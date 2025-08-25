@@ -35,6 +35,10 @@ include make/licenses.mk
 include make/e2e-setup.mk
 include make/scan.mk
 include make/ko.mk
+include make/third_party.mk
+include make/_shared_new/helm/crds.mk
+
+generate-licenses: generate-go-licenses
 
 .PHONY: tidy
 tidy: generate-go-mod-tidy

@@ -61,11 +61,10 @@ import (
 // automatically called.
 func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
-		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
 		s.setup(f)
 
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			// Special case Public ACME Servers against being run in the standard
 			// e2e tests.
 			if strings.Contains(s.Name, "Public ACME Server") && strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
@@ -232,7 +231,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 							return err2
 						}
 
-						fmt.Fprintln(GinkgoWriter, "cert", base64.StdEncoding.EncodeToString(createdCert.RawSubject), dns, err, rest)
+						fmt.Fprintln(GinkgoWriter, "cert", base64.StdEncoding.EncodeToString(createdCert.RawSubject), dns, err, string(rest))
 						if !reflect.DeepEqual(rdnSeq, dns) {
 							return fmt.Errorf("generated certificate's subject [%s] does not match expected subject [%s]", dns.String(), certificate.Spec.LiteralSubject)
 						}
@@ -400,7 +399,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		}
 
 		defineTest := func(test testCase) {
-			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+			s.it(f, test.name, func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 				requiredFeatures := sets.New(test.requiredFeatures...)
 
 				if requiredFeatures.Has(featureset.OtherNamesFeature) {
@@ -456,7 +455,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		////// Gateway/ Ingress Tests ///////
 		/////////////////////////////////////
 
-		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -508,7 +507,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -585,12 +584,17 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
+			// TODO(wallrj): These checks are redundant. The unit
+			// tests for certificate-shim Sync already verify that
+			// the annotations are converted to Certificate fields.
 			By("Validating the created Certificate")
 			err = f.Helper().ValidateCertificate(
 				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
-					Expect(certificate.Spec.CommonName).To(Equal(domain))
+					if !s.UnsupportedFeatures.Has(featureset.CommonNameFeature) {
+						Expect(certificate.Spec.CommonName).To(Equal(domain))
+					}
 					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
 					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 					Expect(certificate.Spec.RevisionHistoryLimit).To(Equal(revisionHistoryLimit))
@@ -610,7 +614,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 
 			name := "testcert-gateway"
@@ -658,7 +662,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		/////// Complex behavioral tests ///////
 		////////////////////////////////////////
 
-		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -668,6 +672,13 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						// Explicitly set RotationPolicy to Never to test the
+						// behavior of reusing the same private key when a
+						// certificate is reissued.
+						// The default value is Always.
+						RotationPolicy: cmapi.RotationPolicyNever,
+					},
 				},
 			}
 			By("Creating a Certificate")
@@ -705,7 +716,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
 			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
 
-			By("Ensuing both certificates are signed by same private key")
+			By("Ensuring both certificates are signed by same private key")
 			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
 			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
 
@@ -714,7 +725,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			}
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
-		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

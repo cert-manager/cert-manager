@@ -53,7 +53,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	if err := logsapi.ResetForTest(nil); err != nil {
 		t.Error(err)
 	}
-	cmd := newServerCommand(context.TODO(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
+	cmd := newServerCommand(t.Context(), func(ctx context.Context, cc *config.ControllerConfiguration) error {
 		finalConfig = cc
 		return nil
 	}, args(tempFilePath))
@@ -61,7 +61,7 @@ func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string)
 	cmd.SetErr(io.Discard)
 	cmd.SetOut(io.Discard)
 
-	err := cmd.ExecuteContext(context.TODO())
+	err := cmd.ExecuteContext(t.Context())
 	return finalConfig, err
 }
 
@@ -174,6 +174,19 @@ logging:
 			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
 				cc.Logging.Verbosity = 2
 				cc.Logging.Format = "text"
+			}),
+		},
+		{
+			yaml: `
+apiVersion: controller.config.cert-manager.io/v1alpha1
+kind: ControllerConfiguration
+ingressShimConfig: {}
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath, "--extra-certificate-annotations", "venafi.cert-manager.io/custom-fields"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.ControllerConfiguration) {
+				cc.IngressShimConfig.ExtraCertificateAnnotations = []string{"venafi.cert-manager.io/custom-fields"}
 			}),
 		},
 	}

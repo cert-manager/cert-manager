@@ -112,13 +112,10 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// chain. If no match is found after a pass, then the list can never be reduced
 	// to a single chain and we error.
 	// For lots of certificates, the time complexity is O(n^2).
-	for {
-		// If a single list is left, then we have built the entire chain. Stop
-		// iterating.
-		if len(chains) == 1 {
-			break
-		}
-
+	//
+	// If a single list is left, then we have built the entire chain. Stop
+	// iterating.
+	for len(chains) > 1 {
 		// If we were not able to merge two chains in this pass, then the chain is
 		// broken and cannot be built. Error.
 		mergedTwoChains := false
@@ -216,7 +213,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 // A, which is why the argument order for the two input chains does not
 // matter.
 //
-// Gluability: We say that the chains A and B are gluable when either the
+// Glueability: We say that the chains A and B are glueable when either the
 // leaf certificate of A can be verified using the root certificate of B,
 // or that the leaf certificate of B can be verified using the root certificate
 // of A.
@@ -234,7 +231,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 //	+------+-------+      +------+-------+      +------+-------+
 //	leaf certificate                            root certificate
 //
-// The function returns false if the chains A and B are not gluable.
+// The function returns false if the chains A and B are not glueable.
 func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 	bRoot := b.root()
 

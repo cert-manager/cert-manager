@@ -118,7 +118,7 @@ func TestSync(t *testing.T) {
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
 		}),
@@ -136,7 +136,7 @@ func TestSync(t *testing.T) {
 	baseCRNotApprovedEC := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrECPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
 		}),
@@ -161,7 +161,7 @@ func TestSync(t *testing.T) {
 	tests := map[string]testT{
 		"should return nil (no action) if group name if not 'cert-manager.io' or ''": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Group: "not-cert-manager.io",
 				}),
 			),
@@ -448,7 +448,7 @@ func TestSync(t *testing.T) {
 		"should return error to try again if there was an error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
 			helper: &issuerfake.Helper{
-				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
+				GetGenericIssuerFunc: func(cmmeta.IssuerReference, string) (cmapi.GenericIssuer, error) {
 					return nil, errors.New("this is a network error")
 				},
 			},
@@ -585,7 +585,7 @@ func TestSync(t *testing.T) {
 						gen.SetCertificateRequestCertificate([]byte("a bad certificate")),
 					)},
 				ExpectedEvents: []string{
-					"Warning DecodeError Failed to decode returned certificate: error decoding certificate PEM block",
+					"Warning DecodeError Failed to decode returned certificate: error decoding certificate PEM block: no valid certificates found",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -598,7 +598,7 @@ func TestSync(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
-								Message:            "Failed to decode returned certificate: error decoding certificate PEM block",
+								Message:            "Failed to decode returned certificate: error decoding certificate PEM block: no valid certificates found",
 								LastTransitionTime: &nowMetaTime,
 							}),
 							gen.SetCertificateRequestFailureTime(nowMetaTime),
@@ -783,7 +783,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err := c.Sync(context.Background(), test.certificateRequest)
+	err := c.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

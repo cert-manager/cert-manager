@@ -237,7 +237,6 @@ func (f *DynamicSource) regenerateCertificate(ctx context.Context, nextRenew cha
 
 	// create the certificate template to be signed
 	template := &x509.Certificate{
-		Version:            3,
 		PublicKeyAlgorithm: x509.ECDSA,
 		PublicKey:          pk.Public(),
 		DNSNames:           f.DNSNames,

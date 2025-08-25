@@ -20,13 +20,11 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
@@ -57,8 +55,15 @@ type DynamicAuthority struct {
 	// Namespace and Name of the Secret resource used to store the authority.
 	SecretNamespace, SecretName string
 
+	// Labels added to the Secret resource used to store the authority.
+	SecretLabels map[string]string
+
 	// RESTConfig used to connect to the apiserver.
 	RESTConfig *rest.Config
+
+	// CommonName of the CA subject.
+	// Defaults to 'cert-manager-webhook-ca' for backwards compatibility reasons.
+	CommonName string
 
 	// The amount of time the root CA certificate will be valid for.
 	// This must be greater than LeafDuration.
@@ -101,6 +106,9 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 	}
 	if d.SecretName == "" {
 		return fmt.Errorf("SecretName must be set")
+	}
+	if d.CommonName == "" {
+		d.CommonName = "cert-manager-webhook-ca"
 	}
 	if d.CADuration == 0 {
 		d.CADuration = time.Hour * 24 * 365 // 365d
@@ -203,12 +211,6 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 		return nil, fmt.Errorf("failed decoding CA private key: %v", err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, err
-	}
-	template.Version = 3
-	template.SerialNumber = serialNumber
 	template.BasicConstraintsValid = true
 	template.NotBefore = time.Now()
 	template.NotAfter = template.NotBefore.Add(d.LeafDuration)
@@ -339,8 +341,6 @@ func caRequiresRegeneration(s *corev1.Secret) (bool, string) {
 	return false, ""
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 // regenerateCA will regenerate and store a new CA.
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
@@ -354,17 +354,14 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return err
 	}
 	cert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		Subject: pkix.Name{
-			CommonName: "cert-manager-webhook-ca",
+			CommonName: d.CommonName,
 		},
 		IsCA:      true,
 		NotBefore: time.Now(),
@@ -386,9 +383,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      d.SecretName,
 				Namespace: d.SecretNamespace,
-				Labels: map[string]string{
-					"app.kubernetes.io/managed-by": "cert-manager",
-				},
+				Labels:    d.SecretLabels,
 				Annotations: map[string]string{
 					cmapi.AllowsInjectionFromSecretAnnotation: "true",
 				},

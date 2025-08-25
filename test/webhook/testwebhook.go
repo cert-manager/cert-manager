@@ -31,7 +31,7 @@ import (
 	"testing"
 	"time"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -41,6 +41,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/webhook/server"
 )
 
+// NOTE: all functions that return a StopFunc should use
+// context.WithCancel(t.Context()) instead of just t.Context()
 type StopFunc func()
 
 type ServerOptions struct {
@@ -55,8 +57,12 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
-	log := logtesting.NewTestLogger(t)
+func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
+	// Making sure the rootCtx is canceled when StopFunc is called
+	// even when t.Context() has not been canceled yet.
+	stoppableCtx, stopCtxFn := context.WithCancel(t.Context())
+
+	log := testr.New(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	webhookFlags := options.NewWebhookFlags()
@@ -72,10 +78,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	}
 
 	var caPEM []byte
-	tempDir, err := os.MkdirTemp("", "webhook-tls-")
-	if err != nil {
-		t.Fatal(err)
-	}
+	tempDir := t.TempDir()
 	if !webhookConfig.TLSConfig.FilesystemConfigProvided() && !webhookConfig.TLSConfig.DynamicConfigProvided() {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()
@@ -105,17 +108,16 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer close(errCh)
-		if err := srv.Run(ctx); err != nil {
+		if err := srv.Run(stoppableCtx); err != nil {
 			errCh <- fmt.Errorf("error running webhook server: %v", err)
 		}
 	}()
 
 	// Determine the random port number that was chosen
 	var listenPort int
-	if err := wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(stoppableCtx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
 		listenPort, err = srv.Port()
 		if err != nil {
 			if errors.Is(err, server.ErrNotListening) {
@@ -133,7 +135,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 		CAPEM: caPEM,
 	}
 	return serverOpts, func() {
-		cancel()
+		stopCtxFn()
 		err := <-errCh // Wait for shutdown
 		if err != nil {
 			t.Fatal(err)
@@ -150,7 +152,6 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		return nil, nil, nil, err
 	}
 	rootCA := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(1658),
 		PublicKeyAlgorithm:    x509.RSA,
@@ -171,7 +172,6 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 		return nil, nil, nil, err
 	}
 	servingCert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(1659),
 		PublicKeyAlgorithm:    x509.RSA,

@@ -37,7 +37,7 @@ func testExitCode(
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run="+t.Name())
 	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -52,7 +52,7 @@ func testExitCode(
 
 func TestSetupExitHandlerAlwaysErrCodeSIGTERM(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := context.WithoutCancel(t.Context())
 		ctx, complete := SetupExitHandler(ctx, AlwaysErrCode)
 		defer complete()
 
@@ -76,7 +76,7 @@ func TestSetupExitHandlerAlwaysErrCodeSIGTERM(t *testing.T) {
 
 func TestSetupExitHandlerAlwaysErrCodeSIGINT(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := context.WithoutCancel(t.Context())
 		ctx, complete := SetupExitHandler(ctx, AlwaysErrCode)
 		defer complete()
 
@@ -100,7 +100,7 @@ func TestSetupExitHandlerAlwaysErrCodeSIGINT(t *testing.T) {
 
 func TestSetupExitHandlerGracefulShutdownSIGINT(t *testing.T) {
 	exitCode := testExitCode(t, func(t *testing.T) {
-		ctx := context.Background()
+		ctx := context.WithoutCancel(t.Context())
 		ctx, complete := SetupExitHandler(ctx, GracefulShutdown)
 		defer complete()
 

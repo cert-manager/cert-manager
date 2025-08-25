@@ -17,9 +17,9 @@ limitations under the License.
 package fuzzer
 
 import (
-	fuzz "github.com/google/gofuzz"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"sigs.k8s.io/randfill"
 
 	"github.com/cert-manager/cert-manager/internal/apis/acme"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -28,21 +28,27 @@ import (
 // Funcs returns the fuzzer functions for the apps api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		func(s *acme.Order, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *acme.Order, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
 		},
-		func(s *acme.Challenge, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *acme.Challenge, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
 		},
-		func(s *apiextensionsv1.JSON, c fuzz.Continue) {
+		func(s *apiextensionsv1.JSON, c randfill.Continue) {
 			// ensure the webhook's config is valid JSON
 			s.Raw = []byte("{}")
 		},

@@ -77,7 +77,7 @@ type venafiProvisioner struct {
 	tpp *vaddon.VenafiTPP
 }
 
-func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.ObjectReference) {
+func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
 	Expect(v.tpp.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
 
 	if ref.Kind == "ClusterIssuer" {
@@ -86,14 +86,14 @@ func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, 
 	}
 }
 
-func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating a Venafi Issuer")
 
 	v.tpp = &vaddon.VenafiTPP{
 		Namespace: f.Namespace.Name,
 	}
 
-	_, err := v.tpp.Setup(f.Config)
+	_, err := v.tpp.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -110,21 +110,21 @@ func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Frame
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
 
-func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating a Venafi ClusterIssuer")
 
 	v.tpp = &vaddon.VenafiTPP{
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
-	_, err := v.tpp.Setup(f.Config)
+	_, err := v.tpp.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -141,7 +141,7 @@ func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framewor
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,

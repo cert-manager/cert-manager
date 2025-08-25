@@ -20,7 +20,10 @@ ifndef repo_name
 $(error repo_name is not set)
 endif
 
-go_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+ifndef golangci_lint_config
+$(error golangci_lint_config is not set)
+endif
+
 golangci_lint_override := $(dir $(lastword $(MAKEFILE_LIST)))/.golangci.override.yaml
 
 .PHONY: go-workspace
@@ -58,13 +61,23 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 
 shared_generate_targets += generate-go-mod-tidy
 
+ifndef dont_generate_govulncheck
+
+govulncheck_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+
 .PHONY: generate-govulncheck
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-govulncheck:
-	cp -r $(go_base_dir)/. ./
+	cp -r $(govulncheck_base_dir)/. ./
+	cd $(govulncheck_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
 
 shared_generate_targets += generate-govulncheck
+
+endif # dont_generate_govulncheck
 
 .PHONY: verify-govulncheck
 ## Verify all Go modules for vulnerabilities using govulncheck
@@ -79,7 +92,7 @@ shared_generate_targets += generate-govulncheck
 # `verify-govulncheck` not added to the `shared_verify_targets` variable and is
 # not run by `make verify`, because `make verify` is run for each PR, and we do
 # not want new vulnerabilities in existing code to block the merging of PRs.
-# Instead `make verify-govulnecheck` is intended to be run periodically by a CI job.
+# Instead `make verify-govulncheck` is intended to be run periodically by a CI job.
 verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
@@ -91,12 +104,15 @@ verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 				echo ""; \
 			done
 
-ifdef golangci_lint_config
-
 .PHONY: generate-golangci-lint-config
 ## Generate a golangci-lint configuration file
 ## @category [shared] Generate/ Verify
-generate-golangci-lint-config: | $(NEEDS_YQ) $(bin_dir)/scratch
+generate-golangci-lint-config: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/scratch
+	if [ "$$($(YQ) eval 'has("version") | not' $(golangci_lint_config))" == "true" ]; then \
+		$(GOLANGCI-LINT) migrate -c $(golangci_lint_config); \
+		rm $(basename $(golangci_lint_config)).bck$(suffix $(golangci_lint_config)); \
+	fi
+
 	cp $(golangci_lint_config) $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) -i 'del(.linters.enable)' $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) eval-all -i '. as $$item ireduce ({}; . * $$item)' $(bin_dir)/scratch/golangci-lint.yaml.tmp $(golangci_lint_override)
@@ -105,6 +121,8 @@ generate-golangci-lint-config: | $(NEEDS_YQ) $(bin_dir)/scratch
 
 shared_generate_targets += generate-golangci-lint-config
 
+golangci_lint_timeout ?= 10m
+
 .PHONY: verify-golangci-lint
 ## Verify all Go modules using golangci-lint
 ## @category [shared] Generate/ Verify
@@ -112,9 +130,9 @@ verify-golangci-lint: | $(NEEDS_GO) $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
 				target=$$(dirname $${d}); \
-				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config)' in directory '$${target}'"; \
+				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint run -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout)' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
-				$(GOLANGCI-LINT) run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --timeout 4m || exit; \
+				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) run -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout) || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
@@ -125,23 +143,12 @@ shared_verify_targets_dirty += verify-golangci-lint
 ## Fix all Go modules using golangci-lint
 ## @category [shared] Generate/ Verify
 fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/scratch
-	$(GCI) write \
-		--skip-generated \
-		--skip-vendor \
-		-s "standard" \
-		-s "default" \
-		-s "prefix($(repo_name))" \
-		-s "blank" \
-		-s "dot" .
-
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
 				target=$$(dirname $${d}); \
-				echo "Running '$(bin_dir)/tools/golangci-lint run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --fix' in directory '$${target}'"; \
+				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint fmt -c $(CURDIR)/$(golangci_lint_config)' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
-				$(GOLANGCI-LINT) run --go $(VENDORED_GO_VERSION) -c $(CURDIR)/$(golangci_lint_config) --fix || exit; \
+				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) fmt -c $(CURDIR)/$(golangci_lint_config) || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
-
-endif

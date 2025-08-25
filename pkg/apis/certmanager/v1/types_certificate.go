@@ -27,6 +27,13 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=`.spec.secretName`
+// +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=`.spec.issuerRef.name`,priority=1
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Namespaced,shortName={cert,certs},categories=cert-manager
+// +kubebuilder:subresource:status
 
 // A Certificate resource should be created to ensure an up to date and signed
 // X.509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
@@ -97,6 +104,19 @@ const (
 	// key algorithm and the private key in the body. A key that uses this
 	// encoding can be recognised by its `BEGIN PRIVATE KEY` header.
 	PKCS8 PrivateKeyEncoding = "PKCS8"
+)
+
+// +kubebuilder:validation:Enum=SHA256WithRSA;SHA384WithRSA;SHA512WithRSA;ECDSAWithSHA256;ECDSAWithSHA384;ECDSAWithSHA512;PureEd25519
+type SignatureAlgorithm string
+
+const (
+	SHA256WithRSA   SignatureAlgorithm = "SHA256WithRSA"
+	SHA384WithRSA   SignatureAlgorithm = "SHA384WithRSA"
+	SHA512WithRSA   SignatureAlgorithm = "SHA512WithRSA"
+	ECDSAWithSHA256 SignatureAlgorithm = "ECDSAWithSHA256"
+	ECDSAWithSHA384 SignatureAlgorithm = "ECDSAWithSHA384"
+	ECDSAWithSHA512 SignatureAlgorithm = "ECDSAWithSHA512"
+	PureEd25519     SignatureAlgorithm = "PureEd25519"
 )
 
 // CertificateSpec defines the desired state of Certificate.
@@ -193,14 +213,17 @@ type CertificateSpec struct {
 
 	// Requested DNS subject alternative names.
 	// +optional
+	// +listType=atomic
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// Requested IP address subject alternative names.
 	// +optional
+	// +listType=atomic
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// Requested URI subject alternative names.
 	// +optional
+	// +listType=atomic
 	URIs []string `json:"uris,omitempty"`
 
 	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
@@ -208,10 +231,12 @@ type CertificateSpec struct {
 	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
 	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
 	// +optional
+	// +listType=atomic
 	OtherNames []OtherName `json:"otherNames,omitempty"`
 
 	// Requested email subject alternative names.
 	// +optional
+	// +listType=atomic
 	EmailAddresses []string `json:"emailAddresses,omitempty"`
 
 	// Name of the Secret resource that will be automatically created and
@@ -238,7 +263,7 @@ type CertificateSpec struct {
 	// from any namespace.
 	//
 	// The `name` field of the reference must always be specified.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.IssuerReference `json:"issuerRef"`
 
 	// Requested basic constraints isCA value.
 	// The isCA value is used to set the `isCA` field on the created CertificateRequest
@@ -257,12 +282,20 @@ type CertificateSpec struct {
 	//
 	// If unset, defaults to `digital signature` and `key encipherment`.
 	// +optional
+	// +listType=atomic
 	Usages []KeyUsage `json:"usages,omitempty"`
 
 	// Private key options. These include the key algorithm and size, the used
 	// encoding and the rotation policy.
 	// +optional
 	PrivateKey *CertificatePrivateKey `json:"privateKey,omitempty"`
+
+	// Signature algorithm to use.
+	// Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA.
+	// Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512.
+	// Allowed values for Ed25519 keys: PureEd25519.
+	// +optional
+	SignatureAlgorithm SignatureAlgorithm `json:"signatureAlgorithm,omitempty"`
 
 	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
 	//
@@ -278,18 +311,14 @@ type CertificateSpec struct {
 	// revisions exceeds this number.
 	//
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
-	// If unset (`nil`), revisions will not be garbage collected.
-	// Default value is `nil`.
+	// Default value is `1`.
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"`
 
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
-	//
-	// This is a Beta Feature enabled by default. It can be disabled with the
-	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
-	// the controller and webhook components.
 	// +optional
+	// +listType=atomic
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 
 	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
@@ -327,7 +356,11 @@ type CertificatePrivateKey struct {
 	// to await user intervention.
 	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
-	// Default is `Never` for backward compatibility.
+	// Default is `Always`.
+	// The default was changed from `Never` to `Always` in cert-manager >=v1.18.0.
+	// The new default can be disabled by setting the
+	// `--feature-gates=DefaultPrivateKeyRotationPolicyAlways=false` option on
+	// the controller component.
 	// +optional
 	RotationPolicy PrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
 
@@ -426,24 +459,31 @@ type CertificateAdditionalOutputFormat struct {
 type X509Subject struct {
 	// Organizations to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	Organizations []string `json:"organizations,omitempty"`
 	// Countries to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	Countries []string `json:"countries,omitempty"`
 	// Organizational Units to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
 	// Cities to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	Localities []string `json:"localities,omitempty"`
 	// State/Provinces to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	Provinces []string `json:"provinces,omitempty"`
 	// Street addresses to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	StreetAddresses []string `json:"streetAddresses,omitempty"`
 	// Postal codes to be used on the Certificate.
 	// +optional
+	// +listType=atomic
 	PostalCodes []string `json:"postalCodes,omitempty"`
 	// Serial number to be used on the Certificate.
 	// +optional
@@ -464,13 +504,13 @@ type CertificateKeystores struct {
 	PKCS12 *PKCS12Keystore `json:"pkcs12,omitempty"`
 }
 
-// JKS configures options for storing a JKS keystore in the `spec.secretName`
-// Secret resource.
+// JKS configures options for storing a JKS keystore in the target secret.
+// Either PasswordSecretRef or Password must be provided.
 type JKSKeystore struct {
 	// Create enables JKS keystore creation for the Certificate.
 	// If true, a file named `keystore.jks` will be created in the target
 	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef`.
+	// `passwordSecretRef` or `password`.
 	// The keystore file will be updated immediately.
 	// If the issuer provided a CA certificate, a file named `truststore.jks`
 	// will also be created in the target Secret resource, encrypted using the
@@ -478,14 +518,23 @@ type JKSKeystore struct {
 	// containing the issuing Certificate Authority
 	Create bool `json:"create"`
 
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the JKS keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
-
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
 	// +optional
 	Alias *string `json:"alias,omitempty"`
+
+	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+
+	// Password provides a literal password used to encrypt the JKS keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	Password *string `json:"password,omitempty"`
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
@@ -494,17 +543,13 @@ type PKCS12Keystore struct {
 	// Create enables PKCS12 keystore creation for the Certificate.
 	// If true, a file named `keystore.p12` will be created in the target
 	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef`.
+	// `passwordSecretRef` or in `password`.
 	// The keystore file will be updated immediately.
 	// If the issuer provided a CA certificate, a file named `truststore.p12` will
 	// also be created in the target Secret resource, encrypted using the
 	// password stored in `passwordSecretRef` containing the issuing Certificate
 	// Authority
 	Create bool `json:"create"`
-
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the PKCS12 keystore.
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
@@ -513,10 +558,23 @@ type PKCS12Keystore struct {
 	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
 	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
-	// (eg. because of company policy). Please note that the security of the algorithm is not that important
+	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	// +optional
 	Profile PKCS12Profile `json:"profile,omitempty"`
+
+	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
+	// containing the password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+
+	// Password provides a literal password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	// +optional
+	Password *string `json:"password,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023
@@ -537,9 +595,9 @@ const (
 type CertificateStatus struct {
 	// List of status conditions to indicate the status of certificates.
 	// Known condition types are `Ready` and `Issuing`.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
 	Conditions []CertificateCondition `json:"conditions,omitempty"`
 
 	// LastFailureTime is set only if the latest issuance for this
@@ -698,18 +756,22 @@ type NameConstraintItem struct {
 	// DNSDomains is a list of DNS domains that are permitted or excluded.
 	//
 	// +optional
+	// +listType=atomic
 	DNSDomains []string `json:"dnsDomains,omitempty"`
 	// IPRanges is a list of IP Ranges that are permitted or excluded.
 	// This should be a valid CIDR notation.
 	//
 	// +optional
+	// +listType=atomic
 	IPRanges []string `json:"ipRanges,omitempty"`
 	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
 	//
 	// +optional
+	// +listType=atomic
 	EmailAddresses []string `json:"emailAddresses,omitempty"`
 	// URIDomains is a list of URI domains that are permitted or excluded.
 	//
 	// +optional
+	// +listType=atomic
 	URIDomains []string `json:"uriDomains,omitempty"`
 }

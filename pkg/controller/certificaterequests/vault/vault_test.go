@@ -108,7 +108,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  baseIssuer.Kind,
@@ -579,7 +579,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

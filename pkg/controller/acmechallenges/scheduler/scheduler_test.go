@@ -17,15 +17,13 @@ limitations under the License.
 package scheduler
 
 import (
-	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -81,7 +79,7 @@ func BenchmarkScheduleAscending(b *testing.B) {
 			chs := ascendingChallengeN(c)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})
@@ -95,7 +93,7 @@ func BenchmarkScheduleRandom(b *testing.B) {
 			chs := randomChallengeN(c, 0)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})
@@ -109,7 +107,7 @@ func BenchmarkScheduleDuplicates(b *testing.B) {
 			chs := randomChallengeN(c, 3)
 			s := &Scheduler{}
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_ = s.scheduleN(30, chs)
 			}
 		})
@@ -143,7 +141,7 @@ func TestScheduleN(t *testing.T) {
 			expected:   ascendingChallengeN(maxConcurrentChallenges),
 		},
 		{
-			name:       "schedule no new if current number is higher than MaxConcurrentChallenges",
+			name:       "schedule no new if current number is greater than MaxConcurrentChallenges",
 			n:          maxConcurrentChallenges,
 			challenges: ascendingChallengeN(maxConcurrentChallenges * 4),
 			expected:   ascendingChallengeN(maxConcurrentChallenges),
@@ -308,7 +306,7 @@ func TestScheduleN(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cl := fake.NewSimpleClientset()
+			cl := fake.NewClientset()
 			factory := cminformers.NewSharedInformerFactory(cl, 0)
 			challengesInformer := factory.Acme().V1().Challenges()
 			for _, ch := range test.challenges {
@@ -316,7 +314,7 @@ func TestScheduleN(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
+			s := New(t.Context(), challengesInformer.Lister(), maxConcurrentChallenges)
 
 			if test.expected == nil {
 				test.expected = []*cmacme.Challenge{}
@@ -328,8 +326,8 @@ func TestScheduleN(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("expected to get an error, but got none")
 			}
-			if !reflect.DeepEqual(chs, test.expected) {
-				t.Errorf("expected did not match actual: %v", diff.ObjectDiff(test.expected, chs))
+			if diff := cmp.Diff(test.expected, chs); diff != "" {
+				t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 			}
 		})
 	}

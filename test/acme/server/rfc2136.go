@@ -38,7 +38,7 @@ type rfc2136Handler struct {
 	lock       sync.Mutex
 }
 
-// serveDNS implements github.com/miekg/dns.Handler
+// ServeDNS implements github.com/miekg/dns.Handler
 func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 	b.lock.Lock()
 	defer b.lock.Unlock()

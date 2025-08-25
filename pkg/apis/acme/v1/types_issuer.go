@@ -46,7 +46,7 @@ type ACMEIssuer struct {
 	// PreferredChain is the chain to use if the ACME server outputs multiple.
 	// PreferredChain is no guarantee that this one gets delivered by the ACME
 	// endpoint.
-	// For example, for Let's Encrypt's DST crosssign you would use:
+	// For example, for Let's Encrypt's DST cross-sign you would use:
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	// This value picks the first certificate bundle in the combined set of
 	// ACME default and alternative chains that has a root-most certificate with
@@ -96,6 +96,7 @@ type ACMEIssuer struct {
 	// from an ACME server.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	// +optional
+	// +listType=atomic
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
 
 	// Enables or disables generating a new ACME account key.
@@ -114,6 +115,11 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+
+	// Profile allows requesting a certificate profile from the ACME server.
+	// Supported profiles are listed by the server's ACME directory URL.
+	// +optional
+	Profile string `json:"profile,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -163,7 +169,7 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the HTTP01 challenge flow.
 	// It is not possible to obtain certificates for wildcard domain names
-	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
+	// (e.g., `*.example.com`) using the HTTP01 challenge mechanism.
 	// +optional
 	HTTP01 *ACMEChallengeSolverHTTP01 `json:"http01,omitempty"`
 
@@ -191,6 +197,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
+	// +listType=atomic
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// List of DNSZones that this solver will be used to solve.
@@ -203,6 +210,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
+	// +listType=atomic
 	DNSZones []string `json:"dnsZones,omitempty"`
 }
 
@@ -285,6 +293,8 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// cert-manager needs to know which parentRefs should be used when creating
 	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
 	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
+	// +optional
+	// +listType=atomic
 	ParentRefs []gwapi.ParentReference `json:"parentRefs,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
@@ -331,6 +341,7 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's tolerations.
 	// +optional
+	// +listType=atomic
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod's priorityClassName.
@@ -343,6 +354,10 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's imagePullSecrets
 	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchMergeKey:"name" patchStrategy:"merge"`
 
 	// If specified, the pod's security context
@@ -459,6 +474,7 @@ type ACMEChallengeSolverHTTP01IngressPodSecurityContext struct {
 	// even if they are not included in this list.
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
+	// +listType=atomic
 	SupplementalGroups []int64 `json:"supplementalGroups,omitempty"`
 	// A special supplemental group that applies to all containers in a pod.
 	// Some volume types allow the Kubelet to change the ownership of that volume
@@ -476,6 +492,7 @@ type ACMEChallengeSolverHTTP01IngressPodSecurityContext struct {
 	// sysctls (by the container runtime) might fail to launch.
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
+	// +listType=atomic
 	Sysctls []corev1.Sysctl `json:"sysctls,omitempty"`
 	// fsGroupChangePolicy defines behavior of changing ownership and permission of the volume
 	// before being exposed inside Pod. This field will only apply to
@@ -653,6 +670,7 @@ type ServiceAccountRef struct {
 	// and name is always included.
 	// If unset the audience defaults to `sts.amazonaws.com`.
 	// +optional
+	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
@@ -702,16 +720,16 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.
 // Otherwise, we fall-back to using Azure Managed Service Identity.
 type AzureManagedIdentity struct {
-	// client ID of the managed identity, can not be used at the same time as resourceID
+	// client ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
 
-	// resource ID of the managed identity, can not be used at the same time as clientID
+	// resource ID of the managed identity, cannot be used at the same time as clientID
 	// Cannot be used for Azure Managed Service Identity
 	// +optional
 	ResourceID string `json:"resourceID,omitempty"`
 
-	// tenant ID of the managed identity, can not be used at the same time as resourceID
+	// tenant ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
 	TenantID string `json:"tenantID,omitempty"`
 }
@@ -759,7 +777,21 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+
+	// Protocol to use for dynamic DNS update queries. Valid values are (case-sensitive) ``TCP`` and ``UDP``; ``UDP`` (default).
+	// +optional
+	Protocol RFC2136UpdateProtocol `json:"protocol,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=TCP;UDP
+type RFC2136UpdateProtocol string
+
+const (
+	// RFC2136UpdateProtocolTCP utilizes TCP to update queries.
+	RFC2136UpdateProtocolTCP RFC2136UpdateProtocol = "TCP"
+	// RFC2136UpdateProtocolUDP utilizes UDP to update queries.
+	RFC2136UpdateProtocolUDP RFC2136UpdateProtocol = "UDP"
+)
 
 // ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
 // provider, including where to POST ChallengePayload resources.
@@ -772,14 +804,14 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 
 	// The name of the solver to use, as defined in the webhook provider
 	// implementation.
-	// This will typically be the name of the provider, e.g. 'cloudflare'.
+	// This will typically be the name of the provider, e.g., 'cloudflare'.
 	SolverName string `json:"solverName"`
 
 	// Additional configuration that should be passed to the webhook apiserver
 	// when challenges are processed.
 	// This can contain arbitrary JSON data.
 	// Secret values should not be specified in this stanza.
-	// If secret values are needed (e.g. credentials for a DNS service), you
+	// If secret values are needed (e.g., credentials for a DNS service), you
 	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.

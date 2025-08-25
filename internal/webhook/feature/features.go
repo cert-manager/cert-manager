@@ -44,6 +44,7 @@ const (
 	// Owner: @joshvanl
 	// Alpha: v1.7.1
 	// Beta: v1.15
+	// GA: v1.18
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
@@ -67,6 +68,7 @@ const (
 
 	// Owner: @tanujd11
 	// Alpha: v1.14
+	// Beta: v1.17
 	//
 	// NameConstraints adds support for Name Constraints in Certificate resources
 	// with IsCA=true.
@@ -96,8 +98,8 @@ func init() {
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 
-	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.GA},
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
-	NameConstraints:                    {Default: false, PreRelease: featuregate.Alpha},
+	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
 }

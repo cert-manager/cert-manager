@@ -19,6 +19,7 @@ package gen
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	internalv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -26,13 +27,14 @@ import (
 type CertificateRequestModifier func(*v1.CertificateRequest)
 
 func CertificateRequest(name string, mods ...CertificateRequestModifier) *v1.CertificateRequest {
-	c := &v1.CertificateRequest{
+	cr := &v1.CertificateRequest{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
-		mod(c)
+		mod(cr)
 	}
-	return c
+	internalv1.SetObjectDefaults_CertificateRequest(cr)
+	return cr
 }
 
 func CertificateRequestFrom(cr *v1.CertificateRequest, mods ...CertificateRequestModifier) *v1.CertificateRequest {
@@ -40,11 +42,12 @@ func CertificateRequestFrom(cr *v1.CertificateRequest, mods ...CertificateReques
 	for _, mod := range mods {
 		mod(cr)
 	}
+	internalv1.SetObjectDefaults_CertificateRequest(cr)
 	return cr
 }
 
-// SetIssuer sets the CertificateRequest.spec.issuerRef field
-func SetCertificateRequestIssuer(o cmmeta.ObjectReference) CertificateRequestModifier {
+// SetCertificateRequestIssuer sets the CertificateRequest.spec.issuerRef field
+func SetCertificateRequestIssuer(o cmmeta.IssuerReference) CertificateRequestModifier {
 	return func(c *v1.CertificateRequest) {
 		c.Spec.IssuerRef = o
 	}

@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -145,13 +146,20 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		log.V(logf.DebugLevel).Info("certificate not found for key", "error", err.Error())
-		return nil
-	}
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
+	if crt == nil || crt.DeletionTimestamp != nil {
+		// If the Certificate object was/ is being deleted, we don't want to create any
+		// new Secret resources.
+		return nil
+	}
+
+	// Apply runtime defaults to apply default values that are governed by
+	// controller feature gates, such as DefaultPrivateKeyRotationPolicyAlways.
+	// We deep copy the object to avoid mutating the client-go cache.
+	crt = crt.DeepCopy()
+	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
 	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy(crt))
@@ -172,10 +180,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// if there is no existing Secret resource, create a new one
 	if len(secrets) == 0 {
-		rotationPolicy := cmapi.RotationPolicyNever
-		if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.RotationPolicy != "" {
-			rotationPolicy = crt.Spec.PrivateKey.RotationPolicy
-		}
+		// PrivateKey is a pointer, but it will never be nil because we called
+		// the SetRuntimeDefaults function at the start of this function.
+		rotationPolicy := crt.Spec.PrivateKey.RotationPolicy
 		switch rotationPolicy {
 		case cmapi.RotationPolicyNever:
 			return c.createNextPrivateKeyRotationPolicyNever(ctx, crt)
@@ -318,7 +325,10 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 			Status:     cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
 		})
 	} else {
-		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, &cmapi.Certificate{
+			ObjectMeta: crt.ObjectMeta,
+			Status:     crt.Status,
+		}, metav1.UpdateOptions{})
 		return err
 	}
 }

@@ -203,7 +203,7 @@ func NewCertManagerBasicCertificateRequest(
 		gen.SetCertificateRequestNamespace(namespace),
 		gen.SetCertificateRequestDuration(duration),
 		gen.SetCertificateRequestCSR(csrPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name: issuerName,
 			Kind: issuerKind,
 		}),
@@ -220,7 +220,7 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 			SecretName:  secretName,
 			Duration:    duration,
 			RenewBefore: renewBefore,
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: issuerName,
 				Kind: issuerKind,
 			},
@@ -291,7 +291,7 @@ func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, d
 									Path: "/",
 									Backend: networkingv1beta1.IngressBackend{
 										ServiceName: "somesvc",
-										ServicePort: intstr.FromInt(80),
+										ServicePort: intstr.FromInt32(80),
 									},
 								},
 							},

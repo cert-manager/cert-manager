@@ -17,10 +17,8 @@ limitations under the License.
 package validation
 
 import (
-	"context"
 	"strings"
 	"testing"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,7 +53,7 @@ func TestValidationCertificate(t *testing.T) {
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},
 					Usages:     []cmapi.KeyUsage{},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "letsencrypt-staging",
 					},
 					PrivateKey: &cmapi.CertificatePrivateKey{
@@ -75,7 +73,7 @@ func TestValidationCertificate(t *testing.T) {
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},
 					Usages:     []cmapi.KeyUsage{},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "letsencrypt-staging",
 					},
 					PrivateKey: &cmapi.CertificatePrivateKey{
@@ -93,20 +91,17 @@ func TestValidationCertificate(t *testing.T) {
 			cert := test.input.(*cmapi.Certificate)
 			cert.SetGroupVersionKind(certificateGVK)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-			defer cancel()
+			config, stopFn := framework.RunControlPlane(t)
+			t.Cleanup(stopFn)
 
-			config, stop := framework.RunControlPlane(t, ctx)
-			defer stop()
-
-			framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, config, certificateGVK)
+			framework.WaitForOpenAPIResourcesToBeLoaded(t, t.Context(), config, certificateGVK)
 
 			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			err = cl.Create(ctx, cert)
+			err = cl.Create(t.Context(), cert)
 
 			if test.expectError {
 				if err == nil {

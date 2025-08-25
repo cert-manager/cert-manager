@@ -17,6 +17,8 @@ limitations under the License.
 package rbac
 
 import (
+	"context"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,176 +31,176 @@ var _ = RBACDescribe("Issuers", func() {
 
 	Context("with namespace view access", func() {
 		clusterRole := "view"
-		It("shouldn't be able to create issuers", func() {
+		It("shouldn't be able to create issuers", func(testingCtx context.Context) {
 			verb := "create"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to delete issuers", func() {
+		It("shouldn't be able to delete issuers", func(testingCtx context.Context) {
 			verb := "delete"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to delete collections of issuers", func() {
+		It("shouldn't be able to delete collections of issuers", func(testingCtx context.Context) {
 			verb := "deletecollection"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to patch issuers", func() {
+		It("shouldn't be able to patch issuers", func(testingCtx context.Context) {
 			verb := "patch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to update issuers", func() {
+		It("shouldn't be able to update issuers", func(testingCtx context.Context) {
 			verb := "update"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("should be able to get issuers", func() {
+		It("should be able to get issuers", func(testingCtx context.Context) {
 			verb := "get"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list issuers", func() {
+		It("should be able to list issuers", func(testingCtx context.Context) {
 			verb := "list"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch issuers", func() {
+		It("should be able to watch issuers", func(testingCtx context.Context) {
 			verb := "watch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 	})
 	Context("with namespace edit access", func() {
 		clusterRole := "edit"
-		It("should be able to create issuers", func() {
+		It("should be able to create issuers", func(testingCtx context.Context) {
 			verb := "create"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete issuers", func() {
+		It("should be able to delete issuers", func(testingCtx context.Context) {
 			verb := "delete"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete collections of issuers", func() {
+		It("should be able to delete collections of issuers", func(testingCtx context.Context) {
 			verb := "deletecollection"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to patch issuers", func() {
+		It("should be able to patch issuers", func(testingCtx context.Context) {
 			verb := "patch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to update issuers", func() {
+		It("should be able to update issuers", func(testingCtx context.Context) {
 			verb := "update"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to get issuers", func() {
+		It("should be able to get issuers", func(testingCtx context.Context) {
 			verb := "get"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list issuers", func() {
+		It("should be able to list issuers", func(testingCtx context.Context) {
 			verb := "list"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch issuers", func() {
+		It("should be able to watch issuers", func(testingCtx context.Context) {
 			verb := "watch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 	})
 
 	Context("with namespace admin access", func() {
 		clusterRole := "admin"
-		It("should be able to create issuers", func() {
+		It("should be able to create issuers", func(testingCtx context.Context) {
 			verb := "create"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete issuers", func() {
+		It("should be able to delete issuers", func(testingCtx context.Context) {
 			verb := "delete"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete collections of issuers", func() {
+		It("should be able to delete collections of issuers", func(testingCtx context.Context) {
 			verb := "deletecollection"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to patch issuers", func() {
+		It("should be able to patch issuers", func(testingCtx context.Context) {
 			verb := "patch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to update issuers", func() {
+		It("should be able to update issuers", func(testingCtx context.Context) {
 			verb := "update"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to get issuers", func() {
+		It("should be able to get issuers", func(testingCtx context.Context) {
 			verb := "get"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list issuers", func() {
+		It("should be able to list issuers", func(testingCtx context.Context) {
 			verb := "list"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch issuers", func() {
+		It("should be able to watch issuers", func(testingCtx context.Context) {
 			verb := "watch"
 
-			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
+			hasAccess := framework.RbacClusterRoleHasAccessToResource(testingCtx, f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 	})

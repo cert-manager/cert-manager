@@ -32,7 +32,7 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{- define "example-webhook.selfSignedIssuer" -}}
-{{ printf "%s-selfsign" (include "example-webhook.fullname" .) }}
+{{ printf "%s-self-sign" (include "example-webhook.fullname" .) }}
 {{- end -}}
 
 {{- define "example-webhook.rootCAIssuer" -}}

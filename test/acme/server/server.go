@@ -59,27 +59,38 @@ type BasicServer struct {
 }
 
 // Run starts the test DNS server, binding to a random port on 127.0.0.1
-func (b *BasicServer) Run(ctx context.Context) error {
-	return b.RunWithAddress(ctx, "127.0.0.1:0")
+func (b *BasicServer) Run(ctx context.Context, network string) error {
+	return b.RunWithAddress(ctx, "127.0.0.1:0", network)
 }
 
 // RunWithAddress starts the test DNS server using the specified listen address.
-func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) error {
+func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr, network string) error {
 	log := logf.FromContext(ctx, "dnsBasicServer")
 
 	if listenAddr == "" {
 		return fmt.Errorf("listen address must be provided")
 	}
 
-	pc, err := net.ListenPacket("udp", listenAddr)
-	if err != nil {
-		return err
-	}
-	b.listenAddr = pc.LocalAddr().String()
-	log = log.WithValues("address", b.listenAddr)
-	log.V(logf.InfoLevel).Info("listening on UDP port")
+	lc := net.ListenConfig{}
+	if network == "tcp" {
+		listener, err := lc.Listen(ctx, "tcp", listenAddr)
+		if err != nil {
+			return err
+		}
 
-	b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
+		b.server = &dns.Server{Listener: listener, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
+		b.listenAddr = listener.Addr().String()
+	} else {
+		pc, err := lc.ListenPacket(ctx, "udp", listenAddr)
+		if err != nil {
+			return err
+		}
+		b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
+		b.listenAddr = pc.LocalAddr().String()
+	}
+	log = log.WithValues("address", b.listenAddr)
+	log.V(logf.InfoLevel).Info(fmt.Sprintf("listening on %s port", network))
+
 	if b.EnableTSIG {
 		log.V(logf.DebugLevel).Info("enabling TSIG support")
 		b.server.TsigSecret = map[string]string{b.TSIGKeyName: b.TSIGKeySecret}

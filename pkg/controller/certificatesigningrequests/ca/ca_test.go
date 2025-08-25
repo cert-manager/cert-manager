@@ -17,7 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -72,7 +71,6 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x509.Certificate, []byte) {
 	tmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{
@@ -151,7 +149,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// generate a self signed root ca valid for 60d
+	// generate a self-signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
 	ecCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -241,7 +239,7 @@ func TestSign(t *testing.T) {
 				),
 				},
 				ExpectedEvents: []string{
-					"Warning SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+					"Warning SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 				},
 
 				ExpectedActions: []testpkg.Action{
@@ -579,7 +577,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.ProcessItem(context.Background(), types.NamespacedName{
+	err := controller.ProcessItem(t.Context(), types.NamespacedName{
 		Name: test.csr.Name,
 	})
 	if err != nil && !test.expectedErr {
@@ -619,7 +617,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestDuration("30m"),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
@@ -654,7 +652,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestRequest(testCSR),
-				gen.SetCertificateSigningRequestSignerName("issers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/"+gen.DefaultTestNamespace+".issuer-1"),
 				gen.SetCertificateSigningRequestExpirationSeconds(654),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
@@ -766,11 +764,11 @@ func TestCA_Sign(t *testing.T) {
 				signingFn:         pki.SignCSRTemplate,
 			}
 
-			gotErr := c.Sign(context.Background(), test.givenCSR, test.givenCAIssuer)
+			gotErr := c.Sign(t.Context(), test.givenCSR, test.givenCAIssuer)
 			require.NoError(t, gotErr)
 			builder.Sync()
 
-			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), test.givenCSR.Name, metav1.GetOptions{})
+			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(t.Context(), test.givenCSR.Name, metav1.GetOptions{})
 			require.NoError(t, err)
 
 			require.NotEmpty(t, csr.Status.Certificate)

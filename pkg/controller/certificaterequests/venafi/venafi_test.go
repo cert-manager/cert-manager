@@ -17,13 +17,10 @@ limitations under the License.
 package venafi
 
 import (
-	"context"
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
-	"math/big"
 	"testing"
 	"time"
 
@@ -77,15 +74,8 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	rootTmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             rootPK.Public(),
 		IsCA:                  true,
@@ -180,7 +170,7 @@ func TestSign(t *testing.T) {
 	)
 
 	tppCR := gen.CertificateRequestFrom(baseCR,
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Group: certmanager.GroupName,
 			Name:  tppIssuer.Name,
 			Kind:  tppIssuer.Kind,
@@ -194,7 +184,7 @@ func TestSign(t *testing.T) {
 	tppCRWithInvalidCustomFieldType := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok", "type": "Bool"}]`}))
 
 	cloudCR := gen.CertificateRequestFrom(baseCR,
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Group: certmanager.GroupName,
 			Name:  cloudIssuer.Name,
 			Kind:  cloudIssuer.Kind,
@@ -839,12 +829,12 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Start()
 
 	// Deep copy the certificate request to prevent pulling condition state across tests
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 
 	if err == nil && test.fakeClient != nil && test.fakeClient.RetrieveCertificateFn != nil && !test.skipSecondSignCall {
 		// request state is ok! simulating a 2nd sync to fetch the cert
 		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, cmapi.VenafiPickupIDAnnotationKey, "test")
-		err = controller.Sync(context.Background(), test.certificateRequest)
+		err = controller.Sync(t.Context(), test.certificateRequest)
 	}
 
 	if err != nil && !test.expectedErr {

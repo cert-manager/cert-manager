@@ -224,7 +224,7 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 				partialMetadataLister: scenario.partialMetadataLister,
 				typedLister:           scenario.typedLister,
 				typedClient:           scenario.typedClient,
-				ctx:                   context.Background(),
+				ctx:                   t.Context(),
 			}
 			got, err := snl.Get(name)
 			if (err != nil) != scenario.wantErr {
@@ -438,7 +438,7 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 				partialMetadataLister: scenario.partialMetadataLister,
 				typedLister:           scenario.typedLister,
 				typedClient:           scenario.typedClient,
-				ctx:                   context.Background(),
+				ctx:                   t.Context(),
 			}
 			got, err := snl.List(someSelector)
 			if (err != nil) != scenario.wantErr {

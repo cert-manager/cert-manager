@@ -95,6 +95,17 @@ type Context struct {
 	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
 	DiscoveryClient discovery.DiscoveryInterface
 
+	// Clock should be used to access the current time instead of relying on
+	// time.Now, to make it easier to test controllers that utilise time
+	Clock clock.Clock
+
+	// ACMEAccountRegistry is used as a cache of ACME accounts between various
+	// components of cert-manager
+	ACMEAccountRegistry accounts.Registry
+
+	// Metrics is used for exposing Prometheus metrics across the controllers
+	Metrics *metrics.Metrics
+
 	// Recorder to record events to
 	Recorder record.EventRecorder
 
@@ -138,13 +149,6 @@ type ContextOptions struct {
 	// If unset, operates on all namespaces
 	Namespace string
 
-	// Clock should be used to access the current time instead of relying on
-	// time.Now, to make it easier to test controllers that utilise time
-	Clock clock.Clock
-
-	// Metrics is used for exposing Prometheus metrics across the controllers
-	Metrics *metrics.Metrics
-
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
@@ -160,7 +164,7 @@ type ConfigOptions struct {
 
 type IssuerOptions struct {
 	// ClusterResourceNamespace is the namespace to store resources created by
-	// non-namespaced resources (e.g. ClusterIssuer) in.
+	// non-namespaced resources (e.g., ClusterIssuer) in.
 	ClusterResourceNamespace string
 
 	// ClusterIssuerAmbientCredentials controls whether a cluster issuer should
@@ -205,10 +209,6 @@ type ACMEOptions struct {
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
 
-	// AccountRegistry is used as a cache of ACME accounts between various
-	// components of cert-manager
-	AccountRegistry accounts.Registry
-
 	// DNS01CheckRetryPeriod is the time the controller should wait between checking if a ACME dns entry exists.
 	DNS01CheckRetryPeriod time.Duration
 }
@@ -221,6 +221,7 @@ type IngressShimOptions struct {
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
+	ExtraCertificateAnnotations       []string
 }
 
 type CertificateOptions struct {
@@ -308,9 +309,13 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
+	clock := clock.RealClock{}
+	log := logf.FromContext(ctx)
+	metrics := metrics.New(log, clock)
+
 	return &ContextFactory{
 		baseRestConfig: restConfig,
-		log:            logf.FromContext(ctx),
+		log:            log,
 		ctx: &Context{
 			RootContext:                            ctx,
 			KubeSharedInformerFactory:              kubeSharedInformerFactory,
@@ -319,6 +324,11 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 			GatewaySolverEnabled:                   clients.gatewayAvailable,
 			HTTP01ResourceMetadataInformersFactory: http01ResourceMetadataInformerFactory,
 			ContextOptions:                         opts,
+			Clock:                                  clock,
+			Metrics:                                metrics,
+			ACMEAccountRegistry: accounts.NewDefaultRegistry(
+				accounts.NewClient(metrics, restConfig.UserAgent),
+			),
 		},
 	}, nil
 }

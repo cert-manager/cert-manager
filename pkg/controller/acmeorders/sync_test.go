@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,6 +38,7 @@ import (
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestSync(t *testing.T) {
@@ -85,12 +85,27 @@ func TestSync(t *testing.T) {
 
 	testOrder := gen.Order("testorder",
 		gen.SetOrderCommonName("test.com"),
-		gen.SetOrderIssuer(cmmeta.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
 			Name: testIssuerHTTP01TestCom.Name,
 		}),
 	)
 
-	testOrderIP := gen.Order("testorder", gen.SetOrderIssuer(cmmeta.ObjectReference{Name: testIssuerHTTP01.Name}), gen.SetOrderIPAddresses("10.0.0.1"))
+	testOrderIP := gen.Order("testorder",
+		gen.SetOrderCommonName("10.0.0.2"),
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
+			Name: testIssuerHTTP01.Name,
+		}),
+		gen.SetOrderIPAddresses("10.0.0.1"))
+
+	const ipv6AddressOne = "2001:4860:4860::8888"
+	const ipv6AddressTwo = "2001:4860:4860::8844"
+
+	testOrderIPV6 := gen.Order("testorder",
+		gen.SetOrderCommonName(ipv6AddressOne),
+		gen.SetOrderIssuer(cmmeta.IssuerReference{
+			Name: testIssuerHTTP01.Name,
+		}),
+		gen.SetOrderIPAddresses(ipv6AddressTwo))
 
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
@@ -289,7 +304,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			return "key", nil
 		},
 	}
-	testAuthorizationChallenge, err := buildPartialChallenge(context.TODO(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+	testAuthorizationChallenge, err := buildPartialChallenge(t.Context(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
 
 	if err != nil {
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
@@ -381,7 +396,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
-		"create a new order with the acme server with an IP address": {
+		"create a new order with the acme server with an IPv4 address": {
 			order: testOrderIP,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderIP},
@@ -406,6 +421,53 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 					if id[0].Value != "10.0.0.1" || id[0].Type != "ip" {
 						return nil, errors.New("AuthzID needs to be the IP")
 					}
+					if id[1].Value != "10.0.0.2" || id[1].Type != "ip" {
+						return nil, errors.New("AuthzID needs to be the IP")
+					}
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+		},
+		"create a new order with the acme server with an IPv6 address": {
+			order: testOrderIPV6,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderIPV6},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderIPV6, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					if id[0].Value != ipv6AddressTwo || id[0].Type != "ip" {
+						return nil, fmt.Errorf("AuthzID 1 needs to be expected IPv6 address: wanted value=%s but got %s", ipv6AddressTwo, id[0].Value)
+					}
+
+					if id[1].Value != ipv6AddressOne || id[1].Type != "ip" {
+						return nil, fmt.Errorf("AuthzID 2 needs to be expected IPv6 address: wanted value=%s but got %s", ipv6AddressOne, id[1].Value)
+					}
+
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
@@ -429,7 +491,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 				ExpectedEvents: []string{
 					//nolint: dupword
-					`Normal Created Created Challenge resource "testorder-756011405" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-2580184217" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -893,6 +955,56 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			acmeClient: &acmecl.FakeACME{},
 		},
+		"acme-profiles:profiles-not-implemented": {
+			// Simulate an attempt to create an order with a profile on an ACME
+			// server which does not support profiles.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not support profiles"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrCADoesNotSupportProfiles
+				},
+			},
+		},
+		"acme-profiles:profile-not-supported": {
+			// Simulate an attempt to create an order with a profile which the
+			// ACME server does not provide.
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderPending.Namespace,
+							gen.OrderFrom(
+								testOrderErrored,
+								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not advertise a profile with name"),
+							),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, acmeapi.ErrProfileNotInSetOfSupportedProfiles
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -943,7 +1055,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err = cw.Sync(context.Background(), test.order)
+	err = cw.Sync(t.Context(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}

@@ -97,7 +97,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		name        string
 		signFunc    authority.SignFunc
 		testFn      func(t *testing.T, source *DynamicSource, mockAuth *mockAuthority)
-		cancelAtEnd bool
 		expStartErr string
 	}
 
@@ -141,7 +140,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 						return nil, fmt.Errorf("mock error")
 					}
 
-					template.Version = 3
 					template.SerialNumber = big.NewInt(10)
 					template.NotBefore = time.Now()
 					template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -159,12 +157,10 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "don't rotate root",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -192,12 +188,10 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 
 				assert.Equal(t, cert.Certificate[0], cert2.Certificate[0])
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "rotate root",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(time.Minute)
@@ -214,7 +208,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					// Rotate the root
 					mockAuth.notifyCh <- struct{}{}
 
@@ -229,12 +223,10 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 					assert.NotEqual(t, cert.Certificate[0], cert2.Certificate[0])
 				}
 			},
-			cancelAtEnd: true,
 		},
 		{
 			name: "expire leaf",
 			signFunc: func(template *x509.Certificate) (*x509.Certificate, error) {
-				template.Version = 3
 				template.SerialNumber = big.NewInt(10)
 				template.NotBefore = time.Now()
 				template.NotAfter = template.NotBefore.Add(150 * time.Millisecond)
@@ -258,7 +250,7 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, cert)
 
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					// Sleep for a short time to allow the DynamicSource to generate a new certificate
 					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
 					// possible delays of max 100ms (based on experiments, we noticed that issuance of
@@ -275,7 +267,6 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 					cert = newCert
 				}
 			},
-			cancelAtEnd: true,
 		},
 	}
 
@@ -296,17 +287,11 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 			}
 
 			// Start the DynamicSource
-			ctx, cancel := context.WithCancel(context.Background())
-			group, gctx := errgroup.WithContext(ctx)
+			group, gctx := errgroup.WithContext(t.Context())
 			group.Go(func() error {
 				return source.Start(gctx)
 			})
 			t.Cleanup(func() {
-				if tc.cancelAtEnd {
-					cancel()
-				} else {
-					defer cancel()
-				}
 				err := group.Wait()
 				if tc.expStartErr == "" {
 					assert.NoError(t, err)

@@ -27,8 +27,8 @@ import (
 )
 
 func TestPruneTypes(t *testing.T) {
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "certificates"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "certificaterequests"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "issuers"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "clusterissuers"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "cert-manager.io_certificates"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "cert-manager.io_certificaterequests"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "cert-manager.io_issuers"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "cert-manager.io_clusterissuers"), cmfuzzer.Funcs)
 }

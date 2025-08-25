@@ -36,17 +36,17 @@ var (
 	// to detect the BINDIR here (`make print-bindir`?)
 	BinDir = filepath.Join(ModuleRootDir, "_bin")
 
-	// BinToolsDir is the filesystem path of the bin/tools directory which can for
-	// example be populated by `make -f make/Makefile integration-test-tools`.
+	// BinToolsDir is the filesystem path of the _bin/tools directory which can for
+	// example be populated by `make test`.
 	BinToolsDir = filepath.Join(BinDir, "tools")
 
-	// BinCRDDir is the filesystem path of templated CRDs created by Makefile commands
-	BinCRDDir = filepath.Join(BinDir, "yaml", "templated-crds")
+	// BinCRDDir is the filesystem path of the CRD yaml
+	BinCRDDir = filepath.Join(ModuleRootDir, "deploy", "crds")
 )
 
 // PathForCRD attempts to find a path to the named CRD.
 // The 'name' is the name of the resource contained within the CRD as denoted
-// by the filename, e.g. 'foobar' would find a CRD with a filename containing
+// by the filename, e.g., 'foobar' would find a CRD with a filename containing
 // the word 'foobar'.
 func PathForCRD(t *testing.T, name string) string {
 	dir, err := CRDDirectory()
@@ -54,7 +54,7 @@ func PathForCRD(t *testing.T, name string) string {
 		t.Fatalf("failed to find CRD directory: %s", err)
 	}
 
-	path := filepath.Join(dir, fmt.Sprintf("crd-%s.templated.yaml", name))
+	path := filepath.Join(dir, fmt.Sprintf("%s.yaml", name))
 
 	info, err := os.Stat(path)
 	if err != nil {

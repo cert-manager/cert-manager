@@ -27,7 +27,7 @@ import (
 // Helper is an interface that defines a method that returns an issuer for the given
 // IssuerRef and namespace.
 type Helper interface {
-	GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error)
+	GetGenericIssuer(ref cmmeta.IssuerReference, ns string) (cmapi.GenericIssuer, error)
 }
 
 // Type Helper provides a set of commonly useful functions for use when building
@@ -54,9 +54,9 @@ func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlister
 // This namespace will be used to read the Issuer resource.
 // In most cases, the ns parameter should be set to the namespace of the resource
 // that defines the IssuerRef (i.e. the namespace of the Certificate resource).
-func (h *helperImpl) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
+func (h *helperImpl) GetGenericIssuer(ref cmmeta.IssuerReference, ns string) (cmapi.GenericIssuer, error) {
 	switch ref.Kind {
-	case "", cmapi.IssuerKind:
+	case cmapi.IssuerKind:
 		return h.issuerLister.Issuers(ns).Get(ref.Name)
 	case cmapi.ClusterIssuerKind:
 		// handle edge case where the ClusterIssuerLister is not set.
@@ -69,6 +69,6 @@ func (h *helperImpl) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cm
 		}
 		return h.clusterIssuerLister.Get(ref.Name)
 	default:
-		return nil, fmt.Errorf(`invalid value %q for issuerRef.kind. Must be empty, %q or %q`, ref.Kind, cmapi.IssuerKind, cmapi.ClusterIssuerKind)
+		return nil, fmt.Errorf(`invalid value %q for issuerRef.kind. Must be %q or %q`, ref.Kind, cmapi.IssuerKind, cmapi.ClusterIssuerKind)
 	}
 }

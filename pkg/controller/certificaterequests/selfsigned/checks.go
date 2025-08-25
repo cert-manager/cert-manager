@@ -81,7 +81,7 @@ func certificateRequestsForSecret(log logr.Logger,
 		return nil, fmt.Errorf("failed to list certificate requests: %w", err)
 	}
 
-	dbg.Info("checking if self signed certificate requests reference secret")
+	dbg.Info("checking if self-signed certificate requests reference secret")
 	var affected []*cmapi.CertificateRequest
 	for _, request := range requests {
 		if request.Spec.IssuerRef.Group != cmdoc.GroupName {

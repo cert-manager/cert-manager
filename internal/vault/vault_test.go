@@ -42,8 +42,7 @@ import (
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -223,7 +222,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 }
 
 type testSignT struct {
-	issuer     *cmapi.Issuer
+	issuer     *cmapiv1.Issuer
 	fakeLister *listers.FakeSecretLister
 	fakeClient *vaultfake.FakeClient
 
@@ -243,8 +242,8 @@ func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Sec
 	secret.Data["issuing_ca"] = issuingCaPEM
 
 	// Vault returns ca_chain only when a certificate chain is set along with a CA certificate to Vault PKI mount
-	// See https://github.com/hashicorp/vault/blob/v1.5.0/builtin/logical/pki/path_issue_sign.go#L256
-	// See https://github.com/hashicorp/vault/blob/v1.5.5/sdk/helper/certutil/types.go#L627
+	// See https://github.com/hashicorp/vault/blob/cmapiv1.5.0/builtin/logical/pki/path_issue_sign.go#L256
+	// See https://github.com/hashicorp/vault/blob/cmapiv1.5.5/sdk/helper/certutil/types.go#L627
 	if len(caPEM) > 0 {
 		chain := []string{issuingCaPEM}
 		chain = append(chain, caPEM...)
@@ -286,7 +285,7 @@ func TestSign(t *testing.T) {
 		"a good csr but failed request should error": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{}),
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
 			),
 			fakeClient:   vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
 			expectedErr:  errors.New("failed to sign certificate by vault: request failed"),
@@ -297,7 +296,7 @@ func TestSign(t *testing.T) {
 		"a good csr and good response with no root should return a certificate with the intermediate in the chain and as the CA": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{}),
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -311,7 +310,7 @@ func TestSign(t *testing.T) {
 		"a good csr and good response with a root should return a certificate without the root in the chain but with the root as the CA": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{}),
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -325,7 +324,7 @@ func TestSign(t *testing.T) {
 		"vault issuer with namespace specified": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{Namespace: "test"}),
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{Namespace: "test"}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -440,7 +439,7 @@ func TestSetToken(t *testing.T) {
 		expectedToken string
 		expectedErr   error
 
-		issuer          cmapi.GenericIssuer
+		issuer          cmapiv1.GenericIssuer
 		fakeLister      *listers.FakeSecretLister
 		mockCreateToken func(t *testing.T) CreateToken
 
@@ -448,9 +447,9 @@ func TestSetToken(t *testing.T) {
 	}{
 		"if neither token secret ref, app role secret ref, clientCertificate auth or kube auth not found then error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth:     cmapi.VaultAuth{},
+					Auth:     cmapiv1.VaultAuth{},
 				}),
 			),
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
@@ -462,9 +461,9 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref is set but secret doesn't exist should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
+					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
@@ -482,9 +481,9 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
+					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
@@ -504,10 +503,10 @@ func TestSetToken(t *testing.T) {
 
 		"if app role set but secret token not but vault fails to return token, error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						AppRole: &cmapi.VaultAppRole{
+					Auth: cmapiv1.VaultAuth{
+						AppRole: &cmapiv1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -528,10 +527,10 @@ func TestSetToken(t *testing.T) {
 
 		"if app role secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						AppRole: &cmapi.VaultAppRole{
+					Auth: cmapiv1.VaultAuth{
+						AppRole: &cmapiv1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -560,10 +559,10 @@ func TestSetToken(t *testing.T) {
 
 		"if clientCertificate auth is set but referenced secret doesn't exist return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+					Auth: cmapiv1.VaultAuth{
+						ClientCertificate: &cmapiv1.VaultClientCertificateAuth{
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -579,10 +578,10 @@ func TestSetToken(t *testing.T) {
 
 		"if clientCertificate auth set but referenced secret doesn't contain tls.crt return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+					Auth: cmapiv1.VaultAuth{
+						ClientCertificate: &cmapiv1.VaultClientCertificateAuth{
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -602,10 +601,10 @@ func TestSetToken(t *testing.T) {
 
 		"if clientCertificate auth set but referenced secret doesn't contain tls.key return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						ClientCertificate: &cmapi.VaultClientCertificateAuth{
+					Auth: cmapiv1.VaultAuth{
+						ClientCertificate: &cmapiv1.VaultClientCertificateAuth{
 							SecretName: "secret-ref-name",
 						},
 					},
@@ -625,10 +624,10 @@ func TestSetToken(t *testing.T) {
 
 		"if clientCertificate auth set but there is no secret referenced, do not return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						ClientCertificate: &cmapi.VaultClientCertificateAuth{},
+					Auth: cmapiv1.VaultAuth{
+						ClientCertificate: &cmapiv1.VaultClientCertificateAuth{},
 					},
 				}),
 			),
@@ -646,10 +645,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't exist return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -670,10 +669,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't contain data at key error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -694,10 +693,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but errors with a raw request should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -719,10 +718,10 @@ func TestSetToken(t *testing.T) {
 
 		"foo": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -751,10 +750,10 @@ func TestSetToken(t *testing.T) {
 
 		"if appRole.secretRef, tokenSecretRef set, take preference on tokenSecretRef": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						AppRole: &cmapi.VaultAppRole{
+					Auth: cmapiv1.VaultAuth{
+						AppRole: &cmapiv1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -781,12 +780,12 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (Issuer)": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
-							ServiceAccountRef: &v1.ServiceAccountRef{
+							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 							},
 							Path: "my-path",
@@ -818,12 +817,12 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes.serviceAccountRef set, request token and exchange it for a vault token (ClusterIssuer)": {
 			issuer: gen.ClusterIssuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
-							ServiceAccountRef: &v1.ServiceAccountRef{
+							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 							},
 							Path: "my-path",
@@ -855,12 +854,12 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes.serviceAccountRef set and audiences are provided, request token and exchange it for a vault token (Issuer)": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
-							ServiceAccountRef: &v1.ServiceAccountRef{
+							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 								TokenAudiences: []string{
 									"https://custom-audience",
@@ -897,12 +896,12 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes.serviceAccountRef set and audiences are provided, request token and exchange it for a vault token (ClusterIssuer)": {
 			issuer: gen.ClusterIssuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
-							ServiceAccountRef: &v1.ServiceAccountRef{
+							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 								TokenAudiences: []string{
 									"https://custom-audience",
@@ -957,7 +956,7 @@ func TestSetToken(t *testing.T) {
 				issuer:        test.issuer,
 			}
 
-			err := v.setToken(context.TODO(), test.fakeClient)
+			err := v.setToken(t.Context(), test.fakeClient)
 			if ((test.expectedErr == nil) != (err == nil)) &&
 				test.expectedErr != nil &&
 				test.expectedErr.Error() != err.Error() {
@@ -978,7 +977,7 @@ type testAppRoleRefT struct {
 	expectedSecretID string
 	expectedErr      error
 
-	appRole *cmapi.VaultAppRole
+	appRole *cmapiv1.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 }
@@ -986,7 +985,7 @@ type testAppRoleRefT struct {
 func TestAppRoleRef(t *testing.T) {
 	errSecretGet := errors.New("no secret found")
 
-	basicAppRoleRef := &cmapi.VaultAppRole{
+	basicAppRoleRef := &cmapiv1.VaultAppRole{
 		RoleId: "my-role-id",
 	}
 
@@ -1002,7 +1001,7 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"no data in key should fail": {
-			appRole: &cmapi.VaultAppRole{
+			appRole: &cmapiv1.VaultAppRole{
 				RoleId: "",
 				SecretRef: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1025,7 +1024,7 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"should return roleID and secretID with trimmed space": {
-			appRole: &cmapi.VaultAppRole{
+			appRole: &cmapiv1.VaultAppRole{
 				RoleId: "    my-role-id  ",
 				SecretRef: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1173,7 +1172,7 @@ func TestTokenRef(t *testing.T) {
 
 type testNewConfigT struct {
 	expectedErr error
-	issuer      *cmapi.Issuer
+	issuer      *cmapiv1.Issuer
 	checkFunc   func(cfg *vault.Config, err error) error
 
 	fakeLister      *listers.FakeSecretLister
@@ -1220,7 +1219,7 @@ func TestNewConfig(t *testing.T) {
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: nil,
 				}),
 			),
@@ -1229,7 +1228,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a bad cert bundle should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server:   "https://vault.example.com",
 					CABundle: []byte("a bad cert bundle"),
 				}),
@@ -1239,7 +1238,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a good cert bundle should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server:   "https://vault.example.com",
 					CABundle: []byte(testLeafCertificate),
 				}),
@@ -1261,7 +1260,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a good bundle from a caBundleSecretRef should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						Key: "my-bundle.crt",
@@ -1291,7 +1290,7 @@ func TestNewConfig(t *testing.T) {
 		},
 		"a good bundle from a caBundleSecretRef with default key should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1320,7 +1319,7 @@ func TestNewConfig(t *testing.T) {
 		},
 		"a bad bundle from a caBundleSecretRef should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						Key: "my-bundle.crt",
@@ -1335,13 +1334,13 @@ func TestNewConfig(t *testing.T) {
 		},
 		"the tokenCreate func should be called with the correct namespace": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					Path:   "my-path",
-					Auth: cmapi.VaultAuth{
-						Kubernetes: &cmapi.VaultKubernetesAuth{
+					Auth: cmapiv1.VaultAuth{
+						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "my-role",
-							ServiceAccountRef: &v1.ServiceAccountRef{
+							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-sa",
 							},
 						},
@@ -1358,7 +1357,7 @@ func TestNewConfig(t *testing.T) {
 		},
 		"a good client certificate with default key should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1400,7 +1399,7 @@ func TestNewConfig(t *testing.T) {
 		},
 		"a bad client certificate should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1421,6 +1420,29 @@ func TestNewConfig(t *testing.T) {
 				)),
 			expectedErr: errors.New("failed to load vault client certificate: could not parse the TLS certificate from Secrets 'test-namespace/bundle'(cert) and 'test-namespace/bundle'(key): tls: failed to find any PEM data in certificate input"),
 			fakeLister:  clientCertificateSecretRefFakeSecretLister("test-namespace", "bundle", "ca.crt", testLeafCertificate, "tls.crt", "not a valid certificate", "tls.key", "not a valid certificate"),
+		},
+		"if server name is set it should be added to the config": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
+					Server:     "https://vault.example.com",
+					ServerName: "vault.example.net",
+				},
+				)),
+			checkFunc: func(cfg *vault.Config, err error) error {
+				if err != nil {
+					return err
+				}
+
+				expectedServerName := "vault.example.net"
+				clientServerName := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.ServerName
+
+				if clientServerName != expectedServerName {
+					return fmt.Errorf("got unexpected server name in config, exp=%v got=%v",
+						expectedServerName, clientServerName)
+				}
+
+				return nil
+			},
 		},
 	}
 
@@ -1448,7 +1470,7 @@ func TestNewConfig(t *testing.T) {
 
 type requestTokenWithAppRoleRefT struct {
 	client  Client
-	appRole *cmapi.VaultAppRole
+	appRole *cmapiv1.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 
@@ -1457,7 +1479,7 @@ type requestTokenWithAppRoleRefT struct {
 }
 
 func TestRequestTokenWithAppRoleRef(t *testing.T) {
-	basicAppRoleRef := &cmapi.VaultAppRole{
+	basicAppRoleRef := &cmapiv1.VaultAppRole{
 		RoleId: "test-role-id",
 		SecretRef: cmmeta.SecretKeySelector{
 			LocalObjectReference: cmmeta.LocalObjectReference{
@@ -1596,7 +1618,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := New(
-				context.TODO(),
+				t.Context(),
 				"k8s-ns1",
 				func(ns string) CreateToken { return nil },
 				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1607,17 +1629,17 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 							},
 						}, nil),
 				),
-				&cmapi.Issuer{
+				&cmapiv1.Issuer{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "issuer1",
 						Namespace: "k8s-ns1",
 					},
-					Spec: v1.IssuerSpec{
-						IssuerConfig: v1.IssuerConfig{
-							Vault: &v1.VaultIssuer{
+					Spec: cmapiv1.IssuerSpec{
+						IssuerConfig: cmapiv1.IssuerConfig{
+							Vault: &cmapiv1.VaultIssuer{
 								Server:    "https://vault.example.com",
 								Namespace: tc.vaultNS,
-								Auth: cmapi.VaultAuth{
+								Auth: cmapiv1.VaultAuth{
 									TokenSecretRef: &cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "secret1",
@@ -1653,7 +1675,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
-		context.TODO(),
+		t.Context(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1664,17 +1686,17 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 					},
 				}, nil),
 		),
-		&cmapi.Issuer{
+		&cmapiv1.Issuer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "issuer1",
 				Namespace: "k8s-ns1",
 			},
-			Spec: v1.IssuerSpec{
-				IssuerConfig: v1.IssuerConfig{
-					Vault: &v1.VaultIssuer{
+			Spec: cmapiv1.IssuerSpec{
+				IssuerConfig: cmapiv1.IssuerConfig{
+					Vault: &cmapiv1.VaultIssuer{
 						Server:    server.URL,
 						Namespace: "ns1",
-						Auth: cmapi.VaultAuth{
+						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "secret1",
@@ -1719,7 +1741,7 @@ func TestSignIntegration(t *testing.T) {
 	defer server.Close()
 
 	v, err := New(
-		context.TODO(),
+		t.Context(),
 		"k8s-ns1",
 		func(ns string) CreateToken { return nil },
 		listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
@@ -1730,18 +1752,18 @@ func TestSignIntegration(t *testing.T) {
 					},
 				}, nil),
 		),
-		&cmapi.Issuer{
+		&cmapiv1.Issuer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "issuer1",
 				Namespace: "k8s-ns1",
 			},
-			Spec: v1.IssuerSpec{
-				IssuerConfig: v1.IssuerConfig{
-					Vault: &v1.VaultIssuer{
+			Spec: cmapiv1.IssuerSpec{
+				IssuerConfig: cmapiv1.IssuerConfig{
+					Vault: &cmapiv1.VaultIssuer{
 						Server:    server.URL,
 						Path:      vaultPath,
 						Namespace: vaultNamespace,
-						Auth: cmapi.VaultAuth{
+						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "secret1",

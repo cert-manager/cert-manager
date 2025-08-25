@@ -17,7 +17,6 @@ limitations under the License.
 package acmechallenges
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -132,7 +131,7 @@ func TestRunScheduler(t *testing.T) {
 			_, _, err := c.Register(test.builder.Context)
 			require.NoError(t, err)
 			test.builder.Start()
-			c.runScheduler(context.Background())
+			c.runScheduler(t.Context())
 			test.builder.CheckAndFinish()
 		})
 	}

@@ -18,17 +18,15 @@ package tls
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"golang.org/x/sync/errgroup"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -36,15 +34,7 @@ import (
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test-filesource-readsfile-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 
 	serial := "serial1"
 	pkBytes, certBytes := generatePrivateKeyAndCertificate(t, serial)
@@ -56,9 +46,9 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		CertPath:       certFile,
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
-		log:            logtesting.NewTestLogger(t),
+		log:            testr.New(t),
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(t.Context(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)
@@ -86,15 +76,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 }
 
 func TestFileSource_UpdatesFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test-filesource-updatesfile-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	dir := t.TempDir()
 
 	serial := "serial1"
 	pkBytes, certBytes := generatePrivateKeyAndCertificate(t, serial)
@@ -107,7 +89,7 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
 	}
-	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	ctx, cancel := context.WithCancel(logr.NewContext(t.Context(), testr.New(t)))
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Start(ctx)
@@ -157,8 +139,6 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	}
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
 func generatePrivateKeyAndCertificate(t *testing.T, serial string) ([]byte, []byte) {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -169,14 +149,8 @@ func generatePrivateKeyAndCertificate(t *testing.T, serial string) ([]byte, []by
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Fatal(err)
-	}
 	cert := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.RSA,
 		Subject: pkix.Name{
 			SerialNumber: serial,

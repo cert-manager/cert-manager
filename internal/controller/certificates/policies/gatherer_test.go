@@ -17,12 +17,11 @@ limitations under the License.
 package policies
 
 import (
-	"context"
 	"flag"
 	"testing"
 	"time"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -145,7 +144,7 @@ func TestDataForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			fakeClockStart, _ := time.Parse(time.RFC3339, "2021-01-02T15:04:05Z07:00")
-			log := logtesting.NewTestLogger(t)
+			log := testr.New(t)
 			turnOnKlogIfVerboseTest()
 
 			test.builder.T = t
@@ -215,7 +214,7 @@ func TestDataForCertificate(t *testing.T) {
 				SecretLister:             test.builder.KubeSharedInformerFactory.Secrets().Lister(),
 			}
 
-			ctx := logf.NewContext(context.Background(), logf.WithResource(log, test.givenCert))
+			ctx := logf.NewContext(t.Context(), logf.WithResource(log, test.givenCert))
 			got, gotErr := g.DataForCertificate(ctx, test.givenCert)
 
 			if test.wantErr != "" {

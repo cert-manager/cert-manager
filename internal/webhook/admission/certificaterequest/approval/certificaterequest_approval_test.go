@@ -41,7 +41,7 @@ func TestValidate(t *testing.T) {
 	baseCR := &certmanager.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
 		Spec: certmanager.CertificateRequestSpec{
-			IssuerRef: meta.ObjectReference{
+			IssuerRef: meta.IssuerReference{
 				Name:  "my-issuer",
 				Kind:  "Issuer",
 				Group: "example.io",
@@ -302,7 +302,7 @@ func TestValidate(t *testing.T) {
 				test.authorizer.t = t
 			}
 
-			warnings, err := a.Validate(context.TODO(), *test.req, test.oldCR, test.newCR)
+			warnings, err := a.Validate(t.Context(), *test.req, test.oldCR, test.newCR)
 			if len(warnings) > 0 {
 				t.Errorf("expected no warnings but got: %v", warnings)
 			}

@@ -1,53 +1,86 @@
-github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
-github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
-github.com/cert-manager/cert-manager,https://github.com/cert-manager/cert-manager/blob/HEAD/LICENSE,Apache-2.0
-github.com/cert-manager/cert-manager/acmesolver-binary,https://github.com/cert-manager/cert-manager/blob/HEAD/acmesolver-binary/LICENSE,Apache-2.0
-github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt,MIT
-github.com/fxamacker/cbor/v2,https://github.com/fxamacker/cbor/blob/v2.7.0/LICENSE,MIT
-github.com/go-logr/logr,https://github.com/go-logr/logr/blob/v1.4.2/LICENSE,Apache-2.0
-github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apache-2.0
-github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
-github.com/google/go-cmp/cmp,https://github.com/google/go-cmp/blob/v0.6.0/LICENSE,BSD-3-Clause
-github.com/google/gofuzz,https://github.com/google/gofuzz/blob/v1.2.0/LICENSE,Apache-2.0
-github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
-github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.17.11/LICENSE,MIT
-github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.17.11/LICENSE,Apache-2.0
-github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.17.11/LICENSE,BSD-3-Clause
-github.com/klauspost/compress/internal/snapref,https://github.com/klauspost/compress/blob/v1.17.11/internal/snapref/LICENSE,BSD-3-Clause
-github.com/klauspost/compress/zstd/internal/xxhash,https://github.com/klauspost/compress/blob/v1.17.11/zstd/internal/xxhash/LICENSE.txt,MIT
-github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
-github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
-github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
-github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,https://github.com/prometheus/client_golang/blob/v1.20.5/internal/github.com/golang/gddo/LICENSE,BSD-3-Clause
-github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.20.5/LICENSE,Apache-2.0
-github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.6.1/LICENSE,Apache-2.0
-github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.61.0/LICENSE,Apache-2.0
-github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.15.1/LICENSE,Apache-2.0
-github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.8.1/LICENSE.txt,Apache-2.0
-github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
-github.com/x448/float16,https://github.com/x448/float16/blob/v0.8.4/LICENSE,MIT
-go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.33.0/LICENSE,Apache-2.0
-go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.33.0/trace/LICENSE,Apache-2.0
-go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt,MIT
-go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.27.0/LICENSE,MIT
-golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.33.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.28.0:LICENSE,BSD-3-Clause
-golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.21.0:LICENSE,BSD-3-Clause
-google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.36.0/LICENSE,BSD-3-Clause
-gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
-k8s.io/api/core/v1,https://github.com/kubernetes/api/blob/v0.32.0/LICENSE,Apache-2.0
-k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,https://github.com/kubernetes/apiextensions-apiserver/blob/v0.32.0/LICENSE,Apache-2.0
-k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.32.0/LICENSE,Apache-2.0
-k8s.io/apimachinery/third_party/forked/golang/reflect,https://github.com/kubernetes/apimachinery/blob/v0.32.0/third_party/forked/golang/LICENSE,BSD-3-Clause
-k8s.io/component-base,https://github.com/kubernetes/component-base/blob/v0.32.0/LICENSE,Apache-2.0
-k8s.io/klog/v2,https://github.com/kubernetes/klog/blob/v2.130.1/LICENSE,Apache-2.0
-k8s.io/utils,https://github.com/kubernetes/utils/blob/24370beab758/LICENSE,Apache-2.0
-k8s.io/utils/internal/third_party/forked/golang/net,https://github.com/kubernetes/utils/blob/24370beab758/internal/third_party/forked/golang/LICENSE,BSD-3-Clause
-sigs.k8s.io/gateway-api/apis/v1,https://github.com/kubernetes-sigs/gateway-api/blob/v1.1.0/LICENSE,Apache-2.0
-sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/cfa47c3a1cc8/LICENSE,Apache-2.0
-sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/cfa47c3a1cc8/LICENSE,BSD-3-Clause
-sigs.k8s.io/structured-merge-diff/v4/value,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.5.0/LICENSE,Apache-2.0
-sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.4.0/LICENSE,MIT
-sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.4.0/LICENSE,Apache-2.0
-sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.4.0/LICENSE,BSD-3-Clause
-sigs.k8s.io/yaml/goyaml.v2,https://github.com/kubernetes-sigs/yaml/blob/v1.4.0/goyaml.v2/LICENSE,Apache-2.0
+This LICENSES file is generated by the `licenses` module in makefile-modules[0].
+
+The licenses below the "---" are determined by the go-licenses tool[1].
+
+The aim of this file is to collect the licenses of all dependencies, and provide
+a single source of truth for licenses used by this project.
+
+## For Developers
+
+If CI reports that this file is out of date, you should be careful to check that the
+new licenses are acceptable for this project before running `make generate-go-licenses`
+to update this file.
+
+Acceptable licenses are those allowlisted by the CNCF[2].
+
+You MUST NOT add any new dependencies whose licenses are not allowlisted by the CNCF,
+or which do not have an explicit license exception[3].
+
+## For Users
+
+If this file was included in a release artifact, it is a snapshot of the licenses of all dependencies at the time of the release.
+
+You can retrieve the actual license text by following these steps:
+
+1. Find the dependency name in this file
+2. Go to the source code repository of this project, and go to the tag corresponding to this release.
+3. Find the exact version of the dependency in the `go.mod` file
+4. Search for the dependency at the correct version in the [Go package index](https://pkg.go.dev/).
+
+## Links
+
+[0]: https://github.com/cert-manager/makefile-modules/
+[1]: https://github.com/google/go-licenses
+[2]: https://github.com/cncf/foundation/blob/db4179134ebe7fa00b140a050c19147db808b6fa/policies-guidance/allowed-third-party-license-policy.md#cncf-allowlist-license-policy
+[3]: https://github.com/cncf/foundation/blob/db4179134ebe7fa00b140a050c19147db808b6fa/license-exceptions/README.md
+
+---
+
+github.com/beorn7/perks/quantile,MIT
+github.com/blang/semver/v4,MIT
+github.com/cert-manager/cert-manager,Apache-2.0
+github.com/cert-manager/cert-manager/acmesolver-binary,Apache-2.0
+github.com/cespare/xxhash/v2,MIT
+github.com/fxamacker/cbor/v2,MIT
+github.com/go-logr/logr,Apache-2.0
+github.com/go-logr/zapr,Apache-2.0
+github.com/gogo/protobuf,BSD-3-Clause
+github.com/google/go-cmp/cmp,BSD-3-Clause
+github.com/json-iterator/go,MIT
+github.com/modern-go/concurrent,Apache-2.0
+github.com/modern-go/reflect2,Apache-2.0
+github.com/munnerz/goautoneg,BSD-3-Clause
+github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,BSD-3-Clause
+github.com/prometheus/client_golang/prometheus,Apache-2.0
+github.com/prometheus/client_model/go,Apache-2.0
+github.com/prometheus/common,Apache-2.0
+github.com/prometheus/procfs,Apache-2.0
+github.com/spf13/cobra,Apache-2.0
+github.com/spf13/pflag,BSD-3-Clause
+github.com/x448/float16,MIT
+go.opentelemetry.io/otel,Apache-2.0
+go.opentelemetry.io/otel/trace,Apache-2.0
+go.uber.org/multierr,MIT
+go.uber.org/zap,MIT
+go.yaml.in/yaml/v2,Apache-2.0
+golang.org/x/net,BSD-3-Clause
+golang.org/x/sys/unix,BSD-3-Clause
+golang.org/x/text,BSD-3-Clause
+google.golang.org/protobuf,BSD-3-Clause
+gopkg.in/inf.v0,BSD-3-Clause
+k8s.io/api/core/v1,Apache-2.0
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,Apache-2.0
+k8s.io/apimachinery/pkg,Apache-2.0
+k8s.io/apimachinery/third_party/forked/golang/reflect,BSD-3-Clause
+k8s.io/component-base,Apache-2.0
+k8s.io/klog/v2,Apache-2.0
+k8s.io/utils,Apache-2.0
+k8s.io/utils/internal/third_party/forked/golang/net,BSD-3-Clause
+sigs.k8s.io/gateway-api/apis/v1,Apache-2.0
+sigs.k8s.io/json,Apache-2.0
+sigs.k8s.io/json,BSD-3-Clause
+sigs.k8s.io/randfill,Apache-2.0
+sigs.k8s.io/structured-merge-diff/v4/value,Apache-2.0
+sigs.k8s.io/yaml,MIT
+sigs.k8s.io/yaml,Apache-2.0
+sigs.k8s.io/yaml,BSD-3-Clause

@@ -18,7 +18,6 @@ package pki
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
@@ -40,15 +39,8 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		t.Fatal(err)
 	}
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	template := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             pk.Public(),
 		IsCA:                  true,
@@ -66,7 +58,7 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 	)
 
 	if issuer == nil {
-		// No issuer implies the cert should be self signed
+		// No issuer implies the cert should be self-signed
 		issuerKey = pk
 		issuerCert = template
 	} else {
@@ -107,7 +99,7 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 
 		cert := root
 		var pems [][]byte
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			cert = mustCreateBundle(t, cert, fmt.Sprintf("int-%d", i))
 			pems = append(pems, cert.pem)
 		}
@@ -223,7 +215,7 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 
 				cert := root
 				var chain []byte
-				for i := 0; i < 501; i++ {
+				for i := range 501 {
 					cert = mustCreateBundle(t, cert, fmt.Sprintf("int-%d", i))
 					chain = joinPEM(chain, cert.pem)
 				}
@@ -232,7 +224,7 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 			}(),
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
-			expErrString: "provided PEM data was larger than the maximum 65000B",
+			expErrString: "provided PEM data was larger than the maximum 95000B",
 		},
 	}
 
@@ -267,7 +259,7 @@ func TestParseSingleCertificateChain(t *testing.T) {
 	// this test checks that passing in too many small certs is correctly rejected
 	var inputBundle []*x509.Certificate
 
-	for i := 0; i < 1001; i++ {
+	for i := range 1001 {
 		cert := mustCreateBundle(t, nil, fmt.Sprintf("cert-%d", i))
 		inputBundle = append(inputBundle, cert.cert)
 	}

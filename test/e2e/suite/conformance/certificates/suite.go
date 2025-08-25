@@ -31,7 +31,7 @@ import (
 // Suite defines a reusable conformance test suite that can be used against any
 // Issuer implementation.
 type Suite struct {
-	// Name is the name of the issuer being tested, e.g. SelfSigned, CA, ACME
+	// Name is the name of the issuer being tested, e.g., SelfSigned, CA, ACME
 	// This field must be provided.
 	Name string
 
@@ -39,14 +39,14 @@ type Suite struct {
 	// returns an ObjectReference to that Issuer that will be used as the
 	// IssuerRef on Certificate resources that this suite creates.
 	// This field must be provided.
-	CreateIssuerFunc func(context.Context, *framework.Framework) cmmeta.ObjectReference
+	CreateIssuerFunc func(context.Context, *framework.Framework) cmmeta.IssuerReference
 
 	// DeleteIssuerFunc is a function that is run after the test has completed
-	// in order to clean up resources created for a test (e.g. the resources
+	// in order to clean up resources created for a test (e.g., the resources
 	// created in CreateIssuerFunc).
 	// This function will be run regardless whether the test passes or fails.
 	// If not specified, this function will be skipped.
-	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.ObjectReference)
+	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.IssuerReference)
 
 	// SharedIPAddress is the IP address that will be used in all certificates
 	// that require an IP address to be set. For HTTP-01 tests, this IP address
@@ -126,19 +126,19 @@ func (s *Suite) validate() {
 }
 
 // it is called by the tests to in Define() to setup and run the test
-func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
+func (s *Suite) it(f *framework.Framework, name string, fn func(context.Context, cmmeta.IssuerReference), requiredFeatures ...featureset.Feature) {
 	if s.UnsupportedFeatures.HasAny(requiredFeatures...) {
 		return
 	}
-	It(name, func(ctx context.Context) {
+	It(name, func(testingCtx context.Context) {
 		By("Creating an issuer resource")
-		issuerRef := s.CreateIssuerFunc(ctx, f)
+		issuerRef := s.CreateIssuerFunc(testingCtx, f)
 		defer func() {
 			if s.DeleteIssuerFunc != nil {
 				By("Cleaning up the issuer resource")
-				s.DeleteIssuerFunc(ctx, f, issuerRef)
+				s.DeleteIssuerFunc(testingCtx, f, issuerRef)
 			}
 		}()
-		fn(issuerRef)
+		fn(testingCtx, issuerRef)
 	})
 }

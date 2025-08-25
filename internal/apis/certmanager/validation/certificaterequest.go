@@ -69,7 +69,7 @@ func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest,
 	for k, v := range objA.Annotations {
 		if strings.HasPrefix(k, certmanager.GroupName) ||
 			strings.HasPrefix(k, acme.GroupName) {
-			if vnew, ok := objB.Annotations[k]; !ok || v != vnew {
+			if vNew, ok := objB.Annotations[k]; !ok || v != vNew {
 				el = append(el, field.Forbidden(fieldPath.Child(k), "cannot change cert-manager annotation after creation"))
 			}
 		}
@@ -113,11 +113,22 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 		pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)
 	if err != nil {
-		el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, err.Error()))
+		// truncate the request to avoid creating a ridiculously long error message with the whole CSR in it
+		el = append(el, field.Invalid(fldPath.Child("request"), truncateString(string(crSpec.Request)), err.Error()))
 		return el
 	}
 
 	return el
+}
+
+func truncateString(s string) string {
+	const maxLength = 100
+
+	if len(s) <= maxLength {
+		return s
+	}
+
+	return s[:maxLength-3] + "..."
 }
 
 // ValidateCertificateRequestApprovalCondition will ensure that only a single

@@ -81,7 +81,7 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		return nil
 	}
 
-	issuerObj, err := c.helper.GetGenericIssuer(cmmeta.ObjectReference{
+	issuerObj, err := c.helper.GetGenericIssuer(cmmeta.IssuerReference{
 		Name:  ref.Name,
 		Kind:  kind,
 		Group: ref.Group,

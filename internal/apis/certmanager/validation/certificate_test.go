@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	validIssuerRef = cmmeta.ObjectReference{
+	validIssuerRef = cmmeta.IssuerReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
 	}
@@ -57,7 +57,6 @@ func TestValidateCertificate(t *testing.T) {
 		cfg                           *internalcmapi.Certificate
 		a                             *admissionv1.AdmissionRequest
 		errs                          []*field.Error
-		warnings                      []string
 		nameConstraintsFeatureEnabled bool
 	}{
 		"valid basic certificate": {
@@ -75,7 +74,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 					},
 				},
@@ -87,7 +86,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 						Kind: "Issuer",
 					},
@@ -113,7 +112,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "valid",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",
@@ -127,7 +126,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "abc",
 						Kind: "AWSPCAClusterIssuer",
 					},
@@ -143,7 +142,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "abc",
 						Kind:  "AWSPCAClusterIssuer",
 						Group: "awspca.cert-manager.io",
@@ -552,14 +551,14 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailAddresses: []string{"aliceexample.com"},
+					EmailAddresses: []string{"alice.example.com"},
 					SecretName:     "abc",
 					IssuerRef:      validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailAddresses").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "alice.example.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
 		},
 		"invalid certificate with email formatted with name": {
@@ -760,13 +759,147 @@ func TestValidateCertificate(t *testing.T) {
 					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
 		},
+		"signature algorithm SHA+RSA allowed for empty key (RSA)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:         "testcn",
+					SecretName:         "abc",
+					IssuerRef:          validIssuerRef,
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+		},
+		"signature algorithm SHA+RSA allowed for RSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+						Size:      3072,
+					},
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+		},
+		"signature algorithm SHA+RSA not allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.SHA256WithRSA,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.SHA256WithRSA,
+					"for key algorithm ECDSA the allowed signature algorithms are [ECDSAWithSHA256 ECDSAWithSHA384 ECDSAWithSHA512]"),
+			},
+		},
+		"signature algorithm SHA+ECDSA allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.ECDSAWithSHA256,
+				},
+			},
+		},
+		"signature algorithm SHA+ECDSA not allowed for RSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.ECDSAWithSHA256,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.ECDSAWithSHA256,
+					"for key algorithm RSA the allowed signature algorithms are [SHA256WithRSA SHA384WithRSA SHA512WithRSA]"),
+			},
+		},
+		"signature algorithm Ed25519 not allowed for RSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.RSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.PureEd25519,
+					"for key algorithm RSA the allowed signature algorithms are [SHA256WithRSA SHA384WithRSA SHA512WithRSA]"),
+			},
+		},
+		"signature algorithm Ed25519 not allowed for ECDSA key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.ECDSAKeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.PureEd25519,
+					"for key algorithm ECDSA the allowed signature algorithms are [ECDSAWithSHA256 ECDSAWithSHA384 ECDSAWithSHA512]"),
+			},
+		},
+		"signature algorithm Ed25519 allowed for Ed25519 key": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						Algorithm: internalcmapi.Ed25519KeyAlgorithm,
+					},
+					SignatureAlgorithm: internalcmapi.PureEd25519,
+				},
+			},
+		},
+		"explicit rotation policy": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
-			assert.ElementsMatch(t, warnings, s.warnings)
+			if s.cfg.Spec.PrivateKey == nil || s.cfg.Spec.PrivateKey.RotationPolicy == "" {
+				assert.Contains(t, warnings, newDefaultPrivateKeyRotationPolicy, "a warning is expected when the rotation policy is omitted.")
+			} else {
+				assert.NotContains(t, warnings, newDefaultPrivateKeyRotationPolicy)
+			}
 		})
 	}
 }
@@ -1037,50 +1170,16 @@ func TestValidateDuration(t *testing.T) {
 
 func Test_validateAdditionalOutputFormats(t *testing.T) {
 	tests := map[string]struct {
-		featureEnabled bool
-		spec           *internalcmapi.CertificateSpec
-		expErr         field.ErrorList
+		spec   *internalcmapi.CertificateSpec
+		expErr field.ErrorList
 	}{
-		"if feature disabled and no formats defined, expect no error": {
-			featureEnabled: false,
+		"if no formats defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{},
 			},
 			expErr: nil,
 		},
-		"if feature disabled and 1 format defined, expect error": {
-			featureEnabled: false,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
-					{Type: internalcmapi.CertificateOutputFormatType("foo")},
-				},
-			},
-			expErr: field.ErrorList{
-				field.Forbidden(field.NewPath("spec", "additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"),
-			},
-		},
-		"if feature disabled and multiple formats defined, expect error": {
-			featureEnabled: false,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
-					{Type: internalcmapi.CertificateOutputFormatType("foo")},
-					{Type: internalcmapi.CertificateOutputFormatType("bar")},
-					{Type: internalcmapi.CertificateOutputFormatType("random")},
-				},
-			},
-			expErr: field.ErrorList{
-				field.Forbidden(field.NewPath("spec", "additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"),
-			},
-		},
-		"if feature enabled and no formats defined, expect no error": {
-			featureEnabled: true,
-			spec: &internalcmapi.CertificateSpec{
-				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{},
-			},
-			expErr: nil,
-		},
-		"if feature enabled and single format defined, expect no error": {
-			featureEnabled: true,
+		"if single format defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1088,8 +1187,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 			},
 			expErr: nil,
 		},
-		"if feature enabled and multiple unique formats defined, expect no error": {
-			featureEnabled: true,
+		"if multiple unique formats defined, expect no error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1099,8 +1197,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 			},
 			expErr: nil,
 		},
-		"if feature enabled and multiple formats defined but 2 non-unique, expect error": {
-			featureEnabled: true,
+		"if multiple formats defined but 2 non-unique, expect error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1113,8 +1210,7 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 				field.Duplicate(field.NewPath("spec", "additionalOutputFormats").Key("type"), "foo"),
 			},
 		},
-		"if feature enabled and multiple formats defined but multiple non-unique, expect error": {
-			featureEnabled: true,
+		"if multiple formats defined but multiple non-unique, expect error": {
 			spec: &internalcmapi.CertificateSpec{
 				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
 					{Type: internalcmapi.CertificateOutputFormatType("foo")},
@@ -1139,7 +1235,6 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, test.featureEnabled)
 			gotErr := validateAdditionalOutputFormats(test.spec, field.NewPath("spec"))
 			assert.Equal(t, test.expErr, gotErr)
 		})
@@ -1278,7 +1373,160 @@ func Test_validateLiteralSubject(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			assert.ElementsMatch(t, warnings, []string{})
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
+		})
+	}
+}
+
+func Test_validateKeystores(t *testing.T) {
+	emptyString := ""
+	keystorePassword := "changeit"
+
+	fldPath := field.NewPath("spec")
+	tests := map[string]struct {
+		cfg  *internalcmapi.Certificate
+		a    *admissionv1.AdmissionRequest
+		errs []*field.Error
+	}{
+		"JKS PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks"), fmt.Sprintf(keystoresPasswordRequiredFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"JKS one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						JKS: &internalcmapi.JKSKeystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "jks", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "JKS")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 PasswordSecretRef and Password are mutually exclusive": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "secret",
+								},
+							},
+							Password: &keystorePassword,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresMutuallyExclusivePasswordsFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (nil password)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{},
+							Password:          nil,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12"), fmt.Sprintf(keystoresPasswordRequiredFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 one of PasswordSecretRef / Password is required (empty strings)": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							PasswordSecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "",
+								},
+							},
+							Password: &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			errs, warnings := ValidateCertificate(test.a, test.cfg)
+			assert.ElementsMatch(t, errs, test.errs)
+			// None of these test inputs include a privateKey field, so they will all result in this warning.
+			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
 		})
 	}
 }

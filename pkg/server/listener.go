@@ -17,6 +17,7 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 
@@ -38,9 +39,10 @@ type ListenerOption func(*ListenerConfig) error
 
 // Listen will listen on a given network and port, with additional options available
 // for enabling TLS and obtaining certificates.
-func Listen(network, addr string, options ...ListenerOption) (net.Listener, error) {
+func Listen(ctx context.Context, network, addr string, options ...ListenerOption) (net.Listener, error) {
 	// Create the base listener on the configured network and address
-	listener, err := net.Listen(network, addr)
+	lc := net.ListenConfig{}
+	listener, err := lc.Listen(ctx, network, addr)
 	if err != nil {
 		return nil, err
 	}

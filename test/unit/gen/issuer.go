@@ -125,6 +125,17 @@ func SetIssuerACMEEmail(email string) IssuerModifier {
 		spec.ACME.Email = email
 	}
 }
+
+func SetIssuerACMEProfile(profile string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.Profile = profile
+	}
+}
+
 func SetIssuerACMEPrivKeyRef(privateKeyName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()

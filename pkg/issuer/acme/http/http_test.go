@@ -79,7 +79,7 @@ func TestCheck(t *testing.T) {
 				requiredPasses:   requiredCallsForPass,
 			}
 
-			err := s.Check(context.Background(), nil, test.challenge)
+			err := s.Check(t.Context(), nil, test.challenge)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected Check to return non-nil error, but got %v", err)
 				return
@@ -102,7 +102,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse url %s: %v", site, err)
 	}
-	ips, err := net.LookupIP(u.Host)
+	ips, err := net.LookupIP(u.Host) // nolint: noctx // We intentionally use LookupIP here for test compatibility
 	if err != nil {
 		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
 	}
@@ -191,7 +191,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 
 	for _, tt := range tests {
 		atomic.StoreInt32(&dnsServerCalled, 0)
-		err = testReachability(context.Background(), u, key, tt.dnsServers, "cert-manager-test")
+		err = testReachability(t.Context(), u, key, tt.dnsServers, "cert-manager-test")
 		switch {
 		case err == nil:
 			t.Errorf("Expected error for testReachability, but got none")

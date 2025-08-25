@@ -278,7 +278,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 
 	spec := cmacme.OrderSpec{
 		Request: csr.Spec.Request,
-		IssuerRef: cmmeta.ObjectReference{
+		IssuerRef: cmmeta.IssuerReference{
 			Name:  ref.Name,
 			Kind:  kind,
 			Group: ref.Group,

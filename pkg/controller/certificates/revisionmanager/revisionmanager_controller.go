@@ -106,21 +106,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		log.V(logf.DebugLevel).Info("certificate not found for key", "error", err.Error())
-		return nil
-	}
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return err
+	}
+	if crt == nil || crt.DeletionTimestamp != nil {
+		// If the Certificate object was/ is being deleted, we don't want to start deleting
+		// CertificateRequests last minute in the same namespace.
+		return nil
 	}
 
 	log = logf.WithResource(log, crt)
-
-	// If RevisionHistoryLimit is nil, don't attempt to garbage collect old
-	// CertificateRequests
-	if crt.Spec.RevisionHistoryLimit == nil {
-		return nil
-	}
 
 	// Only garbage collect over Certificates that are in a Ready=True condition.
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
@@ -138,7 +133,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Fetch and delete all CertificateRequests that need to be deleted
-	limit := int(*crt.Spec.RevisionHistoryLimit)
+	// If RevisionHistoryLimit is nil, then default to 1
+	var limit int
+	if crt.Spec.RevisionHistoryLimit == nil {
+		limit = 1
+	} else {
+		limit = int(*crt.Spec.RevisionHistoryLimit)
+	}
+
 	toDelete := certificateRequestsToDelete(log, limit, requests)
 
 	for _, req := range toDelete {

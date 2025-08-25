@@ -35,6 +35,10 @@ import (
 )
 
 func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {
+	return buildCertificateWithKeyAndSigParams(keyAlgo, keySize, "")
+}
+
+func buildCertificateWithKeyAndSigParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int, sigAlg v1.SignatureAlgorithm) *v1.Certificate {
 	return &v1.Certificate{
 		Spec: v1.CertificateSpec{
 			CommonName: "test",
@@ -43,6 +47,7 @@ func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) 
 				Algorithm: keyAlgo,
 				Size:      keySize,
 			},
+			SignatureAlgorithm: sigAlg,
 		},
 	}
 }
@@ -249,15 +254,8 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 func signTestCert(key crypto.Signer) *x509.Certificate {
 	commonName := "testingcert"
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		panic(fmt.Errorf("failed to generate serial number: %s", err.Error()))
-	}
-
 	template := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		Subject: pkix.Name{
 			Organization: []string{"cert-manager"},

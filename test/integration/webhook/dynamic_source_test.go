@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,18 +45,15 @@ import (
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
-	defer cancel()
-
-	config, stop := framework.RunControlPlane(t, ctx)
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
 	namespace := "testns"
 
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,24 +67,23 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 		},
 	}
 	errCh := make(chan error)
-	defer func() {
-		cancel()
-		err := <-errCh
-		if err != nil {
+	t.Cleanup(func() {
+		if err := <-errCh; err != nil {
 			t.Fatal(err)
 		}
-	}()
+	})
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		authCtx := logr.NewContext(t.Context(), testr.New(t))
+		if err := source.Start(authCtx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
 
 	// allow the controller 5s to provision the Secret - this is far longer
 	// than it should ever take.
-	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextCancel(t.Context(), time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -110,11 +106,8 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_CARotation(t *testing.T) {
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
-	defer cancel()
-
-	config, stop := framework.RunControlPlane(t, ctx)
-	defer stop()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	kubeClient, _, _, _, _ := framework.NewClients(t, config)
 
@@ -122,7 +115,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	secretNamespace := "testns"
 
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: secretNamespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,17 +129,16 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		},
 	}
 	errCh := make(chan error)
-	defer func() {
-		cancel()
-		err := <-errCh
-		if err != nil {
+	t.Cleanup(func() {
+		if err := <-errCh; err != nil {
 			t.Fatal(err)
 		}
-	}()
+	})
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		authCtx := logr.NewContext(t.Context(), testr.New(t))
+		if err := source.Start(authCtx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
@@ -154,7 +146,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	var serialNumber *big.Int
 	// allow the controller 5s to provision the Secret - this is far longer
 	// than it should ever take.
-	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextCancel(t.Context(), time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -181,13 +173,13 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	}
 
 	cl := kubernetes.NewForConfigOrDie(config)
-	if err := cl.CoreV1().Secrets(secretNamespace).Delete(ctx, secretName, metav1.DeleteOptions{}); err != nil {
+	if err := cl.CoreV1().Secrets(secretNamespace).Delete(t.Context(), secretName, metav1.DeleteOptions{}); err != nil {
 		t.Fatalf("Failed to delete CA secret: %v", err)
 	}
 
 	// wait for the serving certificate to have a new serial number (which
 	// indicates it has been regenerated)
-	if err := wait.PollUntilContextCancel(ctx, time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextCancel(t.Context(), time.Millisecond*500, true, func(ctx context.Context) (done bool, err error) {
 		cert, err := source.GetCertificate(nil)
 		if err == tls.ErrNotAvailable {
 			t.Logf("GetCertificate has no certificate available, waiting...")
@@ -223,19 +215,16 @@ func TestDynamicSource_CARotation(t *testing.T) {
 func TestDynamicSource_leaderelection(t *testing.T) {
 	const nrManagers = 2 // number of managers to start for this test
 
-	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
-	defer cancel()
-
-	env, stop := apiserver.RunBareControlPlane(t)
-	defer stop()
+	env, stopFn := apiserver.RunBareControlPlane(t)
+	t.Cleanup(stopFn)
 
 	var started int64
 
-	gctx, cancel := context.WithCancel(ctx)
+	gctx, cancel := context.WithCancel(logr.NewContext(t.Context(), testr.New(t)))
 	defer cancel()
 	group, gctx := errgroup.WithContext(gctx)
 
-	for i := 0; i < nrManagers; i++ {
+	for i := range nrManagers {
 		group.Go(func() error {
 			mgr, err := manager.New(env.Config, manager.Options{
 				Metrics:     server.Options{BindAddress: "0"},

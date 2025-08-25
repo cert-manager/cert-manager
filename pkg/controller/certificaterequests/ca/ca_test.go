@@ -17,7 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -69,7 +68,6 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x509.Certificate, []byte) {
 	tmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{
@@ -119,7 +117,7 @@ func TestSign(t *testing.T) {
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(testCSR),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.DeepCopy().Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -145,7 +143,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// generate a self signed root ca valid for 60d
+	// generate a self-signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
 	rsaCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -242,7 +240,7 @@ func TestSign(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -254,7 +252,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+								Message:            "Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -445,7 +443,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
@@ -484,7 +482,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -525,7 +523,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -544,7 +542,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -562,7 +560,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -581,7 +579,7 @@ func TestCA_Sign(t *testing.T) {
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -610,7 +608,7 @@ func TestCA_Sign(t *testing.T) {
 				signingFn:         pki.SignCSRTemplate,
 			}
 
-			gotIssueResp, gotErr := c.Sign(context.Background(), test.givenCR, test.givenCAIssuer)
+			gotIssueResp, gotErr := c.Sign(t.Context(), test.givenCR, test.givenCAIssuer)
 			if test.wantErr != "" {
 				require.EqualError(t, gotErr, test.wantErr)
 			} else {

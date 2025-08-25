@@ -17,7 +17,6 @@ limitations under the License.
 package readiness
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -317,7 +316,7 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = w.controller.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(t.Context(), key)
 			if test.wantsErr != (err != nil) {
 				t.Errorf("expected error: %v, got : %v", test.wantsErr, err)
 			}
@@ -378,7 +377,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				})),
 			reason:         policies.InvalidKeyPair,
-			message:        "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
+			message:        "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block: no PEM data was found in given input",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains corrupt certificate data": {
@@ -389,7 +388,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				})),
 			reason:         policies.InvalidCertificate,
-			message:        "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
+			message:        "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block: no valid certificates found",
 			violationFound: true,
 		},
 		"Certificate not Ready as Secret contains a non-matching key-pair": {
@@ -409,7 +408,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
 				gen.SetCertificateIssuer(
-					cmmeta.ObjectReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"})),
+					cmmeta.IssuerReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"})),
 			secret: gen.Secret("something",
 				gen.SetSecretAnnotations(
 					map[string]string{
@@ -428,7 +427,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			),
 			cr: gen.CertificateRequest("something",
 				gen.SetCertificateRequestIssuer(
-					cmmeta.ObjectReference{
+					cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -445,7 +444,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 		"Certificate is not Ready when it has expired": {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -466,7 +465,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					},
 				)),
 			cr: gen.CertificateRequest("something",
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -482,7 +481,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 		"Certificate is Ready, no policy violations found": {
 			cert: gen.Certificate("something",
 				gen.SetCertificateCommonName("new.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateIssuer(cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -505,7 +504,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				)),
 			cr: gen.CertificateRequest("something",
 				gen.SetCertificateRequestIssuer(
-					cmmeta.ObjectReference{
+					cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",

@@ -22,13 +22,10 @@ import (
 	"fmt"
 	"testing"
 
-	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -36,8 +33,8 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // Present the challenge value with the given solver.
@@ -54,7 +51,7 @@ func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cma
 
 // CleanUp will remove challenge records for a given solver.
 // This may involve deleting resources in the Kubernetes API Server, or
-// communicating with other external components (e.g. DNS providers).
+// communicating with other external components (e.g., DNS providers).
 func (f *fakeSolver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
 	return f.fakeCleanUp(ctx, ch)
 }
@@ -74,7 +71,7 @@ type testT struct {
 	acmeClient *acmecl.FakeACME
 }
 
-func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinalizer string) {
+func TestSyncHappyPath(t *testing.T) {
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -85,10 +82,10 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(cmmeta.ObjectReference{
+		gen.SetChallengeIssuer(cmmeta.IssuerReference{
 			Name: "testissuer",
 		}),
-		gen.SetChallengeFinalizers([]string{finalizer}),
+		gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer}),
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
@@ -191,7 +188,7 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 							gen.DefaultTestNamespace,
 							gen.ChallengeFrom(baseChallenge,
 								gen.SetChallengeProcessing(true),
-								gen.SetChallengeFinalizers([]string{activeFinalizer})))),
+								gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer})))),
 				},
 			},
 			expectErr: false,
@@ -591,26 +588,6 @@ func testSyncHappyPathWithFinalizer(t *testing.T, finalizer string, activeFinali
 	}
 }
 
-func TestSyncHappyPathFinalizerLegacyToLegacy(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMELegacyFinalizer)
-}
-
-func TestSyncHappyPathFinalizerDomainQualifiedToLegacy(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, false)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMELegacyFinalizer)
-}
-
-func TestSyncHappyPathFinalizerLegacyToDomainQualified(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMELegacyFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
-}
-
-func TestSyncHappyPathFinalizerDomainQualifiedToDomainQualified(t *testing.T) {
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.UseDomainQualifiedFinalizer, true)
-	testSyncHappyPathWithFinalizer(t, cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMEDomainQualifiedFinalizer)
-}
-
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Init()
@@ -633,7 +610,7 @@ func runTest(t *testing.T, test testT) {
 	c.dnsSolver = test.dnsSolver
 	test.builder.Start()
 
-	err := c.Sync(context.Background(), test.challenge)
+	err := c.Sync(t.Context(), test.challenge)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}

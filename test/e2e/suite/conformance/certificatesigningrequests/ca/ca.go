@@ -132,7 +132,6 @@ func newSigningKeypairSecret(name string) *corev1.Secret {
 	Expect(err).NotTo(HaveOccurred())
 
 	tmpl := &x509.Certificate{
-		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{

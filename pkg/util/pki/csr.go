@@ -30,7 +30,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/big"
 	"net"
 	"net/netip"
 	"net/url"
@@ -86,8 +85,6 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 	return *crt.Spec.Subject
 }
-
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
@@ -302,7 +299,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 				return nil, err
 			}
 			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
-			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
+			nameConstraints.PermittedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
 		}
 
 		if crt.Spec.NameConstraints.Excluded != nil {
@@ -475,62 +472,73 @@ func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 	return caPem.Bytes(), nil
 }
 
+var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
+	v1.RSAKeyAlgorithm:     x509.RSA,
+	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
+	v1.Ed25519KeyAlgorithm: x509.Ed25519,
+}
+var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
+	v1.SHA256WithRSA:   x509.SHA256WithRSA,
+	v1.SHA384WithRSA:   x509.SHA384WithRSA,
+	v1.SHA512WithRSA:   x509.SHA512WithRSA,
+	v1.ECDSAWithSHA256: x509.ECDSAWithSHA256,
+	v1.ECDSAWithSHA384: x509.ECDSAWithSHA384,
+	v1.ECDSAWithSHA512: x509.ECDSAWithSHA512,
+	v1.PureEd25519:     x509.PureEd25519,
+}
+
 // SignatureAlgorithm will determine the appropriate signature algorithm for
 // the given certificate.
 // Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
 func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.SignatureAlgorithm, error) {
 	var pubKeyAlgo x509.PublicKeyAlgorithm
 	var specAlgorithm v1.PrivateKeyAlgorithm
+	var specKeySize int
 
 	if crt.Spec.PrivateKey != nil {
 		specAlgorithm = crt.Spec.PrivateKey.Algorithm
+		specKeySize = crt.Spec.PrivateKey.Size
 	}
 
 	var sigAlgoArg any
 
-	switch specAlgorithm {
-	case v1.PrivateKeyAlgorithm(""):
-		// If keyAlgorithm is not specified, we default to rsa with keysize 2048
+	var ok bool
+	if specAlgorithm == "" {
 		pubKeyAlgo = x509.RSA
-		sigAlgoArg = MinRSAKeySize
-
-	case v1.RSAKeyAlgorithm:
-		pubKeyAlgo = x509.RSA
-		keySize := crt.Spec.PrivateKey.Size
-		if keySize == 0 {
-			keySize = MinRSAKeySize
+	} else {
+		pubKeyAlgo, ok = keyAlgorithms[specAlgorithm]
+		if !ok {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519' or 'rsa", crt.Spec.PrivateKey.Algorithm)
 		}
+	}
 
-		sigAlgoArg = keySize
-
-	case v1.Ed25519KeyAlgorithm:
-		pubKeyAlgo = x509.Ed25519
-		sigAlgoArg = nil
-
-	case v1.ECDSAKeyAlgorithm:
-		pubKeyAlgo = x509.ECDSA
-
-		size := crt.Spec.PrivateKey.Size
-		if size == 0 {
-			size = 256
+	var sigAlgo x509.SignatureAlgorithm
+	if crt.Spec.SignatureAlgorithm != "" {
+		sigAlgo, ok = sigAlgorithms[crt.Spec.SignatureAlgorithm]
+		if !ok {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported signature algorithm: %s", crt.Spec.SignatureAlgorithm)
 		}
+		return pubKeyAlgo, sigAlgo, nil
+	}
 
-		switch size {
+	switch pubKeyAlgo {
+	case x509.RSA:
+		if specKeySize == 0 {
+			sigAlgoArg = MinRSAKeySize
+		} else {
+			sigAlgoArg = specKeySize
+		}
+	case x509.ECDSA:
+		switch specKeySize {
 		case 521:
 			sigAlgoArg = elliptic.P521()
-
 		case 384:
 			sigAlgoArg = elliptic.P384()
-
-		case 256:
+		case 256, 0:
 			sigAlgoArg = elliptic.P256()
-
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
-
-	default:
-		return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519' or 'rsa", crt.Spec.PrivateKey.Algorithm)
 	}
 
 	sigAlgo, err := signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)

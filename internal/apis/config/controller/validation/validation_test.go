@@ -89,7 +89,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"),
+					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be greater than 0"),
 				}
 			},
 		},
@@ -112,7 +112,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be higher than 0"),
+					field.Invalid(field.NewPath("leaderElectionConfig.healthzTimeout"), cc.LeaderElectionConfig.HealthzTimeout, "must be greater than 0"),
 					field.Invalid(field.NewPath("leaderElectionConfig.leaseDuration"), cc.LeaderElectionConfig.LeaseDuration, "must be greater than 0"),
 					field.Invalid(field.NewPath("leaderElectionConfig.renewDeadline"), cc.LeaderElectionConfig.RenewDeadline, "must be greater than 0"),
 					field.Invalid(field.NewPath("leaderElectionConfig.retryPeriod"), cc.LeaderElectionConfig.RetryPeriod, "must be greater than 0"),
@@ -177,7 +177,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be greater than 0"),
 					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"),
 				}
 			},
@@ -214,7 +214,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be higher than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be greater than 0"),
 				}
 			},
 		},

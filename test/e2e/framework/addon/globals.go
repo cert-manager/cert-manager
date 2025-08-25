@@ -81,16 +81,16 @@ func InitGlobals(cfg *config.Config) {
 	}
 }
 
-// SetupGlobals setups all of the global addons.
+// SetupGlobalsPrimary setups all of the global addons.
 // The primary ginkgo process is the process with index 1.
 // This function should be called by the test suite entrypoint in a SynchronizedBeforeSuite
 // block to ensure it is run only on ginkgo process #1. It has to be run before
 // any other ginkgo processes are started, because the return value of this function
 // has to be transferred to the other ginkgo processes.
-func SetupGlobalsPrimary(cfg *config.Config) ([]AddonTransferableData, error) {
+func SetupGlobalsPrimary(ctx context.Context, cfg *config.Config) ([]AddonTransferableData, error) {
 	toBeTransferred := make([]AddonTransferableData, len(allAddons))
 	for addonIdx, g := range allAddons {
-		data, err := g.Setup(cfg)
+		data, err := g.Setup(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -110,9 +110,9 @@ func SetupGlobalsPrimary(cfg *config.Config) ([]AddonTransferableData, error) {
 // can be passed into this function. This function calls Setup on all of the non-primary
 // processes (processes #2 and above) and passes in the AddonTransferableData data returned
 // by the primary process.
-func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableData) error {
+func SetupGlobalsNonPrimary(ctx context.Context, cfg *config.Config, transferred []AddonTransferableData) error {
 	for addonIdx, g := range allAddons {
-		_, err := g.Setup(cfg, transferred[addonIdx])
+		_, err := g.Setup(ctx, cfg, transferred[addonIdx])
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func SetupGlobalsNonPrimary(cfg *config.Config, transferred []AddonTransferableD
 // This should be called by the test suite in a SynchronizedBeforeSuite block
 // after the Setup data has been transferred to all ginkgo processes, so that
 // not all processes have to wait for the addons to be provisioned. Instead,
-// the individual test has to check that the addon is provisioned (eg. by querying
+// the individual test has to check that the addon is provisioned (e.g., by querying
 // the API server for a resource that the addon creates or by checking that an
 // HTTP endpoint is available)
 // This function should be run only on ginkgo process #1.

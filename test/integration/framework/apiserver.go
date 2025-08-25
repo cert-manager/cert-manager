@@ -44,6 +44,8 @@ import (
 	webhooktesting "github.com/cert-manager/cert-manager/test/webhook"
 )
 
+// NOTE: all functions that return a StopFunc should use
+// context.WithCancel(t.Context()) instead of just t.Context()
 type StopFunc func()
 
 // controlPlaneOptions has parameters for the control plane of the integration
@@ -62,7 +64,11 @@ func WithCRDDirectory(directory string) RunControlPlaneOption {
 	}
 }
 
-func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunControlPlaneOption) (*rest.Config, StopFunc) {
+func RunControlPlane(t *testing.T, optionFunctions ...RunControlPlaneOption) (*rest.Config, StopFunc) {
+	// Making sure the rootCtx is canceled when StopFunc is called
+	// even when t.Context() has not been canceled yet.
+	stoppableCtx, stopCtxFn := context.WithCancel(t.Context())
+
 	crdDirectoryPath, err := paths.CRDDirectory()
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +82,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		f(options)
 	}
 
-	env, stopControlPlane := apiserver.RunBareControlPlane(t)
+	env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
 	testuser, err := env.ControlPlane.AddUser(envtest.User{Name: "test-user", Groups: []string{"cluster-admin"}}, env.Config)
 	if err != nil {
 		t.Fatal(err)
@@ -87,7 +93,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		t.Fatal(err)
 	}
 
-	f, err := os.CreateTemp("", "integration-")
+	f, err := os.CreateTemp(t.TempDir(), "integration-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +109,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		// Disable the metrics server to avoid multiple webhook servers
 		// attempting to listen on metrics port 9402 when tests are running in
 		// parallel.
-		t, ctx, []string{"--kubeconfig", f.Name(), "--metrics-listen-address=0"},
+		t, []string{"--kubeconfig", f.Name(), "--metrics-listen-address=0"},
 	)
 
 	crds := readCustomResourcesAtPath(t, *options.crdsDir)
@@ -123,20 +129,21 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 	}
 
 	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be its own
-	err = cl.Create(ctx, getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	err = cl.Create(stoppableCtx, getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// installing the mutating webhooks, not using WebhookInstallOptions as it patches the CA to be its own
-	err = cl.Create(ctx, getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	err = cl.Create(stoppableCtx, getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	return env.Config, func() {
-		defer stopWebhook()
-		stopControlPlane()
+		stopCtxFn()
+		stopControlPlaneFn()
+		stopWebhook()
 	}
 }
 

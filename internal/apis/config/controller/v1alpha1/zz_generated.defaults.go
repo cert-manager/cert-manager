@@ -23,7 +23,7 @@ package v1alpha1
 
 import (
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
+	controllerv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -31,13 +31,13 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&v1alpha1.ControllerConfiguration{}, func(obj interface{}) {
-		SetObjectDefaults_ControllerConfiguration(obj.(*v1alpha1.ControllerConfiguration))
+	scheme.AddTypeDefaultingFunc(&controllerv1alpha1.ControllerConfiguration{}, func(obj interface{}) {
+		SetObjectDefaults_ControllerConfiguration(obj.(*controllerv1alpha1.ControllerConfiguration))
 	})
 	return nil
 }
 
-func SetObjectDefaults_ControllerConfiguration(in *v1alpha1.ControllerConfiguration) {
+func SetObjectDefaults_ControllerConfiguration(in *controllerv1alpha1.ControllerConfiguration) {
 	SetDefaults_ControllerConfiguration(in)
 	SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
 	sharedv1alpha1.SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig.LeaderElectionConfig)

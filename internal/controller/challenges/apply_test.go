@@ -22,9 +22,9 @@ import (
 	"sync"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/randfill"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
@@ -39,19 +39,19 @@ func Test_serializeApply(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var challenge cmacme.Challenge
-					fuzz.New().NilChance(0.5).Funcs(
-						func(challenge *cmacme.Challenge, c fuzz.Continue) {
+					randfill.New().NilChance(0.5).Funcs(
+						func(challenge *cmacme.Challenge, c randfill.Continue) {
 							if challenge.Spec.Solver.DNS01 != nil && challenge.Spec.Solver.DNS01.Webhook != nil {
 								// Config can only hold data which originates from proper JSON.
 								challenge.Spec.Solver.DNS01.Webhook.Config = &apiextensionsv1.JSON{Raw: []byte(`{"some": {"json": "test"}, "string": 42}`)}
 							}
 						},
-					).Fuzz(&challenge)
+					).Fill(&challenge)
 
 					// Test regex with non-empty status.
 					challengeData, err := serializeApply(&challenge)
@@ -69,7 +69,7 @@ func Test_serializeApply(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)
@@ -87,12 +87,12 @@ func Test_serializeApplyStatus(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var challenge cmacme.Challenge
-					fuzz.New().NilChance(0.5).Fuzz(&challenge)
+					randfill.New().NilChance(0.5).Fill(&challenge)
 					challenge.Name = "foo"
 					challenge.Namespace = "bar"
 
@@ -118,7 +118,7 @@ func Test_serializeApplyStatus(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)

@@ -49,12 +49,12 @@ type TPPDetails struct {
 	issuerTemplate cmapi.VenafiIssuer
 }
 
-func (v *VenafiTPP) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+func (v *VenafiTPP) Setup(ctx context.Context, cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	v.config = cfg
 
 	if v.Base == nil {
 		v.Base = &base.Base{}
-		_, err := v.Base.Setup(cfg)
+		_, err := v.Base.Setup(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}

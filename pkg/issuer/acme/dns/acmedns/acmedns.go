@@ -30,13 +30,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cpu/goacmedns"
+	"github.com/nrdcg/goacmedns"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers []string
-	client           goacmedns.Client
+	client           *goacmedns.Client
 	accounts         map[string]goacmedns.Account
 }
 
@@ -52,7 +52,10 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // acme-dns server host is given in a string
 // credentials are stored in json in the given string
 func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string) (*DNSProvider, error) {
-	client := goacmedns.NewClient(host)
+	client, err := goacmedns.NewClient(host)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating acme-dns client: %s", err)
+	}
 
 	var accounts map[string]goacmedns.Account
 	if err := json.Unmarshal(accountJSON, &accounts); err != nil {
@@ -67,10 +70,10 @@ func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers [
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(_ context.Context, domain, fqdn, value string) error {
+func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
-		return c.client.UpdateTXTRecord(account, value)
+		return c.client.UpdateTXTRecord(ctx, account, value)
 	}
 
 	return fmt.Errorf("account credentials not found for domain %s", domain)

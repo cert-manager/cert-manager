@@ -17,7 +17,6 @@ limitations under the License.
 package cmapichecker
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -244,6 +243,31 @@ func TestCheck(t *testing.T) {
 			// fake https server to simulate the Kubernetes API server responses
 			mockKubernetesAPI := func(t *testing.T, r *http.Request) (int, []byte) {
 				switch r.URL.Path {
+				case "/api":
+					return http.StatusOK, []byte(`{
+						"kind":"APIVersions",
+						"versions":["v1"],
+						"serverAddressByClientCIDRs":[
+							{
+								"clientCIDR":"0.0.0.0/0",
+								"serverAddress":"10.10.1.2:6443"
+							}
+						]
+					}`)
+
+				case "/apis":
+					return http.StatusOK, []byte(`{
+						"kind":"APIGroupList",
+						"apiVersion":"v1",
+						"groups":[
+							{
+								"name":"cert-manager.io",
+								"versions":[{"groupVersion":"cert-manager.io/v1","version":"v1"}],
+								"preferredVersion":{"groupVersion":"cert-manager.io/v1","version":"v1"}
+							}
+						]
+					}`)
+
 				case "/apis/cert-manager.io/v1":
 					if test.discoveryResponse != nil {
 						return test.discoveryResponse(t, r)
@@ -328,10 +352,10 @@ func TestCheck(t *testing.T) {
 				t.Fatalf("failed to create checker: %v", err)
 			}
 
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				t.Logf("# check %d", i)
 
-				err = checker.Check(context.Background())
+				err = checker.Check(t.Context())
 				switch {
 				case err == nil && test.expectedError == "":
 				case err == nil && test.expectedError != "":

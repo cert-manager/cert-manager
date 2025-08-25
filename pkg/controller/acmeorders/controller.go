@@ -155,7 +155,7 @@ func NewController(
 		helper:              issuer.NewHelper(issuerLister, clusterIssuerLister),
 		recorder:            ctx.Recorder,
 		cmClient:            ctx.CMClient,
-		accountRegistry:     ctx.AccountRegistry,
+		accountRegistry:     ctx.ACMEAccountRegistry,
 		fieldManager:        ctx.FieldManager,
 	}, queue, mustSync, nil
 
@@ -166,13 +166,13 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	order, err := c.orderLister.Orders(namespace).Get(name)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "order in work queue no longer exists")
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if order == nil || order.DeletionTimestamp != nil {
+		// If the Order object was/ is being deleted, we don't want to update its status or
+		// create new Challenges.
+		return nil
 	}
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, order))

@@ -236,7 +236,7 @@
         "issuers.cert-manager.io/*",
         "clusterissuers.cert-manager.io/*"
       ],
-      "description": "List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.\nref: https://cert-manager.io/docs/concepts/certificaterequest/#approval",
+      "description": "List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because, e.g., you are using approver-policy, you can enable 'disableAutoApproval'.\nref: https://cert-manager.io/docs/concepts/certificaterequest/#approval",
       "items": {},
       "type": "array"
     },
@@ -461,10 +461,10 @@
       "type": "boolean"
     },
     "helm-values.cainjector.podDisruptionBudget.maxUnavailable": {
-      "description": "`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `minAvailable` is set."
+      "description": "`maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to\nan integer (e.g., 1) or a percentage value (e.g., 25%).\nCannot be used if `minAvailable` is set."
     },
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
-      "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g. 1) or a percentage value (e.g. 25%).\nCannot be used if `maxUnavailable` is set."
+      "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g., 1) or a percentage value (e.g., 25%).\nCannot be used if `maxUnavailable` is set."
     },
     "helm-values.cainjector.podLabels": {
       "default": {},
@@ -579,7 +579,7 @@
     },
     "helm-values.config": {
       "default": {},
-      "description": "This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\nconfig:\n  apiVersion: controller.config.cert-manager.io/v1alpha1\n  kind: ControllerConfiguration\n  logging:\n    verbosity: 2\n    format: text\n  leaderElectionConfig:\n    namespace: kube-system\n  kubernetesAPIQPS: 9000\n  kubernetesAPIBurst: 9000\n  numberOfConcurrentWorkers: 200\n  enableGatewayAPI: true\n  # Feature gates as of v1.17.0. Listed with their default values.\n  # See https://cert-manager.io/docs/cli/controller/\n  featureGates:\n    AdditionalCertificateOutputFormats: true # BETA - default=true\n    AllAlpha: false # ALPHA - default=false\n    AllBeta: false # BETA - default=false\n    ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false\n    ExperimentalGatewayAPISupport: true # BETA - default=true\n    LiteralCertificateSubject: true # BETA - default=true\n    NameConstraints: false # ALPHA - default=false\n    OtherNames: false # ALPHA - default=false\n    SecretsFilteredCaching: true # BETA - default=true\n    ServerSideApply: false # ALPHA - default=false\n    StableCertificateRequestName: true # BETA - default=true\n    UseCertificateRequestBasicConstraints: false # ALPHA - default=false\n    UseDomainQualifiedFinalizer: true # BETA - default=false\n    ValidateCAA: false # ALPHA - default=false\n  # Configure the metrics server for TLS\n  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls\n  metricsTLSConfig:\n    dynamic:\n      secretNamespace: \"cert-manager\"\n      secretName: \"cert-manager-metrics-ca\"\n      dnsNames:\n      - cert-manager-metrics",
+      "description": "This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\nconfig:\n  apiVersion: controller.config.cert-manager.io/v1alpha1\n  kind: ControllerConfiguration\n  logging:\n    verbosity: 2\n    format: text\n  leaderElectionConfig:\n    namespace: kube-system\n  kubernetesAPIQPS: 9000\n  kubernetesAPIBurst: 9000\n  numberOfConcurrentWorkers: 200\n  enableGatewayAPI: true\n  # Feature gates as of v1.18.1. Listed with their default values.\n  # See https://cert-manager.io/docs/cli/controller/\n  featureGates:\n    AdditionalCertificateOutputFormats: true # GA - default=true\n    AllAlpha: false # ALPHA - default=false\n    AllBeta: false # BETA - default=false\n    ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false\n    ExperimentalGatewayAPISupport: true # BETA - default=true\n    LiteralCertificateSubject: true # BETA - default=true\n    NameConstraints: true # BETA - default=true\n    OtherNames: false # ALPHA - default=false\n    SecretsFilteredCaching: true # BETA - default=true\n    ServerSideApply: false # ALPHA - default=false\n    StableCertificateRequestName: true # BETA - default=true\n    UseCertificateRequestBasicConstraints: false # ALPHA - default=false\n    UseDomainQualifiedFinalizer: true # GA - default=true\n    ValidateCAA: false # ALPHA - default=false\n    DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true\n    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true\n  # Configure the metrics server for TLS\n  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls\n  metricsTLSConfig:\n    dynamic:\n      secretNamespace: \"cert-manager\"\n      secretName: \"cert-manager-metrics-ca\"\n      dnsNames:\n      - cert-manager-metrics",
       "type": "object"
     },
     "helm-values.containerSecurityContext": {
@@ -698,6 +698,9 @@
         "logLevel": {
           "$ref": "#/$defs/helm-values.global.logLevel"
         },
+        "nodeSelector": {
+          "$ref": "#/$defs/helm-values.global.nodeSelector"
+        },
         "podSecurityPolicy": {
           "$ref": "#/$defs/helm-values.global.podSecurityPolicy"
         },
@@ -762,6 +765,11 @@
       "default": 2,
       "description": "Set the verbosity of cert-manager. A range of 0 - 6, with 6 being the most verbose.",
       "type": "number"
+    },
+    "helm-values.global.nodeSelector": {
+      "default": {},
+      "description": "Global node selector\n\nThe nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nIf a component-specific nodeSelector is also set, it will take precedence.",
+      "type": "object"
     },
     "helm-values.global.podSecurityPolicy": {
       "properties": {
@@ -921,7 +929,7 @@
       "type": "number"
     },
     "helm-values.nameOverride": {
-      "description": "Override the \"cert-manager.name\" value, which is used to annotate some of the resources that are created by this Chart (using \"app.kubernetes.io/name\"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use eg. \"cainjector.name\" which resolves to the value \"cainjector\").",
+      "description": "Override the \"cert-manager.name\" value, which is used to annotate some of the resources that are created by this Chart (using \"app.kubernetes.io/name\"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use, e.g., \"cainjector.name\" which resolves to the value \"cainjector\").",
       "type": "string"
     },
     "helm-values.namespace": {
@@ -965,10 +973,10 @@
       "type": "boolean"
     },
     "helm-values.podDisruptionBudget.maxUnavailable": {
-      "description": "This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set."
+      "description": "This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%). it cannot be used if `minAvailable` is set."
     },
     "helm-values.podDisruptionBudget.minAvailable": {
-      "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set."
+      "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
     },
     "helm-values.podDnsConfig": {
       "description": "Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to \"None\", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).",
@@ -1000,7 +1008,7 @@
     },
     "helm-values.prometheus.enabled": {
       "default": true,
-      "description": "Enable Prometheus monitoring for the cert-manager controller and webhook. If you use the Prometheus Operator, set prometheus.podmonitor.enabled or prometheus.servicemonitor.enabled, to create a PodMonitor or a\nServiceMonitor resource.\nOtherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.",
+      "description": "Enable Prometheus monitoring for the cert-manager controller and webhook. If you use the Prometheus Operator, set prometheus.podmonitor.enabled or prometheus.servicemonitor.enabled, to create a PodMonitor or a\nServiceMonitor resource.\nOtherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you cannot enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.",
       "type": "boolean"
     },
     "helm-values.prometheus.podmonitor": {
@@ -1177,9 +1185,8 @@
       "type": "string"
     },
     "helm-values.prometheus.servicemonitor.targetPort": {
-      "default": 9402,
-      "description": "The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.",
-      "type": "number"
+      "default": "http-metrics",
+      "description": "The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics."
     },
     "helm-values.replicaCount": {
       "default": 1,
@@ -1887,6 +1894,11 @@
               "ipBlock": {
                 "cidr": "0.0.0.0/0"
               }
+            },
+            {
+              "ipBlock": {
+                "cidr": "::/0"
+              }
             }
           ]
         }
@@ -1907,6 +1919,11 @@
             {
               "ipBlock": {
                 "cidr": "0.0.0.0/0"
+              }
+            },
+            {
+              "ipBlock": {
+                "cidr": "::/0"
               }
             }
           ]
@@ -1948,10 +1965,10 @@
       "type": "boolean"
     },
     "helm-values.webhook.podDisruptionBudget.maxUnavailable": {
-      "description": "This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `minAvailable` is set."
+      "description": "This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `minAvailable` is set."
     },
     "helm-values.webhook.podDisruptionBudget.minAvailable": {
-      "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).\nIt cannot be used if `maxUnavailable` is set."
+      "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
     },
     "helm-values.webhook.podLabels": {
       "default": {},

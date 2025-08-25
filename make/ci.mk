@@ -28,24 +28,8 @@ verify-errexit:
 
 shared_verify_targets += verify-errexit
 
-.PHONY: generate-licenses
-generate-licenses:
-	rm -rf LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES cmd/startupapicheck/LICENSES test/integration/LICENSES test/e2e/LICENSES
-	$(MAKE) LICENSES cmd/acmesolver/LICENSES cmd/cainjector/LICENSES cmd/controller/LICENSES cmd/webhook/LICENSES cmd/startupapicheck/LICENSES test/integration/LICENSES test/e2e/LICENSES
-
-shared_generate_targets += generate-licenses
-
-.PHONY: generate-crds
-generate-crds: | $(NEEDS_CONTROLLER-GEN)
-	$(CONTROLLER-GEN) \
-		schemapatch:manifests=./deploy/crds \
-		output:dir=./deploy/crds \
-		paths=./pkg/apis/...
-
-shared_generate_targets += generate-crds
-
 .PHONY: generate-codegen
-generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN)
+generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-GEN) $(NEEDS_LISTER-GEN) $(NEEDS_DEFAULTER-GEN) $(NEEDS_CONVERSION-GEN) $(NEEDS_OPENAPI-GEN) $(NEEDS_APPLYCONFIGURATION-GEN)
 	./hack/k8s-codegen.sh \
 		$(CLIENT-GEN) \
 		$(DEEPCOPY-GEN) \
@@ -53,7 +37,8 @@ generate-codegen: | $(NEEDS_CLIENT-GEN) $(NEEDS_DEEPCOPY-GEN) $(NEEDS_INFORMER-G
 		$(LISTER-GEN) \
 		$(DEFAULTER-GEN) \
 		$(CONVERSION-GEN) \
-		$(OPENAPI-GEN)
+		$(OPENAPI-GEN) \
+		$(APPLYCONFIGURATION-GEN)
 
 shared_generate_targets_dirty += generate-codegen
 

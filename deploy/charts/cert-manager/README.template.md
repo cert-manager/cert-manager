@@ -1,10 +1,10 @@
 # cert-manager
 
-cert-manager is a Kubernetes addon to automate the management and issuance of
-TLS certificates from various issuing sources.
+cert-manager creates TLS certificates for workloads in your Kubernetes or OpenShift cluster and renews the certificates before they expire.
 
-It will ensure certificates are valid and up to date periodically, and attempt
-to renew certificates at an appropriate time before expiry.
+cert-manager can obtain certificates from a [variety of certificate authorities](https://cert-manager.io/docs/configuration/issuers/), including:
+[Let's Encrypt](https://cert-manager.io/docs/configuration/acme/), [HashiCorp Vault](https://cert-manager.io/docs/configuration/vault/),
+[Venafi](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
 
 ## Prerequisites
 
@@ -13,23 +13,21 @@ to renew certificates at an appropriate time before expiry.
 ## Installing the Chart
 
 Full installation instructions, including details on how to configure extra
-functionality in cert-manager can be found in the [installation docs](https://cert-manager.io/docs/installation/kubernetes/).
-
-Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources.
-This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
-
-```bash
-$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-```
+functionality in cert-manager can be found in the [installation docs](https://cert-manager.io/docs/installation/helm/).
 
 To install the chart with the release name `cert-manager`:
 
 ```console
-## Add the Jetstack Helm repository
-$ helm repo add jetstack https://charts.jetstack.io --force-update
+# Add the Jetstack Helm repository
+helm repo add jetstack https://charts.jetstack.io --force-update
 
-## Install the cert-manager helm chart
-$ helm install cert-manager --namespace cert-manager --version {{RELEASE_VERSION}} jetstack/cert-manager
+# Install the cert-manager helm chart
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version {{RELEASE_VERSION}} \
+  --set crds.enabled=true
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -56,17 +54,25 @@ are documented in our full [upgrading guide](https://cert-manager.io/docs/instal
 To uninstall/delete the `cert-manager` deployment:
 
 ```console
-$ helm delete cert-manager --namespace cert-manager
+helm delete cert-manager --namespace cert-manager
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 If you want to completely uninstall cert-manager from your cluster, you will also need to
-delete the previously installed CustomResourceDefinition resources:
+delete the previously installed CustomResourceDefinition resources.
 
-```console
-$ kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-```
+> ☢️ This will remove all `Issuer`,`ClusterIssuer`,`Certificate`,`CertificateRequest`,`Order` and `Challenge` resources from the cluster:
+>
+> ```console
+> kubectl delete crd \
+>   issuers.cert-manager.io \
+>   clusterissuers.cert-manager.io \
+>   certificates.cert-manager.io \
+>   certificaterequests.cert-manager.io \
+>   orders.acme.cert-manager.io \
+>   challenges.acme.cert-manager.io
+> ```
 
 ## Configuration
 <!-- AUTO-GENERATED -->
@@ -87,6 +93,18 @@ For example:
 imagePullSecrets:
   - name: "image-pull-secret"
 ```
+#### **global.nodeSelector** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+Global node selector  
+  
+The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).  
+  
+If a component-specific nodeSelector is also set, it will take precedence.
+
 #### **global.commonLabels** ~ `object`
 > Default value:
 > ```yaml
@@ -230,13 +248,13 @@ This prevents downtime during voluntary disruptions such as during a Node upgrad
 Pod is currently running.
 #### **podDisruptionBudget.minAvailable** ~ `unknown`
 
-This configures the minimum available pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This configures the minimum available pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `maxUnavailable` is set.
 
 
 #### **podDisruptionBudget.maxUnavailable** ~ `unknown`
 
-This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%). it cannot be used if `minAvailable` is set.
+This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%). it cannot be used if `minAvailable` is set.
 
 
 #### **featureGates** ~ `string`
@@ -300,7 +318,7 @@ Override the "cert-manager.fullname" value. This value is used as part of most o
 
 #### **nameOverride** ~ `string`
 
-Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use eg. "cainjector.name" which resolves to the value "cainjector").
+Override the "cert-manager.name" value, which is used to annotate some of the resources that are created by this Chart (using "app.kubernetes.io/name"). NOTE: There are some inconsistencies in the Helm chart when it comes to these annotations (some resources use, e.g., "cainjector.name" which resolves to the value "cainjector").
 
 #### **serviceAccount.create** ~ `bool`
 > Default value:
@@ -371,23 +389,25 @@ config:
   kubernetesAPIBurst: 9000
   numberOfConcurrentWorkers: 200
   enableGatewayAPI: true
-  # Feature gates as of v1.17.0. Listed with their default values.
+  # Feature gates as of v1.18.1. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
-    AdditionalCertificateOutputFormats: true # BETA - default=true
+    AdditionalCertificateOutputFormats: true # GA - default=true
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true
-    NameConstraints: false # ALPHA - default=false
+    NameConstraints: true # BETA - default=true
     OtherNames: false # ALPHA - default=false
     SecretsFilteredCaching: true # BETA - default=true
     ServerSideApply: false # ALPHA - default=false
     StableCertificateRequestName: true # BETA - default=true
     UseCertificateRequestBasicConstraints: false # ALPHA - default=false
-    UseDomainQualifiedFinalizer: true # BETA - default=false
+    UseDomainQualifiedFinalizer: true # GA - default=true
     ValidateCAA: false # ALPHA - default=false
+    DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true
+    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
   # Configure the metrics server for TLS
   # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
   metricsTLSConfig:
@@ -425,7 +445,7 @@ Option to disable cert-manager's build-in auto-approver. The auto-approver appro
 > - clusterissuers.cert-manager.io/*
 > ```
 
-List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because eg. you are using approver-policy, you can enable 'disableAutoApproval'.  
+List of signer names that cert-manager will approve by default. CertificateRequests referencing these signer names will be auto-approved by cert-manager. Defaults to just approving the cert-manager.io Issuer and ClusterIssuer issuers. When set to an empty array, ALL issuers will be auto-approved by cert-manager. To disable the auto-approval, because, e.g., you are using approver-policy, you can enable 'disableAutoApproval'.  
 ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 
 #### **extraArgs** ~ `array`
@@ -684,7 +704,7 @@ enableServiceLinks indicates whether information about services should be inject
 
 Enable Prometheus monitoring for the cert-manager controller and webhook. If you use the Prometheus Operator, set prometheus.podmonitor.enabled or prometheus.servicemonitor.enabled, to create a PodMonitor or a  
 ServiceMonitor resource.  
-Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you can not enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
+Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-manager-webhook Deployments. Note that you cannot enable both PodMonitor and ServiceMonitor as they are mutually exclusive. Enabling both will result in an error.
 #### **prometheus.servicemonitor.enabled** ~ `bool`
 > Default value:
 > ```yaml
@@ -703,13 +723,14 @@ The namespace that the service monitor should live in, defaults to the cert-mana
 > ```
 
 Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.
-#### **prometheus.servicemonitor.targetPort** ~ `number`
+#### **prometheus.servicemonitor.targetPort** ~ `string,integer`
 > Default value:
 > ```yaml
-> 9402
+> http-metrics
 > ```
 
 The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.
+
 #### **prometheus.servicemonitor.path** ~ `string`
 > Default value:
 > ```yaml
@@ -969,13 +990,13 @@ This prevents downtime during voluntary disruptions such as during a Node upgrad
 Pod is currently running.
 #### **webhook.podDisruptionBudget.minAvailable** ~ `unknown`
 
-This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `maxUnavailable` is set.
 
 
 #### **webhook.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
-This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g. 1) or a percentage value (e.g. 25%).  
+This property configures the maximum unavailable pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).  
 It cannot be used if `minAvailable` is set.
 
 
@@ -1293,6 +1314,8 @@ Create network policies for the webhooks.
 > - from:
 >     - ipBlock:
 >         cidr: 0.0.0.0/0
+>     - ipBlock:
+>         cidr: ::/0
 > ```
 
 Ingress rule for the webhook network policy. By default, it allows all inbound traffic.
@@ -1314,6 +1337,8 @@ Ingress rule for the webhook network policy. By default, it allows all inbound t
 >   to:
 >     - ipBlock:
 >         cidr: 0.0.0.0/0
+>     - ipBlock:
+>         cidr: ::/0
 > ```
 
 Egress rule for the webhook network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
@@ -1442,14 +1467,14 @@ Pod is currently running.
 #### **cainjector.podDisruptionBudget.minAvailable** ~ `unknown`
 
 `minAvailable` configures the minimum available pods for disruptions. It can either be set to  
-an integer (e.g. 1) or a percentage value (e.g. 25%).  
+an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `maxUnavailable` is set.
 
 
 #### **cainjector.podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
-an integer (e.g. 1) or a percentage value (e.g. 25%).  
+an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `minAvailable` is set.
 
 

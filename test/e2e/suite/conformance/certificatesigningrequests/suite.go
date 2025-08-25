@@ -33,7 +33,7 @@ import (
 // Suite defines a reusable conformance test suite that can be used against any
 // Issuer implementation.
 type Suite struct {
-	// Name is the name of the issuer being tested, e.g. SelfSigned, CA, ACME
+	// Name is the name of the issuer being tested, e.g., SelfSigned, CA, ACME
 	// This field must be provided.
 	Name string
 
@@ -44,7 +44,7 @@ type Suite struct {
 	CreateIssuerFunc func(context.Context, *framework.Framework) string
 
 	// DeleteIssuerFunc is a function that is run after the test has completed
-	// in order to clean up resources created for a test (e.g. the resources
+	// in order to clean up resources created for a test (e.g., the resources
 	// created in CreateIssuerFunc).
 	// This function will be run regardless whether the test passes or fails.
 	// If not specified, this function will be skipped.

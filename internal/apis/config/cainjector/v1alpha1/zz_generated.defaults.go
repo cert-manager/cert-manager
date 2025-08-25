@@ -23,7 +23,7 @@ package v1alpha1
 
 import (
 	sharedv1alpha1 "github.com/cert-manager/cert-manager/internal/apis/config/shared/v1alpha1"
-	v1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
+	cainjectorv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -31,13 +31,13 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&v1alpha1.CAInjectorConfiguration{}, func(obj interface{}) {
-		SetObjectDefaults_CAInjectorConfiguration(obj.(*v1alpha1.CAInjectorConfiguration))
+	scheme.AddTypeDefaultingFunc(&cainjectorv1alpha1.CAInjectorConfiguration{}, func(obj interface{}) {
+		SetObjectDefaults_CAInjectorConfiguration(obj.(*cainjectorv1alpha1.CAInjectorConfiguration))
 	})
 	return nil
 }
 
-func SetObjectDefaults_CAInjectorConfiguration(in *v1alpha1.CAInjectorConfiguration) {
+func SetObjectDefaults_CAInjectorConfiguration(in *cainjectorv1alpha1.CAInjectorConfiguration) {
 	SetDefaults_CAInjectorConfiguration(in)
 	sharedv1alpha1.SetDefaults_LeaderElectionConfig(&in.LeaderElectionConfig)
 	SetDefaults_EnableDataSourceConfig(&in.EnableDataSourceConfig)

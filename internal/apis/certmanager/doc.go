@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// +kubebuilder:skip
 // +k8s:deepcopy-gen=package,register
 
 // Package certmanager is the internal version of the API.

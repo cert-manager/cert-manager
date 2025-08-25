@@ -17,9 +17,9 @@ limitations under the License.
 package fuzzer
 
 import (
-	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	logsapi "k8s.io/component-base/logs/api/v1"
+	"sigs.k8s.io/randfill"
 
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
@@ -27,8 +27,8 @@ import (
 // Funcs returns the fuzzer functions for the webhook config api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		func(s *webhook.WebhookConfiguration, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *webhook.WebhookConfiguration, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
 
 			if s.PprofAddress == "" {
 				s.PprofAddress = "something:1234"

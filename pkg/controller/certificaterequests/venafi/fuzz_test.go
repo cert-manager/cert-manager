@@ -17,7 +17,6 @@ limitations under the License.
 package venafi
 
 import (
-	"context"
 	"crypto/rsa"
 	"testing"
 	"time"
@@ -93,7 +92,7 @@ func FuzzVenafiCRController(f *testing.F) {
 			gen.SetCertificateRequestIsCA(isCA),
 			gen.SetCertificateRequestCSR(csrPEM),
 			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: tm}),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name:  baseIssuer.Name,
 				Group: certmanager.GroupName,
 				Kind:  baseIssuer.Kind,
@@ -160,7 +159,7 @@ func FuzzVenafiCRController(f *testing.F) {
 			// Make it explicit if this fails
 			panic(err)
 		}
-		_ = controller.Sync(context.Background(), baseCR)
+		_ = controller.Sync(t.Context(), baseCR)
 
 	})
 }

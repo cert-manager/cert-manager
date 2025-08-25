@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	logtesting "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -248,7 +248,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
-		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is not the first": {
+		"should not set Issuing=True when other Certificates with the same secret name are found, the secret does not exist and the certificate is not the first": {
 			existingCertificate: gen.Certificate("cert-2",
 				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
 				gen.SetCertificateNamespace("testns"),
@@ -268,7 +268,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 			wantDataForCertificateCalled: false,
 			wantShouldReissueCalled:      false,
 		},
-		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does not exist and the certificate is the first": {
+		"should set Issuing=True when other Certificates with the same secret name are found, the secret does not exist and the certificate is the first": {
 			existingCertificate: gen.Certificate("cert-1",
 				gen.SetCertificateCreationTimestamp(fixedNow),
 				gen.SetCertificateNamespace("testns"),
@@ -302,7 +302,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				LastTransitionTime: &fixedNow,
 			}},
 		},
-		"should set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is the owner": {
+		"should set Issuing=True when other Certificates with the same secret name are found, the secret does exist and the certificate is the owner": {
 			existingCertificate: gen.Certificate("cert-2",
 				gen.SetCertificateCreationTimestamp(metav1.NewTime(fixedNow.Add(1*time.Minute))),
 				gen.SetCertificateNamespace("testns"),
@@ -347,7 +347,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				LastTransitionTime: &fixedNow,
 			}},
 		},
-		"should not set Issuing=True when other Ceritificates with the same secret name are found, the secret does exist and the certificate is first but not the owner": {
+		"should not set Issuing=True when other Certificates with the same secret name are found, the secret does exist and the certificate is first but not the owner": {
 			existingCertificate: gen.Certificate("cert-1",
 				gen.SetCertificateCreationTimestamp(fixedNow),
 				gen.SetCertificateNamespace("testns"),
@@ -453,7 +453,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				}
 			}
 
-			gotErr := w.controller.ProcessItem(context.Background(), key)
+			gotErr := w.controller.ProcessItem(t.Context(), key)
 			switch {
 			case gotErr != nil:
 				if test.wantErr != gotErr.Error() {
@@ -474,7 +474,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 }
 
 func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
-	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.Local))
+	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.UTC))
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
@@ -818,7 +818,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(logtesting.NewTestLogger(t), clock, test.givenCert, test.givenNextCR)
+			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(testr.New(t), clock, test.givenCert, test.givenNextCR)
 			assert.Equal(t, test.wantBackoff, gotBackoff)
 			assert.Equal(t, test.wantDelay, gotDelay)
 		})

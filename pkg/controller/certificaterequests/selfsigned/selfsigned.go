@@ -34,6 +34,7 @@ import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
@@ -75,20 +76,29 @@ func init() {
 				func(ctx *controllerpkg.Context, log logr.Logger, queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) ([]cache.InformerSynced, error) {
 					secretInformer := ctx.KubeSharedInformerFactory.Secrets().Informer()
 					certificateRequestLister := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister()
+
+					isNamespaced := ctx.Namespace != ""
+
+					mustSync := []cache.InformerSynced{
+						secretInformer.HasSynced,
+						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Informer().HasSynced,
+					}
+
+					var clusterIssuerLister cmlisters.ClusterIssuerLister
+					if !isNamespaced {
+						clusterIssuerLister = ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister()
+						mustSync = append(mustSync, ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Informer().HasSynced)
+					}
 					helper := issuer.NewHelper(
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
-						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
+						clusterIssuerLister,
 					)
 					if _, err := secretInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
 						WorkFunc: handleSecretReferenceWorkFunc(log, certificateRequestLister, helper, queue),
 					}); err != nil {
 						return nil, fmt.Errorf("error setting up event handler: %v", err)
 					}
-					return []cache.InformerSynced{
-						secretInformer.HasSynced,
-						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Informer().HasSynced,
-						ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Informer().HasSynced,
-					}, nil
+					return mustSync, nil
 				},
 			)).
 			Complete()
@@ -202,9 +212,9 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		return nil, nil
 	}
 
-	log.V(logf.DebugLevel).Info("self signed certificate issued")
+	log.V(logf.DebugLevel).Info("self-signed certificate issued")
 
-	// We set the CA to the returned certificate here since this is self signed.
+	// We set the CA to the returned certificate here since this is self-signed.
 	return &issuer.IssueResponse{
 		Certificate: certPem,
 		CA:          certPem,

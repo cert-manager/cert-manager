@@ -46,7 +46,6 @@ import (
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/logs"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
@@ -56,7 +55,7 @@ func init() {
 	logs.InitLogs()
 	_ = flag.Set("alsologtostderr", "true")
 	_ = flag.Set("v", "4")
-	ctrl.SetLogger(logf.Log)
+	ctrl.SetLogger(logs.Log)
 }
 
 type StringGenerator func(n int) string
@@ -127,8 +126,9 @@ func (b *Builder) Init() {
 		b.T.Fatalf("error adding meta to scheme: %v", err)
 	}
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
-	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
-	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
+	b.Client = kubefake.NewClientset(b.KubeObjects...)
+	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
+	// FIXME: It seems like the gateway-api fake.NewClientset is misbehaving and is not usable per July 2025
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
 	b.DiscoveryClient = discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {

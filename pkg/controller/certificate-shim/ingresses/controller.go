@@ -98,14 +98,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	namespace, name := key.Namespace, key.Name
 
 	ingress, err := c.ingressLister.Ingresses(namespace).Get(name)
-
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("ingress '%s' in work queue no longer exists", key))
-			return nil
-		}
-
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
+	}
+	if ingress == nil || ingress.DeletionTimestamp != nil {
+		// If the Ingress object was/ is being deleted, we don't want to start creating Certificates.
+		return nil
 	}
 
 	return c.sync(ctx, ingress)

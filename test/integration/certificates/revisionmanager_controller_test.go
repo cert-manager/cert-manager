@@ -42,11 +42,8 @@ import (
 // controller will delete old CertificateRequests according to the
 // spec.revisionHistoryLimit value
 func TestRevisionManagerController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
-	defer cancel()
-
-	config, stopFn := framework.RunControlPlane(t, ctx)
-	defer stopFn()
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
 
 	// Build, instantiate and run the revision manager controller.
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
@@ -81,7 +78,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,10 +88,10 @@ func TestRevisionManagerController(t *testing.T) {
 		gen.SetCertificateCommonName("my-common-name"),
 		gen.SetCertificateSecretName(secretName),
 		gen.SetCertificateRevisionHistoryLimit(3),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +99,7 @@ func TestRevisionManagerController(t *testing.T) {
 	// Set Certificate to Ready
 	apiutil.SetCertificateCondition(crt, crt.Generation,
 		cmapi.CertificateConditionReady, cmmeta.ConditionTrue, "Issued", "integration test")
-	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,8 +110,8 @@ func TestRevisionManagerController(t *testing.T) {
 	}
 
 	// Create 6 CertificateRequests which are owned by this Certificate
-	for i := 0; i < 6; i++ {
-		_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, &cmapi.CertificateRequest{
+	for i := range 6 {
+		_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(t.Context(), &cmapi.CertificateRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: crtName + "-",
 				Namespace:    namespace,
@@ -127,7 +124,7 @@ func TestRevisionManagerController(t *testing.T) {
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   csrPEM,
-				IssuerRef: cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
+				IssuerRef: cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -138,7 +135,7 @@ func TestRevisionManagerController(t *testing.T) {
 	var crs []cmapi.CertificateRequest
 
 	// Wait for 3 CertificateRequests to be deleted, and that they have the correct revisions
-	err = wait.PollUntilContextCancel(ctx, time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
+	err = wait.PollUntilContextCancel(t.Context(), time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		requests, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err

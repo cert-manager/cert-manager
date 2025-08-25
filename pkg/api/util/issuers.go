@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 const (
@@ -52,12 +51,4 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 		return IssuerVenafi, nil
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
-}
-
-// IssuerKind returns the kind of issuer for a certificate.
-func IssuerKind(ref cmmeta.ObjectReference) string {
-	if ref.Kind == "" {
-		return cmapi.IssuerKind
-	}
-	return ref.Kind
 }

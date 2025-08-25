@@ -52,9 +52,9 @@ type ChallengeSpec struct {
 	// challenge is a part of.
 	AuthorizationURL string
 
-	// dnsName is the identifier that this challenge is for, e.g. example.com.
+	// dnsName is the identifier that this challenge is for, e.g., example.com.
 	// If the requested DNSName is a 'wildcard', this field MUST be set to the
-	// non-wildcard domain, e.g. for `*.example.com`, it must be `example.com`.
+	// non-wildcard domain, e.g., for `*.example.com`, it must be `example.com`.
 	DNSName string
 
 	// wildcard will be true if this challenge is for a wildcard identifier,
@@ -87,7 +87,7 @@ type ChallengeSpec struct {
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
 	// Challenge will be marked as failed.
-	IssuerRef cmmeta.ObjectReference
+	IssuerRef cmmeta.IssuerReference
 }
 
 // The type of ACME challenge. Only HTTP-01 and DNS-01 are supported.

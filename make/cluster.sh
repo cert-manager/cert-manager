@@ -25,7 +25,7 @@ set -e
 source ./make/kind_images.sh
 
 mode=kind
-k8s_version=1.31
+k8s_version=1.33
 name=kind
 
 help() {
@@ -44,7 +44,7 @@ Flags:
   # TODO: do we need this flag? It's not used anywhere.
   --k8s-version VERSION
       The Kubernetes version to spin up with kind. It should be either a
-      minor version e.g. 1.23 or a full version e.g. 1.23.3. You can also
+      minor version, e.g., 1.23 or a full version, e.g., 1.23.3. You can also
       use K8S_VERSION to do the same.
   --show-image
       Show the image that will be used for the cluster and exit with 0. The
@@ -70,7 +70,7 @@ while [ $# -ne 0 ]; do
     ;;
     # This block of code will create the variable associated the flags,
     # $mode, $name, and $k8s_version and then set them to the value provided.
-    # E.g. "--name pinto" will create the variable named "name" set to the
+    # E.g., "--name pinto" will create the variable named "name" set to the
     # value "pinto"--equivalent to name="pinto"
   --mode | --name | --k8s-version)
     if [ $# -lt 2 ]; then
@@ -109,6 +109,7 @@ case "$k8s_version" in
 1.30*) image=$KIND_IMAGE_K8S_130 ;;
 1.31*) image=$KIND_IMAGE_K8S_131 ;;
 1.32*) image=$KIND_IMAGE_K8S_132 ;;
+1.33*) image=$KIND_IMAGE_K8S_133 ;;
 v*) printf "${red}${redcross}Error${end}: Kubernetes version must be given without the leading 'v'\n" >&2 && exit 1 ;;
 *) printf "${red}${redcross}Error${end}: unsupported Kubernetes version ${yel}${k8s_version}${end}\n" >&2 && exit 1 ;;
 esac

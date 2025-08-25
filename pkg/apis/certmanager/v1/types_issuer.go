@@ -25,9 +25,13 @@ import (
 
 // +genclient
 // +genclient:nonNamespaced
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Cluster,shortName=ciss,categories=cert-manager
+// +kubebuilder:subresource:status
 
 // A ClusterIssuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.
@@ -57,9 +61,13 @@ type ClusterIssuerList struct {
 }
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Namespaced,shortName=iss,categories=cert-manager
+// +kubebuilder:subresource:status
 
 // An Issuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.
@@ -173,7 +181,7 @@ type VenafiTPP struct {
 // VenafiCloud defines connection configuration details for Venafi Cloud
 type VenafiCloud struct {
 	// URL is the base URL for Venafi Cloud.
-	// Defaults to "https://api.venafi.cloud/v1".
+	// Defaults to "https://api.venafi.cloud/".
 	// +optional
 	URL string `json:"url,omitempty"`
 
@@ -188,6 +196,7 @@ type SelfSignedIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 }
 
@@ -199,6 +208,11 @@ type VaultIssuer struct {
 
 	// Server is the connection address for the Vault server, e.g: "https://vault.example.com:8200".
 	Server string `json:"server"`
+
+	// ServerName is used to verify the hostname on the returned certificates
+	// by the Vault server.
+	// +optional
+	ServerName string `json:"serverName,omitempty"`
 
 	// Path is the mount path of the Vault PKI backend's `sign` endpoint, e.g:
 	// "my_pki_mount/sign/my-role-name".
@@ -343,6 +357,7 @@ type ServiceAccountRef struct {
 	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
 	// consisting of the issuer's namespace and name is always included.
 	// +optional
+	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
@@ -355,6 +370,7 @@ type CAIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 
 	// The OCSP server list is an X.509 v3 extension that defines a list of
@@ -363,12 +379,14 @@ type CAIssuer struct {
 	// certificate will be issued with no OCSP servers set. For example, an
 	// OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
 	// +optional
+	// +listType=atomic
 	OCSPServers []string `json:"ocspServers,omitempty"`
 
 	// IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
 	// it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details.
 	// As an example, such a URL might be "http://ca.domain.com/ca.crt".
 	// +optional
+	// +listType=atomic
 	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
 }
 
@@ -376,9 +394,9 @@ type CAIssuer struct {
 type IssuerStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
 	Conditions []IssuerCondition `json:"conditions,omitempty"`
 
 	// ACME specific status options.

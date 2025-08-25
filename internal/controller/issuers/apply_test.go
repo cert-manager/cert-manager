@@ -22,8 +22,8 @@ import (
 	"sync"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/randfill"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -39,12 +39,12 @@ func Test_serializeApplyIssuerStatus(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var issuer cmapi.Issuer
-					fuzz.New().NilChance(0.5).Fuzz(&issuer)
+					randfill.New().NilChance(0.5).Fill(&issuer)
 					issuer.Name = "foo"
 					issuer.Namespace = "bar"
 
@@ -70,7 +70,7 @@ func Test_serializeApplyIssuerStatus(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)
@@ -88,12 +88,12 @@ func Test_serializeApplyClusterIssuerStatus(t *testing.T) {
 	jobs := make(chan int)
 
 	wg.Add(numJobs)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		go func() {
 			for j := range jobs {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var issuer cmapi.ClusterIssuer
-					fuzz.New().NilChance(0.5).Fuzz(&issuer)
+					randfill.New().NilChance(0.5).Fill(&issuer)
 					issuer.Name = "foo"
 
 					// Test regex with non-empty status.
@@ -118,7 +118,7 @@ func Test_serializeApplyClusterIssuerStatus(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < numJobs; i++ {
+	for i := range numJobs {
 		jobs <- i
 	}
 	close(jobs)

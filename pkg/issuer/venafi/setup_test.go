@@ -17,7 +17,6 @@ limitations under the License.
 package venafi
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -166,16 +165,14 @@ func (s *testSetupT) runTest(t *testing.T) {
 	rec := &controllertest.FakeRecorder{}
 
 	v := &Venafi{
-		resourceNamespace: "test-namespace",
 		Context: &controllerpkg.Context{
 			Recorder: rec,
 		},
-		issuer:        s.iss,
 		clientBuilder: s.clientBuilder,
 		log:           logf.Log.WithName("venafi"),
 	}
 
-	err := v.Setup(context.TODO())
+	err := v.Setup(t.Context(), s.iss)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

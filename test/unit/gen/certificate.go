@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	internalv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -36,19 +37,21 @@ func Certificate(name string, mods ...CertificateModifier) *v1.Certificate {
 	for _, mod := range mods {
 		mod(c)
 	}
+	internalv1.SetObjectDefaults_Certificate(c)
 	return c
 }
 
-func CertificateFrom(crt *v1.Certificate, mods ...CertificateModifier) *v1.Certificate {
-	crt = crt.DeepCopy()
+func CertificateFrom(c *v1.Certificate, mods ...CertificateModifier) *v1.Certificate {
+	c = c.DeepCopy()
 	for _, mod := range mods {
-		mod(crt)
+		mod(c)
 	}
-	return crt
+	internalv1.SetObjectDefaults_Certificate(c)
+	return c
 }
 
-// SetIssuer sets the Certificate.spec.issuerRef field
-func SetCertificateIssuer(o cmmeta.ObjectReference) CertificateModifier {
+// SetCertificateIssuer sets the Certificate.spec.issuerRef field
+func SetCertificateIssuer(o cmmeta.IssuerReference) CertificateModifier {
 	return func(c *v1.Certificate) {
 		c.Spec.IssuerRef = o
 	}
@@ -289,5 +292,11 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.CertificateAdditionalOutputFormat) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
+	}
+}
+
+func SetCertificateKeystore(keystores *v1.CertificateKeystores) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.Keystores = keystores
 	}
 }
