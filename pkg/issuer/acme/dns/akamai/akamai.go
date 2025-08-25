@@ -91,8 +91,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 		return nil, fmt.Errorf("edgedns: Error creating session: %w", err)
 	}
 
-	dnsClient := dns.Client(s)
-	dnsp.dnsclient.(*OpenDNSConfig).client = dnsClient
+	dnsp.dnsclient.(*OpenDNSConfig).client = dns.Client(s)
 
 	return dnsp, nil
 }
