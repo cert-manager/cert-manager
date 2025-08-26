@@ -15,3 +15,8 @@ updates:
   groups:
     all-gh-actions:
       patterns: ["*"]
+  labels:
+    - dependencies
+    - kind/cleanup
+    - release-note-none
+    - ok-to-test
