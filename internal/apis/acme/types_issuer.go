@@ -592,6 +592,8 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	Environment AzureDNSEnvironment
 
 	ManagedIdentity *AzureManagedIdentity
+
+	IsPrivateZone bool `json:"isPrivateZone,omitempty"`
 }
 
 type AzureManagedIdentity struct {
