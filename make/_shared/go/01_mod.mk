@@ -55,6 +55,7 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 				echo "Running 'go mod tidy' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
 				$(GO) mod tidy || exit; \
+				$(GO) get toolchain@none || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
