@@ -70,4 +70,8 @@ type WebhookConfiguration struct {
 
 	// Metrics endpoint TLS config
 	MetricsTLSConfig shared.TLSConfig
+
+	// EnableWebhookClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableWebhookClientVerification bool
 }
