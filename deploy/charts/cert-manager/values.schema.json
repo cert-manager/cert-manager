@@ -1617,6 +1617,15 @@
         "enableServiceLinks": {
           "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
         },
+        "enableClientVerification": {
+          "$ref": "#/$defs/helm-values.webhook.enableClientVerification"
+        },
+        "clientCAFile": {
+          "$ref": "#/$defs/helm-values.webhook.clientCAFile"
+        },
+        "apiserverClientCertSubject": {
+          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubject"
+        },
         "extraArgs": {
           "$ref": "#/$defs/helm-values.webhook.extraArgs"
         },
@@ -1757,6 +1766,21 @@
       "default": false,
       "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
       "type": "boolean"
+    },
+    "helm-values.webhook.enableClientVerification": {
+      "default": false,
+      "description": "enableClientVerification indicates whether client verification is required for requests made to the webhook server.",
+      "type": "boolean"
+    },
+    "helm-values.webhook.clientCAFile": {
+      "default": "",
+      "description": "clientCAFile is the CA file name used to sign the certificates presented by clients while requesting to the webhook server.",
+      "type": "string"
+    },
+    "helm-values.webhook.apiserverClientCertSubject": {
+      "default": "",
+      "description": "apiserverClientCertSubject is the subject name used by the kube-apiserver certificate for requests to the webhook server.",
+      "type": "string"
     },
     "helm-values.webhook.extraArgs": {
       "default": [],

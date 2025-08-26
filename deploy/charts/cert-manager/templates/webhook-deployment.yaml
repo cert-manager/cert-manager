@@ -98,6 +98,9 @@ spec:
           {{- if .Values.webhook.featureGates }}
           - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
+          {{- if .Values.webhook.enableClientVerification }}
+          - --enable-webhook-client-verification={{ .Values.webhook.enableClientVerification }}
+          {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
@@ -166,6 +169,14 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- if .Values.webhook.clientCAFile }}
+          - name: WEBHOOK_CLIENT_CA_FILE
+            value: {{ .Values.webhook.clientCAFile }}
+          {{- end }}
+          {{- if .Values.webhook.apiserverClientCertSubject }}
+          - name: APISERVER_CLIENT_CERT_SUBJECT
+            value: {{ .Values.webhook.apiserverClientCertSubject }}
+          {{- end }}
           {{- with .Values.webhook.extraEnv }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -180,7 +191,7 @@ spec:
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.webhook.volumeMounts }}
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 10 }}
             {{- end }}
           {{- end }}
       {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
@@ -211,6 +222,6 @@ spec:
             name: {{ include "webhook.fullname" . }}
         {{- end }}
         {{- with .Values.webhook.volumes }}
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 6 }}
         {{- end }}
       {{- end }}
