@@ -60,7 +60,7 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 				echo ""; \
 			done
 
-shared_generate_targets += generate-go-mod-tidy
+shared_generate_targets := generate-go-mod-tidy $(shared_generate_targets)
 
 ifndef dont_generate_govulncheck
 
