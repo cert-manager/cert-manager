@@ -270,7 +270,7 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notBefore := metav1.NewTime(x509Cert.NotBefore)
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
-		renewalTime := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.RenewTimeWindow)
 
 		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {
