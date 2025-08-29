@@ -57,7 +57,6 @@ github.com/go-openapi/swag,Apache-2.0
 github.com/gogo/protobuf,BSD-3-Clause
 github.com/google/btree,Apache-2.0
 github.com/google/gnostic-models,Apache-2.0
-github.com/google/go-cmp/cmp,BSD-3-Clause
 github.com/google/uuid,BSD-3-Clause
 github.com/josharian/intern,MIT
 github.com/json-iterator/go,MIT
@@ -66,6 +65,7 @@ github.com/modern-go/concurrent,Apache-2.0
 github.com/modern-go/reflect2,Apache-2.0
 github.com/munnerz/goautoneg,BSD-3-Clause
 github.com/pkg/errors,BSD-2-Clause
+github.com/pmezard/go-difflib/difflib,BSD-3-Clause
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,BSD-3-Clause
 github.com/prometheus/client_golang/prometheus,Apache-2.0
 github.com/prometheus/client_model/go,Apache-2.0
@@ -111,7 +111,7 @@ sigs.k8s.io/gateway-api/apis/v1,Apache-2.0
 sigs.k8s.io/json,Apache-2.0
 sigs.k8s.io/json,BSD-3-Clause
 sigs.k8s.io/randfill,Apache-2.0
-sigs.k8s.io/structured-merge-diff/v4,Apache-2.0
+sigs.k8s.io/structured-merge-diff/v6,Apache-2.0
 sigs.k8s.io/yaml,MIT
 sigs.k8s.io/yaml,Apache-2.0
 sigs.k8s.io/yaml,BSD-3-Clause
