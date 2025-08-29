@@ -299,19 +299,19 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 
 	statusID := resp.ChangeInfo.Id
 
-	return util.WaitFor(120*time.Second, 4*time.Second, func() (bool, error) {
-		reqParams := &route53.GetChangeInput{
+	var changeResp *route53.GetChangeOutput
+	for changeResp == nil || changeResp.ChangeInfo.Status != route53types.ChangeStatusInsync {
+		changeResp, err = r.client.GetChange(ctx, &route53.GetChangeInput{
 			Id: statusID,
-		}
-		resp, err := r.client.GetChange(ctx, reqParams)
+		})
 		if err != nil {
-			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
+			log.V(logf.DebugLevel).WithValues("error", fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))).Info("ignoring GetChange error")
 		}
-		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
-			return true, nil
-		}
-		return false, nil
-	})
+
+		time.Sleep(4 * time.Second)
+	}
+
+	return nil
 }
 
 func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string, error) {
