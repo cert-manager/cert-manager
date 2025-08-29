@@ -126,6 +126,14 @@ The number of old ReplicaSets to retain to allow rollback (if not set, the defau
 > ```
 
 The optional priority class to be used for the cert-manager pods.
+#### **global.hostUsers** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Global property to set all your pods to run as root inside the container. Enabled by default in kubernetes 1.33 (https://kubernetes.io/blog/2025/04/25/userns-enabled-by-default/) If a component specific value is also set, then it will take precedence.
+
 #### **global.rbac.create** ~ `bool`
 > Default value:
 > ```yaml
@@ -589,6 +597,10 @@ The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with mat
   
 This default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.
 
+#### **hostUsers** ~ `bool`
+
+Property to set cert-manager-controller to run as root inside the container
+
 #### **ingressShim.defaultIssuerName** ~ `string`
 
 Optional default issuer to use for ingress resources.
@@ -897,6 +909,10 @@ Number of replicas of the cert-manager webhook to run.
 The default is 1, but in production set this to 2 or 3 to provide high availability.  
   
 If `replicas > 1`, consider setting `webhook.podDisruptionBudget.enabled=true`.
+#### **webhook.hostUsers** ~ `bool`
+
+Property to set cert-manager webhook to run as root inside the container
+
 #### **webhook.timeoutSeconds** ~ `number`
 > Default value:
 > ```yaml
@@ -1373,6 +1389,10 @@ enableServiceLinks indicates whether information about services should be inject
 > ```
 
 Create the CA Injector deployment
+#### **cainjector.hostUsers** ~ `bool`
+
+Property to set cert-manager cainjector pod to run as root inside the container
+
 #### **cainjector.replicaCount** ~ `number`
 > Default value:
 > ```yaml
@@ -1736,6 +1756,10 @@ This startupapicheck is a Helm post-install hook that waits for the webhook endp
 > ```
 
 Enables the startup api check.
+#### **startupapicheck.hostUsers** ~ `bool`
+
+Property to set cert-manager startupapicheck pod to run as root inside the container
+
 #### **startupapicheck.securityContext** ~ `object`
 > Default value:
 > ```yaml
