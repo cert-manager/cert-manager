@@ -276,7 +276,8 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 
 	// PodSpec defines overrides for the HTTP01 challenge solver pod.
 	// Only the 'priorityClassName', 'nodeSelector', 'affinity',
-	// 'serviceAccountName' and 'tolerations' fields are supported currently.
+	// 'serviceAccountName', 'tolerations', 'imagePullSecrets', 'securityContext',
+	// and 'resources' fields are supported currently.
 	// All other fields will be ignored.
 	// +optional
 	Spec ACMEChallengeSolverHTTP01IngressPodSpec
@@ -316,6 +317,11 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's security context
 	// +optional
 	SecurityContext *ACMEChallengeSolverHTTP01IngressPodSecurityContext `json:"securityContext,omitempty"`
+
+	// If specified, the pod's resource requirements
+	// These values override the global resource configuration flags
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
