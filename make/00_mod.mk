@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# FIXME(erikgb): Upgrading to K8s 1.34 will require more work
+K8S_CODEGEN_VERSION := v0.33.4
+
 repo_name := github.com/cert-manager/cert-manager
 
 include make/util.mk
