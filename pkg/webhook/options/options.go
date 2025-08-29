@@ -76,8 +76,12 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 		"will be attempted.")
 	fs.BoolVar(&c.EnablePprof, "enable-profiling", c.EnablePprof, ""+
 		"Enable profiling for webhook.")
-	fs.BoolVar(&c.EnableWebhookClientVerification, "enable-webhook-client-verification", c.EnableWebhookClientVerification, ""+
+	fs.BoolVar(&c.EnableClientVerification, "enable-client-verification", c.EnableClientVerification, ""+
 		"Enable client cert authenticate of apiserver to webhooks.")
+	fs.StringVar(&c.ClientCAName, "client-ca-name", c.ClientCAName, ""+
+		"The client cert CA used to verify clients contacting webhooks.")
+	fs.StringVar(&c.ClientCertificateCN, "client-certificate-cn", c.ClientCertificateCN, ""+
+		"The client cert CN used by apiserver to contact the webhook.")
 	fs.StringVar(&c.PprofAddress, "profiler-address", c.PprofAddress,
 		"Address of the Go profiler (pprof). This should never be exposed on a public interface. If this flag is not set, the profiler is not run.")
 	tlsCipherPossibleValues := cliflag.TLSCipherPossibleValues()

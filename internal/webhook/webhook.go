@@ -18,7 +18,6 @@ package webhook
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -67,47 +66,29 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		return nil, err
 	}
 
-	// setup the client cert for webhook server
-	// if enabled via flag
-	var (
-		ok                  bool
-		apiserverCN         string
-		webhookClientCAFile string
-	)
-	if opts.EnableWebhookClientVerification {
-		if webhookClientCAFile, ok = os.LookupEnv("WEBHOOK_CLIENT_CA_FILE"); !ok {
-			return nil, fmt.Errorf("missing apiserver client ca file with EnableWebhookClientVerification option")
-		}
-	}
-
 	scheme := runtime.NewScheme()
 	cminstall.Install(scheme)
 	acmeinstall.Install(scheme)
 	metainstall.Install(scheme)
 
 	s := &server.Server{
-		ResourceScheme:                  scheme,
-		ListenAddr:                      int(opts.SecurePort),
-		HealthzAddr:                     ptr.To(int(opts.HealthzPort)),
-		EnablePprof:                     opts.EnablePprof,
-		PprofAddress:                    opts.PprofAddress,
-		CertificateSource:               buildCertificateSource(log, opts.TLSConfig, restcfg),
-		CipherSuites:                    opts.TLSConfig.CipherSuites,
-		MinTLSVersion:                   opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook:               admissionHandler,
-		MutationWebhook:                 admissionHandler,
-		MetricsListenAddress:            opts.MetricsListenAddress,
-		MetricsCertificateSource:        buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
-		MetricsCipherSuites:             opts.MetricsTLSConfig.CipherSuites,
-		MetricsMinTLSVersion:            opts.MetricsTLSConfig.MinTLSVersion,
-		EnableWebhookClientVerification: opts.EnableWebhookClientVerification,
-		ClientCAName:                    webhookClientCAFile,
-	}
-	// if provided verify the apiserver CN name as well
-	// this is required to avoid impersonation issue when using
-	// common CA certificates like kube-root CA
-	if apiserverCN, ok = os.LookupEnv("APISERVER_CLIENT_CERT_SUBJECT"); ok {
-		s.WebhookClientCertificateCN = apiserverCN
+		ResourceScheme:           scheme,
+		ListenAddr:               int(opts.SecurePort),
+		HealthzAddr:              ptr.To(int(opts.HealthzPort)),
+		EnablePprof:              opts.EnablePprof,
+		PprofAddress:             opts.PprofAddress,
+		CertificateSource:        buildCertificateSource(log, opts.TLSConfig, restcfg),
+		CipherSuites:             opts.TLSConfig.CipherSuites,
+		MinTLSVersion:            opts.TLSConfig.MinTLSVersion,
+		ValidationWebhook:        admissionHandler,
+		MutationWebhook:          admissionHandler,
+		MetricsListenAddress:     opts.MetricsListenAddress,
+		MetricsCertificateSource: buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
+		MetricsCipherSuites:      opts.MetricsTLSConfig.CipherSuites,
+		MetricsMinTLSVersion:     opts.MetricsTLSConfig.MinTLSVersion,
+		EnableClientVerification: opts.EnableClientVerification,
+		ClientCAName:             opts.ClientCAName,
+		ClientCertificateCN:      opts.ClientCertificateCN,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
