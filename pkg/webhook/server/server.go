@@ -103,17 +103,17 @@ type Server struct {
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MetricsMinTLSVersion string
 
-	// EnableWebhookClientVerification turns on client verification of requests
+	// EnableClientVerification turns on client verification of requests
 	// made to the webhook server
-	EnableWebhookClientVerification bool
+	EnableClientVerification bool
 
 	// ClientCAName is the CA certificate name which server used to verify remote(client)'s certificate.
 	// Defaults to "", which means server does not verify client's certificate.
 	ClientCAName string
 
-	// This client is generated in the kubeadm bootstrap stages
-	// using the kubernetes CA
-	WebhookClientCertificateCN string
+	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
+	// using a CA for apiserver to contact webhooks
+	ClientCertificateCN string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -161,7 +161,10 @@ func (s *Server) Run(ctx context.Context) error {
 		},
 	}
 
-	if s.EnableWebhookClientVerification {
+	if s.EnableClientVerification {
+		if s.ClientCAName == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-name")
+		}
 		webhookOpts.ClientCAName = s.ClientCAName
 		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
 	}
@@ -334,12 +337,13 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-		if s.WebhookClientCertificateCN != "" {
+		// avoid impersonation of apiserver client by verifying the CN name if provided
+		if s.ClientCertificateCN != "" {
 			if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
 				return fmt.Errorf("no verified chains")
 			}
 			cert := verifiedChains[0][0]
-			if cert.Subject.CommonName != s.WebhookClientCertificateCN {
+			if cert.Subject.CommonName != s.ClientCertificateCN {
 				return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
 			}
 		}
