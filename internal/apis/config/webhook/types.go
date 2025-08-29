@@ -72,7 +72,15 @@ type WebhookConfiguration struct {
 	// Metrics endpoint TLS config
 	MetricsTLSConfig shared.TLSConfig
 
-	// EnableWebhookClientVerification turns on client verification of requests
+	// EnableClientVerification turns on client verification of requests
 	// made to the webhook server
-	EnableWebhookClientVerification bool
+	EnableClientVerification bool
+
+	// ClientCAName is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAName string
+
+	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
+	// using a CA for apiserver to contact webhooks
+	ClientCertificateCN string
 }
