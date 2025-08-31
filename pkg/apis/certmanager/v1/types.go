@@ -143,6 +143,9 @@ const (
 	// IngressACMEIssuerHTTP01IngressClassAnnotationKey holds the acmeIssuerHTTP01IngressClassAnnotation value
 	// which can be used to override the http01 ingressClass if the challenge type is set to http01
 	IngressACMEIssuerHTTP01IngressClassAnnotationKey = "acme.cert-manager.io/http01-ingress-class"
+	// IngressACMEIssuerHTTP01IngressClassNameAnnotationKey holds the annotation value
+	// which can be used to override the http01 ingressClassName if the challenge type is set to http01
+	IngressACMEIssuerHTTP01IngressClassNameAnnotationKey = "acme.cert-manager.io/http01-ingress-ingressclassname"
 
 	// IngressClassAnnotationKey picks a specific "class" for the Ingress. The
 	// controller only processes Ingresses with this annotation either unset, or

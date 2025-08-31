@@ -34,6 +34,15 @@ const (
 	// solver for each ingress class.
 	ACMECertificateHTTP01IngressClassOverride = "acme.cert-manager.io/http01-override-ingress-class"
 
+	// ACMECertificateHTTP01IngressClassNameOverride is annotation to override ingressClassName.
+	// If this annotation is specified on a Certificate or Order resource when
+	// using the HTTP01 solver type, the ingress.ingressClassName field of the HTTP01
+	// solver's configuration will be set to the value given here.
+	// This is especially useful for users deploying many different ingress
+	// classes into a single cluster that want to be able to re-use a single
+	// solver for each ingress class.
+	ACMECertificateHTTP01IngressClassNameOverride = "acme.cert-manager.io/http01-override-ingress-ingressclassname"
+
 	// IngressEditInPlaceAnnotationKey is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
 	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
