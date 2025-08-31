@@ -197,7 +197,17 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if ingress.Class != nil && ingress.IngressClassName != nil && len(ingress.Name) > 0 {
+	numFieldsSpecified := 0
+	if ingress.Class != nil {
+		numFieldsSpecified++
+	}
+	if ingress.IngressClassName != nil {
+		numFieldsSpecified++
+	}
+	if len(ingress.Name) > 0 {
+		numFieldsSpecified++
+	}
+	if numFieldsSpecified > 1 {
 		el = append(el, field.Forbidden(fldPath, "only one of 'ingressClassName', 'name' or 'class' should be specified"))
 	}
 
