@@ -19,6 +19,7 @@
   labels: [
     'dependencies',
     'kind/cleanup',
+    'ok-to-test',
     'release-note-none',
   ],
   postUpgradeTasks: {
