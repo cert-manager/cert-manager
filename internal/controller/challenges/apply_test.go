@@ -78,8 +78,8 @@ func Test_serializeApply(t *testing.T) {
 
 func Test_serializeApplyStatus(t *testing.T) {
 	const (
-		expReg   = `^{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"url":"","authorizationURL":"","dnsName":"","wildcard":false,"type":"","token":"","key":"","solver":{},"issuerRef":{"name":""}},"status":{.*}$`
-		expEmpty = `{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"url":"","authorizationURL":"","dnsName":"","wildcard":false,"type":"","token":"","key":"","solver":{},"issuerRef":{"name":""}},"status":{"processing":false,"presented":false}}`
+		expReg   = `^{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"url":"","authorizationURL":"","dnsName":"","wildcard":false,"type":"","token":"","key":"","solver":{},"issuerRef":{"name":""}},"status":{.*}$`
+		expEmpty = `{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"url":"","authorizationURL":"","dnsName":"","wildcard":false,"type":"","token":"","key":"","solver":{},"issuerRef":{"name":""}},"status":{"processing":false,"presented":false}}`
 		numJobs  = 10000
 	)
 
