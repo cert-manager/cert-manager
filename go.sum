@@ -32,6 +32,7 @@ github.com/Venafi/vcert/v5 v5.11.1 h1:2yUhXIQU2tJGA0ATwMFefmXE2Z1McD/nQZe4V9wBdz
 github.com/Venafi/vcert/v5 v5.11.1/go.mod h1:+trMGATX+a4ZiQ7n46oxQQStni4hs6Sn7m/43dSNGHs=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v11 v11.1.0 h1:h/33OxYLqBk0BYmEbSUy7MlvgQR/m1w1/7OJFKoPL1I=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v11 v11.1.0/go.mod h1:rvh3imDA6EaQi+oM/GQHkQAOHbXPKJ7EWJvfjuw141Q=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.0.0/go.mod h1:Bf6hnZkloZnfL4I/gFGnMMMdMHiu/ERnSOWtFgnodDk=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa h1:LHTHcTQiSGT7VVbI0o4wBRNQIgn917usHWOd6VAffYI=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
