@@ -10,46 +10,46 @@ targets:
     - folder_name: boilerplate
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/boilerplate
     - folder_name: generate-verify
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/generate-verify
     - folder_name: go
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/go
     - folder_name: help
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/help
     - folder_name: klone
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/klone
     - folder_name: licenses
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/licenses
     - folder_name: repository-base
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/repository-base
     - folder_name: tools
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/tools
   make/_shared_new:
     - folder_name: helm
       repo_url: https://github.com/cert-manager/makefile-modules.git
       repo_ref: main
-      repo_hash: 75f2cdfc6896abf6bccac50ff8837681ca8d6e2c
+      repo_hash: b635d0b654fa2249d6d7cbf8e04c370eb53e568f
       repo_path: modules/helm
