@@ -29,6 +29,7 @@
     ],
     executionMode: 'branch',
   },
+  // packageRules uses globs for matchPackageNames. Some packages have a separate major version i.e. /v on them which is when we would need package**/**.
   packageRules: [
     {
       groupName: 'Misc Go deps',
@@ -45,9 +46,9 @@
         'gomod',
       ],
       matchPackageNames: [
-        'github.com/onsi/ginkgo**/**',
-        'github.com/onsi/gomega**/**',
-        'github.com/stretchr/testify**/**',
+        'github.com/onsi/ginkgo/**',
+        'github.com/onsi/gomega',
+        'github.com/stretchr/testify',
       ],
     },
     {
@@ -56,12 +57,12 @@
         'gomod',
       ],
       matchPackageNames: [
-        'github.com/akamai**/**',
-        'github.com/aws**/**',
-        'github.com/Azure**/**',
-        'github.com/AzureAD**/**',
-        'github.com/cloudflare**/**',
-        'github.com/digitalocean**/**',
+        'github.com/akamai/**',
+        'github.com/aws/**',
+        'github.com/Azure/**',
+        'github.com/AzureAD/**',
+        'github.com/cloudflare/**',
+        'github.com/digitalocean/**',
         'google.golang.org/api',
       ],
     },
@@ -71,8 +72,8 @@
         'gomod',
       ],
       matchPackageNames: [
-        'sigs.k8s.io**/**',
-        'k8s.io**/**',
+        'sigs.k8s.io/**',
+        'k8s.io/**',
       ],
     },
     {
@@ -81,7 +82,7 @@
         'gomod',
       ],
       matchPackageNames: [
-        'k8s.io**/**',
+        'k8s.io/**',
       ],
       matchUpdateTypes: [
         'patch',
@@ -96,7 +97,7 @@
         'gomod',
       ],
       matchPackageNames: [
-        'golang.org/x**/*',
+        'golang.org/x/**',
       ],
       addLabels: [
         'skip-review', // Adding label to allow PRs to automerge
