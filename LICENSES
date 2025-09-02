@@ -149,7 +149,6 @@ github.com/nrdcg/goacmedns,MIT
 github.com/pavlo-v-chernykh/keystore-go/v4,MIT
 github.com/pierrec/lz4,BSD-3-Clause
 github.com/pkg/browser,BSD-2-Clause
-github.com/pkg/errors,BSD-2-Clause
 github.com/pmezard/go-difflib/difflib,BSD-3-Clause
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,BSD-3-Clause
 github.com/prometheus/client_golang/prometheus,Apache-2.0
@@ -231,7 +230,7 @@ sigs.k8s.io/gateway-api,Apache-2.0
 sigs.k8s.io/json,Apache-2.0
 sigs.k8s.io/json,BSD-3-Clause
 sigs.k8s.io/randfill,Apache-2.0
-sigs.k8s.io/structured-merge-diff/v4,Apache-2.0
+sigs.k8s.io/structured-merge-diff/v6,Apache-2.0
 sigs.k8s.io/yaml,MIT
 sigs.k8s.io/yaml,Apache-2.0
 sigs.k8s.io/yaml,BSD-3-Clause

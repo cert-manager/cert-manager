@@ -335,7 +335,7 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 				Protocol: gwapi.TLSProtocolType,
 				Port:     gwapi.PortNumber(443),
 				Hostname: (*gwapi.Hostname)(&dnsNames[0]),
-				TLS: &gwapi.GatewayTLSConfig{
+				TLS: &gwapi.ListenerTLSConfig{
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),

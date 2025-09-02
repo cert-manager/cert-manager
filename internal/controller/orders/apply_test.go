@@ -30,8 +30,8 @@ import (
 
 func Test_serializeApplyStatus(t *testing.T) {
 	const (
-		expReg   = `^{"kind":"Order","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"request":null,"issuerRef":{"name":""}},"status":{.*}$`
-		expEmpty = `{"kind":"Order","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"request":null,"issuerRef":{"name":""}},"status":{}}`
+		expReg   = `^{"kind":"Order","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"request":null,"issuerRef":{"name":""}},"status":{.*}$`
+		expEmpty = `{"kind":"Order","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"request":null,"issuerRef":{"name":""}},"status":{}}`
 		numJobs  = 10000
 	)
 
