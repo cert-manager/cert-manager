@@ -85,6 +85,10 @@
         'sigs.k8s.io/**',
         'k8s.io/**',
       ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ]
     },
     {
       groupName: 'Kubernetes Go patches',
