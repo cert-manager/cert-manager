@@ -109,7 +109,7 @@ tools += goimports=v0.35.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
 tools += go-licenses=e4be799587800ffd119a1b419f13daf4989da546
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
-# renovate: datasource=go packageName=gotest.tool/gotestsum
+# renovate: datasource=github-releases packageName=gotestyourself/gotestsum
 tools += gotestsum=v1.12.3
 # https://pkg.go.dev/sigs.k8s.io/kustomize/kustomize/v5?tab=versions
 # renovate: datasource=go packageName=sigs.k8s.io/kustomize/kustomize/v5

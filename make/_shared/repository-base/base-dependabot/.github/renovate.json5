@@ -4,7 +4,8 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
-  gitAuthor: 'cert-manager-bot <cert-manager-bot@users.noreply.github.com>',
+  gitAuthor: 'Renovate Bot <renovate-bot@users.noreply.github.com>',
+  recreateWhen: 'always', // TODO: Remove; temporary fix to force Renovate to ignore "foreign" commits
   enabledManagers: [
     'gomod',
   ],
