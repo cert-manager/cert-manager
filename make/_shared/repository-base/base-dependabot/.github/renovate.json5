@@ -37,9 +37,6 @@
       matchManagers: [
         'gomod',
       ],
-      matchPackageNames: [
-        '*',
-      ],
     },
     {
       groupName: 'Testing Go deps',
@@ -105,12 +102,22 @@
       ],
     },
     {
-      description: 'Disable Go pseudo-version updates',
+      matchManagers: [
+        'gomod',
+      ],
+      matchUpdateTypes: [
+        'major',
+        'digest',
+      ],
+      dependencyDashboardApproval: true
+    },
+    {
+      description: 'Disable (internal) cert-manager pseudo-version updates',
       matchManagers: [
         'gomod',
       ],
       matchPackageNames: [
-        '*',
+        'github.com/cert-manager/**',
       ],
       matchCurrentValue: 'v0.0.0*',
       enabled: false,
