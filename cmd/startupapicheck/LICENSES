@@ -55,6 +55,7 @@ github.com/go-logr/zapr,Apache-2.0
 github.com/go-openapi/jsonpointer,Apache-2.0
 github.com/go-openapi/jsonreference,Apache-2.0
 github.com/go-openapi/swag,Apache-2.0
+github.com/go-openapi/swag/jsonname,Apache-2.0
 github.com/gogo/protobuf,BSD-3-Clause
 github.com/google/btree,Apache-2.0
 github.com/google/gnostic-models,Apache-2.0
