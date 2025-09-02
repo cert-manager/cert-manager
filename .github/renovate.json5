@@ -37,6 +37,10 @@
       matchManagers: [
         'gomod',
       ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ],
     },
     {
       groupName: 'Testing Go deps',
@@ -48,6 +52,10 @@
         'github.com/onsi/gomega',
         'github.com/stretchr/testify',
       ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ]
     },
     {
       groupName: 'Cloud Go deps',
@@ -63,6 +71,10 @@
         'github.com/digitalocean/**',
         'google.golang.org/api',
       ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ]
     },
     {
       groupName: 'Kubernetes Go deps',
