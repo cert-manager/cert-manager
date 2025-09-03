@@ -66,6 +66,11 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if hasKey .Values.webhook "hostUsers" }}
+      hostUsers: {{ .Values.webhook.hostUsers }}
+      {{- else }}
+      hostUsers: {{ .Values.global.hostUsers }}
+      {{- end }}
       {{- with .Values.webhook.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
