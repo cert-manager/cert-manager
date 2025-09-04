@@ -13,8 +13,8 @@ require (
 	github.com/cloudflare/cloudflare-go/v5 v5.1.0
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/kr/pretty v0.3.1
-	github.com/onsi/ginkgo/v2 v2.25.1
-	github.com/onsi/gomega v1.38.1
+	github.com/onsi/ginkgo/v2 v2.25.2
+	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.9
 	k8s.io/api v0.34.0
 	k8s.io/apiextensions-apiserver v0.34.0
