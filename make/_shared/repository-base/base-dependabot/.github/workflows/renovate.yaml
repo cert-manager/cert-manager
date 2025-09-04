@@ -17,10 +17,7 @@ jobs:
     if: github.repository == '{{REPLACE:GH-REPOSITORY}}'
 
     permissions:
-      contents: write
-      issues: write
-      statuses: write
-      pull-requests: write
+      id-token: write
 
     steps:
       - name: Fail if branch is not head of branch.
@@ -29,11 +26,20 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
+      - name: Octo STS Token Exchange
+        uses: octo-sts/action@e480437973a6f6ac2e9caa40ecabedc870d76395 # main
+        id: octo-sts
+        with:
+          scope: '{{REPLACE:GH-REPOSITORY}}'
+          identity: renovate
+
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
 
       - id: go-version
         run: |
@@ -47,7 +53,7 @@ jobs:
         uses: renovatebot/github-action@a447f09147d00e00ae2a82ad5ef51ca89352da80 # v43.0.9
         with:
           configurationFile: .github/renovate.json5
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.octo-sts.outputs.token }}
         env:
           RENOVATE_REPOSITORIES: '["${{ github.repository }}"]'
           RENOVATE_ONBOARDING: "false"

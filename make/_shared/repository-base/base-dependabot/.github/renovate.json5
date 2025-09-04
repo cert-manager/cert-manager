@@ -5,8 +5,13 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   enabled: true,
   gitAuthor: 'Renovate Bot <renovate-bot@users.noreply.github.com>',
+  gitIgnoredAuthors: [
+    'Renovate Bot <renovate-bot@users.noreply.github.com>',
+    'cert-manager-bot <cert-manager-bot@users.noreply.github.com>',
+  ],
   recreateWhen: 'always', // TODO: Remove; temporary fix to force Renovate to ignore "foreign" commits
   enabledManagers: [
+    'github-actions',
     'gomod',
   ],
   extends: [
@@ -24,14 +29,25 @@
     'ok-to-test',
     'release-note-none',
   ],
-  postUpgradeTasks: {
-    commands: [
-      'make generate',
-    ],
-    executionMode: 'branch',
-  },
   // packageRules uses globs for matchPackageNames. Some packages have a separate major version i.e. /v on them which is when we would need package**/**.
   packageRules: [
+    {
+      groupName: 'Misc GitHub actions',
+      matchManagers: [
+        'github-actions',
+      ],
+    },
+    {
+      matchManagers: [
+        'gomod',
+      ],
+      postUpgradeTasks: {
+        commands: [
+          'make vendor-go generate',
+        ],
+        executionMode: 'branch',
+      }
+    },
     {
       groupName: 'Misc Go deps',
       matchManagers: [
@@ -141,5 +157,10 @@
   ],
   ignorePaths: [
     '**/vendor/**',
+    // Exclude files that are mastered from makefile-modules and shouldn't be upgraded in projects using makefile-modules.
+    'make/_shared/**',
+    '.github/workflows/govulncheck.yaml',
+    '.github/workflows/make-self-upgrade.yaml',
+    '.github/workflows/renovate.yaml',
   ],
 }
