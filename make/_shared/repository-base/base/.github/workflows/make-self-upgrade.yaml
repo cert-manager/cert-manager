@@ -18,8 +18,7 @@ jobs:
     if: github.repository == '{{REPLACE:GH-REPOSITORY}}'
 
     permissions:
-      contents: write
-      pull-requests: write
+      id-token: write
     
     env:
       SOURCE_BRANCH: "${{ github.ref_name }}"
@@ -32,11 +31,20 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
+      - name: Octo STS Token Exchange
+        uses: octo-sts/action@e480437973a6f6ac2e9caa40ecabedc870d76395 # main
+        id: octo-sts
+        with:
+          scope: '{{REPLACE:GH-REPOSITORY}}'
+          identity: make-self-upgrade
+
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
 
       - id: go-version
         run: |
@@ -75,6 +83,7 @@ jobs:
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
+          github-token: ${{ steps.octo-sts.outputs.token }}
           script: |
             const { repo, owner } = context.repo;
             const pulls = await github.rest.pulls.list({

@@ -34,6 +34,8 @@ else
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-base:
+	# TODO(erikgb): Remove; just a temporary command to clean out Dependabot files
+	rm -f ./.github/dependabot.yaml
 	cp -r $(repository_base_dir)/. ./
 	cd $(repository_base_dir) && \
 		find . -type f | while read file; do \
