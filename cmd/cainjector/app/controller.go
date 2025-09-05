@@ -141,7 +141,6 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			LeaderElectionNamespace:       opts.LeaderElectionConfig.Namespace,
 			LeaderElectionID:              "cert-manager-cainjector-leader-election",
 			LeaderElectionReleaseOnCancel: true,
-			LeaderElectionLabels:          map[string]string{"app.kubernetes.io/managed-by": "cert-manager", "app.kubernetes.io/name": "ca-injector"},
 			LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
 			LeaseDuration:                 &opts.LeaderElectionConfig.LeaseDuration,
 			RenewDeadline:                 &opts.LeaderElectionConfig.RenewDeadline,
