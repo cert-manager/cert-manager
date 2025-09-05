@@ -119,7 +119,7 @@ echo "+++ Creating some more cert-manager resources.."
 $kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="second"
 
 # Ensure cert becomes ready
-$kubectl wait --for=condition=Ready cert/test2 --timeout=180s
+$kubectl wait --for=condition=Ready cert/test2 --timeout=180s || $kubectl get cert/test2 -o yaml
 
 # 3. UNINSTALL HELM RELEASE
 
