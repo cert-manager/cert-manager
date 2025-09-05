@@ -109,6 +109,6 @@ jobs:
                 owner,
                 repo,
                 issue_number: result.data.number,
-                labels: ['ok-to-test', 'skip-review']
+                labels: ['ok-to-test', 'skip-review', 'release-note-none', 'kind/cleanup']
               });
             }
