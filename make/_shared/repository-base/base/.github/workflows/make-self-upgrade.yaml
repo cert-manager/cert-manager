@@ -50,7 +50,7 @@ jobs:
         run: |
           make print-go-version >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: ${{ steps.go-version.outputs.result }}
 
@@ -81,7 +81,7 @@ jobs:
           git push -f origin "$SELF_UPGRADE_BRANCH"
 
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ steps.octo-sts.outputs.token }}
           script: |
