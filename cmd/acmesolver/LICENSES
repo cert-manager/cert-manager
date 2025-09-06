@@ -46,6 +46,7 @@ github.com/fxamacker/cbor/v2,MIT
 github.com/go-logr/logr,Apache-2.0
 github.com/go-logr/zapr,Apache-2.0
 github.com/gogo/protobuf,BSD-3-Clause
+github.com/grafana/regexp,BSD-3-Clause
 github.com/json-iterator/go,MIT
 github.com/modern-go/concurrent,Apache-2.0
 github.com/modern-go/reflect2,Apache-2.0
@@ -69,6 +70,7 @@ golang.org/x/sys/unix,BSD-3-Clause
 golang.org/x/text,BSD-3-Clause
 google.golang.org/protobuf,BSD-3-Clause
 gopkg.in/inf.v0,BSD-3-Clause
+gopkg.in/yaml.v2,Apache-2.0
 k8s.io/api/core/v1,Apache-2.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,Apache-2.0
 k8s.io/apimachinery/pkg,Apache-2.0

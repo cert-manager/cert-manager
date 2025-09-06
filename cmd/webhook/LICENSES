@@ -66,6 +66,7 @@ github.com/google/cel-go,Apache-2.0
 github.com/google/cel-go,BSD-3-Clause
 github.com/google/gnostic-models,Apache-2.0
 github.com/google/uuid,BSD-3-Clause
+github.com/grafana/regexp,BSD-3-Clause
 github.com/grpc-ecosystem/grpc-gateway/v2,BSD-3-Clause
 github.com/josharian/intern,MIT
 github.com/json-iterator/go,MIT
@@ -112,6 +113,7 @@ google.golang.org/grpc,Apache-2.0
 google.golang.org/protobuf,BSD-3-Clause
 gopkg.in/evanphx/json-patch.v4,BSD-3-Clause
 gopkg.in/inf.v0,BSD-3-Clause
+gopkg.in/yaml.v2,Apache-2.0
 gopkg.in/yaml.v3,MIT
 k8s.io/api,Apache-2.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,Apache-2.0

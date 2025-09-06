@@ -119,6 +119,7 @@ github.com/google/uuid,BSD-3-Clause
 github.com/googleapis/enterprise-certificate-proxy/client,Apache-2.0
 github.com/googleapis/gax-go/v2,BSD-3-Clause
 github.com/gorilla/websocket,BSD-2-Clause
+github.com/grafana/regexp,BSD-3-Clause
 github.com/grpc-ecosystem/go-grpc-prometheus,Apache-2.0
 github.com/grpc-ecosystem/grpc-gateway/v2,BSD-3-Clause
 github.com/hashicorp/errwrap,MPL-2.0
