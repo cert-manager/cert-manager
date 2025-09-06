@@ -36,6 +36,7 @@ type ACMEIssuerApplyConfiguration struct {
 	DisableAccountKeyGeneration *bool                                         `json:"disableAccountKeyGeneration,omitempty"`
 	EnableDurationFeature       *bool                                         `json:"enableDurationFeature,omitempty"`
 	Profile                     *string                                       `json:"profile,omitempty"`
+	KeyType                     *string                                       `json:"keyType,omitempty"`
 }
 
 // ACMEIssuerApplyConfiguration constructs a declarative configuration of the ACMEIssuer type for use with
@@ -136,5 +137,13 @@ func (b *ACMEIssuerApplyConfiguration) WithEnableDurationFeature(value bool) *AC
 // If called multiple times, the Profile field is set to the value of the last call.
 func (b *ACMEIssuerApplyConfiguration) WithProfile(value string) *ACMEIssuerApplyConfiguration {
 	b.Profile = &value
+	return b
+}
+
+// WithKeyType sets the KeyType field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the KeyType field is set to the value of the last call.
+func (b *ACMEIssuerApplyConfiguration) WithKeyType(value string) *ACMEIssuerApplyConfiguration {
+	b.KeyType = &value
 	return b
 }
