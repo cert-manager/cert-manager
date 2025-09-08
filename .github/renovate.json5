@@ -6,8 +6,7 @@
   enabled: true,
   gitAuthor: 'Renovate Bot <renovate-bot@users.noreply.github.com>',
   gitIgnoredAuthors: [
-    'Renovate Bot <renovate-bot@users.noreply.github.com>',
-    'cert-manager-bot <cert-manager-bot@users.noreply.github.com>',
+    '157150467+octo-sts[bot]@users.noreply.github.com',
   ],
   enabledManagers: [
     'github-actions',

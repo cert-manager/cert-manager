@@ -207,7 +207,7 @@ tools += openapi-gen=v0.0.0-20250905212525-66792eed8611
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
-KUBEBUILDER_ASSETS_VERSION := v1.33.0
+KUBEBUILDER_ASSETS_VERSION := v1.34.0
 tools += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 tools += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -516,10 +516,10 @@ $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		tar xfO $(outfile).tar.gz azwi > $(outfile) && chmod 775 $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubebuilder_tools_linux_amd64_SHA256SUM=3fb446463d20a6c4e093cb6a0facaae8bab966192a387624190fb15b34ce6abb
-kubebuilder_tools_linux_arm64_SHA256SUM=56c0ab934591543b3decdf4e80a27dccccbfeeb59a1e6103ad0e935aacb34e74
-kubebuilder_tools_darwin_amd64_SHA256SUM=c63643447f9a2ee23191a0b1f32d503a8bca6df7013dd4beb9eaae7088a1bea1
-kubebuilder_tools_darwin_arm64_SHA256SUM=36a413216c7a2a11c2164eb8553a009a2997c383a6bf768cb5e3709bf36e4596
+kubebuilder_tools_linux_amd64_SHA256SUM=9c45e40aa56971b105e596ebb3e84af6742e8709cc0523733baf8d9bb725e69c
+kubebuilder_tools_linux_arm64_SHA256SUM=602183b102e8871b109e426d115574375f41d67f4a41e06ad04dc1632db76485
+kubebuilder_tools_darwin_amd64_SHA256SUM=a1c7304a304f70cbdbff982ccf22c3b22710c6dfa1a7722d45297a834f178b43
+kubebuilder_tools_darwin_arm64_SHA256SUM=8afaf69ebd14177d8af37c044c28acafde016552517f42dfe732f42d2ecc52c7
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
