@@ -295,7 +295,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 	{
 		var lastError error
 		err = wait.PollUntilContextTimeout(ctx, time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
-			_, err := v.client.Sys().Health()
+			_, err := v.client.Sys().HealthWithContext(ctx)
 			if err != nil {
 				lastError = err
 				return false, nil
@@ -390,10 +390,10 @@ func (v *VaultInitializer) Setup(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) Clean(ctx context.Context) error {
-	if _, err := v.client.Logical().Delete(path.Join("sys", "mounts", v.intermediateMount)); err != nil {
+	if _, err := v.client.Logical().DeleteWithContext(ctx, path.Join("sys", "mounts", v.intermediateMount)); err != nil {
 		return fmt.Errorf("unable to unmount %v: %v", v.intermediateMount, err)
 	}
-	if _, err := v.client.Logical().Delete(path.Join("sys", "mounts", v.rootMount)); err != nil {
+	if _, err := v.client.Logical().DeleteWithContext(ctx, path.Join("sys", "mounts", v.rootMount)); err != nil {
 		return fmt.Errorf("unable to unmount %v: %v", v.rootMount, err)
 	}
 
@@ -403,13 +403,13 @@ func (v *VaultInitializer) Clean(ctx context.Context) error {
 func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, error) {
 	// create policy
 	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] }`, v.IntermediateSignPath())
-	err := v.client.Sys().PutPolicy(v.role, policy)
+	err := v.client.Sys().PutPolicyWithContext(ctx, v.role, policy)
 	if err != nil {
 		return "", "", fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
 	// create approle role
-	_, err = v.client.Logical().Write(path.Join("auth", v.appRoleAuthPath, "role", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role), map[string]interface{}{
 		"token_period":   "24h",
 		"token_policies": []string{v.role},
 	})
@@ -418,13 +418,13 @@ func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, e
 	}
 
 	// # read the role-id
-	respRoleId, err := v.client.Logical().Read(path.Join("auth", v.appRoleAuthPath, "role", v.role, "role-id"))
+	respRoleId, err := v.client.Logical().ReadWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role, "role-id"))
 	if err != nil {
 		return "", "", fmt.Errorf("error reading role_id: %s", err.Error())
 	}
 
 	// # read the secret-id
-	resp, err := v.client.Logical().Write(path.Join("auth", v.appRoleAuthPath, "role", v.role, "secret-id"), nil)
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role, "secret-id"), nil)
 	if err != nil {
 		return "", "", fmt.Errorf("error reading secret_id: %s", err.Error())
 	}
@@ -432,12 +432,12 @@ func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, e
 }
 
 func (v *VaultInitializer) CleanAppRole(ctx context.Context) error {
-	_, err := v.client.Logical().Delete(path.Join("auth", v.appRoleAuthPath, "role", v.role))
+	_, err := v.client.Logical().DeleteWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role))
 	if err != nil {
 		return fmt.Errorf("error deleting AppRole: %s", err.Error())
 	}
 
-	err = v.client.Sys().DeletePolicy(v.role)
+	err = v.client.Sys().DeletePolicyWithContext(ctx, v.role)
 	if err != nil {
 		return fmt.Errorf("error deleting policy: %s", err.Error())
 	}
@@ -446,9 +446,8 @@ func (v *VaultInitializer) CleanAppRole(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) mountPKI(ctx context.Context, mount, ttl string) error {
-	_ = ctx
 	// Equivalent to: vault secrets enable -path=<mount> -max-lease-ttl=<ttl> pki
-	_, err := v.client.Logical().Write(path.Join("sys", "mounts", mount), map[string]interface{}{
+	_, err := v.client.Logical().WriteWithContext(ctx, path.Join("sys", "mounts", mount), map[string]interface{}{
 		"type": "pki",
 		"config": map[string]interface{}{
 			"max_lease_ttl": ttl,
@@ -462,8 +461,7 @@ func (v *VaultInitializer) mountPKI(ctx context.Context, mount, ttl string) erro
 }
 
 func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error) {
-	_ = ctx
-	resp, err := v.client.Logical().Write(path.Join(v.rootMount, "root", "generate", "internal"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "generate", "internal"), map[string]interface{}{
 		"common_name":          "Root CA",
 		"ttl":                  "87600h",
 		"exclude_cn_from_sans": true,
@@ -477,8 +475,7 @@ func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error)
 }
 
 func (v *VaultInitializer) generateIntermediateSigningReq(ctx context.Context) (string, error) {
-	_ = ctx
-	resp, err := v.client.Logical().Write(path.Join(v.intermediateMount, "intermediate", "generate", "internal"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.intermediateMount, "intermediate", "generate", "internal"), map[string]interface{}{
 		"common_name":          "Intermediate CA",
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": true,
@@ -492,8 +489,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq(ctx context.Context) (
 }
 
 func (v *VaultInitializer) signCertificate(ctx context.Context, csr string) (string, error) {
-	_ = ctx
-	resp, err := v.client.Logical().Write(path.Join(v.rootMount, "root", "sign-intermediate"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "sign-intermediate"), map[string]interface{}{
 		"use_csr_values":       true,
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": true,
@@ -507,8 +503,7 @@ func (v *VaultInitializer) signCertificate(ctx context.Context, csr string) (str
 }
 
 func (v *VaultInitializer) importSignIntermediate(ctx context.Context, caChain, intermediateMount string) error {
-	_ = ctx
-	_, err := v.client.Logical().Write(path.Join(intermediateMount, "intermediate", "set-signed"), map[string]interface{}{
+	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(intermediateMount, "intermediate", "set-signed"), map[string]interface{}{
 		"certificate": caChain,
 	})
 	if err != nil {
@@ -519,8 +514,7 @@ func (v *VaultInitializer) importSignIntermediate(ctx context.Context, caChain, 
 }
 
 func (v *VaultInitializer) configureCert(ctx context.Context, mount string) error {
-	_ = ctx
-	_, err := v.client.Logical().Write(path.Join(mount, "config", "urls"), map[string]interface{}{
+	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(mount, "config", "urls"), map[string]interface{}{
 		"issuing_certificates":    []string{fmt.Sprintf("https://vault.vault:8200/v1/%s/ca", mount)},
 		"crl_distribution_points": []string{fmt.Sprintf("https://vault.vault:8200/v1/%s/crl", mount)},
 	})
@@ -532,7 +526,6 @@ func (v *VaultInitializer) configureCert(ctx context.Context, mount string) erro
 }
 
 func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error {
-	_ = ctx
 	// TODO: Create PKI role via raw API call; not using vault-client-go typed wrapper here anymore.
 	params := map[string]interface{}{
 		"allow_any_name":     "true",
@@ -547,7 +540,7 @@ func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error
 	}
 	url := path.Join(v.intermediateMount, "roles", v.role)
 
-	_, err := v.client.Logical().Write(url, params)
+	_, err := v.client.Logical().WriteWithContext(ctx, url, params)
 	if err != nil {
 		return fmt.Errorf("error creating role %s: %s", v.role, err.Error())
 	}
@@ -556,9 +549,8 @@ func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error
 }
 
 func (v *VaultInitializer) setupAppRoleAuth(ctx context.Context) error {
-	_ = ctx
 	// vault auth-enable approle
-	mounts, err := v.client.Sys().ListAuth()
+	mounts, err := v.client.Sys().ListAuthWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
 	}
@@ -567,7 +559,7 @@ func (v *VaultInitializer) setupAppRoleAuth(ctx context.Context) error {
 		return nil
 	}
 
-	err = v.client.Sys().EnableAuthWithOptions(v.appRoleAuthPath, &vault.EnableAuthOptions{Type: "approle"})
+	err = v.client.Sys().EnableAuthWithOptionsWithContext(ctx, v.appRoleAuthPath, &vault.EnableAuthOptions{Type: "approle"})
 	if err != nil {
 		return fmt.Errorf("error enabling approle auth: %s", err.Error())
 	}
@@ -576,9 +568,8 @@ func (v *VaultInitializer) setupAppRoleAuth(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
-	_ = ctx
 	// vault auth-enable kubernetes
-	mounts, err := v.client.Sys().ListAuth()
+	mounts, err := v.client.Sys().ListAuthWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
 	}
@@ -587,13 +578,13 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 		return nil
 	}
 
-	err = v.client.Sys().EnableAuthWithOptions(v.kubernetesAuthPath, &vault.EnableAuthOptions{Type: "kubernetes"})
+	err = v.client.Sys().EnableAuthWithOptionsWithContext(ctx, v.kubernetesAuthPath, &vault.EnableAuthOptions{Type: "kubernetes"})
 	if err != nil {
 		return fmt.Errorf("error enabling kubernetes auth: %s", err.Error())
 	}
 
 	// vault write auth/kubernetes/config
-	_, err = v.client.Logical().Write(path.Join("auth", v.kubernetesAuthPath, "config"), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "config"), map[string]interface{}{
 		"kubernetes_host": v.kubernetesAPIServerURL,
 		// See https://www.vaultproject.io/docs/auth/kubernetes#kubernetes-1-21
 		"disable_iss_validation": true,
@@ -621,13 +612,13 @@ func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kube
 
 	// create policy
 	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] }`, v.IntermediateSignPath())
-	err = v.client.Sys().PutPolicy(v.role, policy)
+	err = v.client.Sys().PutPolicyWithContext(ctx, v.role, policy)
 	if err != nil {
 		return fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
 	// create kubernetes auth role
-	_, err = v.client.Logical().Write(path.Join("auth", v.kubernetesAuthPath, "role", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "role", v.role), map[string]interface{}{
 		"token_period":                     "24h",
 		"token_policies":                   []string{v.role},
 		"bound_service_account_names":      []string{boundSA},
@@ -651,12 +642,12 @@ func (v *VaultInitializer) CleanKubernetesRole(ctx context.Context, client kuber
 	}
 
 	// vault delete auth/kubernetes/role/<roleName>
-	_, err := v.client.Logical().Delete(path.Join("auth", v.kubernetesAuthPath, "role", v.role))
+	_, err := v.client.Logical().DeleteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "role", v.role))
 	if err != nil {
 		return fmt.Errorf("error cleaning up kubernetes auth role: %s", err.Error())
 	}
 
-	err = v.client.Sys().DeletePolicy(v.role)
+	err = v.client.Sys().DeletePolicyWithContext(ctx, v.role)
 	if err != nil {
 		return fmt.Errorf("error deleting policy: %s", err.Error())
 	}
@@ -727,9 +718,8 @@ func CleanKubernetesRoleForServiceAccountRefAuth(ctx context.Context, client kub
 }
 
 func (v *VaultInitializer) setupClientCertAuth(ctx context.Context) error {
-	_ = ctx
 	// vault auth-enable cert
-	mounts, err := v.client.Sys().ListAuth()
+	mounts, err := v.client.Sys().ListAuthWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching auth mounts: %s", err.Error())
 	}
@@ -738,7 +728,7 @@ func (v *VaultInitializer) setupClientCertAuth(ctx context.Context) error {
 		return nil
 	}
 
-	err = v.client.Sys().EnableAuthWithOptions(v.clientCertAuthPath, &vault.EnableAuthOptions{Type: "cert"})
+	err = v.client.Sys().EnableAuthWithOptionsWithContext(ctx, v.clientCertAuthPath, &vault.EnableAuthOptions{Type: "cert"})
 	if err != nil {
 		return fmt.Errorf("error enabling cert auth: %s", err.Error())
 	}
@@ -772,13 +762,13 @@ func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte
 
 	role_path := v.IntermediateSignPath()
 	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] } `, role_path)
-	err = v.client.Sys().PutPolicy(v.role, policy)
+	err = v.client.Sys().PutPolicyWithContext(ctx, v.role, policy)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
 	// vault write auth/<clientCertAuthPath>/certs/<role>
-	_, err = v.client.Logical().Write(path.Join("auth", v.clientCertAuthPath, "certs", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.clientCertAuthPath, "certs", v.role), map[string]interface{}{
 		"display_name":   v.role,
 		"certificate":    string(certificatePEM),
 		"token_policies": []string{v.role},
