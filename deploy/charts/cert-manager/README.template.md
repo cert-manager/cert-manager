@@ -127,12 +127,8 @@ The number of old ReplicaSets to retain to allow rollback (if not set, the defau
 
 The optional priority class to be used for the cert-manager pods.
 #### **global.hostUsers** ~ `bool`
-> Default value:
-> ```yaml
-> false
-> ```
 
-Global property to set all your pods to run in pod namespace. By default, cert-manager runs in pod namespace. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. If a component specific value is also set, then it will take precedence.
+Global property to set all your pods to run in pod namespace without access to host. This field is experimental and not set until it becomes GA. If this field is to be set, then either kubernetes version shoud be above 1.33 or the UserNamespacesSupport feature gate needs to enabled for versions 1.27 - 1.32. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. If a component specific value is also set, then it will take precedence.
 
 #### **global.rbac.create** ~ `bool`
 > Default value:

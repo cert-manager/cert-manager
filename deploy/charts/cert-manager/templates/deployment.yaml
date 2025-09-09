@@ -66,10 +66,8 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if hasKey .Values "hostUsers" }}
-      hostUsers: {{ .Values.hostUsers }}
-      {{- else }}
-      hostUsers: {{ .Values.global.hostUsers }}
+      {{- if or (hasKey .Values "hostUsers") (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ default .Values.global.hostUsers .Values.hostUsers }}       
       {{- end }}
       {{- with .Values.securityContext }}
       securityContext:

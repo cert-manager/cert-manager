@@ -735,8 +735,7 @@
       "type": "object"
     },
     "helm-values.global.hostUsers": {
-      "default": false,
-      "description": "Global property to set all your pods to run in pod namespace. By default, cert-manager runs in pod namespace. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. If a component specific value is also set, then it will take precedence.",
+      "description": "Global property to set all your pods to run in pod namespace without access to host. This field is experimental and not set until it becomes GA. If this field is to be set, then either kubernetes version shoud be above 1.33 or the UserNamespacesSupport feature gate needs to enabled for versions 1.27 - 1.32. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. If a component specific value is also set, then it will take precedence.",
       "type": "boolean"
     },
     "helm-values.global.imagePullSecrets": {

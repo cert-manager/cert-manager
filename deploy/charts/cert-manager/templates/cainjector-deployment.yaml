@@ -67,10 +67,8 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if hasKey .Values.cainjector "hostUsers" }}
-      hostUsers: {{ .Values.cainjector.hostUsers }}
-      {{- else }}
-      hostUsers: {{ .Values.global.hostUsers }}
+      {{- if or (hasKey .Values.cainjector "hostUsers") (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ default .Values.global.hostUsers .Values.cainjector.hostUsers }}       
       {{- end }}
       {{- with .Values.cainjector.securityContext }}
       securityContext:

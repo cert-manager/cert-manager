@@ -41,10 +41,8 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if hasKey .Values.startupapicheck "hostUsers" }}
-      hostUsers: {{ .Values.startupapicheck.hostUsers }}
-      {{- else }}
-      hostUsers: {{ .Values.global.hostUsers }}
+      {{- if or (hasKey .Values.startupapicheck "hostUsers") (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ default .Values.global.hostUsers .Values.startupapicheck.hostUsers }}       
       {{- end }}
       {{- with .Values.startupapicheck.securityContext }}
       securityContext:
