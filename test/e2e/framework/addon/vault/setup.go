@@ -390,14 +390,14 @@ func (v *VaultInitializer) Setup(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) Clean(ctx context.Context) error {
-    if err := v.client.Sys().UnmountWithContext(ctx, v.intermediateMount); err != nil {
-        return fmt.Errorf("unable to unmount %v: %v", v.intermediateMount, err)
-    }
-    if err := v.client.Sys().UnmountWithContext(ctx, v.rootMount); err != nil {
-        return fmt.Errorf("unable to unmount %v: %v", v.rootMount, err)
-    }
+	if err := v.client.Sys().UnmountWithContext(ctx, v.intermediateMount); err != nil {
+		return fmt.Errorf("unable to unmount %v: %v", v.intermediateMount, err)
+	}
+	if err := v.client.Sys().UnmountWithContext(ctx, v.rootMount); err != nil {
+		return fmt.Errorf("unable to unmount %v: %v", v.rootMount, err)
+	}
 
-    return nil
+	return nil
 }
 
 func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, error) {
@@ -446,18 +446,18 @@ func (v *VaultInitializer) CleanAppRole(ctx context.Context) error {
 }
 
 func (v *VaultInitializer) mountPKI(ctx context.Context, mount, ttl string) error {
-    // Equivalent to: vault secrets enable -path=<mount> -max-lease-ttl=<ttl> pki
-    err := v.client.Sys().MountWithContext(ctx, mount, &vault.MountInput{
-        Type: "pki",
-        Config: vault.MountConfigInput{
-            MaxLeaseTTL: ttl,
-        },
-    })
-    if err != nil {
-        return fmt.Errorf("error mounting %s: %s", mount, err.Error())
-    }
+	// Equivalent to: vault secrets enable -path=<mount> -max-lease-ttl=<ttl> pki
+	err := v.client.Sys().MountWithContext(ctx, mount, &vault.MountInput{
+		Type: "pki",
+		Config: vault.MountConfigInput{
+			MaxLeaseTTL: ttl,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error mounting %s: %s", mount, err.Error())
+	}
 
-    return nil
+	return nil
 }
 
 func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error) {
