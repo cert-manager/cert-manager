@@ -143,18 +143,18 @@ func CertificateHasConditionWithObservedGeneration(crt *cmapi.Certificate, c cma
 }
 
 func GetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) *cmapi.CertificateCondition {
-	for _, cond := range crt.Status.Conditions {
+	for i, cond := range crt.Status.Conditions {
 		if cond.Type == conditionType {
-			return &cond
+			return &crt.Status.Conditions[i]
 		}
 	}
 	return nil
 }
 
 func GetCertificateRequestCondition(req *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {
-	for _, cond := range req.Status.Conditions {
+	for i, cond := range req.Status.Conditions {
 		if cond.Type == conditionType {
-			return &cond
+			return &req.Status.Conditions[i]
 		}
 	}
 	return nil
