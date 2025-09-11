@@ -526,7 +526,6 @@ func (v *VaultInitializer) configureCert(ctx context.Context, mount string) erro
 }
 
 func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error {
-	// TODO: Create PKI role via raw API call; not using vault-client-go typed wrapper here anymore.
 	params := map[string]interface{}{
 		"allow_any_name":     "true",
 		"max_ttl":            "2160h",
@@ -767,7 +766,6 @@ func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte
 		return nil, nil, fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
-	// vault write auth/<clientCertAuthPath>/certs/<role>
 	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.clientCertAuthPath, "certs", v.role), map[string]interface{}{
 		"display_name":   v.role,
 		"certificate":    string(certificatePEM),
