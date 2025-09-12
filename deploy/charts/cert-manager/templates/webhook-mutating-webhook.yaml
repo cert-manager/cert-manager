@@ -1,3 +1,4 @@
+{{- if ne .Values.crds.only false -}}
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -46,3 +47,4 @@ webhooks:
         namespace: {{ include "cert-manager.namespace" . }}
         path: /mutate
       {{- end }}
+{{- end }}
