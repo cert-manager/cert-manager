@@ -3162,8 +3162,6 @@ spec:
                 - url
               type: object
             status:
-              required:
-                - accepted
               properties:
                 accepted:
                   description: |-
@@ -3206,6 +3204,8 @@ spec:
                     - expired
                     - errored
                   type: string
+              required:
+                - accepted
               type: object
           required:
             - metadata
