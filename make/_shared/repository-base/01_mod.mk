@@ -16,7 +16,8 @@ ifndef repo_name
 $(error repo_name is not set)
 endif
 
-repository_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
+_repository_base_module_dir := $(dir $(lastword $(MAKEFILE_LIST)))
+repository_base_dir := $(_repository_base_module_dir)base/
 
 .PHONY: generate-base
 ## Generate base files in the repository
@@ -27,5 +28,9 @@ generate-base:
 		find . -type f | while read file; do \
 			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
 		done
+	if [ ! -e ./.github/renovate.json5 ]; then \
+		mkdir -p ./.github; \
+		cp $(_repository_base_module_dir)/renovate-bootstrap-config.json5 ./.github/renovate.json5; \
+	fi
 
 shared_generate_targets += generate-base
