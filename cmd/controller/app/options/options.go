@@ -228,6 +228,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	utilruntime.Must(fs.MarkHidden("internal-healthz-leader-election-timeout"))
 
+	fs.DurationVar(&c.ChallengeAuthorizationTimeout, "challenge-authorization-timeout", c.ChallengeAuthorizationTimeout, ""+
+		"Defines the timeout a challenge authorization can take before the request will be "+
+		"canceled.")
+
 	logf.AddFlags(&c.Logging, fs)
 }
 
