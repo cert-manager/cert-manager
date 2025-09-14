@@ -539,6 +539,8 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
+	default:
+		// ok
 	}
 
 	sigAlgo, err := signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)

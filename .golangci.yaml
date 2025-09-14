@@ -2,6 +2,8 @@ version: "2"
 linters:
   default: none
   settings:
+    exhaustive:
+      default-signifies-exhaustive: true
     govet:
       enable:
         - shadow
@@ -16,7 +18,6 @@ linters:
     rules:
       - linters:
           - dogsled
-          - exhaustive
           - gomoddirectives
           - govet
           - interfacebloat

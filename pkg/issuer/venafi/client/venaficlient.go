@@ -126,6 +126,8 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		if ok {
 			cc = c
 		}
+	default:
+		return nil, fmt.Errorf("unsupported Venafi connector type: %v", vcertClient.GetType())
 	}
 
 	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)

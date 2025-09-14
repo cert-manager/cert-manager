@@ -255,6 +255,8 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			default:
 				return fmt.Errorf("%w %q: invalid private key size for ECDSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
 			}
+		default:
+			// ok
 		}
 
 		if crt.Spec.PrivateKey == nil {

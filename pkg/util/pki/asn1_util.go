@@ -119,6 +119,8 @@ func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
 			}
 			rawValue.Tag = asn1.TagPrintableString
 			rawValue.Bytes = []byte(uv.PrintableString)
+		default:
+			return nil, fmt.Errorf("asn1: unsupported UniversalValueType: %v", uvType)
 		}
 
 		universalBytes, err := asn1.Marshal(rawValue)
