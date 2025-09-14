@@ -321,7 +321,7 @@ func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 	// Copy vcert's initialization of the TLS client config
 	tlsClientConfig := http.DefaultTransport.(*http.Transport).TLSClientConfig.Clone()
 	if tlsClientConfig == nil {
-		tlsClientConfig = &tls.Config{}
+		tlsClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 	if len(options.CABundle) > 0 {
 		rootCAs := x509.NewCertPool()

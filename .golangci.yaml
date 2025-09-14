@@ -24,7 +24,7 @@ linters:
         text: .*
       - linters:
           - gosec
-        text: G(101|107|204|306|402)
+        text: G(101|204|306)
     paths: [third_party, builtin$, examples$]
     warn-unused: true
   enable:
