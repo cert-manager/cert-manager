@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,7 +69,7 @@ func relaxedSecretMatcher(l coretesting.Action, r coretesting.Action) error {
 		objR.Data[k] = []byte("something")
 	}
 	if !reflect.DeepEqual(objL, objR) {
-		return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objL, objR))
+		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", cmp.Diff(objL, objR))
 	}
 	return nil
 }
