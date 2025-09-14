@@ -30,9 +30,6 @@ linters:
       - linters:
           - gosec
         text: G(101|107|204|306|402)
-      - linters:
-          - staticcheck
-        text: (NewCertManagerBasicCertificateRequest)
     paths: [third_party, builtin$, examples$]
     warn-unused: true
   enable:
