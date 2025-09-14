@@ -62,10 +62,10 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v3.18.6
+tools += helm=v3.19.0
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.34.0
+tools += kubectl=v1.34.1
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
 tools += kind=v0.30.0
@@ -86,7 +86,7 @@ tools += yq=v4.47.2
 tools += ko=0.18.0
 # https://github.com/protocolbuffers/protobuf/releases
 # renovate: datasource=github-releases packageName=protocolbuffers/protobuf
-tools += protoc=32.0
+tools += protoc=v32.1
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
 tools += trivy=v0.66.0
@@ -106,13 +106,13 @@ tools += istioctl=1.27.1
 tools += controller-gen=v0.19.0
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 # renovate: datasource=go packageName=golang.org/x/tools
-tools += goimports=v0.36.0
+tools += goimports=v0.37.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
 # renovate: datasource=go packageName=github.com/inteon/go-licenses/v2
 tools += go-licenses=v2.0.0-20250821024731-e4be79958780
 # https://pkg.go.dev/gotest.tools/gotestsum?tab=versions
 # renovate: datasource=github-releases packageName=gotestyourself/gotestsum
-tools += gotestsum=v1.12.3
+tools += gotestsum=v1.13.0
 # https://pkg.go.dev/sigs.k8s.io/kustomize/kustomize/v5?tab=versions
 # renovate: datasource=go packageName=sigs.k8s.io/kustomize/kustomize/v5
 tools += kustomize=v5.7.1
@@ -127,7 +127,7 @@ tools += crane=v0.20.6
 tools += protoc-gen-go=v1.36.9
 # https://pkg.go.dev/github.com/sigstore/cosign/v2/cmd/cosign?tab=versions
 # renovate: datasource=go packageName=github.com/sigstore/cosign/v2
-tools += cosign=v2.5.3
+tools += cosign=v2.6.0
 # https://pkg.go.dev/github.com/cert-manager/boilersuite?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/boilersuite
 tools += boilersuite=v0.1.0
@@ -176,7 +176,7 @@ tools += govulncheck=v1.1.4
 tools += operator-sdk=v1.41.1
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.78.0
+tools += gh=v2.79.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.14.1
@@ -193,7 +193,7 @@ tools += kubeconform=v0.7.0
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.34.0
+K8S_CODEGEN_VERSION ?= v0.34.1
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -203,7 +203,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20250905212525-66792eed8611
+tools += openapi-gen=v0.0.0-20250910181357-589584f1c912
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -451,10 +451,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=3f43c0aa57243852dd542493a0f54f1396c0bc8ec7296bbb2c01e802010819ce
-helm_linux_arm64_SHA256SUM=5b8e00b6709caab466cbbb0bc29ee09059b8dc9417991dd04b497530e49b1737
-helm_darwin_amd64_SHA256SUM=80cad0470e38cf25731cdead7c32dfbeb887bc177bd6fa01e31b065722f8f06b
-helm_darwin_arm64_SHA256SUM=48e30d236a1f334c6acb78501be5a851eaa2a267fefeb1131b6484eb2f9f30d7
+helm_linux_amd64_SHA256SUM=a7f81ce08007091b86d8bd696eb4d86b8d0f2e1b9f6c714be62f82f96a594496
+helm_linux_arm64_SHA256SUM=440cf7add0aee27ebc93fada965523c1dc2e0ab340d4348da2215737fc0d76ad
+helm_darwin_amd64_SHA256SUM=09a108c0abda42e45af172be65c49125354bf7cd178dbe10435e94540e49c7b9
+helm_darwin_arm64_SHA256SUM=31513e1193da4eb4ae042eb5f98ef9aca7890cfa136f4707c8d4f70e2115bef6
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -465,10 +465,10 @@ $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubectl_linux_amd64_SHA256SUM=cfda68cba5848bc3b6c6135ae2f20ba2c78de20059f68789c090166d6abc3e2c
-kubectl_linux_arm64_SHA256SUM=00b182d103a8a73da7a4d11e7526d0543dcf352f06cc63a1fde25ce9243f49a0
-kubectl_darwin_amd64_SHA256SUM=a5904061dd5c8e57d55e52c78fa23790e76de30924b26ba31be891e75710d7a9
-kubectl_darwin_arm64_SHA256SUM=d491f4c47c34856188d38e87a27866bd94a66a57b8db3093a82ae43baf3bb20d
+kubectl_linux_amd64_SHA256SUM=7721f265e18709862655affba5343e85e1980639395d5754473dafaadcaa69e3
+kubectl_linux_arm64_SHA256SUM=420e6110e3ba7ee5a3927b5af868d18df17aae36b720529ffa4e9e945aa95450
+kubectl_darwin_amd64_SHA256SUM=bb211f2b31f2b3bc60562b44cc1e3b712a16a98e9072968ba255beb04cefcfdf
+kubectl_darwin_arm64_SHA256SUM=d80e5fa36f2b14005e5bb35d3a72818acb1aea9a081af05340a000e5fbdb2f76
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -580,10 +580,10 @@ $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-protoc_linux_amd64_SHA256SUM=7ca037bfe5e5cabd4255ccd21dd265f79eb82d3c010117994f5dc81d2140ee88
-protoc_linux_arm64_SHA256SUM=56af3fc2e43a0230802e6fadb621d890ba506c5c17a1ae1070f685fe79ba12d0
-protoc_darwin_amd64_SHA256SUM=63eeba15ddc12ab11b0a8bce81fb2d46cc69022c3e6ad21fecde90d52139bff6
-protoc_darwin_arm64_SHA256SUM=09a2c729cc821215cc0d4c564b761760961fe338c52f24b302fd7e18e7b675d1
+protoc_linux_amd64_SHA256SUM=e9c129c176bb7df02546c4cd6185126ca53c89e7d2f09511e209319704b5dd7e
+protoc_linux_arm64_SHA256SUM=4a802ed23d70f7bad7eb19e5a3e724b3aa967250d572cadfd537c1ba939aee6a
+protoc_darwin_amd64_SHA256SUM=f9caa5b4d0b537acffb0ffd7d53225511a5574ef903fca550ea9e7600987f13b
+protoc_darwin_arm64_SHA256SUM=a7b51b2113862690fa52c62f8891a6037bafb9db88d4f9924c486de9d9bb89d5
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -591,7 +591,7 @@ $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 	$(eval ARCH := $(subst arm64,aarch_64,$(subst amd64,x86_64,$(HOST_ARCH))))
 
 	@source $(lock_script) $@; \
-		$(CURL) https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(OS)-$(ARCH).zip -o $(outfile).zip; \
+		$(CURL) https://github.com/protocolbuffers/protobuf/releases/download/$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION:v%=%)-$(OS)-$(ARCH).zip -o $(outfile).zip; \
 		$(checkhash_script) $(outfile).zip $(protoc_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		unzip -qq -c $(outfile).zip bin/protoc > $(outfile); \
 		chmod +x $(outfile); \
