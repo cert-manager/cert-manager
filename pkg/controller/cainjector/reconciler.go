@@ -100,7 +100,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	dataSource, err := r.caDataSourceFor(log, metaObj)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to determine ca data source for injectable")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
 	caData, err := dataSource.ReadCA(ctx, log, metaObj, r.namespace)

@@ -20,7 +20,6 @@ linters:
           - dogsled
           - govet
           - nakedret
-          - nilerr
           - nilnil
           - promlinter
         text: .*

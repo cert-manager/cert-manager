@@ -236,7 +236,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherName) (bool, error) {
 	x509SANExtension, err := extractSANExtension(extension)
 	if err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 
 	x509GeneralNames, err := UnmarshalSANs(x509SANExtension.Value)

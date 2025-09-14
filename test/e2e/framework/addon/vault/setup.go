@@ -280,7 +280,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 			conn, err := (&net.Dialer{Timeout: time.Second}).DialContext(ctx, "tcp", proxyUrl.Host)
 			if err != nil {
 				lastError = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			conn.Close()
@@ -298,7 +298,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 			_, err := v.client.Sys().HealthWithContext(ctx)
 			if err != nil {
 				lastError = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			return true, nil
