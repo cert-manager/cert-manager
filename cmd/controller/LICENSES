@@ -106,6 +106,7 @@ github.com/golang/snappy,BSD-3-Clause
 github.com/google/btree,Apache-2.0
 github.com/google/certificate-transparency-go,Apache-2.0
 github.com/google/gnostic-models,Apache-2.0
+github.com/google/go-cmp/cmp,BSD-3-Clause
 github.com/google/go-querystring/query,BSD-3-Clause
 github.com/google/s2a-go,Apache-2.0
 github.com/google/uuid,BSD-3-Clause
@@ -129,8 +130,6 @@ github.com/hashicorp/vault/api,MPL-2.0
 github.com/hashicorp/vault/sdk/helper,MPL-2.0
 github.com/josharian/intern,MIT
 github.com/json-iterator/go,MIT
-github.com/kr/pretty,MIT
-github.com/kr/text,MIT
 github.com/kylelemons/godebug,Apache-2.0
 github.com/mailru/easyjson,MIT
 github.com/miekg/dns,BSD-3-Clause
@@ -149,7 +148,6 @@ github.com/prometheus/client_golang/prometheus,Apache-2.0
 github.com/prometheus/client_model/go,Apache-2.0
 github.com/prometheus/common,Apache-2.0
 github.com/prometheus/procfs,Apache-2.0
-github.com/rogpeppe/go-internal/fmtsort,BSD-3-Clause
 github.com/ryanuber/go-glob,MIT
 github.com/sosodev/duration,MIT
 github.com/spf13/cobra,Apache-2.0
