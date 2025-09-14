@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -173,7 +173,7 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
 	if !reflect.DeepEqual(oldCR.Annotations, newCR.Annotations) {
-		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(oldCR.Annotations, newCR.Annotations))
+		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", cmp.Diff(oldCR.Annotations, newCR.Annotations))
 		return c.updateOrApply(ctx, newCR)
 	}
 
@@ -181,7 +181,7 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 		return nil
 	}
 
-	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(oldCR.Status, newCR.Status))
+	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", cmp.Diff(oldCR.Status, newCR.Status))
 	return c.updateStatusOrApply(ctx, newCR)
 }
 

@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/kr/pretty"
 	coretesting "k8s.io/client-go/testing"
 )
 
@@ -88,7 +87,7 @@ func (a *action) Matches(act coretesting.Action) error {
 		}, cmp.Ignore()),
 	)
 	if diff != "" {
-		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", pretty.Diff(a.action, act))
+		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", diff)
 	}
 	return nil
 }

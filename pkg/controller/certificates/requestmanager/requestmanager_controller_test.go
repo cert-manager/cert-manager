@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,7 +60,7 @@ func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action
 	objL.Spec.Request = nil
 	objR.Spec.Request = nil
 	if !reflect.DeepEqual(objL, objR) {
-		return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objL, objR))
+		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", cmp.Diff(objL, objR))
 	}
 	return nil
 }
