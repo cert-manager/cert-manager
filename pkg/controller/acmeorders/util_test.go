@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -259,7 +259,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				t.Errorf("expected to get an error, but got none")
 			}
 			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
-				t.Errorf("returned challenge spec was not as expected: %v", pretty.Diff(test.expectedChallengeSpec, cs))
+				t.Errorf("returned challenge spec was not as expected (-want +got):\n%s", cmp.Diff(test.expectedChallengeSpec, cs))
 			}
 		})
 	}
