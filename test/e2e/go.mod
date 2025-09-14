@@ -12,7 +12,6 @@ require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go/v5 v5.1.0
 	github.com/hashicorp/vault/api v1.20.0
-	github.com/kr/pretty v0.3.1
 	github.com/onsi/ginkgo/v2 v2.25.3
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
@@ -69,7 +68,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -83,7 +81,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
