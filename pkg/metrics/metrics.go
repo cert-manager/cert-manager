@@ -72,6 +72,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 	var (
 		// Deprecated in favour of clock_time_seconds_gauge.
 		clockTimeSeconds = prometheus.NewCounterFunc(
+			//nolint:promlinter // This metric is deprecated and should be removed
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "clock_time_seconds",
@@ -91,6 +92,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		// a new `clock_time_seconds_gauge` metric of type gauge is added which
 		// implements the same thing.
 		clockTimeSecondsGauge = prometheus.NewGaugeFunc(
+			//nolint:promlinter
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "clock_time_seconds_gauge",
@@ -104,6 +106,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		// acmeClientRequestCount is a Prometheus summary to collect the number of
 		// requests made to each endpoint with the ACME client.
 		acmeClientRequestCount = prometheus.NewCounterVec(
+			//nolint:promlinter
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "acme_client_request_count",
@@ -142,6 +145,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		)
 
 		controllerSyncCallCount = prometheus.NewCounterVec(
+			//nolint:promlinter
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "controller_sync_call_count",
@@ -151,6 +155,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		)
 
 		controllerSyncErrorCount = prometheus.NewCounterVec(
+			//nolint:promlinter
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "controller_sync_error_count",
