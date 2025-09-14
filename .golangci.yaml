@@ -16,7 +16,6 @@ linters:
     rules:
       - linters:
           - dogsled
-          - errname
           - exhaustive
           - gomoddirectives
           - govet

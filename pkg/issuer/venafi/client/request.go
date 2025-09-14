@@ -32,7 +32,7 @@ import (
 )
 
 // ErrCustomFieldsType provides a common error structure for an invalid Venafi custom field type
-type ErrCustomFieldsType struct {
+type ErrCustomFieldsType struct { //nolint:errname
 	Type api.CustomFieldType
 }
 
@@ -40,7 +40,7 @@ func (err ErrCustomFieldsType) Error() string {
 	return fmt.Sprintf("certificate request contains an invalid Venafi custom fields type: %q", err.Type)
 }
 
-var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.")
+var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.") //nolint:errname
 
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.

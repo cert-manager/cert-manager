@@ -69,7 +69,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 
 	defer func() {
 		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
-			if errors.Is(updateError, argumentError) {
+			if errors.Is(updateError, errArgument) {
 				log.Error(updateError, "If this error occurs there is a bug in cert-manager. Please report it. Not retrying.")
 				return
 			}

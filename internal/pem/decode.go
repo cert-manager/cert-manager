@@ -111,7 +111,7 @@ var (
 )
 
 // ErrPEMDataTooLarge is returned when the given data is larger than the maximum allowed
-type ErrPEMDataTooLarge int
+type ErrPEMDataTooLarge int //nolint:errname
 
 // Error returns an error string
 func (e ErrPEMDataTooLarge) Error() string {
