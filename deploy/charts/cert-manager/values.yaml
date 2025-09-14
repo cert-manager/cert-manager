@@ -38,7 +38,7 @@ global:
   # The optional priority class to be used for the cert-manager pods.
   priorityClassName: ""
 
-  # Global property to set all your pods to run in pod namespace without access to host. This field is experimental and not set until it becomes GA. If this field is to be set, then either kubernetes version shoud be above 1.33 or the UserNamespacesSupport feature gate needs to enabled for versions 1.27 - 1.32. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. 
+  # Global property to set all your pods to run in pod namespace without access to host. This value is experimental and will probably be removed in a future release of cert-manager, when the user namespace feature is GA in all supported Kubernetes versions. If this field is to be set, then either kubernetes version shoud be above 1.33 or the UserNamespacesSupport feature gate needs to enabled for versions 1.27 - 1.32. To use host's properties set this value to true. Refer to the [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) to know more about limitations of using pod namespaces. 
   # If a component specific value is also set, then it will take precedence.
   # +docs:property
   # hostUsers: false
@@ -421,10 +421,6 @@ hostAliases: []
 nodeSelector:
   kubernetes.io/os: linux
 
-# Property to set cert-manager-controller to run in pod namespace. To use host's properties set this value to true.
-# +docs:property
-# hostUsers: false
-
 # +docs:ignore
 ingressShim: {}
 
@@ -643,10 +639,6 @@ webhook:
   #
   # If `replicas > 1`, consider setting `webhook.podDisruptionBudget.enabled=true`.
   replicaCount: 1
-
-  # Property to set cert-manager webhook to run in pod namepsace. To use host's properties set this value to true.
-  # +docs:property
-  # hostUsers: false
 
   # The number of seconds the API server should wait for the webhook to respond before treating the call as a failure.
   # The value must be between 1 and 30 seconds. For more information, see
@@ -1027,10 +1019,6 @@ cainjector:
   # Create the CA Injector deployment
   enabled: true
 
-  # Property to set cert-manager cainjector pod to run in pod namepsace. To use host's properties set this value to true.
-  # +docs:property
-  # hostUsers: false
-
   # The number of replicas of the cert-manager cainjector to run.
   #
   # The default is 1, but in production set this to 2 or 3 to provide high
@@ -1304,10 +1292,6 @@ acmesolver:
 startupapicheck:
   # Enables the startup api check.
   enabled: true
-
-  # Property to set cert-manager startupapicheck pod to run in pod namepsace. To use host's properties set this value to true.
-  # +docs:property
-  # hostUsers: false
 
   # Pod Security Context to be set on the startupapicheck component Pod.
   # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).

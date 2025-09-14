@@ -66,8 +66,8 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if or (hasKey .Values.webhook "hostUsers") (hasKey .Values.global "hostUsers") }}
-      hostUsers: {{ default .Values.global.hostUsers .Values.webhook.hostUsers }}       
+      {{- if (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ .Values.global.hostUsers }}       
       {{- end }}
       {{- with .Values.webhook.securityContext }}
       securityContext:
