@@ -19,7 +19,6 @@ linters:
       - linters:
           - dogsled
           - govet
-          - interfacebloat
           - musttag
           - nakedret
           - nilerr
