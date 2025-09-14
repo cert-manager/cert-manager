@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/dump"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -326,10 +326,10 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 
 	if _, err := cert.Verify(opts); err != nil {
 		return fmt.Errorf(
-			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%v\nERROR\n%s\n",
-			pretty.Sprint(cert),
-			pretty.Sprint(rootCertPool),
-			pretty.Sprint(intermediateCertPool),
+			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%s\nERROR\n%s\n",
+			dump.Pretty(cert),
+			dump.Pretty(rootCertPool),
+			dump.Pretty(intermediateCertPool),
 			err,
 		)
 	}
