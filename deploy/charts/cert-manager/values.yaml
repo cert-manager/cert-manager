@@ -38,6 +38,19 @@ global:
   # The optional priority class to be used for the cert-manager pods.
   priorityClassName: ""
 
+  # Set all pods to run in a user namespace without host access.
+  # Experimental: may be removed once the Kubernetes User Namespaces feature is GA.
+  #
+  # Requirements:
+  #   - Kubernetes ≥ 1.33, or
+  #   - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.
+  #
+  # Set to false to run pods in a user namespace without host access.
+  #
+  # See [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.
+  # +docs:property
+  # hostUsers: false
+
   rbac:
     # Create required ClusterRoles and ClusterRoleBindings for cert-manager.
     create: true
@@ -445,7 +458,6 @@ ingressShim: {}
 # but certain domains should be excluded.
 # +docs:property
 # no_proxy: 127.0.0.1,localhost
-
 
 # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
 #

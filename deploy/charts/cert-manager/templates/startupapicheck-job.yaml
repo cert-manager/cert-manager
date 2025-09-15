@@ -41,6 +41,9 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ .Values.global.hostUsers }}       
+      {{- end }}
       {{- with .Values.startupapicheck.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

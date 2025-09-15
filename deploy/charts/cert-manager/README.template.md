@@ -126,6 +126,18 @@ The number of old ReplicaSets to retain to allow rollback (if not set, the defau
 > ```
 
 The optional priority class to be used for the cert-manager pods.
+#### **global.hostUsers** ~ `bool`
+
+Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.  
+  
+Requirements:  
+  - Kubernetes ≥ 1.33, or  
+  - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.  
+  
+Set to false to run pods in a user namespace without host access.  
+  
+See [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.
+
 #### **global.rbac.create** ~ `bool`
 > Default value:
 > ```yaml
