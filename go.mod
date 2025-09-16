@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager
 
-go 1.24.0
+go 1.25.0
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -25,8 +25,8 @@ require (
 	github.com/go-openapi/jsonreference v0.21.1
 	github.com/google/gnostic-models v0.7.0
 	github.com/google/go-cmp v0.7.0
-	github.com/hashicorp/vault/api v1.20.0
-	github.com/hashicorp/vault/sdk v0.18.0
+	github.com/hashicorp/vault/api v1.21.0
+	github.com/hashicorp/vault/sdk v0.19.0
 	github.com/miekg/dns v1.1.68
 	github.com/nrdcg/goacmedns v0.2.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
