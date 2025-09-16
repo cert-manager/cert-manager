@@ -4,7 +4,7 @@
 
 - [Release Signoff Checklist](#release-signoff-checklist)
 - [Summary](#summary)
-- [Use-cases](#use-cases)
+- [Stories](#stories)
 - [Questions](#questions)
 - [Proposal](#proposal)
 - [Design Details](#design-details)
