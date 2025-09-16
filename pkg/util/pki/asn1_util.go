@@ -106,7 +106,7 @@ func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
 		}
 		return marshalRawString(asn1.TagPrintableString, []byte(uv.PrintableString))
 	default:
-		return nil, fmt.Errorf("programmer mistake: unsupported UniversalValue type %d", uvType)
+		return nil, fmt.Errorf("unsupported UniversalValue type: %d", uvType)
 	}
 }
 
