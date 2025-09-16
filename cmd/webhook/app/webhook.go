@@ -28,7 +28,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	webhookconfigfile "github.com/cert-manager/cert-manager/pkg/webhook/configfile"
@@ -69,8 +68,7 @@ func newServerCommand(
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentWebhook,
-		Short: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use: componentWebhook,
 		Long: `
 cert-manager is a Kubernetes addon to automate the management and issuance of
 TLS certificates from various issuing sources.

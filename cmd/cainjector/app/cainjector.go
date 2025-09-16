@@ -29,7 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
@@ -61,8 +60,7 @@ func newCAInjectorCommand(
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentController,
-		Short: fmt.Sprintf("CA Injection Controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use: componentController,
 		Long: `
 cert-manager CA injector is a Kubernetes addon to automate the injection of CA data into
 webhooks and APIServices from cert-manager certificates.
