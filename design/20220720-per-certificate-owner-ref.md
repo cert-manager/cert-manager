@@ -29,7 +29,7 @@ This checklist contains actions which must be completed before a PR implementing
 
 The existing flag `--enable-certificate-owner-ref` allows you to configure cert-manager to delete Secret resources when the associated Certificate is removed. 
 
-We propose to introduce the same setting at the Certificate level so that users of the Certificate resource can decide whether the Secret resource should be removed or not.
+We propose to introduce the same setting at the Certificate level so that users of the Certificate resource can decide whether or not the Secret resource should be removed.
 
 ## Stories
 
