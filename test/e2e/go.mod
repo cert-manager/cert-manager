@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/e2e-tests
 
-go 1.24.0
+go 1.25.0
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -11,7 +11,7 @@ replace github.com/cert-manager/cert-manager => ../../
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go/v5 v5.1.0
-	github.com/hashicorp/vault/api v1.20.0
+	github.com/hashicorp/vault/api v1.21.0
 	github.com/onsi/ginkgo/v2 v2.25.3
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
