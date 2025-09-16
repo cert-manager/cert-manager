@@ -95,7 +95,7 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 			},
 			errorMessage: fmt.Sprintf(
 				"%s: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-				argumentError,
+				errArgument,
 			),
 		},
 		// If the Update API call fails, that error is returned.

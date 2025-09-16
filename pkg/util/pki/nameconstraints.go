@@ -268,6 +268,9 @@ func UnmarshalNameConstraints(value []byte) (*NameConstraints, error) {
 				}
 
 				uriDomains = append(uriDomains, domain)
+
+			default:
+				return nil, nil, nil, nil, fmt.Errorf("x509: unsupported NameConstraints tag: %v", tag)
 			}
 		}
 

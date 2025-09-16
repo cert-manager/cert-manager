@@ -245,7 +245,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 		return fmt.Errorf("error loading Vault CA bundle: %s", v.details.VaultCA)
 	}
 	// Build a custom transport with our TLS settings
-	tlsCfg := &tls.Config{RootCAs: caCertPool}
+	tlsCfg := &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}
 	if v.details.EnforceMtls {
 		clientCertificate, err := tls.X509KeyPair(v.details.VaultClientCertificate, v.details.VaultClientPrivateKey)
 		if err != nil {
@@ -280,7 +280,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 			conn, err := (&net.Dialer{Timeout: time.Second}).DialContext(ctx, "tcp", proxyUrl.Host)
 			if err != nil {
 				lastError = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			conn.Close()
@@ -298,7 +298,7 @@ func (v *VaultInitializer) Init(ctx context.Context) error {
 			_, err := v.client.Sys().HealthWithContext(ctx)
 			if err != nil {
 				lastError = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			return true, nil

@@ -34,7 +34,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-var argumentError = errors.New("invalid arguments")
+var errArgument = errors.New("invalid arguments")
 
 type objectUpdateClient interface {
 	update(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
@@ -79,7 +79,7 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, n
 	) {
 		return fmt.Errorf(
 			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-			argumentError,
+			errArgument,
 		)
 	}
 

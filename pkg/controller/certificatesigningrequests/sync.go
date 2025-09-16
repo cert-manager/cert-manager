@@ -102,7 +102,7 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 	signerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
 		c.recorder.Eventf(csr, corev1.EventTypeWarning, "IssuerTypeMissing", "Referenced %s %s/%s is missing type", kind, ref.Namespace, ref.Name)
-		return nil
+		return nil //nolint:nilerr
 	}
 
 	// This CertificateSigningRequest is not meant for us, ignore

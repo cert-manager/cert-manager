@@ -2,6 +2,8 @@ version: "2"
 linters:
   default: none
   settings:
+    exhaustive:
+      default-signifies-exhaustive: true
     govet:
       enable:
         - shadow
@@ -16,23 +18,13 @@ linters:
     rules:
       - linters:
           - dogsled
-          - errname
-          - exhaustive
-          - gomoddirectives
           - govet
-          - interfacebloat
-          - musttag
           - nakedret
-          - nilerr
           - nilnil
-          - promlinter
         text: .*
       - linters:
           - gosec
-        text: G(101|107|204|306|402)
-      - linters:
-          - staticcheck
-        text: (NewCertManagerBasicCertificateRequest)
+        text: G(101|204|306)
     paths: [third_party, builtin$, examples$]
     warn-unused: true
   enable:

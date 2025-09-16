@@ -108,7 +108,7 @@ func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
 	}
 
 	var details Details
-	err = json.Unmarshal(jsonEncoded, &details)
+	err = json.Unmarshal(jsonEncoded, &details) //nolint:musttag
 	if err != nil {
 		return Details{}, err
 	}

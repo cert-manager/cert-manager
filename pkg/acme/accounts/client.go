@@ -76,7 +76,7 @@ func newClientFromHTTPClient(httpClient *http.Client, userAgent string, options 
 // from the ACME client
 func buildHTTPClientWithCABundle(metrics *metrics.Metrics, skipTLSVerify bool, caBundle []byte) *http.Client {
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: skipTLSVerify,
+		InsecureSkipVerify: skipTLSVerify, // #nosec G402 -- false positive
 	}
 
 	// len also checks if the bundle is nil

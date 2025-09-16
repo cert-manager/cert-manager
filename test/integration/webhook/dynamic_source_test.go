@@ -276,7 +276,7 @@ type testAuthority struct {
 
 func (m *testAuthority) Run(ctx context.Context) error {
 	if ctx.Err() != nil {
-		return nil // context was cancelled, we are shutting down
+		return nil //nolint:nilerr // context was cancelled, we are shutting down
 	}
 
 	m.t.Log("Starting authority with id", m.id)

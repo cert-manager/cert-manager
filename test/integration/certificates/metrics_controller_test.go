@@ -166,7 +166,7 @@ func TestMetricsController(t *testing.T) {
 		err = wait.PollUntilContextCancel(t.Context(), time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 			if err := testMetrics(expectedOutput); err != nil {
 				lastErr = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			return true, nil

@@ -102,9 +102,9 @@ func (p *certificateRequestIdentity) Validate(ctx context.Context, request admis
 			return nil, fmt.Errorf("internal error: oldObject in admission request is not of type *certmanager.CertificateRequest")
 		}
 		return nil, validateUpdate(oldCR, cr)
+	default:
+		return nil, fmt.Errorf("internal error: request operation has changed - this should never be possible")
 	}
-
-	return nil, fmt.Errorf("internal error: request operation has changed - this should never be possible")
 }
 
 func validateUpdate(oldCR *certmanager.CertificateRequest, cr *certmanager.CertificateRequest) error {
