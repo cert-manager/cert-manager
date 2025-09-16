@@ -28,6 +28,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	webhookconfigfile "github.com/cert-manager/cert-manager/pkg/webhook/configfile"
@@ -41,6 +42,9 @@ func NewServerCommand(ctx context.Context) *cobra.Command {
 		ctx,
 		func(ctx context.Context, webhookConfig *config.WebhookConfiguration) error {
 			log := logf.FromContext(ctx, componentWebhook)
+
+			versionInfo := util.VersionInfo()
+			log.Info("starting cert-manager webhook", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
 
 			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
 			if err != nil {

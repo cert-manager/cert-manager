@@ -29,6 +29,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
@@ -39,6 +40,11 @@ func NewCAInjectorCommand(ctx context.Context) *cobra.Command {
 	return newCAInjectorCommand(
 		ctx,
 		func(ctx context.Context, cfg *config.CAInjectorConfiguration) error {
+			log := logf.FromContext(ctx, componentController)
+
+			versionInfo := util.VersionInfo()
+			log.Info("starting cert-manager ca-injector", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
+
 			return Run(cfg, ctx)
 		},
 		os.Args[1:],
