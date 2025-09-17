@@ -309,5 +309,28 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.SecurityContext.SeccompProfile = podTempl.Spec.SecurityContext.SeccompProfile
 	}
 
+	// Merge container resources based on precedence:
+	// 1. If pod template resources are set, use them (highest priority)
+	// 2. Otherwise use values from ACMEOptions (already set in the 'buildDefaultPod' function)
+	if podTempl.Spec.Resources != nil {
+		container := &pod.Spec.Containers[0]
+		if podTempl.Spec.Resources.Requests != nil {
+			if container.Resources.Requests == nil {
+				container.Resources.Requests = make(corev1.ResourceList)
+			}
+			for resourceName, quantity := range podTempl.Spec.Resources.Requests {
+				container.Resources.Requests[resourceName] = quantity
+			}
+		}
+		if podTempl.Spec.Resources.Limits != nil {
+			if container.Resources.Limits == nil {
+				container.Resources.Limits = make(corev1.ResourceList)
+			}
+			for resourceName, quantity := range podTempl.Spec.Resources.Limits {
+				container.Resources.Limits[resourceName] = quantity
+			}
+		}
+	}
+
 	return pod
 }

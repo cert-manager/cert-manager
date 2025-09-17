@@ -54,6 +54,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &acmev1.ACMEChallengeSolverHTTP01IngressObjectMetaApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ACMEChallengeSolverHTTP01IngressPodObjectMeta"):
 		return &acmev1.ACMEChallengeSolverHTTP01IngressPodObjectMetaApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ACMEChallengeSolverHTTP01IngressPodResources"):
+		return &acmev1.ACMEChallengeSolverHTTP01IngressPodResourcesApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ACMEChallengeSolverHTTP01IngressPodSecurityContext"):
 		return &acmev1.ACMEChallengeSolverHTTP01IngressPodSecurityContextApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ACMEChallengeSolverHTTP01IngressPodSpec"):

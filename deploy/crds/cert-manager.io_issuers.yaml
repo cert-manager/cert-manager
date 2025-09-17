@@ -1953,6 +1953,40 @@ spec:
                                         priorityClassName:
                                           description: If specified, the pod's priorityClassName.
                                           type: string
+                                        resources:
+                                          description: |-
+                                            If specified, the pod's resource requirements.
+                                            These values override the global resource configuration flags.
+                                            Note that when only specifying resource limits, ensure they are greater than or equal
+                                            to the corresponding global resource requests configured via controller flags
+                                            (--acme-http01-solver-resource-request-cpu, --acme-http01-solver-resource-request-memory).
+                                            Kubernetes will reject pod creation if limits are lower than requests, causing challenge failures.
+                                          properties:
+                                            limits:
+                                              additionalProperties:
+                                                anyOf:
+                                                - type: integer
+                                                - type: string
+                                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                                x-kubernetes-int-or-string: true
+                                              description: |-
+                                                Limits describes the maximum amount of compute resources allowed.
+                                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                              type: object
+                                            requests:
+                                              additionalProperties:
+                                                anyOf:
+                                                - type: integer
+                                                - type: string
+                                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                                x-kubernetes-int-or-string: true
+                                              description: |-
+                                                Requests describes the minimum amount of compute resources required.
+                                                If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                                                otherwise to the global values configured via controller flags. Requests cannot exceed Limits.
+                                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                              type: object
+                                          type: object
                                         securityContext:
                                           description: If specified, the pod's security
                                             context
@@ -3246,6 +3280,40 @@ spec:
                                         priorityClassName:
                                           description: If specified, the pod's priorityClassName.
                                           type: string
+                                        resources:
+                                          description: |-
+                                            If specified, the pod's resource requirements.
+                                            These values override the global resource configuration flags.
+                                            Note that when only specifying resource limits, ensure they are greater than or equal
+                                            to the corresponding global resource requests configured via controller flags
+                                            (--acme-http01-solver-resource-request-cpu, --acme-http01-solver-resource-request-memory).
+                                            Kubernetes will reject pod creation if limits are lower than requests, causing challenge failures.
+                                          properties:
+                                            limits:
+                                              additionalProperties:
+                                                anyOf:
+                                                - type: integer
+                                                - type: string
+                                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                                x-kubernetes-int-or-string: true
+                                              description: |-
+                                                Limits describes the maximum amount of compute resources allowed.
+                                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                              type: object
+                                            requests:
+                                              additionalProperties:
+                                                anyOf:
+                                                - type: integer
+                                                - type: string
+                                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                                x-kubernetes-int-or-string: true
+                                              description: |-
+                                                Requests describes the minimum amount of compute resources required.
+                                                If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                                                otherwise to the global values configured via controller flags. Requests cannot exceed Limits.
+                                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                                              type: object
+                                          type: object
                                         securityContext:
                                           description: If specified, the pod's security
                                             context

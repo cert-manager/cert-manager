@@ -363,6 +363,15 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's security context
 	// +optional
 	SecurityContext *ACMEChallengeSolverHTTP01IngressPodSecurityContext `json:"securityContext,omitempty"`
+
+	// If specified, the pod's resource requirements.
+	// These values override the global resource configuration flags.
+	// Note that when only specifying resource limits, ensure they are greater than or equal
+	// to the corresponding global resource requests configured via controller flags
+	// (--acme-http01-solver-resource-request-cpu, --acme-http01-solver-resource-request-memory).
+	// Kubernetes will reject pod creation if limits are lower than requests, causing challenge failures.
+	// +optional
+	Resources *ACMEChallengeSolverHTTP01IngressPodResources `json:"resources,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
@@ -507,6 +516,21 @@ type ACMEChallengeSolverHTTP01IngressPodSecurityContext struct {
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
 	SeccompProfile *corev1.SeccompProfile `json:"seccompProfile,omitempty"`
+}
+
+// ACMEChallengeSolverHTTP01IngressPodResources defines resource requirements for ACME HTTP01 solver pods.
+// To keep API surface essential, this trims down the 'corev1.ResourceRequirements' type to only include the Requests and Limits fields.
+type ACMEChallengeSolverHTTP01IngressPodResources struct {
+	// Limits describes the maximum amount of compute resources allowed.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// +optional
+	Limits corev1.ResourceList `json:"limits,omitempty"`
+	// Requests describes the minimum amount of compute resources required.
+	// If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+	// otherwise to the global values configured via controller flags. Requests cannot exceed Limits.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+	// +optional
+	Requests corev1.ResourceList `json:"requests,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records

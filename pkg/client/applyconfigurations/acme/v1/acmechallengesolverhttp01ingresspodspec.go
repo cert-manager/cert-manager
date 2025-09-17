@@ -32,6 +32,7 @@ type ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration struct {
 	ServiceAccountName *string                                                               `json:"serviceAccountName,omitempty"`
 	ImagePullSecrets   []corev1.LocalObjectReference                                         `json:"imagePullSecrets,omitempty"`
 	SecurityContext    *ACMEChallengeSolverHTTP01IngressPodSecurityContextApplyConfiguration `json:"securityContext,omitempty"`
+	Resources          *ACMEChallengeSolverHTTP01IngressPodResourcesApplyConfiguration       `json:"resources,omitempty"`
 }
 
 // ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration constructs a declarative configuration of the ACMEChallengeSolverHTTP01IngressPodSpec type for use with
@@ -103,5 +104,13 @@ func (b *ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration) WithImagePul
 // If called multiple times, the SecurityContext field is set to the value of the last call.
 func (b *ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration) WithSecurityContext(value *ACMEChallengeSolverHTTP01IngressPodSecurityContextApplyConfiguration) *ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration {
 	b.SecurityContext = value
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration) WithResources(value *ACMEChallengeSolverHTTP01IngressPodResourcesApplyConfiguration) *ACMEChallengeSolverHTTP01IngressPodSpecApplyConfiguration {
+	b.Resources = value
 	return b
 }

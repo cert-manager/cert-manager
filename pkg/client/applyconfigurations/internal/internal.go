@@ -197,6 +197,19 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodResources
+  map:
+    fields:
+    - name: limits
+      type:
+        map:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: requests
+      type:
+        map:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext
   map:
     fields:
@@ -255,6 +268,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: priorityClassName
       type:
         scalar: string
+    - name: resources
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodResources
     - name: securityContext
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext
@@ -1698,6 +1714,8 @@ var schemaYAML = typed.YAMLObject(`types:
     elementType:
       namedType: __untyped_deduced_
     elementRelationship: separable
+- name: io.k8s.apimachinery.pkg.api.resource.Quantity
+  scalar: untyped
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
   scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
