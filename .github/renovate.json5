@@ -3,4 +3,8 @@
   extends: [
     'github>cert-manager/renovate-config:default.json5',
   ],
+  addLabels: [
+    'kind/cleanup',
+    'release-note-none',
+  ],
 }
