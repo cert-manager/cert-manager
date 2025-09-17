@@ -212,6 +212,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime.Time.Sub(c.clock.Now()))
 	}
 
+	if isReissueDisabled(crt) {
+		return nil
+	}
+
 	reason, message, reissue := c.shouldReissue(input)
 	if !reissue {
 		// no re-issuance required, return early
@@ -232,6 +236,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+}
+
+func isReissueDisabled(crt *cmapi.Certificate) bool {
+	if crt.Annotations == nil {
+		return false
+	}
+
+	value, exists := crt.Annotations[cmapi.DisableReissueAnnotationKey]
+	return exists && value == "true"
 }
 
 // updateOrApplyStatus will update the controller status. If the
