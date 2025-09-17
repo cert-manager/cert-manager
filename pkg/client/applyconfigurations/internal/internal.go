@@ -197,6 +197,19 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodResources
+  map:
+    fields:
+    - name: limits
+      type:
+        map:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+    - name: requests
+      type:
+        map:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext
   map:
     fields:
@@ -257,7 +270,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: resources
       type:
-        namedType: io.k8s.api.core.v1.ResourceRequirements
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodResources
     - name: securityContext
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext
@@ -1621,37 +1634,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-- name: io.k8s.api.core.v1.ResourceClaim
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
-    - name: request
-      type:
-        scalar: string
-- name: io.k8s.api.core.v1.ResourceRequirements
-  map:
-    fields:
-    - name: claims
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.ResourceClaim
-          elementRelationship: associative
-          keys:
-          - name
-    - name: limits
-      type:
-        map:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
-    - name: requests
-      type:
-        map:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
 - name: io.k8s.api.core.v1.SELinuxOptions
   map:
     fields:

@@ -662,7 +662,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
-										Resources: &corev1.ResourceRequirements{
+										Resources: &cmacme.ACMEChallengeSolverHTTP01IngressPodResources{
 											Requests: corev1.ResourceList{
 												corev1.ResourceCPU:    resource.MustParse("75m"),
 												corev1.ResourceMemory: resource.MustParse("96Mi"),
@@ -713,7 +713,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
-										Resources: &corev1.ResourceRequirements{
+										Resources: &cmacme.ACMEChallengeSolverHTTP01IngressPodResources{
 											// Only CPU request specified
 											Requests: corev1.ResourceList{
 												corev1.ResourceCPU: resource.MustParse("25m"),

@@ -42,6 +42,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01Ingress":                   schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01Ingress(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressObjectMeta":         schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressObjectMeta(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodObjectMeta":      schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodResources":       schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodResources(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext": schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSecurityContext(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodSpec":            schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSpec(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodTemplate":        schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodTemplate(ref),
@@ -953,6 +954,49 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(ref c
 	}
 }
 
+func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodResources(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ACMEChallengeSolverHTTP01IngressPodResources defines resource requirements for ACME HTTP01 solver pods. To keep API surface essential, this trims down the 'corev1.ResourceRequirements' type to only include the Requests and Limits fields.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"limits": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+									},
+								},
+							},
+						},
+					},
+					"requests": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to the global values configured via controller flags. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
+	}
+}
+
 func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSecurityContext(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1147,15 +1191,15 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01IngressPodSpec(ref common.
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the pod's resource requirements These values override the global resource configuration flags",
-							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
+							Description: "If specified, the pod's resource requirements. These values override the global resource configuration flags. Note that when only specifying resource limits, ensure they are greater than or equal to the corresponding global resource requests configured via controller flags (--acme-http01-solver-resource-request-cpu, --acme-http01-solver-resource-request-memory). Kubernetes will reject pod creation if limits are lower than requests, causing challenge failures.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodResources"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodResources", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.Toleration"},
 	}
 }
 
