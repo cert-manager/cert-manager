@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net"
 	"strings"
 
@@ -213,9 +214,7 @@ func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *netw
 		ingress.Labels = make(map[string]string)
 	}
 
-	for k, v := range ingressTempl.Labels {
-		ingress.Labels[k] = v
-	}
+	maps.Copy(ingress.Labels, ingressTempl.Labels)
 
 	if ingress.Annotations == nil {
 		ingress.Annotations = make(map[string]string)
