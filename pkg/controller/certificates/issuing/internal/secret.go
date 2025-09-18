@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -160,12 +161,8 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	}
 
 	if crt.Spec.SecretTemplate != nil {
-		for k, v := range crt.Spec.SecretTemplate.Labels {
-			secret.Labels[k] = v
-		}
-		for k, v := range crt.Spec.SecretTemplate.Annotations {
-			secret.Annotations[k] = v
-		}
+		maps.Copy(secret.Labels, crt.Spec.SecretTemplate.Labels)
+		maps.Copy(secret.Annotations, crt.Spec.SecretTemplate.Annotations)
 	}
 
 	var certificate *x509.Certificate
@@ -183,9 +180,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	if err != nil {
 		return err
 	}
-	for k, v := range certificateDetailsAnnotations {
-		secret.Annotations[k] = v
-	}
+	maps.Copy(secret.Annotations, certificateDetailsAnnotations)
 
 	// Add the certificate name and issuer details to the secret annotations.
 	// If the annotations are not set/ empty, we do not use them to determine
