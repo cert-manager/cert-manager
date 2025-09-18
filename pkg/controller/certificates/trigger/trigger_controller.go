@@ -162,6 +162,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	if isReissueDisabled(crt) {
+		return nil
+	}
+
 	if apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
@@ -210,10 +214,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		// ensure a resync is scheduled in the future so that we re-check
 		// Certificate resources and trigger them near expiry time
 		c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime.Time.Sub(c.clock.Now()))
-	}
-
-	if isReissueDisabled(crt) {
-		return nil
 	}
 
 	reason, message, reissue := c.shouldReissue(input)
