@@ -33,13 +33,25 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+// PrivateRecordsClient is an interface shim to make sure we can mock the clients since RecordSetsClient are structs and not interfaces.
+type PrivateRecordsClient interface {
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, options *privatedns.RecordSetsClientCreateOrUpdateOptions) (privatedns.RecordSetsClientCreateOrUpdateResponse, error)
+	Get(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientGetOptions) (privatedns.RecordSetsClientGetResponse, error)
+	Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientDeleteOptions) (privatedns.RecordSetsClientDeleteResponse, error)
+}
+
+// PrivateZonesClient is an interface shim for mocking the PrivateZonesClient since they are structs and not interfaces.
+type PrivateZonesClient interface {
+	Get(ctx context.Context, resourceGroupName string, privateZoneName string, options *privatedns.PrivateZonesClientGetOptions) (privatedns.PrivateZonesClientGetResponse, error)
+}
+
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers    []string
 	recordClient        *dns.RecordSetsClient
-	privateRecordClient *privatedns.RecordSetsClient
+	privateRecordClient PrivateRecordsClient 
 	zoneClient          *dns.ZonesClient
-	privateZoneClient   *privatedns.PrivateZonesClient
+	privateZoneClient   PrivateZonesClient 
 	resourceGroupName   string
 	zoneName            string
 	log                 logr.Logger
@@ -247,7 +259,13 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+	if c.isPrivateZone {
+		_, err = c.privateZoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil)
+	} else {
+		_, err = c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil)
+	}
+
+	if err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}
