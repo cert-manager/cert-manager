@@ -206,7 +206,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 				openidConfiguration := map[string]string{
 					"token_endpoint":         tenantURL + "/oauth2/token",
 					"authorization_endpoint": tenantURL + "/oauth2/authorize",
-					"issuer":                 "https://fakeIssuer.com",
+					"issuer":                 tenantURL + "/adfs/",
 				}
 
 				if err := json.NewEncoder(w).Encode(openidConfiguration); err != nil {
@@ -281,7 +281,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 				openidConfiguration := map[string]string{
 					"token_endpoint":         tenantURL + "/oauth2/token",
 					"authorization_endpoint": tenantURL + "/oauth2/authorize",
-					"issuer":                 "https://fakeIssuer.com",
+					"issuer":                 tenantURL + "/adfs/",
 				}
 
 				if err := json.NewEncoder(w).Encode(openidConfiguration); err != nil {
@@ -343,7 +343,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 				openidConfiguration := map[string]string{
 					"token_endpoint":         tenantURL + "/oauth2/token",
 					"authorization_endpoint": tenantURL + "/oauth2/authorize",
-					"issuer":                 "https://fakeIssuer.com",
+					"issuer":                 tenantURL + "/adfs/",
 				}
 
 				if err := json.NewEncoder(w).Encode(openidConfiguration); err != nil {
