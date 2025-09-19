@@ -7,4 +7,25 @@
     'kind/cleanup',
     'release-note-none',
   ],
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        'make/base_images.mk',
+      ],
+      matchStrings: [
+        '(?<depName>gcr\\.io\/[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})',
+      ],
+      datasourceTemplate: 'docker',
+      currentValueTemplate: 'latest'
+    },
+  ],
+  packageRules: [
+    {
+      groupName: 'Base Images',
+      matchManagers: [
+        'custom.regex',
+      ],
+    },
+  ],
 }
