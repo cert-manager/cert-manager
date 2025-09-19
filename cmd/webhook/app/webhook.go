@@ -43,6 +43,9 @@ func NewServerCommand(ctx context.Context) *cobra.Command {
 		func(ctx context.Context, webhookConfig *config.WebhookConfiguration) error {
 			log := logf.FromContext(ctx, componentWebhook)
 
+			versionInfo := util.VersionInfo()
+			log.Info("starting cert-manager webhook", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
+
 			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
 			if err != nil {
 				return err
@@ -69,8 +72,7 @@ func newServerCommand(
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentWebhook,
-		Short: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use: componentWebhook,
 		Long: `
 cert-manager is a Kubernetes addon to automate the management and issuance of
 TLS certificates from various issuing sources.

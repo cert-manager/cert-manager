@@ -47,6 +47,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/server"
 	"github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
@@ -68,6 +69,9 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 	log := logf.FromContext(rootCtx)
 	g, rootCtx := errgroup.WithContext(rootCtx)
+
+	versionInfo := util.VersionInfo()
+	log.Info("starting cert-manager controller", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
 
 	ctxFactory, err := buildControllerContextFactory(rootCtx, opts)
 	if err != nil {

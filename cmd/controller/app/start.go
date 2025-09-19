@@ -29,7 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 
@@ -72,8 +71,7 @@ func newServerCommand(
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentController,
-		Short: fmt.Sprintf("Automated TLS controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use: componentController,
 		Long: `
 cert-manager is a Kubernetes addon to automate the management and issuance of
 TLS certificates from various issuing sources.
