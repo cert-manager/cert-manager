@@ -19,6 +19,17 @@
       datasourceTemplate: 'docker',
       currentValueTemplate: 'latest'
     },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        'hack/latest-kind-images.sh',
+      ],
+      matchStrings: [
+        'kind_version=(?<currentValue>.*)',
+      ],
+      datasourceTemplate: 'github-releases',
+      depNameTemplate: 'kubernetes-sigs/kind',
+    },
   ],
   packageRules: [
     {
@@ -26,6 +37,20 @@
       matchManagers: [
         'custom.regex',
       ],
+    },
+    {
+      groupName: null,
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'kubernetes-sigs/kind',
+      ],
+      postUpgradeTasks: {
+        commands: [
+          'hack/latest-kind-images.sh',
+        ],
+      },
     },
   ],
 }
