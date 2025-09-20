@@ -77,6 +77,8 @@ type Venafi struct {
 	tppClient   *tpp.Connector
 	cloudClient *cloud.Connector
 	config      *vcert.Config
+
+	tppAccessToken string
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -420,8 +422,12 @@ func (v *Venafi) VerifyCredentials() error {
 		}
 
 		if v.config.Credentials.AccessToken != "" {
+			v.tppAccessToken = v.config.Credentials.AccessToken
+		}
+
+		if v.tppAccessToken != "" {
 			_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
-				AccessToken: v.config.Credentials.AccessToken,
+				AccessToken: v.tppAccessToken,
 			})
 
 			if err != nil {
@@ -430,6 +436,10 @@ func (v *Venafi) VerifyCredentials() error {
 
 			return nil
 		}
+
+		// If VerifyAccessToken fail, reset tppAccessToken immediately
+		// So that GetRefreshToken get called again
+		v.tppAccessToken = ""
 
 		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
 			// Use vcert library GetRefreshToken which brings back a token pair.
@@ -455,6 +465,8 @@ func (v *Venafi) VerifyCredentials() error {
 			if err != nil {
 				return fmt.Errorf("tppClient.Authenticate: %v", err)
 			}
+
+			v.tppAccessToken = resp.Access_token
 
 			return nil
 		}
