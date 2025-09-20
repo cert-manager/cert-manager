@@ -77,7 +77,7 @@ tools += vault=v1.20.3
 tools += azwi=v1.5.1
 # https://github.com/kyverno/kyverno/releases
 # renovate: datasource=github-releases packageName=kyverno/kyverno
-tools += kyverno=v1.15.1
+tools += kyverno=v1.15.2
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
 tools += yq=v4.47.2
@@ -149,10 +149,10 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.2.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.12.0
+tools += goreleaser=v2.12.2
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.32.0
+tools += syft=v1.33.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -207,7 +207,7 @@ tools += openapi-gen=v0.0.0-20250910181357-589584f1c912
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
-KUBEBUILDER_ASSETS_VERSION := v1.34.0
+KUBEBUILDER_ASSETS_VERSION := v1.34.1
 tools += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 tools += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -516,10 +516,10 @@ $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		tar xfO $(outfile).tar.gz azwi > $(outfile) && chmod 775 $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubebuilder_tools_linux_amd64_SHA256SUM=9c45e40aa56971b105e596ebb3e84af6742e8709cc0523733baf8d9bb725e69c
-kubebuilder_tools_linux_arm64_SHA256SUM=602183b102e8871b109e426d115574375f41d67f4a41e06ad04dc1632db76485
-kubebuilder_tools_darwin_amd64_SHA256SUM=a1c7304a304f70cbdbff982ccf22c3b22710c6dfa1a7722d45297a834f178b43
-kubebuilder_tools_darwin_arm64_SHA256SUM=8afaf69ebd14177d8af37c044c28acafde016552517f42dfe732f42d2ecc52c7
+kubebuilder_tools_linux_amd64_SHA256SUM=c8500090806ed5ce4064eeeb2a5666476a5168c1f4ff0eadd54fe59b22c4baa7
+kubebuilder_tools_linux_arm64_SHA256SUM=cb56759108ea15933abf79d8573bbf66cca8c13e20425d7bc9f95941a060649d
+kubebuilder_tools_darwin_amd64_SHA256SUM=84d47d6c3a2fa4d14571249b4cccfafad1eb77087bb680693553b438b8ec8c43
+kubebuilder_tools_darwin_arm64_SHA256SUM=f25c213bc88582750935b370fa2c6108f0259b9c8f59ece5a82345d48858fc7d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
@@ -535,10 +535,10 @@ $(DOWNLOAD_DIR)/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(
 	@source $(lock_script) $@; \
 		tar xfO $< controller-tools/envtest/kube-apiserver > $(outfile) && chmod 775 $(outfile)
 
-kyverno_linux_amd64_SHA256SUM=6b252750af3063e698f4d72cbf7599e8b292bd710248e23d0b1c8935e88aee67
-kyverno_linux_arm64_SHA256SUM=de2a9398cd9d75747e0fd50ce824a31389663a0e50e62481ddf8f52a40172d24
-kyverno_darwin_amd64_SHA256SUM=6875b5836f188b089fe4af6d3be8709a61ccad46d7e39febf06472df19d171f5
-kyverno_darwin_arm64_SHA256SUM=a6a2a25b1d0ee1ea564cc3303434096f0313f45fdac1ec453b5f63586b2ebdfb
+kyverno_linux_amd64_SHA256SUM=c90520ba24fb8b8df003ec22d6d2621e4a3d3c7497665fdcf84e9eab4ff1dfe0
+kyverno_linux_arm64_SHA256SUM=3d9b2465d09d2d251b42a8de92531cf00ecef4afc1e74ea6af01498f6a8b8c80
+kyverno_darwin_amd64_SHA256SUM=bf6348d84ef0ee487b3476db03217d24e6e980ceaea35248932f6e96ffb6d0c8
+kyverno_darwin_arm64_SHA256SUM=217af6bc2fc21006dd243101db64a48436c01a63092feabb3d994e286d64d4b1
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
