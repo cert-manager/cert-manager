@@ -81,6 +81,8 @@ var (
 	defaultNumberOfConcurrentWorkers int32 = 5
 	defaultMaxConcurrentChallenges   int32 = 60
 
+	defaultChallengeAuthorizationTimeout = 2 * time.Minute
+
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
 	defaultHealthzServerAddress = "0.0.0.0:9403"
@@ -254,6 +256,10 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = defaultProfilerAddr
+	}
+
+	if obj.ChallengeAuthorizationTimeout == nil || obj.ChallengeAuthorizationTimeout.IsZero() {
+		obj.ChallengeAuthorizationTimeout = sharedv1alpha1.DurationFromTime(defaultChallengeAuthorizationTimeout)
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
