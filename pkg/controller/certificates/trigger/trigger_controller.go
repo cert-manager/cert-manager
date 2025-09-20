@@ -162,6 +162,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	if isReissueDisabled(crt) {
+		return nil
+	}
+
 	if apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
@@ -232,6 +236,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+}
+
+func isReissueDisabled(crt *cmapi.Certificate) bool {
+	if crt.Annotations == nil {
+		return false
+	}
+
+	value, exists := crt.Annotations[cmapi.DisableReissueAnnotationKey]
+	return exists && value == "true"
 }
 
 // updateOrApplyStatus will update the controller status. If the
