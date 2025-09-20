@@ -738,6 +738,10 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// If set, ClientID, ClientSecret and TenantID must not be set.
 	// +optional
 	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
+
+	// Required if your hosted zone is private.
+	// +optional
+	IsPrivateZone bool `json:"isPrivateZone,omitempty"`
 }
 
 // AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity
