@@ -1396,12 +1396,18 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 							Format:      "",
 						},
 					},
+					"authorizationTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Sets the overall timeout for creating certificates in seconds. For most Issuers the default should be sufficient, however e.g. letsencrypt staging sometimes takes longer, especially on slow local environments. Defaults to 20s",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
 				},
 				Required: []string{"server", "privateKeySecretRef"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEExternalAccountBinding", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEExternalAccountBinding", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 	}
 }
 

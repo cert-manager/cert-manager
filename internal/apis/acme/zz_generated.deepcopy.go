@@ -535,6 +535,11 @@ func (in *ACMEIssuer) DeepCopyInto(out *ACMEIssuer) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.AuthorizationTimeout != nil {
+		in, out := &in.AuthorizationTimeout, &out.AuthorizationTimeout
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	return
 }
 
