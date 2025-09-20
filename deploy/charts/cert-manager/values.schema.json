@@ -189,6 +189,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.acmesolver.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.acmesolver.image.pullPolicy"
         },
@@ -208,6 +211,11 @@
       "description": "Setting a digest will override any tag.",
       "type": "string"
     },
+    "helm-values.acmesolver.image.name": {
+      "default": "cert-manager-acmesolver",
+      "description": "The container image name for the cert-manager acmesolver.",
+      "type": "string"
+    },
     "helm-values.acmesolver.image.pullPolicy": {
       "default": "IfNotPresent",
       "description": "Kubernetes imagePullPolicy on Deployment.",
@@ -218,7 +226,7 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-acmesolver",
+      "default": "",
       "description": "The container image for the cert-manager acmesolver.",
       "type": "string"
     },
@@ -392,6 +400,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.cainjector.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.cainjector.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.cainjector.image.pullPolicy"
         },
@@ -411,6 +422,11 @@
       "description": "Setting a digest will override any tag.",
       "type": "string"
     },
+    "helm-values.cainjector.image.name": {
+      "default": "cert-manager-cainjector",
+      "description": "The container image name for the cert-manager cainjector.",
+      "type": "string"
+    },
     "helm-values.cainjector.image.pullPolicy": {
       "default": "IfNotPresent",
       "description": "Kubernetes imagePullPolicy on Deployment.",
@@ -421,8 +437,8 @@
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-cainjector",
-      "description": "The container image for the cert-manager cainjector",
+      "default": "",
+      "description": "The container image for the cert-manager cainjector.",
       "type": "string"
     },
     "helm-values.cainjector.image.tag": {
@@ -695,6 +711,9 @@
         "imagePullSecrets": {
           "$ref": "#/$defs/helm-values.global.imagePullSecrets"
         },
+        "imageRepository": {
+          "$ref": "#/$defs/helm-values.global.imageRepository"
+        },
         "leaderElection": {
           "$ref": "#/$defs/helm-values.global.leaderElection"
         },
@@ -733,6 +752,11 @@
       "description": "Reference to one or more secrets to be used when pulling images. For more information, see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).\n\nFor example:\nimagePullSecrets:\n  - name: \"image-pull-secret\"",
       "items": {},
       "type": "array"
+    },
+    "helm-values.global.imageRepository": {
+      "default": "quay.io/jetstack",
+      "description": "Image repository default for all images",
+      "type": "string"
     },
     "helm-values.global.leaderElection": {
       "properties": {
@@ -849,6 +873,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.image.pullPolicy"
         },
@@ -868,6 +895,11 @@
       "description": "Setting a digest will override any tag.",
       "type": "string"
     },
+    "helm-values.image.name": {
+      "default": "cert-manager-controller",
+      "description": "The container image name for the cert-manager controller.",
+      "type": "string"
+    },
     "helm-values.image.pullPolicy": {
       "default": "IfNotPresent",
       "description": "Kubernetes imagePullPolicy on Deployment.",
@@ -878,7 +910,7 @@
       "type": "string"
     },
     "helm-values.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-controller",
+      "default": "",
       "description": "The container image for the cert-manager controller.",
       "type": "string"
     },
@@ -1401,6 +1433,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.startupapicheck.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.startupapicheck.image.pullPolicy"
         },
@@ -1420,6 +1455,11 @@
       "description": "Setting a digest will override any tag.",
       "type": "string"
     },
+    "helm-values.startupapicheck.image.name": {
+      "default": "cert-manager-startupapicheck",
+      "description": "The container image name for the cert-manager startupapicheck.",
+      "type": "string"
+    },
     "helm-values.startupapicheck.image.pullPolicy": {
       "default": "IfNotPresent",
       "description": "Kubernetes imagePullPolicy on Deployment.",
@@ -1430,7 +1470,7 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-startupapicheck",
+      "default": "",
       "description": "The container image for the cert-manager startupapicheck.",
       "type": "string"
     },
@@ -1786,6 +1826,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.webhook.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.webhook.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.webhook.image.pullPolicy"
         },
@@ -1805,6 +1848,11 @@
       "description": "Setting a digest will override any tag",
       "type": "string"
     },
+    "helm-values.webhook.image.name": {
+      "default": "cert-manager-webhook",
+      "description": "The container image name for the cert-manager webhook.",
+      "type": "string"
+    },
     "helm-values.webhook.image.pullPolicy": {
       "default": "IfNotPresent",
       "description": "Kubernetes imagePullPolicy on Deployment.",
@@ -1815,8 +1863,8 @@
       "type": "string"
     },
     "helm-values.webhook.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-webhook",
-      "description": "The container image for the cert-manager webhook",
+      "default": "",
+      "description": "The container image for the cert-manager webhook.",
       "type": "string"
     },
     "helm-values.webhook.image.tag": {

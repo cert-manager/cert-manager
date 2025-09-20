@@ -76,7 +76,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-cainjector
-          image: "{{ template "image" (tuple .Values.cainjector.image $.Chart.AppVersion) }}"
+          image: "{{ template "image" (tuple .Values.cainjector.image $.Chart.AppVersion .Values.global) }}"
           imagePullPolicy: {{ .Values.cainjector.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
