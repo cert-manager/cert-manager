@@ -1,0 +1,119 @@
+package client
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+
+	metricspkg "github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
+	"github.com/go-logr/logr/testr"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	fakeclock "k8s.io/utils/clock/testing"
+)
+
+func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		ctx            context.Context
+		method         string
+		statusToReturn int
+		useTLS         bool
+		requestsToMake int
+		expectedAction string
+	}{
+		{
+			name:           "GET 200 OK with action",
+			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "get_directory"),
+			method:         "GET",
+			statusToReturn: http.StatusOK,
+			useTLS:         false,
+			requestsToMake: 1,
+			expectedAction: "get_directory",
+		},
+		{
+			name:           "POST 500 Error without action",
+			ctx:            context.Background(),
+			method:         "POST",
+			statusToReturn: http.StatusInternalServerError,
+			useTLS:         false,
+			requestsToMake: 1,
+			expectedAction: "unnamed_action",
+		},
+		{
+			name:           "GET 200 OK over HTTPS",
+			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "get_cert"),
+			method:         "GET",
+			statusToReturn: http.StatusOK,
+			useTLS:         true,
+			requestsToMake: 1,
+			expectedAction: "get_cert",
+		},
+		{
+			name:           "Multiple requests accumulate",
+			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "finalize_order"),
+			method:         "POST",
+			statusToReturn: http.StatusOK,
+			useTLS:         false,
+			requestsToMake: 3,
+			expectedAction: "finalize_order",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fixedClock := fakeclock.NewFakeClock(time.Now())
+			metrics := metricspkg.New(testr.New(t), fixedClock)
+
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.statusToReturn)
+			})
+
+			var server *httptest.Server
+			var scheme string
+			if tc.useTLS {
+				server = httptest.NewTLSServer(handler)
+				scheme = "https"
+			} else {
+				server = httptest.NewServer(handler)
+				scheme = "http"
+			}
+			defer server.Close()
+
+			httpClient := server.Client()
+			instrumentedTransport := &Transport{
+				wrappedRT: httpClient.Transport,
+				metrics:   metrics,
+			}
+			httpClient.Transport = instrumentedTransport
+
+			for i := 0; i < tc.requestsToMake; i++ {
+				req, err := http.NewRequestWithContext(tc.ctx, tc.method, server.URL, nil)
+				if err != nil {
+					t.Fatalf("Failed to create request: %v", err)
+				}
+				if _, err = httpClient.Do(req); err != nil {
+					t.Fatalf("client.Do failed: %v", err)
+				}
+			}
+			parsedURL, err := url.Parse(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to parse server URL: %v", err)
+			}
+			expectedCounter := fmt.Sprintf(`
+				# HELP certmanager_http_acme_client_request_count The number of requests made by the ACME client.
+				# TYPE certmanager_http_acme_client_request_count counter
+				certmanager_http_acme_client_request_count{action="%s",host="%s",method="%s",scheme="%s",status="%d"} %d
+				`, tc.expectedAction, parsedURL.Host, tc.method, scheme, tc.statusToReturn, tc.requestsToMake)
+			err = testutil.CollectAndCompare(metrics.ACMERequestCounter(), strings.NewReader(expectedCounter))
+			if err != nil {
+				t.Errorf("unexpected counter metric result:\n%v", err)
+			}
+		})
+	}
+}

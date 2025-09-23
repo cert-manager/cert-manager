@@ -134,6 +134,13 @@ type Client struct {
 	nonces   map[string]struct{} // nonces collected from previous responses
 }
 
+// MetricsContextKey is the type used for context keys in the metrics package.
+// Using a custom type prevents key collisions with other packages.
+type MetricsContextKey string
+
+// AcmeAction is the context key for storing the logical ACME operation name.
+const AcmeAction = MetricsContextKey("acme_action")
+
 // accountKID returns a key ID associated with c.Key, the account identity
 // provided by the CA during RFC based registration.
 // It assumes c.Discover has already been called.
@@ -240,6 +247,7 @@ func (c *Client) CreateCert(ctx context.Context, csr []byte, exp time.Duration, 
 // Callers are encouraged to parse the returned value to ensure the certificate is valid
 // and has expected features.
 func (c *Client) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "fetch_cert")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -253,6 +261,7 @@ func (c *Client) FetchCert(ctx context.Context, url string, bundle bool) ([][]by
 // For instance, the key pair of the certificate may be authorized.
 // If the key is nil, c.Key is used instead.
 func (c *Client) RevokeCert(ctx context.Context, key crypto.Signer, cert []byte, reason CRLReasonCode) error {
+	ctx = context.WithValue(ctx, AcmeAction, "revoke_cert")
 	if _, err := c.Discover(ctx); err != nil {
 		return err
 	}
@@ -279,6 +288,7 @@ func (c *Client) Register(ctx context.Context, acct *Account, prompt func(tosURL
 	if c.Key == nil {
 		return nil, errors.New("acme: client.Key must be set to Register")
 	}
+	ctx = context.WithValue(ctx, AcmeAction, "register")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -290,6 +300,7 @@ func (c *Client) Register(ctx context.Context, acct *Account, prompt func(tosURL
 // The url argument is a legacy artifact of the pre-RFC 8555 API
 // and is ignored.
 func (c *Client) GetReg(ctx context.Context, url string) (*Account, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "get_registration")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -302,6 +313,7 @@ func (c *Client) GetReg(ctx context.Context, url string) (*Account, error) {
 // The account's URI is ignored and the account URL associated with
 // c.Key is used instead.
 func (c *Client) UpdateReg(ctx context.Context, acct *Account) (*Account, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "update_registration")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -319,6 +331,7 @@ func (c *Client) UpdateReg(ctx context.Context, acct *Account) (*Account, error)
 // More about account key rollover can be found at
 // https://tools.ietf.org/html/rfc8555#section-7.3.5.
 func (c *Client) AccountKeyRollover(ctx context.Context, newKey crypto.Signer) error {
+	ctx = context.WithValue(ctx, AcmeAction, "account_key_rollover")
 	return c.accountKeyRollover(ctx, newKey)
 }
 
@@ -338,6 +351,7 @@ func (c *Client) AccountKeyRollover(ctx context.Context, newKey crypto.Signer) e
 // More about pre-authorization can be found at
 // https://tools.ietf.org/html/rfc8555#section-7.4.1.
 func (c *Client) Authorize(ctx context.Context, domain string) (*Authorization, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "authorize_dns")
 	return c.authorize(ctx, "dns", domain)
 }
 
@@ -348,6 +362,7 @@ func (c *Client) Authorize(ctx context.Context, domain string) (*Authorization, 
 // See the ACME spec extension for more details about IP address identifiers:
 // https://tools.ietf.org/html/draft-ietf-acme-ip.
 func (c *Client) AuthorizeIP(ctx context.Context, ipaddr string) (*Authorization, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "authorize_ip")
 	return c.authorize(ctx, "ip", ipaddr)
 }
 
@@ -392,6 +407,7 @@ func (c *Client) authorize(ctx context.Context, typ, val string) (*Authorization
 // If a caller needs to poll an authorization until its status is final,
 // see the WaitAuthorization method.
 func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorization, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "get_authorization")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -418,6 +434,7 @@ func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorizati
 //
 // It does not revoke existing certificates.
 func (c *Client) RevokeAuthorization(ctx context.Context, url string) error {
+	ctx = context.WithValue(ctx, AcmeAction, "revoke_authorization")
 	if _, err := c.Discover(ctx); err != nil {
 		return err
 	}
@@ -447,6 +464,7 @@ func (c *Client) RevokeAuthorization(ctx context.Context, url string) error {
 // In all other cases WaitAuthorization returns an error.
 // If the Status is StatusInvalid, the returned error is of type *AuthorizationError.
 func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorization, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "wait_authorization")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -494,6 +512,7 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 //
 // A client typically polls a challenge status using this method.
 func (c *Client) GetChallenge(ctx context.Context, url string) (*Challenge, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "get_challenge")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}
@@ -516,6 +535,7 @@ func (c *Client) GetChallenge(ctx context.Context, url string) (*Challenge, erro
 //
 // The server will then perform the validation asynchronously.
 func (c *Client) Accept(ctx context.Context, chal *Challenge) (*Challenge, error) {
+	ctx = context.WithValue(ctx, AcmeAction, "accept_challenge")
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 	"net/http"
 	"strings"
 	"time"
@@ -74,11 +75,17 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if resp != nil {
 		statusCode = resp.StatusCode
 	}
-
+	var action string
+	if op, ok := req.Context().Value(acme.AcmeAction).(string); ok {
+		action = op
+	} else {
+		// Fallback for any requests where the context was not set.
+		action = "unnamed_action"
+	}
 	labels := []string{
 		req.URL.Scheme,
 		req.URL.Host,
-		pathProcessor(req.URL.Path),
+		action,
 		req.Method,
 		fmt.Sprintf("%d", statusCode),
 	}

@@ -20,8 +20,8 @@ limitations under the License.
 // certificate_renewal_timestamp_seconds{name, namespace, issuer_name, issuer_kind, issuer_group}
 // certificate_ready_status{name, namespace, condition, issuer_name, issuer_kind, issuer_group}
 // certificate_challenge_status{status, domain, reason, processing, id, type}
-// acme_client_request_count{"scheme", "host", "path", "method", "status"}
-// acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
+// acme_client_request_count{"scheme", "host", "action", "method", "status"}
+// acme_client_request_duration_seconds{"scheme", "host", "action", "method", "status"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // controller_sync_call_count{"controller"}
 package metrics
@@ -113,7 +113,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Help:      "The number of requests made by the ACME client.",
 				Subsystem: "http",
 			},
-			[]string{"scheme", "host", "path", "method", "status"},
+			[]string{"scheme", "host", "action", "method", "status"},
 		)
 
 		// acmeClientRequestDurationSeconds is a Prometheus summary to collect request
@@ -126,7 +126,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Subsystem:  "http",
 				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 			},
-			[]string{"scheme", "host", "path", "method", "status"},
+			[]string{"scheme", "host", "action", "method", "status"},
 		)
 
 		// venafiClientRequestDurationSeconds is a Prometheus summary to
@@ -194,6 +194,14 @@ func (m *Metrics) SetupACMECollector(acmeInformers cmacmelisters.ChallengeLister
 
 func (m *Metrics) SetupCertificateCollector(certLister cmlisters.CertificateLister) {
 	m.certificateCollector = cmcollectors.NewCertificateCollector(certLister)
+}
+
+func (m *Metrics) ACMERequestCounter() *prometheus.CounterVec {
+	return m.acmeClientRequestCount
+}
+
+func (m *Metrics) ACMERequestDuration() *prometheus.SummaryVec {
+	return m.acmeClientRequestDurationSeconds
 }
 
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
