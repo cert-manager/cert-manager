@@ -26,11 +26,12 @@ import (
 	"testing"
 	"time"
 
-	metricspkg "github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	fakeclock "k8s.io/utils/clock/testing"
+
+	metricspkg "github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {

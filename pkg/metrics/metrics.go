@@ -31,14 +31,15 @@ import (
 	"net/http"
 	"time"
 
-	cmcollectors "github.com/cert-manager/cert-manager/internal/collectors"
-	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
-	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
+
+	cmcollectors "github.com/cert-manager/cert-manager/internal/collectors"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
 const (
