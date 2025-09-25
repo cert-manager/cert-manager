@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	clientgotesting "k8s.io/client-go/testing"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -86,20 +86,20 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	assertNumberOfActions(t, fatalf, actions, 2)
 
 	action := actions[1]
-	updateAction := assertIsUpdateAction(t, errorf, action)
+	patchAction := assertIsPatchAction(t, errorf, action)
 
-	obj := updateAction.GetObject()
-	issuer = assertIsIssuer(t, errorf, obj)
+	err = json.Unmarshal(patchAction.GetPatch(), issuer)
+	assertErrIsNil(t, fatalf, err)
 
 	assertDeepEqual(t, errorf, newStatus, issuer.Status)
 }
 
-func assertIsUpdateAction(t *testing.T, f failfFunc, action clientgotesting.Action) clientgotesting.UpdateAction {
-	updateAction, ok := action.(clientgotesting.UpdateAction)
+func assertIsPatchAction(t *testing.T, f failfFunc, action clientgotesting.Action) clientgotesting.PatchAction {
+	patchAction, ok := action.(clientgotesting.PatchAction)
 	if !ok {
-		f(t, "action %#v does not implement interface UpdateAction")
+		f(t, "action %#v does not implement interface PatchAction")
 	}
-	return updateAction
+	return patchAction
 }
 
 func assertNumberOfActions(t *testing.T, f failfFunc, actions []clientgotesting.Action, number int) {
@@ -112,14 +112,6 @@ func assertErrIsNil(t *testing.T, f failfFunc, err error) {
 	if err != nil {
 		f(t, err.Error())
 	}
-}
-
-func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1.Issuer {
-	issuer, ok := obj.(*v1.Issuer)
-	if !ok {
-		f(t, "expected runtime.Object to be of type *v1.Issuer, but it was %#v", obj)
-	}
-	return issuer
 }
 
 func assertDeepEqual(t *testing.T, f failfFunc, left, right any) {
