@@ -26,12 +26,10 @@ import (
 	"testing"
 	"time"
 
+	metricspkg "github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/go-logr/logr/testr"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	fakeclock "k8s.io/utils/clock/testing"
-
-	metricspkg "github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
@@ -46,7 +44,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 	}{
 		{
 			name:           "GET 200 OK with action",
-			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "get_directory"),
+			ctx:            context.WithValue(context.Background(), AcmeActionLabel, "get_directory"),
 			method:         "GET",
 			statusToReturn: http.StatusOK,
 			useTLS:         false,
@@ -64,7 +62,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 		},
 		{
 			name:           "GET 200 OK over HTTPS",
-			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "get_cert"),
+			ctx:            context.WithValue(context.Background(), AcmeActionLabel, "get_cert"),
 			method:         "GET",
 			statusToReturn: http.StatusOK,
 			useTLS:         true,
@@ -73,7 +71,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 		},
 		{
 			name:           "Multiple requests accumulate",
-			ctx:            context.WithValue(context.Background(), acme.AcmeAction, "finalize_order"),
+			ctx:            context.WithValue(context.Background(), AcmeActionLabel, "finalize_order"),
 			method:         "POST",
 			statusToReturn: http.StatusOK,
 			useTLS:         false,

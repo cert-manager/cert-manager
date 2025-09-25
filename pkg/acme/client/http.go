@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // This file implements a custom instrumented HTTP client round tripper that
@@ -31,6 +30,13 @@ import (
 // We implement this as part of the HTTP client to ensure we don't miss any
 // calls made to the ACME server caused by retries in the underlying ACME
 // library.
+
+// MetricsContextKey is the type used for context keys in the metrics package.
+// Using a custom type prevents key collisions with other packages.
+type MetricsContextKey string
+
+// AcmeActionLabel is the context key for storing the logical ACME operation name.
+const AcmeActionLabel = MetricsContextKey("acme_action")
 
 // Transport is a http.RoundTripper that collects Prometheus metrics of every
 // request it processes. It allows to be configured with callbacks that process
@@ -75,7 +81,7 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		statusCode = resp.StatusCode
 	}
 	var action string
-	if op, ok := req.Context().Value(acme.AcmeAction).(string); ok {
+	if op, ok := req.Context().Value(AcmeActionLabel).(string); ok {
 		action = op
 	} else {
 		// Fallback for any requests where the context was not set.
