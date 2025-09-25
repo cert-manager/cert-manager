@@ -108,14 +108,17 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 			}
 			httpClient.Transport = instrumentedTransport
 
-			for i := 0; i < tc.requestsToMake; i++ {
+			for range tc.requestsToMake {
 				req, err := http.NewRequestWithContext(tc.ctx, tc.method, server.URL, nil)
 				if err != nil {
 					t.Fatalf("Failed to create request: %v", err)
 				}
-				if _, err = httpClient.Do(req); err != nil {
-					t.Fatalf("client.Do failed: %v", err)
+
+				resp, err := httpClient.Do(req)
+				if err != nil {
+					t.Fatalf("failed to make request: %v", err)
 				}
+				resp.Body.Close()
 			}
 			parsedURL, err := url.Parse(server.URL)
 			if err != nil {

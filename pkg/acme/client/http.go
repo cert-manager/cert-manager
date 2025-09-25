@@ -18,12 +18,11 @@ package client
 
 import (
 	"fmt"
-	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // This file implements a custom instrumented HTTP client round tripper that
@@ -95,15 +94,4 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// return the response and error reported from the next RoundTripper.
 	return resp, err
-}
-
-// pathProcessor will trim the provided path to only include the first 2
-// segments in order to reduce the number of prometheus labels generated
-func pathProcessor(path string) string {
-	p := strings.Split(path, "/")
-	// only record the first two path segments as a prometheus label value
-	if len(p) > 3 {
-		p = p[:3]
-	}
-	return strings.Join(p, "/")
 }
