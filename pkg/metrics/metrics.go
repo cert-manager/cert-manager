@@ -200,10 +200,6 @@ func (m *Metrics) ACMERequestCounter() *prometheus.CounterVec {
 	return m.acmeClientRequestCount
 }
 
-func (m *Metrics) ACMERequestDuration() *prometheus.SummaryVec {
-	return m.acmeClientRequestDurationSeconds
-}
-
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
