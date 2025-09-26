@@ -162,6 +162,10 @@ maxConcurrentChallenges: 60
 
 image:
   # The container registry to pull the manager image from.
+  # This value is prepended to the target image repository, if set.
+  # For example:
+  #   registry: quay.io
+  #   repository: jetstack/cert-manager-controller
   # +docs:property
   # registry: quay.io
 
@@ -897,6 +901,10 @@ webhook:
 
   image:
     # The container registry to pull the webhook image from.
+    # This value is prepended to the target image repository, if set.
+    # For example:
+    #   registry: quay.io
+    #   repository: jetstack/cert-manager-webhook
     # +docs:property
     # registry: quay.io
 
@@ -1210,6 +1218,10 @@ cainjector:
 
   image:
     # The container registry to pull the cainjector image from.
+    # This value is prepended to the target image repository, if set.
+    # For example:
+    #   registry: quay.io
+    #   repository: jetstack/cert-manager-cainjector
     # +docs:property
     # registry: quay.io
 
@@ -1269,6 +1281,10 @@ cainjector:
 acmesolver:
   image:
     # The container registry to pull the acmesolver image from.
+    # This value is prepended to the target image repository, if set.
+    # For example:
+    #   registry: quay.io
+    #   repository: jetstack/cert-manager-acmesolver
     # +docs:property
     # registry: quay.io
 
@@ -1402,6 +1418,10 @@ startupapicheck:
 
   image:
     # The container registry to pull the startupapicheck image from.
+    # This value is prepended to the target image repository, if set.
+    # For example:
+    #   registry: quay.io
+    #   repository: jetstack/cert-manager-startupapicheck
     # +docs:property
     # registry: quay.io
 
