@@ -113,7 +113,7 @@ func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Autho
 
 func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
 	l.log.V(logf.TraceLevel).Info("Calling Register")
-	ctx = context.WithValue(ctx, client.AcmeActionLabel, "regiser_account")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "register_account")
 
 	return l.baseCl.Register(ctx, a, prompt)
 }
