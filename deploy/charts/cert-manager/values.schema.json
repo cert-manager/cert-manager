@@ -218,7 +218,7 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-acmesolver",
+      "default": "jetstack/cert-manager-acmesolver",
       "description": "The container image for the cert-manager acmesolver.",
       "type": "string"
     },
@@ -421,7 +421,7 @@
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-cainjector",
+      "default": "jetstack/cert-manager-cainjector",
       "description": "The container image for the cert-manager cainjector",
       "type": "string"
     },
@@ -692,6 +692,9 @@
         "hostUsers": {
           "$ref": "#/$defs/helm-values.global.hostUsers"
         },
+        "imageRegistry": {
+          "$ref": "#/$defs/helm-values.global.imageRegistry"
+        },
         "imagePullSecrets": {
           "$ref": "#/$defs/helm-values.global.imagePullSecrets"
         },
@@ -727,6 +730,11 @@
     "helm-values.global.hostUsers": {
       "description": "Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.\n\nRequirements:\n  - Kubernetes ≥ 1.33, or\n  - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.\n\nSet to false to run pods in a user namespace without host access.\n\nSee [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.",
       "type": "boolean"
+    },
+    "helm-values.global.imageRegistry": {
+      "default": "quay.io",
+      "description": "Image registry default for all images",
+      "type": "string"
     },
     "helm-values.global.imagePullSecrets": {
       "default": [],
@@ -878,7 +886,7 @@
       "type": "string"
     },
     "helm-values.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-controller",
+      "default": "jetstack/cert-manager-controller",
       "description": "The container image for the cert-manager controller.",
       "type": "string"
     },
@@ -1430,7 +1438,7 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-startupapicheck",
+      "default": "jetstack/cert-manager-startupapicheck",
       "description": "The container image for the cert-manager startupapicheck.",
       "type": "string"
     },
@@ -1815,7 +1823,7 @@
       "type": "string"
     },
     "helm-values.webhook.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-webhook",
+      "default": "jetstack/cert-manager-webhook",
       "description": "The container image for the cert-manager webhook",
       "type": "string"
     },

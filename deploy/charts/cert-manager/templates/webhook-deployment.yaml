@@ -81,7 +81,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-webhook
-          image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion) }}"
+          image: "{{ template "image" (tuple .Values.webhook.image $.Chart.AppVersion .Values.global) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
