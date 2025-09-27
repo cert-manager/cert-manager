@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -101,6 +102,18 @@ type Server struct {
 	// MetricsMinTLSVersion is the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MetricsMinTLSVersion string
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool
+
+	// ClientCAName is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAName string
+
+	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
+	// using a CA for apiserver to contact webhooks
+	ClientCertificateCN string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -137,6 +150,25 @@ func (s *Server) Run(ctx context.Context) error {
 		s.ListenAddr = webhookPort
 	}
 
+	webhookOpts := webhook.Options{
+		Port: s.ListenAddr,
+		TLSOpts: []func(*tls.Config){
+			func(cfg *tls.Config) {
+				cfg.CipherSuites = cipherSuites
+				cfg.MinVersion = minVersion
+				cfg.GetCertificate = s.CertificateSource.GetCertificate
+			},
+		},
+	}
+
+	if s.EnableClientVerification {
+		if s.ClientCAName == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-name")
+		}
+		webhookOpts.ClientCAName = s.ClientCAName
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
+	}
+
 	mgr, err := ctrl.NewManager(
 		&rest.Config{}, // controller-runtime does not need to talk to the API server
 		ctrl.Options{
@@ -154,16 +186,7 @@ func (s *Server) Run(ctx context.Context) error {
 					},
 				},
 			},
-			WebhookServer: webhook.NewServer(webhook.Options{
-				Port: s.ListenAddr,
-				TLSOpts: []func(*tls.Config){
-					func(cfg *tls.Config) {
-						cfg.CipherSuites = cipherSuites
-						cfg.MinVersion = minVersion
-						cfg.GetCertificate = s.CertificateSource.GetCertificate
-					},
-				},
-			}),
+			WebhookServer: webhook.NewServer(webhookOpts),
 		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
@@ -310,4 +333,20 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
+	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		// avoid impersonation of apiserver client by verifying the CN name if provided
+		if s.ClientCertificateCN != "" {
+			if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
+				return fmt.Errorf("no verified chains")
+			}
+			cert := verifiedChains[0][0]
+			if cert.Subject.CommonName != s.ClientCertificateCN {
+				return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
+			}
+		}
+		return nil
+	}
 }
