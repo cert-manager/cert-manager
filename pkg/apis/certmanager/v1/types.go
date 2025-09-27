@@ -130,6 +130,10 @@ const (
 	// Annotation key used to set the PrivateKeyRotationPolicy for a Certificate.
 	// If unset a policy `Never` will be used.
 	PrivateKeyRotationPolicyAnnotationKey = "cert-manager.io/private-key-rotation-policy"
+
+	// Annotation key used to disable certificate reissue.
+	// If set to "true", the certificate will not be reissue.
+	DisableReissueAnnotationKey = "cert-manager.io/disable-reissue"
 )
 
 const (

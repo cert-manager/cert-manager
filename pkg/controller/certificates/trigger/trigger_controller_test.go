@@ -825,3 +825,60 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 
 	}
 }
+
+func Test_isReissueDisabled(t *testing.T) {
+	tests := map[string]struct {
+		cert *cmapi.Certificate
+		want bool
+	}{
+		"certificate with no annotations should return false": {
+			cert: gen.Certificate("test-cert"),
+			want: false,
+		},
+		"certificate with nil annotations should return false": {
+			cert: gen.Certificate("test-cert",
+				gen.AddCertificateAnnotations(nil),
+			),
+			want: false,
+		},
+		"certificate with disable reissue annotation set to 'true' should return true": {
+			cert: gen.Certificate("test-cert",
+				gen.AddCertificateAnnotations(map[string]string{
+					cmapi.DisableReissueAnnotationKey: "true",
+				}),
+			),
+			want: true,
+		},
+		"certificate with disable reissue annotation set to 'false' should return false": {
+			cert: gen.Certificate("test-cert",
+				gen.AddCertificateAnnotations(map[string]string{
+					cmapi.DisableReissueAnnotationKey: "false",
+				}),
+			),
+			want: false,
+		},
+		"certificate with disable reissue annotation set to empty string should return false": {
+			cert: gen.Certificate("test-cert",
+				gen.AddCertificateAnnotations(map[string]string{
+					cmapi.DisableReissueAnnotationKey: "",
+				}),
+			),
+			want: false,
+		},
+		"certificate with disable reissue annotation set to 'True' (capitalized) should return false": {
+			cert: gen.Certificate("test-cert",
+				gen.AddCertificateAnnotations(map[string]string{
+					cmapi.DisableReissueAnnotationKey: "True",
+				}),
+			),
+			want: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := isReissueDisabled(test.cert)
+			assert.Equal(t, test.want, got)
+		})
+	}
+}
