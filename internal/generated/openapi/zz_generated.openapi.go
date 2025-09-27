@@ -2130,6 +2130,14 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"accepted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ChallengeAccepted will be set to true after notifying the ACME server that the challenge is presented.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"reason": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Contains human readable information on why the Challenge is in the current state.",
@@ -2145,6 +2153,7 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 						},
 					},
 				},
+				Required: []string{"accepted"},
 			},
 		},
 	}
