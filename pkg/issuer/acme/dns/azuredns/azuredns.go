@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/go-logr/logr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -32,19 +33,46 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+type RecordSetTypes interface {
+	*privatedns.RecordSet | *dns.RecordSet
+}
+
+// PrivateRecordsClient is an interface shim to make sure we can mock the clients since RecordSetsClient are structs and not interfaces.
+type PrivateRecordsClient interface {
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, options *privatedns.RecordSetsClientCreateOrUpdateOptions) (privatedns.RecordSetsClientCreateOrUpdateResponse, error)
+	Get(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientGetOptions) (privatedns.RecordSetsClientGetResponse, error)
+	Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientDeleteOptions) (privatedns.RecordSetsClientDeleteResponse, error)
+}
+
+// PrivateZonesClient is an interface shim for mocking the PrivateZonesClient since they are structs and not interfaces.
+type PrivateZonesClient interface {
+	Get(ctx context.Context, resourceGroupName string, privateZoneName string, options *privatedns.PrivateZonesClientGetOptions) (privatedns.PrivateZonesClientGetResponse, error)
+}
+
 // DNSProvider implements the util.ChallengeProvider interface
-type DNSProvider struct {
-	dns01Nameservers  []string
-	recordClient      *dns.RecordSetsClient
-	zoneClient        *dns.ZonesClient
-	resourceGroupName string
-	zoneName          string
-	log               logr.Logger
+type DNSProvider[T RecordSetTypes] struct {
+	dns01Nameservers    []string
+	recordClient        *dns.RecordSetsClient
+	privateRecordClient PrivateRecordsClient 
+	zoneClient          *dns.ZonesClient
+	privateZoneClient   PrivateZonesClient 
+	resourceGroupName   string
+	zoneName            string
+	log                 logr.Logger
+	isPrivateZone       bool
+}
+
+type ProviderOption[T RecordSetTypes] func(*DNSProvider[T])
+
+func WithPrivateZone[T RecordSetTypes](isPrivateZone bool) ProviderOption[T] {
+	return func(c *DNSProvider[T]) {
+		c.isPrivateZone = isPrivateZone
+	}
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*DNSProvider, error) {
+func NewDNSProviderCredentials[T RecordSetTypes](environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...ProviderOption[T]) (*DNSProvider[T], error) {
 	cloudCfg, err := getCloudConfiguration(environment)
 	if err != nil {
 		return nil, err
@@ -55,23 +83,45 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	if err != nil {
 		return nil, err
 	}
-	rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
-	if err != nil {
-		return nil, err
-	}
-	zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
-	if err != nil {
-		return nil, err
-	}
 
-	return &DNSProvider{
+	d := &DNSProvider[T]{
 		dns01Nameservers:  dns01Nameservers,
-		recordClient:      rc,
-		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
 		log:               logf.Log.WithName("azure-dns"),
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(d)
+	}
+
+	if d.isPrivateZone {
+		rc, err := privatedns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+
+		zc, err := privatedns.NewPrivateZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+
+		d.privateRecordClient = rc
+		d.privateZoneClient = zc
+	} else {
+		rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+		zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+
+		d.recordClient = rc
+		d.zoneClient = zc
+	}
+	return d, nil
 }
 
 func getCloudConfiguration(name string) (cloud.Configuration, error) {
@@ -138,39 +188,70 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
-	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
-		var found bool
-		for _, r := range set.Properties.TxtRecords {
-			if len(r.Value) > 0 && *r.Value[0] == value {
-				found = true
-				break
+func (c *DNSProvider[T]) Present(ctx context.Context, domain, fqdn, value string) error {
+		return c.updateTXTRecord(ctx, fqdn, func(set T) {
+		if c.isPrivateZone {
+			recordSet := any(set).(*privatedns.RecordSet)
+			var found bool
+			for _, r := range recordSet.Properties.TxtRecords {
+				if len(r.Value) > 0 && *r.Value[0] == value {
+					found = true
+					break
+				}
 			}
-		}
 
-		if !found {
-			set.Properties.TxtRecords = append(set.Properties.TxtRecords, &dns.TxtRecord{
-				Value: []*string{to.Ptr(value)},
-			})
+			if !found {
+				recordSet.Properties.TxtRecords = append(recordSet.Properties.TxtRecords, &privatedns.TxtRecord{
+					Value: []*string{to.Ptr(value)},
+				})
+			}
+		} else {
+			recordSet := any(set).(*dns.RecordSet)
+			var found bool
+			for _, r := range recordSet.Properties.TxtRecords {
+				if len(r.Value) > 0 && *r.Value[0] == value {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				recordSet.Properties.TxtRecords = append(recordSet.Properties.TxtRecords, &dns.TxtRecord{
+					Value: []*string{to.Ptr(value)},
+				})
+			}
 		}
 	})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
-		var records []*dns.TxtRecord
-		for _, r := range set.Properties.TxtRecords {
-			if len(r.Value) > 0 && *r.Value[0] != value {
-				records = append(records, r)
+func (c *DNSProvider[T]) CleanUp(ctx context.Context, domain, fqdn, value string) error {
+	return c.updateTXTRecord(ctx, fqdn, func(set T) {
+		if c.isPrivateZone {
+			recordSet := any(set).(*privatedns.RecordSet)
+			var records []*privatedns.TxtRecord
+			for _, r := range recordSet.Properties.TxtRecords {
+				if len(r.Value) > 0 && *r.Value[0] != value {
+					records = append(records, r)
+				}
 			}
-		}
 
-		set.Properties.TxtRecords = records
+			recordSet.Properties.TxtRecords = records
+		} else {
+			recordSet := any(set).(*dns.RecordSet)
+			var records []*dns.TxtRecord
+			for _, r := range recordSet.Properties.TxtRecords {
+				if len(r.Value) > 0 && *r.Value[0] != value {
+					records = append(records, r)
+				}
+			}
+
+			recordSet.Properties.TxtRecords = records
+		}
 	})
 }
 
-func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (string, error) {
+func (c *DNSProvider[T]) getHostedZoneName(ctx context.Context, fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
@@ -182,7 +263,13 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+	if c.isPrivateZone {
+		_, err = c.privateZoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil)
+	} else {
+		_, err = c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil)
+	}
+
+	if err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
 	}
@@ -191,7 +278,7 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 }
 
 // Trims DNS zone from the fqdn. Defaults to DNSProvider.zoneName if it is specified.
-func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
+func (c *DNSProvider[T]) trimFqdn(fqdn string, zone string) string {
 	z := zone
 	if len(c.zoneName) > 0 {
 		z = c.zoneName
@@ -200,7 +287,7 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 }
 
 // Updates or removes DNS TXT record while respecting optimistic concurrency control
-func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater func(*dns.RecordSet)) error {
+func (c *DNSProvider[T]) updateTXTRecord(ctx context.Context, fqdn string, updater func(T)) error {
 	zone, err := c.getHostedZoneName(ctx, fqdn)
 	if err != nil {
 		return err
@@ -208,12 +295,22 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 
 	name := c.trimFqdn(fqdn, zone)
 
+	if c.isPrivateZone {
+		return c.updatePrivateTXTRecord(ctx, fqdn, name, zone, updater)
+	}
+
 	var set *dns.RecordSet
+	var genericSet T
+	set , ok := any(genericSet).(*dns.RecordSet)
+	if !ok {
+		return errors.New("unsupported type for public dns function")
+	}
 
 	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
+		err = c.handleResponseError(err, zone, fqdn)
+		if errors.As(err, &respErr) {
 			set = &dns.RecordSet{
 				Properties: &dns.RecordSetProperties{
 					TTL:        to.Ptr(int64(60)),
@@ -222,14 +319,13 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 				Etag: to.Ptr(""),
 			}
 		} else {
-			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-			return stabilizeError(err)
+			return err
 		}
 	} else {
 		set = &resp.RecordSet
 	}
 
-	updater(set)
+	updater(genericSet)
 
 	if len(set.Properties.TxtRecords) == 0 {
 		if *set.Etag != "" {
@@ -264,6 +360,85 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 	if err != nil {
 		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
 		return stabilizeError(err)
+	}
+
+	return nil
+}
+
+func (c *DNSProvider[T]) updatePrivateTXTRecord(ctx context.Context, fqdn, name, zone string, updater func(T)) error {
+	var genericSet T
+	set , ok := any(genericSet).(*privatedns.RecordSet)
+	if !ok {
+		return errors.New("unsupported type for private dns function")
+	}
+	resp, err := c.privateRecordClient.Get(ctx, c.resourceGroupName, zone, privatedns.RecordTypeTXT, name, nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		err = c.handleResponseError(err, zone, fqdn)
+		if errors.As(err, &respErr) {
+			set = &privatedns.RecordSet{
+				Properties: &privatedns.RecordSetProperties{
+					TTL:        to.Ptr(int64(60)),
+					TxtRecords: []*privatedns.TxtRecord{},
+				},
+				Etag: to.Ptr(""),
+			}
+		} else {
+			return err
+		}
+	} else {
+		set = &resp.RecordSet
+	}
+
+	updater(genericSet)
+
+	if len(set.Properties.TxtRecords) == 0 {
+		if *set.Etag != "" {
+			// Etag will cause the deletion to fail if any updates happen concurrently
+			_, err = c.privateRecordClient.Delete(ctx, c.resourceGroupName, zone, privatedns.RecordTypeTXT, name, &privatedns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
+			if err != nil {
+				c.log.Error(err, "Error deleting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+				return stabilizeError(err)
+			}
+		}
+
+		return nil
+	}
+
+	opts := &privatedns.RecordSetsClientCreateOrUpdateOptions{}
+	if *set.Etag == "" {
+		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
+		// Only relevant when this is a new record, for updates conflicts are solved with Etag
+		opts.IfNoneMatch = to.Ptr("*")
+	} else {
+		opts.IfMatch = set.Etag
+	}
+
+	_, err = c.privateRecordClient.CreateOrUpdate(
+		ctx,
+		c.resourceGroupName,
+		zone,
+		privatedns.RecordTypeTXT,
+		name,
+		*set,
+		opts)
+	if err != nil {
+		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+		return stabilizeError(err)
+	}
+
+	return nil
+}
+
+func (c *DNSProvider[T]) handleResponseError(err error, zone, fqdn string) error {
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
+			return respErr
+		} else {
+			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
+			return stabilizeError(err)
+		}
 	}
 
 	return nil

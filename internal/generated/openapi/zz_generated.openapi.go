@@ -1538,6 +1538,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderAzureDNS(ref common.Referenc
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AzureManagedIdentity"),
 						},
 					},
+					"isPrivateZone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Required if your hosted zone is private.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"subscriptionID", "resourceGroupName"},
 			},
