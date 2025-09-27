@@ -22,7 +22,7 @@ require (
 	github.com/digitalocean/godo v1.165.1
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/go-logr/logr v1.4.3
-	github.com/go-openapi/jsonreference v0.21.1
+	github.com/go-openapi/jsonreference v0.21.2
 	github.com/google/gnostic-models v0.7.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/vault/api v1.21.0
@@ -96,9 +96,9 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
-	github.com/go-openapi/jsonpointer v0.22.0 // indirect
+	github.com/go-openapi/jsonpointer v0.22.1 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/go-openapi/swag/jsonname v0.24.0 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.1 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
