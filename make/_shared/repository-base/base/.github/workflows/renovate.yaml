@@ -27,7 +27,7 @@ jobs:
           exit 1
 
       - name: Octo STS Token Exchange
-        uses: octo-sts/action@e480437973a6f6ac2e9caa40ecabedc870d76395 # v1.0.1
+        uses: octo-sts/action@a26b0c6455c7f13316f29a8766287f939e75f6c8 # v1.0.2
         id: octo-sts
         with:
           scope: '{{REPLACE:GH-REPOSITORY}}'
@@ -50,7 +50,7 @@ jobs:
           go-version: ${{ steps.go-version.outputs.result }}
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@f8af9272cd94a4637c29f60dea8731afd3134473 # v43.0.12
+        uses: renovatebot/github-action@9ba84f1ade243f8c2ce5b223df61cf23dc094584 # v43.0.13
         with:
           configurationFile: .github/renovate.json5
           token: ${{ steps.octo-sts.outputs.token }}

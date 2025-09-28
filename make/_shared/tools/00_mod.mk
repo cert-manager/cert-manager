@@ -71,7 +71,7 @@ tools += kubectl=v1.34.1
 tools += kind=v0.30.0
 # https://www.vaultproject.io/downloads
 # renovate: datasource=github-releases packageName=hashicorp/vault
-tools += vault=v1.20.3
+tools += vault=v1.20.4
 # https://github.com/Azure/azure-workload-identity/releases
 # renovate: datasource=github-releases packageName=Azure/azure-workload-identity
 tools += azwi=v1.5.1
@@ -95,7 +95,7 @@ tools += trivy=v0.66.0
 tools += ytt=v0.52.1
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.71.0
+tools += rclone=v1.71.1
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.27.1
@@ -149,7 +149,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.2.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.12.2
+tools += goreleaser=v2.12.3
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.33.0
@@ -167,7 +167,7 @@ tools += cmctl=v2.3.0
 tools += cmrel=v1.12.15-0.20241121151736-e3cbe5171488
 # https://pkg.go.dev/github.com/golangci/golangci-lint/v2/cmd/golangci-lint?tab=versions
 # renovate: datasource=go packageName=github.com/golangci/golangci-lint/v2
-tools += golangci-lint=v2.4.0
+tools += golangci-lint=v2.5.0
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 # renovate: datasource=go packageName=golang.org/x/vuln
 tools += govulncheck=v1.1.4
@@ -176,7 +176,7 @@ tools += govulncheck=v1.1.4
 tools += operator-sdk=v1.41.1
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.79.0
+tools += gh=v2.80.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.14.1
@@ -489,10 +489,10 @@ $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		$(checkhash_script) $(outfile) $(kind_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-vault_linux_amd64_SHA256SUM=128d35b82bed319b8ce3caec99286a7d458342d8def5e6ca4d20cc7621df53d3
-vault_linux_arm64_SHA256SUM=35847f819eb3917f1b454994bd517bf4f83fdbd7e9a06fa17f37a7c99ab7eb9d
-vault_darwin_amd64_SHA256SUM=c83250d6432a200f6fdbda3e648351858ea8754d20147a761fc85f40f4357d13
-vault_darwin_arm64_SHA256SUM=134ca9433205d065180073f2e02c62558e4ee7d06115112189746991a40b8fde
+vault_linux_amd64_SHA256SUM=fc5fb5d01d192f1216b139fb5c6af17e3af742aaeffc289fd861920ec55f2c9c
+vault_linux_arm64_SHA256SUM=d1e9548efd89e772b6be9dc37914579cabd86362779b7239d2d769cfb601d835
+vault_darwin_amd64_SHA256SUM=0abe8673c442710795b0182c382dd5347b961d2c0d548742813b3ecbe15bf7cc
+vault_darwin_arm64_SHA256SUM=cca50f328a44e025205047d480bead1460012ecd82fa78387c7b5af0bae59d02
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -626,10 +626,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=3ddbcfd535ef2e6eb00cd006831766537f1fef1c8baeed1ee4632e7bcc699e93
-rclone_linux_arm64_SHA256SUM=b710ac2ded37261d2cc6ab046dcd644828944524cf1ee7c2b17dd746f0fd8684
-rclone_darwin_amd64_SHA256SUM=858fcdb96597776672c38416a4cdf72b87f5ed8e05353374c894b38ae381b965
-rclone_darwin_arm64_SHA256SUM=ee9964d24f1aed3f0a2183f5a93eeec29526782240435d4b3f302b45f6f34b61
+rclone_linux_amd64_SHA256SUM=417e3da236f3a12d292da4e7287d67b1df558b8c2b280d092e563958ed724be7
+rclone_linux_arm64_SHA256SUM=cd0eb0d6faf1fdb697f191a316bbc6552770fafa097baf326ce61c04ab89f783
+rclone_darwin_amd64_SHA256SUM=a2d635ef69785c889381460a16ef20255b07ef17a67c84c81fb4cb8aaf1a280f
+rclone_darwin_arm64_SHA256SUM=8b7a2c57680d769e33d8616cabc214831d3bddcdb4da0d40a263ede63b15acce
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
