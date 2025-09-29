@@ -31,7 +31,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/Khan/genqlient v0.8.1 // indirect
 	github.com/Venafi/vcert/v5 v5.12.0 // indirect
-	github.com/akamai/AkamaiOPEN-edgegrid-golang/v11 v11.1.0 // indirect
+	github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.39.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.31.11 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.15 // indirect

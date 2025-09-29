@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"strings"
 
-	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v11/pkg/dns"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v11/pkg/edgegrid"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v11/pkg/session"
+	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg/dns"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg/edgegrid"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg/session"
 	"github.com/go-logr/logr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"

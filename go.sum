@@ -30,8 +30,8 @@ github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cq
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/Venafi/vcert/v5 v5.12.0 h1:ruNmiOUB5Nmoy4oayOlM8yUOJxXHD5XvNDbMu7SXXD4=
 github.com/Venafi/vcert/v5 v5.12.0/go.mod h1:x3l0pB0q0E6wuhPe7nzfkUEwwraK7amnBWQ4LtT1bbw=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v11 v11.1.0 h1:h/33OxYLqBk0BYmEbSUy7MlvgQR/m1w1/7OJFKoPL1I=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v11 v11.1.0/go.mod h1:rvh3imDA6EaQi+oM/GQHkQAOHbXPKJ7EWJvfjuw141Q=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.0.0 h1:UED1jCu37aILAC6MuXE+K7j4EL3F0dT9wgcqASJlOos=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.0.0/go.mod h1:Bf6hnZkloZnfL4I/gFGnMMMdMHiu/ERnSOWtFgnodDk=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa h1:LHTHcTQiSGT7VVbI0o4wBRNQIgn917usHWOd6VAffYI=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
