@@ -134,10 +134,7 @@ The new field `deletionPolicy` has three possible values:
 
 When changing the value of the field `deletionPolicy` from `Delete` to `Orphan`,
 the associated Secret resource immediately loses its owner reference. The user
-doesn't need to wait until the certificate is renewed. Similarly, when `deletionPolicy`
-is changed from `Delete` to `Orphan`, the associated Secret resource loses its
-owner reference.
-
+doesn't need to wait until the certificate is renewed.
 Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`
 and introduce the new flag `--default-secret-cleanup-policy`. Its values are as follows:
 
@@ -174,13 +171,13 @@ flag behaves differently from how the new `cleanupPolicy` behaves:
   when `--default-secret-cleanup-policy` is set to `OnDelete` and `cleanupPolicy` is not
   set.  
 
-The deprecated flag `--enable-certificate-owner-ref` keeps precendence over the new flag
+The deprecated flag `--enable-certificate-owner-ref` keeps precedence over the new flag
 in order to keep backwards compatibility.
 
 When upgrading to the new flag, users can refer to the following table:
 
 | If... | then they should replace it with... |
-|-----|-----|
+| ----- | ----------------------------------- |
 | `--enable-certificate-owner-ref` not passed to the controller | No change needed |
 | `--enable-certificate-owner-ref=false` | Replace with `--default-secret-cleanup-policy=Never` |
 | `--enable-certificate-owner-ref=true` | Replace with `--default-secret-cleanup-policy=OnDelete` |
