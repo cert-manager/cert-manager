@@ -117,7 +117,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 spec:
   secretName: cert-1
-  cleanupPolicy: [OnDelete|Never] # ✨ Can be left empty.
+  deletionPolicy: [Delete|Orphan] # ✨ Can be left empty.
 ```
 
 The new field `cleanupPolicy` has three possible values:
