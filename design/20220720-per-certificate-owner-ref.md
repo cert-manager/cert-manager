@@ -110,7 +110,7 @@ data:
   ca.crt: "..."
 ```
 
-The proposition is to add a new field `cleanupPolicy` to the Certificate resource:
+The proposition is to add a new field `deletionPolicy` to the Certificate resource:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -120,11 +120,11 @@ spec:
   deletionPolicy: [Delete|Orphan] # ✨ Can be left empty.
 ```
 
-The new field `cleanupPolicy` has three possible values:
+The new field `deletionPolicy` has three possible values:
 
 1. When not set, the value set by `--default-secret-cleanup-policy` is inherited.
-2. When `OnDelete`, the owner reference is always created on the Secret resource.
-3. When `Never`, the owner reference is never created on the Secret resource.
+2. When `Delete`, the owner reference is always created on the Secret resource.
+3. When `Orphan`, the owner reference is never created on the Secret resource.
 
 > At first, the proposed field was named `certificateOwnerRef` and was a
 > nullable boolean. James Munnelly reminded us that the Kubernetes API
@@ -132,10 +132,10 @@ The new field `cleanupPolicy` has three possible values:
 > "meaningful values". On top of being more readable, it also makes the
 > field extensible.
 
-When changing the value of the field `cleanupPolicy` from `OnDelete` to `Never`,
+When changing the value of the field `deletionPolicy` from `Delete` to `Orphan`,
 the associated Secret resource immediately loses its owner reference. The user
-doesn't need to wait until the certificate is renewed. Similarly, when `cleanupPolicy`
-is changed from `OnDelete` to `Never`, the associated Secret resource loses its
+doesn't need to wait until the certificate is renewed. Similarly, when `deletionPolicy`
+is changed from `Delete` to `Orphan`, the associated Secret resource loses its
 owner reference.
 
 Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`
