@@ -6,7 +6,6 @@
   baseBranchPatterns: [
     'master',
     'release-1.18',
-    'release-1.17',
   ],
   addLabels: [
     'kind/cleanup',
@@ -61,19 +60,11 @@
       matchBaseBranches: [
         '/^release-.*/',
       ],
-      enabled: false,
-    },
-    {
-      matchBaseBranches: [
-        '/^release-.*/',
-      ],
       matchUpdateTypes: [
-        'patch',
-        'pin',
-        'pinDigest',
-        'digest',
+        'major',
+        'minor',
       ],
-      enabled: true,
+      enabled: false,
     },
   ],
 }
