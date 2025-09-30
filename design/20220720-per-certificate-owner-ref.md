@@ -39,9 +39,9 @@ We propose to introduce the same setting at the Certificate level so that users 
 
 On the "dev" cluster, customers are given long-lived namespaces in which they install and uninstall their applications over and over with random names, including Certificate resources. With hundreds of customers deploying approximately ten times a day to the "dev" cluster, the Secret resources that are left over by cert-manager accumulate (around 10,000 Secret resources after a few months), and the Kubernetes API becomes slow, with people having to wait for 10 seconds to list the secrets in a given namespace.
 
-To solve this problem, Flant aims at using `cleanupPolicy: Never` on the certificates used for their managed components and use `--default-certificate-cleanup-policy=OnDelete` for the rest of the Certificates. Users won't have to change their Certificate resources.
+To solve this problem, Flant aims at using `deletionPolicy: Orphan` on the certificates used for their managed components and use `--default-secret-deletion-policy=Delete` for the rest of the Certificates. Users won't have to change their Certificate resources.
 
-On the "prod" cluster, Flant recommends customers to keep the Secret resource on removal to lower the risk of outages. Flant aims to use `--default-certificate-cleanup-policy=Never` for the "prod" cluster and also aims to document the reason for this difference between "prod" and "dev".
+On the "prod" cluster, Flant recommends customers to keep the Secret resource on removal to lower the risk of outages. Flant aims to use `--default-secret-deletion-policy=Orphan` for the "prod" cluster and also aims to document the reason for this difference between "prod" and "dev".
 
 ## Questions
 
@@ -55,19 +55,32 @@ The flag `--enable-certificate-owner-ref` will still continue to function as bef
 
 **What happens when I downgrade cert-manager?**
 
-Downgrading requires two actions: (1) removing the new flag `--default-secret-cleanup-policy` from the Deployment, adding the corresponding `--enable-certificate-owner-ref` and (2) emptying the `cleanupPolicy` field from every Certificate in the cluster.
+Downgrading requires two actions: (1) removing the new flag `--default-secret-deletion-policy` from the Deployment, adding the corresponding `--enable-certificate-owner-ref` and (2) emptying the `deletionPolicy` field from every Certificate in the cluster.
 
-**Why is there a new "duplicate" flag `--default-secret-cleanup-policy` that does the same thing as `--enable-certificate-owner-ref`?**
+**Why is there a new "duplicate" flag `--default-secret-deletion-policy` that does the same thing as `--enable-certificate-owner-ref`?**
 
-The existing flag `--enable-certificate-owner-ref` does not match the new API (`OnDelete` and `Never`), that is why we decided to add a new flag to reflect the new API.
+The existing flag `--enable-certificate-owner-ref` does not match the new API (`Delete` and `Orphan`), that is why we decided to add a new flag to reflect the new API.
 
-**Do we intend to add more to `OnDelete` and `Never`?**
+**Do we intend to add more to `Delete` and `Orphan`?**
 
 No, I don't think there will be another value. The intent of these two values (as opposed to using a boolean) is to make the API more explicit, but a boolean could have done the trick.
 
-**Will `--default-secret-cleanup-policy` be removed?**
+**Will `--default-secret-deletion-policy` be removed?**
 
-We intend to remove `--default-secret-cleanup-policy` within 3 to 6 releases.
+We intend to remove `--default-secret-deletion-policy` within 3 to 6 releases.
+
+**Why did we choose `deletionPolicy` over `cleanupPolicy`?**
+
+During the design process, we initially considered using `cleanupPolicy` with
+values `[OnDelete|Never]`, but ultimately chose `deletionPolicy` with values
+`[Delete|Orphan]` because it is slightly more declarative, and a bit more
+familiar to the ecosystem (Crossplane, FluxCD, and External Secrets Operator all
+use `deletionPolicy`).
+
+Note that while `deletionPolicy` has a slightly different meaning in Crossplane
+(where it works more like finalizers), in cert-manager it simply controls
+whether the secret gets deleted along with the certificate without complex
+coordination mechanisms.
 
 ## Proposal
 
@@ -122,7 +135,7 @@ spec:
 
 The new field `deletionPolicy` has three possible values:
 
-1. When not set, the value set by `--default-secret-cleanup-policy` is inherited.
+1. When not set, the value set by `--default-secret-deletion-policy` is inherited.
 2. When `Delete`, the owner reference is always created on the Secret resource.
 3. When `Orphan`, the owner reference is never created on the Secret resource.
 
@@ -136,40 +149,41 @@ When changing the value of the field `deletionPolicy` from `Delete` to `Orphan`,
 the associated Secret resource immediately loses its owner reference. The user
 doesn't need to wait until the certificate is renewed.
 Along with this new field, we propose to deprecate the flag `--enable-certificate-owner-ref`
-and introduce the new flag `--default-secret-cleanup-policy`. Its values are as follows:
+and introduce the new flag `--default-secret-deletion-policy`. Its values are as follows:
 
-- When `--default-secret-cleanup-policy` is set to `Never`, the Certificate resources
-  that don't have the `cleanupPolicy` field set will have their associated Secret
+- When `--default-secret-deletion-policy` is set to `Orphan`, the Certificate resources
+  that don't have the `deletionPolicy` field set will have their associated Secret
   resources updated (i.e., the owner reference gets removed) on the next issuance of
   the Certificate.
-- When `--default-secret-cleanup-policy` is set to `OnDelete`, the Certificate resources
-  that don't have the `cleanupPolicy` field set will have their associated Secret
+- When `--default-secret-deletion-policy` is set to `Delete`, the Certificate resources
+  that don't have the `deletionPolicy` field set will have their associated Secret
   resources updated (i.e., the owner reference gets added) on the next issuance of
   the Certificate.
   
-The effect of changing `--default-secret-cleanup-policy` from `Never` to `OnDelete`
-or from `OnDelete` to `Never` is not immediate: the change requires a re-issuance
+The effect of changing `--default-secret-deletion-policy` from `Orphan` to `Delete`
+or from `Delete` to `Orphan` is not immediate: the change requires a re-issuance
 of the Certificate resources.
 
-The default value for `--default-secret-cleanup-policy` is `Never`.
+The default value for `--default-secret-deletion-policy` is `Orphan`.
 
-When changing the flag from `Never` to `OnDelete`, the existing Certificate resources
-that don't have `cleanupPolicy` set are immediately affected, meaning that their
-associated Secrets will gain a new owner reference. When changing the flag from
-`OnDelete` to `Never`, the Secrets associated to Certificates that have no `cleanupPolicy`
-set will see their owner reference immediately removed.
+When changing the flag from `Orphan` to `Delete`, the existing Certificate
+resources that don't have `deletionPolicy` set are immediately affected, meaning
+that their associated Secrets will gain a new owner reference. When changing the
+flag from `Delete` to `Orphan`, the Secrets associated to Certificates that
+have no `deletionPolicy` set will see their owner reference immediately removed.
 
-The reason we decided to deprecate `--enable-certificate-owner-ref` is because this
-flag behaves differently from how the new `cleanupPolicy` behaves:
+The reason we decided to deprecate `--enable-certificate-owner-ref` is because
+this flag behaves differently from how the new `deletionPolicy` behaves:
 
-- When `--enable-certificate-owner-ref` is not passed (or is set to false), the existing
-  Secret resources that have an owner reference are not changed even after a re-issuance.
-  With `--default-secret-cleanup-policy` and given that `cleanupPolicy` is not set, the
-  behavior is slightly different: unlike with the old flag, the existing Secret resources
-  will have their owner references removed.
-- When `--enable-certificate-owner-ref` is set to true, the behavior is the same as
-  when `--default-secret-cleanup-policy` is set to `OnDelete` and `cleanupPolicy` is not
-  set.  
+- When `--enable-certificate-owner-ref` is not passed (or is set to false), the
+  existing Secret resources that have an owner reference are not changed even
+  after a re-issuance. With `--default-secret-deletion-policy` and given that
+  `deletionPolicy` is not set, the behavior is slightly different: unlike with
+  the old flag, the existing Secret resources will have their owner references
+  removed.
+- When `--enable-certificate-owner-ref` is set to true, the behavior is the same
+  as when `--default-secret-deletion-policy` is set to `Delete` and
+  `deletionPolicy` is not set.
 
 The deprecated flag `--enable-certificate-owner-ref` keeps precedence over the new flag
 in order to keep backwards compatibility.
@@ -179,8 +193,8 @@ When upgrading to the new flag, users can refer to the following table:
 | If... | then they should replace it with... |
 | ----- | ----------------------------------- |
 | `--enable-certificate-owner-ref` not passed to the controller | No change needed |
-| `--enable-certificate-owner-ref=false` | Replace with `--default-secret-cleanup-policy=Never` |
-| `--enable-certificate-owner-ref=true` | Replace with `--default-secret-cleanup-policy=OnDelete` |
+| `--enable-certificate-owner-ref=false` | Replace with `--default-secret-deletion-policy=Orphan` |
+| `--enable-certificate-owner-ref=true` | Replace with `--default-secret-deletion-policy=Delete` |
 
 ## Design Details
 
@@ -188,12 +202,12 @@ cert-manager would have to change in a few places.
 
 **Mutating webhook**
 
-We propose to have no "value defaulting" for `cleanupPolicy` because the
-"empty" value has a meaning for us: when `cleanupPolicy` is empty, the
-presence or not of the flag `--enable-certificate-owner-ref` takes over.
-To give more context, some other resources, such as the Pod resource,
-will mutate the object when the value is "empty", for example the
-`imagePullPolicy` value will default to `IfNotPresent`.
+We propose to have no "value defaulting" for `deletionPolicy` because the
+"empty" value has a meaning for us: when `deletionPolicy` is empty, the presence
+or not of the flag `--enable-certificate-owner-ref` takes over. To give more
+context, some other resources, such as the Pod resource, will mutate the object
+when the value is "empty", for example the `imagePullPolicy` value will default
+to `IfNotPresent`.
 
 **PostIssuancePolicyChain**
 
