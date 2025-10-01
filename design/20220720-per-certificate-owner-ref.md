@@ -71,7 +71,7 @@ values `[OnDelete|Never]`, but ultimately chose `deletionPolicy` with values
 familiar to the ecosystem ([Crossplane](https://docs.crossplane.io/v1.20/concepts/managed-resources/#deletionpolicy),
 [FluxCD](https://fluxcd.io/flux/components/kustomize/kustomizations/#deletion-policy), and
 [External Secrets Operator](https://external-secrets.io/latest/guides/ownership-deletion-policy/#deletion-policy)
-all use `deletionPolicy`). 
+all use `deletionPolicy`).
 
 Note that while `deletionPolicy` has a slightly different meaning in Crossplane
 (where it works more like finalizers), in cert-manager it simply controls
@@ -237,7 +237,7 @@ We don't think this feature needs to be [feature gated][feature gate].
 ### Upgrade / Downgrade Strategy
 
 Upgrading from a version without this feature to a version with this
-feature won't be breaking.
+feature won't require intervention.
 
 Downgrading requires manual intervention: removing the new flag
 `--default-secret-deletion-policy` from the Deployment, adding the corresponding
