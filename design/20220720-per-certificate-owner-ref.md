@@ -51,14 +51,6 @@ On the "prod" cluster, Flant recommends customers to keep the Secret resource on
 
 I think that the user of the Certificate resource should be deciding on the fate of the Secret resource, not the person operating the cert-manager installation.
 
-**What happens when I upgrade cert-manager?**
-
-The flag `--enable-certificate-owner-ref` will still continue to function as before. No action is needed to upgrade.
-
-**What happens when I downgrade cert-manager?**
-
-Downgrading requires two actions: (1) removing the new flag `--default-secret-deletion-policy` from the Deployment, adding the corresponding `--enable-certificate-owner-ref` and (2) emptying the `deletionPolicy` field from every Certificate in the cluster.
-
 **Why is there a new "duplicate" flag `--default-secret-deletion-policy` that does the same thing as `--enable-certificate-owner-ref`?**
 
 The existing flag `--enable-certificate-owner-ref` does not match the new API (`Delete` and `Orphan`), that is why we decided to add a new flag to reflect the new API.
@@ -245,8 +237,10 @@ We don't think this feature needs to be [feature gated][feature gate].
 Upgrading from a version without this feature to a version with this
 feature won't be breaking.
 
-Downgrading, however, will be a breaking change, since a new field will be
-introduced.
+Downgrading requires manual intervention: removing the new flag
+`--default-secret-deletion-policy` from the Deployment, adding the corresponding
+`--enable-certificate-owner-ref` and emptying the `deletionPolicy` field from
+every Certificate in the cluster.
 
 ### Supported Versions
 
