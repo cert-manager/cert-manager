@@ -3,11 +3,6 @@
   extends: [
     'github>cert-manager/renovate-config:default.json5',
   ],
-  baseBranchPatterns: [
-    'master',
-    'release-1.18',
-    'release-1.17',
-  ],
   addLabels: [
     'kind/cleanup',
     'release-note-none',
@@ -56,24 +51,6 @@
           'hack/latest-kind-images.sh',
         ],
       },
-    },
-    {
-      matchBaseBranches: [
-        '/^release-.*/',
-      ],
-      enabled: false,
-    },
-    {
-      matchBaseBranches: [
-        '/^release-.*/',
-      ],
-      matchUpdateTypes: [
-        'patch',
-        'pin',
-        'pinDigest',
-        'digest',
-      ],
-      enabled: true,
     },
   ],
 }
