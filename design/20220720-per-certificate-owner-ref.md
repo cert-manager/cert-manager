@@ -67,9 +67,9 @@ The existing flag `--enable-certificate-owner-ref` does not match the new API (`
 
 No, I don't think there will be another value. The intent of these two values (as opposed to using a boolean) is to make the API more explicit, but a boolean could have done the trick.
 
-**Will `--default-secret-deletion-policy` be removed?**
+**Will `--enable-certificate-owner-ref` be removed?**
 
-We intend to remove `--default-secret-deletion-policy` within 3 to 6 releases.
+We intend to remove `--enable-certificate-owner-ref` within 3 to 6 releases. Or maybe never since the maintenance burden won't be high. We will strongly recommend users to switch to `--default-secret-deletion-policy`.
 
 **Why did we choose `deletionPolicy` over `cleanupPolicy`?**
 
