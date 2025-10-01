@@ -1,6 +1,6 @@
 # Design: Per-Certificate Secret Owner Reference
 
-> 🌟 This design document was written by Maël Valais on 20 July 2022 in order to facilitate Denis Romanenko's feature request presented in [#5158](https://github.com/cert-manager/cert-manager/pull/5158).
+> 🌟 This design document was originally written by Maël Valais on 20 July 2022 in order to facilitate Denis Romanenko's feature request presented in [#5158](https://github.com/cert-manager/cert-manager/pull/5158).
 
 - [Release Signoff Checklist](#release-signoff-checklist)
 - [Summary](#summary)
@@ -68,8 +68,10 @@ We intend to remove `--enable-certificate-owner-ref` within 3 to 6 releases. Or 
 During the design process, we initially considered using `cleanupPolicy` with
 values `[OnDelete|Never]`, but ultimately chose `deletionPolicy` with values
 `[Delete|Orphan]` because it is slightly more declarative, and a bit more
-familiar to the ecosystem (Crossplane, FluxCD, and External Secrets Operator all
-use `deletionPolicy`).
+familiar to the ecosystem ([Crossplane](https://docs.crossplane.io/v1.20/concepts/managed-resources/#deletionpolicy),
+[FluxCD](https://fluxcd.io/flux/components/kustomize/kustomizations/#deletion-policy), and
+[External Secrets Operator](https://external-secrets.io/latest/guides/ownership-deletion-policy/#deletion-policy)
+all use `deletionPolicy`). 
 
 Note that while `deletionPolicy` has a slightly different meaning in Crossplane
 (where it works more like finalizers), in cert-manager it simply controls
