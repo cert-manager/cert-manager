@@ -33,7 +33,9 @@ func NewLogger(baseCl client.Interface) client.Interface {
 	}
 }
 
-// Logger is a glog based logging middleware for an ACME client
+// Logger is a glog based logging middleware for an ACME client.
+// Also used to attach an AcmeActionLabel to the request's context to be used downstream in as a metric label.
+// TODO: Maybe rename to something more generic like "ACMEObservabilityMiddleware" since it does more than just logging.
 type Logger struct {
 	baseCl client.Interface
 	log    logr.Logger

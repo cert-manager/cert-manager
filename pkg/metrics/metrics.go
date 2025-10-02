@@ -96,7 +96,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "clock_time_seconds_gauge",
-				Help:      "The clock time given in seconds (from 1970/01/01 UTC).",
+				Help:      "The clock time given in seconds (from 1970/01/01 UTC). Gauge form of the deprecated clock_time_seconds counter. No labels.",
 			},
 			func() float64 {
 				return float64(c.Now().Unix())
@@ -110,7 +110,9 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "acme_client_request_count",
-				Help:      "The number of requests made by the ACME client.",
+				Help: "Total number of outbound ACME HTTP requests. " +
+					"Labels: scheme (http/https), host (ACME host), action (logical ACME operation), " +
+					"method (HTTP verb), status (HTTP status code).",
 				Subsystem: "http",
 			},
 			[]string{"scheme", "host", "action", "method", "status"},
@@ -120,9 +122,13 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		// times for the ACME client.
 		acmeClientRequestDurationSeconds = prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
-				Namespace:  namespace,
-				Name:       "acme_client_request_duration_seconds",
-				Help:       "The HTTP request latencies in seconds for the ACME client.",
+				Namespace: namespace,
+				Name:      "acme_client_request_duration_seconds",
+				Help: "Latency of outbound ACME HTTP requests in seconds. " +
+					"Summary quantiles approximate request distribution. " +
+					"Labels: scheme (http/https), host (ACME host), action (logical ACME operation), " +
+					"method (HTTP verb), status (HTTP status code). " +
+					"Use with acme_client_request_count for rate/error analysis.",
 				Subsystem:  "http",
 				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 			},
@@ -149,7 +155,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "controller_sync_call_count",
-				Help:      "The number of sync() calls made by a controller.",
+				Help:      "The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).",
 			},
 			[]string{"controller"},
 		)
@@ -159,7 +165,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "controller_sync_error_count",
-				Help:      "The number of errors encountered during controller sync().",
+				Help:      "The number of errors encountered during controller sync(). Label: controller. Use with controller_sync_call_count to derive error rates.",
 			},
 			[]string{"controller"},
 		)
