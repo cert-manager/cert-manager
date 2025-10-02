@@ -33,7 +33,9 @@ func NewLogger(baseCl client.Interface) client.Interface {
 	}
 }
 
-// Logger is a glog based logging middleware for an ACME client
+// Logger is a glog based logging middleware for an ACME client.
+// Also used to attach an AcmeActionLabel to the request's context to be used downstream in as a metric label.
+// TODO: Maybe rename to something more generic like "ACMEObservabilityMiddleware" since it does more than just logging.
 type Logger struct {
 	baseCl client.Interface
 	log    logr.Logger
@@ -43,72 +45,84 @@ var _ client.Interface = &Logger{}
 
 func (l *Logger) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error) {
 	l.log.V(logf.TraceLevel).Info("Calling AuthorizeOrder")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "authorize_order")
 
 	return l.baseCl.AuthorizeOrder(ctx, id, opt...)
 }
 
 func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) {
 	l.log.V(logf.TraceLevel).Info("Calling GetOrder")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "get_order")
 
 	return l.baseCl.GetOrder(ctx, url)
 }
 
 func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
 	l.log.V(logf.TraceLevel).Info("Calling FetchCert")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "fetch_cert")
 
 	return l.baseCl.FetchCert(ctx, url, bundle)
 }
 
 func (l *Logger) ListCertAlternates(ctx context.Context, url string) ([]string, error) {
 	l.log.V(logf.TraceLevel).Info("Calling ListCertAlternates")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "list_cert_alternates")
 
 	return l.baseCl.ListCertAlternates(ctx, url)
 }
 
 func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
 	l.log.V(logf.TraceLevel).Info("Calling WaitOrder")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "wait_order")
 
 	return l.baseCl.WaitOrder(ctx, url)
 }
 
 func (l *Logger) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 	l.log.V(logf.TraceLevel).Info("Calling CreateOrderCert")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "create_order_cert")
 
 	return l.baseCl.CreateOrderCert(ctx, finalizeURL, csr, bundle)
 }
 
 func (l *Logger) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
 	l.log.V(logf.TraceLevel).Info("Calling Accept")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "accept_challenge")
 
 	return l.baseCl.Accept(ctx, chal)
 }
 
 func (l *Logger) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {
 	l.log.V(logf.TraceLevel).Info("Calling GetChallenge")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "get_challenge")
 
 	return l.baseCl.GetChallenge(ctx, url)
 }
 
 func (l *Logger) GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
 	l.log.V(logf.TraceLevel).Info("Calling GetAuthorization")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "get_authorization")
 
 	return l.baseCl.GetAuthorization(ctx, url)
 }
 
 func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
 	l.log.V(logf.TraceLevel).Info("Calling WaitAuthorization")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "wait_authorization")
 
 	return l.baseCl.WaitAuthorization(ctx, url)
 }
 
 func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
 	l.log.V(logf.TraceLevel).Info("Calling Register")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "register_account")
 
 	return l.baseCl.Register(ctx, a, prompt)
 }
 
 func (l *Logger) GetReg(ctx context.Context, url string) (*acme.Account, error) {
 	l.log.V(logf.TraceLevel).Info("Calling GetReg")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "get_registration")
 
 	return l.baseCl.GetReg(ctx, url)
 }
@@ -127,12 +141,14 @@ func (l *Logger) DNS01ChallengeRecord(token string) (string, error) {
 
 func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
 	l.log.V(logf.TraceLevel).Info("Calling Discover")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "discover")
 
 	return l.baseCl.Discover(ctx)
 }
 
 func (l *Logger) UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error) {
 	l.log.V(logf.TraceLevel).Info("Calling UpdateReg")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "update_registration")
 
 	return l.baseCl.UpdateReg(ctx, a)
 }
