@@ -49,7 +49,7 @@ var (
 # TYPE certmanager_clock_time_seconds counter
 certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 	clockGaugeMetric = fmt.Sprintf(`
-# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC).
+# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC). Gauge form of the deprecated clock_time_seconds counter. No labels.
 # TYPE certmanager_clock_time_seconds_gauge gauge
 certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 )
@@ -60,7 +60,6 @@ certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 func TestMetricsController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	t.Cleanup(stopFn)
-
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 
@@ -241,7 +240,7 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 ` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 1
 `)
@@ -304,7 +303,7 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
 ` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
 `)
@@ -320,7 +319,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 
 	// Should expose no Certificates and only metrics sync count increase
 	waitForMetrics(clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 3
 `)
