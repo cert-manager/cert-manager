@@ -125,7 +125,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 				t.Fatalf("Failed to parse server URL: %v", err)
 			}
 			expectedCounter := fmt.Sprintf(`
-				# HELP certmanager_http_acme_client_request_count The number of requests made by the ACME client.
+				# HELP certmanager_http_acme_client_request_count Total number of outbound ACME HTTP requests. Labels: scheme (http/https), host (ACME host), action (logical ACME operation), method (HTTP verb), status (HTTP status code).
 				# TYPE certmanager_http_acme_client_request_count counter
 				certmanager_http_acme_client_request_count{action="%s",host="%s",method="%s",scheme="%s",status="%d"} %d
 				`, tc.expectedAction, parsedURL.Host, tc.method, scheme, tc.statusToReturn, tc.requestsToMake)
