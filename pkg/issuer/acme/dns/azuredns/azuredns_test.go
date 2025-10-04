@@ -9,7 +9,9 @@ this directory.
 package azuredns
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +27,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	logrtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -57,11 +61,57 @@ func init() {
 	}
 }
 
+type fakePrivateZonesClient struct {
+	zones map[string]privatedns.PrivateZone
+}
+
+func newFakePrivateZonesClient(zones map[string]privatedns.PrivateZone) *fakePrivateZonesClient {
+	return &fakePrivateZonesClient{zones: zones}
+}
+
+func (fpz *fakePrivateZonesClient) Get(ctx context.Context, resourceGroupName string, privateZoneName string, options *privatedns.PrivateZonesClientGetOptions) (privatedns.PrivateZonesClientGetResponse, error) {
+	z, ok := fpz.zones[privateZoneName]
+	if !ok {
+		return privatedns.PrivateZonesClientGetResponse{}, errors.New("no zone found")
+	}
+
+	return privatedns.PrivateZonesClientGetResponse{PrivateZone: z}, nil
+}
+
+type fakePrivateRecordsClient struct {
+	records map[string]privatedns.RecordSet
+}
+
+func newFakeRecordSetsClient(records map[string]privatedns.RecordSet) *fakePrivateRecordsClient {
+	return &fakePrivateRecordsClient{records: records}
+}
+
+func (fpr *fakePrivateRecordsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, options *privatedns.RecordSetsClientCreateOrUpdateOptions) (privatedns.RecordSetsClientCreateOrUpdateResponse, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, privateZoneName)
+	fpr.records[key] = parameters
+	return privatedns.RecordSetsClientCreateOrUpdateResponse{}, nil
+}
+
+func (fpr *fakePrivateRecordsClient) Get(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientGetOptions) (privatedns.RecordSetsClientGetResponse, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, privateZoneName)
+	r, ok := fpr.records[key]
+	if !ok {
+		return privatedns.RecordSetsClientGetResponse{}, errors.New("no record found")
+	}
+
+	return privatedns.RecordSetsClientGetResponse{RecordSet: r}, nil
+}
+
+func (fpr *fakePrivateRecordsClient) Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, options *privatedns.RecordSetsClientDeleteOptions) (privatedns.RecordSetsClientDeleteResponse, error) {
+	delete(fpr.records, fmt.Sprintf("%s.%s", relativeRecordSetName, privateZoneName))
+	return privatedns.RecordSetsClientDeleteResponse{}, nil
+} 
+
 func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderCredentials[*dns.RecordSet]("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -72,7 +122,7 @@ func TestLiveAzureDnsPresentMultiple(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderCredentials[*dns.RecordSet]("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -88,7 +138,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderCredentials[*dns.RecordSet]("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -102,7 +152,7 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 
 	time.Sleep(time.Second * 10)
 
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderCredentials[*dns.RecordSet]("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -114,21 +164,21 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 func TestInvalidAzureDns(t *testing.T) {
 	validEnv := []string{"", "AzurePublicCloud", "AzureChinaCloud", "AzureUSGovernmentCloud"}
 	for _, env := range validEnv {
-		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+		_, err := NewDNSProviderCredentials[*dns.RecordSet](env, "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 		assert.NoError(t, err)
 	}
 
 	// Invalid environment
-	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	_, err := NewDNSProviderCredentials[*dns.RecordSet]("invalid env", "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.Error(t, err)
 
 	// Invalid tenantID
-	_, err = NewDNSProviderCredentials("", "cid", "secret", "", "invalid env value", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	_, err = NewDNSProviderCredentials[*dns.RecordSet]("", "cid", "secret", "", "invalid env value", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.Error(t, err)
 }
 
 func TestAuthenticationError(t *testing.T) {
-	provider, err := NewDNSProviderCredentials("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderCredentials[*dns.RecordSet]("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
@@ -414,7 +464,7 @@ func TestStabilizeResponseError(t *testing.T) {
 	zc, err := dns.NewZonesClient("subscriptionID", nil, &arm.ClientOptions{ClientOptions: clientOpt})
 	require.NoError(t, err)
 
-	dnsProvider := DNSProvider{
+	dnsProvider := DNSProvider[*dns.RecordSet]{
 		dns01Nameservers:  util.RecursiveNameservers,
 		resourceGroupName: "resourceGroupName",
 		zoneClient:        zc,
@@ -429,4 +479,66 @@ RESPONSE 502 Bad Gateway
 ERROR CODE: TEST_ERROR_CODE
 --------------------------------------------------------------------------------
 see logs for more information`, ts.URL))
+}
+
+func TestLiveAzurePrivateDNSPresent(t *testing.T) {
+	if !azureLiveTest {
+		t.Skip("skipping live test")
+	}
+
+	provider, err := NewDNSProviderCredentials[*privatedns.RecordSet]("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, true, &v1.AzureManagedIdentity{}, WithPrivateZone[*privatedns.RecordSet](true))
+	require.NoError(t, err)
+
+	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	assert.NoError(t, err)
+}
+
+func TestMockAzurePrivateDNSPresent(t *testing.T) {
+	tests := []struct {
+		name string
+		domain string
+		relativeRecordName string
+		fqdn string
+		value string
+		expectError bool
+	} {
+		{
+			name: "Present challenge in private zone",
+			domain: "test.internal.exmaple.com",
+			relativeRecordName: "_acme-challenge",
+			fqdn: "_acme-challenge.test.internal.example.com",
+			value: "validation-token-123",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pzc := newFakePrivateZonesClient(map[string]privatedns.PrivateZone{
+				tt.domain: {Name: &tt.domain}, 
+			})
+			prc := newFakeRecordSetsClient(map[string]privatedns.RecordSet{
+				tt.fqdn: {
+					Name: &tt.fqdn,
+					Etag: new(string),
+					Properties: &privatedns.RecordSetProperties{
+						TxtRecords: make([]*privatedns.TxtRecord, 0),
+					},
+				},
+			})
+			provider := &DNSProvider[*privatedns.RecordSet]{
+				privateRecordClient: prc,
+				privateZoneClient: pzc,
+				resourceGroupName: "test-rg",
+				zoneName: "internal.example.com",
+				isPrivateZone: true,
+				log: logrtesting.NewTestLogger(t),
+			}
+
+			err := provider.Present(t.Context(), tt.domain, tt.fqdn, tt.value)
+			assert.NoError(t, err)
+			val := *(prc.records[tt.fqdn].Properties.TxtRecords[0].Value[0])
+			assert.Equal(t, tt.value, val)
+		})
+	}
 }

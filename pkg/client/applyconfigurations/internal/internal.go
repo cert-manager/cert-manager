@@ -401,6 +401,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: hostedZoneName
       type:
         scalar: string
+    - name: isPrivateZone
+      type:
+        scalar: boolean
     - name: managedIdentity
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.AzureManagedIdentity
