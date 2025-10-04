@@ -613,6 +613,10 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeStatus
   map:
     fields:
+    - name: accepted
+      type:
+        scalar: boolean
+      default: false
     - name: presented
       type:
         scalar: boolean
