@@ -20,15 +20,19 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ChallengeStatusApplyConfiguration represents a declarative configuration of the ChallengeStatus type for use
 // with apply.
 type ChallengeStatusApplyConfiguration struct {
-	Processing *bool         `json:"processing,omitempty"`
-	Presented  *bool         `json:"presented,omitempty"`
-	Reason     *string       `json:"reason,omitempty"`
-	State      *acmev1.State `json:"state,omitempty"`
+	Processing    *bool                                    `json:"processing,omitempty"`
+	Presented     *bool                                    `json:"presented,omitempty"`
+	Conditions    []ChallengeConditionApplyConfiguration   `json:"conditions,omitempty"`
+	Reason        *string                                  `json:"reason,omitempty"`
+	State         *acmev1.State                            `json:"state,omitempty"`
+	Solver        *ChallengeSolverStatusApplyConfiguration `json:"solver,omitempty"`
+	NextReconcile *metav1.Time                             `json:"nextReconcile,omitempty"`
 }
 
 // ChallengeStatusApplyConfiguration constructs a declarative configuration of the ChallengeStatus type for use with
@@ -53,6 +57,19 @@ func (b *ChallengeStatusApplyConfiguration) WithPresented(value bool) *Challenge
 	return b
 }
 
+// WithConditions adds the given value to the Conditions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Conditions field.
+func (b *ChallengeStatusApplyConfiguration) WithConditions(values ...*ChallengeConditionApplyConfiguration) *ChallengeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithConditions")
+		}
+		b.Conditions = append(b.Conditions, *values[i])
+	}
+	return b
+}
+
 // WithReason sets the Reason field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Reason field is set to the value of the last call.
@@ -66,5 +83,21 @@ func (b *ChallengeStatusApplyConfiguration) WithReason(value string) *ChallengeS
 // If called multiple times, the State field is set to the value of the last call.
 func (b *ChallengeStatusApplyConfiguration) WithState(value acmev1.State) *ChallengeStatusApplyConfiguration {
 	b.State = &value
+	return b
+}
+
+// WithSolver sets the Solver field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Solver field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithSolver(value *ChallengeSolverStatusApplyConfiguration) *ChallengeStatusApplyConfiguration {
+	b.Solver = value
+	return b
+}
+
+// WithNextReconcile sets the NextReconcile field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the NextReconcile field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithNextReconcile(value metav1.Time) *ChallengeStatusApplyConfiguration {
+	b.NextReconcile = &value
 	return b
 }

@@ -26,6 +26,7 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -45,6 +46,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	webhookslv "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/webhook"
+	acmesolver "github.com/cert-manager/cert-manager/pkg/issuer/acme/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -75,6 +77,7 @@ type Solver struct {
 	secretLister            internalinformers.SecretLister
 	dnsProviderConstructors dnsProviderConstructors
 	webhookSolvers          map[string]webhook.Solver
+	clock                   clock.Clock
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
@@ -107,31 +110,77 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
-func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) (acmesolver.SolverCheckResult, cmacme.ChallengeSolverStatus, error) {
 	log := logf.WithResource(logf.FromContext(ctx, "Check"), ch).WithValues("domain", ch.Spec.DNSName)
+
+	// Get the status from the challenge
+	status := ch.Status.Solver.DeepCopy()
+	if status.DNS == nil {
+		status.DNS = &cmacme.ChallengeSolverStatusDNS{
+			TTL: &metav1.Duration{Duration: 60 * time.Second},
+		}
+	}
+
+	// If we have already validated the record in the authoritative nameserver,
+	// we are just waiting for the TTL to elapse
+	if status.DNS.LastSuccess != nil {
+		propagationTime := status.DNS.LastSuccess.Time.Add(status.DNS.TTL.Duration)
+		if now := s.clock.Now(); now.Before(propagationTime) {
+			return acmesolver.SolverCheckResult{
+				Status:     cmmeta.ConditionFalse,
+				Reason:     "ChallengeSelfCheckNotPropagated",
+				Message:    fmt.Sprintf("Waiting TTL (%s) for the record to propagate", status.DNS.TTL),
+				RetryAfter: propagationTime.Sub(now),
+			}, *status, nil
+		}
+
+		log.V(logf.DebugLevel).Info("ACME DNS01 validation record propagated", "fqdn", status.DNS.FQDN)
+		return acmesolver.SolverCheckResult{
+			Status:  cmmeta.ConditionTrue,
+			Reason:  "ChallengeSelfCheckPassed",
+			Message: "Challenge self check has passed using method DNS",
+		}, *status, nil
+	}
 
 	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, false, s.DNS01Nameservers...)
 	if err != nil {
-		return err
+		return acmesolver.SolverCheckResult{
+			Status:  cmmeta.ConditionFalse,
+			Reason:  "ChallengeSelfCheckLookupFailed",
+			Message: fmt.Sprintf("Failed to lookup FQDN %q: %s", ch.Spec.DNSName, err),
+		}, *status, nil
 	}
 
 	log.V(logf.DebugLevel).Info("checking DNS propagation", "nameservers", s.Context.DNS01Nameservers)
 
 	ok, err := util.PreCheckDNS(ctx, fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
 		s.Context.DNS01CheckAuthoritative)
+
 	if err != nil {
-		return err
+		return acmesolver.SolverCheckResult{
+			Status:  cmmeta.ConditionFalse,
+			Reason:  "ChallengeSelfCheckFailed",
+			Message: fmt.Sprintf("Error performing DNS challenge self check: %s", err),
+		}, *status, nil
 	}
+
 	if !ok {
-		return fmt.Errorf("DNS record for %q not yet propagated", ch.Spec.DNSName)
+		return acmesolver.SolverCheckResult{
+			Status:  cmmeta.ConditionFalse,
+			Reason:  "ChallengeSelfCheckNotPropagated",
+			Message: fmt.Sprintf("DNS record for %q not yet propagated", ch.Spec.DNSName),
+		}, *status, nil
 	}
 
-	ttl := 60
-	log.V(logf.DebugLevel).Info("waiting DNS record TTL to allow the DNS01 record to propagate for domain", "ttl", ttl, "fqdn", fqdn)
-	time.Sleep(time.Second * time.Duration(ttl))
-	log.V(logf.DebugLevel).Info("ACME DNS01 validation record propagated", "fqdn", fqdn)
-
-	return nil
+	log.V(logf.DebugLevel).Info("waiting DNS record TTL to allow the DNS01 record to propagate for domain", "ttl", status.DNS.TTL, "fqdn", fqdn)
+	status.DNS.LastSuccess = &metav1.Time{Time: s.clock.Now()}
+	status.DNS.FQDN = fqdn
+	return acmesolver.SolverCheckResult{
+		Status:     cmmeta.ConditionFalse,
+		Reason:     "ChallengeSelfCheckNotPropagated",
+		Message:    fmt.Sprintf("Waiting TTL (%s) for the record to propagate", status.DNS.TTL),
+		RetryAfter: status.DNS.TTL.Duration,
+	}, *status, nil
 }
 
 // CleanUp removes DNS records which are no longer needed after
@@ -544,6 +593,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			digitalocean.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
+		clock:          ctx.Clock,
 	}, nil
 }
 

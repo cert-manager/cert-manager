@@ -31,12 +31,11 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"math/big"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -384,7 +383,7 @@ func (c *Client) authorize(ctx context.Context, typ, val string) (*Authorization
 	if v.Status != StatusPending && v.Status != StatusValid {
 		return nil, fmt.Errorf("acme: unexpected status: %s", v.Status)
 	}
-	return v.authorization(res.Header.Get("Location")), nil
+	return v.authorization(res.Header.Get("Location"), 0), nil
 }
 
 // GetAuthorization retrieves an authorization identified by the given URL.
@@ -405,7 +404,8 @@ func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorizati
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
 		return nil, fmt.Errorf("acme: invalid response: %v", err)
 	}
-	return v.authorization(url), nil
+	d := retryAfter(res.Header.Get("Retry-After"))
+	return v.authorization(url, d), nil
 }
 
 // RevokeAuthorization relinquishes an existing authorization identified
@@ -463,7 +463,7 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 		case err != nil:
 			// Skip and retry.
 		case raw.Status == StatusValid:
-			return raw.authorization(url), nil
+			return raw.authorization(url, 0), nil
 		case raw.Status == StatusInvalid:
 			return nil, raw.error(url)
 		}
@@ -473,7 +473,7 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 		// while waiting for a final authorization status.
 		d := retryAfter(res.Header.Get("Retry-After"))
 		if d == 0 {
-			// Given that the fastest challenges TLS-SNI and HTTP-01
+			// Given that the fastest challenges TLS-ALPN and HTTP-01
 			// require a CA to make at least 1 network round trip
 			// and most likely persist a challenge state,
 			// this default delay seems reasonable.
@@ -508,7 +508,8 @@ func (c *Client) GetChallenge(ctx context.Context, url string) (*Challenge, erro
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
 		return nil, fmt.Errorf("acme: invalid response: %v", err)
 	}
-	return v.challenge(), nil
+	d := retryAfter(res.Header.Get("Retry-After"))
+	return v.challenge(d), nil
 }
 
 // Accept informs the server that the client accepts one of its challenges
@@ -537,7 +538,7 @@ func (c *Client) Accept(ctx context.Context, chal *Challenge) (*Challenge, error
 	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
 		return nil, fmt.Errorf("acme: invalid response: %v", err)
 	}
-	return v.challenge(), nil
+	return v.challenge(0), nil
 }
 
 // DNS01ChallengeRecord returns a DNS record value for a dns-01 challenge response.
@@ -574,50 +575,28 @@ func (c *Client) HTTP01ChallengePath(token string) string {
 }
 
 // TLSSNI01ChallengeCert creates a certificate for TLS-SNI-01 challenge response.
+// Always returns an error.
 //
-// Deprecated: This challenge type is unused in both draft-02 and RFC versions of the ACME spec.
-func (c *Client) TLSSNI01ChallengeCert(token string, opt ...CertOption) (cert tls.Certificate, name string, err error) {
-	ka, err := keyAuth(c.Key.Public(), token)
-	if err != nil {
-		return tls.Certificate{}, "", err
-	}
-	b := sha256.Sum256([]byte(ka))
-	h := hex.EncodeToString(b[:])
-	name = fmt.Sprintf("%s.%s.acme.invalid", h[:32], h[32:])
-	cert, err = tlsChallengeCert([]string{name}, opt)
-	if err != nil {
-		return tls.Certificate{}, "", err
-	}
-	return cert, name, nil
+// Deprecated: This challenge type was only present in pre-standardized ACME
+// protocol drafts and is insecure for use in shared hosting environments.
+func (c *Client) TLSSNI01ChallengeCert(token string, opt ...CertOption) (tls.Certificate, string, error) {
+	return tls.Certificate{}, "", errPreRFC
 }
 
 // TLSSNI02ChallengeCert creates a certificate for TLS-SNI-02 challenge response.
+// Always returns an error.
 //
-// Deprecated: This challenge type is unused in both draft-02 and RFC versions of the ACME spec.
-func (c *Client) TLSSNI02ChallengeCert(token string, opt ...CertOption) (cert tls.Certificate, name string, err error) {
-	b := sha256.Sum256([]byte(token))
-	h := hex.EncodeToString(b[:])
-	sanA := fmt.Sprintf("%s.%s.token.acme.invalid", h[:32], h[32:])
-
-	ka, err := keyAuth(c.Key.Public(), token)
-	if err != nil {
-		return tls.Certificate{}, "", err
-	}
-	b = sha256.Sum256([]byte(ka))
-	h = hex.EncodeToString(b[:])
-	sanB := fmt.Sprintf("%s.%s.ka.acme.invalid", h[:32], h[32:])
-
-	cert, err = tlsChallengeCert([]string{sanA, sanB}, opt)
-	if err != nil {
-		return tls.Certificate{}, "", err
-	}
-	return cert, sanA, nil
+// Deprecated: This challenge type was only present in pre-standardized ACME
+// protocol drafts and is insecure for use in shared hosting environments.
+func (c *Client) TLSSNI02ChallengeCert(token string, opt ...CertOption) (tls.Certificate, string, error) {
+	return tls.Certificate{}, "", errPreRFC
 }
 
 // TLSALPN01ChallengeCert creates a certificate for TLS-ALPN-01 challenge response.
 // Servers can present the certificate to validate the challenge and prove control
-// over a domain name. For more details on TLS-ALPN-01 see
-// https://tools.ietf.org/html/draft-shoemaker-acme-tls-alpn-00#section-3
+// over an identifier (either a DNS name or the textual form of an IPv4 or IPv6
+// address). For more details on TLS-ALPN-01 see
+// https://www.rfc-editor.org/rfc/rfc8737 and https://www.rfc-editor.org/rfc/rfc8738
 //
 // The token argument is a Challenge.Token value.
 // If a WithKey option is provided, its private part signs the returned cert,
@@ -625,9 +604,13 @@ func (c *Client) TLSSNI02ChallengeCert(token string, opt ...CertOption) (cert tl
 // If no WithKey option is provided, a new ECDSA key is generated using P-256 curve.
 //
 // The returned certificate is valid for the next 24 hours and must be presented only when
-// the server name in the TLS ClientHello matches the domain, and the special acme-tls/1 ALPN protocol
+// the server name in the TLS ClientHello matches the identifier, and the special acme-tls/1 ALPN protocol
 // has been specified.
-func (c *Client) TLSALPN01ChallengeCert(token, domain string, opt ...CertOption) (cert tls.Certificate, err error) {
+//
+// Validation requests for IP address identifiers will use the reverse DNS form in the server name
+// in the TLS ClientHello since the SNI extension is not supported for IP addresses.
+// See RFC 8738 Section 6 for more information.
+func (c *Client) TLSALPN01ChallengeCert(token, identifier string, opt ...CertOption) (cert tls.Certificate, err error) {
 	ka, err := keyAuth(c.Key.Public(), token)
 	if err != nil {
 		return tls.Certificate{}, err
@@ -657,7 +640,7 @@ func (c *Client) TLSALPN01ChallengeCert(token, domain string, opt ...CertOption)
 	}
 	tmpl.ExtraExtensions = append(tmpl.ExtraExtensions, acmeExtension)
 	newOpt = append(newOpt, WithTemplate(tmpl))
-	return tlsChallengeCert([]string{domain}, newOpt)
+	return tlsChallengeCert(identifier, newOpt)
 }
 
 // popNonce returns a nonce value previously stored with c.addNonce
@@ -775,11 +758,15 @@ func defaultTLSChallengeCertTemplate() *x509.Certificate {
 	}
 }
 
-// tlsChallengeCert creates a temporary certificate for TLS-SNI challenges
-// with the given SANs and auto-generated public/private key pair.
-// The Subject Common Name is set to the first SAN to aid debugging.
+// tlsChallengeCert creates a temporary certificate for TLS-ALPN challenges
+// for the given identifier, using an auto-generated public/private key pair.
+//
+// If the provided identifier is a domain name, it will be used as a DNS type SAN and for the
+// subject common name. If the provided identifier is an IP address it will be used as an IP type
+// SAN.
+//
 // To create a cert with a custom key pair, specify WithKey option.
-func tlsChallengeCert(san []string, opt []CertOption) (tls.Certificate, error) {
+func tlsChallengeCert(identifier string, opt []CertOption) (tls.Certificate, error) {
 	var key crypto.Signer
 	tmpl := defaultTLSChallengeCertTemplate()
 	for _, o := range opt {
@@ -803,9 +790,12 @@ func tlsChallengeCert(san []string, opt []CertOption) (tls.Certificate, error) {
 			return tls.Certificate{}, err
 		}
 	}
-	tmpl.DNSNames = san
-	if len(san) > 0 {
-		tmpl.Subject.CommonName = san[0]
+
+	if ip := net.ParseIP(identifier); ip != nil {
+		tmpl.IPAddresses = []net.IP{ip}
+	} else {
+		tmpl.DNSNames = []string{identifier}
+		tmpl.Subject.CommonName = identifier
 	}
 
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, key.Public(), key)
@@ -816,12 +806,6 @@ func tlsChallengeCert(san []string, opt []CertOption) (tls.Certificate, error) {
 		Certificate: [][]byte{der},
 		PrivateKey:  key,
 	}, nil
-}
-
-// encodePEM returns b encoded as PEM with block of type typ.
-func encodePEM(typ string, b []byte) []byte {
-	pb := &pem.Block{Type: typ, Bytes: b}
-	return pem.EncodeToMemory(pb)
 }
 
 // timeNow is time.Now, except in tests which can mess with it.

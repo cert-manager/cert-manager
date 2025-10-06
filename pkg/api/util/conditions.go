@@ -17,10 +17,13 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -396,4 +399,95 @@ func CertificateRequestIsDenied(cr *cmapi.CertificateRequest) bool {
 	}
 
 	return false
+}
+
+// ChallengePresented returns true if the challenge has been marked as Presented,
+// meaning the solver has successfully provisioned the challenge token.
+func ChallengePresented(cr *cmacme.Challenge) bool {
+	return hasChallengeCondition(cr, cmacme.ChallengeConditionTypePresented)
+}
+
+// ChallengeSolved returns true if the challenge has been marked as Solved,
+// meaning the presented solution has propagated and is expected to be accessible.
+func ChallengeSolved(cr *cmacme.Challenge) bool {
+	return hasChallengeCondition(cr, cmacme.ChallengeConditionTypeSolved)
+}
+
+// ChallengeAccepted returns true if the challenge has been marked as Accepted,
+// meaning the ACME server has validated and accepted the challenge response.
+func ChallengeAccepted(cr *cmacme.Challenge) bool {
+	return hasChallengeCondition(cr, cmacme.ChallengeConditionTypeAccepted)
+}
+
+// hasChallengeCondition returns true if the given challenge has a condition
+// with the specified type and a status of ConditionTrue.
+func hasChallengeCondition(cr *cmacme.Challenge, condType cmacme.ChallengeConditionType) bool {
+	if cr == nil {
+		return false
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == condType && con.Status == cmmeta.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// SetChallengeCondition will set a 'condition' on the given Challenge.
+//   - If no condition of the same type already exists, the condition will be
+//     inserted with the LastTransitionTime set to the current time.
+//   - If a condition of the same type and state already exists, the condition
+//     will be updated but the LastTransitionTime will not be modified.
+//   - If a condition of the same type and different state already exists, the
+//     condition will be updated with the LastTransitionTime set to the current
+//     time.
+//
+// The given ObservedGeneration will always set on the condition, whether the
+// lastTransitionTime is modified or not.
+func SetChallengeCondition(ch *cmacme.Challenge, conditionType cmacme.ChallengeConditionType,
+	status cmmeta.ConditionStatus, reason, message string, a ...any) {
+	newCondition := cmacme.ChallengeCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: fmt.Sprintf(message, a...),
+	}
+
+	nowTime := metav1.NewTime(Clock.Now())
+	newCondition.LastTransitionTime = &nowTime
+
+	// Search through existing conditions
+	for idx, cond := range ch.Status.Conditions {
+		// Skip unrelated conditions
+		if cond.Type != conditionType {
+			continue
+		}
+
+		// If this update doesn't contain a state transition, we don't update the
+		// conditions LastTransitionTime to Now()
+		if cond.Status == status {
+			newCondition.LastTransitionTime = cond.LastTransitionTime
+		} else {
+			logf.Log.V(logf.InfoLevel).Info("Found status change for Challenge condition; setting lastTransitionTime",
+				"challenge", klog.KObj(ch),
+				"condition", conditionType,
+				"oldStatus", cond.Status,
+				"status", status,
+				"lastTransitionTime", nowTime.Time)
+		}
+
+		// Overwrite the existing condition
+		ch.Status.Conditions[idx] = newCondition
+		return
+	}
+
+	// If we've not found an existing condition of this type, we simply insert
+	// the new condition into the slice.
+	ch.Status.Conditions = append(ch.Status.Conditions, newCondition)
+	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for Challenge condition",
+		"challenge", klog.KObj(ch),
+		"condition", conditionType,
+		"lastTransitionTime", nowTime.Time)
 }

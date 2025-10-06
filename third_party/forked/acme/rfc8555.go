@@ -328,6 +328,7 @@ func responseOrder(res *http.Response) (*Order, error) {
 		AuthzURLs:   v.Authorizations,
 		FinalizeURL: v.Finalize,
 		CertURL:     v.Certificate,
+		RetryAfter:  retryAfter(res.Header.Get("Retry-After")),
 	}
 	for _, id := range v.Identifiers {
 		o.Identifiers = append(o.Identifiers, AuthzID{Type: id.Type, Value: id.Value})

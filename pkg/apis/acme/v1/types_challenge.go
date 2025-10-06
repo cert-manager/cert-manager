@@ -133,6 +133,12 @@ type ChallengeStatus struct {
 	// +optional
 	Presented bool `json:"presented"`
 
+	// conditions contains the current observed conditions for the challenge.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []ChallengeCondition `json:"conditions,omitempty"`
+
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional
@@ -142,4 +148,103 @@ type ChallengeStatus struct {
 	// If not set, the state of the challenge is unknown.
 	// +optional
 	State State `json:"state,omitempty"`
+
+	// solver contains the observed status of an ACME challenge solver,
+	// including DNS and HTTP-specific readiness data and general state tracking.
+	//
+	// This structure is used to track whether a challenge is ready to be submitted
+	// to the ACME server for validation.
+	// +optional
+	Solver ChallengeSolverStatus `json:"solver,omitzero"`
+
+	// nextReconcile is the timestamp that the next reconcile should be made.
+	//
+	// This exists as we have various polling going in within the challenge
+	// controller with different backoff.
+	// +optional
+	NextReconcile *metav1.Time `json:"nextReconcile,omitempty"`
+}
+
+// ChallengeConditionType represents a Challenge condition value.
+type ChallengeConditionType string
+
+const (
+	// ChallengeConditionTypePresented indicates that the challenge solver
+	// has successfully presented the challenge token (e.g., by provisioning
+	// a DNS record or serving an HTTP response).
+	ChallengeConditionTypePresented = "Presented"
+	// ChallengeConditionTypeSolved indicates that the presented solution
+	// has propagated and is expected to be accessible to the ACME server.
+	// This typically means DNS changes have propagated or HTTP endpoints are reachable.
+	ChallengeConditionTypeSolved = "Solved"
+	// ChallengeConditionTypeAccepted indicates that the ACME server has
+	// validated and accepted the challenge response.
+	ChallengeConditionTypeAccepted = "Accepted"
+)
+
+// ChallengeCondition contains condition information for a Challenge.
+type ChallengeCondition struct {
+	// type of the condition, known values are (`Presented`, `Solved`, `Accepted`).
+	Type ChallengeConditionType `json:"type"`
+
+	// status of the condition, one of (`True`, `False`, `Unknown`).
+	Status cmmeta.ConditionStatus `json:"status"`
+
+	// lastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+
+	// reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason"`
+
+	// message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
+}
+
+// ChallengeSolverStatus contains the observed status of an ACME challenge solver,
+// including DNS and HTTP-specific readiness data and general state tracking.
+//
+// This structure is used to track whether a challenge is ready to be submitted
+// to the ACME server for validation.
+type ChallengeSolverStatus struct {
+	// dns contains status information specific to DNS-01 challenge solving.
+	// +optional
+	DNS *ChallengeSolverStatusDNS `json:"dns,omitempty"`
+
+	// http contains status information specific to HTTP-01 challenge solving.
+	// +optional
+	HTTP *ChallengeSolverStatusHTTP `json:"http,omitempty"`
+}
+
+// ChallengeSolverStatusDNS provides details about DNS-01 challenge readiness checks.
+type ChallengeSolverStatusDNS struct {
+	// ttl is the configured time-to-live of the DNS record used for validation.
+	// +optional
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// lastSuccess is the time that the DNS check was successful against the
+	// authoritative nameserver.
+	//
+	// The check will not pass until lastSuccess + ttl
+	// has been reached to allow for DNSpropagation.
+	// +optional
+	LastSuccess *metav1.Time `json:"lastSuccess,omitempty"`
+
+	// fqdn is the fully qualified domain name of the challenge
+	// +optional
+	FQDN string `json:"fqdn,omitempty"`
+}
+
+// ChallengeSolverStatusHTTP provides details about HTTP-01 challenge readiness checks.
+type ChallengeSolverStatusHTTP struct {
+	// requiredSuccesses is the number of successful HTTP requests required
+	// to consider the challenge ready.
+	// +optional
+	RequiredSuccesses int64 `json:"requiredSuccesses"`
+
+	// successes is the number of successful HTTP readiness checks observed so far.
+	// +optional
+	Successes int64 `json:"successes"`
 }
