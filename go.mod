@@ -50,7 +50,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.22.1
-	sigs.k8s.io/gateway-api v1.4.0-rc.2
+	sigs.k8s.io/gateway-api v1.4.0
 	sigs.k8s.io/randfill v1.0.0
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0
 	software.sslmate.com/src/go-pkcs12 v0.6.0
