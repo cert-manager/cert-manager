@@ -1,0 +1,79 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'github>cert-manager/renovate-config:default.json5',
+  ],
+  baseBranchPatterns: [
+    'master',
+    'release-1.19',
+    'release-1.18',
+  ],
+  addLabels: [
+    'kind/cleanup',
+    'release-note-none',
+  ],
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        'make/base_images.mk',
+      ],
+      matchStrings: [
+        '(?<depName>gcr\\.io\/[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})',
+      ],
+      datasourceTemplate: 'docker',
+      currentValueTemplate: 'latest'
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        'hack/latest-kind-images.sh',
+      ],
+      matchStrings: [
+        'kind_version=(?<currentValue>.*)',
+      ],
+      datasourceTemplate: 'github-releases',
+      depNameTemplate: 'kubernetes-sigs/kind',
+    },
+  ],
+  packageRules: [
+    {
+      groupName: 'Base Images',
+      matchManagers: [
+        'custom.regex',
+      ],
+    },
+    {
+      groupName: null,
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'kubernetes-sigs/kind',
+      ],
+      postUpgradeTasks: {
+        commands: [
+          'hack/latest-kind-images.sh',
+        ],
+      },
+    },
+    {
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      enabled: false,
+    },
+    {
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      matchUpdateTypes: [
+        'patch',
+        'pin',
+        'pinDigest',
+        'digest',
+      ],
+      enabled: true,
+    },
+  ],
+}
