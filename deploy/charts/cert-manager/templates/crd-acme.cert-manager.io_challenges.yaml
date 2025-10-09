@@ -84,7 +84,6 @@ spec:
                       description: Group of the issuer being referred to.
                       type: string
                     kind:
-                      default: Issuer
                       description: Kind of the issuer being referred to.
                       type: string
                     name:

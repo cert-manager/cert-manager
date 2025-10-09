@@ -4773,7 +4773,6 @@ func schema_pkg_apis_meta_v1_IssuerReference(ref common.ReferenceCallback) commo
 					"kind": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Kind of the issuer being referred to.",
-							Default:     "Issuer",
 							Type:        []string{"string"},
 							Format:      "",
 						},

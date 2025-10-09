@@ -22,6 +22,7 @@ limitations under the License.
 package v1
 
 import (
+	metav1 "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -40,12 +41,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_Certificate(in *certmanagerv1.Certificate) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
+	metav1.SetObjectDefaults_IssuerReference(&in.Spec.IssuerRef)
 }
 
 func SetObjectDefaults_CertificateList(in *certmanagerv1.CertificateList) {
@@ -56,12 +52,7 @@ func SetObjectDefaults_CertificateList(in *certmanagerv1.CertificateList) {
 }
 
 func SetObjectDefaults_CertificateRequest(in *certmanagerv1.CertificateRequest) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
+	metav1.SetObjectDefaults_IssuerReference(&in.Spec.IssuerRef)
 }
 
 func SetObjectDefaults_CertificateRequestList(in *certmanagerv1.CertificateRequestList) {

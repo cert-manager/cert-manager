@@ -54,7 +54,6 @@ type IssuerReference struct {
 	Name string `json:"name"`
 	// Kind of the issuer being referred to.
 	// +optional
-	// +default="Issuer"
 	Kind string `json:"kind,omitempty"`
 	// Group of the issuer being referred to.
 	// +optional
