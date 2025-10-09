@@ -189,7 +189,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 			violations = append(violations, "spec.subject.postCodes")
 		}
 		if !util.EqualUnsorted(x509req.Subject.Province, spec.Subject.Provinces) {
-			violations = append(violations, "spec.subject.postCodes")
+			violations = append(violations, "spec.subject.provinces")
 		}
 		if !util.EqualUnsorted(x509req.Subject.StreetAddress, spec.Subject.StreetAddresses) {
 			violations = append(violations, "spec.subject.streetAddresses")
