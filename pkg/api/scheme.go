@@ -23,20 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	cmacmev1 "github.com/cert-manager/cert-manager/internal/apis/acme/v1"
+	cmapiv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmacmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
-
-// This package defines a Scheme and Codec that has the *external* API types
-// registered.
-// This means that the scheme will *not* perform defaulting or conversions for
-// cert-manager API resources.
-// This is to ensure a clean separation between API semantics and controllers.
-// Only the webhook should utilise a scheme with conversions and defaults
-// registered in order to ensure all controllers have a consistent view of
-// resource types in the apiserver.
 
 var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)

@@ -41,7 +41,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_Certificate(in *certmanagerv1.Certificate) {
-	metav1.SetObjectDefaults_IssuerReference(&in.Spec.IssuerRef)
+	SetObjectDefaults_CertificateSpec(&in.Spec)
 }
 
 func SetObjectDefaults_CertificateList(in *certmanagerv1.CertificateList) {
