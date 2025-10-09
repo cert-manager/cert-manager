@@ -30,10 +30,12 @@ import (
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -100,27 +102,31 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		return err
 	}
 
-	// Build Secret apply configuration and options.
-	applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager, Force: true}
-	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
-		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
-		WithData(secret.Data).WithType(secret.Type)
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		// Build Secret apply configuration and options.
+		applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager, Force: true}
+		applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
+			WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
+			WithData(secret.Data).WithType(secret.Type)
 
-	// If Secret owner reference is enabled, set it on the Secret. This results
-	// in a no-op if the Secret already exists and has the owner reference set,
-	// and visa-versa.
-	if s.enableSecretOwnerReferences {
-		ref := *metav1.NewControllerRef(crt, certificateGvk)
-		applyCnf = applyCnf.WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-			APIVersion: &ref.APIVersion, Kind: &ref.Kind,
-			Name: &ref.Name, UID: &ref.UID,
-			Controller: ref.Controller, BlockOwnerDeletion: ref.BlockOwnerDeletion,
-		})
+		// If Secret owner reference is enabled, set it on the Secret. This results
+		// in a no-op if the Secret already exists and has the owner reference set,
+		// and visa-versa.
+		if s.enableSecretOwnerReferences {
+			ref := *metav1.NewControllerRef(crt, certificateGvk)
+			applyCnf = applyCnf.WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+				APIVersion: &ref.APIVersion, Kind: &ref.Kind,
+				Name: &ref.Name, UID: &ref.UID,
+				Controller: ref.Controller, BlockOwnerDeletion: ref.BlockOwnerDeletion,
+			})
+		}
+
+		log.V(logf.DebugLevel).Info("applying secret")
+		_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
+	} else {
+		log.V(logf.DebugLevel).Info("updating secret")
+		_, err = s.secretClient.Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	}
-
-	log.V(logf.DebugLevel).Info("applying secret")
-
-	_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
 	if err != nil {
 		return fmt.Errorf("failed to apply secret %s/%s: %w", secret.Namespace, secret.Name, err)
 	}

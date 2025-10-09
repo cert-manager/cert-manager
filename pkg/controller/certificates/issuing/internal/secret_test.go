@@ -30,14 +30,17 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcoreclients "github.com/cert-manager/cert-manager/test/unit/coreclients"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -102,19 +105,22 @@ func Test_SecretsManager(t *testing.T) {
 	tlsDerContent := block.Bytes
 
 	tests := map[string]struct {
-		certificateOptions controllerpkg.CertificateOptions
-		certificate        *cmapi.Certificate
-		existingSecret     *corev1.Secret
+		certificateOptions    controllerpkg.CertificateOptions
+		certificate           *cmapi.Certificate
+		existingSecret        *corev1.Secret
+		enableServerSideApply bool
 
 		secretData SecretData
 		applyFn    func(t *testing.T) testcoreclients.ApplyFn
+		updateFn   func(t *testing.T) func() (*corev1.Secret, error)
 
 		expectedErr bool
 	}{
 		"if secret does not exists and unable to decode certificate, then error": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertBundle.Certificate,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertBundle.Certificate,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -125,13 +131,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil, // ServerSideApply enabled, so UpdateFn should not be used
 			expectedErr: true,
 		},
 
 		"if secret does not exist, create new Secret, with owner disabled": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertBundle.Certificate,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertBundle.Certificate,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -163,13 +171,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil, // ServerSideApply enabled, so UpdateFn should not be used
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret, with owner enabled": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
-			certificate:        baseCertBundle.Certificate,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:           baseCertBundle.Certificate,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -202,6 +212,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil, // ServerSideApply enabled, so UpdateFn should not be used
 			expectedErr: false,
 		},
 
@@ -218,6 +229,7 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -250,6 +262,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 		"if secret does exist, update existing Secret and leave custom annotations and labels, with owner enabled": {
@@ -265,6 +278,7 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -303,6 +317,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
@@ -319,6 +334,7 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -353,6 +369,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
@@ -369,6 +386,7 @@ func Test_SecretsManager(t *testing.T) {
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
 				Type: corev1.SecretTypeTLS,
 			},
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -403,13 +421,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret using the secret template": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
-			certificate:        baseCertWithSecretTemplate,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:           baseCertWithSecretTemplate,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -450,13 +470,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret with additional output format DER": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertWithAdditionalOutputFormatDER,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertWithAdditionalOutputFormatDER,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -490,13 +512,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret with additional output format CombinedPEM": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertWithAdditionalOutputFormatCombinedPEM,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertWithAdditionalOutputFormatCombinedPEM,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -530,13 +554,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret with additional output format DER and CombinedPEM": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertWithAdditionalOutputFormats,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertWithAdditionalOutputFormats,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -571,6 +597,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
@@ -601,7 +628,7 @@ func Test_SecretsManager(t *testing.T) {
 				},
 				Type: corev1.SecretTypeOpaque,
 			},
-
+			enableServerSideApply: true,
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -630,6 +657,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
@@ -660,7 +688,7 @@ func Test_SecretsManager(t *testing.T) {
 				},
 				Type: corev1.SecretTypeOpaque,
 			},
-
+			enableServerSideApply: true,
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -690,6 +718,7 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
@@ -720,7 +749,7 @@ func Test_SecretsManager(t *testing.T) {
 				},
 				Type: corev1.SecretTypeOpaque,
 			},
-
+			enableServerSideApply: true,
 			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
 				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
 					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
@@ -750,12 +779,14 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 		"if apply errors, expect error response": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
-			certificate:        baseCertWithSecretTemplate,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:           baseCertWithSecretTemplate,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -765,13 +796,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, errors.New("this is an error")
 				}
 			},
+			updateFn:    nil,
 			expectedErr: true,
 		},
 
 		"if secret does not exist, create new Secret with JKS keystore": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertWithJKSKeystore,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertWithJKSKeystore,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -782,13 +815,15 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret with PKCS12 keystore": {
-			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
-			certificate:        baseCertWithPKCS12Keystore,
-			existingSecret:     nil,
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertWithPKCS12Keystore,
+			existingSecret:        nil,
+			enableServerSideApply: true,
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
@@ -799,13 +834,133 @@ func Test_SecretsManager(t *testing.T) {
 					return nil, nil
 				}
 			},
+			updateFn:    nil,
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with ServerSideApply disabled": {
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertBundle.Certificate,
+			existingSecret:        nil,
+			enableServerSideApply: false,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					// Apply method should not be called when ServerSideApply is disabled
+					t.Error("unexpected apply call when ServerSideApply is disabled")
+					return nil, nil
+				}
+			},
+			updateFn: func(t *testing.T) func() (*corev1.Secret, error) {
+				return func() (*corev1.Secret, error) {
+					return nil, errors.New("update method called when ServerSideApply is disabled")
+				}
+			},
+			expectedErr: true,
+		},
+
+		"if secret does not exist, create new Secret with ServerSideApply disabled and UpdateFn succeeds": {
+			certificateOptions:    controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:           baseCertBundle.Certificate,
+			existingSecret:        nil,
+			enableServerSideApply: false,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					// Apply method should not be called when ServerSideApply is disabled
+					t.Error("unexpected apply call when ServerSideApply is disabled")
+					return nil, nil
+				}
+			},
+			updateFn: func(t *testing.T) func() (*corev1.Secret, error) {
+				return func() (*corev1.Secret, error) {
+					// Return a mock secret to simulate successful update
+					return &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: gen.DefaultTestNamespace,
+							Name:      "output",
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						},
+						Type: corev1.SecretTypeTLS,
+					}, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret exists, update existing Secret with ServerSideApply disabled": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   gen.DefaultTestNamespace,
+					Name:        "output",
+					Annotations: map[string]string{"my-custom": "annotation"},
+					Labels:      map[string]string{"my-custom": "label"},
+				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			enableServerSideApply: false,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					// Apply method should not be called when ServerSideApply is disabled
+					t.Error("unexpected apply call when ServerSideApply is disabled")
+					return nil, nil
+				}
+			},
+			updateFn: func(t *testing.T) func() (*corev1.Secret, error) {
+				return func() (*corev1.Secret, error) {
+					// Verify that update is called with the correct data
+					return &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace:   gen.DefaultTestNamespace,
+							Name:        "output",
+							Annotations: map[string]string{"my-custom": "annotation"},
+							Labels:      map[string]string{"my-custom": "label"},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						},
+						Type: corev1.SecretTypeTLS,
+					}, nil
+				}
+			},
 			expectedErr: false,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			// Set the state of ServerSideApply feature
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, test.enableServerSideApply)
+
+			// Create secret client with ApplyFn
 			secretClient := testcoreclients.NewFakeSecretsGetter(testcoreclients.SetFakeSecretsGetterApplyFn(test.applyFn(t)))
+
+			// If ServerSideApply is disabled and updateFn is provided, set UpdateFn
+			if !test.enableServerSideApply && test.updateFn != nil {
+				secretClient = testcoreclients.NewFakeSecretsGetter(
+					testcoreclients.SetFakeSecretsGetterApplyFn(test.applyFn(t)),
+					testcoreclients.SetFakeSecretsGetterUpdateFn(test.updateFn(t)),
+				)
+			}
 
 			var mod testcorelisters.FakeSecretListerModifier
 			if test.existingSecret != nil {

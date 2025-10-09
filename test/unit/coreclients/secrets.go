@@ -75,6 +75,14 @@ func SetFakeSecretsGetterGet(s *corev1.Secret, err error) FakeSecretsGetterModif
 	}
 }
 
+// SetFakeSecretsGetterUpdateFn is a function that can be used to inject code
+// when the FakeSecretsGetter is Updated.
+func SetFakeSecretsGetterUpdateFn(fn func() (*corev1.Secret, error)) FakeSecretsGetterModifier {
+	return func(f *FakeSecretsGetter) {
+		f.c.UpdateFn = fn
+	}
+}
+
 // SetFakeSecretsGetterApplyFn is a function that can be used to inject code
 // when the FakeSecretsGetter is Applied.
 func SetFakeSecretsGetterApplyFn(fn ApplyFn) FakeSecretsGetterModifier {
