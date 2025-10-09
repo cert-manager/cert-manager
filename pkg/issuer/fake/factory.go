@@ -22,11 +22,18 @@ import (
 )
 
 type Factory struct {
-	IssuerForFunc func(iss v1.GenericIssuer) (issuerpkg.Interface, error)
+	IssuerForFunc      func(iss v1.GenericIssuer) (issuerpkg.Interface, error)
+	RegisterIssuerFunc func(name string, c issuerpkg.IssuerConstructor)
 }
 
 var _ issuerpkg.Factory = &Factory{}
 
 func (f *Factory) IssuerFor(iss v1.GenericIssuer) (issuerpkg.Interface, error) {
 	return f.IssuerForFunc(iss)
+}
+
+func (f *Factory) RegisterIssuer(name string, c issuerpkg.IssuerConstructor) {
+	if f.RegisterIssuerFunc != nil {
+		f.RegisterIssuerFunc(name, c)
+	}
 }
