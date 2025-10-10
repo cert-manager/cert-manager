@@ -1465,7 +1465,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: kind
       type:
         scalar: string
-      default: Issuer
     - name: name
       type:
         scalar: string

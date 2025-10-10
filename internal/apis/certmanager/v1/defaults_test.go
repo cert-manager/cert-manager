@@ -27,21 +27,21 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
-// Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy demonstrates that
+// Test_SetObjectDefaults_Certificate_PrivateKey_RotationPolicy demonstrates that
 // the default rotation policy is set by the defaulting function and that the
 // old default (`Never`) can be re-instated by disabling the
 // DefaultPrivateKeyRotationPolicyAlways feature gate.
-func Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy(t *testing.T) {
+func Test_SetObjectDefaults_Certificate_PrivateKey_RotationPolicy(t *testing.T) {
 	t.Run("feature-enabled", func(t *testing.T) {
 		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, true)
 		in := &cmapi.Certificate{}
-		SetRuntimeDefaults_Certificate(in)
+		SetObjectDefaults_Certificate(in)
 		assert.Equal(t, cmapi.RotationPolicyAlways, in.Spec.PrivateKey.RotationPolicy)
 	})
 	t.Run("feature-disabled", func(t *testing.T) {
 		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, false)
 		in := &cmapi.Certificate{}
-		SetRuntimeDefaults_Certificate(in)
+		SetObjectDefaults_Certificate(in)
 		assert.Equal(t, cmapi.RotationPolicyNever, in.Spec.PrivateKey.RotationPolicy)
 	})
 	t.Run("explicit-rotation-policy", func(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy(t *testing.T)
 				},
 			},
 		}
-		SetRuntimeDefaults_Certificate(in)
+		SetObjectDefaults_Certificate(in)
 		assert.Equal(t, expectedRotationPolicy, in.Spec.PrivateKey.RotationPolicy)
 	})
 }

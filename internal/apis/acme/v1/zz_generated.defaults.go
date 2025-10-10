@@ -22,6 +22,7 @@ limitations under the License.
 package v1
 
 import (
+	metav1 "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -38,12 +39,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_Challenge(in *acmev1.Challenge) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
+	metav1.SetObjectDefaults_IssuerReference(&in.Spec.IssuerRef)
 }
 
 func SetObjectDefaults_ChallengeList(in *acmev1.ChallengeList) {
@@ -54,12 +50,7 @@ func SetObjectDefaults_ChallengeList(in *acmev1.ChallengeList) {
 }
 
 func SetObjectDefaults_Order(in *acmev1.Order) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
+	metav1.SetObjectDefaults_IssuerReference(&in.Spec.IssuerRef)
 }
 
 func SetObjectDefaults_OrderList(in *acmev1.OrderList) {

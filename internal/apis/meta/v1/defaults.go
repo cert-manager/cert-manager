@@ -18,8 +18,19 @@ package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetObjectDefaults_IssuerReference(in *cmmeta.IssuerReference) {
+	if in.Group == "" {
+		in.Group = "cert-manager.io"
+	}
+	if in.Group == "cert-manager.io" && in.Kind == "" {
+		in.Kind = "Issuer"
+	}
 }

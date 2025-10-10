@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -154,12 +153,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		// new Secret resources.
 		return nil
 	}
-
-	// Apply runtime defaults to apply default values that are governed by
-	// controller feature gates, such as DefaultPrivateKeyRotationPolicyAlways.
-	// We deep copy the object to avoid mutating the client-go cache.
-	crt = crt.DeepCopy()
-	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
 	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy(crt))
