@@ -153,6 +153,12 @@ podDisruptionBudget:
   # +docs:type=unknown
   # maxUnavailable: 1
 
+  # This configures how to act with unheathly pods during eviction
+  # This feature can only be used in kubernetes 1.27-0 and later
+  # +docs:property
+  # +docs:type=unknown
+  # unhealthyPodEvictionPolicy: AlwaysAllow
+
 # A comma-separated list of feature gates that should be enabled on the
 # controller pod.
 featureGates: ""
@@ -744,6 +750,12 @@ webhook:
     # +docs:type=unknown
     # maxUnavailable: 1
 
+    # This configures how to act with unheathly pods during eviction
+    # This feature can only be used in kubernetes 1.27-0 and later
+    # +docs:property
+    # +docs:type=unknown
+    # unhealthyPodEvictionPolicy: AlwaysAllow
+
   # Optional additional annotations to add to the webhook Deployment.
   # +docs:property
   # deploymentAnnotations: {}
@@ -1114,6 +1126,12 @@ cainjector:
     # +docs:property
     # +docs:type=unknown
     # maxUnavailable: 1
+
+    # This configures how to act with unheathly pods during eviction
+    # This feature can only be used in kubernetes 1.27-0 and later
+    # +docs:property
+    # +docs:type=unknown
+    # unhealthyPodEvictionPolicy: AlwaysAllow
 
   # Optional additional annotations to add to the cainjector Deployment.
   # +docs:property
