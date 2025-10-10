@@ -89,7 +89,7 @@ tools += ko=0.18.0
 tools += protoc=v32.1
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
-tools += trivy=v0.67.0
+tools += trivy=v0.67.1
 # https://github.com/vmware-tanzu/carvel-ytt/releases
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-ytt
 tools += ytt=v0.52.1
@@ -106,7 +106,7 @@ tools += istioctl=1.27.1
 tools += controller-gen=v0.19.0
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 # renovate: datasource=go packageName=golang.org/x/tools
-tools += goimports=v0.37.0
+tools += goimports=v0.38.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
 # renovate: datasource=go packageName=github.com/inteon/go-licenses/v2
 tools += go-licenses=v2.0.0-20250821024731-e4be79958780
@@ -217,7 +217,7 @@ tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
 # renovate: datasource=golang-version packageName=go
-VENDORED_GO_VERSION := 1.25.2
+VENDORED_GO_VERSION := 1.25.1
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -440,10 +440,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=d7fa7f8fbd16263aa2501d681b11f972a5fd8e811f7b10cb9b26d031a3d7454b
-go_linux_arm64_SHA256SUM=9aaeb044bf8dbf50ca2fbf0edc5ebc98b90d5bda8c6b2911526df76f61232919
-go_darwin_amd64_SHA256SUM=95493abb01da81638ab5083ff3f97e8f923cb42a64c2e16728e3cf5b0cd3fc5a
-go_darwin_arm64_SHA256SUM=d1ade1b480e51b6269b6e65856c602aed047e1f0d32fffef7eebbd7faa8d7687
+go_linux_amd64_SHA256SUM=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
+go_linux_arm64_SHA256SUM=65a3e34fb2126f55b34e1edfc709121660e1be2dee6bdf405fc399a63a95a87d
+go_darwin_amd64_SHA256SUM=1d622468f767a1b9fe1e1e67bd6ce6744d04e0c68712adc689748bbeccb126bb
+go_darwin_arm64_SHA256SUM=68deebb214f39d542e518ebb0598a406ab1b5a22bba8ec9ade9f55fb4dd94a6c
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
@@ -597,10 +597,10 @@ $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-trivy_linux_amd64_SHA256SUM=5b10e9bba00a508b0f3bcb98e78f1039f7eee26b57c9266961a415642a9208ab
-trivy_linux_arm64_SHA256SUM=0f3ac33954dd918cad708bdf06731b4aa8cc14b12e879932b4ceef2f22640a9e
-trivy_darwin_amd64_SHA256SUM=ae8a13d8c3abf7f7e7981ac1a5f5ec094d68835f2aac67da102d4ba36e820c3c
-trivy_darwin_arm64_SHA256SUM=feea8727b501f654683774fe0f98a9c1a128c7d8bcd7c942a8e6f6d05b33bd4b
+trivy_linux_amd64_SHA256SUM=945c004188970dddb634db8bbac332b00f477858918a2026866367268a810678
+trivy_linux_arm64_SHA256SUM=dbc17ea23d75c9f93d3e781468cf0fd82d46e2e772353a4ff9da6d88919a1052
+trivy_darwin_amd64_SHA256SUM=36001046e4a52885b664b7a5f40da5f0e1883c07a72763dee57c7d5b9676d901
+trivy_darwin_arm64_SHA256SUM=81e24fd39ddecda180cc9abefaea184e0c22c331d7b683993a9bc89e67d07bb9
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
