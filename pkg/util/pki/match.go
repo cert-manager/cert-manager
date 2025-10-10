@@ -27,7 +27,6 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"net"
-	"reflect"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -224,13 +223,38 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		req.Spec.Duration.Duration != spec.Duration.Duration {
 		violations = append(violations, "spec.duration")
 	}
-	if !reflect.DeepEqual(req.Spec.IssuerRef, spec.IssuerRef) {
+	if req.Spec.IssuerRef.Name != spec.IssuerRef.Name ||
+		!issuerKindsEqual(req.Spec.IssuerRef.Kind, spec.IssuerRef.Kind) ||
+		!issuerGroupsEqual(req.Spec.IssuerRef.Group, spec.IssuerRef.Group) {
 		violations = append(violations, "spec.issuerRef")
 	}
 
 	// TODO: check spec.EncodeBasicConstraintsInRequest and spec.EncodeUsagesInRequest
 
 	return violations, nil
+}
+
+const defaultIssuerKind = "Issuer"
+const defaultIssuerGroup = "cert-manager.io"
+
+func issuerKindsEqual(l, r string) bool {
+	if l == "" {
+		l = defaultIssuerKind
+	}
+	if r == "" {
+		r = defaultIssuerKind
+	}
+	return l == r
+}
+
+func issuerGroupsEqual(l, r string) bool {
+	if l == "" {
+		l = defaultIssuerGroup
+	}
+	if r == "" {
+		r = defaultIssuerGroup
+	}
+	return l == r
 }
 
 func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherName) (bool, error) {
