@@ -154,7 +154,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			RoleSessionName: aws.String("cert-manager"),
 		})
 		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role: %s", removeReqID(err))
+			return aws.Config{}, fmt.Errorf("unable to assume role: %w", &RedactedError{err})
 		}
 
 		cfg.Credentials = credentials.NewStaticCredentialsProvider(
@@ -174,7 +174,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			WebIdentityToken: aws.String(d.WebIdentityToken),
 		})
 		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %s", removeReqID(err))
+			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %w", &RedactedError{err})
 		}
 
 		cfg.Credentials = credentials.NewStaticCredentialsProvider(
@@ -293,7 +293,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 			)
 			return nil
 		}
-		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
+		return fmt.Errorf("failed to change Route 53 record set: %w", &RedactedError{err})
 
 	}
 
@@ -305,7 +305,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
-			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
+			return false, fmt.Errorf("failed to query Route 53 change status: %w", &RedactedError{err})
 		}
 		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
 			return true, nil
@@ -330,7 +330,7 @@ func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string,
 	}
 	resp, err := r.client.ListHostedZonesByName(ctx, reqParams)
 	if err != nil {
-		return "", removeReqID(err)
+		return "", &RedactedError{err}
 	}
 
 	zoneToID := make(map[string]string)
@@ -375,16 +375,25 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53types.ResourceRecordSe
 // want our error messages to be the same when the cause is the same to
 // avoid spurious challenge updates.
 //
-// This function must be called everywhere we have an error coming from
-// an aws-sdk-go func. The passed error is modified in place.
-func removeReqID(err error) error {
+// This struct needs to wrap all errors coming from
+// an aws-sdk-go func.
+type RedactedError struct {
+	Err error
+}
+
+func (e *RedactedError) Error() string {
+	errString := e.Err.Error()
 	var responseError *awshttp.ResponseError
-	if errors.As(err, &responseError) {
+	if errors.As(e.Err, &responseError) {
 		before := responseError.Error()
 		// remove the request id from the error message
 		responseError.RequestID = "<REDACTED>"
 		after := responseError.Error()
-		return errors.New(strings.Replace(err.Error(), before, after, 1))
+		return strings.Replace(errString, before, after, 1)
 	}
-	return err
+	return errString
+}
+
+func (e *RedactedError) Unwrap() error {
+	return e.Err
 }

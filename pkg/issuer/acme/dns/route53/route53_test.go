@@ -588,7 +588,7 @@ func makeMockSessionProvider(
 	}
 }
 
-func Test_removeReqID(t *testing.T) {
+func Test_RedactedError(t *testing.T) {
 	newResponseError := func() *smithyhttp.ResponseError {
 		return &smithyhttp.ResponseError{
 			Err: errors.New("foo"),
@@ -628,15 +628,10 @@ func Test_removeReqID(t *testing.T) {
 			err:     errors.New("foo"),
 			wantErr: errors.New("foo"),
 		},
-		{
-			name:    "should ignore nil errors",
-			err:     nil,
-			wantErr: nil,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := removeReqID(tt.err)
+			err := &RedactedError{tt.err}
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantErr.Error(), err.Error())

@@ -378,7 +378,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			s.RESTConfig.UserAgent,
 		)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %w", err)
 		}
 	case providerConfig.AzureDNS != nil:
 		dbg.Info("preparing to create AzureDNS provider")
