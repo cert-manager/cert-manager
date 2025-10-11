@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
-	"github.com/aws/smithy-go"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
@@ -283,7 +282,7 @@ func TestRoute53Present(t *testing.T) {
 	// request which causes spurious challenge updates.
 	err = provider.Present(ctx, "bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
-	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
+	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: SOMEREQUESTID, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
 
 func TestRoute53Cleanup(t *testing.T) {
@@ -311,7 +310,7 @@ func TestRoute53Cleanup(t *testing.T) {
 			responses: MockResponseMap{
 				"/2013-04-01/hostedzonesbyname": MockResponse{StatusCode: 400, Body: ListHostedZonesByName400ResponseInvalidDomainName},
 			},
-			expectedError: `failed to determine Route 53 hosted zone ID: operation error Route 53: ListHostedZonesByName, https response error StatusCode: 400, RequestID: <REDACTED>, InvalidDomainName: Simulated message`,
+			expectedError: `failed to determine Route 53 hosted zone ID: operation error Route 53: ListHostedZonesByName, https response error StatusCode: 400, RequestID: SOMEREQUESTID, InvalidDomainName: Simulated message`,
 		},
 		{
 			// Cleanup fails if the changeresourcerecordsets API call returns an error.
@@ -320,7 +319,7 @@ func TestRoute53Cleanup(t *testing.T) {
 				"/2013-04-01/hostedzonesbyname":        MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
 				"/2013-04-01/hostedzone/ABCDEFG/rrset": MockResponse{StatusCode: 400, Body: ChangeResourceRecordSets403Response},
 			},
-			expectedError: `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 400, RequestID: <REDACTED>, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`,
+			expectedError: `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 400, RequestID: SOMEREQUESTID, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`,
 		},
 		{
 			// Cleanup succeeds if the record has already been deleted; the
@@ -386,34 +385,11 @@ func TestAssumeRole(t *testing.T) {
 			role:          "my-role",
 			ambient:       true,
 			expErr:        true,
-			expErrMessage: "unable to assume role: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
+			expErrMessage: "unable to assume role: https response error StatusCode: 0, RequestID: fake-request-id, foo",
 			expCreds:      creds,
 			expRegion:     "",
 			mockSTS: &mockSTS{
 				AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-					return nil, &awshttp.ResponseError{
-						RequestID: "fake-request-id",
-						ResponseError: &smithyhttp.ResponseError{
-							Err: errors.New("foo"),
-							Response: &smithyhttp.Response{
-								Response: &http.Response{},
-							},
-						},
-					}
-				},
-			},
-		},
-		{
-			name:             "should remove request ID for assumeRoleWithWebIdentity",
-			role:             "my-role",
-			webIdentityToken: jwt,
-			ambient:          true,
-			expErr:           true,
-			expErrMessage:    "unable to assume role with web identity: https response error StatusCode: 0, RequestID: <REDACTED>, foo",
-			expCreds:         creds,
-			expRegion:        "",
-			mockSTS: &mockSTS{
-				AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
 					return nil, &awshttp.ResponseError{
 						RequestID: "fake-request-id",
 						ResponseError: &smithyhttp.ResponseError{
@@ -585,64 +561,5 @@ func makeMockSessionProvider(
 		Role:             role,
 		WebIdentityToken: webIdentityToken,
 		StsProvider:      defaultSTSProvider,
-	}
-}
-
-func Test_removeReqID(t *testing.T) {
-	newResponseError := func() *smithyhttp.ResponseError {
-		return &smithyhttp.ResponseError{
-			Err: errors.New("foo"),
-			Response: &smithyhttp.Response{
-				Response: &http.Response{},
-			},
-		}
-	}
-
-	tests := []struct {
-		name    string
-		err     error
-		wantErr error
-	}{
-		{
-			name:    "should replace the request id in a nested error with a static value to keep the message stable",
-			err:     &smithy.OperationError{OperationName: "test", Err: &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()}},
-			wantErr: &smithy.OperationError{OperationName: "test", Err: &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()}},
-		},
-		{
-			name:    "should replace the request id with a static value to keep the message stable",
-			err:     &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()},
-			wantErr: &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()},
-		},
-		{
-			name:    "should replace the request id in a %w wrapped error",
-			err:     fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()}),
-			wantErr: fmt.Errorf("failed to refresh cached credentials, %w", &awshttp.ResponseError{RequestID: "<REDACTED>", ResponseError: newResponseError()}),
-		},
-		{
-			name:    "should do nothing if no request id is set",
-			err:     newResponseError(),
-			wantErr: newResponseError(),
-		},
-		{
-			name:    "should do nothing if the error is not an aws error",
-			err:     errors.New("foo"),
-			wantErr: errors.New("foo"),
-		},
-		{
-			name:    "should ignore nil errors",
-			err:     nil,
-			wantErr: nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := removeReqID(tt.err)
-			if tt.wantErr != nil {
-				require.Error(t, err)
-				assert.Equal(t, tt.wantErr.Error(), err.Error())
-				return
-			}
-			require.NoError(t, err)
-		})
 	}
 }

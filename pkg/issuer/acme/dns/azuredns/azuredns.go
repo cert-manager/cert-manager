@@ -132,7 +132,7 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 
 	cred, err := azidentity.NewManagedIdentityCredential(msiOpt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		return nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
 	}
 	return cred, nil
 }
@@ -184,7 +184,7 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 
 	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
+		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %w", z, fqdn, err)
 	}
 
 	return util.UnFqdn(z), nil
@@ -223,7 +223,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 			}
 		} else {
 			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-			return stabilizeError(err)
+			return err
 		}
 	} else {
 		set = &resp.RecordSet
@@ -237,7 +237,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 			_, err = c.recordClient.Delete(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, &dns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
 			if err != nil {
 				c.log.Error(err, "Error deleting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-				return stabilizeError(err)
+				return err
 			}
 		}
 
@@ -263,80 +263,8 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 		opts)
 	if err != nil {
 		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
+		return err
 	}
 
 	return nil
-}
-
-// The azure-sdk library returns the contents of the HTTP requests in its
-// error messages. We want our error messages to be the same when the cause
-// is the same to avoid spurious challenge updates.
-//
-// The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from an azure-sdk func that makes API calls.
-func stabilizeError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	return NormalizedError{
-		Cause: err,
-	}
-}
-
-type NormalizedError struct {
-	Cause error
-}
-
-func (e NormalizedError) Error() string {
-	var (
-		authErr *azidentity.AuthenticationFailedError
-		respErr *azcore.ResponseError
-	)
-
-	switch {
-	case errors.As(e.Cause, &authErr):
-		msg := new(strings.Builder)
-		fmt.Fprintln(msg, "authentication failed:")
-
-		if authErr.RawResponse != nil {
-			if authErr.RawResponse.Request != nil {
-				fmt.Fprintf(msg, "%s %s://%s%s\n", authErr.RawResponse.Request.Method, authErr.RawResponse.Request.URL.Scheme, authErr.RawResponse.Request.URL.Host, authErr.RawResponse.Request.URL.Path)
-			}
-
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-			fmt.Fprintf(msg, "RESPONSE %s\n", authErr.RawResponse.Status)
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-		}
-
-		fmt.Fprint(msg, "see logs for more information")
-
-		return msg.String()
-	case errors.As(e.Cause, &respErr):
-		msg := new(strings.Builder)
-		fmt.Fprintln(msg, "request error:")
-
-		if respErr.RawResponse != nil {
-			if respErr.RawResponse.Request != nil {
-				fmt.Fprintf(msg, "%s %s://%s%s\n", respErr.RawResponse.Request.Method, respErr.RawResponse.Request.URL.Scheme, respErr.RawResponse.Request.URL.Host, respErr.RawResponse.Request.URL.Path)
-			}
-
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-			fmt.Fprintf(msg, "RESPONSE %s\n", respErr.RawResponse.Status)
-			if respErr.ErrorCode != "" {
-				fmt.Fprintf(msg, "ERROR CODE: %s\n", respErr.ErrorCode)
-			} else {
-				fmt.Fprintln(msg, "ERROR CODE UNAVAILABLE")
-			}
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-		}
-
-		fmt.Fprint(msg, "see logs for more information")
-
-		return msg.String()
-
-	default:
-		return e.Cause.Error()
-	}
 }
