@@ -588,7 +588,7 @@ func makeMockSessionProvider(
 	}
 }
 
-func Test_removeReqID(t *testing.T) {
+func Test_RedactedError(t *testing.T) {
 	newResponseError := func() *smithyhttp.ResponseError {
 		return &smithyhttp.ResponseError{
 			Err: errors.New("foo"),
@@ -636,7 +636,7 @@ func Test_removeReqID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := removeReqID(tt.err)
+			err := wrapInRedactedError(tt.err)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantErr.Error(), err.Error())
