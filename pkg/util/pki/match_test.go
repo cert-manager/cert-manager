@@ -294,20 +294,25 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 }
 
 // RequestMatchesSpecIssuerRef tests that RequestMatchesSpec correctly compares
-// the IssuerRef in the CertificateRequest and CertificateSpec.
+// the IssuerRef in the CertificateRequest and CertificateSpec, regardless of
+// any differences which are solely due to the presence or absence of default
+// group and kind.
 //
-// cert-manager 1.19 introduced API defaults for the IssuerRef Kind and Group
-// fields for Certificate resources only; not for CertificateRequest resources.
-// This means that when cert-manager fetches existing Certificate resource which
-// have an empty Kind and/or Group field in the IssuerRef, the Kubernetes API
-// server will default these fields to "Issuer" and "cert-manager.io"
-// respectively in the Certificate resource only. The Kind and Group fields in
-// the IssuerRef of the *existing* CertificateRequest resource will remain
-// empty. Therefore, RequestMatchesSpec needs to treat empty Kind and Group
-// fields in the IssuerRef of the CertificateRequest as equivalent to "Issuer"
-// and "cert-manager.io" respectively when comparing against the IssuerRef in
-// the CertificateSpec, otherwise cert-manager will re-issue all Certificates
-// after an upgrade to 1.19.
+// For example, we do not want to re-issue the Certificate if the user
+// explicitly adds the default issuer group and kind. Nor do we want to re-issue
+// if the user removes the default issuer group and kind.
+//
+// And we want to avoid re-issuing if a future version of the cert-manager
+// CRDs introduces API defaults for issuerRef group and kind. Specifically,
+// we want to gracefully handle a situation where the platform admin
+// upgrades the CRDs to a version that has defaults, but not the controller.
+// In that situation, when the CRDs are upgraded, the controller
+// re-establishes its watches and refreshes its caches with updated Certificates
+// and CertificateRequests, containing the new API defaults. But this
+// doesn't happen transactionally, so the updated Certificates may start
+// being reconciled before the cached CertificateRequests have been updated
+// and there will be a mis-match if the Certificate has the default
+// group/kind set but the CertificateRequest does not.
 func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 	type testCase struct {
 		crSpec     *cmapi.CertificateRequest

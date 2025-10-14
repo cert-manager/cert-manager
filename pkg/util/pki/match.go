@@ -30,6 +30,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
@@ -223,6 +224,25 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		req.Spec.Duration.Duration != spec.Duration.Duration {
 		violations = append(violations, "spec.duration")
 	}
+	// RequestMatchesSpec compares the IssuerRef in the CertificateRequest and
+	// CertificateSpec, regardless of any differences which are solely due to
+	// the presence or absence of default group (cert-manager.io) and kind (Issuer).
+	//
+	// We do not want to re-issue the Certificate if the user explicitly adds
+	// the default issuer group and kind.
+	// Nor do we want to re-issue if the user removes the default issuer group and kind.
+	//
+	// And we want to avoid re-issuing if a future version of the cert-manager
+	// CRDs introduces API defaults for issuerRef group and kind. Specifically,
+	// we want to gracefully handle a situation where the platform admin
+	// upgrades the CRDs to a version that has defaults, but not the controller.
+	// In that situation, when the CRDs are upgraded, the controller
+	// re-establishes its watches and refreshes its caches with updated Certificates
+	// and CertificateRequests, containing the new API defaults. But this
+	// doesn't happen transactionally, so the updated Certificates may start
+	// being reconciled before the cached CertificateRequests have been updated
+	// and there will be a mis-match if the Certificate has the default
+	// group/kind set but the CertificateRequest does not.
 	if req.Spec.IssuerRef.Name != spec.IssuerRef.Name ||
 		!issuerKindsEqual(req.Spec.IssuerRef.Kind, spec.IssuerRef.Kind) ||
 		!issuerGroupsEqual(req.Spec.IssuerRef.Group, spec.IssuerRef.Group) {
@@ -234,9 +254,19 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	return violations, nil
 }
 
-const defaultIssuerKind = "Issuer"
-const defaultIssuerGroup = "cert-manager.io"
+// These defaults are also applied at runtime by the cert-manager
+// CertificateRequest controller.
+const (
+	// defaultIssuerKind is the default value for an IssuerRef's kind field
+	// if it is not specified.
+	defaultIssuerKind = cmapi.IssuerKind
+	// defaultIssuerGroup is the default value for an IssuerRef's group field
+	// if it is not specified.
+	defaultIssuerGroup = certmanager.GroupName
+)
 
+// issuerKindsEqual returns true if the two issuer reference kinds are equal,
+// taking into account the defaulting of the kind to "Issuer".
 func issuerKindsEqual(l, r string) bool {
 	if l == "" {
 		l = defaultIssuerKind
@@ -247,6 +277,8 @@ func issuerKindsEqual(l, r string) bool {
 	return l == r
 }
 
+// issuerGroupsEqual returns true if the two issuer reference groups are equal,
+// taking into account defaulting of the group to "cert-manager.io".
 func issuerGroupsEqual(l, r string) bool {
 	if l == "" {
 		l = defaultIssuerGroup
