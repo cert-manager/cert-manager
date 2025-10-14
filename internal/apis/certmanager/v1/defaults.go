@@ -25,6 +25,12 @@ import (
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&cmapi.Certificate{}, func(obj interface{}) { SetObjectDefaults_Certificate(obj.(*cmapi.Certificate)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateList{}, func(obj interface{}) { SetObjectDefaults_CertificateList(obj.(*cmapi.CertificateList)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequest{}, func(obj interface{}) { SetObjectDefaults_CertificateRequest(obj.(*cmapi.CertificateRequest)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequestList{}, func(obj interface{}) {
+		SetObjectDefaults_CertificateRequestList(obj.(*cmapi.CertificateRequestList))
+	})
 	return RegisterDefaults(scheme)
 }
 
@@ -59,5 +65,37 @@ func SetRuntimeDefaults_Certificate(in *cmapi.Certificate) {
 			defaultRotationPolicy = cmapi.RotationPolicyAlways
 		}
 		in.Spec.PrivateKey.RotationPolicy = defaultRotationPolicy
+	}
+}
+
+func SetObjectDefaults_Certificate(in *cmapi.Certificate) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_CertificateList(in *cmapi.CertificateList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Certificate(a)
+	}
+}
+
+func SetObjectDefaults_CertificateRequest(in *cmapi.CertificateRequest) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_CertificateRequestList(in *cmapi.CertificateRequestList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_CertificateRequest(a)
 	}
 }

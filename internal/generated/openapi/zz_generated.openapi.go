@@ -4772,16 +4772,14 @@ func schema_pkg_apis_meta_v1_IssuerReference(ref common.ReferenceCallback) commo
 					},
 					"kind": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the issuer being referred to.",
-							Default:     "Issuer",
+							Description: "Kind of the issuer being referred to. Defaults to 'Issuer'.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"group": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Group of the issuer being referred to.",
-							Default:     "cert-manager.io",
+							Description: "Group of the issuer being referred to. Defaults to 'cert-manager.io'.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
