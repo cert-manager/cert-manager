@@ -1461,11 +1461,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: group
       type:
         scalar: string
-      default: cert-manager.io
     - name: kind
       type:
         scalar: string
-      default: Issuer
     - name: name
       type:
         scalar: string

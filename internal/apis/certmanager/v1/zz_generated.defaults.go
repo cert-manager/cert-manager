@@ -22,7 +22,6 @@ limitations under the License.
 package v1
 
 import (
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -30,43 +29,5 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&certmanagerv1.Certificate{}, func(obj interface{}) { SetObjectDefaults_Certificate(obj.(*certmanagerv1.Certificate)) })
-	scheme.AddTypeDefaultingFunc(&certmanagerv1.CertificateList{}, func(obj interface{}) { SetObjectDefaults_CertificateList(obj.(*certmanagerv1.CertificateList)) })
-	scheme.AddTypeDefaultingFunc(&certmanagerv1.CertificateRequest{}, func(obj interface{}) { SetObjectDefaults_CertificateRequest(obj.(*certmanagerv1.CertificateRequest)) })
-	scheme.AddTypeDefaultingFunc(&certmanagerv1.CertificateRequestList{}, func(obj interface{}) {
-		SetObjectDefaults_CertificateRequestList(obj.(*certmanagerv1.CertificateRequestList))
-	})
 	return nil
-}
-
-func SetObjectDefaults_Certificate(in *certmanagerv1.Certificate) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
-}
-
-func SetObjectDefaults_CertificateList(in *certmanagerv1.CertificateList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Certificate(a)
-	}
-}
-
-func SetObjectDefaults_CertificateRequest(in *certmanagerv1.CertificateRequest) {
-	if in.Spec.IssuerRef.Kind == "" {
-		in.Spec.IssuerRef.Kind = "Issuer"
-	}
-	if in.Spec.IssuerRef.Group == "" {
-		in.Spec.IssuerRef.Group = "cert-manager.io"
-	}
-}
-
-func SetObjectDefaults_CertificateRequestList(in *certmanagerv1.CertificateRequestList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_CertificateRequest(a)
-	}
 }
