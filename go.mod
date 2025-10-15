@@ -12,14 +12,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Venafi/vcert/v5 v5.12.2
-	github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.0.0
+	github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.1.0
 	github.com/aws/aws-sdk-go-v2 v1.39.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.12
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.16
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.58.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.6
 	github.com/aws/smithy-go v1.23.0
-	github.com/digitalocean/godo v1.165.1
+	github.com/digitalocean/godo v1.166.0
 	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/go-logr/logr v1.4.3
 	github.com/go-openapi/jsonreference v0.21.2
