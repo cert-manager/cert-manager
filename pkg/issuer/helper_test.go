@@ -68,9 +68,8 @@ func TestGetGenericIssuer(t *testing.T) {
 		},
 		{
 			Name:     "name",
-			Kind:     "",
 			Err:      true,
-			Expected: nil,
+			Expected: nilIssuer,
 		},
 		{
 			Name:                   "name",

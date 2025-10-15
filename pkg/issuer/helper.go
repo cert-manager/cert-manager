@@ -56,7 +56,7 @@ func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlister
 // that defines the IssuerRef (i.e. the namespace of the Certificate resource).
 func (h *helperImpl) GetGenericIssuer(ref cmmeta.IssuerReference, ns string) (cmapi.GenericIssuer, error) {
 	switch ref.Kind {
-	case cmapi.IssuerKind:
+	case "", cmapi.IssuerKind:
 		return h.issuerLister.Issuers(ns).Get(ref.Name)
 	case cmapi.ClusterIssuerKind:
 		// handle edge case where the ClusterIssuerLister is not set.
@@ -69,6 +69,6 @@ func (h *helperImpl) GetGenericIssuer(ref cmmeta.IssuerReference, ns string) (cm
 		}
 		return h.clusterIssuerLister.Get(ref.Name)
 	default:
-		return nil, fmt.Errorf(`invalid value %q for issuerRef.kind. Must be %q or %q`, ref.Kind, cmapi.IssuerKind, cmapi.ClusterIssuerKind)
+		return nil, fmt.Errorf(`invalid value %q for issuerRef.kind. Must be empty, %q or %q`, ref.Kind, cmapi.IssuerKind, cmapi.ClusterIssuerKind)
 	}
 }

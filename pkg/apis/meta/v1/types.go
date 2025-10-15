@@ -53,12 +53,12 @@ type IssuerReference struct {
 	// Name of the issuer being referred to.
 	Name string `json:"name"`
 	// Kind of the issuer being referred to.
+	// Defaults to 'Issuer'.
 	// +optional
-	// +default="Issuer"
 	Kind string `json:"kind,omitempty"`
 	// Group of the issuer being referred to.
+	// Defaults to 'cert-manager.io'.
 	// +optional
-	// +default="cert-manager.io"
 	Group string `json:"group,omitempty"`
 }
 
