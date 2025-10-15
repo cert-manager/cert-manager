@@ -325,7 +325,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should not report any violation if Certificate issuerRef matches the CertificateRequest's": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -333,7 +333,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -344,13 +344,13 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should not report any violation if both Certificate and CertificateRequest issuerRef Kind and Group are empty": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name: "test-issuer",
 				},
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name: "test-issuer",
 				},
 			},
@@ -359,14 +359,14 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should not report any violation if Certificate issuerRef Kind and Group are defaulted and CertificateRequest issuerRef Group is empty": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name: "test-issuer",
 					Kind: "Issuer",
 				},
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -377,14 +377,14 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should not report any violation if Certificate issuerRef Kind and Group are defaulted and CertificateRequest issuerRef Kind is empty": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Group: "cert-manager.io",
 				},
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -395,7 +395,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should report violation if Certificate issuerRef name mismatches the CertificateRequest's": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -403,7 +403,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "different-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -415,13 +415,13 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should not report any violation if Certificate issuerRef Kind and Group are defaulted and CertificateRequest's are empty": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name: "test-issuer",
 				},
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -432,7 +432,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should report violation if Certificate issuerRef Kind mismatches the CertificateRequest's (defaulted vs non-defaulted)": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "ClusterIssuer",
 					Group: "cert-manager.io",
@@ -440,7 +440,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -452,7 +452,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 		"should report violation if Certificate issuerRef Group mismatches the CertificateRequest's (defaulted vs non-defaulted)": {
 			crSpec: mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "different-group.io",
@@ -460,7 +460,7 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 			}}),
 			certSpec: cmapi.CertificateSpec{
 				CommonName: "dummy-common-name",
-				IssuerRef: cmmeta.IssuerReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name:  "test-issuer",
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
