@@ -80,12 +80,14 @@ spec:
                   Challenge will be marked as failed.
                 properties:
                   group:
-                    default: cert-manager.io
-                    description: Group of the issuer being referred to.
+                    description: |-
+                      Group of the issuer being referred to.
+                      Defaults to 'cert-manager.io'.
                     type: string
                   kind:
-                    default: Issuer
-                    description: Kind of the issuer being referred to.
+                    description: |-
+                      Kind of the issuer being referred to.
+                      Defaults to 'Issuer'.
                     type: string
                   name:
                     description: Name of the issuer being referred to.

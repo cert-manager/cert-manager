@@ -40,7 +40,7 @@ func (o IssuerOptions) ResourceNamespaceRef(ref cmmeta.IssuerReference, challeng
 	switch ref.Kind {
 	case cmapi.ClusterIssuerKind:
 		return o.ClusterResourceNamespace
-	case cmapi.IssuerKind:
+	case "", cmapi.IssuerKind:
 		return challengeNamespace
 	}
 	return challengeNamespace // Should not be reached
@@ -67,7 +67,7 @@ func (o IssuerOptions) CanUseAmbientCredentialsFromRef(ref cmmeta.IssuerReferenc
 	switch ref.Kind {
 	case cmapi.ClusterIssuerKind:
 		return o.ClusterIssuerAmbientCredentials
-	case cmapi.IssuerKind:
+	case "", cmapi.IssuerKind:
 		return o.IssuerAmbientCredentials
 	}
 	return false
