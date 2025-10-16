@@ -34,6 +34,7 @@ type ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration struct {
 	HostedZoneName    *string                                     `json:"hostedZoneName,omitempty"`
 	Environment       *acmev1.AzureDNSEnvironment                 `json:"environment,omitempty"`
 	ManagedIdentity   *AzureManagedIdentityApplyConfiguration     `json:"managedIdentity,omitempty"`
+	IsPrivateZone     *bool                                       `json:"isPrivateZone,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use with
@@ -103,5 +104,13 @@ func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithEnvironment(valu
 // If called multiple times, the ManagedIdentity field is set to the value of the last call.
 func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithManagedIdentity(value *AzureManagedIdentityApplyConfiguration) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
 	b.ManagedIdentity = value
+	return b
+}
+
+// WithIsPrivateZone sets the IsPrivateZone field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IsPrivateZone field is set to the value of the last call.
+func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithIsPrivateZone(value bool) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
+	b.IsPrivateZone = &value
 	return b
 }
