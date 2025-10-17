@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -38,6 +39,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/solver"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -57,8 +59,8 @@ type controller struct {
 	// ACME challenge solvers are instantiated once at the time of controller
 	// construction.
 	// This also allows for easy mocking of the different challenge mechanisms.
-	dnsSolver  solver
-	httpSolver solver
+	dnsSolver  solver.Solver
+	httpSolver solver.Solver
 	// scheduler marks challenges as Processing=true if they can be scheduled
 	// for processing. This job runs periodically every N seconds, so it cannot
 	// be constructed as a traditional controller.
@@ -77,6 +79,9 @@ type controller struct {
 	dns01Nameservers []string
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// clock used for testing
+	clock clock.Clock
 
 	// objectUpdater implements the updateObject function which is used to save
 	// changes to the Challenge.Status and Challenge.Finalizers
@@ -161,6 +166,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// Construct an objectUpdater which is used to save changes to the Challenge
 	// object, either using Update or using Patch + Server Side Apply.
 	c.objectUpdater = newObjectUpdater(ctx.CMClient, ctx.FieldManager)
+	c.clock = ctx.Clock
 
 	return c.queue, mustSync, nil
 }

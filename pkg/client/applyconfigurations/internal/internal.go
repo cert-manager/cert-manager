@@ -571,6 +571,59 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeStatus
       default: {}
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeCondition
+  map:
+    fields:
+    - name: lastTransitionTime
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: message
+      type:
+        scalar: string
+    - name: reason
+      type:
+        scalar: string
+      default: ""
+    - name: status
+      type:
+        scalar: string
+      default: ""
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatus
+  map:
+    fields:
+    - name: dns
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatusDNS
+    - name: http
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatusHTTP
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatusDNS
+  map:
+    fields:
+    - name: fqdn
+      type:
+        scalar: string
+    - name: lastSuccess
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: ttl
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatusHTTP
+  map:
+    fields:
+    - name: requiredSuccesses
+      type:
+        scalar: numeric
+      default: 0
+    - name: successes
+      type:
+        scalar: numeric
+      default: 0
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSpec
   map:
     fields:
@@ -613,6 +666,17 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeStatus
   map:
     fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeCondition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: nextReconcile
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
     - name: presented
       type:
         scalar: boolean
@@ -624,6 +688,10 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: reason
       type:
         scalar: string
+    - name: solver
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ChallengeSolverStatus
+      default: {}
     - name: state
       type:
         scalar: string
