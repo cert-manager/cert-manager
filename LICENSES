@@ -44,6 +44,7 @@ github.com/Azure/azure-sdk-for-go/sdk/azcore,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azidentity,MIT
 github.com/Azure/azure-sdk-for-go/sdk/internal,MIT
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns,MIT
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns,MIT
 github.com/Azure/go-ntlmssp,MIT
 github.com/AzureAD/microsoft-authentication-library-for-go/apps,MIT
 github.com/Khan/genqlient/graphql,MIT
