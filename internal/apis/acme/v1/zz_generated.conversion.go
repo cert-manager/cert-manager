@@ -28,10 +28,10 @@ import (
 	meta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	metav1 "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	apismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	pkgapismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	pkgapismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	apisv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -1023,6 +1023,7 @@ func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *acmev1.ACMEIssuer, out *ac
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
 	out.Profile = in.Profile
+	out.AuthorizationTimeout = (*apismetav1.Duration)(unsafe.Pointer(in.AuthorizationTimeout))
 	return nil
 }
 
@@ -1058,6 +1059,7 @@ func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *acme
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
 	out.Profile = in.Profile
+	out.AuthorizationTimeout = (*apismetav1.Duration)(unsafe.Pointer(in.AuthorizationTimeout))
 	return nil
 }
 
@@ -1154,7 +1156,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1_ACMEIssuerDNS01Provi
 	out.ClientID = in.ClientID
 	if in.ClientSecret != nil {
 		in, out := &in.ClientSecret, &out.ClientSecret
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(pkgapismetav1.SecretKeySelector)
 		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1198,7 +1200,7 @@ func Convert_v1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderC
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *acmev1.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	if in.ServiceAccount != nil {
 		in, out := &in.ServiceAccount, &out.ServiceAccount
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(pkgapismetav1.SecretKeySelector)
 		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1247,7 +1249,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1_ACMEIssuerDNS01Pro
 	out.Email = in.Email
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(pkgapismetav1.SecretKeySelector)
 		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1256,7 +1258,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1_ACMEIssuerDNS01Pro
 	}
 	if in.APIToken != nil {
 		in, out := &in.APIToken, &out.APIToken
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(pkgapismetav1.SecretKeySelector)
 		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1358,7 +1360,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1_ACMEIssuerDNS01Provid
 	out.AccessKeyID = in.AccessKeyID
 	if in.SecretAccessKeyID != nil {
 		in, out := &in.SecretAccessKeyID, &out.SecretAccessKeyID
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(pkgapismetav1.SecretKeySelector)
 		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1701,7 +1703,7 @@ func autoConvert_v1_OrderSpec_To_acme_OrderSpec(in *acmev1.OrderSpec, out *acme.
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.Duration = (*pkgapismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	out.Profile = in.Profile
 	return nil
 }
@@ -1719,7 +1721,7 @@ func autoConvert_acme_OrderSpec_To_v1_OrderSpec(in *acme.OrderSpec, out *acmev1.
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.Duration = (*pkgapismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	out.Profile = in.Profile
 	return nil
 }
@@ -1736,7 +1738,7 @@ func autoConvert_v1_OrderStatus_To_acme_OrderStatus(in *acmev1.OrderStatus, out 
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.State = acme.State(in.State)
 	out.Reason = in.Reason
-	out.FailureTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1752,7 +1754,7 @@ func autoConvert_acme_OrderStatus_To_v1_OrderStatus(in *acme.OrderStatus, out *a
 	out.State = acmev1.State(in.State)
 	out.Reason = in.Reason
 	out.Authorizations = *(*[]acmev1.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.FailureTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
