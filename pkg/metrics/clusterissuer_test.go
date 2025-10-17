@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	"github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -42,11 +43,42 @@ func TestClusterIssuerMetrics(t *testing.T) {
 		expectedReady string
 	}
 	tests := map[string]testT{
-		"clusterissuer with ready status": {
-			ciss: gen.ClusterIssuer("test-clusterissuer"),
+		"clusterissuer with ready status True": {
+			ciss: gen.ClusterIssuer("test-clusterissuer",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionTrue,
+				}),
+			),
 			expectedReady: `
+		certmanager_clusterissuer_ready_status{condition="True",name="test-clusterissuer"} 1
 		certmanager_clusterissuer_ready_status{condition="False",name="test-clusterissuer"} 0
+		certmanager_clusterissuer_ready_status{condition="Unknown",name="test-clusterissuer"} 0
+`,
+		},
+		"clusterissuer with ready status False": {
+			ciss: gen.ClusterIssuer("test-clusterissuer",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionFalse,
+				}),
+			),
+			expectedReady: `
 		certmanager_clusterissuer_ready_status{condition="True",name="test-clusterissuer"} 0
+		certmanager_clusterissuer_ready_status{condition="False",name="test-clusterissuer"} 1
+		certmanager_clusterissuer_ready_status{condition="Unknown",name="test-clusterissuer"} 0
+`,
+		},
+		"clusterissuer with ready status Unknown": {
+			ciss: gen.ClusterIssuer("test-clusterissuer",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionUnknown,
+				}),
+			),
+			expectedReady: `
+		certmanager_clusterissuer_ready_status{condition="True",name="test-clusterissuer"} 0
+		certmanager_clusterissuer_ready_status{condition="False",name="test-clusterissuer"} 0
 		certmanager_clusterissuer_ready_status{condition="Unknown",name="test-clusterissuer"} 1
 `,
 		},

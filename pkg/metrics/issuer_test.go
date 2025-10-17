@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	"github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -42,13 +43,45 @@ func TestIssuerMetrics(t *testing.T) {
 		expectedReady string
 	}
 	tests := map[string]testT{
-		"issuer with ready status": {
+		"issuer with ready status True": {
 			iss: gen.Issuer("test-issuer",
 				gen.SetIssuerNamespace("test-ns"),
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionTrue,
+				}),
 			),
 			expectedReady: `
+		certmanager_issuer_ready_status{condition="True",name="test-issuer",namespace="test-ns"} 1
 		certmanager_issuer_ready_status{condition="False",name="test-issuer",namespace="test-ns"} 0
+		certmanager_issuer_ready_status{condition="Unknown",name="test-issuer",namespace="test-ns"} 0
+`,
+		},
+		"issuer with ready status False": {
+			iss: gen.Issuer("test-issuer",
+				gen.SetIssuerNamespace("test-ns"),
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionFalse,
+				}),
+			),
+			expectedReady: `
 		certmanager_issuer_ready_status{condition="True",name="test-issuer",namespace="test-ns"} 0
+		certmanager_issuer_ready_status{condition="False",name="test-issuer",namespace="test-ns"} 1
+		certmanager_issuer_ready_status{condition="Unknown",name="test-issuer",namespace="test-ns"} 0
+`,
+		},
+		"issuer with ready status Unknown": {
+			iss: gen.Issuer("test-issuer",
+				gen.SetIssuerNamespace("test-ns"),
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmmeta.ConditionUnknown,
+				}),
+			),
+			expectedReady: `
+		certmanager_issuer_ready_status{condition="True",name="test-issuer",namespace="test-ns"} 0
+		certmanager_issuer_ready_status{condition="False",name="test-issuer",namespace="test-ns"} 0
 		certmanager_issuer_ready_status{condition="Unknown",name="test-issuer",namespace="test-ns"} 1
 `,
 		},
