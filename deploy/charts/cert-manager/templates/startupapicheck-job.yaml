@@ -48,6 +48,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}-startupapicheck
           image: "{{ template "image" (tuple .Values.startupapicheck.image $.Chart.AppVersion) }}"
