@@ -17,7 +17,6 @@ limitations under the License.
 package metrics
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -65,7 +64,6 @@ func TestClusterIssuerMetrics(t *testing.T) {
 
 			m.SetupClusterIssuerCollector(cissInformer.Lister())
 
-			fmt.Println(m.clusterIssuerCollector)
 			if err := testutil.CollectAndCompare(m.clusterIssuerCollector,
 				strings.NewReader(cissReadyMetadata+test.expectedReady),
 				"certmanager_clusterissuer_ready_status",
