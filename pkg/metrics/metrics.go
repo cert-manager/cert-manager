@@ -65,6 +65,8 @@ type Metrics struct {
 	controllerSyncErrorCount           *prometheus.CounterVec
 	challengeCollector                 prometheus.Collector
 	certificateCollector               prometheus.Collector
+	issuerCollector                    prometheus.Collector
+	clusterIssuerCollector             prometheus.Collector
 }
 
 // New creates a Metrics struct and populates it with prometheus metric types.
@@ -202,6 +204,14 @@ func (m *Metrics) SetupCertificateCollector(certLister cmlisters.CertificateList
 	m.certificateCollector = cmcollectors.NewCertificateCollector(certLister)
 }
 
+func (m *Metrics) SetupIssuerCollector(issuerLister cmlisters.IssuerLister) {
+	m.issuerCollector = cmcollectors.NewIssuerCollector(issuerLister)
+}
+
+func (m *Metrics) SetupClusterIssuerCollector(clusterIssuerLister cmlisters.ClusterIssuerLister) {
+	m.clusterIssuerCollector = cmcollectors.NewClusterIssuerCollector(clusterIssuerLister)
+}
+
 func (m *Metrics) ACMERequestCounter() *prometheus.CounterVec {
 	return m.acmeClientRequestCount
 }
@@ -222,6 +232,14 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 
 	if m.certificateCollector != nil {
 		m.registry.MustRegister(m.certificateCollector)
+	}
+
+	if m.issuerCollector != nil {
+		m.registry.MustRegister(m.issuerCollector)
+	}
+
+	if m.clusterIssuerCollector != nil {
+		m.registry.MustRegister(m.clusterIssuerCollector)
 	}
 
 	mux := http.NewServeMux()
