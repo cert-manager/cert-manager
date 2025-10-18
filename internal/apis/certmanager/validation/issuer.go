@@ -18,6 +18,7 @@ package validation
 
 import (
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -647,12 +648,45 @@ func validateCABundleNotEmpty(bundle []byte) error {
 	// are rejected or at least warned on.
 	// For example, something like: https://github.com/cert-manager/trust-manager/blob/21c839ff1128990e049eaf23000a9a8d6716c89e/pkg/util/pem.go#L26-L81
 
+	caBundle := []byte{}
+
+	//Verify that the CABundle is in x509 PEM format
+	//If not then covert it over to PEM x509 format
+
+	if !isPemFormatFromYaml(bundle) {
+		caBundle = convertToPemFormat(bundle)
+	} else {
+		caBundle = bundle
+	}
+
 	pool := x509.NewCertPool()
 
-	ok := pool.AppendCertsFromPEM(bundle)
+	ok := pool.AppendCertsFromPEM(caBundle)
 	if !ok {
 		return fmt.Errorf("cert bundle didn't contain any valid certificates")
 	}
 
 	return nil
+}
+
+func isPemFormatFromYaml(bundle []byte) bool {
+	//Validate the CABundle is in the x509 PEM format
+	return x509.NewCertPool().AppendCertsFromPEM(bundle)
+}
+
+func convertToPemFormat(bundle []byte) []byte {
+
+	cert, err := x509.ParseCertificate(bundle)
+	if err != nil {
+		return []byte{}
+	}
+
+	derBytes := cert.Raw
+
+	pemBlock := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: derBytes,
+	}
+
+	return pem.EncodeToMemory(pemBlock)
 }
