@@ -76,9 +76,9 @@ type WebhookConfiguration struct {
 	// made to the webhook server
 	EnableClientVerification bool
 
-	// ClientCAName is the CA certificate name which server used to verify remote(client)'s certificate.
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
 	// Defaults to "", which means server does not verify client's certificate.
-	ClientCAName string
+	ClientCAPath string
 
 	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
 	// using a CA for apiserver to contact webhooks

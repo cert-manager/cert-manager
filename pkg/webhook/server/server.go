@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -107,9 +108,9 @@ type Server struct {
 	// made to the webhook server
 	EnableClientVerification bool
 
-	// ClientCAName is the CA certificate name which server used to verify remote(client)'s certificate.
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
 	// Defaults to "", which means server does not verify client's certificate.
-	ClientCAName string
+	ClientCAPath string
 
 	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
 	// using a CA for apiserver to contact webhooks
@@ -162,10 +163,17 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	if s.EnableClientVerification {
-		if s.ClientCAName == "" {
-			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-name")
+		if s.ClientCAPath == "" || s.ClientCertificateCN == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-name & --client-certificate-cn")
 		}
-		webhookOpts.ClientCAName = s.ClientCAName
+		caCert, err := loadClientCA(s.ClientCAPath)
+		if err != nil {
+			return err
+		}
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, func(cfg *tls.Config) {
+			cfg.ClientCAs = caCert
+			cfg.ClientAuth = tls.RequireAndVerifyClientCert
+		})
 		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
 	}
 
@@ -338,15 +346,28 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		// avoid impersonation of apiserver client by verifying the CN name if provided
-		if s.ClientCertificateCN != "" {
-			if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
-				return fmt.Errorf("no verified chains")
-			}
-			cert := verifiedChains[0][0]
-			if cert.Subject.CommonName != s.ClientCertificateCN {
-				return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
-			}
+		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
+			return fmt.Errorf("no verified chains")
+		}
+		cert := verifiedChains[0][0]
+		if cert.Subject.CommonName != s.ClientCertificateCN {
+			return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
 		}
 		return nil
 	}
+}
+
+// loadClientCA loads the client CA from given path
+func loadClientCA(path string) (*x509.CertPool, error) {
+	caPem, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client CA cert: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caPem) {
+		return nil, fmt.Errorf("Failed to append cert from caPem")
+	}
+
+	return certPool, nil
 }

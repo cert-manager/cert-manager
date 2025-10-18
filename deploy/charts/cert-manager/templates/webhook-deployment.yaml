@@ -102,7 +102,7 @@ spec:
           - --enable-client-verification={{ .Values.webhook.enableClientVerification }}
           {{- end }}
           {{- if .Values.webhook.clientCAFile }}
-          - --client-ca-name={{ .Values.webhook.clientCAFile }}
+          - --client-ca-path={{ .Values.webhook.clientCAFile }}
           {{- end }}
           {{- if .Values.webhook.apiserverClientCertSubject }}
           - --client-certificate-cn={{ .Values.webhook.apiserverClientCertSubject }}

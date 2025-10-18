@@ -1376,6 +1376,27 @@ Additional volume mounts to add to the cert-manager controller container.
 > ```
 
 enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.
+#### **webhook.enableClientVerification** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+enableClientVerification turns on client verification of requests made to the webhook server
+#### **webhook.clientCAFile** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+the client CA file to be used for verification
+#### **webhook.apiserverClientCertSubject** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+if provided the subject name to be verified for the given client cert
 ### CA Injector
 
 #### **cainjector.enabled** ~ `bool`
