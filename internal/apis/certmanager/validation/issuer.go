@@ -648,20 +648,15 @@ func validateCABundleNotEmpty(bundle []byte) error {
 	// are rejected or at least warned on.
 	// For example, something like: https://github.com/cert-manager/trust-manager/blob/21c839ff1128990e049eaf23000a9a8d6716c89e/pkg/util/pem.go#L26-L81
 
-	caBundle := []byte{}
-
-	//Verify that the CABundle is in x509 PEM format
-	//If not then covert it over to PEM x509 format
-
+	// Verify that the CABundle is in x509 PEM format
+	// If not then covert it over to PEM x509 format
 	if !isPemFormatFromYaml(bundle) {
-		caBundle = convertToPemFormat(bundle)
-	} else {
-		caBundle = bundle
+		bundle = convertToPemFormat(bundle)
 	}
 
 	pool := x509.NewCertPool()
 
-	ok := pool.AppendCertsFromPEM(caBundle)
+	ok := pool.AppendCertsFromPEM(bundle)
 	if !ok {
 		return fmt.Errorf("cert bundle didn't contain any valid certificates")
 	}
@@ -670,7 +665,7 @@ func validateCABundleNotEmpty(bundle []byte) error {
 }
 
 func isPemFormatFromYaml(bundle []byte) bool {
-	//Validate the CABundle is in the x509 PEM format
+	// Validate the CABundle is in the x509 PEM format
 	return x509.NewCertPool().AppendCertsFromPEM(bundle)
 }
 
