@@ -3429,6 +3429,11 @@ spec:
             type: object
           status:
             properties:
+              accepted:
+                description: |-
+                  ChallengeAccepted will be set to true after notifying the ACME server that the
+                  challenge is presented.
+                type: boolean
               presented:
                 description: |-
                   presented will be set to true if the challenge values for this challenge
@@ -3465,6 +3470,8 @@ spec:
                 - expired
                 - errored
                 type: string
+            required:
+            - accepted
             type: object
         required:
         - metadata

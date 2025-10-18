@@ -25,10 +25,11 @@ import (
 // ChallengeStatusApplyConfiguration represents a declarative configuration of the ChallengeStatus type for use
 // with apply.
 type ChallengeStatusApplyConfiguration struct {
-	Processing *bool         `json:"processing,omitempty"`
-	Presented  *bool         `json:"presented,omitempty"`
-	Reason     *string       `json:"reason,omitempty"`
-	State      *acmev1.State `json:"state,omitempty"`
+	Processing        *bool         `json:"processing,omitempty"`
+	Presented         *bool         `json:"presented,omitempty"`
+	ChallengeAccepted *bool         `json:"accepted,omitempty"`
+	Reason            *string       `json:"reason,omitempty"`
+	State             *acmev1.State `json:"state,omitempty"`
 }
 
 // ChallengeStatusApplyConfiguration constructs a declarative configuration of the ChallengeStatus type for use with
@@ -50,6 +51,14 @@ func (b *ChallengeStatusApplyConfiguration) WithProcessing(value bool) *Challeng
 // If called multiple times, the Presented field is set to the value of the last call.
 func (b *ChallengeStatusApplyConfiguration) WithPresented(value bool) *ChallengeStatusApplyConfiguration {
 	b.Presented = &value
+	return b
+}
+
+// WithChallengeAccepted sets the ChallengeAccepted field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ChallengeAccepted field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithChallengeAccepted(value bool) *ChallengeStatusApplyConfiguration {
+	b.ChallengeAccepted = &value
 	return b
 }
 
