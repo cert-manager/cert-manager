@@ -1025,9 +1025,9 @@ webhook:
   # made to the webhook server
   enableClientVerification: false
   # the client CA file to be used for verification
-  # clientCAFile: ""
+  clientCAFile: ""
   # if provided the subject name to be verified for the given client cert
-  # apiserverClientCertSubject: ""
+  apiserverClientCertSubject: ""
 
 # +docs:section=CA Injector
 

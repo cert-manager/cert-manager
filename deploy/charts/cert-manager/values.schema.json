@@ -1602,8 +1602,14 @@
         "affinity": {
           "$ref": "#/$defs/helm-values.webhook.affinity"
         },
+        "apiserverClientCertSubject": {
+          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubject"
+        },
         "automountServiceAccountToken": {
           "$ref": "#/$defs/helm-values.webhook.automountServiceAccountToken"
+        },
+        "clientCAFile": {
+          "$ref": "#/$defs/helm-values.webhook.clientCAFile"
         },
         "config": {
           "$ref": "#/$defs/helm-values.webhook.config"
@@ -1614,17 +1620,11 @@
         "deploymentAnnotations": {
           "$ref": "#/$defs/helm-values.webhook.deploymentAnnotations"
         },
-        "enableServiceLinks": {
-          "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
-        },
         "enableClientVerification": {
           "$ref": "#/$defs/helm-values.webhook.enableClientVerification"
         },
-        "clientCAFile": {
-          "$ref": "#/$defs/helm-values.webhook.clientCAFile"
-        },
-        "apiserverClientCertSubject": {
-          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubject"
+        "enableServiceLinks": {
+          "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
         },
         "extraArgs": {
           "$ref": "#/$defs/helm-values.webhook.extraArgs"
@@ -1736,9 +1736,19 @@
       "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
       "type": "object"
     },
+    "helm-values.webhook.apiserverClientCertSubject": {
+      "default": "",
+      "description": "if provided the subject name to be verified for the given client cert",
+      "type": "string"
+    },
     "helm-values.webhook.automountServiceAccountToken": {
       "description": "Automounting API credentials for a particular pod.",
       "type": "boolean"
+    },
+    "helm-values.webhook.clientCAFile": {
+      "default": "",
+      "description": "the client CA file to be used for verification",
+      "type": "string"
     },
     "helm-values.webhook.config": {
       "default": {},
@@ -1762,25 +1772,15 @@
       "description": "Optional additional annotations to add to the webhook Deployment.",
       "type": "object"
     },
+    "helm-values.webhook.enableClientVerification": {
+      "default": false,
+      "description": "enableClientVerification turns on client verification of requests made to the webhook server",
+      "type": "boolean"
+    },
     "helm-values.webhook.enableServiceLinks": {
       "default": false,
       "description": "enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.",
       "type": "boolean"
-    },
-    "helm-values.webhook.enableClientVerification": {
-      "default": false,
-      "description": "enableClientVerification indicates whether client verification is required for requests made to the webhook server.",
-      "type": "boolean"
-    },
-    "helm-values.webhook.clientCAFile": {
-      "default": "",
-      "description": "clientCAFile is the CA file name used to sign the certificates presented by clients while requesting to the webhook server.",
-      "type": "string"
-    },
-    "helm-values.webhook.apiserverClientCertSubject": {
-      "default": "",
-      "description": "apiserverClientCertSubject is the subject name used by the kube-apiserver certificate for requests to the webhook server.",
-      "type": "string"
     },
     "helm-values.webhook.extraArgs": {
       "default": [],
