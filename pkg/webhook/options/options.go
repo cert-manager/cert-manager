@@ -78,7 +78,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 		"Enable profiling for webhook.")
 	fs.BoolVar(&c.EnableClientVerification, "enable-client-verification", c.EnableClientVerification, ""+
 		"Enable client cert authenticate of apiserver to webhooks.")
-	fs.StringVar(&c.ClientCAName, "client-ca-name", c.ClientCAName, ""+
+	fs.StringVar(&c.ClientCAPath, "client-ca-path", c.ClientCAPath, ""+
 		"The client cert CA used to verify clients contacting webhooks.")
 	fs.StringVar(&c.ClientCertificateCN, "client-certificate-cn", c.ClientCertificateCN, ""+
 		"The client cert CN used by apiserver to contact the webhook.")
