@@ -85,6 +85,9 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		MetricsCertificateSource: buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
 		MetricsCipherSuites:      opts.MetricsTLSConfig.CipherSuites,
 		MetricsMinTLSVersion:     opts.MetricsTLSConfig.MinTLSVersion,
+		EnableClientVerification: opts.EnableClientVerification,
+		ClientCAPath:             opts.ClientCAPath,
+		ClientCertificateCN:      opts.ClientCertificateCN,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
