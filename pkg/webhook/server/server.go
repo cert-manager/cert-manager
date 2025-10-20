@@ -164,7 +164,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	if s.EnableClientVerification {
 		if s.ClientCAPath == "" || s.ClientCertificateCN == "" {
-			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-name & --client-certificate-cn")
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-path & --client-certificate-cn")
 		}
 		caCert, err := loadClientCA(s.ClientCAPath)
 		if err != nil {
@@ -366,7 +366,7 @@ func loadClientCA(path string) (*x509.CertPool, error) {
 
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(caPem) {
-		return nil, fmt.Errorf("Failed to append cert from caPem")
+		return nil, fmt.Errorf("failed to append cert from caPem")
 	}
 
 	return certPool, nil
