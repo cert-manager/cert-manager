@@ -80,7 +80,6 @@ type WebhookConfiguration struct {
 	// Defaults to "", which means server does not verify client's certificate.
 	ClientCAPath string
 
-	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
-	// using a CA for apiserver to contact webhooks
+	// ClientCertificateCN is the Common Name of the client certificate used by the apiserver to contact webhooks.
 	ClientCertificateCN string
 }
