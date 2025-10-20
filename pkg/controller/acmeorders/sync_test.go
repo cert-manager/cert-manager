@@ -20,9 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,8 +36,10 @@ import (
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -1067,4 +1072,162 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	test.builder.CheckAndFinish(err)
+}
+
+func TestFinalizeOrder(t *testing.T) {
+
+	tests := map[string]struct {
+		cl               acmecl.Interface
+		o                *cmacme.Order
+		createRequestLog string
+		getOrderLog      string
+		logCount         int
+	}{
+		"CreateOrderRequest - Succeed, UpdateOrderStatus - Succeed": {
+			cl: &acmecl.FakeACME{
+				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+					return nil, "", nil
+				},
+				FakeGetOrder: func(ctx context.Context, url string) (*acmeapi.Order, error) {
+					return nil, nil
+				},
+			},
+			o: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{
+						"example.com",
+					},
+					IPAddresses: []string{
+						"1.2.3.4",
+					},
+				},
+			},
+			logCount: 0,
+		},
+		"CreateOrderRequest - Fail, UpdateOrderStatus - Succeed": {
+			cl: &acmecl.FakeACME{
+				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+					return nil, "", &acmeapi.Error{
+						StatusCode: 500,
+						Header: http.Header{
+							"header1": []string{"header2"},
+						},
+					}
+				},
+			},
+			o: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{
+						"example.com",
+					},
+					IPAddresses: []string{
+						"1.2.3.4",
+					},
+				},
+			},
+			createRequestLog: "acme server fatal error err=\"500 : \" [errorCode 500 dnsNames [example.com] ipAddresses [1.2.3.4] responseHeaders map[header1:[header2]]]",
+			logCount:         1,
+		},
+		"CreateOrderRequest - Fail, UpdateOrderStatus - Fail": {
+			cl: &acmecl.FakeACME{
+				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+					return nil, "", &acmeapi.Error{
+						StatusCode: 501,
+						Header: http.Header{
+							"header1": []string{"header2"},
+						},
+					}
+				},
+				FakeGetOrder: func(ctx context.Context, url string) (*acmeapi.Order, error) {
+					return nil, &acmeapi.Error{
+						StatusCode: 502,
+						Header: http.Header{
+							"header3": []string{"header4"},
+						},
+					}
+				},
+			},
+			o: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{
+						"example.com",
+					},
+					IPAddresses: []string{
+						"1.2.3.4",
+					},
+				},
+				Status: cmacme.OrderStatus{
+					URL: "example@example.com",
+				},
+			},
+			createRequestLog: "acme server fatal error err=\"501 : \" [errorCode 501 dnsNames [example.com] ipAddresses [1.2.3.4] responseHeaders map[header1:[header2]]]",
+			getOrderLog:      "acme server fatal error err=\"502 : \" [errorCode 502 dnsNames [example.com] ipAddresses [1.2.3.4] responseHeaders map[header3:[header4]]]",
+			logCount:         2,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			s := newFakeLogSink()
+			logger := logr.New(s)
+			ctx := context.Background()
+			ctx = logf.NewContext(ctx, logger)
+
+			i := &v1.Issuer{}
+			cw := &controllerWrapper{}
+
+			_ = cw.finalizeOrder(ctx, test.cl, test.o, i)
+			if len(s.errMessages) != test.logCount {
+				t.Errorf("Unexpected error message count. Expected %d, got %d", test.logCount, len(s.errMessages))
+			}
+
+			if test.createRequestLog != "" && s.errMessages[0] != test.createRequestLog {
+				t.Errorf("Incorrect log message got %q, expected %q", s.errMessages[0], test.createRequestLog)
+			}
+			if test.getOrderLog != "" && s.errMessages[1] != test.getOrderLog {
+				t.Errorf("Incorrect log message got %q, expected %q", s.errMessages[1], test.getOrderLog)
+			}
+		})
+	}
+
+}
+
+type fakeLogSink struct {
+	messages    []string
+	errMessages []string
+}
+
+func (l *fakeLogSink) Init(info logr.RuntimeInfo) {
+}
+
+func (l *fakeLogSink) Enabled(level int) bool {
+	return true
+}
+
+func (l *fakeLogSink) WithValues(keysAndValues ...any) logr.LogSink {
+	return l
+}
+
+func (l *fakeLogSink) WithName(name string) logr.LogSink {
+	return l
+}
+
+func newFakeLogSink() *fakeLogSink {
+	return &fakeLogSink{}
+}
+
+func (l *fakeLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
+	l.messages = append(l.messages, fmt.Sprintf("%s %s", msg, keysAndValues))
+}
+
+func (l *fakeLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
+	l.errMessages = append(l.errMessages, fmt.Sprintf("%s err=%q %v", msg, err, keysAndValues))
+}
+
+func (l *fakeLogSink) String() string {
+	out := make([]string, len(l.messages))
+	for i := range l.messages {
+		out[i] = "\t-" + l.messages[i]
+	}
+	return strings.Join(out, "\n")
 }
