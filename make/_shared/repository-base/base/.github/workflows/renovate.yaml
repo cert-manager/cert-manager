@@ -27,7 +27,7 @@ jobs:
           exit 1
 
       - name: Octo STS Token Exchange
-        uses: octo-sts/action@a26b0c6455c7f13316f29a8766287f939e75f6c8 # v1.0.2
+        uses: octo-sts/action@d6c70ad3b9ac85df6da6b9749014d7283987cfec # v1.0.3
         id: octo-sts
         with:
           scope: '{{REPLACE:GH-REPOSITORY}}'
