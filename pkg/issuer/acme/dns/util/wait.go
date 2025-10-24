@@ -394,7 +394,7 @@ func dnsMsgContainsCNAME(msg *dns.Msg) bool {
 
 // ToFqdn converts the name into a fqdn appending a trailing dot.
 func ToFqdn(name string) string {
-	if strings.HasSuffix(name, ".") {
+	if name == "" || strings.HasSuffix(name, ".") {
 		return name
 	}
 
