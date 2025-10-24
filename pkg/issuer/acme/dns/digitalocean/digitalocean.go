@@ -53,8 +53,10 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 	unusedCtx := context.Background() // context is not actually used
 	c := oauth2.NewClient(unusedCtx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 
-	clientOpts := []godo.ClientOpt{godo.SetUserAgent(userAgent)}
-	client, err := godo.New(c, clientOpts...)
+	client, err := godo.New(c,
+		godo.SetUserAgent(userAgent),
+		godo.WithRetryAndBackoffs(godo.RetryConfig{RetryMax: 3}),
+	)
 	if err != nil {
 		return nil, err
 	}
