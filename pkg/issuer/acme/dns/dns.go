@@ -19,6 +19,7 @@ package dns
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -78,12 +79,12 @@ type Solver struct {
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
-func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Present(ctx context.Context, _ v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "Present"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
 	webhookSolver, req, err := s.prepareChallengeRequest(ctx, ch)
-	if err != nil && err != errNotFound {
+	if err != nil && !errors.Is(err, errNotFound) {
 		return err
 	}
 	if err == nil {

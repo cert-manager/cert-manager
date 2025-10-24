@@ -394,20 +394,16 @@ func dnsMsgContainsCNAME(msg *dns.Msg) bool {
 
 // ToFqdn converts the name into a fqdn appending a trailing dot.
 func ToFqdn(name string) string {
-	n := len(name)
-	if n == 0 || name[n-1] == '.' {
+	if name == "" || strings.HasSuffix(name, ".") {
 		return name
 	}
+
 	return name + "."
 }
 
 // UnFqdn converts the fqdn into a name removing the trailing dot.
 func UnFqdn(name string) string {
-	n := len(name)
-	if n != 0 && name[n-1] == '.' {
-		return name[:n-1]
-	}
-	return name
+	return strings.TrimSuffix(name, ".")
 }
 
 // WaitFor polls the given function 'f', once every 'interval', up to 'timeout'.
