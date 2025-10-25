@@ -141,7 +141,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("acmedns", host, accountJson, dns01Nameservers)
 			return nil, nil
 		},
-		digitalOcean: func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error) {
+		digitalOcean: func(ctx context.Context, token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error) {
 			f.call("digitalocean", token, util.RecursiveNameservers)
 			return nil, nil
 		},
