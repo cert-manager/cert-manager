@@ -94,6 +94,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &acmev1.CertificateDNSNameSelectorApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Challenge"):
 		return &acmev1.ChallengeApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ChallengeCondition"):
+		return &acmev1.ChallengeConditionApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ChallengeSolverStatus"):
+		return &acmev1.ChallengeSolverStatusApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ChallengeSolverStatusDNS"):
+		return &acmev1.ChallengeSolverStatusDNSApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("ChallengeSolverStatusHTTP"):
+		return &acmev1.ChallengeSolverStatusHTTPApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ChallengeSpec"):
 		return &acmev1.ChallengeSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ChallengeStatus"):
