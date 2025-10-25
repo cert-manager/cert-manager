@@ -19,10 +19,12 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,6 +103,18 @@ type Server struct {
 	// MetricsMinTLSVersion is the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MetricsMinTLSVersion string
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool
+
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAPath string
+
+	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
+	// using a CA for apiserver to contact webhooks
+	ClientCertificateCN string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -137,6 +151,32 @@ func (s *Server) Run(ctx context.Context) error {
 		s.ListenAddr = webhookPort
 	}
 
+	webhookOpts := webhook.Options{
+		Port: s.ListenAddr,
+		TLSOpts: []func(*tls.Config){
+			func(cfg *tls.Config) {
+				cfg.CipherSuites = cipherSuites
+				cfg.MinVersion = minVersion
+				cfg.GetCertificate = s.CertificateSource.GetCertificate
+			},
+		},
+	}
+
+	if s.EnableClientVerification {
+		if s.ClientCAPath == "" || s.ClientCertificateCN == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-path & --client-certificate-cn")
+		}
+		caCert, err := loadClientCA(s.ClientCAPath)
+		if err != nil {
+			return err
+		}
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, func(cfg *tls.Config) {
+			cfg.ClientCAs = caCert
+			cfg.ClientAuth = tls.RequireAndVerifyClientCert
+		})
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
+	}
+
 	mgr, err := ctrl.NewManager(
 		&rest.Config{}, // controller-runtime does not need to talk to the API server
 		ctrl.Options{
@@ -154,16 +194,7 @@ func (s *Server) Run(ctx context.Context) error {
 					},
 				},
 			},
-			WebhookServer: webhook.NewServer(webhook.Options{
-				Port: s.ListenAddr,
-				TLSOpts: []func(*tls.Config){
-					func(cfg *tls.Config) {
-						cfg.CipherSuites = cipherSuites
-						cfg.MinVersion = minVersion
-						cfg.GetCertificate = s.CertificateSource.GetCertificate
-					},
-				},
-			}),
+			WebhookServer: webhook.NewServer(webhookOpts),
 		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
@@ -310,4 +341,33 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
+	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		// avoid impersonation of apiserver client by verifying the CN name if provided
+		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
+			return fmt.Errorf("no verified chains")
+		}
+		cert := verifiedChains[0][0]
+		if cert.Subject.CommonName != s.ClientCertificateCN {
+			return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
+		}
+		return nil
+	}
+}
+
+// loadClientCA loads the client CA from given path
+func loadClientCA(path string) (*x509.CertPool, error) {
+	caPem, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client CA cert: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caPem) {
+		return nil, fmt.Errorf("failed to append cert from caPem")
+	}
+
+	return certPool, nil
 }
