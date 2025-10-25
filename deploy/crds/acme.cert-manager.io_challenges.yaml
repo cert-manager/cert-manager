@@ -255,6 +255,9 @@ spec:
                           hostedZoneName:
                             description: name of the DNS zone that should be used
                             type: string
+                          isPrivateZone:
+                            description: Required if your hosted zone is private.
+                            type: boolean
                           managedIdentity:
                             description: |-
                               Auth: Azure Workload Identity or Azure Managed Service Identity:
