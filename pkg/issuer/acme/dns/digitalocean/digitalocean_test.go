@@ -17,11 +17,14 @@ limitations under the License.
 package digitalocean
 
 import (
+	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -82,4 +85,39 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 
 	err = provider.CleanUp(t.Context(), doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestDigitalOceanBackoff(t *testing.T) {
+	if !doLiveTest {
+		t.Skip("skipping live test")
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	t.Cleanup(cancel)
+
+	provider, err := NewDNSProviderCredentials(ctx, doToken, util.RecursiveNameservers, "cert-manager-test")
+	require.NoError(t, err)
+
+	var i int
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		default:
+		}
+
+		t.Logf("Getting domain records for the %dth time", i+1)
+		rec, _, err := provider.client.Domains.Records(ctx, doDomain, nil)
+		if errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
+
+		require.NoError(t, err)
+		require.NotEmpty(t, rec)
+
+		i++
+		// See https://docs.digitalocean.com/reference/api/digitalocean/#section/Introduction/Rate-Limit
+		assert.LessOrEqual(t, i, 250)
+	}
 }
