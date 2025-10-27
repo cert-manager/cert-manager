@@ -83,7 +83,3 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 	err = provider.CleanUp(t.Context(), doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
 }
-
-func TestDigitalOceanSolveForProvider(t *testing.T) {
-
-}
