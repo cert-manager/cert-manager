@@ -46,7 +46,7 @@ func DefaultCertificateRateLimiter() workqueue.TypedRateLimiter[types.Namespaced
 	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*1, time.Second*30)
 }
 
-// DefaultCertificateRateLimiter returns a new rate limiter with base delay of 5
+// DefaultACMERateLimiter returns a new rate limiter with base delay of 5
 // seconds, max delay of 30 minutes.
 func DefaultACMERateLimiter() workqueue.TypedRateLimiter[types.NamespacedName] {
 	return workqueue.NewTypedItemExponentialFailureRateLimiter[types.NamespacedName](time.Second*5, time.Minute*30)
