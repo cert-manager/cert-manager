@@ -21,7 +21,6 @@ package digitalocean
 import (
 	"context"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 
@@ -55,7 +54,7 @@ func NewDNSProviderCredentials(ctx context.Context, token string, dns01Nameserve
 
 	client, err := godo.New(c,
 		godo.SetUserAgent(userAgent),
-		godo.WithRetryAndBackoffs(godo.RetryConfig{RetryMax: math.MaxInt}),
+		godo.WithRetryAndBackoffs(godo.RetryConfig{RetryMax: 10}),
 	)
 	if err != nil {
 		return nil, err
