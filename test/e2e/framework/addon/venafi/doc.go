@@ -15,5 +15,5 @@ limitations under the License.
 */
 
 // Package venafi implements an addon for the Venafi platform.
-// It provides a means for e2e tests to consume credentials for Venafi TPP.
+// It provides a means for e2e tests to consume credentials for CyberArk Control Plane Self-Hosted.
 package venafi

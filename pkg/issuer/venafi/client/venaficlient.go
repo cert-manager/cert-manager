@@ -65,7 +65,7 @@ type Interface interface {
 	VerifyCredentials() error
 }
 
-// Venafi is an implementation of vcert library to manager certificates from TPP or Venafi Cloud
+// Venafi is an implementation of vcert library to manager certificates from Control Plane, Self-Hosted or Control Plane SaaS
 type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -100,7 +100,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 	// Using `false` here ensures we do not immediately authenticate to the
 	// Venafi backend. Doing so invokes a call which forces the use of APIKey
-	// on the TPP side. This auth method has been removed since 22.4 of TPP.
+	// on the Control Plane, Self-Hosted side. This auth method has been removed since 22.4 of Control Plane, Self-Hosted.
 	// This results in an APIKey usage error.
 	// Reference code from vcert library which still refers to the APIKey.
 	// ref: https://github.com/Venafi/vcert/blob/master/pkg/venafi/tpp/connector.go#L137-L146
@@ -150,7 +150,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 	return v, nil
 }
 
-// configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
+// configForIssuer will convert a cert-manager CyberArk Certificate Manager issuer into a vcert.Config
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.SecretLister, namespace string, userAgent string) (*vcert.Config, error) {
 	venaCfg := iss.GetSpec().Venafi
@@ -232,7 +232,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 	}
 	// API validation in webhook and in the ClusterIssuer and Issuer controller
 	// Sync functions should make this unreachable in production.
-	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
+	return nil, fmt.Errorf("neither Control Plane SaaS or Control Plane, Self-Hosted configuration found")
 }
 
 // httpClientForVcertOptions contains options for `httpClientForVcert`, to allow
@@ -254,7 +254,7 @@ type httpClientForVcertOptions struct {
 // Why is it necessary to create our own HTTP client for vcert?
 //
 //  1. We need to customize the client TLS renegotiation setting when connecting
-//     to certain TPP servers.
+//     to certain Control Plane, Self-Hosted servers.
 //  2. We need to customize the User-Agent header for all HTTP requests to Venafi
 //     REST API endpoints.
 //  3. The vcert package does not currently provide an easier way to change those
@@ -264,7 +264,7 @@ type httpClientForVcertOptions struct {
 //
 // Why is it necessary to customize the client TLS renegotiation?
 //
-//  1. The TPP API server is served by Microsoft Windows Server and IIS.
+//  1. The Control Plane, Self-Hosted API server is served by Microsoft Windows Server and IIS.
 //  2. IIS uses TLS-1.2 by default[1] and it uses a
 //     TLS-1.2 feature called "renegotiation" to allow client certificate
 //     settings to be configured at the folder level. e.g.
@@ -401,7 +401,7 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
-// VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud
+// VerifyCredentials will remotely verify the credentials for the client, both for Control Plane, Self-Hosted and Control Plane, SaaS
 func (v *Venafi) VerifyCredentials() error {
 	switch {
 	case v.cloudClient != nil:

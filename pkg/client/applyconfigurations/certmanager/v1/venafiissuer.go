@@ -40,9 +40,9 @@ func (b *VenafiIssuerApplyConfiguration) WithZone(value string) *VenafiIssuerApp
 	return b
 }
 
-// WithTPP sets the TPP field in the declarative configuration to the given value
+// WithTPP sets the Control Plane, Self-Hosted field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TPP field is set to the value of the last call.
+// If called multiple times, the Control Plane, Self-Hosted field is set to the value of the last call.
 func (b *VenafiIssuerApplyConfiguration) WithTPP(value *VenafiTPPApplyConfiguration) *VenafiIssuerApplyConfiguration {
 	b.TPP = value
 	return b

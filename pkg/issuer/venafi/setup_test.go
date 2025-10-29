@@ -90,7 +90,7 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: error building client: this is an error",
+				Message: "Failed to setup CyberArk Certificate Manager issuer: error building client: this is an error",
 				Status:  "False",
 			},
 		},
@@ -101,7 +101,7 @@ func TestSetup(t *testing.T) {
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: error pinging Venafi API: this is a ping error",
+				Message: "Failed to setup CyberArk Certificate Manager issuer: error pinging CyberArk Control Plane: this is a ping error",
 				Status:  "False",
 			},
 		},
@@ -111,8 +111,8 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedErr:   false,
 			expectedCondition: &cmapi.IssuerCondition{
-				Message: "Venafi issuer started",
-				Reason:  "Venafi issuer started",
+				Message: "CyberArk Certificate Manager issuer started",
+				Reason:  "CyberArk Certificate Manager issuer started",
 				Status:  "True",
 			},
 			expectedEvents: []string{
@@ -124,8 +124,8 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedErr:   false,
 			expectedCondition: &cmapi.IssuerCondition{
-				Message: "Venafi issuer started",
-				Reason:  "Venafi issuer started",
+				Message: "CyberArk Certificate Manager issuer started",
+				Reason:  "CyberArk Certificate Manager issuer started",
 				Status:  "True",
 			},
 			expectedEvents: []string{
@@ -139,7 +139,7 @@ func TestSetup(t *testing.T) {
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup Venafi issuer: client.VerifyCredentials: 401 Unauthorized",
+				Message: "Failed to setup CyberArk Certificate Manager issuer: client.VerifyCredentials: 401 Unauthorized",
 				Status:  "False",
 			},
 		},

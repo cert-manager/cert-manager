@@ -38,7 +38,7 @@ type Addons struct {
 	Gateway Gateway
 
 	// Venafi describes global configuration variables for the Venafi tests.
-	// This includes credentials for the Venafi TPP server to use during runs.
+	// This includes credentials for the CyberArk Control Plane Self-Hosted server to use during runs.
 	Venafi Venafi
 
 	// CertManager contains configuration options for the cert-manager

@@ -1,4 +1,3 @@
-
 <p align="center">
   <img src="./logo/logo-small.png" height="256" width="256" alt="cert-manager project logo" />
 </p>
@@ -24,7 +23,7 @@
 
 cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
 
-It supports issuing certificates from a variety of sources, including Let's Encrypt (ACME), HashiCorp Vault, and Venafi TPP / TLS Protect Cloud, as well as local in-cluster issuance.
+It supports issuing certificates from a variety of sources, including Let's Encrypt (ACME), HashiCorp Vault, and CyberArk Control Plane Self-Hosted / CyberArk Certificate Manager, SaaS, as well as local in-cluster issuance.
 
 cert-manager also ensures certificates remain valid and up to date, attempting to renew certificates at an appropriate time before expiry to reduce the risk of outages and remove toil.
 
@@ -120,6 +119,5 @@ and we also publish release notes on [the website](https://cert-manager.io/docs/
 
 cert-manager is loosely based upon the work of [kube-lego](https://github.com/jetstack/kube-lego)
 and has borrowed some wisdom from other similar projects such as [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
-
 
 <sub><sup>Logo design by [Zoe Paterson](https://zoepatersonmedia.com)</sup></sub>

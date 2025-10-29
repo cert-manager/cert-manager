@@ -35,7 +35,7 @@ func CloudDescribe(name string, body func()) bool {
 	return framework.CertManagerDescribe(name, body)
 }
 
-var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
+var _ = CloudDescribe("properly configured Control Plane, SaaS Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-cloud-setup")
 
 	var (
@@ -57,7 +57,7 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 
 	It("should set Ready=True accordingly", func(testingCtx context.Context) {
 		var err error
-		By("Creating a Venafi Cloud Issuer resource")
+		By("Creating a Control Plane, SaaS Issuer resource")
 		issuer = cloudAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -74,7 +74,7 @@ var _ = CloudDescribe("properly configured Venafi Cloud Issuer", func() {
 
 	It("should set Ready=False with a bad access token", func(testingCtx context.Context) {
 		var err error
-		By("Creating a Venafi Cloud Issuer resource")
+		By("Creating a Control Plane, SaaS Issuer resource")
 		issuer = cloudAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())

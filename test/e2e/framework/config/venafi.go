@@ -21,7 +21,7 @@ import (
 	"os"
 )
 
-// Venafi global configuration for Venafi TPP/Cloud instances
+// Venafi global configuration for CyberArk Control Plane Self-Hosted/Control Plane, SaaS instances
 type Venafi struct {
 	TPP   VenafiTPPConfiguration
 	Cloud VenafiCloudConfiguration
@@ -50,11 +50,11 @@ func (v *Venafi) Validate() []error {
 }
 
 func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&v.URL, "global.venafi-tpp-url", os.Getenv("VENAFI_TPP_URL"), "URL of the Venafi TPP instance to use during tests")
-	fs.StringVar(&v.Zone, "global.venafi-tpp-zone", os.Getenv("VENAFI_TPP_ZONE"), "Zone to use during Venafi TPP end-to-end tests")
-	fs.StringVar(&v.Username, "global.venafi-tpp-username", os.Getenv("VENAFI_TPP_USERNAME"), "Username to use when authenticating with the Venafi TPP instance")
-	fs.StringVar(&v.Password, "global.venafi-tpp-password", os.Getenv("VENAFI_TPP_PASSWORD"), "Password to use when authenticating with the Venafi TPP instance")
-	fs.StringVar(&v.AccessToken, "global.venafi-tpp-access-token", os.Getenv("VENAFI_TPP_ACCESS_TOKEN"), "Access token to use when authenticating with the Venafi TPP instance")
+	fs.StringVar(&v.URL, "global.venafi-tpp-url", os.Getenv("VENAFI_TPP_URL"), "URL of the CyberArk Control Plane Self-Hosted instance to use during tests")
+	fs.StringVar(&v.Zone, "global.venafi-tpp-zone", os.Getenv("VENAFI_TPP_ZONE"), "Zone to use during CyberArk Control Plane Self-Hosted end-to-end tests")
+	fs.StringVar(&v.Username, "global.venafi-tpp-username", os.Getenv("VENAFI_TPP_USERNAME"), "Username to use when authenticating with the CyberArk Control Plane Self-Hosted instance")
+	fs.StringVar(&v.Password, "global.venafi-tpp-password", os.Getenv("VENAFI_TPP_PASSWORD"), "Password to use when authenticating with the CyberArk Control Plane Self-Hosted instance")
+	fs.StringVar(&v.AccessToken, "global.venafi-tpp-access-token", os.Getenv("VENAFI_TPP_ACCESS_TOKEN"), "Access token to use when authenticating with the CyberArk Control Plane Self-Hosted instance")
 }
 
 func (v *VenafiTPPConfiguration) Validate() []error {
@@ -62,8 +62,8 @@ func (v *VenafiTPPConfiguration) Validate() []error {
 }
 
 func (v *VenafiCloudConfiguration) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&v.Zone, "global.venafi-cloud-zone", os.Getenv("VENAFI_CLOUD_ZONE"), "Zone to use during Venafi Cloud end-to-end tests")
-	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "API token to use when authenticating with the Venafi Cloud instance")
+	fs.StringVar(&v.Zone, "global.venafi-cloud-zone", os.Getenv("VENAFI_CLOUD_ZONE"), "Zone to use during Control Plane, SaaS end-to-end tests")
+	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "API token to use when authenticating with the Control Plane, SaaS instance")
 }
 
 func (v *VenafiCloudConfiguration) Validate() []error {

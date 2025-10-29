@@ -36,15 +36,15 @@ import (
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
-	// Venafi issuer.
+	// CyberArk Certificate Manager issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// Venafi TPP doesn't allow setting a duration
+		// CyberArk Control Plane Self-Hosted doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
 		// key
 		featureset.ECDSAFeature,
-		// Our Venafi TPP doesn't allow setting non DNS SANs
+		// Our CyberArk Control Plane Self-Hosted doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
@@ -59,14 +59,14 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                "Venafi TPP Issuer",
+		Name:                "CyberArk Control Plane Self-Hosted Issuer",
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Venafi TPP ClusterIssuer",
+		Name:                "CyberArk Control Plane Self-Hosted ClusterIssuer",
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,

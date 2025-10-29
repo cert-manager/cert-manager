@@ -31,7 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
+var _ = TPPDescribe("properly configured CyberArk Control Plane Self-Hosted Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-setup")
 
 	var (

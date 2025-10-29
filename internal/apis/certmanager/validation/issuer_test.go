@@ -1725,7 +1725,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 				field.Required(fldPath.Child("url"), ""),
 			},
 		},
-		"venafi TPP issuer defines both caBundle and caBundleSecretRef": {
+		"Control Plane, Self-Hosted issuer defines both caBundle and caBundleSecretRef": {
 			cfg: &cmapi.VenafiTPP{
 				URL:      "https://tpp.example.com/vedsdk",
 				CABundle: caBundle,
