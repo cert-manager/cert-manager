@@ -707,12 +707,12 @@ endif
 non_go_tool_names := $(filter-out $(go_tool_names),$(tool_names))
 
 .PHONY: non-go-tools
-## Download and setup all Go tools
+## Download and setup all Non-Go tools
 ## @category [shared] Tools
 non-go-tools: $(non_go_tool_names:%=$(bin_dir)/tools/%)
 
 .PHONY: go-tools
-## Download and setup all Non-Go tools
+## Download and setup all Go tools
 ## NOTE: this target is also used to learn the shas of
 ## these tools (see scripts/learn_tools_shas.sh in the
 ## Makefile modules repo)
