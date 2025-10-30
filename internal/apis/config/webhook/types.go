@@ -70,4 +70,15 @@ type WebhookConfiguration struct {
 
 	// Metrics endpoint TLS config
 	MetricsTLSConfig shared.TLSConfig
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool
+
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAPath string
+
+	// ClientCertificateCN is the Common Name of the client certificate used by the apiserver to contact webhooks.
+	ClientCertificateCN string
 }

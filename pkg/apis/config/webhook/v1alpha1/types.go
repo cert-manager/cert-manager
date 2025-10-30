@@ -72,4 +72,15 @@ type WebhookConfiguration struct {
 
 	// metricsTLSConfig is used to configure the metrics server TLS settings.
 	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool `json:"enableClientVerification,omitempty"`
+
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAPath string `json:"clientCAPath,omitempty"`
+
+	// ClientCertificateCN is the Common Name of the client certificate used by the apiserver to contact webhooks.
+	ClientCertificateCN string `json:"clientCertificateCN,omitempty"`
 }
