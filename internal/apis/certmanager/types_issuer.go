@@ -103,13 +103,13 @@ type IssuerConfig struct {
 	// private key used to create the CertificateRequest object.
 	SelfSigned *SelfSignedIssuer
 
-	// Venafi configures this issuer to sign certificates using a CyberArk Control Plane Self-Hosted
-	// or Control Plane SaaS policy zone.
+	// Venafi configures this issuer to sign certificates using a Control Plane, Self-Hosted
+	// or SaaS policy zone.
 	Venafi *VenafiIssuer
 }
 
-// VenafiIssuer configures an issuer to sign certificates using a CyberArk Control Plane Self-Hosted
-// or Control Plane, SaaS policy zone.
+// VenafiIssuer configures an issuer to sign certificates using a Control Plane, Self-Hosted
+// or SaaS policy zone.
 type VenafiIssuer struct {
 	// Zone is the CyberArk Policy Zone to use for this issuer.
 	// All requests made to the CyberArk platform will be restricted by the named
@@ -117,7 +117,7 @@ type VenafiIssuer struct {
 	// This field is required.
 	Zone string
 
-	// Control Plane, Self-Hosted specifies Trust Protection Platform configuration settings.
+	// Control Plane, Self-Hosted specifies Control Plane, Self-Hosted configuration settings.
 	// Only one of Control Plane, Self-Hosted or SaaS may be specified.
 	TPP *VenafiTPP
 
@@ -126,13 +126,13 @@ type VenafiIssuer struct {
 	Cloud *VenafiCloud
 }
 
-// VenafiTPP defines connection configuration details for a CyberArk Control Plane Self-Hosted instance
+// VenafiTPP defines connection configuration details for a Control Plane, Self-Hosted instance
 type VenafiTPP struct {
-	// URL is the base URL for the vedsdk endpoint of the CyberArk Control Plane Self-Hosted instance,
+	// URL is the base URL for the vedsdk endpoint of the Control Plane, Self-Hosted instance,
 	// for example: "https://tpp.example.com/vedsdk".
 	URL string
 
-	// CredentialsRef is a reference to a Secret containing the CyberArk Control Plane Self-Hosted API credentials.
+	// CredentialsRef is a reference to a Secret containing the Control Plane, Self-Hosted API credentials.
 	// The secret must contain the key 'access-token' for the Access Token Authentication,
 	// or two keys, 'username' and 'password' for the API Keys Authentication.
 	CredentialsRef cmmeta.LocalObjectReference
@@ -151,13 +151,13 @@ type VenafiTPP struct {
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
 }
 
-// VenafiCloud defines connection configuration details for Control Plane SaaS
+// VenafiCloud defines connection configuration details for Control Plane, SaaS
 type VenafiCloud struct {
-	// URL is the base URL for Control Plane SaaS.
+	// URL is the base URL for Control Plane, SaaS.
 	// Defaults to "https://api.venafi.cloud/".
 	URL string
 
-	// APITokenSecretRef is a secret key selector for the Control Plane SaaS API token.
+	// APITokenSecretRef is a secret key selector for the Control Plane, SaaS API token.
 	APITokenSecretRef cmmeta.SecretKeySelector
 }
 

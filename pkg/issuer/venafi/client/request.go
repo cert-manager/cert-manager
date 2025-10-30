@@ -37,7 +37,7 @@ type ErrCustomFieldsType struct { //nolint:errname
 }
 
 func (err ErrCustomFieldsType) Error() string {
-	return fmt.Sprintf("certificate request contains an invalid CyberArk Control Plane Self-Hosted type: %q", err.Type)
+	return fmt.Sprintf("certificate request contains an invalid Control Plane, Self-Hosted type: %q", err.Type)
 }
 
 var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.") //nolint:errname

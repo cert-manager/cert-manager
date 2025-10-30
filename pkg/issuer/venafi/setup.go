@@ -46,7 +46,7 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 	}
 	err = client.Ping()
 	if err != nil {
-		return fmt.Errorf("error pinging CyberArk Control Plane: %v", err)
+		return fmt.Errorf("error pinging Control Plane: %v", err)
 	}
 
 	err = client.VerifyCredentials()

@@ -65,7 +65,7 @@ type Interface interface {
 	VerifyCredentials() error
 }
 
-// Venafi is an implementation of vcert library to manager certificates from Control Plane, Self-Hosted or Control Plane SaaS
+// Venafi is an implementation of vcert library to manager certificates from Control Plane, Self-Hosted or Control Plane, SaaS
 type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -232,7 +232,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 	}
 	// API validation in webhook and in the ClusterIssuer and Issuer controller
 	// Sync functions should make this unreachable in production.
-	return nil, fmt.Errorf("neither Control Plane SaaS or Control Plane, Self-Hosted configuration found")
+	return nil, fmt.Errorf("neither Control Plane, SaaS or Self-Hosted configuration found")
 }
 
 // httpClientForVcertOptions contains options for `httpClientForVcert`, to allow

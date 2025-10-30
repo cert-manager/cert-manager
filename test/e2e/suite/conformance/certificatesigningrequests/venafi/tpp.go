@@ -36,16 +36,16 @@ import (
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
-	// CyberArk Control Plane Self-Hosted issuer.
+	// Control Plane, Self-Hosted issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// CyberArk Control Plane Self-Hosted doesn't allow setting a duration
+		// Control Plane, Self-Hosted doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve or
 		// Ed255119 private keys
 		featureset.ECDSAFeature,
 		featureset.Ed25519FeatureSet,
-		// Our CyberArk Control Plane Self-Hosted doesn't allow setting non DNS SANs
+		// Our Control Plane, Self-Hosted doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
@@ -58,7 +58,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	venafiIssuer := new(tpp)
 	(&certificatesigningrequests.Suite{
-		Name:                "CyberArk Control Plane Self-Hosted Issuer",
+		Name:                "Control Plane, Self-Hosted Issuer",
 		CreateIssuerFunc:    venafiIssuer.createIssuer,
 		DeleteIssuerFunc:    venafiIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
@@ -67,7 +67,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	venafiClusterIssuer := new(tpp)
 	(&certificatesigningrequests.Suite{
-		Name:                "CyberArk Control Plane Self-Hosted Cluster Issuer",
+		Name:                "Control Plane, Self-Hosted Cluster Issuer",
 		CreateIssuerFunc:    venafiClusterIssuer.createClusterIssuer,
 		DeleteIssuerFunc:    venafiClusterIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,

@@ -3785,7 +3785,7 @@ func schema_pkg_apis_certmanager_v1_IssuerConfig(ref common.ReferenceCallback) c
 					},
 					"venafi": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Venafi configures this issuer to sign certificates using a CyberArk Control Plane Self-Hosted or Control Plane SaaS policy zone.",
+							Description: "Venafi configures this issuer to sign certificates using a Control Plane, Self-Hosted or SaaS policy zone.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer"),
 						},
 					},
@@ -3879,7 +3879,7 @@ func schema_pkg_apis_certmanager_v1_IssuerSpec(ref common.ReferenceCallback) com
 					},
 					"venafi": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Venafi configures this issuer to sign certificates using a CyberArk Control Plane Self-Hosted or Control Plane SaaS policy zone.",
+							Description: "Venafi configures this issuer to sign certificates using a Control Plane, Self-Hosted or SaaS policy zone.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer"),
 						},
 					},
@@ -4489,19 +4489,19 @@ func schema_pkg_apis_certmanager_v1_VenafiCloud(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VenafiCloud defines connection configuration details for Control Plane SaaS",
+				Description: "VenafiCloud defines connection configuration details for Control Plane, SaaS",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Description: "URL is the base URL for Control Plane SaaS. Defaults to \"https://api.venafi.cloud/\".",
+							Description: "URL is the base URL for Control Plane, SaaS. Defaults to \"https://api.venafi.cloud/\".",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"apiTokenSecretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "APITokenSecretRef is a secret key selector for the Control Plane SaaS API token.",
+							Description: "APITokenSecretRef is a secret key selector for the Control Plane, SaaS API token.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"),
 						},
@@ -4519,7 +4519,7 @@ func schema_pkg_apis_certmanager_v1_VenafiIssuer(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Configures an issuer to sign certificates using a CyberArk Control Plane Self-Hosted or SaaS policy zone.",
+				Description: "Configures an issuer to sign certificates using a Control Plane, Self-Hosted or SaaS policy zone.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"zone": {
@@ -4532,7 +4532,7 @@ func schema_pkg_apis_certmanager_v1_VenafiIssuer(ref common.ReferenceCallback) c
 					},
 					"tpp": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Control Plane, Self-Hosted specifies Trust Protection Platform configuration settings. Only one of Control Plane, Self-Hosted or SaaS may be specified.",
+							Description: "Control Plane, Self-Hosted specifies Control Plane, Self-Hosted configuration settings. Only one of Control Plane, Self-Hosted or SaaS may be specified.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP"),
 						},
 					},
@@ -4555,12 +4555,12 @@ func schema_pkg_apis_certmanager_v1_VenafiTPP(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VenafiTPP defines connection configuration details for a CyberArk Control Plane Self-Hosted instance",
+				Description: "VenafiTPP defines connection configuration details for a Control Plane, Self-Hosted instance",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Description: "URL is the base URL for the vedsdk endpoint of the CyberArk Control Plane Self-Hosted instance, for example: \"https://tpp.example.com/vedsdk\".",
+							Description: "URL is the base URL for the vedsdk endpoint of the Control Plane, Self-Hosted instance, for example: \"https://tpp.example.com/vedsdk\".",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4568,7 +4568,7 @@ func schema_pkg_apis_certmanager_v1_VenafiTPP(ref common.ReferenceCallback) comm
 					},
 					"credentialsRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CredentialsRef is a reference to a Secret containing the CyberArk Control Plane Self-Hosted API credentials. The secret must contain the key 'access-token' for the Access Token Authentication, or two keys, 'username' and 'password' for the API Keys Authentication.",
+							Description: "CredentialsRef is a reference to a Secret containing the Control Plane, Self-Hosted API credentials. The secret must contain the key 'access-token' for the Access Token Authentication, or two keys, 'username' and 'password' for the API Keys Authentication.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.LocalObjectReference"),
 						},

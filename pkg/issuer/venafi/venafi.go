@@ -27,7 +27,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// Venafi is an implementation of govcert library to manager certificates from Control Plane, Self-Hosted or Control Plane SaaS
+// Venafi is an implementation of govcert library to manager certificates from Control Plane, Self-Hosted or Control Plane, SaaS
 type Venafi struct {
 	*controller.Context
 

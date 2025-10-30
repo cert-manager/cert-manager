@@ -3876,8 +3876,8 @@ spec:
                 type: object
               venafi:
                 description: |-
-                  Venafi configures this issuer to sign certificates using a CyberArk Control Plane Self-Hosted
-                  or Control Plane SaaS policy zone.
+                  Venafi configures this issuer to sign certificates using a Control Plane, Self-Hosted
+                  or SaaS policy zone.
                 properties:
                   cloud:
                     description: |-
@@ -3886,7 +3886,7 @@ spec:
                     properties:
                       apiTokenSecretRef:
                         description: APITokenSecretRef is a secret key selector for
-                          the Control Plane SaaS API token.
+                          the Control Plane, SaaS API token.
                         properties:
                           key:
                             description: |-
@@ -3904,7 +3904,7 @@ spec:
                         type: object
                       url:
                         description: |-
-                          URL is the base URL for Control Plane SaaS.
+                          URL is the base URL for Control Plane, SaaS.
                           Defaults to "https://api.venafi.cloud/".
                         type: string
                     required:
@@ -3912,7 +3912,7 @@ spec:
                     type: object
                   tpp:
                     description: |-
-                      Control Plane, Self-Hosted specifies Trust Protection Platform configuration settings.
+                      Control Plane, Self-Hosted specifies Control Plane, Self-Hosted configuration settings.
                       Only one of Control Plane, Self-Hosted or SaaS may be specified.
                     properties:
                       caBundle:
@@ -3947,7 +3947,7 @@ spec:
                         type: object
                       credentialsRef:
                         description: |-
-                          CredentialsRef is a reference to a Secret containing the CyberArk Control Plane Self-Hosted API credentials.
+                          CredentialsRef is a reference to a Secret containing the Control Plane, Self-Hosted API credentials.
                           The secret must contain the key 'access-token' for the Access Token Authentication,
                           or two keys, 'username' and 'password' for the API Keys Authentication.
                         properties:
@@ -3961,7 +3961,7 @@ spec:
                         type: object
                       url:
                         description: |-
-                          URL is the base URL for the vedsdk endpoint of the CyberArk Control Plane Self-Hosted instance,
+                          URL is the base URL for the vedsdk endpoint of the Control Plane, Self-Hosted instance,
                           for example: "https://tpp.example.com/vedsdk".
                         type: string
                     required:

@@ -32,7 +32,7 @@ const (
 	IssuerVault string = "vault"
 	// IssuerSelfSigned is a self signing issuer
 	IssuerSelfSigned string = "selfsigned"
-	// IssuerVenafi uses CyberArk Certificate Manager, Self-Hosted and Control Plane SaaS
+	// IssuerVenafi uses CyberArk Certificate Manager, Self-Hosted and Control Plane, SaaS
 	IssuerVenafi string = "venafi"
 )
 

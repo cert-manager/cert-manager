@@ -345,7 +345,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane Self-Hosted and SaaS, should chose Control Plane, Self-Hosted": {
+		"if Control Plane, Self-Hosted and SaaS, should chose Control Plane, Self-Hosted": {
 			iss: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 					Zone:  zone,

@@ -3625,16 +3625,16 @@ spec:
                   type: object
                 venafi:
                   description: |-
-                    CyberArk configures this issuer to sign certificates using a CyberArk Control Plane Self-Hosted
-                    or Control Plane SaaS policy zone.
+                    Venafi configures this issuer to sign certificates using a Control Plane, Self-Hosted
+                    or SaaS policy zone.
                   properties:
                     cloud:
                       description: |-
-                        Cloud specifies the Control Plane, SaaS configuration settings.
-                        Only one of Control Plane, Self-Hosted or Cloud may be specified.
+                        Cloud specifies the Venafi cloud configuration settings.
+                        Only one of Control Plane, Self-Hosted or SaaS may be specified.
                       properties:
                         apiTokenSecretRef:
-                          description: APITokenSecretRef is a secret key selector for the Control Plane SaaS API token.
+                          description: APITokenSecretRef is a secret key selector for the Control Plane, SaaS API token.
                           properties:
                             key:
                               description: |-
@@ -3652,7 +3652,7 @@ spec:
                           type: object
                         url:
                           description: |-
-                            URL is the base URL for Control Plane SaaS.
+                            URL is the base URL for Control Plane, SaaS.
                             Defaults to "https://api.venafi.cloud/".
                           type: string
                       required:
@@ -3660,8 +3660,8 @@ spec:
                       type: object
                     tpp:
                       description: |-
-                        Control Plane, Self-Hosted specifies Trust Protection Platform configuration settings.
-                        Only one of Control Plane, Self-Hosted or Cloud may be specified.
+                        Control Plane, Self-Hosted specifies Control Plane, Self-Hosted configuration settings.
+                        Only one of Control Plane, Self-Hosted or SaaS may be specified.
                       properties:
                         caBundle:
                           description: |-
@@ -3695,7 +3695,7 @@ spec:
                           type: object
                         credentialsRef:
                           description: |-
-                            CredentialsRef is a reference to a Secret containing the CyberArk Control Plane Self-Hosted API credentials.
+                            CredentialsRef is a reference to a Secret containing the Control Plane, Self-Hosted API credentials.
                             The secret must contain the key 'access-token' for the Access Token Authentication,
                             or two keys, 'username' and 'password' for the API Keys Authentication.
                           properties:
@@ -3709,7 +3709,7 @@ spec:
                           type: object
                         url:
                           description: |-
-                            URL is the base URL for the vedsdk endpoint of the CyberArk Control Plane Self-Hosted instance,
+                            URL is the base URL for the vedsdk endpoint of the Control Plane, Self-Hosted instance,
                             for example: "https://tpp.example.com/vedsdk".
                           type: string
                       required:
@@ -3718,8 +3718,8 @@ spec:
                       type: object
                     zone:
                       description: |-
-                        Zone is the CyberArk Policy Zone to use for this issuer.
-                        All requests made to the CyberArk platform will be restricted by the named
+                        Zone is the Venafi Policy Zone to use for this issuer.
+                        All requests made to the Venafi platform will be restricted by the named
                         zone policy.
                         This field is required.
                       type: string
