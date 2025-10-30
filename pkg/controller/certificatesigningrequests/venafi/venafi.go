@@ -47,8 +47,8 @@ const (
 	CSRControllerName = "certificatesigningrequests-issuer-venafi"
 )
 
-// Venafi is a Kubernetes CertificateSigningRequest controller, responsible for
-// signing CertificateSigningRequests that reference a cert-manager Venafi
+// CyberArk Certificate Manager is a Kubernetes CertificateSigningRequest controller, responsible for
+// signing CertificateSigningRequests that reference a cert-manager CyberArk Certificate Manager
 // Issuer or ClusterIssuer
 type Venafi struct {
 	issuerOptions controllerpkg.IssuerOptions
@@ -89,7 +89,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 }
 
 // Sign attempts to sign the given CertificateSigningRequest based on the
-// provided Venafi Issuer or ClusterIssuer. This function will update the resource
+// provided CyberArk Certificate Manager or ClusterIssuer. This function will update the resource
 // if signing was successful. Returns an error which, if not nil, should
 // trigger a retry.
 // Since this signer takes some time to sign the request, this controller will
@@ -139,7 +139,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		return userr
 	}
 
-	// The signing process with Venafi is slow. The "pickupID" allows us to track
+	// The signing process with CyberArk Certificate Manager is slow. The "pickupID" allows us to track
 	// the progress of the certificate signing. It is set as an annotation the
 	// first time the Certificate is reconciled.
 	pickupID := csr.GetAnnotations()[experimentalapi.CertificateSigningRequestVenafiPickupIDAnnotationKey]
@@ -180,7 +180,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending:
-			message := "Venafi certificate still in a pending state, waiting"
+			message := "Certificate still in a pending state, waiting"
 			log.V(2).Info(message, "error", err.Error())
 			v.recorder.Event(csr, corev1.EventTypeNormal, "IssuancePending", message)
 			return err

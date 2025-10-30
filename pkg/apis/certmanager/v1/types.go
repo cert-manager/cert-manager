@@ -212,14 +212,14 @@ const (
 // Issuer specific Annotations
 const (
 	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the CyberArk Certificate Manager issuer
-	// This will only work with Control Plane, Self-Hosted v19.3 and higher
+	// This will only work with CyberArk Certificate Manager, Self-Hosted v19.3 and higher
 	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"
 
 	// VenafiPickupIDAnnotationKey is the annotation key used to record the
-	// Venafi Pickup ID of a certificate signing request that has been submitted
-	// to the Control Plane for collection later.
+	// CyberArk Certificate Manager Pickup ID of a certificate signing request that has been submitted
+	// to the CyberArk Certificate Manager for collection later.
 	VenafiPickupIDAnnotationKey = "venafi.cert-manager.io/pickup-id"
 )
 

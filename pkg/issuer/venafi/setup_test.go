@@ -101,7 +101,7 @@ func TestSetup(t *testing.T) {
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup CyberArk Certificate Manager issuer: error pinging Control Plane: this is a ping error",
+				Message: "Failed to setup CyberArk Certificate Manager issuer: error pinging CyberArk Certificate Manager: this is a ping error",
 				Status:  "False",
 			},
 		},

@@ -36,29 +36,29 @@ import (
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
-	// Control Plane, Self-Hosted issuer.
+	// CyberArk Certificate Manager, Self-Hosted issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// Control Plane, Self-Hosted doesn't allow setting a duration
+		// CyberArk Certificate Manager, Self-Hosted doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve or
 		// Ed255119 private keys
 		featureset.ECDSAFeature,
 		featureset.Ed25519FeatureSet,
-		// Our Control Plane, Self-Hosted doesn't allow setting non DNS SANs
+		// Our CyberArk Certificate Manager, Self-Hosted doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
 		featureset.IPAddressFeature,
-		// Venafi doesn't allow certs with empty CN & DN
+		// CyberArk Certificate Manager doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
-		// Venafi doesn't setting key usages.
+		// CyberArk Certificate Manager doesn't setting key usages.
 		featureset.KeyUsagesFeature,
 	)
 
 	venafiIssuer := new(cloud)
 	(&certificatesigningrequests.Suite{
-		Name:                "Venafi Cloud Issuer",
+		Name:                "CyberArk Certificate Manager Cloud Issuer",
 		CreateIssuerFunc:    venafiIssuer.createIssuer,
 		DeleteIssuerFunc:    venafiIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
@@ -66,7 +66,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 
 	venafiClusterIssuer := new(cloud)
 	(&certificatesigningrequests.Suite{
-		Name:                "Venafi Cloud Cluster Issuer",
+		Name:                "CyberArk Certificate Manager Cloud Cluster Issuer",
 		CreateIssuerFunc:    venafiClusterIssuer.createClusterIssuer,
 		DeleteIssuerFunc:    venafiClusterIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
@@ -88,7 +88,7 @@ func (c *cloud) delete(ctx context.Context, f *framework.Framework, signerName s
 }
 
 func (c *cloud) createIssuer(ctx context.Context, f *framework.Framework) string {
-	By("Creating a Venafi Cloud Issuer")
+	By("Creating a CyberArk Certificate Manager Cloud Issuer")
 
 	c.VenafiCloud = &venafi.VenafiCloud{
 		Namespace: f.Namespace.Name,
@@ -107,18 +107,18 @@ func (c *cloud) createIssuer(ctx context.Context, f *framework.Framework) string
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	// wait for issuer to be ready
-	By("Waiting for Venafi Cloud Issuer to be Ready")
+	By("Waiting for CyberArk Certificate Manager Cloud Issuer to be Ready")
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
-// createClusterIssuer creates and returns name of a Venafi Cloud
+// createClusterIssuer creates and returns name of a CyberArk Certificate Manager Cloud
 // ClusterIssuer. The name is of the form
 // "clusterissuers.cert-manager.io/issuer-ab3de1".
 func (c *cloud) createClusterIssuer(ctx context.Context, f *framework.Framework) string {
-	By("Creating a Venafi Cloud ClusterIssuer")
+	By("Creating a CyberArk Certificate Manager Cloud ClusterIssuer")
 
 	c.VenafiCloud = &venafi.VenafiCloud{
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
@@ -137,7 +137,7 @@ func (c *cloud) createClusterIssuer(ctx context.Context, f *framework.Framework)
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	// wait for issuer to be ready
-	By("Waiting for Venafi Cloud Cluster Issuer to be Ready")
+	By("Waiting for CyberArk Certificate Manager Cloud Cluster Issuer to be Ready")
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 

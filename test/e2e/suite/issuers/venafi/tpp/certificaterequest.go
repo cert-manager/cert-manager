@@ -55,7 +55,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 	BeforeEach(func(testingCtx context.Context) {
 		var err error
 
-		By("Creating a Venafi Issuer resource")
+		By("Creating a CyberArk Certificate Manager resource")
 		issuer = tppAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())

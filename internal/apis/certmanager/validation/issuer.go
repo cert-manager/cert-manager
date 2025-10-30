@@ -389,7 +389,7 @@ func validateVenafiTPPCABundleUnique(tpp *certmanager.VenafiTPP, fldPath *field.
 	}
 
 	if numCAs > 1 {
-		el = append(el, field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as Control Plane, Self-Hosted CA Bundle"))
+		el = append(el, field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as CyberArk Certificate Manager, Self-Hosted CA Bundle"))
 	}
 
 	return el

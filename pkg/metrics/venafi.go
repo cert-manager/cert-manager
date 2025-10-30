@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-// ObserveVenafiRequestDuration increases bucket counters for that Venafi client duration.
+// ObserveVenafiRequestDuration increases bucket counters for that CyberArk Certificate Manager client duration.
 func (m *Metrics) ObserveVenafiRequestDuration(duration time.Duration, labels ...string) {
 	m.venafiClientRequestDurationSeconds.WithLabelValues(labels...).Observe(duration.Seconds())
 }

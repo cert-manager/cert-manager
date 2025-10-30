@@ -196,18 +196,18 @@ func TestConfigForIssuerT(t *testing.T) {
 	)
 
 	tests := map[string]testConfigForIssuerT{
-		"if Venafi spec has no options in config then should error": {
+		"if CyberArk Certificate Manager spec has no options in config then should error": {
 			iss:         baseIssuer,
 			CheckFn:     checkNoConfigReturned,
 			expectedErr: true,
 		},
-		"if Control Plane, Self-Hosted but getting secret fails, should error": {
+		"if CyberArk Certificate Manager, Self-Hosted but getting secret fails, should error": {
 			iss:           tppIssuer,
 			secretsLister: generateSecretLister(nil, errors.New("this is a network error")),
 			CheckFn:       checkNoConfigReturned,
 			expectedErr:   true,
 		},
-		"if Control Plane, Self-Hosted and neither caBundle nor caBundleSecretRef is specified, CA bundle is not set in vcert config": {
+		"if CyberArk Certificate Manager, Self-Hosted and neither caBundle nor caBundleSecretRef is specified, CA bundle is not set in vcert config": {
 			iss: tppIssuerWithoutCA,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -223,7 +223,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and secret returns user/pass, should return config with those credentials": {
+		"if CyberArk Certificate Manager, Self-Hosted and secret returns user/pass, should return config with those credentials": {
 			iss: tppIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -245,7 +245,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and secret returns user/pass/clientId, should return config with those credentials": {
+		"if CyberArk Certificate Manager, Self-Hosted and secret returns user/pass/clientId, should return config with those credentials": {
 			iss: tppIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -268,7 +268,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and secret returns access-token, should return config with those credentials": {
+		"if CyberArk Certificate Manager, Self-Hosted and secret returns access-token, should return config with those credentials": {
 			iss: tppIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -283,8 +283,8 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		// NOTE: Below scenarios assume valid Control Plane, Self-Hosted CAs, the scenarios with invalid Control Plane, Self-Hosted CAs are run part of TestCaBundleForVcertTPP test
-		"if Control Plane, Self-Hosted and a good caBundle specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
+		// NOTE: Below scenarios assume valid CyberArk Certificate Manager, Self-Hosted CAs, the scenarios with invalid CyberArk Certificate Manager, Self-Hosted CAs are run part of TestCaBundleForVcertTPP test
+		"if CyberArk Certificate Manager, Self-Hosted and a good caBundle specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
 			iss: tppIssuerWithCABundle,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -296,7 +296,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and a good caBundleSecretRef specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
+		"if CyberArk Certificate Manager, Self-Hosted and a good caBundleSecretRef specified, CA bundle should be added to ConnectionTrust and Client in vcert config": {
 			iss: tppIssuerWithCABundleSecretRef,
 			// tppAccessTokenKey secret lister is not passed as we only have single secretsLister in testConfigForIssuerT struck
 			secretsLister: generateSecretLister(&corev1.Secret{
@@ -309,13 +309,13 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, SaaS but getting secret fails, should error": {
+		"if CyberArk Certificate Manager, SaaS but getting secret fails, should error": {
 			iss:           cloudIssuer,
 			secretsLister: generateSecretLister(nil, errors.New("this is a network error")),
 			CheckFn:       checkNoConfigReturned,
 			expectedErr:   true,
 		},
-		"if Control Plane, SaaS and secret but no secret key ref, should use API key at default index": {
+		"if CyberArk Certificate Manager, SaaS and secret but no secret key ref, should use API key at default index": {
 			iss: cloudIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -330,7 +330,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, SaaS and secret with secret key ref, should use API key at default index": {
+		"if CyberArk Certificate Manager, SaaS and secret with secret key ref, should use API key at default index": {
 			iss: cloudWithKeyIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
@@ -345,7 +345,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and SaaS, should chose Control Plane, Self-Hosted": {
+		"if CyberArk Certificate Manager, Self-Hosted and SaaS, should chose CyberArk Certificate Manager, Self-Hosted": {
 			iss: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 					Zone:  zone,
@@ -425,17 +425,17 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 	)
 
 	tests := map[string]testConfigForIssuerT{
-		"if Control Plane, Self-Hosted and neither of caBundle nor caBundleSecretRef is specified, CA bundle is not returned": {
+		"if CyberArk Certificate Manager, Self-Hosted and neither of caBundle nor caBundleSecretRef is specified, CA bundle is not returned": {
 			iss:         tppIssuer,
 			caBundle:    "",
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and caBundle is specified, correct CA bundle from CABundle should be returned": {
+		"if CyberArk Certificate Manager, Self-Hosted and caBundle is specified, correct CA bundle from CABundle should be returned": {
 			iss:         tppIssuerWithCABundle,
 			caBundle:    testLeafCertificate,
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and caBundleSecretRef is specified, correct CA bundle from CABundleSecretRef should be returned": {
+		"if CyberArk Certificate Manager, Self-Hosted and caBundleSecretRef is specified, correct CA bundle from CABundleSecretRef should be returned": {
 			iss:      tppIssuerWithCABundleSecretRef,
 			caBundle: testLeafCertificate,
 			secretsLister: generateSecretLister(&corev1.Secret{
@@ -445,7 +445,7 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 			}, nil),
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and caBundleSecretRef is specified without `key`, correct CA bundle from CABundleSecretRef with default key should be returned": {
+		"if CyberArk Certificate Manager, Self-Hosted and caBundleSecretRef is specified without `key`, correct CA bundle from CABundleSecretRef with default key should be returned": {
 			iss:      tppIssuerWithCABundleSecretRefNoKey,
 			caBundle: testLeafCertificate,
 			secretsLister: generateSecretLister(&corev1.Secret{
@@ -455,7 +455,7 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 			}, nil),
 			expectedErr: false,
 		},
-		"if Control Plane, Self-Hosted and caBundleSecretRef is specified, but getting secret fails should error": {
+		"if CyberArk Certificate Manager, Self-Hosted and caBundleSecretRef is specified, but getting secret fails should error": {
 			iss:           tppIssuerWithCABundleSecretRef,
 			caBundle:      testLeafCertificate,
 			secretsLister: generateSecretLister(nil, errors.New("this is a network error")),
@@ -466,8 +466,8 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		// https://github.com/cert-manager/cert-manager/blob/v1.14.4/internal/apis/certmanager/validation/issuer.go#L354
 		// even though we are not prevalidating, vcert http.Client would anyway fail when using invalid CA
 		// 2 scenarios with bad CAs:
-		// "if Control Plane, Self-Hosted and caBundle is specified, a bad bundle from CABundle should error"
-		// "if Control Plane, Self-Hosted and caBundleSecretRef is specified, a bad bundle from a CABundleSecretRef should error"
+		// "if CyberArk Certificate Manager, Self-Hosted and caBundle is specified, a bad bundle from CABundle should error"
+		// "if CyberArk Certificate Manager, Self-Hosted and caBundleSecretRef is specified, a bad bundle from a CABundleSecretRef should error"
 	}
 
 	for name, test := range tests {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tpp implements tests for the Control Plane, Self-Hosted issuer
+// Package tpp implements tests for the CyberArk Certificate Manager, Self-Hosted issuer
 package tpp
 
 import (

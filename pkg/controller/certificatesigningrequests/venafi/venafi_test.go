@@ -398,7 +398,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning ErrorCustomFields certificate request contains an invalid Control Plane, Self-Hosted type: "test-type"`,
+					`Warning ErrorCustomFields certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: "test-type"`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -440,7 +440,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorCustomFields",
-								Message:            `certificate request contains an invalid Control Plane, Self-Hosted type: "test-type"`,
+								Message:            `certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: "test-type"`,
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
@@ -603,7 +603,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate still in a pending state, waiting",
+					"Normal IssuancePending certificate still in a pending state, waiting",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(

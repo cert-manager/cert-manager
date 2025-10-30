@@ -46,7 +46,7 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 	}
 	err = client.Ping()
 	if err != nil {
-		return fmt.Errorf("error pinging Control Plane: %v", err)
+		return fmt.Errorf("error pinging CyberArk Certificate Manager: %v", err)
 	}
 
 	err = client.VerifyCredentials()
@@ -60,7 +60,7 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {
-		v.Recorder.Eventf(issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Venafi server")
+		v.Recorder.Eventf(issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with CyberArk Certificate Manager server")
 	}
 	v.log.V(logf.DebugLevel).Info("CyberArk Certificate Manager issuer started")
 	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "CyberArk Certificate Manager issuer started", "CyberArk Certificate Manager issuer started")
