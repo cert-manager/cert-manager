@@ -89,6 +89,12 @@ func SetChallengePresented(p bool) ChallengeModifier {
 	}
 }
 
+func SetChallengeAccepted(p bool) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Status.ChallengeAccepted = p
+	}
+}
+
 func SetChallengeWildcard(p bool) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Spec.Wildcard = p

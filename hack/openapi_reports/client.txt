@@ -18,6 +18,7 @@ API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/ac
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEIssuerDNS01ProviderRFC2136,TSIGSecret
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEIssuerDNS01ProviderRoute53,SecretAccessKey
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEIssuerDNS01ProviderRoute53,SecretAccessKeyID
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ChallengeStatus,ChallengeAccepted
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ServiceAccountRef,TokenAudiences
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateKeystores,PKCS12
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateSpec,URIs

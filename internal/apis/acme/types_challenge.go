@@ -121,6 +121,10 @@ type ChallengeStatus struct {
 	// configured).
 	Presented bool
 
+	// ChallengeAccepted will be set to true after notifying the ACME server that the
+	// challenge is presented.
+	ChallengeAccepted bool `json:"accepted"`
+
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
 	Reason string
