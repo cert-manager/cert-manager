@@ -1737,7 +1737,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as TPP CA Bundle"),
+				field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as Control Plane, Self-Hosted CA Bundle"),
 			},
 		},
 	}
