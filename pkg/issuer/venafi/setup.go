@@ -31,7 +31,7 @@ import (
 func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err error) {
 	defer func() {
 		if err != nil {
-			errorMessage := "Failed to setup CyberArk Certificate Manager issuer"
+			errorMessage := "Failed to setup Certificate Manager issuer"
 			v.log.Error(err, errorMessage)
 			apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
 			err = fmt.Errorf("%s: %v", errorMessage, err)
@@ -46,7 +46,7 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 	}
 	err = client.Ping()
 	if err != nil {
-		return fmt.Errorf("error pinging CyberArk Certificate Manager: %v", err)
+		return fmt.Errorf("error pinging Certificate Manager: %v", err)
 	}
 
 	err = client.VerifyCredentials()
@@ -60,10 +60,10 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {
-		v.Recorder.Eventf(issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with CyberArk Certificate Manager server")
+		v.Recorder.Eventf(issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Certificate Manager server")
 	}
-	v.log.V(logf.DebugLevel).Info("CyberArk Certificate Manager issuer started")
-	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "CyberArk Certificate Manager issuer started", "CyberArk Certificate Manager issuer started")
+	v.log.V(logf.DebugLevel).Info("Certificate Manager issuer started")
+	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "Certificate Manager issuer started", "Certificate Manager issuer started")
 
 	return nil
 }

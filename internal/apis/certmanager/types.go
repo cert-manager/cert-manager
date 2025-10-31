@@ -149,8 +149,8 @@ const (
 
 // Issuer specific Annotations
 const (
-	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the CyberArk Certificate Manager issuer
-	// This will only work with CyberArk Certificate Manager, Self-Hosted v19.3 and higher
+	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the Certificate Manager issuer
+	// This will only work with Certificate Manager, Self-Hosted v19.3 and higher
 	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"

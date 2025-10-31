@@ -47,8 +47,8 @@ const (
 	CSRControllerName = "certificatesigningrequests-issuer-venafi"
 )
 
-// CyberArk Certificate Manager is a Kubernetes CertificateSigningRequest controller, responsible for
-// signing CertificateSigningRequests that reference a cert-manager CyberArk Certificate Manager
+// Certificate Manager is a Kubernetes CertificateSigningRequest controller, responsible for
+// signing CertificateSigningRequests that reference a cert-manager Certificate Manager
 // Issuer or ClusterIssuer
 type Venafi struct {
 	issuerOptions controllerpkg.IssuerOptions
@@ -89,7 +89,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 }
 
 // Sign attempts to sign the given CertificateSigningRequest based on the
-// provided CyberArk Certificate Manager or ClusterIssuer. This function will update the resource
+// provided Certificate Manager or ClusterIssuer. This function will update the resource
 // if signing was successful. Returns an error which, if not nil, should
 // trigger a retry.
 // Since this signer takes some time to sign the request, this controller will
@@ -111,7 +111,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 	}
 
 	if err != nil {
-		message := fmt.Sprintf("Failed to initialise venafi client for signing: %s", err)
+		message := fmt.Sprintf("Failed to initialise Certificate Manager client for signing: %s", err)
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorVenafiInit", message)
 		log.Error(err, message)
 		return err
@@ -139,7 +139,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		return userr
 	}
 
-	// The signing process with CyberArk Certificate Manager is slow. The "pickupID" allows us to track
+	// The signing process with Certificate Manager is slow. The "pickupID" allows us to track
 	// the progress of the certificate signing. It is set as an annotation the
 	// first time the Certificate is reconciled.
 	pickupID := csr.GetAnnotations()[experimentalapi.CertificateSigningRequestVenafiPickupIDAnnotationKey]
@@ -159,7 +159,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 				return userr
 
 			default:
-				message := fmt.Sprintf("Failed to request venafi certificate: %s", err)
+				message := fmt.Sprintf("Failed to request Certificate Manager certificate: %s", err)
 				log.Error(err, message)
 				v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorRequest", message)
 				util.CertificateSigningRequestSetFailed(csr, "ErrorRequest", message)
@@ -192,7 +192,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 			return err
 
 		default:
-			message := fmt.Sprintf("Failed to obtain venafi certificate: %s", err)
+			message := fmt.Sprintf("Failed to obtain Certificate Manager certificate: %s", err)
 			log.Error(err, message)
 			v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorRetrieve", message)
 			return err
@@ -218,7 +218,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 	}
 
 	log.V(logf.DebugLevel).Info("certificate issued")
-	v.recorder.Event(csr, corev1.EventTypeNormal, "CertificateIssued", "Certificate fetched from venafi issuer successfully")
+	v.recorder.Event(csr, corev1.EventTypeNormal, "CertificateIssued", "Certificate fetched from Certificate Manager issuer successfully")
 
 	return nil
 }

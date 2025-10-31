@@ -61,10 +61,10 @@ func (v *VenafiCloud) Setup(ctx context.Context, cfg *config.Config, _ ...intern
 	}
 
 	if v.config.Addons.Venafi.Cloud.Zone == "" {
-		return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager, SaaS Zone must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Certificate Manager, SaaS Zone must be set"))
 	}
 	if v.config.Addons.Venafi.Cloud.APIToken == "" {
-		return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager, SaaS APIToken must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Certificate Manager, SaaS APIToken must be set"))
 	}
 
 	return nil, nil

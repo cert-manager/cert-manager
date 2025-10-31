@@ -47,17 +47,17 @@ const (
 	CertificateSigningRequestPrivateKeyAnnotationKey = "experimental.cert-manager.io/private-key-secret-name"
 )
 
-// CyberArk Certificate Manager specific Annotations
+// Certificate Manager specific Annotations
 const (
 	// CertificateSigningRequestVenafiCustomFieldsAnnotationKey is the annotation
-	// that passes on JSON encoded custom fields to the CyberArk Certificate Manager issuer.
-	// This will only work with CyberArk Certificate Manager, Self-Hosted v19.3 and higher.
+	// that passes on JSON encoded custom fields to the Certificate Manager issuer.
+	// This will only work with Certificate Manager, Self-Hosted v19.3 and higher.
 	// The value is an array with objects containing the name and value keys for
 	// example: `[{"name": "custom-field", "value": "custom-value"}]`
 	CertificateSigningRequestVenafiCustomFieldsAnnotationKey = "venafi.experimental.cert-manager.io/custom-fields"
 
 	// CertificateSigningRequestVenafiPickupIDAnnotationKey is the annotation key
-	// used to record the CyberArk Certificate Manager Pickup ID of a certificate signing request that
-	// has been submitted to the CyberArk Certificate Manager for collection later.
+	// used to record the Certificate Manager Pickup ID of a certificate signing request that
+	// has been submitted to the Certificate Manager for collection later.
 	CertificateSigningRequestVenafiPickupIDAnnotationKey = "venafi.experimental.cert-manager.io/pickup-id"
 )

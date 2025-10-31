@@ -22,7 +22,7 @@ const (
 	CustomFieldTypePlain CustomFieldType = "Plain"
 )
 
-// CustomField defines a custom field to be passed to CyberArk Certificate Manager
+// CustomField defines a custom field to be passed to Certificate Manager
 type CustomField struct {
 	Type  CustomFieldType `json:"type,omitempty"`
 	Name  string          `json:"name"`

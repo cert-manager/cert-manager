@@ -52,7 +52,7 @@ func init() {
 	FuzzVenafiCRController is a fuzz test that can be run by way of
 
 go test -fuzz=FuzzVenafiCRController. It tests for panics, OOMs
-and stackoverflow-related bugs in the CyberArk Certificate Manager reconciliation.
+and stackoverflow-related bugs in the Certificate Manager reconciliation.
 */
 func FuzzVenafiCRController(f *testing.F) {
 	f.Fuzz(func(t *testing.T,

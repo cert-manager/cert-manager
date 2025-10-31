@@ -90,7 +90,7 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup CyberArk Certificate Manager issuer: error building client: this is an error",
+				Message: "Failed to setup Certificate Manager issuer: error building client: this is an error",
 				Status:  "False",
 			},
 		},
@@ -101,7 +101,7 @@ func TestSetup(t *testing.T) {
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup CyberArk Certificate Manager issuer: error pinging CyberArk Certificate Manager: this is a ping error",
+				Message: "Failed to setup Certificate Manager issuer: error pinging Certificate Manager: this is a ping error",
 				Status:  "False",
 			},
 		},
@@ -111,12 +111,12 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedErr:   false,
 			expectedCondition: &cmapi.IssuerCondition{
-				Message: "CyberArk Certificate Manager issuer started",
-				Reason:  "CyberArk Certificate Manager issuer started",
+				Message: "Certificate Manager issuer started",
+				Reason:  "Certificate Manager issuer started",
 				Status:  "True",
 			},
 			expectedEvents: []string{
-				"Normal Ready Verified issuer with CyberArk Certificate Manager server",
+				"Normal Ready Verified issuer with Certificate Manager server",
 			},
 		},
 		"verifyCredentials happy path": {
@@ -124,12 +124,12 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedErr:   false,
 			expectedCondition: &cmapi.IssuerCondition{
-				Message: "CyberArk Certificate Manager issuer started",
-				Reason:  "CyberArk Certificate Manager issuer started",
+				Message: "Certificate Manager issuer started",
+				Reason:  "Certificate Manager issuer started",
 				Status:  "True",
 			},
 			expectedEvents: []string{
-				"Normal Ready Verified issuer with CyberArk Certificate Manager server",
+				"Normal Ready Verified issuer with Certificate Manager server",
 			},
 		},
 
@@ -139,7 +139,7 @@ func TestSetup(t *testing.T) {
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
-				Message: "Failed to setup CyberArk Certificate Manager issuer: client.VerifyCredentials: 401 Unauthorized",
+				Message: "Failed to setup Certificate Manager issuer: client.VerifyCredentials: 401 Unauthorized",
 				Status:  "False",
 			},
 		},
@@ -169,7 +169,7 @@ func (s *testSetupT) runTest(t *testing.T) {
 			Recorder: rec,
 		},
 		clientBuilder: s.clientBuilder,
-		log:           logf.Log.WithName("venafi"),
+		log:           logf.Log.WithName("Certificate Manager"),
 	}
 
 	err := v.Setup(t.Context(), s.iss)

@@ -27,7 +27,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// CyberArk Certificate Manager is an implementation of govcert library to manager certificates from CyberArk Certificate Manager, Self-Hosted or SaaS
+// Certificate Manager is an implementation of govcert library to manager certificates from Certificate Manager, Self-Hosted or SaaS
 type Venafi struct {
 	*controller.Context
 
@@ -46,7 +46,7 @@ func NewVenafi(ctx *controller.Context) (issuer.Interface, error) {
 		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		clientBuilder: client.New,
 		Context:       ctx,
-		log:           logf.Log.WithName("venafi"),
+		log:           logf.Log.WithName("Certificate Manager"),
 		userAgent:     ctx.RESTConfig.UserAgent,
 	}, nil
 }

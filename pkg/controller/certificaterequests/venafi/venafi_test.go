@@ -320,7 +320,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise Certificate Manager client for signing: this is a network error`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -332,7 +332,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to initialise Certificate Manager client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -372,7 +372,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise Certificate Manager client for signing: this is a network error`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -384,7 +384,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to initialise Certificate Manager client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -521,7 +521,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tppSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestError Failed to request venafi certificate: this is an error",
+					"Warning RequestError Failed to request Certificate Manager certificate: this is an error",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -533,7 +533,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Failed to request venafi certificate: this is an error",
+								Message:            "Failed to request Certificate Manager certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -552,7 +552,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{cloudSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestError Failed to request venafi certificate: this is an error",
+					"Warning RequestError Failed to request Certificate Manager certificate: this is an error",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -564,7 +564,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Failed to request venafi certificate: this is an error",
+								Message:            "Failed to request Certificate Manager certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -753,7 +753,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning CustomFieldsError certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: "Bool": certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: "Bool"`,
+					`Warning CustomFieldsError certificate request contains an invalid Certificate Manager, Self-Hosted type: "Bool": certificate request contains an invalid Certificate Manager, Self-Hosted type: "Bool"`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -765,7 +765,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: \"Bool\": certificate request contains an invalid CyberArk Certificate Manager, Self-Hosted type: \"Bool\"",
+								Message:            "certificate request contains an invalid Certificate Manager, Self-Hosted type: \"Bool\": certificate request contains an invalid Certificate Manager, Self-Hosted type: \"Bool\"",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

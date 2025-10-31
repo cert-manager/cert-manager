@@ -3875,17 +3875,17 @@ spec:
                 type: object
               venafi:
                 description: |-
-                  CyberArk Certificate Manager configures this issuer to sign certificates using a CyberArk Certificate Manager, Self-Hosted
+                  Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
                   or SaaS policy zone.
                 properties:
                   cloud:
                     description: |-
-                      Cloud specifies the CyberArk Certificate Manager, SaaS configuration settings.
-                      Only one of CyberArk Certificate Manager, Self-Hosted or SaaS may be specified.
+                      Cloud specifies the Certificate Manager, SaaS configuration settings.
+                      Only one of Certificate Manager, Self-Hosted or SaaS may be specified.
                     properties:
                       apiTokenSecretRef:
                         description: APITokenSecretRef is a secret key selector for
-                          the CyberArk Certificate Manager, SaaS API token.
+                          the Certificate Manager, SaaS API token.
                         properties:
                           key:
                             description: |-
@@ -3903,7 +3903,7 @@ spec:
                         type: object
                       url:
                         description: |-
-                          URL is the base URL for CyberArk Certificate Manager, SaaS.
+                          URL is the base URL for Certificate Manager, SaaS.
                           Defaults to "https://api.venafi.cloud/".
                         type: string
                     required:
@@ -3911,13 +3911,13 @@ spec:
                     type: object
                   tpp:
                     description: |-
-                      CyberArk Certificate Manager, Self-Hosted specifies CyberArk Certificate Manager, Self-Hosted configuration settings.
-                      Only one of CyberArk Certificate Manager, Self-Hosted or SaaS may be specified.
+                      Certificate Manager, Self-Hosted specifies Certificate Manager, Self-Hosted configuration settings.
+                      Only one of Certificate Manager, Self-Hosted or SaaS may be specified.
                     properties:
                       caBundle:
                         description: |-
                           Base64-encoded bundle of PEM CAs which will be used to validate the certificate
-                          chain presented by the CyberArk Certificate Manager, Self-Hosted server. Only used if using HTTPS; ignored for HTTP.
+                          chain presented by the Certificate Manager, Self-Hosted server. Only used if using HTTPS; ignored for HTTP.
                           If undefined, the certificate bundle in the cert-manager controller container
                           is used to validate the chain.
                         format: byte
@@ -3925,7 +3925,7 @@ spec:
                       caBundleSecretRef:
                         description: |-
                           Reference to a Secret containing a base64-encoded bundle of PEM CAs
-                          which will be used to validate the certificate chain presented by the CyberArk Certificate Manager, Self-Hosted server.
+                          which will be used to validate the certificate chain presented by the Certificate Manager, Self-Hosted server.
                           Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
                           If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
                           the cert-manager controller container is used to validate the TLS connection.
@@ -3946,7 +3946,7 @@ spec:
                         type: object
                       credentialsRef:
                         description: |-
-                          CredentialsRef is a reference to a Secret containing the CyberArk Certificate Manager, Self-Hosted API credentials.
+                          CredentialsRef is a reference to a Secret containing the Certificate Manager, Self-Hosted API credentials.
                           The secret must contain the key 'access-token' for the Access Token Authentication,
                           or two keys, 'username' and 'password' for the API Keys Authentication.
                         properties:
@@ -3960,7 +3960,7 @@ spec:
                         type: object
                       url:
                         description: |-
-                          URL is the base URL for the vedsdk endpoint of the CyberArk Certificate Manager, Self-Hosted instance,
+                          URL is the base URL for the vedsdk endpoint of the Certificate Manager, Self-Hosted instance,
                           for example: "https://tpp.example.com/vedsdk".
                         type: string
                     required:
@@ -3969,8 +3969,8 @@ spec:
                     type: object
                   zone:
                     description: |-
-                      Zone is the CyberArk Certificate Manager Policy Zone to use for this issuer.
-                      All requests made to the CyberArk Certificate Manager platform will be restricted by the named
+                      Zone is the Certificate Manager Policy Zone to use for this issuer.
+                      All requests made to the Certificate Manager platform will be restricted by the named
                       zone policy.
                       This field is required.
                     type: string
