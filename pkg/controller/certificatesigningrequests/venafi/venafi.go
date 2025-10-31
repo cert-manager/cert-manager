@@ -180,7 +180,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending:
-			message := "Certificate still in a pending state, waiting"
+			message := "certificate still in a pending state, waiting"
 			log.V(2).Info(message, "error", err.Error())
 			v.recorder.Event(csr, corev1.EventTypeNormal, "IssuancePending", message)
 			return err
