@@ -28,6 +28,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -135,7 +137,14 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	}
 
 	// register handler functions
-	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+		Queue: c.queue,
+		Predicates: []predicate.TypedPredicate[client.Object]{
+			// Only enqueue when generation changes.
+			// Don't re-enqueue on status updates.
+			predicate.GenerationChangedPredicate{},
+		},
+	}); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
