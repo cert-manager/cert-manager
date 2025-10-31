@@ -3785,7 +3785,7 @@ func schema_pkg_apis_certmanager_v1_IssuerConfig(ref common.ReferenceCallback) c
 					},
 					"venafi": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted or SaaS policy zone.",
+							Description: "Venafi configures this issuer to sign certificates using a Certificate Manager, Self-Hosted or SaaS policy zone.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer"),
 						},
 					},
@@ -3879,7 +3879,7 @@ func schema_pkg_apis_certmanager_v1_IssuerSpec(ref common.ReferenceCallback) com
 					},
 					"venafi": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted or SaaS policy zone.",
+							Description: "Venafi configures this issuer to sign certificates using a Certificate Manager, Self-Hosted or SaaS policy zone.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer"),
 						},
 					},

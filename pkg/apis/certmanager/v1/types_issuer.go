@@ -125,7 +125,7 @@ type IssuerConfig struct {
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
 
-	// Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
+	// Venafi configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
 	// or SaaS policy zone.
 	// +optional
 	Venafi *VenafiIssuer `json:"venafi,omitempty"`

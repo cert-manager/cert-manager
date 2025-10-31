@@ -103,7 +103,7 @@ type IssuerConfig struct {
 	// private key used to create the CertificateRequest object.
 	SelfSigned *SelfSignedIssuer
 
-	// Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
+	// Venafi configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
 	// or SaaS policy zone.
 	Venafi *VenafiIssuer
 }

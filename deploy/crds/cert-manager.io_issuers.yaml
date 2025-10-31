@@ -3875,7 +3875,7 @@ spec:
                 type: object
               venafi:
                 description: |-
-                  Certificate Manager configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
+                  Venafi configures this issuer to sign certificates using a Certificate Manager, Self-Hosted
                   or SaaS policy zone.
                 properties:
                   cloud:
