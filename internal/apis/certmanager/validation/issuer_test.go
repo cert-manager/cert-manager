@@ -1725,7 +1725,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 				field.Required(fldPath.Child("url"), ""),
 			},
 		},
-		"Certificate Manager, Self-Hosted issuer defines both caBundle and caBundleSecretRef": {
+		"CyberArk Certificate Manager Self-Hosted issuer defines both caBundle and caBundleSecretRef": {
 			cfg: &cmapi.VenafiTPP{
 				URL:      "https://tpp.example.com/vedsdk",
 				CABundle: caBundle,
@@ -1737,7 +1737,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as Certificate Manager, Self-Hosted CA Bundle"),
+				field.Forbidden(fldPath, "may not specify more than one of caBundle/caBundleSecretRef as CyberArk Certificate Manager Self-Hosted CA Bundle"),
 			},
 		},
 	}

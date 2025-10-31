@@ -38,7 +38,7 @@ type Addons struct {
 	Gateway Gateway
 
 	// Certificate Manager describes global configuration variables for the Certificate Manager tests.
-	// This includes credentials for the Certificate Manager, Self-Hosted server to use during runs.
+	// This includes credentials for the CyberArk Certificate Manager Self-Hosted server to use during runs.
 	Venafi Venafi
 
 	// CertManager contains configuration options for the cert-manager

@@ -37,7 +37,7 @@ type ErrCustomFieldsType struct { //nolint:errname
 }
 
 func (err ErrCustomFieldsType) Error() string {
-	return fmt.Sprintf("certificate request contains an invalid Certificate Manager, Self-Hosted type: %q", err.Type)
+	return fmt.Sprintf("certificate request contains an invalid CyberArk Certificate Manager Self-Hosted type: %q", err.Type)
 }
 
 var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.") //nolint:errname
@@ -52,18 +52,18 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 		return "", err
 	}
 
-	// If the connector is Certificate Manager, Self-Hosted, we unconditionally reset any prior failed enrollment
+	// If the connector is CyberArk Certificate Manager Self-Hosted, we unconditionally reset any prior failed enrollment
 	// so that we don't get stuck with "Fix any errors, and then click Retry."
 	// (60% of the time) or "WebSDK CertRequest" (40% of the time).
 	//
 	// It would be preferable to only reset when necessary to avoid the extra
 	// call. We tried that in https://github.com/Venafi/vcert/pull/269. It turns
 	// out that calling "request" followed by "reset(restart=true)" causes a
-	// race in Certificate Manager, Self-Hosted.
+	// race in CyberArk Certificate Manager Self-Hosted.
 	//
 	// Unconditionally resetting isn't optimal, but "reset(restart=false)" is
 	// lightweight. We haven't verified that it doesn't slow things down on
-	// large Certificate Manager, Self-Hosted instances.
+	// large CyberArk Certificate Manager Self-Hosted instances.
 	//
 	// Note that resetting won't affect the existing certificate if one was
 	// already issued.

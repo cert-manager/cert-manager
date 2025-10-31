@@ -36,16 +36,16 @@ import (
 
 var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
-	// Certificate Manager, Self-Hosted issuer.
+	// CyberArk Certificate Manager Self-Hosted issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// Certificate Manager, Self-Hosted doesn't allow setting a duration
+		// CyberArk Certificate Manager Self-Hosted doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve or
 		// Ed255119 private keys
 		featureset.ECDSAFeature,
 		featureset.Ed25519FeatureSet,
-		// Our Certificate Manager, Self-Hosted doesn't allow setting non DNS SANs
+		// Our CyberArk Certificate Manager Self-Hosted doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
@@ -78,7 +78,7 @@ type cloud struct {
 }
 
 func (c *cloud) delete(ctx context.Context, f *framework.Framework, signerName string) {
-	Expect(c.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision Certificate Manager, SaaS")
+	Expect(c.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision CyberArk Certificate Manager SaaS")
 
 	ref, _ := util.SignerIssuerRefFromSignerName(signerName)
 	if ref.Type == "clusterissuers" {
@@ -98,9 +98,9 @@ func (c *cloud) createIssuer(ctx context.Context, f *framework.Framework) string
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to provision Certificate Manager, SaaS issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager SaaS issuer")
 
-	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := c.Details().BuildIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -128,9 +128,9 @@ func (c *cloud) createClusterIssuer(ctx context.Context, f *framework.Framework)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to setup Certificate Manager, Self-Hosted")
+	Expect(err).NotTo(HaveOccurred(), "failed to setup CyberArk Certificate Manager Self-Hosted")
 
-	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(c.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := c.Details().BuildClusterIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})

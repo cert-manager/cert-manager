@@ -36,13 +36,13 @@ import (
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
-	// Certificate Manager, SaaS issuer.
+	// CyberArk Certificate Manager SaaS issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// Certificate Manager, SaaS does not allow setting duration in request
+		// CyberArk Certificate Manager SaaS does not allow setting duration in request
 		featureset.DurationFeature,
-		// Certificate Manager, SaaS has no ECDSA support
+		// CyberArk Certificate Manager SaaS has no ECDSA support
 		featureset.ECDSAFeature,
-		// Alternate SANS are currently not supported in Certificate Manager, SaaS
+		// Alternate SANS are currently not supported in CyberArk Certificate Manager SaaS
 		featureset.EmailSANsFeature,
 		featureset.IPAddressFeature,
 		featureset.URISANsFeature,
@@ -52,21 +52,21 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
-		// The Certificate Manager, SaaS server that we use for these tests has not yet been
+		// The CyberArk Certificate Manager SaaS server that we use for these tests has not yet been
 		// configured to allow OtherName fields.
 		featureset.OtherNamesFeature,
 	)
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                "Certificate Manager, SaaS Issuer",
+		Name:                "CyberArk Certificate Manager SaaS Issuer",
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Certificate Manager, SaaS ClusterIssuer",
+		Name:                "CyberArk Certificate Manager SaaS ClusterIssuer",
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
@@ -78,7 +78,7 @@ type venafiProvisioner struct {
 }
 
 func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
-	Expect(v.cloud.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision Certificate Manager, SaaS")
+	Expect(v.cloud.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision CyberArk Certificate Manager SaaS")
 
 	if ref.Kind == "ClusterIssuer" {
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
@@ -87,7 +87,7 @@ func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, 
 }
 
 func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
-	By("Creating a Certificate Manager, SaaS Issuer")
+	By("Creating a CyberArk Certificate Manager SaaS Issuer")
 
 	v.cloud = &vaddon.VenafiCloud{
 		Namespace: f.Namespace.Name,
@@ -97,16 +97,16 @@ func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Frame
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to provision Certificate Manager, SaaS issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager SaaS issuer")
 
-	Expect(v.cloud.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(v.cloud.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := v.cloud.Details().BuildIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for Certificate Manager")
 
 	// wait for issuer to be ready
-	By("Waiting for Certificate Manager, SaaS Issuer to be Ready")
+	By("Waiting for CyberArk Certificate Manager SaaS Issuer to be Ready")
 	issuer, err = f.Helper().WaitIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -128,16 +128,16 @@ func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framewor
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to setup Certificate Manager, Self-Hosted")
+	Expect(err).NotTo(HaveOccurred(), "failed to setup CyberArk Certificate Manager Self-Hosted")
 
-	Expect(v.cloud.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(v.cloud.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := v.cloud.Details().BuildClusterIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for Certificate Manager")
 
 	// wait for issuer to be ready
-	By("Waiting for Certificate Manager, SaaS Cluster Issuer to be Ready")
+	By("Waiting for CyberArk Certificate Manager SaaS Cluster Issuer to be Ready")
 	issuer, err = f.Helper().WaitClusterIssuerReady(ctx, issuer, time.Minute*5)
 	Expect(err).ToNot(HaveOccurred())
 

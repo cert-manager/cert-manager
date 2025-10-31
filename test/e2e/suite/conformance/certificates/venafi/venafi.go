@@ -38,13 +38,13 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Certificate Manager issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
-		// Certificate Manager, Self-Hosted doesn't allow setting a duration
+		// CyberArk Certificate Manager Self-Hosted doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
 		// key
 		featureset.ECDSAFeature,
-		// Our Certificate Manager, Self-Hosted doesn't allow setting non DNS SANs
+		// Our CyberArk Certificate Manager Self-Hosted doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
@@ -59,14 +59,14 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                "Certificate Manager, Self-Hosted Issuer",
+		Name:                "CyberArk Certificate Manager Self-Hosted Issuer",
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Certificate Manager, Self-Hosted ClusterIssuer",
+		Name:                "CyberArk Certificate Manager Self-Hosted ClusterIssuer",
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
@@ -78,7 +78,7 @@ type venafiProvisioner struct {
 }
 
 func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
-	Expect(v.tpp.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision Certificate Manager, Self-Hosted")
+	Expect(v.tpp.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision CyberArk Certificate Manager Self-Hosted")
 
 	if ref.Kind == "ClusterIssuer" {
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
@@ -97,9 +97,9 @@ func (v *venafiProvisioner) createIssuer(ctx context.Context, f *framework.Frame
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to setup Certificate Manager, Self-Hosted")
+	Expect(err).NotTo(HaveOccurred(), "failed to setup CyberArk Certificate Manager Self-Hosted")
 
-	Expect(v.tpp.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(v.tpp.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := v.tpp.Details().BuildIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -128,9 +128,9 @@ func (v *venafiProvisioner) createClusterIssuer(ctx context.Context, f *framewor
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to setup Certificate Manager, Self-Hosted")
+	Expect(err).NotTo(HaveOccurred(), "failed to setup CyberArk Certificate Manager Self-Hosted")
 
-	Expect(v.tpp.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision Certificate Manager, Self-Hosted")
+	Expect(v.tpp.Provision(ctx)).NotTo(HaveOccurred(), "failed to provision CyberArk Certificate Manager Self-Hosted")
 
 	issuer := v.tpp.Details().BuildClusterIssuer()
 	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
