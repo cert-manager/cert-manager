@@ -116,7 +116,7 @@ func TestSetup(t *testing.T) {
 				Status:  "True",
 			},
 			expectedEvents: []string{
-				"Normal Ready Verified issuer with Venafi server",
+				"Normal Ready Verified issuer with CyberArk Certificate Manager server",
 			},
 		},
 		"verifyCredentials happy path": {
@@ -129,7 +129,7 @@ func TestSetup(t *testing.T) {
 				Status:  "True",
 			},
 			expectedEvents: []string{
-				"Normal Ready Verified issuer with Venafi server",
+				"Normal Ready Verified issuer with CyberArk Certificate Manager server",
 			},
 		},
 
