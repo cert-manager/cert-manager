@@ -157,7 +157,7 @@ func TestProcessItem(t *testing.T) {
 				ExpectedActions:    nil,
 			},
 		},
-		"an approved CSR where the venafi client builder returns a not found error should fire event and do nothing": {
+		"an approved CSR where the Certificate Manager client builder returns a not found error should fire event and do nothing": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -199,7 +199,7 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 		},
-		"an approved CSR where the venafi client builder returns a generic error should mark as Failed": {
+		"an approved CSR where the Certificate Manager client builder returns a generic error should mark as Failed": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -213,7 +213,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning ErrorVenafiInit Failed to initialise venafi client for signing: generic error",
+					"Warning ErrorVenafiInit Failed to initialise Certificate Manager client for signing: generic error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -469,7 +469,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning ErrorRequest Failed to request venafi certificate: generic error",
+					"Warning ErrorRequest Failed to request Certificate Manager certificate: generic error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -511,7 +511,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorRequest",
-								Message:            "Failed to request venafi certificate: generic error",
+								Message:            "Failed to request Certificate Manager certificate: generic error",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
@@ -705,7 +705,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning ErrorRetrieve Failed to obtain venafi certificate: generic error",
+					"Warning ErrorRetrieve Failed to obtain Certificate Manager certificate: generic error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(

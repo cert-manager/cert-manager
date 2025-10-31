@@ -78,7 +78,7 @@ type venafiProvisioner struct {
 }
 
 func (v *venafiProvisioner) delete(ctx context.Context, f *framework.Framework, ref cmmeta.IssuerReference) {
-	Expect(v.cloud.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision Certificate Manager SaaS")
+	Expect(v.cloud.Deprovision(ctx)).NotTo(HaveOccurred(), "failed to deprovision Certificate Manager, SaaS")
 
 	if ref.Kind == "ClusterIssuer" {
 		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(ctx, ref.Name, metav1.DeleteOptions{})
