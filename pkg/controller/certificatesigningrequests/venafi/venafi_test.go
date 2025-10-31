@@ -828,7 +828,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal CertificateIssued Certificate fetched from venafi issuer successfully",
+					"Normal CertificateIssued Certificate fetched from Certificate Manager issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
