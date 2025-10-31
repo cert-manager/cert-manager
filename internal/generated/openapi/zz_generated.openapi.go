@@ -4532,7 +4532,7 @@ func schema_pkg_apis_certmanager_v1_VenafiIssuer(ref common.ReferenceCallback) c
 					},
 					"tpp": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Certificate Manager, Self-Hosted specifies Certificate Manager, Self-Hosted configuration settings. Only one of Certificate Manager, Self-Hosted or SaaS may be specified.",
+							Description: "TPP specifies Certificate Manager, Self-Hosted configuration settings. Only one of Certificate Manager, Self-Hosted or SaaS may be specified.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP"),
 						},
 					},

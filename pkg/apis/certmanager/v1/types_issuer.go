@@ -140,7 +140,7 @@ type VenafiIssuer struct {
 	// This field is required.
 	Zone string `json:"zone"`
 
-	// Certificate Manager, Self-Hosted specifies Certificate Manager, Self-Hosted configuration settings.
+	// TPP specifies Certificate Manager, Self-Hosted configuration settings.
 	// Only one of Certificate Manager, Self-Hosted or SaaS may be specified.
 	// +optional
 	TPP *VenafiTPP `json:"tpp,omitempty"`
