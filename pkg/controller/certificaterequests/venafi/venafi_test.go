@@ -457,7 +457,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+								Message:            "certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
