@@ -23,7 +23,7 @@
 
 cert-manager adds certificates and certificate issuers as resource types in Kubernetes clusters, and simplifies the process of obtaining, renewing and using those certificates.
 
-It supports issuing certificates from a variety of sources, including Let's Encrypt (ACME), HashiCorp Vault, and CyberArk Control Plane, Self-Hosted / CyberArk Certificate Manager, SaaS, as well as local in-cluster issuance.
+It supports issuing certificates from a variety of sources, including Let's Encrypt (ACME), HashiCorp Vault, and CyberArk Certificate Manager, as well as local in-cluster issuance.
 
 cert-manager also ensures certificates remain valid and up to date, attempting to renew certificates at an appropriate time before expiry to reduce the risk of outages and remove toil.
 
