@@ -4,7 +4,7 @@ cert-manager creates TLS certificates for workloads in your Kubernetes or OpenSh
 
 cert-manager can obtain certificates from a [variety of certificate authorities](https://cert-manager.io/docs/configuration/issuers/), including:
 [Let's Encrypt](https://cert-manager.io/docs/configuration/acme/), [HashiCorp Vault](https://cert-manager.io/docs/configuration/vault/),
-[Venafi](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
+[CyberArk](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
 
 ## Prerequisites
 
