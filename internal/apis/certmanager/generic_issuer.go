@@ -27,7 +27,6 @@ type GenericIssuer interface {
 	runtime.Object
 	metav1.Object
 
-	GetObjectMeta() *metav1.ObjectMeta
 	GetSpec() *IssuerSpec
 	GetStatus() *IssuerStatus
 }
@@ -35,9 +34,6 @@ type GenericIssuer interface {
 var _ GenericIssuer = &Issuer{}
 var _ GenericIssuer = &ClusterIssuer{}
 
-func (c *ClusterIssuer) GetObjectMeta() *metav1.ObjectMeta {
-	return &c.ObjectMeta
-}
 func (c *ClusterIssuer) GetSpec() *IssuerSpec {
 	return &c.Spec
 }
@@ -53,9 +49,7 @@ func (c *ClusterIssuer) SetStatus(status IssuerStatus) {
 func (c *ClusterIssuer) Copy() GenericIssuer {
 	return c.DeepCopy()
 }
-func (c *Issuer) GetObjectMeta() *metav1.ObjectMeta {
-	return &c.ObjectMeta
-}
+
 func (c *Issuer) GetSpec() *IssuerSpec {
 	return &c.Spec
 }

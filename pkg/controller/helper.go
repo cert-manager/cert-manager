@@ -24,7 +24,7 @@ import (
 // ResourceNamespace returns the Kubernetes namespace where resources
 // created or read by `iss` are located.
 func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
-	ns := iss.GetObjectMeta().Namespace
+	ns := iss.GetNamespace()
 	if ns == "" {
 		ns = o.ClusterResourceNamespace
 	}
