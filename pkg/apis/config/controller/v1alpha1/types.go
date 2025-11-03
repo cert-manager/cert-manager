@@ -135,6 +135,10 @@ type ControllerConfiguration struct {
 
 	// acmeDNS01Config configures the behaviour of the ACME DNS01 challenge solver
 	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitempty"`
+
+	// Defines the timeout a challenge authorization can take before the request will be
+	// canceled.
+	ChallengeAuthorizationTimeout *sharedv1alpha1.Duration `json:"challengeAuthorizationTimeout,omitempty"`
 }
 
 type LeaderElectionConfig struct {
