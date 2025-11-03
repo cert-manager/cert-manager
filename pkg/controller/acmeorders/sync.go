@@ -595,6 +595,10 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		return nil
 	}
 
+	if ok && acmeErr.StatusCode >= 500 {
+		log.Error(acmeErr, "acme server fatal error", "errorCode", acmeErr.StatusCode, "dnsNames", o.Spec.DNSNames, "ipAddresses", o.Spec.IPAddresses, "responseHeaders", acmeErr.Header)
+	}
+
 	// Before checking whether the call to CreateOrderCert returned a
 	// non-4xx error, ensure the order status is up-to-date.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
@@ -605,7 +609,11 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", errUpdate)
 			return nil
 		}
+		if acmeErr.StatusCode >= 500 {
+			log.Error(acmeErr, "acme server fatal error", "errorCode", acmeErr.StatusCode, "dnsNames", o.Spec.DNSNames, "ipAddresses", o.Spec.IPAddresses, "responseHeaders", acmeErr.Header)
+		}
 	}
+
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
 	}
