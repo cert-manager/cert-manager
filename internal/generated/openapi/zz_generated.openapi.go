@@ -4759,7 +4759,7 @@ func schema_pkg_apis_meta_v1_IssuerReference(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ObjectReference is a reference to an object with a given name, kind and group. Deprecated: Use IssuerReference instead.",
+				Description: "ObjectReference is a reference to an object with a given name, kind and group.\n\nDeprecated: Use IssuerReference instead.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {

@@ -46,6 +46,7 @@ type WebhookConfiguration struct {
 	KubeConfig string
 
 	// apiServerHost is used to override the API server connection address.
+	//
 	// Deprecated: use `kubeConfig` instead.
 	APIServerHost string
 
