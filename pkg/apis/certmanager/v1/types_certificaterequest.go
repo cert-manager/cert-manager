@@ -69,11 +69,10 @@ type CertificateRequest struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// Specification of the desired state of the CertificateRequest resource.
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	// +optional
 	Spec CertificateRequestSpec `json:"spec"`
 
 	// Status of the CertificateRequest.
@@ -81,7 +80,7 @@ type CertificateRequest struct {
 	// Read-only.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	// +optional
-	Status CertificateRequestStatus `json:"status"`
+	Status CertificateRequestStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -92,7 +91,7 @@ type CertificateRequestList struct {
 	// Standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 
 	// List of CertificateRequests
 	Items []CertificateRequest `json:"items"`

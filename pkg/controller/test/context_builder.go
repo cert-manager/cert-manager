@@ -85,7 +85,7 @@ type Builder struct {
 	// as well as a list of all the arguments passed to the CheckAndFinish
 	// function (typically the list of return arguments from the function under
 	// test).
-	CheckFn func(*Builder, ...interface{})
+	CheckFn func(*Builder, ...any)
 
 	stopCh chan struct{}
 
@@ -215,7 +215,7 @@ func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
 // CheckAndFinish will run ensure: all reactors are called, all actions are
 // expected, and all events are as expected.
 // It will then call the Builder's CheckFn, if defined.
-func (b *Builder) CheckAndFinish(args ...interface{}) {
+func (b *Builder) CheckAndFinish(args ...any) {
 	defer b.Stop()
 	if err := b.AllActionsExecuted(); err != nil {
 		b.T.Error(err)

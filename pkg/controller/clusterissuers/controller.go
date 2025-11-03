@@ -112,7 +112,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 }
 
 // TODO: replace with generic handleObject function (like Navigator)
-func (c *controller) secretEvent(obj interface{}) {
+func (c *controller) secretEvent(obj any) {
 	log := c.log.WithName("secretEvent")
 
 	secret, ok := controllerpkg.ToSecret(obj)

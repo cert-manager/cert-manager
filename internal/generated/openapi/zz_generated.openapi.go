@@ -1966,7 +1966,7 @@ func schema_pkg_apis_acme_v1_Challenge(ref common.ReferenceCallback) common.Open
 						},
 					},
 				},
-				Required: []string{"metadata", "spec"},
+				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -2190,7 +2190,7 @@ func schema_pkg_apis_acme_v1_Order(ref common.ReferenceCallback) common.OpenAPID
 						},
 					},
 				},
-				Required: []string{"metadata", "spec"},
+				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -2620,6 +2620,7 @@ func schema_pkg_apis_certmanager_v1_Certificate(ref common.ReferenceCallback) co
 						},
 					},
 				},
+				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -2870,6 +2871,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequest(ref common.ReferenceCallb
 						},
 					},
 				},
+				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{

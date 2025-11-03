@@ -25,8 +25,8 @@ import (
 )
 
 // Funcs returns the fuzzer functions for the webhook config api group.
-var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
-	return []interface{}{
+var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
+	return []any{
 		func(s *webhook.WebhookConfiguration, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 

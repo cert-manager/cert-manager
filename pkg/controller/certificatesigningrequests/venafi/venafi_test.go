@@ -821,7 +821,7 @@ func TestProcessItem(t *testing.T) {
 			clientBuilder: func(_ string, _ internalinformers.SecretLister, _ cmapi.GenericIssuer, _ *metrics.Metrics, _ logr.Logger, _ string) (venaficlient.Interface, error) {
 				return &fakevenaficlient.Venafi{
 					RetrieveCertificateFn: func(_ string, _ []byte, _ time.Duration, _ []venafiapi.CustomField) ([]byte, error) {
-						return []byte(fmt.Sprintf("%s%s", certBundle.ChainPEM, certBundle.CAPEM)), nil
+						return fmt.Appendf(nil, "%s%s", certBundle.ChainPEM, certBundle.CAPEM), nil
 					},
 				}, nil
 			},

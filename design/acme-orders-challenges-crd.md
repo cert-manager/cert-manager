@@ -54,10 +54,13 @@ Numerous changes will need to be made across the codebase to accommodate this.
 // +kubebuilder:resource:path=orders
 type Order struct {
 	metav1.TypeMeta   `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec   OrderSpec   `json:"spec"`
-	Status OrderStatus `json:"status"`
+
+	// +optional
+	Status OrderStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -203,10 +206,13 @@ const (
 // +kubebuilder:resource:path=challenges
 type Challenge struct {
 	metav1.TypeMeta   `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec   ChallengeSpec   `json:"spec"`
-	Status ChallengeStatus `json:"status"`
+
+	// +optional
+	Status ChallengeStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

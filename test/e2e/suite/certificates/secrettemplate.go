@@ -19,6 +19,7 @@ package certificates
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -343,29 +344,13 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 			}
 
 			for _, expectedAnnotation := range []string{"an-annotation", "another-annotation"} {
-				var found bool
-				for _, managedAnnotation := range managedAnnotations {
-					if expectedAnnotation == managedAnnotation {
-						found = true
-						break
-					}
-				}
-
-				if !found {
+				if !slices.Contains(managedAnnotations, expectedAnnotation) {
 					return false
 				}
 			}
 
 			for _, expectedLabel := range []string{"abc", "foo"} {
-				var found bool
-				for _, managedLabel := range managedLabels {
-					if expectedLabel == managedLabel {
-						found = true
-						break
-					}
-				}
-
-				if !found {
+				if !slices.Contains(managedLabels, expectedLabel) {
 					return false
 				}
 			}

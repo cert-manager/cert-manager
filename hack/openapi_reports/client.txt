@@ -90,5 +90,7 @@ API rule violation: names_match,sigs.k8s.io/gateway-api/apis/v1,HTTPExternalAuth
 API rule violation: names_match,sigs.k8s.io/gateway-api/apis/v1,HTTPExternalAuthFilter,HTTPAuthConfig
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ChallengeList,ListMeta
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,OrderList,ListMeta
+API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateList,ListMeta
+API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateRequestList,ListMeta
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,ClusterIssuerList,ListMeta
 API rule violation: streaming_list_type_json_tags,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,IssuerList,ListMeta

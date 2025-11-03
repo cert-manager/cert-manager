@@ -44,11 +44,10 @@ type Certificate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// Specification of the desired state of the Certificate resource.
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	// +optional
 	Spec CertificateSpec `json:"spec"`
 
 	// Status of the Certificate.
@@ -56,7 +55,7 @@ type Certificate struct {
 	// Read-only.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	// +optional
-	Status CertificateStatus `json:"status"`
+	Status CertificateStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -67,7 +66,7 @@ type CertificateList struct {
 	// Standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 
 	// List of Certificates
 	Items []Certificate `json:"items"`
@@ -522,7 +521,7 @@ type JKSKeystore struct {
 	// Mutually exclusive with password.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
 	// +optional
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitzero"`
 
 	// Password provides a literal password used to encrypt the JKS keystore.
 	// Mutually exclusive with passwordSecretRef.
@@ -562,7 +561,7 @@ type PKCS12Keystore struct {
 	// Mutually exclusive with password.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
 	// +optional
-	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef,omitzero"`
 
 	// Password provides a literal password used to encrypt the PKCS#12 keystore.
 	// Mutually exclusive with passwordSecretRef.

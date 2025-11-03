@@ -87,7 +87,7 @@ type ssaPatch struct {
 	err   error
 }
 
-func newSSAPatch(patch interface{}) *ssaPatch {
+func newSSAPatch(patch any) *ssaPatch {
 	jsonPatch, err := json.Marshal(patch)
 	return &ssaPatch{patch: jsonPatch, err: err}
 }

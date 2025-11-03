@@ -28,7 +28,7 @@ var _ cache.TransformFunc = partialMetadataRemoveAll
 // partialMetadataRemoveAll implements a cache.TransformFunc that removes
 // labels, annotations and managed
 // fields from PartialObjectMetadata.
-func partialMetadataRemoveAll(obj interface{}) (interface{}, error) {
+func partialMetadataRemoveAll(obj any) (any, error) {
 	partialMeta, ok := obj.(*metav1.PartialObjectMetadata)
 	if !ok {
 		return nil, fmt.Errorf("internal error: cannot cast object %#+v to PartialObjectMetadata", obj)

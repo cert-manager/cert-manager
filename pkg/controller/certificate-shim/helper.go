@@ -174,7 +174,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if usages, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; found {
 		var newUsages []cmapi.KeyUsage
-		for _, usageName := range strings.Split(usages, ",") {
+		for usageName := range strings.SplitSeq(usages, ",") {
 			usage := cmapi.KeyUsage(strings.Trim(usageName, " "))
 			_, isKU := apiutil.KeyUsageType(usage)
 			_, isEKU := apiutil.ExtKeyUsageType(usage)

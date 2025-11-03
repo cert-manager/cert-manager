@@ -40,7 +40,7 @@ func newTestClient() *Client {
 
 // Decodes a JWS-encoded request and unmarshals the decoded JSON into a provided
 // interface.
-func decodeJWSRequest(t *testing.T, v interface{}, r io.Reader) {
+func decodeJWSRequest(t *testing.T, v any, r io.Reader) {
 	// Decode request
 	var req struct{ Payload string }
 	if err := json.NewDecoder(r).Decode(&req); err != nil {

@@ -60,8 +60,8 @@ func HandleOwnedResourceNamespacedFunc[T metav1.Object](
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	ownerGVK schema.GroupVersionKind,
 	get func(namespace, name string) (T, error),
-) func(obj interface{}) {
-	return func(obj interface{}) {
+) func(obj any) {
+	return func(obj any) {
 		log := log.WithName("handleOwnedResource")
 
 		metaobj, ok := obj.(metav1.Object)
@@ -116,7 +116,7 @@ type QueuingEventHandler struct {
 }
 
 // Enqueue adds a key for an object to the workqueue.
-func (q *QueuingEventHandler) Enqueue(obj interface{}) {
+func (q *QueuingEventHandler) Enqueue(obj any) {
 	objectName, err := cache.DeletionHandlingObjectToName(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -129,12 +129,12 @@ func (q *QueuingEventHandler) Enqueue(obj interface{}) {
 }
 
 // OnAdd adds a newly created object to the workqueue.
-func (q *QueuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+func (q *QueuingEventHandler) OnAdd(obj any, isInInitialList bool) {
 	q.Enqueue(obj)
 }
 
 // OnUpdate adds an updated object to the workqueue.
-func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+func (q *QueuingEventHandler) OnUpdate(oldObj, newObj any) {
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
@@ -142,7 +142,7 @@ func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
 }
 
 // OnDelete adds a deleted object to the workqueue for processing.
-func (q *QueuingEventHandler) OnDelete(obj interface{}) {
+func (q *QueuingEventHandler) OnDelete(obj any) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
@@ -154,21 +154,21 @@ func (q *QueuingEventHandler) OnDelete(obj interface{}) {
 // simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
 // OnDelete.
 type BlockingEventHandler struct {
-	WorkFunc func(obj interface{})
+	WorkFunc func(obj any)
 }
 
 // Enqueue synchronously adds a key for an object to the workqueue.
-func (b *BlockingEventHandler) Enqueue(obj interface{}) {
+func (b *BlockingEventHandler) Enqueue(obj any) {
 	b.WorkFunc(obj)
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
-func (b *BlockingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+func (b *BlockingEventHandler) OnAdd(obj any, isInInitialList bool) {
 	b.WorkFunc(obj)
 }
 
 // OnUpdate synchronously adds an updated object to the workqueue.
-func (b *BlockingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+func (b *BlockingEventHandler) OnUpdate(oldObj, newObj any) {
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
@@ -176,7 +176,7 @@ func (b *BlockingEventHandler) OnUpdate(oldObj, newObj interface{}) {
 }
 
 // OnDelete synchronously adds a deleted object to the workqueue.
-func (b *BlockingEventHandler) OnDelete(obj interface{}) {
+func (b *BlockingEventHandler) OnDelete(obj any) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
@@ -213,7 +213,7 @@ func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string)
 	return filteredAnnotations
 }
 
-func ToSecret(obj interface{}) (*corev1.Secret, bool) {
+func ToSecret(obj any) (*corev1.Secret, bool) {
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
 		meta, ok := obj.(*metav1.PartialObjectMetadata)

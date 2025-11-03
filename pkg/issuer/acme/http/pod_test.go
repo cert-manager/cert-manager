@@ -450,7 +450,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -541,7 +541,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -578,7 +578,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -631,7 +631,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				setupACMEOptionsWithDefaultsResources(s)
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resp, ok := args[0].(*corev1.Pod)
 				if !ok {
 					t.Errorf("expected pod to be returned, but got %v", args[0])
@@ -682,7 +682,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				setupACMEOptionsWithDefaultsResources(s)
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resp, ok := args[0].(*corev1.Pod)
 				if !ok {
 					t.Errorf("expected pod to be returned, but got %v", args[0])
@@ -729,7 +729,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				setupACMEOptionsWithDefaultsResources(s)
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resp, ok := args[0].(*corev1.Pod)
 				if !ok {
 					t.Errorf("expected pod to be returned, but got %v", args[0])

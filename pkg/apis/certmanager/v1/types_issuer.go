@@ -39,15 +39,16 @@ import (
 // be referenced by resources that exist in *any* namespace, not just the same
 // namespace as the referent.
 type ClusterIssuer struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata"`
 
 	// Desired state of the ClusterIssuer resource.
 	Spec IssuerSpec `json:"spec"`
 
 	// Status of the ClusterIssuer. This is set and managed automatically.
 	// +optional
-	Status IssuerStatus `json:"status"`
+	Status IssuerStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -74,15 +75,16 @@ type ClusterIssuerList struct {
 // It is scoped to a single namespace and can therefore only be referenced by
 // resources within the same namespace.
 type Issuer struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata"`
 
 	// Desired state of the Issuer resource.
 	Spec IssuerSpec `json:"spec"`
 
 	// Status of the Issuer. This is set and managed automatically.
 	// +optional
-	Status IssuerStatus `json:"status"`
+	Status IssuerStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -330,7 +332,7 @@ type VaultKubernetesAuth struct {
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported.
 	// +optional
-	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitzero"`
 	// Note: we don't use a pointer here for backwards compatibility.
 
 	// A reference to a service account that will be used to request a bound

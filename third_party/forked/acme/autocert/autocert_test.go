@@ -112,11 +112,11 @@ func (m *memCache) numCerts() int {
 	return res
 }
 
-func dummyCert(pub interface{}, san ...string) ([]byte, error) {
+func dummyCert(pub any, san ...string) ([]byte, error) {
 	return dateDummyCert(pub, time.Now(), time.Now().Add(90*24*time.Hour), san...)
 }
 
-func dateDummyCert(pub interface{}, start, end time.Time, san ...string) ([]byte, error) {
+func dateDummyCert(pub any, start, end time.Time, san ...string) ([]byte, error) {
 	// use EC key to run faster on 386
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

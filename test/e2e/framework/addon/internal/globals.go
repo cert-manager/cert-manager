@@ -49,4 +49,4 @@ type Addon interface {
 // it to all other ginkgo processes. Process #1 then starts a shared server that trusts the
 // certificate. All other ginkgo processes can authenticate to this server using the private
 // key and certificate that was transferred to them.
-type AddonTransferableData interface{}
+type AddonTransferableData any

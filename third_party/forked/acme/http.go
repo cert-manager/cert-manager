@@ -169,7 +169,7 @@ func (c *Client) postAsGet(ctx context.Context, url string, ok resOkay) (*http.R
 // post retries unsuccessful attempts according to c.RetryBackoff
 // until the context is done or a non-retriable error is received.
 // It uses postNoRetry to make individual requests.
-func (c *Client) post(ctx context.Context, key crypto.Signer, url string, body interface{}, ok resOkay) (*http.Response, error) {
+func (c *Client) post(ctx context.Context, key crypto.Signer, url string, body any, ok resOkay) (*http.Response, error) {
 	retry := c.retryTimer()
 	for {
 		res, req, err := c.postNoRetry(ctx, key, url, body)
@@ -211,7 +211,7 @@ func (c *Client) post(ctx context.Context, key crypto.Signer, url string, body i
 // and JWK is used only when KID is unavailable: new account endpoint and certificate
 // revocation requests authenticated by a cert key.
 // See jwsEncodeJSON for other details.
-func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, url string, body interface{}) (*http.Response, *http.Request, error) {
+func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, url string, body any) (*http.Response, *http.Request, error) {
 	kid := noKeyID
 	if key == nil {
 		if c.Key == nil {

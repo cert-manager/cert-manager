@@ -59,7 +59,7 @@ type jsonWebSignature struct {
 // If nonce is non-empty, its quoted value is inserted in the protected header.
 //
 // See https://tools.ietf.org/html/rfc7515#section-7.
-func jwsEncodeJSON(claimset interface{}, key crypto.Signer, kid KeyID, nonce, url string) ([]byte, error) {
+func jwsEncodeJSON(claimset any, key crypto.Signer, kid KeyID, nonce, url string) ([]byte, error) {
 	if key == nil {
 		return nil, errors.New("nil key")
 	}

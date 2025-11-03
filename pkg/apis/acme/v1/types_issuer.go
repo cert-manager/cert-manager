@@ -788,7 +788,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
 	// +optional
-	TSIGSecret cmmeta.SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
+	TSIGSecret cmmeta.SecretKeySelector `json:"tsigSecretSecretRef,omitzero"`
 
 	// The TSIG Key name configured in the DNS.
 	// If ``tsigSecretSecretRef`` is defined, this field is required.

@@ -17,6 +17,7 @@ limitations under the License.
 package gen
 
 import (
+	"maps"
 	"strconv"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -82,9 +83,7 @@ func AddCertificateSigningRequestAnnotations(annotations map[string]string) Cert
 		if annotationsNew == nil {
 			annotationsNew = make(map[string]string)
 		}
-		for k, v := range annotations {
-			annotationsNew[k] = v
-		}
+		maps.Copy(annotationsNew, annotations)
 		csr.SetAnnotations(annotationsNew)
 	}
 }

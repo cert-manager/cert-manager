@@ -3271,7 +3271,6 @@ spec:
                   type: string
               type: object
           required:
-            - metadata
             - spec
           type: object
       served: true

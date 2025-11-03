@@ -114,8 +114,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 //	    name: gateway-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj interface{}) {
-	return func(obj interface{}) {
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj any) {
+	return func(obj any) {
 		crt, ok := obj.(*cmapi.Certificate)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("not a Certificate object: %#v", obj))

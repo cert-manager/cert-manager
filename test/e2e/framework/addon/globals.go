@@ -19,6 +19,7 @@ package addon
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -161,9 +162,7 @@ func GlobalLogs(ctx context.Context) (map[string]string, error) {
 		// TODO: namespace logs from each addon to their addon type to avoid
 		// conflicts. Realistically, it's unlikely a conflict will occur though
 		// so this will probably be fine for now.
-		for k, v := range l {
-			out[k] = v
-		}
+		maps.Copy(out, l)
 	}
 	return out, nil
 }

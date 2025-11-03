@@ -21,7 +21,6 @@ linters:
           - govet
           - nakedret
           - nilnil
-          - modernize
         text: .*
       - linters:
           - gosec

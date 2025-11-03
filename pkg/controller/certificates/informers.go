@@ -37,8 +37,8 @@ import (
 // call when enqueuing Certificate resources.
 // If no predicate constructors are given, all Certificate resources will be
 // enqueued on every invocation.
-func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName], lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(obj interface{}) {
-	return func(obj interface{}) {
+func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName], lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(obj any) {
+	return func(obj any) {
 		s, ok := obj.(metav1.Object)
 		if !ok {
 			log.V(logf.ErrorLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")

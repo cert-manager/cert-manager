@@ -121,7 +121,7 @@ func assertIsClusterIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1.Cl
 	return issuer
 }
 
-func assertDeepEqual(t *testing.T, f failfFunc, left, right interface{}) {
+func assertDeepEqual(t *testing.T, f failfFunc, left, right any) {
 	if !reflect.DeepEqual(left, right) {
 		f(t, "object '%#v' does not equal '%#v'", left, right)
 	}
@@ -139,14 +139,14 @@ func filter(in []clientgotesting.Action) []clientgotesting.Action {
 
 // failfFunc is a type that defines the common signatures of T.Fatalf and
 // T.Errorf.
-type failfFunc func(t *testing.T, msg string, args ...interface{})
+type failfFunc func(t *testing.T, msg string, args ...any)
 
-func fatalf(t *testing.T, msg string, args ...interface{}) {
+func fatalf(t *testing.T, msg string, args ...any) {
 	t.Log(string(debug.Stack()))
 	t.Fatalf(msg, args...)
 }
 
-func errorf(t *testing.T, msg string, args ...interface{}) {
+func errorf(t *testing.T, msg string, args ...any) {
 	t.Log(string(debug.Stack()))
 	t.Errorf(msg, args...)
 }

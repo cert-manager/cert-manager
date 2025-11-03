@@ -304,7 +304,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	// NotAfter field.
 	computeNameSpec.Request = nil
 
-	var hashObj interface{}
+	var hashObj any
 	hashObj = computeNameSpec
 	if len(csr.Name) >= 52 {
 		// Pass a unique struct for hashing so that names at or longer than 52

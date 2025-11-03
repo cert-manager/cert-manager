@@ -174,7 +174,7 @@ func (ca *CAServer) Start() *CAServer {
 	return ca
 }
 
-func (ca *CAServer) serverURL(format string, arg ...interface{}) string {
+func (ca *CAServer) serverURL(format string, arg ...any) string {
 	return ca.server.URL + fmt.Sprintf(format, arg...)
 }
 
@@ -199,7 +199,7 @@ func (ca *CAServer) getHandler(domain string) (http.Handler, bool) {
 	return h, ok
 }
 
-func (ca *CAServer) httpErrorf(w http.ResponseWriter, code int, format string, a ...interface{}) {
+func (ca *CAServer) httpErrorf(w http.ResponseWriter, code int, format string, a ...any) {
 	s := fmt.Sprintf(format, a...)
 	ca.t.Errorf(format, a...)
 	http.Error(w, s, code)
@@ -767,7 +767,7 @@ func (ca *CAServer) verifyHTTPChallenge(a *authorization) error {
 	return nil
 }
 
-func decodePayload(v interface{}, r io.Reader) error {
+func decodePayload(v any, r io.Reader) error {
 	var req struct{ Payload string }
 	if err := json.NewDecoder(r).Decode(&req); err != nil {
 		return err

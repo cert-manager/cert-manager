@@ -34,12 +34,14 @@ import (
 
 // Challenge is a type to represent a Challenge request with an ACME server
 type Challenge struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec ChallengeSpec `json:"spec"`
+
 	// +optional
-	Status ChallengeStatus `json:"status"`
+	Status ChallengeStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

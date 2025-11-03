@@ -17,6 +17,8 @@ limitations under the License.
 package gen
 
 import (
+	"maps"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -247,9 +249,7 @@ func AddCertificateAnnotations(annotations map[string]string) CertificateModifie
 			crt.Annotations = make(map[string]string)
 		}
 
-		for k, v := range annotations {
-			crt.Annotations[k] = v
-		}
+		maps.Copy(crt.Annotations, annotations)
 	}
 }
 
@@ -258,9 +258,8 @@ func AddCertificateLabels(labels map[string]string) CertificateModifier {
 		if crt.Labels == nil {
 			crt.Labels = make(map[string]string)
 		}
-		for k, v := range labels {
-			crt.Labels[k] = v
-		}
+
+		maps.Copy(crt.Labels, labels)
 	}
 }
 

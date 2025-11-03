@@ -143,7 +143,7 @@ type prober struct {
 	errors []error
 }
 
-func (p *prober) errorf(format string, a ...interface{}) {
+func (p *prober) errorf(format string, a ...any) {
 	err := fmt.Errorf(format, a...)
 	log.Print(err)
 	p.errors = append(p.errors, err)

@@ -32,8 +32,8 @@ import (
 func handleGenericIssuerFunc(
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	orderLister cmacmelisters.OrderLister,
-) func(interface{}) {
-	return func(obj interface{}) {
+) func(any) {
+	return func(obj any) {
 		iss, ok := obj.(cmapi.GenericIssuer)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))

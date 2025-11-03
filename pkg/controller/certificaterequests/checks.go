@@ -26,7 +26,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-func (c *Controller) handleGenericIssuer(obj interface{}) {
+func (c *Controller) handleGenericIssuer(obj any) {
 	log := c.log.WithName("handleGenericIssuer")
 
 	iss, ok := obj.(cmapi.GenericIssuer)

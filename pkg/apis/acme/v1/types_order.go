@@ -34,12 +34,14 @@ import (
 
 // Order is a type to represent an Order with an ACME server
 type Order struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec OrderSpec `json:"spec"`
+
 	// +optional
-	Status OrderStatus `json:"status"`
+	Status OrderStatus `json:"status,omitzero"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

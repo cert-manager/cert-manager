@@ -152,7 +152,7 @@ func EncodePKCS1PrivateKey(pk *rsa.PrivateKey) []byte {
 }
 
 // EncodePKCS8PrivateKey will marshal a private key into x509 PEM format.
-func EncodePKCS8PrivateKey(pk interface{}) ([]byte, error) {
+func EncodePKCS8PrivateKey(pk any) ([]byte, error) {
 	keyBytes, err := x509.MarshalPKCS8PrivateKey(pk)
 	if err != nil {
 		return nil, err

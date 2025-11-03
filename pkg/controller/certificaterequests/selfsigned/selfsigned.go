@@ -50,7 +50,7 @@ const (
 	emptyDNMessage   = "Certificate will be issued with an empty Issuer DN, which contravenes RFC 5280 and could break some strict clients"
 )
 
-type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
+type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error)
 
 type SelfSigned struct {
 	issuerOptions controllerpkg.IssuerOptions

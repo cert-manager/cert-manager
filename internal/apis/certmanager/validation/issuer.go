@@ -285,7 +285,7 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 	}
 
 	if len(iss.CABundle) > 0 && iss.CABundleSecretRef != nil {
-		// We don't use iss.CABundle for the "value interface{}" argument to field.Invalid for caBundle
+		// We don't use iss.CABundle for the "value any" argument to field.Invalid for caBundle
 		// since printing the whole bundle verbatim won't help diagnose any issues
 		el = append(el, field.Invalid(fldPath.Child("caBundle"), "<snip>", "specified caBundle and caBundleSecretRef cannot be used together"))
 		el = append(el, field.Invalid(fldPath.Child("caBundleSecretRef"), iss.CABundleSecretRef.Name, "specified caBundleSecretRef and caBundle cannot be used together"))

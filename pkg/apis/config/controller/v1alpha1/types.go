@@ -129,13 +129,13 @@ type ControllerConfiguration struct {
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
 
 	// ingressShimConfig configures the behaviour of the ingress-shim controller
-	IngressShimConfig IngressShimConfig `json:"ingressShimConfig,omitempty"`
+	IngressShimConfig IngressShimConfig `json:"ingressShimConfig"`
 
 	// acmeHTTP01Config configures the behaviour of the ACME HTTP01 challenge solver
-	ACMEHTTP01Config ACMEHTTP01Config `json:"acmeHTTP01Config,omitempty"`
+	ACMEHTTP01Config ACMEHTTP01Config `json:"acmeHTTP01Config"`
 
 	// acmeDNS01Config configures the behaviour of the ACME DNS01 challenge solver
-	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitempty"`
+	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config"`
 }
 
 type LeaderElectionConfig struct {
