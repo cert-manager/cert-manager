@@ -50,8 +50,7 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 		return nil, fmt.Errorf("DigitalOcean token missing")
 	}
 
-	unusedCtx := context.Background() // context is not actually used
-	c := oauth2.NewClient(unusedCtx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+	c := oauth2.NewClient(nil, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 
 	clientOpts := []godo.ClientOpt{godo.SetUserAgent(userAgent)}
 	client, err := godo.New(c, clientOpts...)
