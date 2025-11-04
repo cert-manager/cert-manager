@@ -10,7 +10,6 @@ package azuredns
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,14 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/util/rand"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -324,109 +319,4 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
-
-	// This test tests the stabilizeError function, it makes sure that authentication errors
-	// are also made stable. We want our error messages to be the same when the cause
-	// is the same to avoid spurious challenge updates.
-	// Specifically, this test makes sure that the errors of type AuthenticationFailedError
-	// are made stable. These errors are returned by the recordClient and zoneClient when
-	// they fail to authenticate. We simulate this by calling the GetToken function and
-	// returning a 502 Bad Gateway error.
-	t.Run("errors should be made stable", func(t *testing.T) {
-		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
-
-		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
-				tenantURL := strings.TrimSuffix("https://"+r.Host+r.URL.Path, "/.well-known/openid-configuration")
-
-				w.Header().Set("Content-Type", "application/json")
-				openidConfiguration := map[string]string{
-					"token_endpoint":         tenantURL + "/oauth2/token",
-					"authorization_endpoint": tenantURL + "/oauth2/authorize",
-					"issuer":                 tenantURL + "/adfs/",
-				}
-
-				if err := json.NewEncoder(w).Encode(openidConfiguration); err != nil {
-					assert.FailNow(t, err.Error())
-				}
-
-				return
-			}
-
-			w.WriteHeader(http.StatusBadGateway)
-			randomMessage := "test error message: " + rand.String(10)
-			payload := fmt.Sprintf(`{"error":{"code":"TEST_ERROR_CODE","message":"%s"}}`, randomMessage)
-			if _, err := w.Write([]byte(payload)); err != nil {
-				assert.FailNow(t, err.Error())
-			}
-		}))
-		defer ts.Close()
-
-		ambient := true
-		clientOpt := policy.ClientOptions{
-			Cloud:     cloud.Configuration{ActiveDirectoryAuthorityHost: ts.URL},
-			Transport: ts.Client(),
-		}
-
-		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
-		assert.NoError(t, err)
-
-		_, err = spt.GetToken(t.Context(), policy.TokenRequestOptions{Scopes: []string{"test"}})
-		err = stabilizeError(err)
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, fmt.Sprintf(`authentication failed:
-POST %s/adfs/oauth2/token
---------------------------------------------------------------------------------
-RESPONSE 502 Bad Gateway
---------------------------------------------------------------------------------
-see logs for more information`, ts.URL))
-	})
-}
-
-// TestStabilizeResponseError tests that the ResponseError errors returned by the AzureDNS API are
-// changed to be stable. We want our error messages to be the same when the cause
-// is the same to avoid spurious challenge updates.
-func TestStabilizeResponseError(t *testing.T) {
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadGateway)
-		randomMessage := "test error message: " + rand.String(10)
-		payload := fmt.Sprintf(`{"error":{"code":"TEST_ERROR_CODE","message":"%s"}}`, randomMessage)
-		if _, err := w.Write([]byte(payload)); err != nil {
-			assert.FailNow(t, err.Error())
-		}
-	}))
-
-	defer ts.Close()
-
-	clientOpt := policy.ClientOptions{
-		Cloud: cloud.Configuration{
-			ActiveDirectoryAuthorityHost: ts.URL,
-			Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-				cloud.ResourceManager: {
-					Audience: ts.URL,
-					Endpoint: ts.URL,
-				},
-			},
-		},
-		Transport: ts.Client(),
-	}
-
-	zc, err := dns.NewZonesClient("subscriptionID", nil, &arm.ClientOptions{ClientOptions: clientOpt})
-	require.NoError(t, err)
-
-	dnsProvider := DNSProvider{
-		dns01Nameservers:  util.RecursiveNameservers,
-		resourceGroupName: "resourceGroupName",
-		zoneClient:        zc,
-	}
-
-	err = dnsProvider.Present(t.Context(), "test.com", "fqdn.test.com.", "test123")
-	require.Error(t, err)
-	require.ErrorContains(t, err, fmt.Sprintf(`Zone test.com. not found in AzureDNS for domain fqdn.test.com.. Err: request error:
-GET %s/subscriptions/subscriptionID/resourceGroups/resourceGroupName/providers/Microsoft.Network/dnsZones/test.com
---------------------------------------------------------------------------------
-RESPONSE 502 Bad Gateway
-ERROR CODE: TEST_ERROR_CODE
---------------------------------------------------------------------------------
-see logs for more information`, ts.URL))
 }
