@@ -782,15 +782,3 @@ func decodePayload(v interface{}, r io.Reader) error {
 func challengeToken(domain, challType string, authzID int) string {
 	return fmt.Sprintf("token-%s-%s-%d", domain, challType, authzID)
 }
-
-func unique(a []string) []string {
-	seen := make(map[string]bool)
-	var res []string
-	for _, s := range a {
-		if s != "" && !seen[s] {
-			seen[s] = true
-			res = append(res, s)
-		}
-	}
-	return res
-}

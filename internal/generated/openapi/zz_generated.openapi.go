@@ -62,7 +62,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AzureManagedIdentity":                               schema_pkg_apis_acme_v1_AzureManagedIdentity(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector":                         schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Challenge":                                          schema_pkg_apis_acme_v1_Challenge(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeCondition":                                 schema_pkg_apis_acme_v1_ChallengeCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeList":                                      schema_pkg_apis_acme_v1_ChallengeList(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatus":                              schema_pkg_apis_acme_v1_ChallengeSolverStatus(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusDNS":                           schema_pkg_apis_acme_v1_ChallengeSolverStatusDNS(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusHTTP":                          schema_pkg_apis_acme_v1_ChallengeSolverStatusHTTP(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSpec":                                      schema_pkg_apis_acme_v1_ChallengeSpec(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeStatus":                                    schema_pkg_apis_acme_v1_ChallengeStatus(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Order":                                              schema_pkg_apis_acme_v1_Order(ref),
@@ -1974,6 +1978,59 @@ func schema_pkg_apis_acme_v1_Challenge(ref common.ReferenceCallback) common.Open
 	}
 }
 
+func schema_pkg_apis_acme_v1_ChallengeCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ChallengeCondition contains condition information for a Challenge.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "type of the condition, known values are (`Presented`, `Solved`, `Accepted`).",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "status of the condition, one of (`True`, `False`, `Unknown`).",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "lastTransitionTime is the timestamp corresponding to the last status change of this condition.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Description: "reason is a brief machine readable explanation for the condition's last transition.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "message is a human readable description of the details of the last transition, complementing reason.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"type", "status", "reason"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
 func schema_pkg_apis_acme_v1_ChallengeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2020,6 +2077,96 @@ func schema_pkg_apis_acme_v1_ChallengeList(ref common.ReferenceCallback) common.
 		},
 		Dependencies: []string{
 			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Challenge", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_acme_v1_ChallengeSolverStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ChallengeSolverStatus contains the observed status of an ACME challenge solver, including DNS and HTTP-specific readiness data and general state tracking.\n\nThis structure is used to track whether a challenge is ready to be submitted to the ACME server for validation.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"dns": {
+						SchemaProps: spec.SchemaProps{
+							Description: "dns contains status information specific to DNS-01 challenge solving.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusDNS"),
+						},
+					},
+					"http": {
+						SchemaProps: spec.SchemaProps{
+							Description: "http contains status information specific to HTTP-01 challenge solving.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusHTTP"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusDNS", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatusHTTP"},
+	}
+}
+
+func schema_pkg_apis_acme_v1_ChallengeSolverStatusDNS(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ChallengeSolverStatusDNS provides details about DNS-01 challenge readiness checks.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"ttl": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ttl is the configured time-to-live of the DNS record used for validation.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"lastSuccess": {
+						SchemaProps: spec.SchemaProps{
+							Description: "lastSuccess is the time that the DNS check was successful against the authoritative nameserver.\n\nThe check will not pass until lastSuccess + ttl has been reached to allow for DNSpropagation.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"fqdn": {
+						SchemaProps: spec.SchemaProps{
+							Description: "fqdn is the fully qualified domain name of the challenge",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_acme_v1_ChallengeSolverStatusHTTP(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ChallengeSolverStatusHTTP provides details about HTTP-01 challenge readiness checks.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"requiredSuccesses": {
+						SchemaProps: spec.SchemaProps{
+							Description: "requiredSuccesses is the number of successful HTTP requests required to consider the challenge ready.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"successes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "successes is the number of successful HTTP readiness checks observed so far.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -2130,6 +2277,28 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"type",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "conditions contains the current observed conditions for the challenge.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeCondition"),
+									},
+								},
+							},
+						},
+					},
 					"reason": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Contains human readable information on why the Challenge is in the current state.",
@@ -2144,9 +2313,24 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"solver": {
+						SchemaProps: spec.SchemaProps{
+							Description: "solver contains the observed status of an ACME challenge solver, including DNS and HTTP-specific readiness data and general state tracking.\n\nThis structure is used to track whether a challenge is ready to be submitted to the ACME server for validation.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatus"),
+						},
+					},
+					"nextReconcile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "nextReconcile is the timestamp that the next reconcile should be made.\n\nThis exists as we have various polling going in within the challenge controller with different backoff.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeCondition", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ChallengeSolverStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

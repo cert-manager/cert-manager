@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 )
 
@@ -44,53 +45,83 @@ func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTe
 func TestCheck(t *testing.T) {
 	type testT struct {
 		name             string
-		reachabilityTest reachabilityTest
+		reachabilityTest func(context.Context, *url.URL, string, []string, string) error
 		challenge        *cmacme.Challenge
 		expectedErr      bool
+		expectedStatus   cmmeta.ConditionStatus
+		expectedReason   string
+		expectedSuccess  int64
 	}
 	tests := []testT{
 		{
-			name: "should pass",
+			name: "should pass after reaching threshold",
+			challenge: &cmacme.Challenge{
+				Status: cmacme.ChallengeStatus{
+					Solver: cmacme.ChallengeSolverStatus{
+						HTTP: &cmacme.ChallengeSolverStatusHTTP{
+							RequiredSuccesses: 5,
+							Successes:         4,
+						},
+					},
+				},
+			},
 			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
 				return nil
 			},
-			expectedErr: false,
+			expectedErr:     false,
+			expectedStatus:  cmmeta.ConditionTrue,
+			expectedReason:  "ChallengeSelfCheckPassed",
+			expectedSuccess: 5,
 		},
 		{
-			name: "should error",
+			name: "should error and reset success count",
+			challenge: &cmacme.Challenge{
+				Status: cmacme.ChallengeStatus{
+					Solver: cmacme.ChallengeSolverStatus{
+						HTTP: &cmacme.ChallengeSolverStatusHTTP{
+							RequiredSuccesses: 5,
+							Successes:         4,
+						},
+					},
+				},
+			},
 			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
 				return fmt.Errorf("failed")
 			},
-			expectedErr: true,
+			expectedErr:     false, // still nil because Check returns nil for expected check failures
+			expectedStatus:  cmmeta.ConditionFalse,
+			expectedReason:  "ChallengeSelfCheckFailed",
+			expectedSuccess: 0,
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			calls := 0
-			requiredCallsForPass := 2
-			if test.challenge == nil {
-				test.challenge = &cmacme.Challenge{}
-			}
+			requiredCallsForPass := int64(5)
+
 			s := Solver{
-				Context:          &controller.Context{RESTConfig: new(rest.Config)},
+				Context:          &controller.Context{RESTConfig: &rest.Config{UserAgent: "test-agent"}},
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),
-				requiredPasses:   requiredCallsForPass,
+				requiredPasses:   int(requiredCallsForPass),
 			}
 
-			err := s.Check(t.Context(), nil, test.challenge)
-			if err != nil && !test.expectedErr {
-				t.Errorf("Expected Check to return non-nil error, but got %v", err)
-				return
+			result, status, err := s.Check(t.Context(), nil, test.challenge)
+
+			if (err != nil) != test.expectedErr {
+				t.Errorf("expected error: %v, got: %v", test.expectedErr, err)
 			}
-			if err == nil && test.expectedErr {
-				t.Errorf("Expected error from Check, but got none")
-				return
+
+			if result.Status != test.expectedStatus {
+				t.Errorf("expected status %q, got %q", test.expectedStatus, result.Status)
 			}
-			if !test.expectedErr && calls != requiredCallsForPass {
-				t.Errorf("Expected Wait to verify reachability test passes %d times, but only checked %d", requiredCallsForPass, calls)
-				return
+
+			if result.Reason != test.expectedReason {
+				t.Errorf("expected reason %q, got %q", test.expectedReason, result.Reason)
+			}
+
+			if got := status.HTTP.Successes; got != test.expectedSuccess {
+				t.Errorf("expected HTTP.Successes=%d, got %d", test.expectedSuccess, got)
 			}
 		})
 	}
