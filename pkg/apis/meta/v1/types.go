@@ -63,6 +63,7 @@ type IssuerReference struct {
 }
 
 // ObjectReference is a reference to an object with a given name, kind and group.
+//
 // Deprecated: Use IssuerReference instead.
 type ObjectReference = IssuerReference
 

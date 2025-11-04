@@ -21,6 +21,7 @@ linters:
           - govet
           - nakedret
           - nilnil
+          - modernize
         text: .*
       - linters:
           - gosec
@@ -63,6 +64,7 @@ linters:
     - makezero
     - mirror
     - misspell
+    - modernize
     - musttag
     - nakedret
     - nilerr
@@ -93,6 +95,7 @@ formatters:
         - prefix(github.com/cert-manager/cert-manager) # Custom section: groups all imports with the specified Prefix.
         - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
         - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+      custom-order: true
   exclusions:
     generated: lax
     paths: [third_party, builtin$, examples$]

@@ -534,14 +534,12 @@ func TestManyPasswordLengths(t *testing.T) {
 	certPEM := mustSelfSignCertificate(t)
 	caPEM := mustSelfSignCertificate(t)
 
-	const testN = 10000
-
 	// We will test random password lengths between 0 and 128 character lengths
 	f := randfill.New().NilChance(0).NumElements(0, 128)
 	// Pre-create password test cases. This cannot be done during the test itself
 	// since the fuzzer cannot be used concurrently.
-	var passwords [testN]string
-	for testi := range testN {
+	var passwords [10000]string
+	for testi := range passwords {
 		// fill the password with random characters
 		f.Fill(&passwords[testi])
 	}
@@ -549,8 +547,7 @@ func TestManyPasswordLengths(t *testing.T) {
 	// Run these tests in parallel
 	s := semaphore.NewWeighted(32)
 	g, ctx := errgroup.WithContext(t.Context())
-	for tests := range testN {
-		testi := tests
+	for _, password := range passwords {
 		if ctx.Err() != nil {
 			t.Errorf("internal error while testing JKS Keystore password lengths: %s", ctx.Err())
 			return
@@ -561,17 +558,17 @@ func TestManyPasswordLengths(t *testing.T) {
 		}
 		g.Go(func() error {
 			defer s.Release(1)
-			keystore, err := encodeJKSKeystore([]byte(passwords[testi]), "alias", rawKey, certPEM, caPEM)
+			keystore, err := encodeJKSKeystore([]byte(password), "alias", rawKey, certPEM, caPEM)
 			if err != nil {
-				t.Errorf("couldn't encode JKS Keystore with password %s (length %d): %s", passwords[testi], len(passwords[testi]), err.Error())
+				t.Errorf("couldn't encode JKS Keystore with password %s (length %d): %s", password, len(password), err.Error())
 				return err
 			}
 
 			buf := bytes.NewBuffer(keystore)
 			ks := jks.New()
-			err = ks.Load(buf, []byte(passwords[testi]))
+			err = ks.Load(buf, []byte(password))
 			if err != nil {
-				t.Errorf("error decoding keystore with password %s (length %d): %v", passwords[testi], len(passwords[testi]), err)
+				t.Errorf("error decoding keystore with password %s (length %d): %v", password, len(password), err)
 				return err
 			}
 			if !ks.IsPrivateKeyEntry("alias") {

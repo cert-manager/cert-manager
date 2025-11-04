@@ -146,8 +146,8 @@ const (
 
 	// Owner: N/A
 	// Alpha: v0.7.2
-	// Deprecated: v1.17
-	// Removed: v1.18
+	// Flag deprecated: v1.17
+	// Flag removed: v1.18
 	//
 	// ValidateCAA is a now-removed feature gate which enabled CAA checking when issuing certificates
 	// This was never widely adopted, and without an owner to sponsor it we decided to deprecate

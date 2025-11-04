@@ -184,6 +184,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 }
 
 func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) {
+	// nolint:staticcheck // For backwards compatibility.
 	if obj.APIServerHost == "" {
 		obj.APIServerHost = defaultAPIServerHost
 	}
