@@ -64,11 +64,11 @@ func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssue
 			continue
 		}
 		if !isClusterIssuer {
-			if crt.Namespace != iss.GetObjectMeta().Namespace {
+			if crt.Namespace != iss.GetNamespace() {
 				continue
 			}
 		}
-		if crt.Spec.IssuerRef.Name != iss.GetObjectMeta().Name {
+		if crt.Spec.IssuerRef.Name != iss.GetName() {
 			continue
 		}
 		affected = append(affected, crt)
