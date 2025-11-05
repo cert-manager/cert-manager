@@ -753,7 +753,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning CustomFieldsError certificate request contains an invalid CyberArk Certificate Manager Self-Hosted type: "Bool": certificate request contains an invalid CyberArk Certificate Manager Self-Hosted type: "Bool"`,
+					`Warning CustomFieldsError certificate request contains an invalid custom fields type: "Bool": certificate request contains an invalid custom fields type: "Bool"`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -765,7 +765,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "certificate request contains an invalid CyberArk Certificate Manager Self-Hosted type: \"Bool\": certificate request contains an invalid CyberArk Certificate Manager Self-Hosted type: \"Bool\"",
+								Message:            "certificate request contains an invalid custom fields type: \"Bool\": certificate request contains an invalid custom fields type: \"Bool\"",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
