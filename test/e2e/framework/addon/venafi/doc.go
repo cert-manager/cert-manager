@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package venafi implements an addon for the Certificate Manager platform.
-// It provides a means for e2e tests to consume credentials for CyberArk Certificate Manager Self-Hosted.
+// Package venafi implements an addon for the Venafi platform.
+// It provides a means for e2e tests to consume credentials for Venafi TPP.
 package venafi

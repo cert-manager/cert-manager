@@ -59,7 +59,7 @@ type Venafi struct {
 }
 
 func init() {
-	// create certificate request controller for Certificate Manager issuer
+	// create certificate request controller for venafi issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
 			For(certificaterequests.New(apiutil.IssuerVenafi, NewVenafi)).

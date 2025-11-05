@@ -61,18 +61,18 @@ func (v *VenafiTPP) Setup(ctx context.Context, cfg *config.Config, _ ...internal
 	}
 
 	if v.config.Addons.Venafi.TPP.URL == "" {
-		return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager Self-Hosted URL must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Venafi TPP URL must be set"))
 	}
 	if v.config.Addons.Venafi.TPP.Zone == "" {
-		return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager Self-Hosted Zone must be set"))
+		return nil, errors.NewSkip(fmt.Errorf("Venafi TPP Zone must be set"))
 	}
 
 	if v.config.Addons.Venafi.TPP.AccessToken == "" {
 		if v.config.Addons.Venafi.TPP.Username == "" {
-			return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager Self-Hosted requires either an access-token or username-password to be set: missing username"))
+			return nil, errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing username"))
 		}
 		if v.config.Addons.Venafi.TPP.Password == "" {
-			return nil, errors.NewSkip(fmt.Errorf("CyberArk Certificate Manager Self-Hosted requires either an access-token or username-password to be set: missing password"))
+			return nil, errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing password"))
 		}
 	}
 

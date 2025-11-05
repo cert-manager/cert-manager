@@ -1725,7 +1725,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 				field.Required(fldPath.Child("url"), ""),
 			},
 		},
-		"CyberArk Certificate Manager Self-Hosted issuer defines both caBundle and caBundleSecretRef": {
+		"venafi TPP issuer defines both caBundle and caBundleSecretRef": {
 			cfg: &cmapi.VenafiTPP{
 				URL:      "https://tpp.example.com/vedsdk",
 				CABundle: caBundle,

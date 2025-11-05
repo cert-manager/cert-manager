@@ -277,7 +277,7 @@ func TestVenafi_RetrieveCertificate(t *testing.T) {
 					"foo.example.com", "bar.example.com"})
 			}
 
-			// this is needed to provide the fake Certificate Manager client with a "valid" pickup id
+			// this is needed to provide the fake venafi client with a "valid" pickup id
 			// testing errors in this should be done in TestVenafi_RequestCertificate
 			// any error returned in these tests is a hard fail
 			pickupID, err := v.RequestCertificate(tt.args.csrPEM, tt.args.duration, tt.args.customFields)

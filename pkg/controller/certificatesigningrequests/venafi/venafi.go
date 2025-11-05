@@ -89,7 +89,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 }
 
 // Sign attempts to sign the given CertificateSigningRequest based on the
-// provided VenafiIssuer or VenafiClusterIssuer. This function will update the resource
+// provided Venafi Issuer or ClusterIssuer. This function will update the resource
 // if signing was successful. Returns an error which, if not nil, should
 // trigger a retry.
 // Since this signer takes some time to sign the request, this controller will
@@ -139,7 +139,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		return userr
 	}
 
-	// The signing process with Certificate Manager is slow. The "pickupID" allows us to track
+	// The signing process with Venafi is slow. The "pickupID" allows us to track
 	// the progress of the certificate signing. It is set as an annotation the
 	// first time the Certificate is reconciled.
 	pickupID := csr.GetAnnotations()[experimentalapi.CertificateSigningRequestVenafiPickupIDAnnotationKey]

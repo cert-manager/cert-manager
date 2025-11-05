@@ -302,7 +302,7 @@ func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAl
 		expectedKeyUsages |= x509.KeyUsageKeyAgreement
 
 	case issuerSpec.Venafi != nil:
-		// Certificate Manager issue adds "server auth" key usage
+		// Venafi issue adds "server auth" key usage
 		expectedExtendedKeyUsages.Insert(x509.ExtKeyUsageServerAuth)
 	}
 

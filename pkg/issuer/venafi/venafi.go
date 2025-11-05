@@ -27,7 +27,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// Venafi is an implementation of govcert library to manager certificates from CyberArk Certificate Manager
+// Venafi is an implementation of the go vcert library to manage certificates from CyberArk Certificate Manager (formerly TPP or Venafi Cloud)
 type Venafi struct {
 	*controller.Context
 
