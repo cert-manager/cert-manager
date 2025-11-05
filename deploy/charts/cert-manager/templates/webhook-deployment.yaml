@@ -183,7 +183,9 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-      {{- with (coalesce .Values.webhook.nodeSelector .Values.global.nodeSelector) }}
+      {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
+      {{- $nodeSelector = merge $nodeSelector (.Values.webhook.nodeSelector | default dict) }}
+      {{- with $nodeSelector }}
       nodeSelector:
         {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}
