@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tpp implements tests for the CyberArk Certificate Manager Self-Hosted issuer
+// Package tpp implements tests for the Venafi TPP issuer
 package tpp
 
 import (

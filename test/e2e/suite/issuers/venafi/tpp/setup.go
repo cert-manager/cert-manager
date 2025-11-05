@@ -31,7 +31,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = TPPDescribe("properly configured CyberArk Certificate Manager Self-Hosted Issuer", func() {
+var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-setup")
 
 	var (
@@ -55,7 +55,7 @@ var _ = TPPDescribe("properly configured CyberArk Certificate Manager Self-Hoste
 
 	It("should set Ready=True accordingly", func(testingCtx context.Context) {
 		var err error
-		By("Creating a Certificate Manager resource")
+		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -72,7 +72,7 @@ var _ = TPPDescribe("properly configured CyberArk Certificate Manager Self-Hoste
 
 	It("should set Ready=False with a bad access token", func(testingCtx context.Context) {
 		var err error
-		By("Creating a Certificate Manager resource")
+		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
