@@ -132,7 +132,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 				return nil, nil
 
 			default:
-				message := "Failed to request Certificate Manager certificate"
+				message := "Failed to request certificate from Certificate Manager"
 
 				v.reporter.Failed(cr, err, "RequestError", message)
 				log.Error(err, message)
