@@ -22,12 +22,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/clock"
-
-	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -38,6 +32,12 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
+
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
 
 func TestAcmeOrdersController(t *testing.T) {

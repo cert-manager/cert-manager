@@ -22,15 +22,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
-	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/spf13/cobra"
+
+	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/cert-manager/cert-manager/pkg/controller/acmeorders"

@@ -25,18 +25,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-logr/logr"
-	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/api/resource"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/client-go/tools/record"
-
-	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -50,6 +38,18 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/api/resource"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/client-go/tools/record"
+
+	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 )
 
 const (

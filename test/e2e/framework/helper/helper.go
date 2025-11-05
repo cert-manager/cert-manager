@@ -17,10 +17,10 @@ limitations under the License.
 package helper
 
 import (
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 // Helper provides methods for common operations needed during tests.

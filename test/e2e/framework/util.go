@@ -29,6 +29,7 @@ import (
 	"k8s.io/component-base/featuregate"
 
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

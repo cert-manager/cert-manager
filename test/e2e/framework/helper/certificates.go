@@ -23,16 +23,16 @@ import (
 	"sort"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 )
 
 // WaitForCertificateToExist waits for the named certificate to exist and returns the certificate

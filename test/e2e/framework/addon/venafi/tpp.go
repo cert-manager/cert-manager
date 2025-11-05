@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,8 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 type VenafiTPP struct {

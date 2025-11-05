@@ -19,9 +19,10 @@ package main
 import (
 	"context"
 
-	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+
+	"github.com/cert-manager/cert-manager/acmesolver-binary/app"
 )
 
 // acmesolver solves ACME http-01 challenges. This is intended to run as a pod

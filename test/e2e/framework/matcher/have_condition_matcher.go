@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"reflect"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // HaveCondition will wait for up to the

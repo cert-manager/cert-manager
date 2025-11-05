@@ -19,14 +19,13 @@ package rfc2136
 import (
 	"testing"
 
-	"github.com/go-logr/logr/testr"
-
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	dns "github.com/cert-manager/cert-manager/test/acme"
 	testserver "github.com/cert-manager/cert-manager/test/acme/server"
+	"github.com/go-logr/logr/testr"
 )
 
 func TestRunSuiteWithTSIG(t *testing.T) {

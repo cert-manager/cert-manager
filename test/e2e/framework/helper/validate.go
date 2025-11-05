@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -30,7 +31,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // ValidateCertificate retrieves the issued certificate and runs all validation functions

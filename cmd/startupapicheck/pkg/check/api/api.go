@@ -23,12 +23,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	cmcmdutil "github.com/cert-manager/cert-manager/internal/cmd/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/cmapichecker"
+	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/cert-manager/cert-manager/startupapicheck-binary/pkg/factory"
 )
 

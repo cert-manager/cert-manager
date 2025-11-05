@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"time"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -28,9 +31,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/vault"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

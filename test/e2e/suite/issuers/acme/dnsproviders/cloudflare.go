@@ -19,6 +19,8 @@ package dnsproviders
 import (
 	"context"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -26,8 +28,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // Cloudflare provisions cloudflare credentials in a namespace for cert-manager

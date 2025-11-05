@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testr"
 	corev1 "k8s.io/api/core/v1"
@@ -35,8 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 )
 
 // Tests for the dynamic authority functionality to ensure it properly handles

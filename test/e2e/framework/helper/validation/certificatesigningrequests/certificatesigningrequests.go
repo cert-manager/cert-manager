@@ -27,12 +27,11 @@ import (
 	"slices"
 	"time"
 
-	certificatesv1 "k8s.io/api/certificates/v1"
-
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
 	ctrlutil "github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	certificatesv1 "k8s.io/api/certificates/v1"
 )
 
 // ValidationFunc describes a CertificateSigningRequest validation helper function

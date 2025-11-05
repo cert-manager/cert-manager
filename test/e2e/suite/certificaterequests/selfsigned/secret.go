@@ -19,15 +19,15 @@ package selfsigned
 import (
 	"context"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

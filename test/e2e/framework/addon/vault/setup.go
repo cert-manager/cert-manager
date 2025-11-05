@@ -31,6 +31,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	vault "github.com/hashicorp/vault/api"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -38,8 +39,6 @@ import (
 	k8srand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const vaultToken = "vault-root-token"

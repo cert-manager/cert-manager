@@ -20,6 +20,8 @@ import (
 	"context"
 	"slices"
 
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	api "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -37,8 +39,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
-	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

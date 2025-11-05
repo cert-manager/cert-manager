@@ -19,13 +19,13 @@ package main
 import (
 	"context"
 
+	"github.com/cert-manager/cert-manager/internal/cmd/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/component-base/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/cert-manager/cert-manager/internal/cmd/util"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/startupapicheck-binary/pkg/check"
 )
 

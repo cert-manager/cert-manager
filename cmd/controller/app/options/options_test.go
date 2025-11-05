@@ -19,10 +19,9 @@ package options
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestEnabledControllers(t *testing.T) {

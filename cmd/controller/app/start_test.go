@@ -25,10 +25,10 @@ import (
 	"reflect"
 	"testing"
 
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
-	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 )
 
 func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.ControllerConfiguration, error) {

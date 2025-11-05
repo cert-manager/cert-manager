@@ -117,7 +117,6 @@ generate-golangci-lint-config: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/s
 	cp $(golangci_lint_config) $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) -i 'del(.linters.enable)' $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) eval-all -i '. as $$item ireduce ({}; . * $$item)' $(bin_dir)/scratch/golangci-lint.yaml.tmp $(golangci_lint_override)
-	$(YQ) -i '(.. | select(tag == "!!str")) |= sub("{{REPO-NAME}}", "$(repo_name)")' $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	mv $(bin_dir)/scratch/golangci-lint.yaml.tmp $(golangci_lint_config)
 
 shared_generate_targets += generate-golangci-lint-config
@@ -147,9 +146,9 @@ fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
 				target=$$(dirname $${d}); \
-				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint fmt -c $(CURDIR)/$(golangci_lint_config)' in directory '$${target}'"; \
+				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint run --fix -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout)' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
-				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) fmt -c $(CURDIR)/$(golangci_lint_config) || exit; \
+				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) run --fix -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout) || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done

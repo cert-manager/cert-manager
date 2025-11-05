@@ -19,9 +19,10 @@ package dnsproviders
 import (
 	"context"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 type RFC2136 struct {

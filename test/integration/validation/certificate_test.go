@@ -20,15 +20,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cert-manager/cert-manager/pkg/api"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/api"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 var certificateGVK = schema.GroupVersionKind{
