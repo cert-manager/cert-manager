@@ -89,7 +89,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 }
 
 // Sign attempts to sign the given CertificateSigningRequest based on the
-// provided Certificate Manager or ClusterIssuer. This function will update the resource
+// provided VenafiIssuer or VenafiClusterIssuer. This function will update the resource
 // if signing was successful. Returns an error which, if not nil, should
 // trigger a retry.
 // Since this signer takes some time to sign the request, this controller will
