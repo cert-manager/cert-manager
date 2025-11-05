@@ -46,7 +46,7 @@ func NewVenafi(ctx *controller.Context) (issuer.Interface, error) {
 		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		clientBuilder: client.New,
 		Context:       ctx,
-		log:           logf.Log.WithName("Certificate Manager"),
+		log:           logf.Log.WithName("venafi"),
 		userAgent:     ctx.RESTConfig.UserAgent,
 	}, nil
 }
