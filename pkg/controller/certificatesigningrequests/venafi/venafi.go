@@ -47,7 +47,7 @@ const (
 	CSRControllerName = "certificatesigningrequests-issuer-venafi"
 )
 
-// Certificate Manager is a Kubernetes CertificateSigningRequest controller, responsible for
+// Venafi is a Kubernetes CertificateSigningRequest controller, responsible for
 // signing CertificateSigningRequests that reference a cert-manager Certificate Manager
 // Issuer or ClusterIssuer
 type Venafi struct {
