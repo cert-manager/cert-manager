@@ -320,7 +320,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise Certificate Manager client for signing: this is a network error`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -332,7 +332,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to initialise Certificate Manager client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -372,7 +372,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise Certificate Manager client for signing: this is a network error`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -384,7 +384,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to initialise Certificate Manager client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -429,8 +429,8 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tppSecret},
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate is requested",
-					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+					"Normal IssuancePending certificate is requested",
+					"Normal IssuancePending certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -442,7 +442,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
+								Message:            "certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -457,7 +457,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+								Message:            "certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -475,8 +475,8 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{cloudSecret},
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate is requested",
-					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+					"Normal IssuancePending certificate is requested",
+					"Normal IssuancePending certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -488,7 +488,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
+								Message:            "certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -503,7 +503,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+								Message:            "certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -521,7 +521,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tppSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestError Failed to request venafi certificate: this is an error",
+					"Warning RequestError Failed to request certificate from Certificate Manager: this is an error",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -533,7 +533,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Failed to request venafi certificate: this is an error",
+								Message:            "Failed to request certificate from Certificate Manager: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -552,7 +552,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{cloudSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestError Failed to request venafi certificate: this is an error",
+					"Warning RequestError Failed to request certificate from Certificate Manager: this is an error",
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -564,7 +564,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Failed to request venafi certificate: this is an error",
+								Message:            "Failed to request certificate from Certificate Manager: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -583,7 +583,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tppSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate is requested",
+					"Normal IssuancePending certificate is requested",
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []controllertest.Action{
@@ -596,7 +596,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
+								Message:            "certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -630,7 +630,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{cloudSecret},
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal IssuancePending Venafi certificate is requested`,
+					`Normal IssuancePending certificate is requested`,
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []controllertest.Action{
@@ -643,7 +643,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
+								Message:            "certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -676,7 +676,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate is requested",
+					"Normal IssuancePending certificate is requested",
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []controllertest.Action{
@@ -689,7 +689,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
+								Message:            "certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
@@ -753,7 +753,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning CustomFieldsError certificate request contains an invalid Venafi custom fields type: "Bool": certificate request contains an invalid Venafi custom fields type: "Bool"`,
+					`Warning CustomFieldsError certificate request contains an invalid custom fields type: "Bool": certificate request contains an invalid custom fields type: "Bool"`,
 				},
 				ExpectedActions: []controllertest.Action{
 					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -765,7 +765,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "certificate request contains an invalid Venafi custom fields type: \"Bool\": certificate request contains an invalid Venafi custom fields type: \"Bool\"",
+								Message:            "certificate request contains an invalid custom fields type: \"Bool\": certificate request contains an invalid custom fields type: \"Bool\"",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

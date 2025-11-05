@@ -125,52 +125,52 @@ type IssuerConfig struct {
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
 
-	// Venafi configures this issuer to sign certificates using a Venafi TPP
-	// or Venafi Cloud policy zone.
+	// Venafi configures this issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
+	// or SaaS policy zone.
 	// +optional
 	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
-// Configures an issuer to sign certificates using a Venafi TPP
-// or Cloud policy zone.
+// Configures an issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
+// or SaaS policy zone.
 type VenafiIssuer struct {
-	// Zone is the Venafi Policy Zone to use for this issuer.
-	// All requests made to the Venafi platform will be restricted by the named
+	// Zone is the Certificate Manager Policy Zone to use for this issuer.
+	// All requests made to the Certificate Manager platform will be restricted by the named
 	// zone policy.
 	// This field is required.
 	Zone string `json:"zone"`
 
-	// TPP specifies Trust Protection Platform configuration settings.
-	// Only one of TPP or Cloud may be specified.
+	// TPP specifies CyberArk Certificate Manager Self-Hosted configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
 	// +optional
 	TPP *VenafiTPP `json:"tpp,omitempty"`
 
-	// Cloud specifies the Venafi cloud configuration settings.
-	// Only one of TPP or Cloud may be specified.
+	// Cloud specifies the CyberArk Certificate Manager SaaS configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
 	// +optional
 	Cloud *VenafiCloud `json:"cloud,omitempty"`
 }
 
-// VenafiTPP defines connection configuration details for a Venafi TPP instance
+// VenafiTPP defines connection configuration details for a CyberArk Certificate Manager Self-Hosted instance
 type VenafiTPP struct {
-	// URL is the base URL for the vedsdk endpoint of the Venafi TPP instance,
+	// URL is the base URL for the vedsdk endpoint of the CyberArk Certificate Manager Self-Hosted instance,
 	// for example: "https://tpp.example.com/vedsdk".
 	URL string `json:"url"`
 
-	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
+	// CredentialsRef is a reference to a Secret containing the CyberArk Certificate Manager Self-Hosted API credentials.
 	// The secret must contain the key 'access-token' for the Access Token Authentication,
 	// or two keys, 'username' and 'password' for the API Keys Authentication.
 	CredentialsRef cmmeta.LocalObjectReference `json:"credentialsRef"`
 
 	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
-	// chain presented by the TPP server. Only used if using HTTPS; ignored for HTTP.
+	// chain presented by the CyberArk Certificate Manager Self-Hosted server. Only used if using HTTPS; ignored for HTTP.
 	// If undefined, the certificate bundle in the cert-manager controller container
 	// is used to validate the chain.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 
 	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
-	// which will be used to validate the certificate chain presented by the TPP server.
+	// which will be used to validate the certificate chain presented by the CyberArk Certificate Manager Self-Hosted server.
 	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
 	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
 	// the cert-manager controller container is used to validate the TLS connection.
@@ -178,14 +178,14 @@ type VenafiTPP struct {
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
 }
 
-// VenafiCloud defines connection configuration details for Venafi Cloud
+// VenafiCloud defines connection configuration details for CyberArk Certificate Manager SaaS
 type VenafiCloud struct {
-	// URL is the base URL for Venafi Cloud.
+	// URL is the base URL for CyberArk Certificate Manager SaaS.
 	// Defaults to "https://api.venafi.cloud/".
 	// +optional
 	URL string `json:"url,omitempty"`
 
-	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
+	// APITokenSecretRef is a secret key selector for the CyberArk Certificate Manager SaaS API token.
 	APITokenSecretRef cmmeta.SecretKeySelector `json:"apiTokenSecretRef"`
 }
 

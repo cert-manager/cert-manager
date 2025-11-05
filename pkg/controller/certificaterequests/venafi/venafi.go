@@ -94,7 +94,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	}
 
 	if err != nil {
-		message := "Failed to initialise venafi client for signing"
+		message := "Failed to initialise Certificate Manager client for signing"
 
 		v.reporter.Pending(cr, err, "VenafiInitError", message)
 		log.Error(err, message)
@@ -132,7 +132,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 				return nil, nil
 
 			default:
-				message := "Failed to request venafi certificate"
+				message := "Failed to request certificate from Certificate Manager"
 
 				v.reporter.Failed(cr, err, "RequestError", message)
 				log.Error(err, message)
@@ -141,7 +141,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 			}
 		}
 
-		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
+		v.reporter.Pending(cr, err, "IssuancePending", "certificate is requested")
 
 		metav1.SetMetaDataAnnotation(&cr.ObjectMeta, cmapi.VenafiPickupIDAnnotationKey, pickupID)
 
@@ -152,14 +152,14 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:
-			message := "Venafi certificate still in a pending state, the request will be retried"
+			message := "certificate still in a pending state, the request will be retried"
 
 			v.reporter.Pending(cr, err, "IssuancePending", message)
 			log.Error(err, message)
 			return nil, err
 
 		default:
-			message := "Failed to obtain venafi certificate"
+			message := "Failed to obtain certificate from Certificate Manager"
 
 			v.reporter.Failed(cr, err, "RetrieveError", message)
 			log.Error(err, message)

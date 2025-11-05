@@ -145,7 +145,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			prometheus.SummaryOpts{
 				Namespace:  namespace,
 				Name:       "venafi_client_request_duration_seconds",
-				Help:       "ALPHA: The HTTP request latencies in seconds for the Venafi client. This metric is currently alpha as we would like to understand whether it helps to measure Venafi call latency. Please leave feedback if you have any.",
+				Help:       "ALPHA: The HTTP request latencies in seconds for the Certificate Manager client. This metric is currently alpha as we would like to understand whether it helps to measure Certificate Manager call latency. Please leave feedback if you have any.",
 				Subsystem:  "http",
 				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 			},

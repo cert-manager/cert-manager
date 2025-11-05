@@ -37,7 +37,7 @@ type ErrCustomFieldsType struct { //nolint:errname
 }
 
 func (err ErrCustomFieldsType) Error() string {
-	return fmt.Sprintf("certificate request contains an invalid Venafi custom fields type: %q", err.Type)
+	return fmt.Sprintf("certificate request contains an invalid custom fields type: %q", err.Type)
 }
 
 var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.") //nolint:errname
@@ -217,6 +217,6 @@ func getVcertFriendlyName(crt *x509.Certificate) (string, error) {
 	case len(crt.IPAddresses) > 0:
 		return crt.IPAddresses[0].String(), nil
 	default:
-		return "", errors.New("certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the Venafi certificate objects name")
+		return "", errors.New("certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the certificate objects name")
 	}
 }
