@@ -27,7 +27,7 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// Certificate Manager is an implementation of govcert library to manager certificates from CyberArk Certificate Manager
+// Venafi is an implementation of govcert library to manager certificates from CyberArk Certificate Manager
 type Venafi struct {
 	*controller.Context
 
