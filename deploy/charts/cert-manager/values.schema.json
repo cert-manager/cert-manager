@@ -451,6 +451,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -465,6 +468,10 @@
     },
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
       "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g., 1) or a percentage value (e.g., 25%).\nCannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.cainjector.podLabels": {
       "default": {},
@@ -970,6 +977,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -984,6 +994,10 @@
     },
     "helm-values.podDisruptionBudget.minAvailable": {
       "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.podDnsConfig": {
       "description": "Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to \"None\", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).",
@@ -1962,6 +1976,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -1976,6 +1993,10 @@
     },
     "helm-values.webhook.podDisruptionBudget.minAvailable": {
       "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.webhook.podLabels": {
       "default": {},

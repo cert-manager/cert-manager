@@ -21,7 +21,7 @@ global:
   # If a component-specific nodeSelector is also set, it will be merged and take precedence.
   # +docs:property
   nodeSelector: {}
-  
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -152,6 +152,13 @@ podDisruptionBudget:
   # +docs:property
   # +docs:type=unknown
   # maxUnavailable: 1
+
+  # This configures how to act with unhealthy pods during eviction
+  # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+  # the cluster to work.
+  # +docs:property
+  # +docs:type=string
+  # unhealthyPodEvictionPolicy: AlwaysAllow
 
 # A comma-separated list of feature gates that should be enabled on the
 # controller pod.
@@ -744,6 +751,13 @@ webhook:
     # +docs:type=unknown
     # maxUnavailable: 1
 
+    # This configures how to act with unhealthy pods during eviction
+    # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+    # the cluster to work.
+    # +docs:property
+    # +docs:type=string
+    # unhealthyPodEvictionPolicy: AlwaysAllow
+
   # Optional additional annotations to add to the webhook Deployment.
   # +docs:property
   # deploymentAnnotations: {}
@@ -1114,6 +1128,13 @@ cainjector:
     # +docs:property
     # +docs:type=unknown
     # maxUnavailable: 1
+
+    # This configures how to act with unhealthy pods during eviction
+    # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+    # the cluster to work.
+    # +docs:property
+    # +docs:type=string
+    # unhealthyPodEvictionPolicy: AlwaysAllow
 
   # Optional additional annotations to add to the cainjector Deployment.
   # +docs:property
