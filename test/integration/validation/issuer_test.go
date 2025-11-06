@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cert-manager/cert-manager/pkg/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/api"
 )
 
 var issuerGVK = schema.GroupVersionKind{

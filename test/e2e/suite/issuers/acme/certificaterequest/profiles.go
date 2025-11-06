@@ -24,6 +24,11 @@ import (
 	"fmt"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -31,11 +36,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

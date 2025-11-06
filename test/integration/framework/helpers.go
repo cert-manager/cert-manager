@@ -21,6 +21,11 @@ import (
 	"testing"
 	"time"
 
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -36,12 +41,6 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"k8s.io/kubectl/pkg/util/openapi"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-
-	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
-	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 )
 
 func NewEventRecorder(t *testing.T, scheme *runtime.Scheme) record.EventRecorder {

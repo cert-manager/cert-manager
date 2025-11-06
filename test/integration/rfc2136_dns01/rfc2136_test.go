@@ -27,14 +27,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	testserver "github.com/cert-manager/cert-manager/test/acme/server"
 	"github.com/go-logr/logr/testr"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	testserver "github.com/cert-manager/cert-manager/test/acme/server"
 )
 
 var (

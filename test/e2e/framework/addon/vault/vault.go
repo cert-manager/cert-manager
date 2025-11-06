@@ -33,6 +33,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (

@@ -26,6 +26,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/test/apiserver"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testr"
 	"golang.org/x/sync/errgroup"
@@ -37,9 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/server/tls"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	"github.com/cert-manager/cert-manager/test/apiserver"
 )
 
 // Ensure that when the source is running against an apiserver, it bootstraps
