@@ -9,7 +9,10 @@ this directory.
 package azuredns
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +24,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	logrtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -50,6 +56,55 @@ func init() {
 	if len(azureClientID) > 0 && len(azureClientSecret) > 0 && len(azureDomain) > 0 {
 		azureLiveTest = true
 	}
+}
+
+type fakePublicZonesClient struct {
+	zones map[string]dns.Zone
+}
+
+func newFakePublicZonesClient(zones map[string]dns.Zone) ZonesClient {
+	return &fakePublicZonesClient{zones: zones}
+}
+
+func (fpz *fakePublicZonesClient) Get(ctx context.Context, resourceGroupName string, zoneName string, options *ClientOptions) error {
+	_, ok := fpz.zones[zoneName]
+	if !ok {
+		return errors.New("no zone found")
+	}
+
+	return nil
+}
+
+type fakePublicRecordsClient struct {
+	records map[string]RecordSet
+}
+
+func newFakeRecordSetsClient(records map[string]RecordSet) RecordsClient {
+	return &fakePublicRecordsClient{records: records}
+}
+
+func (fpr *fakePublicRecordsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, set RecordSet, options *ClientOptions) (RecordSet, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName)
+	fpr.records[key] = set
+	return set, nil
+}
+
+func (fpr *fakePublicRecordsClient) Get(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) (RecordSet, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName)
+	r, ok := fpr.records[key]
+	if !ok {
+		return nil, errors.New("no record found")
+	}
+
+	return r, nil
+}
+
+func (fpr *fakePublicRecordsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) error {
+	if len(fpr.records) == 0 {
+		return nil
+	}
+	delete(fpr.records, fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName))
+	return nil
 }
 
 func TestLiveAzureDnsPresent(t *testing.T) {
@@ -319,4 +374,112 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token.Token, "Access token should have been set to a value returned by the webserver")
 	})
+}
+
+func TestMockAzurePublicDNSPresent(t *testing.T) {
+	tests := []struct {
+		name               string
+		domain             string
+		relativeRecordName string
+		fqdn               string
+		value              string
+		expectError        bool
+	}{
+		{
+			name:               "Present challenge in public zone",
+			domain:             "test.internal.example.com",
+			relativeRecordName: "_acme-challenge",
+			fqdn:               "_acme-challenge.test.internal.example.com",
+			value:              "validation-token-123",
+			expectError:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pzc := newFakePublicZonesClient(map[string]dns.Zone{
+				tt.domain: {Name: &tt.domain},
+			})
+			recordSets := map[string]RecordSet{
+				tt.fqdn: &PublicTXTRecordSet{
+					RS: &dns.RecordSet{
+						Name: &tt.fqdn,
+						Etag: new(string),
+						Properties: &dns.RecordSetProperties{
+							TxtRecords: make([]*dns.TxtRecord, 0),
+						},
+					},
+				},
+			}
+			prc := newFakeRecordSetsClient(recordSets)
+			provider := &DNSProvider{
+				recordClient:      prc,
+				zoneClient:        pzc,
+				resourceGroupName: "test-rg",
+				zoneName:          "internal.example.com",
+				log:               logrtesting.NewTestLogger(t),
+			}
+
+			err := provider.Present(t.Context(), tt.domain, tt.fqdn, tt.value)
+			assert.NoError(t, err)
+			val := *(recordSets[tt.fqdn].GetTXTRecords()[0][0])
+			assert.Equal(t, tt.value, val)
+		})
+	}
+}
+
+func TestMockAzurePublicDNSCleanUp(t *testing.T) {
+	tests := []struct {
+		name               string
+		domain             string
+		relativeRecordName string
+		fqdn               string
+		value              string
+		expectError        bool
+	}{
+		{
+			name:               "Cleanup entry in public zone",
+			domain:             "test.internal.example.com",
+			relativeRecordName: "_acme-challenge",
+			fqdn:               "_acme-challenge.test.internal.example.com",
+			value:              "validation-token-123",
+			expectError:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pzc := newFakePublicZonesClient(map[string]dns.Zone{
+				tt.domain: {Name: &tt.domain},
+			})
+			recordSets := map[string]RecordSet{
+				tt.fqdn: &PublicTXTRecordSet{
+					RS: &dns.RecordSet{
+						Name: &tt.fqdn,
+						Etag: to.Ptr("etag-123"),
+						Properties: &dns.RecordSetProperties{
+							TxtRecords: []*dns.TxtRecord{
+								{
+									Value: []*string{to.Ptr("validation-token-123")},
+								},
+							},
+						},
+					},
+				},
+			}
+			prc := newFakeRecordSetsClient(recordSets)
+			provider := &DNSProvider{
+				recordClient:      prc,
+				zoneClient:        pzc,
+				resourceGroupName: "test-rg",
+				zoneName:          "internal.example.com",
+				log:               logrtesting.NewTestLogger(t),
+			}
+
+			assert.Equal(t, len(recordSets[tt.fqdn].GetTXTRecords()), 1)
+			err := provider.CleanUp(t.Context(), tt.domain, tt.fqdn, tt.value)
+			assert.NoError(t, err)
+			assert.Equal(t, len(recordSets), 0)
+		})
+	}
 }
