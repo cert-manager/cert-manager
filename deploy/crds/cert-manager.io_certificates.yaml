@@ -423,15 +423,16 @@ spec:
                       Algorithm is the private key algorithm of the corresponding private key
                       for this certificate.
 
-                      If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
+                      If provided, allowed values are either `RSA`, `ECDSA`, `Ed25519`, or `MLDSA65`.
                       If `algorithm` is specified and `size` is not provided,
                       key size of 2048 will be used for `RSA` key algorithm and
                       key size of 256 will be used for `ECDSA` key algorithm.
-                      key size is ignored when using the `Ed25519` key algorithm.
+                      key size is ignored when using the `Ed25519` or `MLDSA65` key algorithm.
                     enum:
                     - RSA
                     - ECDSA
                     - Ed25519
+                    - MLDSA65
                     type: string
                   encoding:
                     description: |-
@@ -555,6 +556,7 @@ spec:
                   Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA.
                   Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512.
                   Allowed values for Ed25519 keys: PureEd25519.
+                  Allowed values for MLDSA65 keys: PureMLDSA65.
                 enum:
                 - SHA256WithRSA
                 - SHA384WithRSA
@@ -563,6 +565,7 @@ spec:
                 - ECDSAWithSHA384
                 - ECDSAWithSHA512
                 - PureEd25519
+                - PureMLDSA65
                 type: string
               subject:
                 description: |-
