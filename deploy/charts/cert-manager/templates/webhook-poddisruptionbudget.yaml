@@ -26,7 +26,7 @@ spec:
   {{- if hasKey .Values.webhook.podDisruptionBudget "maxUnavailable" }}
   maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
   {{- end }}
-  {{- if hasKey .Values.webhook.podDisruptionBudget "unhealthyPodEvictionPolicy" }}
-  unhealthyPodEvictionPolicy: {{ .Values.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  {{- with .Values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
   {{- end }}
 {{- end }}

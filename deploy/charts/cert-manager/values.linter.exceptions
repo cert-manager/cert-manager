@@ -2,6 +2,3 @@ value missing from templates: crds.enabled
 value missing from templates: crds.keep
 value missing from templates: acmesolver.image.pullPolicy
 value missing from templates: enabled
-value missing from templates: cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy
-value missing from templates: webhook.podDisruptionBudget.unhealthyPodEvictionPolicy
-value missing from templates: podDisruptionBudget.unhealthyPodEvictionPolicy
