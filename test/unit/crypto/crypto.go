@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
 	"testing"
 	"time"
 
@@ -111,9 +112,7 @@ func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*Cr
 	}
 
 	annotations := make(map[string]string)
-	for k, v := range crt.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, crt.Annotations)
 	if crt.Status.Revision != nil {
 		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = fmt.Sprintf("%d", *crt.Status.Revision)
 	}

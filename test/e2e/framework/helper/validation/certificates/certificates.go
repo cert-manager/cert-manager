@@ -43,11 +43,8 @@ func ExpectValidKeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error 
 	validKeys := []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.CertificateOutputFormatDERKey, cmapi.CertificateOutputFormatCombinedPEMKey}
 	nbValidKeys := 0
 	for k := range secret.Data {
-		for _, k2 := range validKeys {
-			if k == k2 {
-				nbValidKeys++
-				break
-			}
+		if slices.Contains(validKeys, k) {
+			nbValidKeys++
 		}
 	}
 	if nbValidKeys < 2 {

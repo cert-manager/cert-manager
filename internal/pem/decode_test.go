@@ -171,7 +171,7 @@ func TestPathologicalInput(t *testing.T) {
 }
 
 func BenchmarkPathologicalInput(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		testPathologicalInternal(b)
 	}
 }

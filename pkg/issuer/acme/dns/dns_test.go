@@ -150,7 +150,7 @@ func TestSolverFor(t *testing.T) {
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*cloudflare.DNSProvider](),
 		},
 		"loads api token for cloudflare provider": {
 			solverFixture: &solverFixture{
@@ -186,7 +186,7 @@ func TestSolverFor(t *testing.T) {
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*cloudflare.DNSProvider](),
 		},
 		"fails to load a cloudflare provider with a missing secret": {
 			solverFixture: &solverFixture{
@@ -360,7 +360,7 @@ func TestSolverFor(t *testing.T) {
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&acmedns.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*acmedns.DNSProvider](),
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {
