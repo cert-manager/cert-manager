@@ -50,7 +50,7 @@ jobs:
           go-version: ${{ steps.go-version.outputs.result }}
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@a3c115cd6676c8a5bc72f9715f108759e570daf5 # v43.0.19
+        uses: renovatebot/github-action@4ebebabcd582dddea1692b05c3d5279f8e372b53 # v44.0.0
         with:
           configurationFile: .github/renovate.json5
           token: ${{ steps.octo-sts.outputs.token }}
