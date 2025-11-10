@@ -168,7 +168,7 @@ func ValidateCertificateRequestApprovalCondition(crConds []cmapi.CertificateRequ
 
 		first := condType.found[0]
 		if first.Status != cmmeta.ConditionTrue {
-			el = append(el, field.Invalid(fldPath.Child(string(first.Type)), first.Status,
+			el = append(el, field.Invalid(fldPath.Child(first.Type), first.Status,
 				fmt.Sprintf("%q condition may only be set to True", condType.condType)))
 			continue
 		}

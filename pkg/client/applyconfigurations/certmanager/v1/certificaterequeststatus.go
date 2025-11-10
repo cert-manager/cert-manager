@@ -19,16 +19,17 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // CertificateRequestStatusApplyConfiguration represents a declarative configuration of the CertificateRequestStatus type for use
 // with apply.
 type CertificateRequestStatusApplyConfiguration struct {
-	Conditions  []CertificateRequestConditionApplyConfiguration `json:"conditions,omitempty"`
-	Certificate []byte                                          `json:"certificate,omitempty"`
-	CA          []byte                                          `json:"ca,omitempty"`
-	FailureTime *metav1.Time                                    `json:"failureTime,omitempty"`
+	Conditions  []metav1.ConditionApplyConfiguration `json:"conditions,omitempty"`
+	Certificate []byte                               `json:"certificate,omitempty"`
+	CA          []byte                               `json:"ca,omitempty"`
+	FailureTime *apismetav1.Time                     `json:"failureTime,omitempty"`
 }
 
 // CertificateRequestStatusApplyConfiguration constructs a declarative configuration of the CertificateRequestStatus type for use with
@@ -40,7 +41,7 @@ func CertificateRequestStatus() *CertificateRequestStatusApplyConfiguration {
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *CertificateRequestStatusApplyConfiguration) WithConditions(values ...*CertificateRequestConditionApplyConfiguration) *CertificateRequestStatusApplyConfiguration {
+func (b *CertificateRequestStatusApplyConfiguration) WithConditions(values ...*metav1.ConditionApplyConfiguration) *CertificateRequestStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithConditions")
@@ -73,7 +74,7 @@ func (b *CertificateRequestStatusApplyConfiguration) WithCA(values ...byte) *Cer
 // WithFailureTime sets the FailureTime field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the FailureTime field is set to the value of the last call.
-func (b *CertificateRequestStatusApplyConfiguration) WithFailureTime(value metav1.Time) *CertificateRequestStatusApplyConfiguration {
+func (b *CertificateRequestStatusApplyConfiguration) WithFailureTime(value apismetav1.Time) *CertificateRequestStatusApplyConfiguration {
 	b.FailureTime = &value
 	return b
 }

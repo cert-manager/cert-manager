@@ -18,6 +18,7 @@ package certificaterequests
 
 import (
 	"testing"
+	"time"
 
 	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -41,6 +42,11 @@ func Test_ConditionsListType(t *testing.T) {
 		namespace = "test-condition-list-type"
 		name      = "test-condition-list-type"
 	)
+
+	// Rounding "now" to the nearest second to avoid failing tests.
+	// When using SSA, nanos/millis are removed from metav1.Time fields.
+	nowTime := time.Now().Round(time.Second)
+	nowMetaTime := metav1.NewTime(nowTime)
 
 	restConfig, stopFn := framework.RunControlPlane(t)
 	t.Cleanup(stopFn)
@@ -80,7 +86,7 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateRequestStatus{
-			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}))
 
@@ -89,15 +95,15 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateRequestStatus{
-			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}))
 
 	req, err = bobCMClient.CertmanagerV1().CertificateRequests(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateRequestCondition{
-		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
-		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
+		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
 	}, req.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
@@ -105,14 +111,14 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateRequestStatus{
-			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime}},
 		},
 	}))
 
 	req, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateRequestCondition{
-		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime},
 	}, req.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten random condition")
 
 	t.Log("bob can re-add a Ready condition and not change Random condition")
@@ -120,14 +126,14 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateRequestStatus{
-			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}))
 
 	req, err = bobCMClient.CertmanagerV1().CertificateRequests(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateRequestCondition{
-		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
-		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"},
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime},
+		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
 	}, req.Status.Conditions, "expected bob to be able to add a distinct ready condition after no longer owning the random condition")
 }

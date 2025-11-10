@@ -41,12 +41,8 @@ func HaveCondition(f *framework.Framework, condition interface{}) *conditionMatc
 
 func toGenericCondition(c interface{}) (*genericCondition, error) {
 	switch c := c.(type) {
-	case cmapi.CertificateCondition:
-		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
-	case cmapi.IssuerCondition:
-		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
-	case cmapi.CertificateRequestCondition:
-		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
+	case metav1.Condition:
+		return buildGenericCondition(c.Type, string(c.Status), c.Reason), nil
 	default:
 		return nil, fmt.Errorf("unsupported condition type %T", c)
 	}

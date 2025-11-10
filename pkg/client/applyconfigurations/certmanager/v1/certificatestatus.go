@@ -19,20 +19,21 @@ limitations under the License.
 package v1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // CertificateStatusApplyConfiguration represents a declarative configuration of the CertificateStatus type for use
 // with apply.
 type CertificateStatusApplyConfiguration struct {
-	Conditions               []CertificateConditionApplyConfiguration `json:"conditions,omitempty"`
-	LastFailureTime          *metav1.Time                             `json:"lastFailureTime,omitempty"`
-	NotBefore                *metav1.Time                             `json:"notBefore,omitempty"`
-	NotAfter                 *metav1.Time                             `json:"notAfter,omitempty"`
-	RenewalTime              *metav1.Time                             `json:"renewalTime,omitempty"`
-	Revision                 *int                                     `json:"revision,omitempty"`
-	NextPrivateKeySecretName *string                                  `json:"nextPrivateKeySecretName,omitempty"`
-	FailedIssuanceAttempts   *int                                     `json:"failedIssuanceAttempts,omitempty"`
+	Conditions               []metav1.ConditionApplyConfiguration `json:"conditions,omitempty"`
+	LastFailureTime          *apismetav1.Time                     `json:"lastFailureTime,omitempty"`
+	NotBefore                *apismetav1.Time                     `json:"notBefore,omitempty"`
+	NotAfter                 *apismetav1.Time                     `json:"notAfter,omitempty"`
+	RenewalTime              *apismetav1.Time                     `json:"renewalTime,omitempty"`
+	Revision                 *int                                 `json:"revision,omitempty"`
+	NextPrivateKeySecretName *string                              `json:"nextPrivateKeySecretName,omitempty"`
+	FailedIssuanceAttempts   *int                                 `json:"failedIssuanceAttempts,omitempty"`
 }
 
 // CertificateStatusApplyConfiguration constructs a declarative configuration of the CertificateStatus type for use with
@@ -44,7 +45,7 @@ func CertificateStatus() *CertificateStatusApplyConfiguration {
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *CertificateStatusApplyConfiguration) WithConditions(values ...*CertificateConditionApplyConfiguration) *CertificateStatusApplyConfiguration {
+func (b *CertificateStatusApplyConfiguration) WithConditions(values ...*metav1.ConditionApplyConfiguration) *CertificateStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithConditions")
@@ -57,7 +58,7 @@ func (b *CertificateStatusApplyConfiguration) WithConditions(values ...*Certific
 // WithLastFailureTime sets the LastFailureTime field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LastFailureTime field is set to the value of the last call.
-func (b *CertificateStatusApplyConfiguration) WithLastFailureTime(value metav1.Time) *CertificateStatusApplyConfiguration {
+func (b *CertificateStatusApplyConfiguration) WithLastFailureTime(value apismetav1.Time) *CertificateStatusApplyConfiguration {
 	b.LastFailureTime = &value
 	return b
 }
@@ -65,7 +66,7 @@ func (b *CertificateStatusApplyConfiguration) WithLastFailureTime(value metav1.T
 // WithNotBefore sets the NotBefore field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NotBefore field is set to the value of the last call.
-func (b *CertificateStatusApplyConfiguration) WithNotBefore(value metav1.Time) *CertificateStatusApplyConfiguration {
+func (b *CertificateStatusApplyConfiguration) WithNotBefore(value apismetav1.Time) *CertificateStatusApplyConfiguration {
 	b.NotBefore = &value
 	return b
 }
@@ -73,7 +74,7 @@ func (b *CertificateStatusApplyConfiguration) WithNotBefore(value metav1.Time) *
 // WithNotAfter sets the NotAfter field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NotAfter field is set to the value of the last call.
-func (b *CertificateStatusApplyConfiguration) WithNotAfter(value metav1.Time) *CertificateStatusApplyConfiguration {
+func (b *CertificateStatusApplyConfiguration) WithNotAfter(value apismetav1.Time) *CertificateStatusApplyConfiguration {
 	b.NotAfter = &value
 	return b
 }
@@ -81,7 +82,7 @@ func (b *CertificateStatusApplyConfiguration) WithNotAfter(value metav1.Time) *C
 // WithRenewalTime sets the RenewalTime field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RenewalTime field is set to the value of the last call.
-func (b *CertificateStatusApplyConfiguration) WithRenewalTime(value metav1.Time) *CertificateStatusApplyConfiguration {
+func (b *CertificateStatusApplyConfiguration) WithRenewalTime(value apismetav1.Time) *CertificateStatusApplyConfiguration {
 	b.RenewalTime = &value
 	return b
 }

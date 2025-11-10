@@ -16,8 +16,10 @@ limitations under the License.
 
 package meta
 
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 // ConditionStatus represents a condition's status.
-type ConditionStatus string
+type ConditionStatus = metav1.ConditionStatus
 
 // These are valid condition statuses. "ConditionTrue" means a resource is in
 // the condition; "ConditionFalse" means a resource is not in the condition;

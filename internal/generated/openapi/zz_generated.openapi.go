@@ -75,12 +75,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CAIssuer":                                    schema_pkg_apis_certmanager_v1_CAIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.Certificate":                                 schema_pkg_apis_certmanager_v1_Certificate(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat":           schema_pkg_apis_certmanager_v1_CertificateAdditionalOutputFormat(ref),
-		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition":                        schema_pkg_apis_certmanager_v1_CertificateCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores":                        schema_pkg_apis_certmanager_v1_CertificateKeystores(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateList":                             schema_pkg_apis_certmanager_v1_CertificateList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey":                       schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequest":                          schema_pkg_apis_certmanager_v1_CertificateRequest(ref),
-		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestCondition":                 schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestList":                      schema_pkg_apis_certmanager_v1_CertificateRequestList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestSpec":                      schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestStatus":                    schema_pkg_apis_certmanager_v1_CertificateRequestStatus(ref),
@@ -90,7 +88,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ClusterIssuer":                               schema_pkg_apis_certmanager_v1_ClusterIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ClusterIssuerList":                           schema_pkg_apis_certmanager_v1_ClusterIssuerList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.Issuer":                                      schema_pkg_apis_certmanager_v1_Issuer(ref),
-		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerCondition":                             schema_pkg_apis_certmanager_v1_IssuerCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerConfig":                                schema_pkg_apis_certmanager_v1_IssuerConfig(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerList":                                  schema_pkg_apis_certmanager_v1_IssuerList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerSpec":                                  schema_pkg_apis_certmanager_v1_IssuerSpec(ref),
@@ -2649,65 +2646,6 @@ func schema_pkg_apis_certmanager_v1_CertificateAdditionalOutputFormat(ref common
 	}
 }
 
-func schema_pkg_apis_certmanager_v1_CertificateCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "CertificateCondition contains condition information for a Certificate.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of the condition, known values are (`Ready`, `Issuing`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status of the condition, one of (`True`, `False`, `Unknown`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reason is a brief machine readable explanation for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Message is a human readable description of the details of the last transition, complementing reason.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"observedGeneration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Certificate.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
-	}
-}
-
 func schema_pkg_apis_certmanager_v1_CertificateKeystores(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2874,58 +2812,6 @@ func schema_pkg_apis_certmanager_v1_CertificateRequest(ref common.ReferenceCallb
 		},
 		Dependencies: []string{
 			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestSpec", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "CertificateRequestCondition contains condition information for a CertificateRequest.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of the condition, known values are (`Ready`, `InvalidRequest`, `Approved`, `Denied`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status of the condition, one of (`True`, `False`, `Unknown`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reason is a brief machine readable explanation for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Message is a human readable description of the details of the last transition, complementing reason.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3123,7 +3009,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestStatus(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestCondition"),
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -3153,7 +3039,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestStatus(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3485,7 +3371,7 @@ func schema_pkg_apis_certmanager_v1_CertificateStatus(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition"),
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -3540,7 +3426,7 @@ func schema_pkg_apis_certmanager_v1_CertificateStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3690,65 +3576,6 @@ func schema_pkg_apis_certmanager_v1_Issuer(ref common.ReferenceCallback) common.
 		},
 		Dependencies: []string{
 			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerSpec", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_certmanager_v1_IssuerCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "IssuerCondition contains condition information for an Issuer.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of the condition, known values are (`Ready`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status of the condition, one of (`True`, `False`, `Unknown`).",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reason is a brief machine readable explanation for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Message is a human readable description of the details of the last transition, complementing reason.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"observedGeneration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Issuer.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3914,7 +3741,7 @@ func schema_pkg_apis_certmanager_v1_IssuerStatus(ref common.ReferenceCallback) c
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerCondition"),
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -3930,7 +3757,7 @@ func schema_pkg_apis_certmanager_v1_IssuerStatus(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEIssuerStatus", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.IssuerCondition"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEIssuerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
@@ -20642,7 +20469,7 @@ func schema_pkg_apis_meta_v1_Condition(ref common.ReferenceCallback) common.Open
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Condition contains details for one aspect of the current state of this API Resource.",
+				Description: "IssuerCondition contains condition information for an Issuer.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {

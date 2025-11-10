@@ -175,29 +175,10 @@ type CertificateRequestStatus struct {
 }
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
-type CertificateRequestCondition struct {
-	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
-	// `Approved`, `Denied`).
-	Type CertificateRequestConditionType
-
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status cmmeta.ConditionStatus
-
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	LastTransitionTime *metav1.Time
-
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	Reason string
-
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	Message string
-}
+type CertificateRequestCondition = metav1.Condition
 
 // CertificateRequestConditionType represents a Certificate condition value.
-type CertificateRequestConditionType string
+type CertificateRequestConditionType = string
 
 const (
 	// CertificateRequestConditionReady indicates that a certificate is ready for use.

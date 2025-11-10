@@ -118,16 +118,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.CertificateApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateAdditionalOutputFormat"):
 		return &applyconfigurationscertmanagerv1.CertificateAdditionalOutputFormatApplyConfiguration{}
-	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateCondition"):
-		return &applyconfigurationscertmanagerv1.CertificateConditionApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateKeystores"):
 		return &applyconfigurationscertmanagerv1.CertificateKeystoresApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificatePrivateKey"):
 		return &applyconfigurationscertmanagerv1.CertificatePrivateKeyApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequest"):
 		return &applyconfigurationscertmanagerv1.CertificateRequestApplyConfiguration{}
-	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequestCondition"):
-		return &applyconfigurationscertmanagerv1.CertificateRequestConditionApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequestSpec"):
 		return &applyconfigurationscertmanagerv1.CertificateRequestSpecApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequestStatus"):
@@ -142,8 +138,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.ClusterIssuerApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("Issuer"):
 		return &applyconfigurationscertmanagerv1.IssuerApplyConfiguration{}
-	case certmanagerv1.SchemeGroupVersion.WithKind("IssuerCondition"):
-		return &applyconfigurationscertmanagerv1.IssuerConditionApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("IssuerConfig"):
 		return &applyconfigurationscertmanagerv1.IssuerConfigApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("IssuerSpec"):

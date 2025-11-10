@@ -367,35 +367,10 @@ type IssuerStatus struct {
 }
 
 // IssuerCondition contains condition information for an Issuer.
-type IssuerCondition struct {
-	// Type of the condition, known values are (`Ready`).
-	Type IssuerConditionType
-
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status cmmeta.ConditionStatus
-
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	LastTransitionTime *metav1.Time
-
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	Reason string
-
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	Message string
-
-	// If set, this represents the .metadata.generation that the condition was
-	// set based upon.
-	// For instance, if .metadata.generation is currently 12, but the
-	// .status.condition[x].observedGeneration is 9, the condition is out of date
-	// with respect to the current state of the Issuer.
-	ObservedGeneration int64
-}
+type IssuerCondition = metav1.Condition
 
 // IssuerConditionType represents an Issuer condition value.
-type IssuerConditionType string
+type IssuerConditionType = string
 
 const (
 	// IssuerConditionReady represents the fact that a given Issuer condition

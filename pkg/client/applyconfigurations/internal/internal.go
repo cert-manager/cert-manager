@@ -784,29 +784,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateCondition
-  map:
-    fields:
-    - name: lastTransitionTime
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-    - name: message
-      type:
-        scalar: string
-    - name: observedGeneration
-      type:
-        scalar: numeric
-    - name: reason
-      type:
-        scalar: string
-    - name: status
-      type:
-        scalar: string
-      default: ""
-    - name: type
-      type:
-        scalar: string
-      default: ""
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateKeystores
   map:
     fields:
@@ -852,26 +829,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequestStatus
       default: {}
-- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequestCondition
-  map:
-    fields:
-    - name: lastTransitionTime
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-    - name: message
-      type:
-        scalar: string
-    - name: reason
-      type:
-        scalar: string
-    - name: status
-      type:
-        scalar: string
-      default: ""
-    - name: type
-      type:
-        scalar: string
-      default: ""
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequestSpec
   map:
     fields:
@@ -927,7 +884,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequestCondition
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
           elementRelationship: associative
           keys:
           - type
@@ -1049,7 +1006,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateCondition
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
           elementRelationship: associative
           keys:
           - type
@@ -1116,29 +1073,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.IssuerStatus
       default: {}
-- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.IssuerCondition
-  map:
-    fields:
-    - name: lastTransitionTime
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-    - name: message
-      type:
-        scalar: string
-    - name: observedGeneration
-      type:
-        scalar: numeric
-    - name: reason
-      type:
-        scalar: string
-    - name: status
-      type:
-        scalar: string
-      default: ""
-    - name: type
-      type:
-        scalar: string
-      default: ""
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.IssuerSpec
   map:
     fields:
@@ -1167,7 +1101,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.IssuerCondition
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
           elementRelationship: associative
           keys:
           - type
@@ -1714,6 +1648,31 @@ var schemaYAML = typed.YAMLObject(`types:
     elementRelationship: separable
 - name: io.k8s.apimachinery.pkg.api.resource.Quantity
   scalar: untyped
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+  map:
+    fields:
+    - name: lastTransitionTime
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: message
+      type:
+        scalar: string
+      default: ""
+    - name: observedGeneration
+      type:
+        scalar: numeric
+    - name: reason
+      type:
+        scalar: string
+      default: ""
+    - name: status
+      type:
+        scalar: string
+      default: ""
+    - name: type
+      type:
+        scalar: string
+      default: ""
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
   scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1

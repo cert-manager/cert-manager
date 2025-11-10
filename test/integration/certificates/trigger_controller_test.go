@@ -309,7 +309,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
+	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Reason", "Message")
 	cert.Status.FailedIssuanceAttempts = &failedIssuanceAttempts
 	cert.Status.LastFailureTime = &metaNow
 	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), cert, metav1.UpdateOptions{})
@@ -420,11 +420,13 @@ func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cm
 // triggered on certificate events.
 func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certificate, client cmclient.Interface) {
 	t.Helper()
+	now := time.Now().Truncate(time.Second)
 	testCond := cmapi.CertificateCondition{
-		Type:    cmapi.CertificateConditionType("Test"),
-		Reason:  "TestTwo",
-		Message: fmt.Sprintf("Test-%s", time.Now().Truncate(time.Second).String()),
-		Status:  cmmeta.ConditionUnknown,
+		Type:               cmapi.CertificateConditionType("Test"),
+		Reason:             "TestTwo",
+		Message:            fmt.Sprintf("Test-%s", now.String()),
+		Status:             cmmeta.ConditionUnknown,
+		LastTransitionTime: metav1.NewTime(now),
 	}
 	// Patch instead of update as there might be conflicts here due to
 	// trigger controller picking up the cert and adding Issuing condition

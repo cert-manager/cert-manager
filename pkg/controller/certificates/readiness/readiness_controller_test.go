@@ -121,7 +121,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionTrue,
 				Reason:             ReadyReason,
 				Message:            "ready message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
@@ -136,7 +136,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionFalse,
 				Reason:             "some reason",
 				Message:            "some message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
@@ -151,7 +151,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionFalse,
 				Reason:             "some reason",
 				Message:            "some message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert: gen.CertificateFrom(cert),
 
@@ -163,7 +163,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionFalse,
 				Reason:             "some reason",
 				Message:            "some message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
@@ -175,7 +175,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionTrue,
 				Reason:             ReadyReason,
 				Message:            "ready message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
 				cmapi.CertificateCondition{
@@ -193,7 +193,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionFalse,
 				Reason:             "some reason",
 				Message:            "some message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
 				cmapi.CertificateCondition{
@@ -211,7 +211,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionFalse,
 				Reason:             "some reason",
 				Message:            "some message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
 				cmapi.CertificateCondition{
@@ -227,7 +227,7 @@ func TestProcessItem(t *testing.T) {
 				Status:             cmmeta.ConditionTrue,
 				Reason:             ReadyReason,
 				Message:            "ready message",
-				LastTransitionTime: &metaNow,
+				LastTransitionTime: metaNow,
 			},
 			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
 				cmapi.CertificateCondition{
@@ -235,7 +235,7 @@ func TestProcessItem(t *testing.T) {
 					Status:             cmmeta.ConditionTrue,
 					Reason:             ReadyReason,
 					Message:            "ready message",
-					LastTransitionTime: &metaNow,
+					LastTransitionTime: metaNow,
 				})),
 			secretShouldExist: true,
 			certShouldUpdate:  false,

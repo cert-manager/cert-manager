@@ -65,7 +65,7 @@ func TestReporter(t *testing.T) {
 		Reason:             "Failed",
 		Message:            exampleMessage + ": " + exampleErr.Error(),
 		Status:             "False",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	invalidRequestCondition := cmapi.CertificateRequestCondition{
@@ -73,7 +73,7 @@ func TestReporter(t *testing.T) {
 		Status:             "True",
 		Reason:             "InvalidRequest Reason",
 		Message:            "InvalidRequest Message",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	pendingCondition := cmapi.CertificateRequestCondition{
@@ -81,7 +81,7 @@ func TestReporter(t *testing.T) {
 		Reason:             "Pending",
 		Message:            exampleMessage + ": " + exampleErr.Error(),
 		Status:             "False",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	existingPendingCondition := cmapi.CertificateRequestCondition{
@@ -89,7 +89,7 @@ func TestReporter(t *testing.T) {
 		Reason:             "Pending",
 		Message:            "Existing Pending Message",
 		Status:             "False",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	readyCondition := cmapi.CertificateRequestCondition{
@@ -97,7 +97,7 @@ func TestReporter(t *testing.T) {
 		Reason:             "Issued",
 		Message:            "Certificate fetched from issuer successfully",
 		Status:             "True",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	deniedReadyCondition := cmapi.CertificateRequestCondition{
@@ -105,7 +105,7 @@ func TestReporter(t *testing.T) {
 		Reason:             "Denied",
 		Message:            "The CertificateRequest was denied by an approval controller",
 		Status:             "False",
-		LastTransitionTime: &nowMetaTime,
+		LastTransitionTime: nowMetaTime,
 	}
 
 	tests := map[string]reporterT{

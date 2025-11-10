@@ -654,39 +654,10 @@ type CertificateStatus struct {
 }
 
 // CertificateCondition contains condition information for a Certificate.
-type CertificateCondition struct {
-	// Type of the condition, known values are (`Ready`, `Issuing`).
-	Type CertificateConditionType `json:"type"`
-
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status cmmeta.ConditionStatus `json:"status"`
-
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	// +optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
-
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	// +optional
-	Reason string `json:"reason,omitempty"`
-
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	// +optional
-	Message string `json:"message,omitempty"`
-
-	// If set, this represents the .metadata.generation that the condition was
-	// set based upon.
-	// For instance, if .metadata.generation is currently 12, but the
-	// .status.condition[x].observedGeneration is 9, the condition is out of date
-	// with respect to the current state of the Certificate.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-}
+type CertificateCondition = metav1.Condition
 
 // CertificateConditionType represents a Certificate condition value.
-type CertificateConditionType string
+type CertificateConditionType = string
 
 const (
 	// CertificateConditionReady indicates that a certificate is ready for use.

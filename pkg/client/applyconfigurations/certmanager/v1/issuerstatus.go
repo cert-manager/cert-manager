@@ -20,12 +20,13 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // IssuerStatusApplyConfiguration represents a declarative configuration of the IssuerStatus type for use
 // with apply.
 type IssuerStatusApplyConfiguration struct {
-	Conditions []IssuerConditionApplyConfiguration        `json:"conditions,omitempty"`
+	Conditions []metav1.ConditionApplyConfiguration       `json:"conditions,omitempty"`
 	ACME       *acmev1.ACMEIssuerStatusApplyConfiguration `json:"acme,omitempty"`
 }
 
@@ -38,7 +39,7 @@ func IssuerStatus() *IssuerStatusApplyConfiguration {
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *IssuerStatusApplyConfiguration) WithConditions(values ...*IssuerConditionApplyConfiguration) *IssuerStatusApplyConfiguration {
+func (b *IssuerStatusApplyConfiguration) WithConditions(values ...*metav1.ConditionApplyConfiguration) *IssuerStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithConditions")
