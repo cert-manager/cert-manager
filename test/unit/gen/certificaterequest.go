@@ -17,6 +17,8 @@ limitations under the License.
 package gen
 
 import (
+	"maps"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	internalv1 "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
@@ -136,9 +138,7 @@ func AddCertificateRequestAnnotations(annotations map[string]string) Certificate
 		if annotationsNew == nil {
 			annotationsNew = make(map[string]string)
 		}
-		for k, v := range annotations {
-			annotationsNew[k] = v
-		}
+		maps.Copy(annotationsNew, annotations)
 		cr.SetAnnotations(annotationsNew)
 	}
 }
@@ -154,9 +154,7 @@ func SetCertificateRequestAnnotations(annotations map[string]string) Certificate
 		if cr.Annotations == nil {
 			cr.Annotations = make(map[string]string)
 		}
-		for k, v := range annotations {
-			cr.Annotations[k] = v
-		}
+		maps.Copy(cr.Annotations, annotations)
 	}
 }
 

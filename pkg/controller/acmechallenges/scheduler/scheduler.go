@@ -64,14 +64,8 @@ func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) []*cmacm
 	// This function returns a list of candidates sorted by creation timestamp.
 	candidates, inProgressChallengeCount := s.determineChallengeCandidates(allChallenges)
 
-	numberToSelect := n
-	remainingNumberAllowedChallenges := s.maxConcurrentChallenges - inProgressChallengeCount
-	if remainingNumberAllowedChallenges < 0 {
-		remainingNumberAllowedChallenges = 0
-	}
-	if numberToSelect > remainingNumberAllowedChallenges {
-		numberToSelect = remainingNumberAllowedChallenges
-	}
+	remainingNumberAllowedChallenges := max(s.maxConcurrentChallenges-inProgressChallengeCount, 0)
+	numberToSelect := min(n, remainingNumberAllowedChallenges)
 
 	return s.selectChallengesToSchedule(candidates, numberToSelect)
 }

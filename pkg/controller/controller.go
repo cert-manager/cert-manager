@@ -103,11 +103,9 @@ func (c *controller) Run(workers int, ctx context.Context) error {
 
 	var wg sync.WaitGroup
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			c.worker(ctx)
-		}()
+		})
 	}
 
 	for _, f := range c.runFirstFuncs {

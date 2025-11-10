@@ -189,7 +189,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 	}
 
 	var crds []*apiextensionsv1.CustomResourceDefinition
-	for _, d := range strings.Split(string(data), "\n---\n") {
+	for d := range strings.SplitSeq(string(data), "\n---\n") {
 		// skip empty YAML documents
 		if strings.TrimSpace(d) == "" {
 			continue
