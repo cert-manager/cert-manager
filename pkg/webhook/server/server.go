@@ -112,8 +112,10 @@ type Server struct {
 	// Defaults to "", which means server does not verify client's certificate.
 	ClientCAPath string
 
-	// ClientCertificateCN is the client is generated in the kubeadm bootstrap stages
-	// using a CA for apiserver to contact webhooks
+	// ClientCertificateCN is the expected CommonName for the client certificate
+	// used by callers (for example, the apiserver). If empty, the server will
+	// only verify that the client certificate chains to the provided ClientCAPath
+	// and will not enforce a specific CommonName.
 	ClientCertificateCN string
 }
 
@@ -163,8 +165,8 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	if s.EnableClientVerification {
-		if s.ClientCAPath == "" || s.ClientCertificateCN == "" {
-			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-path & --client-certificate-cn")
+		if s.ClientCAPath == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-path")
 		}
 		caCert, err := loadClientCA(s.ClientCAPath)
 		if err != nil {
@@ -349,6 +351,12 @@ func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
 		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
 			return fmt.Errorf("no verified chains")
 		}
+		// if no specific CN is configured, skip CN verification and accept any
+		// client certificate that verifies against the configured ClientCAs.
+		if s.ClientCertificateCN == "" {
+			return nil
+		}
+
 		cert := verifiedChains[0][0]
 		if cert.Subject.CommonName != s.ClientCertificateCN {
 			return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
