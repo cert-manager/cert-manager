@@ -183,9 +183,9 @@ type CertificateRequestCondition struct {
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
 	Status cmmeta.ConditionStatus
 
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	LastTransitionTime *metav1.Time
+	// lastTransitionTime is the last time the condition transitioned from one status to another.
+	// This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+	LastTransitionTime metav1.Time
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.

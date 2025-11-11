@@ -66,7 +66,7 @@ func SetIssuerCondition(i cmapi.GenericIssuer, observedGeneration int64, conditi
 	}
 
 	nowTime := metav1.NewTime(Clock.Now())
-	newCondition.LastTransitionTime = &nowTime
+	newCondition.LastTransitionTime = nowTime
 
 	// Set the condition generation
 	newCondition.ObservedGeneration = observedGeneration
@@ -181,7 +181,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, observedGeneration int64, c
 	}
 
 	nowTime := metav1.NewTime(Clock.Now())
-	newCondition.LastTransitionTime = &nowTime
+	newCondition.LastTransitionTime = nowTime
 
 	// Set the condition generation
 	newCondition.ObservedGeneration = observedGeneration
@@ -252,7 +252,7 @@ func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType 
 	}
 
 	nowTime := metav1.NewTime(Clock.Now())
-	newCondition.LastTransitionTime = &nowTime
+	newCondition.LastTransitionTime = nowTime
 
 	// Search through existing conditions
 	for idx, cond := range cr.Status.Conditions {

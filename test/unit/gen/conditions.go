@@ -51,7 +51,7 @@ func SetIssuerConditionStatus(s cmmeta.ConditionStatus) IssuerConditionModifier 
 
 func SetIssuerConditionLastTransitionTime(t *metav1.Time) IssuerConditionModifier {
 	return func(c *v1.IssuerCondition) {
-		c.LastTransitionTime = t
+		c.LastTransitionTime = *t
 	}
 }
 

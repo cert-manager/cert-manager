@@ -115,7 +115,7 @@ func FuzzVenafiCRController(f *testing.F) {
 				Status:             cmmeta.ConditionTrue,
 				Reason:             "cert-manager.io",
 				Message:            "[test-message]",
-				LastTransitionTime: &metaFixedClockStart,
+				LastTransitionTime: metaFixedClockStart,
 			}),
 		)
 

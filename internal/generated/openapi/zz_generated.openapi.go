@@ -2674,7 +2674,7 @@ func schema_pkg_apis_certmanager_v1_CertificateCondition(ref common.ReferenceCal
 					},
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
+							Description: "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -2700,7 +2700,7 @@ func schema_pkg_apis_certmanager_v1_CertificateCondition(ref common.ReferenceCal
 						},
 					},
 				},
-				Required: []string{"type", "status"},
+				Required: []string{"type", "status", "lastTransitionTime"},
 			},
 		},
 		Dependencies: []string{
@@ -2902,7 +2902,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref common.Refer
 					},
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
+							Description: "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -2921,7 +2921,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref common.Refer
 						},
 					},
 				},
-				Required: []string{"type", "status"},
+				Required: []string{"type", "status", "lastTransitionTime"},
 			},
 		},
 		Dependencies: []string{
@@ -3718,7 +3718,7 @@ func schema_pkg_apis_certmanager_v1_IssuerCondition(ref common.ReferenceCallback
 					},
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the timestamp corresponding to the last status change of this condition.",
+							Description: "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -3744,7 +3744,7 @@ func schema_pkg_apis_certmanager_v1_IssuerCondition(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"type", "status"},
+				Required: []string{"type", "status", "lastTransitionTime"},
 			},
 		},
 		Dependencies: []string{

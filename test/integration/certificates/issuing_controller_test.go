@@ -190,7 +190,7 @@ func TestIssuingController(t *testing.T) {
 	}
 
 	// Add Issuing condition to Certificate
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "Reason", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
@@ -399,7 +399,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	}
 
 	// Add Issuing condition to Certificate
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "Reason", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
@@ -603,7 +603,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	}
 
 	// Add Issuing condition to Certificate
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "Reason", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
@@ -836,7 +836,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	}
 
 	// Add Issuing condition to Certificate
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "Reason", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})

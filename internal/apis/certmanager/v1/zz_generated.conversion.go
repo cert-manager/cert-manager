@@ -31,8 +31,8 @@ import (
 	internalapismetav1 "github.com/cert-manager/cert-manager/internal/apis/meta/v1"
 	apisacmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apismetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -518,7 +518,7 @@ func Convert_certmanager_CertificateAdditionalOutputFormat_To_v1_CertificateAddi
 func autoConvert_v1_CertificateCondition_To_certmanager_CertificateCondition(in *certmanagerv1.CertificateCondition, out *certmanager.CertificateCondition, s conversion.Scope) error {
 	out.Type = certmanager.CertificateConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	out.ObservedGeneration = in.ObservedGeneration
@@ -532,8 +532,8 @@ func Convert_v1_CertificateCondition_To_certmanager_CertificateCondition(in *cer
 
 func autoConvert_certmanager_CertificateCondition_To_v1_CertificateCondition(in *certmanager.CertificateCondition, out *certmanagerv1.CertificateCondition, s conversion.Scope) error {
 	out.Type = certmanagerv1.CertificateConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	out.ObservedGeneration = in.ObservedGeneration
@@ -702,7 +702,7 @@ func Convert_certmanager_CertificateRequest_To_v1_CertificateRequest(in *certman
 func autoConvert_v1_CertificateRequestCondition_To_certmanager_CertificateRequestCondition(in *certmanagerv1.CertificateRequestCondition, out *certmanager.CertificateRequestCondition, s conversion.Scope) error {
 	out.Type = certmanager.CertificateRequestConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -715,8 +715,8 @@ func Convert_v1_CertificateRequestCondition_To_certmanager_CertificateRequestCon
 
 func autoConvert_certmanager_CertificateRequestCondition_To_v1_CertificateRequestCondition(in *certmanager.CertificateRequestCondition, out *certmanagerv1.CertificateRequestCondition, s conversion.Scope) error {
 	out.Type = certmanagerv1.CertificateRequestConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -770,7 +770,7 @@ func Convert_certmanager_CertificateRequestList_To_v1_CertificateRequestList(in 
 }
 
 func autoConvert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in *certmanagerv1.CertificateRequestSpec, out *certmanager.CertificateRequestSpec, s conversion.Scope) error {
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	if err := internalapismetav1.Convert_v1_IssuerReference_To_meta_IssuerReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
@@ -790,7 +790,7 @@ func Convert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in 
 }
 
 func autoConvert_certmanager_CertificateRequestSpec_To_v1_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *certmanagerv1.CertificateRequestSpec, s conversion.Scope) error {
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	if err := internalapismetav1.Convert_meta_IssuerReference_To_v1_IssuerReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
@@ -813,7 +813,7 @@ func autoConvert_v1_CertificateRequestStatus_To_certmanager_CertificateRequestSt
 	out.Conditions = *(*[]certmanager.CertificateRequestCondition)(unsafe.Pointer(&in.Conditions))
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.CA = *(*[]byte)(unsafe.Pointer(&in.CA))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -826,7 +826,7 @@ func autoConvert_certmanager_CertificateRequestStatus_To_v1_CertificateRequestSt
 	out.Conditions = *(*[]certmanagerv1.CertificateRequestCondition)(unsafe.Pointer(&in.Conditions))
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.CA = *(*[]byte)(unsafe.Pointer(&in.CA))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -861,8 +861,8 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *certmanag
 	out.Subject = (*certmanager.X509Subject)(unsafe.Pointer(in.Subject))
 	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
-	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.RenewBefore = (*apismetav1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
@@ -903,8 +903,8 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.Subject = (*certmanagerv1.X509Subject)(unsafe.Pointer(in.Subject))
 	out.LiteralSubject = in.LiteralSubject
 	out.CommonName = in.CommonName
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
-	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.RenewBefore = (*apismetav1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.RenewBeforePercentage = (*int32)(unsafe.Pointer(in.RenewBeforePercentage))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
@@ -943,10 +943,10 @@ func Convert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanager.C
 
 func autoConvert_v1_CertificateStatus_To_certmanager_CertificateStatus(in *certmanagerv1.CertificateStatus, out *certmanager.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.CertificateCondition)(unsafe.Pointer(&in.Conditions))
-	out.LastFailureTime = (*metav1.Time)(unsafe.Pointer(in.LastFailureTime))
-	out.NotBefore = (*metav1.Time)(unsafe.Pointer(in.NotBefore))
-	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
-	out.RenewalTime = (*metav1.Time)(unsafe.Pointer(in.RenewalTime))
+	out.LastFailureTime = (*apismetav1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotBefore = (*apismetav1.Time)(unsafe.Pointer(in.NotBefore))
+	out.NotAfter = (*apismetav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.RenewalTime = (*apismetav1.Time)(unsafe.Pointer(in.RenewalTime))
 	out.Revision = (*int)(unsafe.Pointer(in.Revision))
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	out.FailedIssuanceAttempts = (*int)(unsafe.Pointer(in.FailedIssuanceAttempts))
@@ -960,10 +960,10 @@ func Convert_v1_CertificateStatus_To_certmanager_CertificateStatus(in *certmanag
 
 func autoConvert_certmanager_CertificateStatus_To_v1_CertificateStatus(in *certmanager.CertificateStatus, out *certmanagerv1.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanagerv1.CertificateCondition)(unsafe.Pointer(&in.Conditions))
-	out.LastFailureTime = (*metav1.Time)(unsafe.Pointer(in.LastFailureTime))
-	out.NotBefore = (*metav1.Time)(unsafe.Pointer(in.NotBefore))
-	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
-	out.RenewalTime = (*metav1.Time)(unsafe.Pointer(in.RenewalTime))
+	out.LastFailureTime = (*apismetav1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotBefore = (*apismetav1.Time)(unsafe.Pointer(in.NotBefore))
+	out.NotAfter = (*apismetav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.RenewalTime = (*apismetav1.Time)(unsafe.Pointer(in.RenewalTime))
 	out.Revision = (*int)(unsafe.Pointer(in.Revision))
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	out.FailedIssuanceAttempts = (*int)(unsafe.Pointer(in.FailedIssuanceAttempts))
@@ -1084,7 +1084,7 @@ func Convert_certmanager_Issuer_To_v1_Issuer(in *certmanager.Issuer, out *certma
 func autoConvert_v1_IssuerCondition_To_certmanager_IssuerCondition(in *certmanagerv1.IssuerCondition, out *certmanager.IssuerCondition, s conversion.Scope) error {
 	out.Type = certmanager.IssuerConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	out.ObservedGeneration = in.ObservedGeneration
@@ -1098,8 +1098,8 @@ func Convert_v1_IssuerCondition_To_certmanager_IssuerCondition(in *certmanagerv1
 
 func autoConvert_certmanager_IssuerCondition_To_v1_IssuerCondition(in *certmanager.IssuerCondition, out *certmanagerv1.IssuerCondition, s conversion.Scope) error {
 	out.Type = certmanagerv1.IssuerConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	out.ObservedGeneration = in.ObservedGeneration
@@ -1517,7 +1517,7 @@ func Convert_v1_VaultAuth_To_certmanager_VaultAuth(in *certmanagerv1.VaultAuth, 
 func autoConvert_certmanager_VaultAuth_To_v1_VaultAuth(in *certmanager.VaultAuth, out *certmanagerv1.VaultAuth, s conversion.Scope) error {
 	if in.TokenSecretRef != nil {
 		in, out := &in.TokenSecretRef, &out.TokenSecretRef
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(metav1.SecretKeySelector)
 		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1630,7 +1630,7 @@ func autoConvert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.Vault
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	if in.CABundleSecretRef != nil {
 		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(metav1.SecretKeySelector)
 		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1639,7 +1639,7 @@ func autoConvert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.Vault
 	}
 	if in.ClientCertSecretRef != nil {
 		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(metav1.SecretKeySelector)
 		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1648,7 +1648,7 @@ func autoConvert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.Vault
 	}
 	if in.ClientKeySecretRef != nil {
 		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(metav1.SecretKeySelector)
 		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}
@@ -1806,7 +1806,7 @@ func autoConvert_certmanager_VenafiTPP_To_v1_VenafiTPP(in *certmanager.VenafiTPP
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	if in.CABundleSecretRef != nil {
 		in, out := &in.CABundleSecretRef, &out.CABundleSecretRef
-		*out = new(apismetav1.SecretKeySelector)
+		*out = new(metav1.SecretKeySelector)
 		if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
 			return err
 		}

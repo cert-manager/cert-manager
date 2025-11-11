@@ -272,7 +272,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// revision. Leave it to the certificate-requests controller to delete the
 	// CertificateRequest and create a new one.
 	if req.Status.FailureTime != nil &&
-		req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
+		req.Status.FailureTime.Before(&certIssuingCond.LastTransitionTime) && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
 		log.V(logf.InfoLevel).Info("Found a failed CertificateRequest from previous issuance, waiting for it to be deleted...")
 		return nil
 	}

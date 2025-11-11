@@ -18,6 +18,7 @@ package certificaterequests
 
 import (
 	"testing"
+	"time"
 
 	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,6 +39,11 @@ func Test_Apply(t *testing.T) {
 		namespace = "test-apply"
 		name      = "test-apply"
 	)
+
+	// Truncating "now" to the nearest second to avoid failing tests.
+	// When using SSA, nanos/millis are removed from metav1.Time fields.
+	nowTime := time.Now().Truncate(time.Second)
+	nowMetaTime := metav1.NewTime(nowTime)
 
 	restConfig, stopFn := framework.RunControlPlane(t)
 	t.Cleanup(stopFn)
@@ -85,11 +91,11 @@ func Test_Apply(t *testing.T) {
 		internalcertificaterequests.ApplyStatus(t.Context(), cmClient, "cert-manager-test", &cmapi.CertificateRequest{
 			ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 			Status: cmapi.CertificateRequestStatus{
-				Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+				Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 			},
 		}),
 	)
 	req, err = cmClient.CertmanagerV1().CertificateRequests(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}}, req.Status.Conditions)
+	assert.Equal(t, []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}}, req.Status.Conditions)
 }

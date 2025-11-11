@@ -254,8 +254,11 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 	}
 	crt.Status.Conditions = []cmapi.CertificateCondition{
 		{
-			Type:   cmapi.CertificateConditionReady,
-			Status: cmmeta.ConditionTrue,
+			Type:               cmapi.CertificateConditionReady,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "Reason",
+			Message:            "",
+			LastTransitionTime: metav1.Now(),
 		},
 	}
 	crt.Status.RenewalTime = &metav1.Time{

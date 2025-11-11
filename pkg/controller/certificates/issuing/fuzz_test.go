@@ -114,7 +114,7 @@ func FuzzProcessItem(f *testing.F) {
 						Type:               cmapiv1.CertificateConditionIssuing,
 						Status:             cmmeta.ConditionTrue,
 						ObservedGeneration: 3,
-						LastTransitionTime: &metaFixedClockStart,
+						LastTransitionTime: metaFixedClockStart,
 					}),
 				)
 				issuingCert = gen.CertificateFrom(issCert)

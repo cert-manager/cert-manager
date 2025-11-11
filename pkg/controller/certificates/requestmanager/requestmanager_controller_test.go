@@ -104,13 +104,13 @@ func TestProcessItem(t *testing.T) {
 		Type:               cmapi.CertificateRequestConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		Reason:             cmapi.CertificateRequestReasonFailed,
-		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
+		LastTransitionTime: metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
 	}
 	failedCRConditionThisIssuance := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		Reason:             cmapi.CertificateRequestReasonFailed,
-		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)},
+		LastTransitionTime: metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)},
 	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -668,7 +668,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
 				gen.SetCertificateNextPrivateKeySecretName("exists"),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: fixedNow}),
 				gen.SetCertificateRevision(5),
 			),
 			requests: []runtime.Object{
@@ -704,7 +704,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
 				gen.SetCertificateNextPrivateKeySecretName("exists"),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: fixedNow}),
 				gen.SetCertificateRevision(5),
 			),
 			requests: []runtime.Object{

@@ -19,6 +19,7 @@ package certificates
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -41,6 +42,11 @@ func Test_ConditionsListType(t *testing.T) {
 		namespace = "test-condition-list-type"
 		name      = "test-condition-list-type"
 	)
+
+	// Truncating "now" to the nearest second to avoid failing tests.
+	// When using SSA, nanos/millis are removed from metav1.Time fields.
+	nowTime := time.Now().Truncate(time.Second)
+	nowMetaTime := metav1.NewTime(nowTime)
 
 	restConfig, stopFn := framework.RunControlPlane(t)
 	t.Cleanup(stopFn)
@@ -74,7 +80,7 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateStatus{
-			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}
 	crtData, err := json.Marshal(crt)
@@ -90,7 +96,7 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateStatus{
-			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}
 	crtData, err = json.Marshal(crt)
@@ -104,8 +110,8 @@ func Test_ConditionsListType(t *testing.T) {
 	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
-		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
+		{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
+		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
 	}, crt.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
@@ -113,7 +119,7 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateStatus{
-			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
+			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime}},
 		},
 	}
 	crtData, err = json.Marshal(crt)
@@ -127,7 +133,7 @@ func Test_ConditionsListType(t *testing.T) {
 	crt, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
+		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime},
 	}, crt.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten issuing condition")
 
 	t.Log("bob can re-add a Ready condition and not change Issuing condition")
@@ -135,7 +141,7 @@ func Test_ConditionsListType(t *testing.T) {
 		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status: cmapi.CertificateStatus{
-			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
+			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime}},
 		},
 	}
 	crtData, err = json.Marshal(crt)
@@ -149,7 +155,7 @@ func Test_ConditionsListType(t *testing.T) {
 	crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, []cmapi.CertificateCondition{
-		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
-		{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"},
+		{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "AnotherReason", Message: "another-message", LastTransitionTime: nowMetaTime},
+		{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message", LastTransitionTime: nowMetaTime},
 	}, crt.Status.Conditions, "expected bob to be able to add a distinct ready condition after no longer owning the issuing condition")
 }
