@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -112,11 +113,12 @@ type Server struct {
 	// Defaults to "", which means server does not verify client's certificate.
 	ClientCAPath string
 
-	// ClientCertificateCN is the expected CommonName for the client certificate
-	// used by callers (for example, the apiserver). If empty, the server will
-	// only verify that the client certificate chains to the provided ClientCAPath
-	// and will not enforce a specific CommonName.
-	ClientCertificateCN string
+	// ClientCertificateSubjects is a list of expected subject names for client
+	// certificates used by callers (for example, the apiserver). Each entry
+	// will be matched against the certificate CommonName and the DNS SANs. If
+	// empty, the server will only verify that the client certificate chains to
+	// the provided ClientCAPath and will not enforce specific subject names.
+	ClientCertificateSubjects []string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -351,17 +353,25 @@ func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
 		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
 			return fmt.Errorf("no verified chains")
 		}
-		// if no specific CN is configured, skip CN verification and accept any
-		// client certificate that verifies against the configured ClientCAs.
-		if s.ClientCertificateCN == "" {
+		// if no specific names are configured, skip subject matching and accept
+		// any client certificate that verifies against the configured ClientCAs.
+		if len(s.ClientCertificateSubjects) == 0 {
 			return nil
 		}
 
 		cert := verifiedChains[0][0]
-		if cert.Subject.CommonName != s.ClientCertificateCN {
-			return fmt.Errorf("unauthorized client CN: %s", cert.Subject.CommonName)
+		// match against CommonName
+		if slices.Contains(s.ClientCertificateSubjects, cert.Subject.CommonName) {
+			return nil
 		}
-		return nil
+
+		// match against DNS SANs
+		for _, dns := range cert.DNSNames {
+			if slices.Contains(s.ClientCertificateSubjects, dns) {
+				return nil
+			}
+		}
+		return fmt.Errorf("unauthorized client certificate: CN=%s DNS=%v", cert.Subject.CommonName, cert.DNSNames)
 	}
 }
 

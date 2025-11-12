@@ -104,8 +104,8 @@ spec:
           {{- if .Values.webhook.clientCAFile }}
           - --client-ca-path={{ .Values.webhook.clientCAFile }}
           {{- end }}
-          {{- if .Values.webhook.apiserverClientCertSubject }}
-          - --client-certificate-cn={{ .Values.webhook.apiserverClientCertSubject }}
+          {{- if .Values.webhook.apiserverClientCertSubjects }}
+          - --client-subject-names={{ .Values.webhook.apiserverClientCertSubjects }}
           {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}

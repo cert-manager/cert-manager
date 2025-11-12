@@ -80,6 +80,9 @@ type WebhookConfiguration struct {
 	// Defaults to "", which means server does not verify client's certificate.
 	ClientCAPath string
 
-	// ClientCertificateCN is the Common Name of the client certificate used by the apiserver to contact webhooks.
-	ClientCertificateCN string
+	// ClientCertificateSubjects is a list of acceptable subject names for client
+	// certificates used by the apiserver to contact webhooks. Each entry will
+	// be matched against the certificate's CommonName and DNS SubjectAltNames.
+	// Multiple values allow zero-downtime rotations.
+	ClientCertificateSubjects []string
 }

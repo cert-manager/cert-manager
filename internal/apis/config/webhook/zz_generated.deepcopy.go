@@ -39,6 +39,11 @@ func (in *WebhookConfiguration) DeepCopyInto(out *WebhookConfiguration) {
 		}
 	}
 	in.MetricsTLSConfig.DeepCopyInto(&out.MetricsTLSConfig)
+	if in.ClientCertificateSubjects != nil {
+		in, out := &in.ClientCertificateSubjects, &out.ClientCertificateSubjects
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

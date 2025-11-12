@@ -1390,13 +1390,13 @@ enableClientVerification turns on client verification of requests made to the we
 > ```
 
 the client CA file to be used for verification
-#### **webhook.apiserverClientCertSubject** ~ `string`
+#### **webhook.apiserverClientCertSubjects** ~ `string`
 > Default value:
 > ```yaml
 > ""
 > ```
 
-if provided the subject name to be verified for the given client cert
+if provided the subject names to be verified for the given client cert
 ### CA Injector
 
 #### **cainjector.enabled** ~ `bool`
