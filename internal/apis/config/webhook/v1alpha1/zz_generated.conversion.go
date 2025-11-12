@@ -74,7 +74,7 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(i
 	}
 	out.EnableClientVerification = in.EnableClientVerification
 	out.ClientCAPath = in.ClientCAPath
-	out.ClientCertificateCN = in.ClientCertificateCN
+	out.ClientCertificateSubjects = *(*[]string)(unsafe.Pointer(&in.ClientCertificateSubjects))
 	return nil
 }
 
@@ -105,7 +105,7 @@ func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(i
 	}
 	out.EnableClientVerification = in.EnableClientVerification
 	out.ClientCAPath = in.ClientCAPath
-	out.ClientCertificateCN = in.ClientCertificateCN
+	out.ClientCertificateSubjects = *(*[]string)(unsafe.Pointer(&in.ClientCertificateSubjects))
 	return nil
 }
 

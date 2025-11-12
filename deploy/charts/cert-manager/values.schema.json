@@ -1602,8 +1602,8 @@
         "affinity": {
           "$ref": "#/$defs/helm-values.webhook.affinity"
         },
-        "apiserverClientCertSubject": {
-          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubject"
+        "apiserverClientCertSubjects": {
+          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubjects"
         },
         "automountServiceAccountToken": {
           "$ref": "#/$defs/helm-values.webhook.automountServiceAccountToken"
@@ -1736,9 +1736,9 @@
       "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
       "type": "object"
     },
-    "helm-values.webhook.apiserverClientCertSubject": {
+    "helm-values.webhook.apiserverClientCertSubjects": {
       "default": "",
-      "description": "if provided the subject name to be verified for the given client cert",
+      "description": "if provided the subject names to be verified for the given client cert",
       "type": "string"
     },
     "helm-values.webhook.automountServiceAccountToken": {
