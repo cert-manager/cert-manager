@@ -350,4 +350,88 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(successful).To(BeTrue())
 	})
+
+	It("should mark as not ready if ACME issuer has missing secret", func(testingCtx context.Context) {
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(f.Config.Addons.ACMEServer.TestingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMEPrivKeyRef(f.Config.Addons.ACMEServer.TestingACMEPrivateKey),
+			gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+							Email: f.Config.Addons.ACMEServer.TestingACMEEmail,
+							APIToken: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "non-existent-secret",
+								},
+								Key: "test",
+							},
+						},
+					},
+				},
+			}))
+		By("Creating an Issuer")
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, acmeIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			acmeIssuer.Name,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionFalse,
+				Reason: "InvalidSolver",
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should mark as not ready if ACME issuer secret does nat have specified key", func(testingCtx context.Context) {
+		secretName := "test-secret"
+
+		keyBytes := []byte("")
+		s := gen.Secret(secretName,
+			gen.SetSecretNamespace(f.Namespace.Name),
+			gen.SetSecretData(map[string][]byte{
+				"key": keyBytes,
+			}))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, s, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(f.Config.Addons.ACMEServer.TestingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMEPrivKeyRef(f.Config.Addons.ACMEServer.TestingACMEPrivateKey),
+			gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+							Email: f.Config.Addons.ACMEServer.TestingACMEEmail,
+							APIToken: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: secretName,
+								},
+								Key: "test",
+							},
+						},
+					},
+				},
+			}))
+		By("Creating an Issuer")
+		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, acmeIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			acmeIssuer.Name,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionFalse,
+				Reason: "InvalidSolver",
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, s.Name, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
