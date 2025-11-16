@@ -24,9 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cert-manager/cert-manager/internal/test/paths"
-	"github.com/cert-manager/cert-manager/test/apiserver"
-	webhooktesting "github.com/cert-manager/cert-manager/test/webhook"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
@@ -41,6 +38,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/cert-manager/cert-manager/internal/test/paths"
+	"github.com/cert-manager/cert-manager/test/apiserver"
+	webhooktesting "github.com/cert-manager/cert-manager/test/webhook"
 )
 
 // NOTE: all functions that return a StopFunc should use

@@ -448,3 +448,17 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 
 	return el
 }
+
+// func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+// 	var el field.ErrorList
+// 	if crt.Renewal != nil {
+// 		switch crt.Renewal.Policy {
+// 			case internalcmapi.RenewBefore, internalcmapi.Disabled:
+// 			// do nothing
+// 			case internalcmapi.EarliestWindow:
+// 				el = append(el, field.NotSupported(fldPath.Child("renewal", "policy"), fmt.Sprintf("")))
+// 			default:
+// 				el = append(el, )
+// 		}
+// 	}
+// }

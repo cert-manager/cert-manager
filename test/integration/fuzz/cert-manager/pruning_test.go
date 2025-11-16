@@ -19,10 +19,11 @@ package install
 import (
 	"testing"
 
+	crdfuzz "github.com/munnerz/crd-schema-fuzz"
+
 	cmfuzzer "github.com/cert-manager/cert-manager/internal/apis/certmanager/fuzzer"
 	apitesting "github.com/cert-manager/cert-manager/internal/test/paths"
 	"github.com/cert-manager/cert-manager/pkg/api"
-	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 )
 
 func TestPruneTypes(t *testing.T) {

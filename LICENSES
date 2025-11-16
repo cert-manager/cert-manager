@@ -154,6 +154,7 @@ github.com/prometheus/client_golang/prometheus,Apache-2.0
 github.com/prometheus/client_model/go,Apache-2.0
 github.com/prometheus/common,Apache-2.0
 github.com/prometheus/procfs,Apache-2.0
+github.com/robfig/cron/v3,MIT
 github.com/ryanuber/go-glob,MIT
 github.com/sosodev/duration,MIT
 github.com/spf13/cobra,Apache-2.0
