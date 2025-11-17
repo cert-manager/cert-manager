@@ -36,7 +36,6 @@ import (
 // +kubebuilder:selectablefield:JSONPath=.spec.issuerRef.group
 // +kubebuilder:selectablefield:JSONPath=.spec.issuerRef.kind
 // +kubebuilder:selectablefield:JSONPath=.spec.issuerRef.name
-// +kubebuilder:selectablefield:JSONPath=.spec.privateKey.algorithm
 // +kubebuilder:subresource:status
 
 // A Certificate resource should be created to ensure an up to date and signed

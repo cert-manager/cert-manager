@@ -825,7 +825,6 @@ spec:
     - jsonPath: .spec.issuerRef.group
     - jsonPath: .spec.issuerRef.kind
     - jsonPath: .spec.issuerRef.name
-    - jsonPath: .spec.privateKey.algorithm
     served: true
     storage: true
     subresources:
