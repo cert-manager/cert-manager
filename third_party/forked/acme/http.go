@@ -212,7 +212,7 @@ func (c *Client) post(ctx context.Context, key crypto.Signer, requireKid bool, u
 // and JWK is used only when KID is unavailable: new account endpoint and certificate
 // revocation requests authenticated by a cert key.
 // See jwsEncodeJSON for other details.
-func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, requiresKid bool, url string, body interface{}) (*http.Response, *http.Request, error) {
+func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, requireKid bool, url string, body interface{}) (*http.Response, *http.Request, error) {
 	kid := noKeyID
 	var err error
 	if key == nil {
@@ -221,7 +221,7 @@ func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, requiresKid
 		}
 		key = c.Key
 		kid, err = c.accountKID(ctx)
-		if requiresKid && kid == noKeyID {
+		if requireKid && (kid == noKeyID || err != nil) {
 			return nil, nil, fmt.Errorf("acme: the operation requires account KID but the value is not provided and encountered error while retrieving it from the server: %w", err)
 		}
 	}
