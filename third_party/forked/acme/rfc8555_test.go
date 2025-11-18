@@ -243,7 +243,7 @@ func TestRFC_postKID(t *testing.T) {
 		},
 	}
 	req := json.RawMessage(`{"msg":"ping"}`)
-	res, err := cl.post(ctx, nil /* use kid */, ts.URL+"/post", req, wantStatus(http.StatusOK))
+	res, err := cl.post(ctx, nil /* use kid */, false, ts.URL+"/post", req, wantStatus(http.StatusOK))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -422,8 +422,12 @@ func TestRFC_Register(t *testing.T) {
 	if !didPrompt {
 		t.Error("tos prompt wasn't called")
 	}
-	if v := cl.accountKID(ctx); v != KeyID(okAccount.URI) {
+	v, err := cl.accountKID(ctx)
+	if v != KeyID(okAccount.URI) {
 		t.Errorf("account kid = %q; want %q", v, okAccount.URI)
+	}
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
 	}
 }
 
@@ -559,8 +563,12 @@ func TestRFC_RegisterExternalAccountBinding(t *testing.T) {
 	if !didPrompt {
 		t.Error("tos prompt wasn't called")
 	}
-	if v := cl.accountKID(ctx); v != KeyID(okAccount.URI) {
+	v, err := cl.accountKID(ctx)
+	if v != KeyID(okAccount.URI) {
 		t.Errorf("account kid = %q; want %q", v, okAccount.URI)
+	}
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
 	}
 }
 
@@ -580,7 +588,11 @@ func TestRFC_RegisterExisting(t *testing.T) {
 		t.Errorf("err = %v; want %v", err, ErrAccountAlreadyExists)
 	}
 	kid := KeyID(s.url("/accounts/1"))
-	if v := cl.accountKID(context.Background()); v != kid {
+	v, err := cl.accountKID(context.Background())
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
+	}
+	if v != kid {
 		t.Errorf("account kid = %q; want %q", v, kid)
 	}
 }
