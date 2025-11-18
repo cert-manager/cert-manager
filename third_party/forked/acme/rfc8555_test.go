@@ -1148,3 +1148,44 @@ func TestRFC_ListCertAlternates(t *testing.T) {
 		t.Errorf("ListCertAlternates(/crt2): %v; want nil", crts)
 	}
 }
+
+func TestRFC_RequireKidEndpoints(t *testing.T) {
+	s := newACMEServer()
+	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		var payload struct {
+			OnlyReturnExisting bool `json:"onlyReturnExisting,omitempty"`
+		}
+		decodeJWSRequest(t, &payload, bytes.NewReader(b))
+		if payload.OnlyReturnExisting {
+			// get account req
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			// new account req
+			w.Header().Set("Location", "/account-1")
+			w.Write([]byte(`{"status":"valid"}`))
+		}
+	})
+	s.start()
+	defer s.close()
+
+	tests := []struct {
+		name string
+		op   func(client *Client) error
+	}{
+		{"new-order", func(cl *Client) error {
+			_, err := cl.AuthorizeOrder(context.Background(), DomainIDs("example.org"))
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cl := &Client{Key: testKeyEC, DirectoryURL: s.url("/")}
+			err := tt.op(cl)
+			expected := "acme: the operation requires account KID but the value is not provided and failed to obtain it from the server: 400 : 400 Bad Request"
+			if err == nil || err.Error() != expected {
+				t.Errorf("err: %v; want %v", err, expected)
+			}
+		})
+	}
+}
