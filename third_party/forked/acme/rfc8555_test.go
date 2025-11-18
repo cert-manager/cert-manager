@@ -1173,8 +1173,32 @@ func TestRFC_RequireKidEndpoints(t *testing.T) {
 		name string
 		op   func(client *Client) error
 	}{
-		{"new-order", func(cl *Client) error {
+		{"AuthorizeOrder", func(cl *Client) error {
 			_, err := cl.AuthorizeOrder(context.Background(), DomainIDs("example.org"))
+			return err
+		}},
+		{"GetOrder", func(cl *Client) error {
+			_, err := cl.GetOrder(context.Background(), s.url("/orders/1"))
+			return err
+		}},
+		{"WaitOrder", func(cl *Client) error {
+			_, err := cl.WaitOrder(context.Background(), s.url("/orders/1"))
+			return err
+		}},
+		{"CreateOrderCert", func(cl *Client) error {
+			q := &x509.CertificateRequest{
+				Subject: pkix.Name{CommonName: "example.org"},
+			}
+			csr, err := x509.CreateCertificateRequest(rand.Reader, q, testKeyEC)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, _, err = cl.CreateOrderCert(context.Background(), s.url("/pleaseissue"), csr, true)
+			return err
+		}},
+		{"ListCertAlternates", func(cl *Client) error {
+			_, err := cl.ListCertAlternates(context.Background(), s.url("/crt"))
 			return err
 		}},
 	}
