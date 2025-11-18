@@ -1119,6 +1119,11 @@ func TestRFC_AlreadyRevokedCert(t *testing.T) {
 
 func TestRFC_ListCertAlternates(t *testing.T) {
 	s := newACMEServer()
+	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", s.url("/accounts/1"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "valid"}`))
+	})
 	s.handle("/crt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/pem-certificate-chain")
 		w.Header().Add("Link", `<https://example.com/crt/2>;rel="alternate"`)
