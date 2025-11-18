@@ -1201,12 +1201,40 @@ func TestRFC_RequireKidEndpoints(t *testing.T) {
 			_, err := cl.ListCertAlternates(context.Background(), s.url("/crt"))
 			return err
 		}},
+		{"Authorize", func(cl *Client) error {
+			_, err := cl.Authorize(context.Background(), s.url("example.com"))
+			return err
+		}},
+		{"AuthorizeIP", func(cl *Client) error {
+			_, err := cl.AuthorizeIP(context.Background(), s.url("1.1.1.1"))
+			return err
+		}},
+		{"GetAuthorization", func(cl *Client) error {
+			_, err := cl.GetAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"RevokeAuthorization", func(cl *Client) error {
+			err := cl.RevokeAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"WaitAuthorization", func(cl *Client) error {
+			_, err := cl.WaitAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"GetChallenge", func(cl *Client) error {
+			_, err := cl.GetChallenge(context.Background(), s.url("/chall/1"))
+			return err
+		}},
+		{"Accept", func(cl *Client) error {
+			_, err := cl.Accept(context.Background(), &Challenge{Type: "http-01", URI: "/chall/1", Token: "test"})
+			return err
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := &Client{Key: testKeyEC, DirectoryURL: s.url("/")}
 			err := tt.op(cl)
-			expected := "acme: the operation requires account KID but the value is not provided and failed to obtain it from the server: 400 : 400 Bad Request"
+			expected := "acme: the operation requires account KID but the value is not provided and encountered error while retrieving it from the server: 400 : 400 Bad Request"
 			if err == nil || err.Error() != expected {
 				t.Errorf("err: %v; want %v", err, expected)
 			}

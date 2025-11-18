@@ -222,7 +222,7 @@ func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, requiresKid
 		key = c.Key
 		kid, err = c.accountKID(ctx)
 		if requiresKid && kid == noKeyID {
-			return nil, nil, fmt.Errorf("acme: the operation requires account KID but the value is not provided and failed to obtain it from the server: %w", err)
+			return nil, nil, fmt.Errorf("acme: the operation requires account KID but the value is not provided and encountered error while retrieving it from the server: %w", err)
 		}
 	}
 	nonce, err := c.popNonce(ctx, url)
