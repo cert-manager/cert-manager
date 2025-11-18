@@ -821,6 +821,10 @@ spec:
                 type: integer
             type: object
         type: object
+    selectableFields:
+    - jsonPath: .spec.issuerRef.group
+    - jsonPath: .spec.issuerRef.kind
+    - jsonPath: .spec.issuerRef.name
     served: true
     storage: true
     subresources:
