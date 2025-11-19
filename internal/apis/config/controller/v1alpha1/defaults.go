@@ -176,6 +176,7 @@ var (
 		"-kubectl.kubernetes.io/",
 		"-fluxcd.io/",
 		"-argocd.argoproj.io/",
+		"-kapp.k14s.io/",
 	}
 )
 
