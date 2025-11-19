@@ -535,6 +535,52 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingressClassName",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey:                "issuer-name",
+						cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey: "cert-ing-class-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassNameOverride: "cert-ing-class-name",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and valid secret template annotation",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
@@ -4257,6 +4303,77 @@ func Test_isDeletedInForeground(t *testing.T) {
 			}
 		}
 	})
+}
+
+func Test_setIssuerSpecificConfig(t *testing.T) {
+	tests := []struct {
+		name               string
+		ingress            *networkingv1.Ingress
+		expectedCertAnnots map[string]string
+	}{
+		{
+			name: "should set ingressClassName override annotation",
+			ingress: buildIngress("test-ingress", gen.DefaultTestNamespace, map[string]string{
+				cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey: "cert-ing-class-name",
+			}),
+			expectedCertAnnots: map[string]string{
+				cmacme.ACMECertificateHTTP01IngressClassNameOverride: "cert-ing-class-name",
+			},
+		},
+		{
+			name: "should set ingress class override annotation",
+			ingress: buildIngress("test-ingress", gen.DefaultTestNamespace, map[string]string{
+				cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "cert-ing",
+			}),
+			expectedCertAnnots: map[string]string{
+				cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+			},
+		},
+		{
+			name: "should not set annotation when ingressClassName value is empty",
+			ingress: buildIngress("test-ingress", gen.DefaultTestNamespace, map[string]string{
+				cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey: "",
+			}),
+			expectedCertAnnots: nil,
+		},
+		{
+			name: "should not set annotation when ingress class value is empty",
+			ingress: buildIngress("test-ingress", gen.DefaultTestNamespace, map[string]string{
+				cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "",
+			}),
+			expectedCertAnnots: nil,
+		},
+		{
+			name: "should set edit-in-place annotations",
+			ingress: buildIngress("test-ingress", gen.DefaultTestNamespace, map[string]string{
+				cmacme.IngressEditInPlaceAnnotationKey: "true",
+			}),
+			expectedCertAnnots: map[string]string{
+				cmacme.ACMECertificateHTTP01IngressNameOverride: "test-ingress",
+				cmapi.IssueTemporaryCertificateAnnotation:       "true",
+			},
+		},
+		{
+			name:               "should handle nil annotations",
+			ingress:            buildIngress("test-ingress", gen.DefaultTestNamespace, nil),
+			expectedCertAnnots: nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			crt := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-cert",
+					Namespace: gen.DefaultTestNamespace,
+				},
+			}
+
+			setIssuerSpecificConfig(crt, test.ingress)
+
+			assert.Equal(t, test.expectedCertAnnots, crt.Annotations, "Certificate annotations do not match expected")
+		})
+	}
 }
 
 func TestMergeAnnotations(t *testing.T) {

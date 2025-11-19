@@ -152,7 +152,45 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"should return an error if both ingress class and name override annotations are set": {
+		"should override the ingressClassName to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptr.To("test-ingressclassname-to-override"),
+						},
+					},
+				},
+			},
+		},
+		"should return an error if both ingress name and ingress class override annotations are set": {
 			acmeClient: basicACMEClient,
 			issuer: &cmapi.Issuer{
 				Spec: cmapi.IssuerSpec{
@@ -168,6 +206,91 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					Annotations: map[string]string{
 						cmacme.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
 						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress name and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if all ingress name, ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 					},
 				},
 				Spec: cmacme.OrderSpec{

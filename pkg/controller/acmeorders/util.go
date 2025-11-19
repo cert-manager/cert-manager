@@ -151,14 +151,27 @@ func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMECha
 
 	manualIngressName, hasManualIngressName := o.Annotations[cmacme.ACMECertificateHTTP01IngressNameOverride]
 	manualIngressClass, hasManualIngressClass := o.Annotations[cmacme.ACMECertificateHTTP01IngressClassOverride]
-	// don't allow both override annotations to be specified at once
-	if hasManualIngressName && hasManualIngressClass {
-		return fmt.Errorf("both ingress name and ingress class overrides specified - only one may be specified at a time")
+	manualIngressClassName, hasManualIngressClassName := o.Annotations[cmacme.ACMECertificateHTTP01IngressClassNameOverride]
+
+	// only one of override annotations may be specified at once
+	numOverrides := 0
+	if hasManualIngressName {
+		numOverrides++
+	}
+	if hasManualIngressClass {
+		numOverrides++
+	}
+	if hasManualIngressClassName {
+		numOverrides++
+	}
+	if numOverrides > 1 {
+		return fmt.Errorf("may not specify more than one of: name, class, ingressClassName override annotations")
 	}
 	// if an override annotation is specified, clear out the existing solver
 	// config
-	if hasManualIngressClass || hasManualIngressName {
+	if hasManualIngressClass || hasManualIngressClassName || hasManualIngressName {
 		s.HTTP01.Ingress.Class = nil
+		s.HTTP01.Ingress.IngressClassName = nil
 		s.HTTP01.Ingress.Name = ""
 	}
 	if hasManualIngressName {
@@ -167,6 +180,10 @@ func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMECha
 	if hasManualIngressClass {
 		s.HTTP01.Ingress.Class = &manualIngressClass
 	}
+	if hasManualIngressClassName {
+		s.HTTP01.Ingress.IngressClassName = &manualIngressClassName
+	}
+
 	return nil
 }
 
