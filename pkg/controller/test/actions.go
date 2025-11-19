@@ -17,10 +17,10 @@ limitations under the License.
 package test
 
 import (
-	"fmt"
-
 	"github.com/google/go-cmp/cmp"
 	coretesting "k8s.io/client-go/testing"
+
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 // ActionMatchFn is a type of custom matcher for two Actions.
@@ -78,7 +78,7 @@ func (a *action) Action() coretesting.Action {
 
 // Matches compares action.action with another Action.
 func (a *action) Matches(act coretesting.Action) error {
-	diff := cmp.Diff(a.action, act,
+	return testutil.Diff(a.action, act,
 		// We ignore differences in .ManagedFields since the expected object does not have them.
 		// FIXME: don't ignore this field
 		cmp.FilterPath(func(p cmp.Path) bool {
@@ -86,8 +86,4 @@ func (a *action) Matches(act coretesting.Action) error {
 			return p.Last().String() == ".ManagedFields"
 		}, cmp.Ignore()),
 	)
-	if diff != "" {
-		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", diff)
-	}
-	return nil
 }
