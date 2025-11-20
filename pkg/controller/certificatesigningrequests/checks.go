@@ -29,16 +29,10 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-func (c *Controller) handleGenericIssuer(obj interface{}) {
+func (c *Controller) handleGenericIssuer(iss cmapi.GenericIssuer) {
 	log := c.log.WithName("handleGenericIssuer")
-
-	iss, ok := obj.(cmapi.GenericIssuer)
-	if !ok {
-		log.Error(nil, "object does not implement GenericIssuer")
-		return
-	}
-
 	log = logf.WithResource(log, iss)
+
 	crs, err := c.certificateSigningRequestsForGenericIssuer(iss)
 	if err != nil {
 		log.Error(err, "error looking up certificate signing requests observing issuer or clusterissuer")

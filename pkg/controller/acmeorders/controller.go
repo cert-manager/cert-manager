@@ -120,26 +120,24 @@ func NewController(
 		clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
 		if _, err := clusterIssuerInformer.Informer().AddEventHandler(
-			&controllerpkg.BlockingEventHandler{WorkFunc: handleGenericIssuerFunc(queue, orderLister)},
+			controllerpkg.BlockingEventHandler(handleGenericIssuerFunc(queue, orderLister)),
 		); err != nil {
 			return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 		}
 	}
 
 	// register handler functions
-	if _, err := orderInformer.Informer().AddEventHandler(
-		&controllerpkg.QueuingEventHandler{Queue: queue},
-	); err != nil {
+	if _, err := orderInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 	if _, err := issuerInformer.Informer().AddEventHandler(
-		&controllerpkg.BlockingEventHandler{WorkFunc: handleGenericIssuerFunc(queue, orderLister)},
+		controllerpkg.BlockingEventHandler(handleGenericIssuerFunc(queue, orderLister)),
 	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, orderGvk, orderGetterFunc(orderLister)),
-	}); err != nil {
+	if _, err := challengeInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
+		controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, orderGvk, orderGetterFunc(orderLister)),
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

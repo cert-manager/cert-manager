@@ -61,7 +61,7 @@ func NewController(ctx *controllerpkg.Context) (*controller, workqueue.TypedRate
 	// Reconcile over all Certificate events. We do _not_ reconcile on Secret
 	// events that are related to Certificates. It is the responsibility of the
 	// Certificates controllers to update accordingly.
-	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

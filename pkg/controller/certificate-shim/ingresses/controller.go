@@ -23,7 +23,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -70,9 +69,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// to do some cleanup, we would use a finalizer, and the cleanup logic would
 	// be triggered by the "Updated" event when the object gets marked for
 	// deletion.
-	if _, err := ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
-		Queue: queue,
-	}); err != nil {
+	if _, err := ingressInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -85,9 +82,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	//
 	// We want to immediately recreate a Certificate when the Certificate is
 	// deleted.
-	if _, err := cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificateHandler(queue),
-	}); err != nil {
+	if _, err := cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
+		certificateHandler(queue),
+	)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -124,14 +121,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 //	    name: ingress-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj interface{}) {
-	return func(obj interface{}) {
-		cert, ok := obj.(*cmapi.Certificate)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("not a Certificate object: %#v", obj))
-			return
-		}
-
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(*cmapi.Certificate) {
+	return func(cert *cmapi.Certificate) {
 		ingress := metav1.GetControllerOf(cert)
 		if ingress == nil {
 			// No controller should care about orphans being deleted or
