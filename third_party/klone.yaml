@@ -11,5 +11,5 @@ targets:
     - folder_name: acme
       repo_url: https://github.com/cert-manager/crypto
       repo_ref: acme-profiles
-      repo_hash: 20ccc126e2ac0b2d9da2e78f84f5bb7649d8100a
+      repo_hash: 6e8321683b5435259ff5dcb6b85c0cbe535d6e5b
       repo_path: acme

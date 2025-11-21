@@ -128,7 +128,7 @@ func wantStatus(codes ...int) resOkay {
 func (c *Client) get(ctx context.Context, url string, ok resOkay) (*http.Response, error) {
 	retry := c.retryTimer()
 	for {
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -228,7 +228,7 @@ func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, url string,
 	if err != nil {
 		return nil, nil, err
 	}
-	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(b))
 	if err != nil {
 		return nil, nil, err
 	}
