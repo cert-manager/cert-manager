@@ -1006,11 +1006,17 @@ func TestRFC_WaitOrderError(t *testing.T) {
 	s.handle("/orders/1", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Location", s.url("/orders/1"))
 		w.WriteHeader(http.StatusOK)
-		s := StatusPending
 		if count > 0 {
-			s = StatusInvalid
+			// https://www.rfc-editor.org/rfc/rfc8555#section-7.3.3
+			errorData := `{
+				"type": "urn:ietf:params:acme:error:userActionRequired",
+				"detail": "Terms of service have changed",
+				"instance": "https://example.com/acme/agreement/?token=W8Ih3PswD-8"
+			}`
+			fmt.Fprintf(w, `{"status": %q, "error": %s}`, StatusInvalid, errorData)
+		} else {
+			fmt.Fprintf(w, `{"status": %q}`, StatusPending)
 		}
-		fmt.Fprintf(w, `{"status": %q}`, s)
 		count++
 	})
 	s.start()
@@ -1030,6 +1036,13 @@ func TestRFC_WaitOrderError(t *testing.T) {
 	}
 	if e.Status != StatusInvalid {
 		t.Errorf("e.Status = %q; want %q", e.Status, StatusInvalid)
+	}
+	if e.Problem == nil {
+		t.Errorf("e.Problem = nil")
+	}
+	expectedProbType := "urn:ietf:params:acme:error:userActionRequired"
+	if e.Problem.ProblemType != expectedProbType {
+		t.Errorf("e.Problem.ProblemType = %q; want %q", e.Problem.ProblemType, expectedProbType)
 	}
 }
 
