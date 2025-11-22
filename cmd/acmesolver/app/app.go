@@ -23,10 +23,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/spf13/cobra"
 	"k8s.io/component-base/logs"
+
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func NewACMESolverCommand(_ context.Context) *cobra.Command {

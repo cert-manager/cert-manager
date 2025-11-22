@@ -22,16 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/segmentio/encoding/json"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +32,16 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
+	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // TestTriggerController performs a basic test to ensure that the trigger

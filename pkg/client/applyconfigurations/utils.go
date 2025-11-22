@@ -124,6 +124,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.CertificateKeystoresApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificatePrivateKey"):
 		return &applyconfigurationscertmanagerv1.CertificatePrivateKeyApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRenewal"):
+		return &applyconfigurationscertmanagerv1.CertificateRenewalApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRenewalWindows"):
+		return &applyconfigurationscertmanagerv1.CertificateRenewalWindowsApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequest"):
 		return &applyconfigurationscertmanagerv1.CertificateRequestApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateRequestCondition"):

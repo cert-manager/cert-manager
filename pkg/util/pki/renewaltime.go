@@ -17,13 +17,24 @@ limitations under the License.
 package pki
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
+type RenewalResult struct {
+	WindowError      error
+	FinalRenewalTime *metav1.Time
+	AfterExpiry      bool
+}
+
 // RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
-type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32) *metav1.Time
+type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1.CertificateRenewal) RenewalResult
 
 // RenewalTime calculates renewal time for a certificate.
 // If renewBefore is non-nil and less than the certificate's lifetime, renewal
@@ -32,7 +43,7 @@ type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32) *metav
 // will be the computed period before expiry based on the renewBeforePercentage
 // value and certificate lifetime.
 // Default renewal time is 2/3 through certificate's lifetime.
-func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32) *metav1.Time {
+func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *apiv1.CertificateRenewal) RenewalResult {
 	// 1. Calculate how long before expiry a cert should be renewed
 	actualDuration := notAfter.Sub(notBefore)
 
@@ -51,7 +62,32 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	// causing Certificates to not be automatically renewed. See
 	// https://github.com/cert-manager/cert-manager/pull/4399.
 	rt := metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second))
-	return &rt
+
+	// Construct a default renewal policy if none is mentioned. Note that this conditional would go away once we remove the existing behavior.
+	if renewalSpec == nil {
+		renewalSpec = constructDefaultRenewalPolicy()
+	}
+
+	var res RenewalResult
+
+	// 1. If renewal policy is defined and disabled
+	switch renewalSpec.Policy {
+	case apiv1.Disabled:
+		return RenewalResult{
+			FinalRenewalTime: nil,
+		}
+	case apiv1.RenewBefore:
+		res = applyRenewBeforeWithWindows(notAfter, notBefore, rt.Time, renewalSpec.Windows)
+	}
+
+	return res
+}
+
+func constructDefaultRenewalPolicy() *apiv1.CertificateRenewal {
+	r := new(apiv1.CertificateRenewal)
+
+	r.Policy = apiv1.RenewBefore
+	return r
 }
 
 // RenewBefore calculates how far before expiry a certificate should be renewed.
@@ -73,4 +109,142 @@ func RenewBefore(actualDuration time.Duration, renewBefore *metav1.Duration, ren
 
 	// Otherwise, default to renewing 2/3 through certificate's lifetime.
 	return actualDuration / 3
+}
+
+// applyRenewBeforeWithWindows calculates effective renewal time with windows in it. We want the logic to be as follows
+func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Time, windows []apiv1.CertificateRenewalWindows) RenewalResult {
+	var (
+		bestBefore *time.Time
+		bestAfter  *time.Time
+	)
+
+	if len(windows) == 0 {
+		return RenewalResult{
+			FinalRenewalTime: &metav1.Time{Time: desiredRenewalTime},
+			WindowError:      nil,
+		}
+	}
+
+	for _, w := range windows {
+		loc := time.UTC
+		if w.Timezone != "" {
+			if tz, err := time.LoadLocation(w.Timezone); err == nil {
+				loc = tz
+			} else {
+			}
+		}
+
+		cronSched, err := util.CronParse(w.Cron, loc.String())
+		if err != nil {
+
+		}
+
+		// Any renewal logic should only start after notBefore and before notAfter. Bounds are [notBefore - dur, notAfter + dur)
+		searchMin := notBefore.Add(-w.Duration.Duration)
+		searchMax := notAfter.Add(w.Duration.Duration)
+
+		findBeforeDesired(cronSched, searchMin, desiredRenewalTime, bestBefore, w.Duration.Duration)
+		findAfterDesired(cronSched, searchMax, desiredRenewalTime, bestAfter, w.Duration.Duration)
+	}
+
+	if bestBefore != nil {
+		return RenewalResult{
+			FinalRenewalTime: &metav1.Time{Time: *bestBefore},
+			WindowError:      nil,
+		}
+	}
+
+	if bestAfter != nil {
+		return RenewalResult{
+			FinalRenewalTime: &metav1.Time{Time: *bestAfter},
+			WindowError:      nil,
+		}
+	}
+
+	return RenewalResult{
+		FinalRenewalTime: nil,
+		WindowError:      fmt.Errorf("cannot find a time with the given windows"),
+	}
+}
+
+// bsFindEarliestWindowBeforeDesired finds a time that is just before the desiredRenewalTime using binary search. We use binary search
+// to avoid looping infinitely.
+func bsFindEarliestWindowBeforeDesired(sched cron.Schedule, minTime, maxTime time.Time) *time.Time {
+	if !minTime.Before(maxTime) {
+		return nil
+	}
+
+	// If the first instance that matches the cron is after the max bound then we don't have a earliest window before desired renewal.
+	if sched.Next(minTime.Add(-time.Second)).After(maxTime) {
+		return nil
+	}
+
+	low := minTime
+	high := maxTime
+
+	// we need to find a breaking condition.
+	for high.Sub(low) > time.Second {
+		mid := low.Add(high.Sub(low) / 2)
+		next := sched.Next(mid)
+
+		if next.After(maxTime) {
+			high = mid
+		} else {
+			low = mid
+		}
+	}
+
+	last := sched.Next(low.Add(-time.Second))
+	if last.After(maxTime) {
+		return nil
+	}
+
+	return &last
+}
+
+func findBeforeDesired(cronSched cron.Schedule, searchMin, desiredRenewalTime time.Time, bestBefore *time.Time, duration time.Duration) {
+	lastStart := bsFindEarliestWindowBeforeDesired(cronSched, searchMin, desiredRenewalTime)
+	if lastStart != nil {
+		end := lastStart.Add(duration)
+
+		var candidateBefore time.Time
+		if !desiredRenewalTime.Before(*lastStart) && !desiredRenewalTime.After(end) {
+			candidateBefore = desiredRenewalTime
+		} else {
+			candidateBefore = end
+		}
+
+		if !candidateBefore.After(desiredRenewalTime) {
+			if bestBefore == nil || candidateBefore.After(*bestBefore) {
+				c := candidateBefore
+				bestBefore = &c
+			}
+		}
+	}
+}
+
+func findAfterDesired(cronSched cron.Schedule, searchMax, desiredRenewalTime time.Time, bestAfter *time.Time, duration time.Duration) {
+	start := cronSched.Next(desiredRenewalTime.Add(-time.Second))
+	if start.After(searchMax) {
+		return
+	}
+
+	end := start.Add(duration)
+
+	var candidateAfter time.Time
+	switch {
+	case !desiredRenewalTime.Before(start) && desiredRenewalTime.After(end):
+		candidateAfter = desiredRenewalTime
+	case desiredRenewalTime.Before(start):
+		candidateAfter = start
+	default:
+		candidateAfter = time.Time{}
+	}
+
+	if !candidateAfter.IsZero() && !candidateAfter.Before(desiredRenewalTime) {
+		if bestAfter == nil || candidateAfter.Before(*bestAfter) {
+			c := candidateAfter
+			bestAfter = &c
+		}
+	}
 }

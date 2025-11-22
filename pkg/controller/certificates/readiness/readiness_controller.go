@@ -181,12 +181,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 
 		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
-		crt.Status.RenewalTime = renewalTime
+		crt.Status.RenewalTime = renewalTime.FinalRenewalTime
 
 	default:
 		// clear status fields if the secret does not have any data

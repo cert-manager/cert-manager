@@ -19,12 +19,11 @@ package certificates
 import (
 	"context"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 
 	. "github.com/onsi/ginkgo/v2"
 )

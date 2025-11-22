@@ -24,10 +24,6 @@ import (
 	"strings"
 	"time"
 
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -43,6 +39,10 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

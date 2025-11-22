@@ -22,6 +22,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
+	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
@@ -29,9 +32,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/spf13/cobra"
-
-	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 )
 
 const componentController = "cainjector"

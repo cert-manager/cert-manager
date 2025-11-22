@@ -20,6 +20,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/pflag"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
+	cliflag "k8s.io/component-base/cli/flag"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	configscheme "github.com/cert-manager/cert-manager/internal/apis/config/controller/scheme"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
@@ -28,10 +33,6 @@ import (
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/spf13/pflag"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
-	cliflag "k8s.io/component-base/cli/flag"
 )
 
 // ControllerFlags defines options that can only be configured via flags.

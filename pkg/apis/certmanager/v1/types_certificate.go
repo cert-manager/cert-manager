@@ -208,6 +208,12 @@ type CertificateSpec struct {
 	// +optional
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 
+	// `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+	// `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`. If the policy is
+	// `Disabled` or `EarliestWindow` then it ignores those fields.
+	// +optional
+	Renewal *CertificateRenewal `json:"renewal,omitempty"`
+
 	// Requested DNS subject alternative names.
 	// +optional
 	// +listType=atomic
@@ -587,6 +593,34 @@ const (
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
 )
+
+type CertificateRenewal struct {
+	// `policy` must be one of `Disabled`, `RenewBefore` or `EarleistWindow`.
+	Policy CertificateRenewalPolicy `json:"policy,omitempty"`
+
+	// `windows` mentions the behavior of when the renewal must happen.
+	Windows []CertificateRenewalWindows `json:"windows,omitempty"`
+}
+
+type CertificateRenewalPolicy string
+
+const (
+	EarliestWindow CertificateRenewalPolicy = "EarliestWindow"
+	RenewBefore    CertificateRenewalPolicy = "RenewBefore"
+	Disabled       CertificateRenewalPolicy = "Disabled"
+)
+
+// CertificateRenewalWindows is the definition for renewal windows
+type CertificateRenewalWindows struct {
+	// `timeZone` is IANA compliant timezone.
+	Timezone string `json:"timeZone,omitempty"`
+
+	// `duration` is how long the cron definition must be active.
+	Duration *metav1.Duration `json:"duration,omitempty"`
+
+	// `cron` is a cron compliant string to allow when the renewal should be allowed.
+	Cron string `json:"cron,omitempty"`
+}
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {

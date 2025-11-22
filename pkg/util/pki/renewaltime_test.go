@@ -93,8 +93,8 @@ func TestRenewalTime(t *testing.T) {
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
-			renewalTime := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct)
-			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
+			renewalTime := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct, nil)
+			assert.Equal(t, s.expectedRenewalTime, renewalTime.FinalRenewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime.FinalRenewalTime))
 		})
 	}
 }

@@ -19,10 +19,10 @@ package main
 import (
 	"context"
 
-	"github.com/cert-manager/cert-manager/internal/cmd/util"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/cert-manager/cert-manager/internal/cmd/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/webhook-binary/app"
 )
 
