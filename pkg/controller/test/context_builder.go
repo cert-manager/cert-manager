@@ -256,6 +256,7 @@ func (b *Builder) AllActionsExecuted() error {
 		if a.GetVerb() == "list" || a.GetVerb() == "watch" {
 			continue
 		}
+
 		found := false
 		var err error
 		for i, expA := range missingActions {
@@ -277,6 +278,7 @@ func (b *Builder) AllActionsExecuted() error {
 			found = true
 			break
 		}
+
 		if !found {
 			unexpectedActions = append(unexpectedActions, a)
 
@@ -285,12 +287,15 @@ func (b *Builder) AllActionsExecuted() error {
 			}
 		}
 	}
+
 	for _, a := range missingActions {
 		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
 	}
+
 	for _, a := range unexpectedActions {
 		errs = append(errs, fmt.Errorf("unexpected action: %v", actionToString(a)))
 	}
+
 	return utilerrors.NewAggregate(errs)
 }
 
