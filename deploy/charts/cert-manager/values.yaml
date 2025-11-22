@@ -1021,6 +1021,14 @@ webhook:
   # links.
   enableServiceLinks: false
 
+  # enableClientVerification turns on client verification of requests
+  # made to the webhook server
+  enableClientVerification: false
+  # the client CA file to be used for verification
+  clientCAFile: ""
+  # if provided the subject names to be verified for the given client cert
+  apiserverClientCertSubjects: ""
+
 # +docs:section=CA Injector
 
 cainjector:
