@@ -18,8 +18,10 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"slices"
 	"testing"
 	"time"
@@ -29,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/watch"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	metadatafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -97,9 +100,8 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 	genName := obj.GetGenerateName()
 	if genName != "" {
 		obj.SetName(genName + b.StringGenerator(5))
-		return false, obj.(runtime.Object), nil
 	}
-	return false, obj.(runtime.Object), nil
+	return false, nil, nil
 }
 
 // informerResyncPeriod is the resync period used by the test informers. We
@@ -108,6 +110,73 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 // is the lowest we can go.
 // https://github.com/kubernetes/client-go/blob/5a019202120ab4dd7dfb3788e5cb87269f343ebe/tools/cache/shared_informer.go#L575
 const informerResyncPeriod = time.Second
+
+// populateResourceVersionForWatch sets the ResourceVersion for all watch results where
+// the resource version is missing. The generated ResourceVersion is derived from the hash
+// of the resource.
+// This is required because our controllers use the resource version to determine
+// whether or not a resource was updated.
+func populateResourceVersionForWatch(watcher watch.Interface) watch.Interface {
+	return mutateWatch(watcher, func(in watch.Event) watch.Event {
+		resourceVersion := in.Object.(metav1.Object).GetResourceVersion()
+		if resourceVersion != "" {
+			return in
+		}
+
+		in.Object = in.Object.DeepCopyObject()
+		{
+			obj := in.Object.(metav1.Object)
+			jsonBytes, err := json.Marshal(obj)
+			if err != nil {
+				panic(err)
+			}
+			hash := fnv.New64a()
+			_, _ = hash.Write(jsonBytes)
+			obj.SetResourceVersion(fmt.Sprintf("fake:%d", hash.Sum64()))
+		}
+		return in
+	})
+}
+
+func mutateWatch(w watch.Interface, mutator func(in watch.Event) watch.Event) watch.Interface {
+	fw := &mutatedWatch{
+		incoming: w,
+		doneCh:   make(chan struct{}),
+		closeCh:  make(chan struct{}),
+		result:   make(chan watch.Event),
+		mutator:  mutator,
+	}
+	go fw.loop()
+	return fw
+}
+
+type mutatedWatch struct {
+	incoming watch.Interface
+	closeCh  chan struct{}
+	doneCh   chan struct{}
+	result   chan watch.Event
+	mutator  func(in watch.Event) watch.Event
+}
+
+func (fw *mutatedWatch) ResultChan() <-chan watch.Event {
+	return fw.result
+}
+
+func (fw *mutatedWatch) Stop() {
+	fw.incoming.Stop()
+	close(fw.closeCh)
+	<-fw.doneCh
+}
+
+func (fw *mutatedWatch) loop() {
+	defer close(fw.doneCh)
+	for event := range fw.incoming.ResultChan() {
+		select {
+		case fw.result <- fw.mutator(event):
+		case <-fw.closeCh:
+		}
+	}
+}
 
 // Init will construct a new context for this builder and set default values
 // for any unset fields.
@@ -159,6 +228,27 @@ func (b *Builder) Init() {
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeGWClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeMetadataClient().PrependReactor("create", "*", b.generateNameReactor)
+
+	addResourceVersionToWatch := func(objectTracker coretesting.ObjectTracker) coretesting.WatchReactionFunc {
+		return func(action coretesting.Action) (handled bool, ret watch.Interface, err error) {
+			var opts metav1.ListOptions
+			if watchAction, ok := action.(coretesting.WatchActionImpl); ok {
+				opts = watchAction.ListOptions
+			}
+			gvr := action.GetResource()
+			ns := action.GetNamespace()
+			watch, err := objectTracker.Watch(gvr, ns, opts)
+			if err != nil {
+				return false, nil, err
+			}
+			return true, populateResourceVersionForWatch(watch), nil
+		}
+	}
+	b.FakeKubeClient().PrependWatchReactor("*", addResourceVersionToWatch(b.FakeKubeClient().Tracker()))
+	b.FakeCMClient().PrependWatchReactor("*", addResourceVersionToWatch(b.FakeCMClient().Tracker()))
+	b.FakeGWClient().PrependWatchReactor("*", addResourceVersionToWatch(b.FakeGWClient().Tracker()))
+	b.FakeMetadataClient().PrependWatchReactor("*", addResourceVersionToWatch(b.FakeMetadataClient().Tracker()))
+
 	b.KubeSharedInformerFactory = internalinformers.NewBaseKubeInformerFactory(b.Client, informerResyncPeriod, "")
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)

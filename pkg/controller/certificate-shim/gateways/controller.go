@@ -23,7 +23,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
@@ -54,9 +53,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we
 	// still do it for consistency with the rest of the controllers.
-	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
-		Queue: c.queue,
-	}); err != nil {
+	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -70,9 +67,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	//
 	// Regarding "Deleted" events on Certificates, we requeue the parent Gateway
 	// to immediately recreate the Certificate when the Certificate is deleted.
-	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificateHandler(c.queue),
-	}); err != nil {
+	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(certificateHandler(c.queue)),
+	); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -114,14 +111,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 //	    name: gateway-1
 //	    blockOwnerDeletion: true
 //	    uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj interface{}) {
-	return func(obj interface{}) {
-		crt, ok := obj.(*cmapi.Certificate)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("not a Certificate object: %#v", obj))
-			return
-		}
-
+func certificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(*cmapi.Certificate) {
+	return func(crt *cmapi.Certificate) {
 		ref := metav1.GetControllerOf(crt)
 		if ref == nil {
 			// No controller should care about orphans being deleted or
