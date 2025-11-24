@@ -62,7 +62,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v3.19.2
+tools += helm=v4.0.0
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.34.2
@@ -71,7 +71,7 @@ tools += kubectl=v1.34.2
 tools += kind=v0.30.0
 # https://www.vaultproject.io/downloads
 # renovate: datasource=github-releases packageName=hashicorp/vault
-tools += vault=v1.21.0
+tools += vault=v1.21.1
 # https://github.com/Azure/azure-workload-identity/releases
 # renovate: datasource=github-releases packageName=Azure/azure-workload-identity
 tools += azwi=v1.5.1
@@ -80,7 +80,7 @@ tools += azwi=v1.5.1
 tools += kyverno=v1.16.0
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
-tools += yq=v4.48.2
+tools += yq=v4.49.1
 # https://github.com/ko-build/ko/releases
 # renovate: datasource=github-releases packageName=ko-build/ko
 tools += ko=0.18.0
@@ -95,7 +95,7 @@ tools += trivy=v0.67.2
 tools += ytt=v0.52.1
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.71.2
+tools += rclone=v1.72.0
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.28.0
@@ -152,7 +152,7 @@ tools += klone=v0.2.0
 tools += goreleaser=v2.12.7
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.37.0
+tools += syft=v1.38.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -179,7 +179,7 @@ tools += operator-sdk=v1.42.0
 tools += gh=v2.83.1
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
-tools += preflight=1.14.1
+tools += preflight=1.15.2
 # https://github.com/daixiang0/gci/releases
 # renovate: datasource=github-releases packageName=daixiang0/gci
 tools += gci=v0.13.7
@@ -203,7 +203,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20250910181357-589584f1c912
+tools += openapi-gen=v0.0.0-20251121143641-b6aabc6c6745
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -451,10 +451,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=2114c9dea2844dce6d0ee2d792a9aae846be8cf53d5b19dc2988b5a0e8fec26e
-helm_linux_arm64_SHA256SUM=566e9f3a5a83a81e4b03503ae37e368edd52d699619e8a9bb1fdf21561ae0e88
-helm_darwin_amd64_SHA256SUM=7ef4416cdef4c2d78a09e1c8f07a51e945dc0343c883a46b1f628deab52690b7
-helm_darwin_arm64_SHA256SUM=f0847f899479b66a6dd8d9fcd452e8db2562e4cf3f7de28103f9fcf2b824f1d5
+helm_linux_amd64_SHA256SUM=c77e9e7c1cc96e066bd240d190d1beed9a6b08060b2043ef0862c4f865eca08f
+helm_linux_arm64_SHA256SUM=8c5c77e20cc29509d640e208a6a7d2b7e9f99bb04e5b5fbe22707b72a5235245
+helm_darwin_amd64_SHA256SUM=125233cf943e6def2abc727560c5584e9083308d672d38094bae1cc3e0bfeaa2
+helm_darwin_arm64_SHA256SUM=4f5d367af9e2141b047710539d22b7e5872cdaef788333396077236feb422419
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -489,10 +489,10 @@ $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		$(checkhash_script) $(outfile) $(kind_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-vault_linux_amd64_SHA256SUM=5a91c93a9949ed8863ee4b91cfc30640bc49ab04225f0b1c5a0650c4d6e10171
-vault_linux_arm64_SHA256SUM=0083b02005ad89f6a01773866c6a892194ba27867b5f26ee374a0dfbbfb84c07
-vault_darwin_amd64_SHA256SUM=2e00e327be8141751f7bcc840aad93c8a5428908a4131f17d02d22eab444bcf2
-vault_darwin_arm64_SHA256SUM=fd1b26fcbc78c04c2d76d35a13a9564d450074f2547871b2046ddb95bbd7ea9c
+vault_linux_amd64_SHA256SUM=4088617653eba4ea341b6166130239fcbe42edc7839c7f7c6209d280948769c7
+vault_linux_arm64_SHA256SUM=f83f541e4293289bf1cc3f1e62e41a29a9ce20aeb9a152ada2b00ca42e7e856d
+vault_darwin_amd64_SHA256SUM=d33bb27a0ad194e79c2bed9cad198a1f1319d8ca68bc6c4e6f68212c734cda09
+vault_darwin_arm64_SHA256SUM=add728e2ca2101826de030b4da6de77cee5a61f3c9cde74f5628d63332bea0ab
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -551,10 +551,10 @@ $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DO
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-yq_linux_amd64_SHA256SUM=0ffc35320180d4911bc3a772934da508715e08af444cb33d4d43660065e25bcc
-yq_linux_arm64_SHA256SUM=3c21630fda217239a5b7d718d08f08e02503098230b3abd49195d315a6dcfe45
-yq_darwin_amd64_SHA256SUM=ca06dea96304cbfb1482a177e41e535c87d721f45c553873c97f51c339767c40
-yq_darwin_arm64_SHA256SUM=b3a77a428fda2daced121c937be7f5dfb8107fc62ec506064f1d23bc09415dcb
+yq_linux_amd64_SHA256SUM=897045e4a42933951ea8e143c44ea3f7f8005aa25105c4fbd796c3d61ee163ec
+yq_linux_arm64_SHA256SUM=48e09de3f65cb5de1cdf7ae9ba78676f147be376db2727be5dca8213aa898012
+yq_darwin_amd64_SHA256SUM=9d55c8770be6effdebe26776e531867f9f5f1fe61dc2896a8e4903fae626adf2
+yq_darwin_arm64_SHA256SUM=2798f0b76b78d8c2b6e3796d27145468c2ae094c76c9dfc0d6bb3c7031100714
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -626,10 +626,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=ab9fa5877cee91c64fdfd61a27028a458cf618b39259e5c371dc2ec34a12e415
-rclone_linux_arm64_SHA256SUM=e2e2efc7ed143026352d60216ef0d46d3fa4fe9d647eff1bd929e6fea498e6f1
-rclone_darwin_amd64_SHA256SUM=37e50641cd736de296b8aca8149e607b9923b357d79abb902e89c4cdb1fcc790
-rclone_darwin_arm64_SHA256SUM=d1cea838b618f9b4f15984748502232684e92ff0b90e3c4c8bd91ac21f4d8695
+rclone_linux_amd64_SHA256SUM=f3757aa829828c0f3359301bea25eef4d4fd62de735c47546ee6866c5b5545e2
+rclone_linux_arm64_SHA256SUM=c1669ef42d4ad65e3bb3f2cf0b2acf76cf0cbffefe463349a4f2244d8dbed701
+rclone_darwin_amd64_SHA256SUM=b1abd9e0287b19db435b7182faa0bc05478d6d412b839d7f819dee7ec4d9e5d0
+rclone_darwin_arm64_SHA256SUM=8396a06f793668da6cf0d8cf2e6a2da4c971bcbc7584286ffda7e3bf87f40148
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -658,10 +658,10 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=cd1b6143fb511433d07f29075b4840b712933d7d4d4fc6353b079b59c1cb06cd
-preflight_linux_arm64_SHA256SUM=cd29e198bd54cec46b219fc151b1b9c8fe71c33e7fdab7814862736a309a2a7c
-preflight_darwin_amd64_SHA256SUM=7e03a564cfb1697a6a3179c5d2f6f0a861a14bf4443f553d946f92ac06376b98
-preflight_darwin_arm64_SHA256SUM=216b5f8846b6d3292bb798765a63f935627c36285fcba649ddab535973e70914
+preflight_linux_amd64_SHA256SUM=803684554991d64f8a06ccc7bfdd1f7c7f702921322297adab01da3e9886e5a8
+preflight_linux_arm64_SHA256SUM=d9bf232aa0ad44847e1f5d58143b4699aaa3d136f00a8418aef1404235a2e15a
+preflight_darwin_amd64_SHA256SUM=9b948767e70a973d1e8aa6c8c3f8529582c7cebc8d47b07605626b9552a50633
+preflight_darwin_arm64_SHA256SUM=4d397b6a70c3dc7358bfe669c29efcec334debfa589d6ae68296552094f77dc2
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
