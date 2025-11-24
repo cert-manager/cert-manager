@@ -1396,7 +1396,7 @@ the client CA file to be used for verification
 > ""
 > ```
 
-if provided the subject names to be verified for the given client cert
+Subject names to verify for the client certificate. Multiple values may be supplied as a comma-separated list.
 ### CA Injector
 
 #### **cainjector.enabled** ~ `bool`

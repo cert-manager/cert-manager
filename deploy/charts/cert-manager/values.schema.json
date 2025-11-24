@@ -1738,7 +1738,7 @@
     },
     "helm-values.webhook.apiserverClientCertSubjects": {
       "default": "",
-      "description": "if provided the subject names to be verified for the given client cert",
+      "description": "Subject names to verify for the client certificate. Multiple values may be supplied as a comma-separated list.",
       "type": "string"
     },
     "helm-values.webhook.automountServiceAccountToken": {
