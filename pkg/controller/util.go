@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -30,6 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -113,6 +117,9 @@ func HandleOwnedResourceNamespacedFunc[T metav1.Object](
 // simply queues objects that are added/updated/deleted.
 type QueuingEventHandler struct {
 	Queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+	// Predicates is a list of predicates that must all pass
+	// for the object to be enqueued.
+	Predicates []predicate.TypedPredicate[client.Object]
 }
 
 // Enqueue adds a key for an object to the workqueue.
@@ -130,11 +137,58 @@ func (q *QueuingEventHandler) Enqueue(obj interface{}) {
 
 // OnAdd adds a newly created object to the workqueue.
 func (q *QueuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	log := logf.Log.WithName("QueuingEventHandler").WithValues("event", "OnAdd")
+
+	c := event.TypedCreateEvent[client.Object]{
+		IsInInitialList: isInInitialList,
+	}
+
+	// Pull Object out of the object
+	if o, ok := obj.(client.Object); ok {
+		c.Object = o
+	} else {
+		log.Error(nil, "OnAdd missing Object",
+			"object", obj, "type", fmt.Sprintf("%T", obj))
+		return
+	}
+
+	for _, p := range q.Predicates {
+		if !p.Create(c) {
+			return
+		}
+	}
 	q.Enqueue(obj)
 }
 
 // OnUpdate adds an updated object to the workqueue.
 func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+	log := logf.Log.WithName("QueuingEventHandler").WithValues("event", "OnUpdate")
+
+	u := event.TypedUpdateEvent[client.Object]{}
+
+	if o, ok := oldObj.(client.Object); ok {
+		u.ObjectOld = o
+	} else {
+		log.Error(nil, "OnUpdate missing ObjectOld",
+			"object", oldObj, "type", fmt.Sprintf("%T", oldObj))
+		return
+	}
+
+	// Pull Object out of the object
+	if o, ok := newObj.(client.Object); ok {
+		u.ObjectNew = o
+	} else {
+		log.Error(nil, "OnUpdate missing ObjectNew",
+			"object", newObj, "type", fmt.Sprintf("%T", newObj))
+		return
+	}
+
+	for _, p := range q.Predicates {
+		if !p.Update(u) {
+			return
+		}
+	}
+
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
@@ -143,10 +197,48 @@ func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
 
 // OnDelete adds a deleted object to the workqueue for processing.
 func (q *QueuingEventHandler) OnDelete(obj interface{}) {
-	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-	if ok {
+	log := logf.Log.WithName("QueuingEventHandler").WithValues("event", "OnDelete")
+
+	d := event.TypedDeleteEvent[client.Object]{}
+
+	// Deal with tombstone events by pulling the object out.  Tombstone events wrap the object in a
+	// DeleteFinalStateUnknown struct, so the object needs to be pulled out.
+	// Copied from sample-controller
+	// This should never happen if we aren't missing events, which we have concluded that we are not
+	// and made decisions off of this belief.  Maybe this shouldn't be here?
+	var ok bool
+	if _, ok = obj.(client.Object); !ok {
+		// If the object doesn't have Metadata, assume it is a tombstone object of type DeletedFinalStateUnknown
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			log.Error(nil, "Error decoding objects.  Expected cache.DeletedFinalStateUnknown",
+				"type", fmt.Sprintf("%T", obj),
+				"object", obj)
+			return
+		}
+
+		// Set DeleteStateUnknown to true
+		d.DeleteStateUnknown = true
+
+		// Set obj to the tombstone obj
 		obj = tombstone.Obj
 	}
+
+	// Pull Object out of the object
+	if o, ok := obj.(client.Object); ok {
+		d.Object = o
+	} else {
+		log.Error(nil, "OnDelete missing Object",
+			"object", obj, "type", fmt.Sprintf("%T", obj))
+		return
+	}
+
+	for _, p := range q.Predicates {
+		if !p.Delete(d) {
+			return
+		}
+	}
+
 	q.Enqueue(obj)
 }
 

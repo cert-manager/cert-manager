@@ -23,14 +23,19 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -135,7 +140,34 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	}
 
 	// register handler functions
-	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+		Queue: c.queue,
+		Predicates: []predicate.TypedPredicate[client.Object]{
+			// Ignore changes to the Challenge.Status.Reason field because the
+			// this often contains unique strings (e.g. error messages from the
+			// DNS API server containing trace IDs) which would result in
+			// unneeded re-processing of Challenges.
+			predicate.TypedFuncs[client.Object]{
+				UpdateFunc: func(e event.TypedUpdateEvent[client.Object]) bool {
+					oldCh, okOld := e.ObjectOld.(*cmacme.Challenge)
+					newCh, okNew := e.ObjectNew.(*cmacme.Challenge)
+					if !okOld || !okNew {
+						// if we can't cast the objects, fall back to processing the update
+						return true
+					}
+					// ignore updates where only the Status.Reason field has changed
+					if oldCh.Status.Reason != newCh.Status.Reason {
+						oldChCopy := oldCh.DeepCopy()
+						newChCopy := newCh.DeepCopy()
+						oldChCopy.Status.Reason = ""
+						newChCopy.Status.Reason = ""
+						return !apiequality.Semantic.DeepEqual(oldChCopy, newChCopy)
+					}
+					return true
+				},
+			},
+		},
+	}); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
