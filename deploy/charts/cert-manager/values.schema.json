@@ -1602,8 +1602,14 @@
         "affinity": {
           "$ref": "#/$defs/helm-values.webhook.affinity"
         },
+        "apiserverClientCertSubjects": {
+          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubjects"
+        },
         "automountServiceAccountToken": {
           "$ref": "#/$defs/helm-values.webhook.automountServiceAccountToken"
+        },
+        "clientCAFile": {
+          "$ref": "#/$defs/helm-values.webhook.clientCAFile"
         },
         "config": {
           "$ref": "#/$defs/helm-values.webhook.config"
@@ -1613,6 +1619,9 @@
         },
         "deploymentAnnotations": {
           "$ref": "#/$defs/helm-values.webhook.deploymentAnnotations"
+        },
+        "enableClientVerification": {
+          "$ref": "#/$defs/helm-values.webhook.enableClientVerification"
         },
         "enableServiceLinks": {
           "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
@@ -1727,9 +1736,19 @@
       "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
       "type": "object"
     },
+    "helm-values.webhook.apiserverClientCertSubjects": {
+      "default": "",
+      "description": "Subject names to verify for the client certificate. Multiple values may be supplied as a comma-separated list.",
+      "type": "string"
+    },
     "helm-values.webhook.automountServiceAccountToken": {
       "description": "Automounting API credentials for a particular pod.",
       "type": "boolean"
+    },
+    "helm-values.webhook.clientCAFile": {
+      "default": "",
+      "description": "the client CA file to be used for verification",
+      "type": "string"
     },
     "helm-values.webhook.config": {
       "default": {},
@@ -1752,6 +1771,11 @@
     "helm-values.webhook.deploymentAnnotations": {
       "description": "Optional additional annotations to add to the webhook Deployment.",
       "type": "object"
+    },
+    "helm-values.webhook.enableClientVerification": {
+      "default": false,
+      "description": "enableClientVerification turns on client verification of requests made to the webhook server",
+      "type": "boolean"
     },
     "helm-values.webhook.enableServiceLinks": {
       "default": false,

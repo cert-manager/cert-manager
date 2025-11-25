@@ -72,6 +72,9 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(i
 	if err := sharedv1alpha1.Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
+	out.EnableClientVerification = in.EnableClientVerification
+	out.ClientCAPath = in.ClientCAPath
+	out.ClientCertificateSubjects = *(*[]string)(unsafe.Pointer(&in.ClientCertificateSubjects))
 	return nil
 }
 
@@ -100,6 +103,9 @@ func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(i
 	if err := sharedv1alpha1.Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
+	out.EnableClientVerification = in.EnableClientVerification
+	out.ClientCAPath = in.ClientCAPath
+	out.ClientCertificateSubjects = *(*[]string)(unsafe.Pointer(&in.ClientCertificateSubjects))
 	return nil
 }
 

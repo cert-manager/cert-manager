@@ -19,10 +19,13 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"slices"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,6 +104,21 @@ type Server struct {
 	// MetricsMinTLSVersion is the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MetricsMinTLSVersion string
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool
+
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAPath string
+
+	// ClientCertificateSubjects is a list of expected subject names for client
+	// certificates used by callers (for example, the apiserver). Each entry
+	// will be matched against the certificate CommonName and the DNS SANs. If
+	// empty, the server will only verify that the client certificate chains to
+	// the provided ClientCAPath and will not enforce specific subject names.
+	ClientCertificateSubjects []string
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -137,6 +155,32 @@ func (s *Server) Run(ctx context.Context) error {
 		s.ListenAddr = webhookPort
 	}
 
+	webhookOpts := webhook.Options{
+		Port: s.ListenAddr,
+		TLSOpts: []func(*tls.Config){
+			func(cfg *tls.Config) {
+				cfg.CipherSuites = cipherSuites
+				cfg.MinVersion = minVersion
+				cfg.GetCertificate = s.CertificateSource.GetCertificate
+			},
+		},
+	}
+
+	if s.EnableClientVerification {
+		if s.ClientCAPath == "" {
+			return fmt.Errorf("error: when --enable-client-verification is true, you must also provide --client-ca-path")
+		}
+		caCert, err := loadClientCA(s.ClientCAPath)
+		if err != nil {
+			return err
+		}
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, func(cfg *tls.Config) {
+			cfg.ClientCAs = caCert
+			cfg.ClientAuth = tls.RequireAndVerifyClientCert
+		})
+		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
+	}
+
 	mgr, err := ctrl.NewManager(
 		&rest.Config{}, // controller-runtime does not need to talk to the API server
 		ctrl.Options{
@@ -154,16 +198,7 @@ func (s *Server) Run(ctx context.Context) error {
 					},
 				},
 			},
-			WebhookServer: webhook.NewServer(webhook.Options{
-				Port: s.ListenAddr,
-				TLSOpts: []func(*tls.Config){
-					func(cfg *tls.Config) {
-						cfg.CipherSuites = cipherSuites
-						cfg.MinVersion = minVersion
-						cfg.GetCertificate = s.CertificateSource.GetCertificate
-					},
-				},
-			}),
+			WebhookServer: webhook.NewServer(webhookOpts),
 		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
@@ -310,4 +345,47 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
+	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		// avoid impersonation of apiserver client by verifying the CN name if provided
+		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {
+			return fmt.Errorf("no verified chains")
+		}
+		// if no specific names are configured, skip subject matching and accept
+		// any client certificate that verifies against the configured ClientCAs.
+		if len(s.ClientCertificateSubjects) == 0 {
+			return nil
+		}
+
+		cert := verifiedChains[0][0]
+		// match against CommonName
+		if slices.Contains(s.ClientCertificateSubjects, cert.Subject.CommonName) {
+			return nil
+		}
+
+		// match against DNS SANs
+		for _, dns := range cert.DNSNames {
+			if slices.Contains(s.ClientCertificateSubjects, dns) {
+				return nil
+			}
+		}
+		return fmt.Errorf("unauthorized client certificate: CN=%s DNS=%v", cert.Subject.CommonName, cert.DNSNames)
+	}
+}
+
+// loadClientCA loads the client CA from given path
+func loadClientCA(path string) (*x509.CertPool, error) {
+	caPem, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client CA cert: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caPem) {
+		return nil, fmt.Errorf("failed to append cert from caPem")
+	}
+
+	return certPool, nil
 }
