@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -61,6 +62,7 @@ type controller struct {
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             internalinformers.SecretLister
 	client                   cmclient.Interface
+	recorder                 record.EventRecorder
 	gatherer                 *policies.Gatherer
 	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
 	policyEvaluator policyEvaluatorFunc
@@ -130,6 +132,7 @@ func NewController(
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
 		client:                   ctx.CMClient,
+		recorder:                 ctx.Recorder,
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -181,7 +184,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+
+		if err != nil {
+			reason := policies.WindowError
+			message := fmt.Sprintf("Could not calculate renewal time: %v", err)
+			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
+
+			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+		}
 
 		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore

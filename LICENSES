@@ -75,6 +75,7 @@ github.com/blang/semver/v4,MIT
 github.com/cenkalti/backoff/v4,MIT
 github.com/cenkalti/backoff/v5,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
+github.com/cert-manager/cert-manager/internal/cron,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare,MIT

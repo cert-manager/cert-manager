@@ -40,6 +40,7 @@ github.com/Azure/go-ntlmssp,MIT
 github.com/beorn7/perks/quantile,MIT
 github.com/blang/semver/v4,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
+github.com/cert-manager/cert-manager/internal/cron,MIT
 github.com/cert-manager/cert-manager/startupapicheck-binary,Apache-2.0
 github.com/cespare/xxhash/v2,MIT
 github.com/davecgh/go-spew/spew,ISC
