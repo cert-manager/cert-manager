@@ -502,6 +502,32 @@ spec:
                     Cannot be set if the `renewBefore` field is set.
                   format: int32
                   type: integer
+                renewal:
+                  description: |-
+                    `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+                    `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`. If the policy is
+                    `Disabled` or `EarliestWindow` then it ignores those fields.
+                  properties:
+                    policy:
+                      description: '`policy` must be one of `Disabled`, `RenewBefore` or `EarleistWindow`.'
+                      type: string
+                    windows:
+                      description: '`windows` mentions the behavior of when the renewal must happen.'
+                      items:
+                        description: CertificateRenewalWindows is the definition for renewal windows
+                        properties:
+                          cron:
+                            description: '`cron` is a cron compliant string to allow when the renewal should be allowed.'
+                            type: string
+                          duration:
+                            description: '`duration` is how long the cron definition must be active.'
+                            type: string
+                          timeZone:
+                            description: '`timeZone` is IANA compliant timezone.'
+                            type: string
+                        type: object
+                      type: array
+                  type: object
                 revisionHistoryLimit:
                   description: |-
                     The maximum number of CertificateRequest revisions that are maintained in
