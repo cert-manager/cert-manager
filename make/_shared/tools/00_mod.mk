@@ -62,7 +62,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v4.0.0
+tools += helm=v4.0.1
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.34.2
@@ -451,10 +451,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=c77e9e7c1cc96e066bd240d190d1beed9a6b08060b2043ef0862c4f865eca08f
-helm_linux_arm64_SHA256SUM=8c5c77e20cc29509d640e208a6a7d2b7e9f99bb04e5b5fbe22707b72a5235245
-helm_darwin_amd64_SHA256SUM=125233cf943e6def2abc727560c5584e9083308d672d38094bae1cc3e0bfeaa2
-helm_darwin_arm64_SHA256SUM=4f5d367af9e2141b047710539d22b7e5872cdaef788333396077236feb422419
+helm_linux_amd64_SHA256SUM=e0365548f01ed52a58a1181ad310b604a3244f59257425bb1739499372bdff60
+helm_linux_arm64_SHA256SUM=959fa52d34e2e1f0154e3220ed5f22263c8593447647a43af07890bba4b004d1
+helm_darwin_amd64_SHA256SUM=a8d1ca46c3ff5484b2b635dfc25832add4f36fdd09cf2a36fb709829c05b4112
+helm_darwin_arm64_SHA256SUM=8e0b9615cf72a62faaa0cfc0e22115f05bcddfd3d7ee58406ef97bc1ba563ae8
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
