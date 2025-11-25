@@ -46,9 +46,11 @@ func Test_controller_Register(t *testing.T) {
 		{
 			name: "gateway is re-queued when an 'Added' event is received for this gateway",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
-				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-1",
-				}}, metav1.CreateOptions{})
+				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-1",
+					},
+				}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
@@ -64,14 +66,21 @@ func Test_controller_Register(t *testing.T) {
 				// We can't use the gateway-api fake.NewSimpleClientset due to
 				// Gateway being pluralized as "gatewaies" instead of
 				// "gateways". The trick is thus to use Create instead.
-				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-1",
-				}}, metav1.CreateOptions{})
+				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-1",
+						ResourceVersion: "1",
+					},
+				}, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				_, err = c.GatewayV1().Gateways("namespace-1").Update(t.Context(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-1", Labels: map[string]string{"foo": "bar"},
-				}}, metav1.UpdateOptions{})
+				_, err = c.GatewayV1().Gateways("namespace-1").Update(t.Context(), &gwapi.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-1",
+						Labels:          map[string]string{"foo": "bar"},
+						ResourceVersion: "2",
+					},
+				}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
@@ -90,9 +99,11 @@ func Test_controller_Register(t *testing.T) {
 		{
 			name: "gateway is re-queued when a 'Deleted' event is received for this gateway",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
-				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-1",
-				}}, metav1.CreateOptions{})
+				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(), &gwapi.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-1",
+					},
+				}, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				err = c.GatewayV1().Gateways("namespace-1").Delete(t.Context(), "gateway-1", metav1.DeleteOptions{})
@@ -114,12 +125,14 @@ func Test_controller_Register(t *testing.T) {
 		{
 			name: "gateway is re-queued when an 'Added' event is received for its child Certificate",
 			givenCall: func(t *testing.T, c cmclient.Interface, _ gwclient.Interface) {
-				_, err := c.CertmanagerV1().Certificates("namespace-1").Create(t.Context(), &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "cert-1",
-					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "gateway-2",
-					}}, gatewayGVK)},
-				}}, metav1.CreateOptions{})
+				_, err := c.CertmanagerV1().Certificates("namespace-1").Create(t.Context(), &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "cert-1",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+							Namespace: "namespace-1", Name: "gateway-2",
+						}}, gatewayGVK)},
+					},
+				}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
@@ -133,16 +146,20 @@ func Test_controller_Register(t *testing.T) {
 			name: "gateway is re-queued when an 'Updated' event is received for its child Certificate",
 			existingCert: &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1", Name: "cert-1",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-2",
-				}}, gatewayGVK)},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-2",
+					},
+				}, gatewayGVK)},
 			}},
 			givenCall: func(t *testing.T, c cmclient.Interface, _ gwclient.Interface) {
 				_, err := c.CertmanagerV1().Certificates("namespace-1").Update(t.Context(), &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "cert-1",
-					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "gateway-2",
-					}}, gatewayGVK)},
+					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "namespace-1", Name: "gateway-2",
+						},
+					}, gatewayGVK)},
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
@@ -155,12 +172,14 @@ func Test_controller_Register(t *testing.T) {
 		},
 		{
 			name: "gateway is re-queued when a 'Deleted' event is received for its child Certificate",
-			existingCert: &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
-				Namespace: "namespace-1", Name: "cert-1",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "gateway-2",
-				}}, gatewayGVK)},
-			}},
+			existingCert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "namespace-1", Name: "cert-1",
+					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gateway-2",
+					}}, gatewayGVK)},
+				},
+			},
 			givenCall: func(t *testing.T, c cmclient.Interface, _ gwclient.Interface) {
 				// err := c.CertmanagerV1().Certificates("namespace-1").Delete(t.Context(), "cert-1", metav1.DeleteOptions{})
 				// require.NoError(t, err)
