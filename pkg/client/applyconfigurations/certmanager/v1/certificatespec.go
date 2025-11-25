@@ -33,6 +33,7 @@ type CertificateSpecApplyConfiguration struct {
 	Duration                *metav1.Duration                                             `json:"duration,omitempty"`
 	RenewBefore             *metav1.Duration                                             `json:"renewBefore,omitempty"`
 	RenewBeforePercentage   *int32                                                       `json:"renewBeforePercentage,omitempty"`
+	Renewal                 *CertificateRenewalApplyConfiguration                        `json:"renewal,omitempty"`
 	DNSNames                []string                                                     `json:"dnsNames,omitempty"`
 	IPAddresses             []string                                                     `json:"ipAddresses,omitempty"`
 	URIs                    []string                                                     `json:"uris,omitempty"`
@@ -103,6 +104,14 @@ func (b *CertificateSpecApplyConfiguration) WithRenewBefore(value metav1.Duratio
 // If called multiple times, the RenewBeforePercentage field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithRenewBeforePercentage(value int32) *CertificateSpecApplyConfiguration {
 	b.RenewBeforePercentage = &value
+	return b
+}
+
+// WithRenewal sets the Renewal field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Renewal field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithRenewal(value *CertificateRenewalApplyConfiguration) *CertificateSpecApplyConfiguration {
+	b.Renewal = value
 	return b
 }
 
