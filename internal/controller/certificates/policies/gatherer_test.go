@@ -17,7 +17,6 @@ limitations under the License.
 package policies
 
 import (
-	"context"
 	"flag"
 	"testing"
 	"time"
@@ -215,7 +214,7 @@ func TestDataForCertificate(t *testing.T) {
 				SecretLister:             test.builder.KubeSharedInformerFactory.Secrets().Lister(),
 			}
 
-			ctx := logf.NewContext(context.Background(), logf.WithResource(log, test.givenCert))
+			ctx := logf.NewContext(t.Context(), logf.WithResource(log, test.givenCert))
 			got, gotErr := g.DataForCertificate(ctx, test.givenCert)
 
 			if test.wantErr != "" {

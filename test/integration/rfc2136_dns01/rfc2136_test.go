@@ -22,7 +22,6 @@ limitations under the License.
 package rfc2136
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -52,7 +51,7 @@ var (
 const defaultPort = "53"
 
 func TestRFC2136CanaryLocalTestServer(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -79,7 +78,7 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 }
 
 func TestRFC2136ServerSuccess(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -104,7 +103,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 }
 
 func TestRFC2136ServerError(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:       t,
 		Zones:   []string{rfc2136TestZone},
@@ -131,7 +130,7 @@ func TestRFC2136ServerError(t *testing.T) {
 }
 
 func TestRFC2136TsigClient(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:             t,
 		Zones:         []string{rfc2136TestZone},
@@ -320,7 +319,7 @@ func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
 }
 
 func TestRFC2136ValidUpdatePacket(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), testr.New(t), t.Name())
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
 	server := &testserver.BasicServer{
 		T:     t,
 		Zones: []string{rfc2136TestZone},

@@ -17,7 +17,6 @@ limitations under the License.
 package acmechallenges
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -128,7 +127,7 @@ func runUpdateObjectTests(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.TODO()
+			ctx := t.Context()
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
 			objects := []runtime.Object{oldChallenge}

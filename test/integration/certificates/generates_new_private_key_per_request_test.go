@@ -49,7 +49,7 @@ import (
 
 func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	namespace := "default"
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -197,7 +197,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 // to sign the second request.
 func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	namespace := "default"
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*30)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)

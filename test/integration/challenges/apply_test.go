@@ -39,7 +39,7 @@ func Test_Apply(t *testing.T) {
 		name      = "test-apply"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	restConfig, stopFn := framework.RunControlPlane(t, ctx)

@@ -459,7 +459,7 @@ func TestVault_Setup(t *testing.T) {
 				},
 			}
 
-			err := v.Setup(context.Background())
+			err := v.Setup(t.Context())
 			if tt.expectErr != "" {
 				assert.EqualError(t, err, tt.expectErr)
 				return

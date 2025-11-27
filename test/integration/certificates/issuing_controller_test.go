@@ -55,7 +55,7 @@ import (
 // certificate, ca, and private key is stored into the target Secret to
 // complete Issuing the Certificate.
 func TestIssuingController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -260,7 +260,7 @@ func TestIssuingController(t *testing.T) {
 }
 
 func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -474,7 +474,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 // values in a Certificate's SecretTemplate will be copied to the target
 // Secret - when they are both added and deleted.
 func Test_IssuingController_SecretTemplate(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -709,7 +709,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 // ensure that values in a Certificate's AdditionalOutputFormats will be copied
 // to the target Secret - when they are both added and deleted.
 func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -939,7 +939,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		fieldManager = "cert-manager-issuing-test"
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*60)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)

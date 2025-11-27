@@ -17,7 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -445,7 +444,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err := controller.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
@@ -610,7 +609,7 @@ func TestCA_Sign(t *testing.T) {
 				signingFn:         pki.SignCSRTemplate,
 			}
 
-			gotIssueResp, gotErr := c.Sign(context.Background(), test.givenCR, test.givenCAIssuer)
+			gotIssueResp, gotErr := c.Sign(t.Context(), test.givenCR, test.givenCAIssuer)
 			if test.wantErr != "" {
 				require.EqualError(t, gotErr, test.wantErr)
 			} else {

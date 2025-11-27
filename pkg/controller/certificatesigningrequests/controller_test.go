@@ -634,7 +634,7 @@ func TestController(t *testing.T) {
 				}
 			}
 
-			gotErr := controller.ProcessItem(context.Background(), key)
+			gotErr := controller.ProcessItem(t.Context(), key)
 			if test.wantErr != (gotErr != nil) {
 				t.Errorf("got unexpected error, exp=%t got=%v",
 					test.wantErr, gotErr)

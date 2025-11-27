@@ -445,7 +445,7 @@ func TestProcessItem(t *testing.T) {
 			}
 			test.builder.Start()
 
-			err := controller.ProcessItem(context.Background(), types.NamespacedName{
+			err := controller.ProcessItem(t.Context(), types.NamespacedName{
 				Name: test.csr.Name,
 			})
 			if err != nil && !test.expectedErr {
