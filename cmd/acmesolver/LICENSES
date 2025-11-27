@@ -30,9 +30,9 @@ go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob
 go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.33.0/trace/LICENSE,Apache-2.0
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.27.0/LICENSE,MIT
-golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.38.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.33.0:LICENSE,BSD-3-Clause
-golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.25.0:LICENSE,BSD-3-Clause
+golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.47.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.38.0:LICENSE,BSD-3-Clause
+golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.31.0:LICENSE,BSD-3-Clause
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.36.0/LICENSE,BSD-3-Clause
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 k8s.io/api/core/v1,https://github.com/kubernetes/api/blob/v0.32.0/LICENSE,Apache-2.0
