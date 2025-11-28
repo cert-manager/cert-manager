@@ -17,14 +17,13 @@ limitations under the License.
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_NewContextFactory(t *testing.T) {
-	ctxFactory, err := NewContextFactory(context.TODO(), ContextOptions{
+	ctxFactory, err := NewContextFactory(t.Context(), ContextOptions{
 		APIServerHost:      "localhost:8443",
 		KubernetesAPIQPS:   10,
 		KubernetesAPIBurst: 10,

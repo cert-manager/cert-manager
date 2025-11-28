@@ -60,7 +60,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 		},
 	}
 
-	runCtx, cancel := context.WithCancel(context.Background())
+	runCtx, cancel := context.WithCancel(t.Context())
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -119,19 +119,19 @@ func TestDynamicAuthority(t *testing.T) {
 
 	waitForRotationAndSign(true)
 
-	err := fake.CoreV1().Secrets(da.SecretNamespace).Delete(context.TODO(), da.SecretName, metav1.DeleteOptions{})
+	err := fake.CoreV1().Secrets(da.SecretNamespace).Delete(t.Context(), da.SecretName, metav1.DeleteOptions{})
 	assert.NoError(t, err)
 
 	waitForRotationAndSign(false)
 
-	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(context.TODO(), da.SecretName, metav1.GetOptions{})
+	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	secret.Data = map[string][]byte{
 		"tls.crt": []byte("test"),
 		"tls.key": []byte("test"),
 	}
-	_, err = fake.CoreV1().Secrets(da.SecretNamespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
+	_, err = fake.CoreV1().Secrets(da.SecretNamespace).Update(t.Context(), secret, metav1.UpdateOptions{})
 	assert.NoError(t, err)
 
 	waitForRotationAndSign(false)

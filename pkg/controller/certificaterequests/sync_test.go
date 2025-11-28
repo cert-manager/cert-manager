@@ -783,7 +783,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err := c.Sync(context.Background(), test.certificateRequest)
+	err := c.Sync(t.Context(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

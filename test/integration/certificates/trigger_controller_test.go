@@ -50,7 +50,7 @@ import (
 // issuance is triggered when a new Certificate resource is created and
 // no Secret exists.
 func TestTriggerController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -113,7 +113,7 @@ func TestTriggerController(t *testing.T) {
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)
@@ -234,7 +234,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 func TestTriggerController_ExpBackoff(t *testing.T) {
 	t.Log("Testing that trigger controller applies exponential backoff when retrying failed issuances...")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)

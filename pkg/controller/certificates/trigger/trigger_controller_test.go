@@ -453,7 +453,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				}
 			}
 
-			gotErr := w.controller.ProcessItem(context.Background(), key)
+			gotErr := w.controller.ProcessItem(t.Context(), key)
 			switch {
 			case gotErr != nil:
 				if test.wantErr != gotErr.Error() {

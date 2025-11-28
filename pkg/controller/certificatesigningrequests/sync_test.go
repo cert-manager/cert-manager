@@ -336,7 +336,7 @@ func TestController_Sync(t *testing.T) {
 
 			scenario.builder.Start()
 
-			err := c.Sync(context.Background(), scenario.csr)
+			err := c.Sync(t.Context(), scenario.csr)
 			if (err == nil) == scenario.wantErr {
 				t.Errorf("expected error: %v, but got: %v", scenario.wantErr, err)
 			}

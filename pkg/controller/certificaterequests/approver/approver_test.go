@@ -17,7 +17,6 @@ limitations under the License.
 package approver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -220,7 +219,7 @@ func TestProcessItem(t *testing.T) {
 			}
 
 			// Call ProcessItem
-			err = c.ProcessItem(context.Background(), key)
+			err = c.ProcessItem(t.Context(), key)
 			switch {
 			case err != nil:
 				if test.err != err.Error() {

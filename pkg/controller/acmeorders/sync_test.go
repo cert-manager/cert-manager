@@ -304,7 +304,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			return "key", nil
 		},
 	}
-	testAuthorizationChallenge, err := buildPartialChallenge(context.TODO(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+	testAuthorizationChallenge, err := buildPartialChallenge(t.Context(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
 
 	if err != nil {
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
@@ -1055,7 +1055,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Start()
 
-	err = cw.Sync(context.Background(), test.order)
+	err = cw.Sync(t.Context(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}

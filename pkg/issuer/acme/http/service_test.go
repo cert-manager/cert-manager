@@ -17,7 +17,6 @@ limitations under the License.
 package http
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -149,7 +148,7 @@ func TestEnsureService(t *testing.T) {
 			}
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
-			_, err := s.ensureService(context.Background(), scenario.chal)
+			_, err := s.ensureService(t.Context(), scenario.chal)
 			if err != nil != scenario.expectedErr {
 				t.Fatalf("unexpected error: wants err: %t, got err %v", scenario.expectedErr, err)
 
@@ -233,7 +232,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 			}
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
-			gotServiceMetas, err := s.getServicesForChallenge(context.Background(), scenario.chal)
+			gotServiceMetas, err := s.getServicesForChallenge(t.Context(), scenario.chal)
 			if err != nil != scenario.expectedErr {
 				t.Fatalf("unexpected error: wants err: %t, got err %v", scenario.expectedErr, err)
 

@@ -42,7 +42,7 @@ import (
 // controller will delete old CertificateRequests according to the
 // spec.revisionHistoryLimit value
 func TestRevisionManagerController(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*40)
 	defer cancel()
 
 	config, stopFn := framework.RunControlPlane(t, ctx)

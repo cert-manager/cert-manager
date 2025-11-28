@@ -63,7 +63,7 @@ func ParseTLSKeyFromSecret(secret *corev1.Secret, keyName string) (crypto.Signer
 
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
-		return nil, keyBytes, errors.NewInvalidData(err.Error())
+		return nil, keyBytes, errors.NewInvalidData("%s", err.Error())
 	}
 
 	return key, keyBytes, nil
@@ -82,7 +82,7 @@ func SecretTLSCertChain(ctx context.Context, secretLister internalinformers.Secr
 
 	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
-		return cert, errors.NewInvalidData(err.Error())
+		return cert, errors.NewInvalidData("%s", err.Error())
 	}
 
 	return cert, nil
@@ -108,7 +108,7 @@ func SecretTLSKeyPairAndCA(ctx context.Context, secretLister internalinformers.S
 	}
 	ca, err := pki.DecodeX509CertificateBytes(caBytes)
 	if err != nil {
-		return nil, key, errors.NewInvalidData(err.Error())
+		return nil, key, errors.NewInvalidData("%s", err.Error())
 	}
 
 	return append(certs, ca), key, nil
@@ -126,7 +126,7 @@ func SecretTLSKeyPair(ctx context.Context, secretLister internalinformers.Secret
 	}
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
-		return nil, nil, errors.NewInvalidData(err.Error())
+		return nil, nil, errors.NewInvalidData("%s", err.Error())
 	}
 
 	certBytes, ok := secret.Data[corev1.TLSCertKey]
@@ -135,7 +135,7 @@ func SecretTLSKeyPair(ctx context.Context, secretLister internalinformers.Secret
 	}
 	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
-		return nil, key, errors.NewInvalidData(err.Error())
+		return nil, key, errors.NewInvalidData("%s", err.Error())
 	}
 
 	return cert, key, nil

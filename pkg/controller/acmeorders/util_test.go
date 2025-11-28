@@ -17,7 +17,6 @@ limitations under the License.
 package acmeorders
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -1237,7 +1236,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			cs, err := partialChallengeSpecForAuthorization(ctx, test.issuer, test.order, *test.authz)
 			if err != nil && !test.expectedError {
 				t.Errorf("expected to not get an error, but got: %v", err)

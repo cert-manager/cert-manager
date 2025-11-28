@@ -17,7 +17,6 @@ limitations under the License.
 package identity
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -67,7 +66,7 @@ func TestMutate(t *testing.T) {
 	plugin := NewPlugin().(*certificateRequestIdentity)
 	cr := &cmapi.CertificateRequest{}
 	crUnstr := toUnstructured(t, cr)
-	err := plugin.Mutate(context.Background(), admissionv1.AdmissionRequest{
+	err := plugin.Mutate(t.Context(), admissionv1.AdmissionRequest{
 		Operation: admissionv1.Create,
 		RequestResource: &metav1.GroupVersionResource{
 			Group:    "cert-manager.io",
@@ -136,7 +135,7 @@ func TestMutate_Ignores(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cr := &cmapi.CertificateRequest{}
 			crUnstr := toUnstructured(t, cr)
-			err := plugin.Mutate(context.Background(), admissionv1.AdmissionRequest{
+			err := plugin.Mutate(t.Context(), admissionv1.AdmissionRequest{
 				Operation:       test.op,
 				RequestResource: test.gvr,
 				UserInfo: authenticationv1.UserInfo{
@@ -231,7 +230,7 @@ func TestValidateCreate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
-			gotW, gotE := p.Validate(context.Background(), *test.req, nil, test.cr)
+			gotW, gotE := p.Validate(t.Context(), *test.req, nil, test.cr)
 			compareErrors(t, test.wantE, gotE)
 			if !reflect.DeepEqual(gotW, test.wantW) {
 				t.Errorf("warnings from ValidateCreate() = %v, want %v", gotW, test.wantW)
@@ -346,7 +345,7 @@ func TestValidateUpdate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
-			gotW, gotE := p.Validate(context.Background(), *test.req, test.oldCR, test.newCR)
+			gotW, gotE := p.Validate(t.Context(), *test.req, test.oldCR, test.newCR)
 			compareErrors(t, test.wantE, gotE)
 			if !reflect.DeepEqual(gotW, test.wantW) {
 				t.Errorf("warnings from ValidateUpdate() = %v, want %v", gotW, test.wantW)
@@ -460,7 +459,7 @@ func TestMutateCreate(t *testing.T) {
 			cr := test.existingCR.DeepCopy()
 			p := NewPlugin().(*certificateRequestIdentity)
 			crUnstr := toUnstructured(t, cr)
-			if err := p.Mutate(context.Background(), *test.req, crUnstr); err != nil {
+			if err := p.Mutate(t.Context(), *test.req, crUnstr); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
@@ -520,7 +519,7 @@ func TestMutateUpdate(t *testing.T) {
 			cr := test.existingCR.DeepCopy()
 			p := NewPlugin().(*certificateRequestIdentity)
 			crUnstr := toUnstructured(t, cr)
-			if err := p.Mutate(context.Background(), *test.req, crUnstr); err != nil {
+			if err := p.Mutate(t.Context(), *test.req, crUnstr); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
