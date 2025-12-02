@@ -160,6 +160,7 @@ const (
 	// Owner: @wallrj
 	// Alpha: v1.18.0
 	// Beta: v1.18.0
+	// GA: v1.20.0
 	//
 	// DefaultPrivateKeyRotationPolicyAlways change the default value of
 	// `Certificate.Spec.PrivateKey.RotationPolicy` to `Always`.
@@ -211,7 +212,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
-	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
+	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.GA},
 	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
 
 	// NB: Deprecated + removed feature gates are kept here.

@@ -20,33 +20,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy demonstrates that
-// the default rotation policy is set by the defaulting function and that the
-// old default (`Never`) can be re-instated by disabling the
-// DefaultPrivateKeyRotationPolicyAlways feature gate.
+// the default rotation policy is set by the defaulting function.
 func Test_SetRuntimeDefaults_Certificate_PrivateKey_RotationPolicy(t *testing.T) {
-	t.Run("feature-enabled", func(t *testing.T) {
-		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, true)
+	t.Run("default-rotation-policy", func(t *testing.T) {
 		in := &cmapi.Certificate{}
 		SetRuntimeDefaults_Certificate(in)
 		assert.Equal(t, cmapi.RotationPolicyAlways, in.Spec.PrivateKey.RotationPolicy)
 	})
-	t.Run("feature-disabled", func(t *testing.T) {
-		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, false)
-		in := &cmapi.Certificate{}
-		SetRuntimeDefaults_Certificate(in)
-		assert.Equal(t, cmapi.RotationPolicyNever, in.Spec.PrivateKey.RotationPolicy)
-	})
 	t.Run("explicit-rotation-policy", func(t *testing.T) {
 		const expectedRotationPolicy = cmapi.PrivateKeyRotationPolicy("neither-always-nor-never")
-		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DefaultPrivateKeyRotationPolicyAlways, false)
 		in := &cmapi.Certificate{
 			Spec: cmapi.CertificateSpec{
 				PrivateKey: &cmapi.CertificatePrivateKey{

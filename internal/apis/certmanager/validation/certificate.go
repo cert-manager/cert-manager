@@ -237,9 +237,6 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
-		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
-	}
 	return allErrs, warnings
 }
 
