@@ -152,7 +152,7 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 			},
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": oid syntax invalid"))
+		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": invalid oid syntax"))
 
 	})
 

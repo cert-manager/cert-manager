@@ -153,7 +153,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 				}
 
 				if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
-					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
+					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "invalid oid syntax"))
 				}
 
 				if otherName.UTF8Value == "" || !utf8.ValidString(otherName.UTF8Value) {
