@@ -127,7 +127,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		len(crt.EmailAddresses) == 0 &&
 		len(crt.IPAddresses) == 0 &&
 		len(crt.OtherNames) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars

@@ -718,7 +718,7 @@ func TestGenerateCSR(t *testing.T) {
 			literalCertificateSubjectFeatureEnabled: true,
 		},
 		{
-			name:                                    "Error on generating CSR from certificate without CommonName in LiteralSubject, uri names, email address, ip addresses or otherName set",
+			name:                                    "Error on generating CSR from certificate without CommonName in LiteralSubject, email addresses, ip addresses, otherNames, uri names set",
 			crt:                                     &cmapi.Certificate{Spec: cmapi.CertificateSpec{LiteralSubject: "O=EmptyOrg"}},
 			wantErr:                                 true,
 			literalCertificateSubjectFeatureEnabled: true,
