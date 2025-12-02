@@ -80,7 +80,7 @@ tools += azwi=v1.5.1
 tools += kyverno=v1.16.0
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
-tools += yq=v4.49.1
+tools += yq=v4.49.2
 # https://github.com/ko-build/ko/releases
 # renovate: datasource=github-releases packageName=ko-build/ko
 tools += ko=0.18.0
@@ -121,7 +121,7 @@ tools += kustomize=v5.8.0
 tools += gojq=v0.12.17
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.20.6
+tools += crane=v0.20.7
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.10
@@ -149,7 +149,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.2.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.12.7
+tools += goreleaser=v2.13.0
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.38.0
@@ -203,7 +203,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20251121143641-b6aabc6c6745
+tools += openapi-gen=v0.0.0-20251125145642-4e65d59e963e
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -551,10 +551,10 @@ $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DO
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-yq_linux_amd64_SHA256SUM=897045e4a42933951ea8e143c44ea3f7f8005aa25105c4fbd796c3d61ee163ec
-yq_linux_arm64_SHA256SUM=48e09de3f65cb5de1cdf7ae9ba78676f147be376db2727be5dca8213aa898012
-yq_darwin_amd64_SHA256SUM=9d55c8770be6effdebe26776e531867f9f5f1fe61dc2896a8e4903fae626adf2
-yq_darwin_arm64_SHA256SUM=2798f0b76b78d8c2b6e3796d27145468c2ae094c76c9dfc0d6bb3c7031100714
+yq_linux_amd64_SHA256SUM=be2c0ddcf426b6a231648610ec5d1666ae50e9f6473e82f6486f9f4cb6e3e2f7
+yq_linux_arm64_SHA256SUM=783aa3c3beedcf2bf4aaf6262eca38b92a16d3ea31e2218ca80ba8ec7226b248
+yq_darwin_amd64_SHA256SUM=c14cd4ae68d42074e58463f5ebdbc3c49ec27c6de6a23b4af58a483bc3f15aa0
+yq_darwin_arm64_SHA256SUM=b0b70ede2b392ba02091b8137b42db819a7968cf232d595dd7394ac5668b4a0b
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
