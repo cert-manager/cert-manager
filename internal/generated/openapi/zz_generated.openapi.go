@@ -1705,20 +1705,20 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderRoute53(ref common.Reference
 					},
 					"accessKeyID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The AccessKeyID is used for authentication. Cannot be set when SecretAccessKeyID is set. If neither the Access Key nor Key ID are set, we fall-back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
+							Description: "The AccessKeyID is used for authentication. Cannot be set when SecretAccessKeyID is set. If neither the Access Key nor Key ID are set, we fall back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"accessKeyIDSecretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The SecretAccessKey is used for authentication. If set, pull the AWS access key ID from a key within a Kubernetes Secret. Cannot be set when AccessKeyID is set. If neither the Access Key nor Key ID are set, we fall-back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
+							Description: "The SecretAccessKey is used for authentication. If set, pull the AWS access key ID from a key within a Kubernetes Secret. Cannot be set when AccessKeyID is set. If neither the Access Key nor Key ID are set, we fall back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"),
 						},
 					},
 					"secretAccessKeySecretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The SecretAccessKey is used for authentication. If neither the Access Key nor Key ID are set, we fall-back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
+							Description: "The SecretAccessKey is used for authentication. If neither the Access Key nor Key ID are set, we fall back to using env vars, shared credentials file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"),
 						},
@@ -1827,7 +1827,7 @@ func schema_pkg_apis_acme_v1_AzureManagedIdentity(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used. Otherwise, we fall-back to using Azure Managed Service Identity.",
+				Description: "AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used. Otherwise, we fall back to using Azure Managed Service Identity.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"clientID": {
