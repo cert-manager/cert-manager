@@ -411,7 +411,7 @@ config:
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true
     NameConstraints: true # BETA - default=true
-    OtherNames: false # ALPHA - default=false
+    OtherNames: true # BETA - default=true
     SecretsFilteredCaching: true # BETA - default=true
     ServerSideApply: false # ALPHA - default=false
     StableCertificateRequestName: true # BETA - default=true
