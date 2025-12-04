@@ -54,9 +54,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// We don't need to requeue Gateways on "Deleted" events, since our Sync
 	// function does nothing when the Gateway lister returns "not found". But we
 	// still do it for consistency with the rest of the controllers.
-	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
-		Queue: c.queue,
-	}); err != nil {
+	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -70,9 +68,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	//
 	// Regarding "Deleted" events on Certificates, we requeue the parent Gateway
 	// to immediately recreate the Certificate when the Certificate is deleted.
-	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificateHandler(c.queue),
-	}); err != nil {
+	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(certificateHandler(c.queue)),
+	); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

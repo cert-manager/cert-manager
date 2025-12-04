@@ -109,79 +109,99 @@ func HandleOwnedResourceNamespacedFunc[T metav1.Object](
 	}
 }
 
-// QueuingEventHandler is an implementation of cache.ResourceEventHandler that
+// queuingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply queues objects that are added/updated/deleted.
-type QueuingEventHandler struct {
-	Queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+// It skips update events in case the resource has not changed.
+type queuingEventHandler struct {
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
-// Enqueue adds a key for an object to the workqueue.
-func (q *QueuingEventHandler) Enqueue(obj interface{}) {
+// QueuingEventHandler returns a cache.ResourceEventHandler that
+// simply queues objects that are added/updated/deleted. It skips
+// update events in case the resource has not changed.
+func QueuingEventHandler(
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
+) cache.ResourceEventHandler {
+	return queuingEventHandler{
+		queue: queue,
+	}
+}
+
+// enqueue adds a key for an object to the workqueue.
+func (q queuingEventHandler) enqueue(obj interface{}) {
 	objectName, err := cache.DeletionHandlingObjectToName(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	q.Queue.Add(types.NamespacedName{
+	q.queue.Add(types.NamespacedName{
 		Name:      objectName.Name,
 		Namespace: objectName.Namespace,
 	})
 }
 
 // OnAdd adds a newly created object to the workqueue.
-func (q *QueuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
-	q.Enqueue(obj)
+func (q queuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	q.enqueue(obj)
 }
 
 // OnUpdate adds an updated object to the workqueue.
-func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+func (q queuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
-	q.Enqueue(newObj)
+	q.enqueue(newObj)
 }
 
 // OnDelete adds a deleted object to the workqueue for processing.
-func (q *QueuingEventHandler) OnDelete(obj interface{}) {
+func (q queuingEventHandler) OnDelete(obj interface{}) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
 	}
-	q.Enqueue(obj)
+	q.enqueue(obj)
 }
 
-// BlockingEventHandler is an implementation of cache.ResourceEventHandler that
+// blockingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
 // OnDelete.
-type BlockingEventHandler struct {
-	WorkFunc func(obj interface{})
+// It skips update events in case the resource has not changed.
+type blockingEventHandler struct {
+	workFunc func(obj interface{})
 }
 
-// Enqueue synchronously adds a key for an object to the workqueue.
-func (b *BlockingEventHandler) Enqueue(obj interface{}) {
-	b.WorkFunc(obj)
+// BlockingEventHandler returns a cache.ResourceEventHandler that
+// simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
+// OnDelete. It skips update events in case the resource has not changed.
+func BlockingEventHandler(
+	workFunc func(obj interface{}),
+) cache.ResourceEventHandler {
+	return blockingEventHandler{
+		workFunc: workFunc,
+	}
+
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
-func (b *BlockingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
-	b.WorkFunc(obj)
+func (b blockingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	b.workFunc(obj)
 }
 
 // OnUpdate synchronously adds an updated object to the workqueue.
-func (b *BlockingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+func (b blockingEventHandler) OnUpdate(oldObj, newObj interface{}) {
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
-	b.WorkFunc(newObj)
+	b.workFunc(newObj)
 }
 
 // OnDelete synchronously adds a deleted object to the workqueue.
-func (b *BlockingEventHandler) OnDelete(obj interface{}) {
+func (b blockingEventHandler) OnDelete(obj interface{}) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
 	}
-	b.WorkFunc(obj)
+	b.workFunc(obj)
 }
 
 // BuildAnnotationsToCopy takes a map of annotations and a list of prefix
