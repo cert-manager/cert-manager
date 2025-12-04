@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -92,8 +91,6 @@ type Context struct {
 	GWClient gwclient.Interface
 	// MetadataClient is a PartialObjectMetadata client
 	MetadataClient metadata.Interface
-	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
-	DiscoveryClient discovery.DiscoveryInterface
 
 	// Clock should be used to access the current time instead of relying on
 	// time.Now, to make it easier to test controllers that utilise time
@@ -365,8 +362,6 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
 	ctx.GWClient = clients.gwClient
-	ctx.MetadataClient = clients.metadataOnlyClient
-	ctx.DiscoveryClient = clients.kubeClient.Discovery()
 	ctx.Recorder = recorder
 
 	return &ctx, nil

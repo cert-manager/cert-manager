@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -48,7 +47,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 func init() {
@@ -131,29 +129,6 @@ func (b *Builder) Init() {
 	// FIXME: It seems like the gateway-api fake.NewClientset is misbehaving and is not usable per July 2025
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
-	b.DiscoveryClient = discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
-		if groupVersion == networkingv1.SchemeGroupVersion.String() {
-			return &metav1.APIResourceList{
-				TypeMeta:     metav1.TypeMeta{},
-				GroupVersion: networkingv1.SchemeGroupVersion.String(),
-				APIResources: []metav1.APIResource{
-					{
-						Name:               "ingresses",
-						SingularName:       "Ingress",
-						Namespaced:         true,
-						Group:              networkingv1.GroupName,
-						Version:            networkingv1.SchemeGroupVersion.Version,
-						Kind:               networkingv1.SchemeGroupVersion.WithKind("Ingress").Kind,
-						Verbs:              metav1.Verbs{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-						ShortNames:         []string{"ing"},
-						Categories:         []string{"all"},
-						StorageVersionHash: "testing",
-					},
-				},
-			}, nil
-		}
-		return &metav1.APIResourceList{}, nil
-	})
 	b.Recorder = new(FakeRecorder)
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
@@ -206,10 +181,6 @@ func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
 
 func (b *Builder) FakeMetadataClient() *metadatafake.FakeMetadataClient {
 	return b.Context.MetadataClient.(*metadatafake.FakeMetadataClient)
-}
-
-func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
-	return b.Context.DiscoveryClient.(*discoveryfake.Discovery)
 }
 
 // CheckAndFinish will run ensure: all reactors are called, all actions are
