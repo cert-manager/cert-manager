@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -30,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -60,15 +63,9 @@ func HandleOwnedResourceNamespacedFunc[T metav1.Object](
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	ownerGVK schema.GroupVersionKind,
 	get func(namespace, name string) (T, error),
-) func(obj interface{}) {
-	return func(obj interface{}) {
+) func(metav1.Object) {
+	return func(metaobj metav1.Object) {
 		log := log.WithName("handleOwnedResource")
-
-		metaobj, ok := obj.(metav1.Object)
-		if !ok {
-			log.Error(nil, "item passed to handleOwnedResource does not implement metav1.Object")
-			return
-		}
 		log = logf.WithResource(log, metaobj)
 
 		ownerRefs := metaobj.GetOwnerReferences()
@@ -109,79 +106,263 @@ func HandleOwnedResourceNamespacedFunc[T metav1.Object](
 	}
 }
 
-// QueuingEventHandler is an implementation of cache.ResourceEventHandler that
-// simply queues objects that are added/updated/deleted.
-type QueuingEventHandler struct {
-	Queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+// QueuingEventHandler returns a cache.ResourceEventHandler that
+// simply queues objects that are added/updated/deleted. It skips
+// update events in case the resource version has not changed.
+func QueuingEventHandler(
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
+) cache.ResourceEventHandler {
+	return filteredEventHandler[metav1.Object]{
+		handler: queuingEventHandler{queue: queue},
+		predicates: []predicate.TypedPredicate[metav1.Object]{
+			// prevent unnecessary reconciliations in case the resource did not update
+			resourceVersionChangedWithFallback[metav1.Object]{},
+		},
+	}
 }
 
-// Enqueue adds a key for an object to the workqueue.
-func (q *QueuingEventHandler) Enqueue(obj interface{}) {
+// BlockingEventHandler returns a cache.ResourceEventHandler that
+// simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
+// OnDelete. It skips update events in case the resource version has not changed.
+func BlockingEventHandler[T metav1.Object](
+	workFunc func(obj T),
+) cache.ResourceEventHandler {
+	return filteredEventHandler[metav1.Object]{
+		handler: blockingEventHandler[T]{workFunc: workFunc},
+		predicates: []predicate.TypedPredicate[metav1.Object]{
+			// prevent unnecessary reconciliations in case the resource did not update
+			resourceVersionChangedWithFallback[metav1.Object]{},
+		},
+	}
+}
+
+// resourceVersionChangedWithFallback implements a default update predicate function
+// on resource version change and does a deepequal when resource version is missing.
+type resourceVersionChangedWithFallback[T metav1.Object] struct {
+	predicate.TypedFuncs[T]
+}
+
+// Update implements default UpdateEvent filter for validating resource version change.
+func (resourceVersionChangedWithFallback[T]) Update(e event.TypedUpdateEvent[T]) bool {
+	if isNil(e.ObjectOld) {
+		logf.Log.Error(nil, "Update event has no old object to update", "event", e)
+		return false
+	}
+	if isNil(e.ObjectNew) {
+		logf.Log.Error(nil, "Update event has no new object to update", "event", e)
+		return false
+	}
+
+	// In case we are running tests, some of the resource versions are empty. We want
+	// those tests to still pass, so we fall back on the more expensive deepequal compare.
+	if e.ObjectNew.GetResourceVersion() == "" ||
+		e.ObjectOld.GetResourceVersion() == "" {
+		return !reflect.DeepEqual(e.ObjectNew, e.ObjectOld)
+	}
+
+	return e.ObjectNew.GetResourceVersion() != e.ObjectOld.GetResourceVersion()
+}
+
+func isNil(arg any) bool {
+	if v := reflect.ValueOf(arg); !v.IsValid() || ((v.Kind() == reflect.Ptr ||
+		v.Kind() == reflect.Interface ||
+		v.Kind() == reflect.Slice ||
+		v.Kind() == reflect.Map ||
+		v.Kind() == reflect.Chan ||
+		v.Kind() == reflect.Func) && v.IsNil()) {
+		return true
+	}
+	return false
+}
+
+// FilterEventHandler returns a cache.ResourceEventHandler that
+// skips events based on the passed predicates and passes all other
+// events to the provided handler.
+func FilterEventHandler[T metav1.Object](
+	handler cache.ResourceEventHandler,
+	predicates ...predicate.TypedPredicate[T],
+) cache.ResourceEventHandler {
+	return filteredEventHandler[T]{
+		handler:    handler,
+		predicates: predicates,
+	}
+}
+
+// queuingEventHandler is an implementation of cache.ResourceEventHandler that
+// simply queues objects that are added/updated/deleted.
+type queuingEventHandler struct {
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+}
+
+var _ cache.ResourceEventHandler = queuingEventHandler{}
+
+// enqueue adds a key for an object to the workqueue.
+func (q queuingEventHandler) enqueue(obj interface{}) {
 	objectName, err := cache.DeletionHandlingObjectToName(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	q.Queue.Add(types.NamespacedName{
+	q.queue.Add(types.NamespacedName{
 		Name:      objectName.Name,
 		Namespace: objectName.Namespace,
 	})
 }
 
 // OnAdd adds a newly created object to the workqueue.
-func (q *QueuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
-	q.Enqueue(obj)
+func (q queuingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	q.enqueue(obj)
 }
 
 // OnUpdate adds an updated object to the workqueue.
-func (q *QueuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
-	if reflect.DeepEqual(oldObj, newObj) {
-		return
-	}
-	q.Enqueue(newObj)
+func (q queuingEventHandler) OnUpdate(oldObj, newObj interface{}) {
+	q.enqueue(newObj)
 }
 
 // OnDelete adds a deleted object to the workqueue for processing.
-func (q *QueuingEventHandler) OnDelete(obj interface{}) {
-	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-	if ok {
-		obj = tombstone.Obj
-	}
-	q.Enqueue(obj)
+func (q queuingEventHandler) OnDelete(obj interface{}) {
+	q.enqueue(obj)
 }
 
-// BlockingEventHandler is an implementation of cache.ResourceEventHandler that
+// blockingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
 // OnDelete.
-type BlockingEventHandler struct {
-	WorkFunc func(obj interface{})
+type blockingEventHandler[T metav1.Object] struct {
+	workFunc func(obj T)
 }
 
-// Enqueue synchronously adds a key for an object to the workqueue.
-func (b *BlockingEventHandler) Enqueue(obj interface{}) {
-	b.WorkFunc(obj)
+var _ cache.ResourceEventHandler = blockingEventHandler[metav1.Object]{}
+
+// run synchronously runs the workFunc for the object.
+func (b blockingEventHandler[T]) run(obj interface{}) {
+	log := logf.Log.WithName("blockingEventHandler")
+
+	typedObj, ok := obj.(T)
+	if !ok {
+		log.Error(nil, "Object of wrong type", "object", obj, "type", fmt.Sprintf("%T", obj), "expected_type", fmt.Sprintf("%T", *new(T)))
+		return
+	}
+
+	b.workFunc(typedObj)
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
-func (b *BlockingEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
-	b.WorkFunc(obj)
+func (b blockingEventHandler[T]) OnAdd(obj interface{}, isInInitialList bool) {
+	b.run(obj)
 }
 
 // OnUpdate synchronously adds an updated object to the workqueue.
-func (b *BlockingEventHandler) OnUpdate(oldObj, newObj interface{}) {
-	if reflect.DeepEqual(oldObj, newObj) {
-		return
-	}
-	b.WorkFunc(newObj)
+func (b blockingEventHandler[T]) OnUpdate(oldObj, newObj interface{}) {
+	b.run(newObj)
 }
 
 // OnDelete synchronously adds a deleted object to the workqueue.
-func (b *BlockingEventHandler) OnDelete(obj interface{}) {
+func (b blockingEventHandler[T]) OnDelete(obj interface{}) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
 	}
-	b.WorkFunc(obj)
+	b.run(obj)
+}
+
+// filteredEventHandler is an implementation of cache.ResourceEventHandler that
+// only passes the event to the handler when all predicates return true
+type filteredEventHandler[T metav1.Object] struct {
+	handler cache.ResourceEventHandler
+	// predicates is a list of predicates that must all pass
+	// for the object to be enqueued.
+	predicates []predicate.TypedPredicate[T]
+}
+
+var _ cache.ResourceEventHandler = filteredEventHandler[metav1.Object]{}
+
+// OnAdd adds a newly created object to the workqueue.
+func (q filteredEventHandler[T]) OnAdd(obj interface{}, isInInitialList bool) {
+	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnAdd")
+
+	c := event.TypedCreateEvent[T]{
+		IsInInitialList: isInInitialList,
+	}
+
+	// Pull Object out of the object
+	if o, ok := obj.(T); ok {
+		c.Object = o
+	} else {
+		log.Error(nil, "OnAdd missing Object", "object", obj, "type", fmt.Sprintf("%T", obj))
+		return
+	}
+
+	for _, p := range q.predicates {
+		if !p.Create(c) {
+			return
+		}
+	}
+
+	q.handler.OnAdd(obj, isInInitialList)
+}
+
+// OnUpdate adds an updated object to the workqueue.
+func (q filteredEventHandler[T]) OnUpdate(oldObj, newObj interface{}) {
+	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnUpdate")
+
+	u := event.TypedUpdateEvent[T]{}
+
+	if o, ok := oldObj.(T); ok {
+		u.ObjectOld = o
+	} else {
+		log.Error(nil, "OnUpdate missing ObjectOld", "object", oldObj, "type", fmt.Sprintf("%T", oldObj))
+		return
+	}
+
+	// Pull Object out of the object
+	if o, ok := newObj.(T); ok {
+		u.ObjectNew = o
+	} else {
+		log.Error(nil, "OnUpdate missing ObjectNew", "object", newObj, "type", fmt.Sprintf("%T", newObj))
+		return
+	}
+
+	for _, p := range q.predicates {
+		if !p.Update(u) {
+			return
+		}
+	}
+
+	q.handler.OnUpdate(oldObj, newObj)
+}
+
+// OnDelete adds a deleted object to the workqueue for processing.
+func (q filteredEventHandler[T]) OnDelete(obj interface{}) {
+	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnDelete")
+
+	d := event.TypedDeleteEvent[T]{}
+
+	unwrappedObj := obj
+
+	// If the object doesn't have Metadata, assume it is a tombstone object of type DeletedFinalStateUnknown
+	tombstone, ok := unwrappedObj.(cache.DeletedFinalStateUnknown)
+	if ok {
+		// Set DeleteStateUnknown to true
+		d.DeleteStateUnknown = true
+
+		unwrappedObj = tombstone.Obj
+	}
+
+	// Pull Object out of the object
+	if o, ok := unwrappedObj.(T); ok {
+		d.Object = o
+	} else {
+		log.Error(nil, "OnDelete missing Object", "object", unwrappedObj, "type", fmt.Sprintf("%T", unwrappedObj))
+		return
+	}
+
+	for _, p := range q.predicates {
+		if !p.Delete(d) {
+			return
+		}
+	}
+
+	q.handler.OnDelete(obj)
 }
 
 // BuildAnnotationsToCopy takes a map of annotations and a list of prefix
@@ -213,7 +394,7 @@ func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string)
 	return filteredAnnotations
 }
 
-func ToSecret(obj interface{}) (*corev1.Secret, bool) {
+func ToSecret(obj metav1.Object) (*corev1.Secret, bool) {
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
 		meta, ok := obj.(*metav1.PartialObjectMetadata)
