@@ -37,8 +37,12 @@ checkhash_script := $(dir $(lastword $(MAKEFILE_LIST)))/util/checkhash.sh
 lock_script := $(dir $(lastword $(MAKEFILE_LIST)))/util/lock.sh
 
 # $outfile is a variable in the lock script
+# Escape the dollar sign so it's passed literally to the shell script, not expanded by make
 outfile := $$outfile
 
+# Helper function to iterate over key=value pairs and call a function for each pair
+# Usage: $(call for_each_kv,function_name,list_of_key=value_pairs)
+# For each item, splits on "=" and calls function_name with key as $1 and value as $2
 for_each_kv = $(foreach item,$2,$(eval $(call $1,$(word 1,$(subst =, ,$(item))),$(word 2,$(subst =, ,$(item))))))
 
 # To make sure we use the right version of each tool, we put symlink in
@@ -77,7 +81,7 @@ tools += vault=v1.21.1
 tools += azwi=v1.5.1
 # https://github.com/kyverno/kyverno/releases
 # renovate: datasource=github-releases packageName=kyverno/kyverno
-tools += kyverno=v1.16.0
+tools += kyverno=v1.16.1
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
 tools += yq=v4.49.2
@@ -89,7 +93,7 @@ tools += ko=0.18.0
 tools += protoc=v33.1
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
-tools += trivy=v0.67.2
+tools += trivy=v0.68.1
 # https://github.com/vmware-tanzu/carvel-ytt/releases
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-ytt
 tools += ytt=v0.52.1
@@ -118,7 +122,7 @@ tools += gotestsum=v1.13.0
 tools += kustomize=v5.8.0
 # https://pkg.go.dev/github.com/itchyny/gojq?tab=versions
 # renovate: datasource=go packageName=github.com/itchyny/gojq
-tools += gojq=v0.12.17
+tools += gojq=v0.12.18
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
 tools += crane=v0.20.7
@@ -226,6 +230,8 @@ print-go-version:
 
 # When switching branches which use different versions of the tools, we
 # need a way to re-trigger the symlinking from $(bin_dir)/downloaded to $(bin_dir)/tools.
+# This pattern rule creates a version stamp file that tracks the tool version.
+# If the version changes (or file doesn't exist), update the stamp file to trigger rebuild.
 $(bin_dir)/scratch/%_VERSION: FORCE | $(bin_dir)/scratch
 	@test "$($*_VERSION)" == "$(shell cat $@ 2>/dev/null)" || echo $($*_VERSION) > $@
 
@@ -247,7 +253,11 @@ CURL := curl --silent --show-error --fail --location --retry 10 --retry-connrefu
 # -n = If destination already exists, replace it, don't use it as a directory to create a new link inside
 LN := ln -fsn
 
+# Mapping of lowercase to uppercase letters for the uc (uppercase) function
 upper_map := a:A b:B c:C d:D e:E f:F g:G h:H i:I j:J k:K l:L m:M n:N o:O p:P q:Q r:R s:S t:T u:U v:V w:W x:X y:Y z:Z
+# Function to convert a string to uppercase (e.g., "helm" -> "HELM")
+# Works by iterating through upper_map and substituting each lowercase letter with uppercase
+# Used to create variable names like HELM_VERSION from tool names like "helm"
 uc = $(strip \
 		$(eval __upper := $1) \
 		$(foreach p,$(upper_map), \
@@ -281,11 +291,16 @@ $(call uc,$1)_VERSION ?= $2
 NEEDS_$(call uc,$1) := $$(bin_dir)/tools/$1
 $(call uc,$1) := $$(CURDIR)/$$(bin_dir)/tools/$1
 
+# Create symlink from $(bin_dir)/tools/$1 to the versioned binary in $(DOWNLOAD_DIR)
 $$(bin_dir)/tools/$1: $$(bin_dir)/scratch/$(call uc,$1)_VERSION | $$(DOWNLOAD_DIR)/tools/$1@$$($(call uc,$1)_VERSION)_$$(HOST_OS)_$$(HOST_ARCH) $$(bin_dir)/tools
+	@# cd into tools dir and create relative symlink (e.g., ../downloaded/tools/helm@v4.0.1_darwin_arm64)
+	@# patsubst converts absolute path to relative by replacing $(bin_dir) with ..
 	@cd $$(dir $$@) && $$(LN) $$(patsubst $$(bin_dir)/%,../%,$$(word 1,$$|)) $$(notdir $$@)
 	@touch $$@ # making sure the target of the symlink is newer than *_VERSION
 endef
 
+# For each tool in the tools list (e.g., "helm=v4.0.1"), split on "=" and call tool_defs
+# with the tool name as first arg and version as second arg
 $(foreach tool,$(tools),$(eval $(call tool_defs,$(word 1,$(subst =, ,$(tool))),$(word 2,$(subst =, ,$(tool))))))
 
 ######
@@ -303,6 +318,9 @@ $(foreach tool,$(tools),$(eval $(call tool_defs,$(word 1,$(subst =, ,$(tool))),$
 # to $(bin_dir)/tools/go, since $(bin_dir)/tools/go is a prerequisite of
 # any target depending on Go when "make vendor-go" was run.
 
+# Auto-detect if Go vendoring should be enabled:
+# - Set if "vendor-go" is in the make command goals, OR
+# - Set if $(bin_dir)/tools/go already exists (vendoring was previously run)
 detected_vendoring := $(findstring vendor-go,$(MAKECMDGOALS))$(shell [ -f $(bin_dir)/tools/go ] && echo yes)
 export VENDOR_GO ?= $(detected_vendoring)
 
@@ -346,16 +364,22 @@ which-go: | $(NEEDS_GO)
 	@echo "go binary used for above version information: $(GO)"
 
 $(bin_dir)/tools/go: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(bin_dir)/tools/goroot $(bin_dir)/tools
+	@# Create symlink to the go binary inside the goroot
 	@cd $(dir $@) && $(LN) ./goroot/bin/go $(notdir $@)
 	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
 # The "_" in "_bin" prevents "go mod tidy" from trying to tidy the vendored goroot.
 $(bin_dir)/tools/goroot: $(bin_dir)/scratch/VENDORED_GO_VERSION | $(GOVENDOR_DIR)/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot $(bin_dir)/tools
+	@# Create relative symlink from $(bin_dir)/tools/goroot to $(GOVENDOR_DIR)/...
+	@# patsubst converts the absolute path to relative (e.g., ../../go_vendor/go@1.25.4_darwin_arm64/goroot)
 	@cd $(dir $@) && $(LN) $(patsubst $(bin_dir)/%,../%,$(word 1,$|)) $(notdir $@)
 	@touch $@ # making sure the target of the symlink is newer than *_VERSION
 
 # Extract the tar to the $(GOVENDOR_DIR) directory, this directory is not cached across CI runs.
 $(GOVENDOR_DIR)/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH)/goroot: | $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
+	@# 1. Use lock script to prevent concurrent extraction
+	@# 2. Extract tar.gz to temp directory (creates "go" folder inside)
+	@# 3. Rename the extracted "go" directory to final location
 	@source $(lock_script) $@; \
 		mkdir -p $(outfile).dir; \
 		tar xzf $| -C $(outfile).dir; \
@@ -425,9 +449,13 @@ $(call for_each_kv,go_tags_defs,$(go_tags))
 
 go_tool_names :=
 
+# Template for building Go-based tools from source using "go install"
 define go_dependency
 go_tool_names += $1
 $$(DOWNLOAD_DIR)/tools/$1@$($(call uc,$1)_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $$(NEEDS_GO) $$(DOWNLOAD_DIR)/tools
+	@# 1. Use lock script to prevent concurrent builds of the same tool
+	@# 2. Install to temp dir using GOBIN, with GOWORK=off to ignore workspace files
+	@# 3. Move the binary to final location
 	@source $$(lock_script) $$@; \
 		mkdir -p $$(outfile).dir; \
 		GOWORK=off GOBIN=$$(outfile).dir $$(GO) install --tags "$(strip $(go_tags_$1))" $2@$($(call uc,$1)_VERSION); \
@@ -528,20 +556,23 @@ $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)
 		$(checkhash_script) $(outfile) $(kubebuilder_tools_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 $(DOWNLOAD_DIR)/tools/etcd@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH): $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz | $(DOWNLOAD_DIR)/tools
+	@# Extract specific file from tarball using tar's -O flag (output to stdout)
 	@source $(lock_script) $@; \
 		tar xfO $< controller-tools/envtest/etcd > $(outfile) && chmod 775 $(outfile)
 
 $(DOWNLOAD_DIR)/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH): $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz | $(DOWNLOAD_DIR)/tools
+	@# Extract specific file from tarball using tar's -O flag (output to stdout)
 	@source $(lock_script) $@; \
 		tar xfO $< controller-tools/envtest/kube-apiserver > $(outfile) && chmod 775 $(outfile)
 
-kyverno_linux_amd64_SHA256SUM=edb9ec84406704a39e6eced5089df2da75c81dde3d8422255af294bd5e0bc52f
-kyverno_linux_arm64_SHA256SUM=c7897ad466917f0c5a3cc5bb39142929388f739e20bb9e7e3cd422ef90214973
-kyverno_darwin_amd64_SHA256SUM=c6f7052569527498728d8c19551fa985378107c785391c6d601d1aa452bbb101
-kyverno_darwin_arm64_SHA256SUM=cac8aefd5de5e23431dc8f1a7d0acf8233ce66462446f23f2d5575cafedcf7b8
+kyverno_linux_amd64_SHA256SUM=0c0216e4c3bb535eaf94ea1c2e13e4d66f7be2ec6446c37aee6c3133650167e7
+kyverno_linux_arm64_SHA256SUM=c1d349a272c2adf1bc9d2caf23a354ff4edc10687664c7a04da6fb84ce502c20
+kyverno_darwin_amd64_SHA256SUM=7985d522952e88adf7f21058439099b0e27c099baab0589b3a501862daebe842
+kyverno_darwin_arm64_SHA256SUM=25a704a74683a3da5bb50cb9e7a11a4df686121674d1271f49c0261618c94f1d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Kyverno uses x86_64 instead of amd64 in download URLs, so translate the architecture
 	$(eval ARCH := $(subst amd64,x86_64,$(HOST_ARCH)))
 
 	@source $(lock_script) $@; \
@@ -570,6 +601,7 @@ ko_darwin_arm64_SHA256SUM=2efa5796986e38994a3a233641b98404fa071a76456e3c99b3c00d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Ko uses capitalized OS names (Linux/Darwin) and x86_64 instead of amd64
 	$(eval OS := $(subst linux,Linux,$(subst darwin,Darwin,$(HOST_OS))))
 	$(eval ARCH := $(subst amd64,x86_64,$(HOST_ARCH)))
 
@@ -587,6 +619,7 @@ protoc_darwin_arm64_SHA256SUM=db7e66ff7f9080614d0f5505a6b0ac488cf89a15621b6a3616
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Protoc uses different naming: darwin->osx, amd64->x86_64, arm64->aarch_64
 	$(eval OS := $(subst darwin,osx,$(HOST_OS)))
 	$(eval ARCH := $(subst arm64,aarch_64,$(subst amd64,x86_64,$(HOST_ARCH))))
 
@@ -597,13 +630,14 @@ $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-trivy_linux_amd64_SHA256SUM=546511a5514afc813c0b72e4abeea2c16a32228a13a1e5114d927c190e76b1f9
-trivy_linux_arm64_SHA256SUM=e4f28390b06cdaaed94f8c49cce2c4c847938b5188aefdeb82453f2e933e57cb
-trivy_darwin_amd64_SHA256SUM=4a5b936a8d89b508ecdc6edd65933b6fe3e9a368796cbdf917fd0df393f26542
-trivy_darwin_arm64_SHA256SUM=6b3163667f29fc608a2ed647c1bd42023af5779349286148190a168c5b3f28f1
+trivy_linux_amd64_SHA256SUM=63e37242088e418651931f891963c19554faa19f0591fe6b40b606152051df2f
+trivy_linux_arm64_SHA256SUM=b29ea550f573afbcae3c86fb2b5e0ebba76b7cb0965e3787c4e8cb884d2c1d57
+trivy_darwin_amd64_SHA256SUM=d5b5bd3b3c3626d223c3981cc40f4709f00a6327a681b588d2fc64a3aa9d02c5
+trivy_darwin_arm64_SHA256SUM=4dd3d2e74e1b6f6f7fd5fbf55489727698f586d6a6a0cff3421031a05b80bcac
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Trivy uses unusual naming: Linux/macOS for OS, 64bit/ARM64 for architecture
 	$(eval OS := $(subst linux,Linux,$(subst darwin,macOS,$(HOST_OS))))
 	$(eval ARCH := $(subst amd64,64bit,$(subst arm64,ARM64,$(HOST_ARCH))))
 
@@ -633,6 +667,7 @@ rclone_darwin_arm64_SHA256SUM=8396a06f793668da6cf0d8cf2e6a2da4c971bcbc7584286ffd
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Rclone uses "osx" instead of "darwin" in download URLs
 	$(eval OS := $(subst darwin,osx,$(HOST_OS)))
 
 	@source $(lock_script) $@; \
@@ -649,6 +684,7 @@ istioctl_darwin_arm64_SHA256SUM=593f8d58571ff4cddcd069041d2c398da4e0d6fc80558907
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@# Istio uses "osx" instead of "darwin" in download URLs
 	$(eval OS := $(subst darwin,osx,$(HOST_OS)))
 
 	@source $(lock_script) $@; \
@@ -695,6 +731,9 @@ $(DOWNLOAD_DIR)/tools/operator-sdk@$(OPERATOR-SDK_VERSION)_$(HOST_OS)_$(HOST_ARC
 # about go being missing even though abc itself depends on vendor-go!
 # That means we need to pass vendor-go at the top level if go is not installed (i.e. "make vendor-go abc")
 
+# Check for required system tools by testing if each command exists
+# If a command is missing, echo its name. The && chains mean all tests run,
+# and "missing" will contain a space-separated list of any missing tools.
 missing=$(shell (command -v curl >/dev/null || echo curl) \
              && (command -v sha256sum >/dev/null || command -v shasum >/dev/null || echo sha256sum) \
              && (command -v git >/dev/null || echo git) \
