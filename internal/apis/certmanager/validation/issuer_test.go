@@ -1143,7 +1143,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 				field.Invalid(fldPath.Child("azureDNS", "environment"), cmacme.AzureDNSEnvironment("an env"),
-					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
+					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud, or AzureUSGovernmentCloud"),
 			},
 		},
 		"invalid azuredns missing clientSecret and tenantID": {

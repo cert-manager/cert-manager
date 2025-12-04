@@ -609,8 +609,8 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	// The AccessKeyID is used for authentication.
 	// Cannot be set when SecretAccessKeyID is set.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
+	// If neither the Access Key nor Key ID are set, we fall back to using env
+	// vars, shared credentials file, or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
 	AccessKeyID string `json:"accessKeyID,omitempty"`
@@ -618,15 +618,15 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// The SecretAccessKey is used for authentication. If set, pull the AWS
 	// access key ID from a key within a Kubernetes Secret.
 	// Cannot be set when AccessKeyID is set.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
+	// If neither the Access Key nor Key ID are set, we fall back to using env
+	// vars, shared credentials file, or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
 	SecretAccessKeyID *cmmeta.SecretKeySelector `json:"accessKeyIDSecretRef,omitempty"`
 
 	// The SecretAccessKey is used for authentication.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
+	// If neither the Access Key nor Key ID are set, we fall back to using env
+	// vars, shared credentials file, or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
 	SecretAccessKey cmmeta.SecretKeySelector `json:"secretAccessKeySecretRef"`
@@ -742,7 +742,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 // AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity
 // If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.
-// Otherwise, we fall-back to using Azure Managed Service Identity.
+// Otherwise, we fall back to using Azure Managed Service Identity.
 type AzureManagedIdentity struct {
 	// client ID of the managed identity, cannot be used at the same time as resourceID
 	// +optional
