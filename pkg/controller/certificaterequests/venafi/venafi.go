@@ -18,7 +18,6 @@ package venafi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
@@ -102,11 +101,22 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, err
 	}
 
-	var customFields []api.CustomField
-	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
-		err := json.Unmarshal([]byte(annotation), &customFields)
+	var issuerCustomFields []api.CustomField
+	var certificateFields []api.CustomField
+	if issuerAnnotation, exists := issuerObj.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && issuerAnnotation != "" {
+		issuerCustomFields, err = parseCustomFieldAnnotation(issuerAnnotation)
 		if err != nil {
-			message := fmt.Sprintf("Failed to parse %q annotation", cmapi.VenafiCustomFieldsAnnotationKey)
+			message := fmt.Sprintf("Failed to parse %s %q annotation", issuerObj.GetName(), cmapi.VenafiCustomFieldsAnnotationKey)
+			v.reporter.Failed(cr, err, "CustomFieldsError", message)
+			log.Error(err, message)
+			return nil, nil
+		}
+	}
+
+	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
+		certificateFields, err = parseCustomFieldAnnotation(annotation)
+		if err != nil {
+			message := fmt.Sprintf("Failed to parse %s %q annotation", cr.GetName(), cmapi.VenafiCustomFieldsAnnotationKey)
 
 			v.reporter.Failed(cr, err, "CustomFieldsError", message)
 			log.Error(err, message)
@@ -114,7 +124,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 			return nil, nil
 		}
 	}
-
+	customFields := mergeCustomFields(issuerCustomFields, certificateFields)
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 	pickupID := cr.ObjectMeta.Annotations[cmapi.VenafiPickupIDAnnotationKey]
 
