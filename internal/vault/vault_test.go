@@ -445,7 +445,7 @@ func TestSetToken(t *testing.T) {
 
 		fakeClient *vaultfake.FakeClient
 	}{
-		"if neither token secret ref, app role secret ref, clientCertificate auth or kube auth not found then error": {
+		"error when no credentials are found": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
@@ -455,7 +455,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
+				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set",
 			),
 		},
 
