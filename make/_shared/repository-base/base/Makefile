@@ -39,8 +39,16 @@
 # For details on some of these "prelude" settings, see:
 # https://clarkgrubb.com/makefile-style-guide
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
-SHELL := /usr/bin/env PS1="" bash
-.SHELLFLAGS := -uo pipefail -c
+SHELL := /usr/bin/env bash
+# The `--norc` option prevents "PS1: unbound" errors.
+# If Bash thinks it is being run with its standard input connected to a network
+# connection (such as via SSH or via Docker), it reads and executes commands
+# from ~/.bashrc, regardless of whether it thinks it is in interactive mode.
+# Bash does not set PS1 in non-interactive environments. But on Ubuntu 24.04 the
+# default /etc/bash.bashrc file assumes that PS1 is set.
+#
+# See https://www.gnu.org/software/bash/manual/bash.html#Invoked-by-remote-shell-daemon
+.SHELLFLAGS := --norc -uo pipefail -c
 .DEFAULT_GOAL := help
 .DELETE_ON_ERROR:
 .SUFFIXES:
