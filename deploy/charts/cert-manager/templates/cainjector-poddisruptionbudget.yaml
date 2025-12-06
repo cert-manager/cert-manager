@@ -26,4 +26,7 @@ spec:
   {{- if hasKey .Values.cainjector.podDisruptionBudget "maxUnavailable" }}
   maxUnavailable: {{ .Values.cainjector.podDisruptionBudget.maxUnavailable }}
   {{- end }}
+  {{- with .Values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
+  {{- end }}
 {{- end }}
