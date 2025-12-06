@@ -21,7 +21,8 @@
 		"*",
 		"-kubectl.kubernetes.io/",
 		"-fluxcd.io/",
-		"-argocd.argoproj.io/"
+		"-argocd.argoproj.io/",
+		"-kapp.k14s.io/"
 	],
 	"numberOfConcurrentWorkers": 5,
 	"maxConcurrentChallenges": 60,
