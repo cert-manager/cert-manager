@@ -101,22 +101,22 @@ func NewController(
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
 	// When a CertificateRequest resource changes, enqueue the Certificate resource that owns it.
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	}); err != nil {
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 	// When a Secret resource changes, enqueue any Certificate resources that name it as spec.secretName.
-	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
 		// Trigger reconciles on changes to the Secret named `spec.secretName`
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	}); err != nil {
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
