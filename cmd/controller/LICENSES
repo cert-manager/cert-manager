@@ -85,6 +85,7 @@ github.com/davecgh/go-spew/spew,ISC
 github.com/digitalocean/godo,MIT
 github.com/digitalocean/godo,BSD-3-Clause
 github.com/emicklei/go-restful/v3,MIT
+github.com/evanphx/json-patch/v5,BSD-3-Clause
 github.com/felixge/httpsnoop,MIT
 github.com/fxamacker/cbor/v2,MIT
 github.com/go-asn1-ber/asn1-ber,MIT
@@ -213,6 +214,7 @@ k8s.io/kube-openapi/pkg/validation/spec,Apache-2.0
 k8s.io/utils,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang,BSD-3-Clause
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,Apache-2.0
+sigs.k8s.io/controller-runtime/pkg,Apache-2.0
 sigs.k8s.io/gateway-api,Apache-2.0
 sigs.k8s.io/json,Apache-2.0
 sigs.k8s.io/json,BSD-3-Clause
