@@ -33,4 +33,7 @@ generate-base:
 		cp $(_repository_base_module_dir)/renovate-bootstrap-config.json5 ./.github/renovate.json5; \
 	fi
 
+	# TODO(erikgb): Remove the following command when all Renovate workflow files are gone
+	rm -f ./.github/chainguard/renovate.sts.yaml ./.github/workflows/renovate.yaml
+
 shared_generate_targets += generate-base
