@@ -102,7 +102,7 @@ tools += ytt=v0.52.1
 tools += rclone=v1.72.0
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.28.0
+tools += istioctl=1.28.1
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -165,13 +165,13 @@ tools += helm-tool=v0.5.3
 tools += image-tool=v0.1.0
 # https://github.com/cert-manager/cmctl/releases
 # renovate: datasource=github-releases packageName=cert-manager/cmctl
-tools += cmctl=v2.3.0
+tools += cmctl=v2.4.0
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/release
 tools += cmrel=v1.12.15-0.20241121151736-e3cbe5171488
 # https://pkg.go.dev/github.com/golangci/golangci-lint/v2/cmd/golangci-lint?tab=versions
 # renovate: datasource=go packageName=github.com/golangci/golangci-lint/v2
-tools += golangci-lint=v2.6.2
+tools += golangci-lint=v2.7.1
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 # renovate: datasource=go packageName=golang.org/x/vuln
 tools += govulncheck=v1.1.4
@@ -677,10 +677,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=31ba3429f6527e085a5b3630bb732f876e8ff8a433947abae2cdd886c9e59271
-istioctl_linux_arm64_SHA256SUM=f1eff3bcc86dcd72ee473d8a7fbfe9eafd2337b946c9c3fd40f0c9d0e20e2561
-istioctl_darwin_amd64_SHA256SUM=5cbe5c4bf72bf5e447d39626d69874e25b96578a19c40c420ec9af09eae71ccd
-istioctl_darwin_arm64_SHA256SUM=593f8d58571ff4cddcd069041d2c398da4e0d6fc8055890715cad95feec09aeb
+istioctl_linux_amd64_SHA256SUM=4e5d96f1efacd2186cd2ed664055e3ad90e8652a56f0303f812705c577c84f87
+istioctl_linux_arm64_SHA256SUM=1e156834e757b09a5048e50c50e177b05637f83a470eecf0878addd3ede0d09f
+istioctl_darwin_amd64_SHA256SUM=656e1f504d38cd209572dfdce9cb744f1122f248ed496feaddea9206f5a93c1b
+istioctl_darwin_arm64_SHA256SUM=24557042710431346d78a81c43881b3f54865b66f323c468c4d08398624fe1c3
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
