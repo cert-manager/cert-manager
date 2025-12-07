@@ -228,6 +228,9 @@ type CertificateOptions struct {
 	// CopiedAnnotationPrefixes defines which annotations should be copied
 	// Certificate -> CertificateRequest, CertificateRequest -> Order.
 	CopiedAnnotationPrefixes []string
+	// CertificateRequestBackoffDuration defines how long the trigger controller should
+	// set the default backoff duration in the case an error occurs.
+	CertificateRequestBackoffDuration time.Duration
 }
 
 type SchedulerOptions struct {

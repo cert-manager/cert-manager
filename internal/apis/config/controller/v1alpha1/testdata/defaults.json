@@ -66,5 +66,6 @@
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
-	}
+	},
+	"certificateRequestBackoffDuration": "1h0m0s"
 }
