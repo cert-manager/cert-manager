@@ -90,10 +90,10 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	c.secretLister = secretInformer.Lister()
 
 	// register handler functions
-	if _, err := issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+	if _, err := issuerInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretEvent}); err != nil {
+	if _, err := secretInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(c.secretEvent)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
