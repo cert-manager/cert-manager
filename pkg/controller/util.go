@@ -163,7 +163,7 @@ func (q queuingEventHandler) OnDelete(obj interface{}) {
 }
 
 // blockingEventHandler is an implementation of cache.ResourceEventHandler that
-// simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
+// simply synchronously calls its workFunc upon calls to OnAdd, OnUpdate or
 // OnDelete.
 // It skips update events in case the resource has not changed.
 type blockingEventHandler struct {
@@ -171,7 +171,7 @@ type blockingEventHandler struct {
 }
 
 // BlockingEventHandler returns a cache.ResourceEventHandler that
-// simply synchronously calls it's WorkFunc upon calls to OnAdd, OnUpdate or
+// simply synchronously calls the workFunc upon calls to OnAdd, OnUpdate or
 // OnDelete. It skips update events in case the resource has not changed.
 func BlockingEventHandler(
 	workFunc func(obj interface{}),
@@ -179,7 +179,6 @@ func BlockingEventHandler(
 	return blockingEventHandler{
 		workFunc: workFunc,
 	}
-
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
