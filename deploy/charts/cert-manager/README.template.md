@@ -105,6 +105,18 @@ The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with mat
   
 If a component-specific nodeSelector is also set, it will be merged and take precedence.
 
+#### **global.tolerations** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Global tolerations  
+  
+A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+  
+If component-specific tolerations are also set, they will be merged.
+
 #### **global.commonLabels** ~ `object`
 > Default value:
 > ```yaml

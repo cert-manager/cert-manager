@@ -22,6 +22,14 @@ global:
   # +docs:property
   nodeSelector: {}
   
+  # Global tolerations
+  #
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+  #
+  # If component-specific tolerations are also set, they will be merged.
+  # +docs:property
+  tolerations: []
+  
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
