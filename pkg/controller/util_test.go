@@ -106,7 +106,7 @@ func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			predicate := onlyUpdateWhenResourceChanged{}
+			predicate := onlyUpdateWhenResourceChanged[metav1.Object]{}
 			e := event.TypedUpdateEvent[metav1.Object]{
 				ObjectOld: tt.oldObj,
 				ObjectNew: tt.newObj,
@@ -182,7 +182,7 @@ func TestBlockingEventHandler(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			callCount := 0
-			handler := BlockingEventHandler(func(obj interface{}) {
+			handler := BlockingEventHandler(func(obj metav1.Object) {
 				require.Equal(t, obj, obj1)
 				callCount++
 			})
@@ -363,7 +363,7 @@ func TestFilterEventHandler(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			callCount := 0
 			handler := FilterEventHandler(
-				BlockingEventHandler(func(obj interface{}) { callCount++ }),
+				BlockingEventHandler(func(obj metav1.Object) { callCount++ }),
 				test.predicate,
 			)
 
