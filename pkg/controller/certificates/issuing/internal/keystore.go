@@ -28,8 +28,8 @@ import (
 	"fmt"
 	"time"
 
+	pkcs12 "github.com/cert-manager/go-pkcs12"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
-	"software.sslmate.com/src/go-pkcs12"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -40,7 +40,7 @@ import (
 // If the certificate data contains multiple certificates, the first will be used
 // as the keystores 'certificate' and the remaining certificates will be prepended
 // to the list of CAs in the resulting keystore.
-func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
+func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, keyAlias string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
 	key, err := pki.DecodePrivateKeyBytes(rawKey)
 	if err != nil {
 		return nil, err
@@ -64,13 +64,13 @@ func encodePKCS12Keystore(profile cmapi.PKCS12Profile, password string, rawKey [
 
 	switch profile {
 	case cmapi.Modern2023PKCS12Profile:
-		return pkcs12.Modern2023.Encode(key, certs[0], cas, password)
+		return pkcs12.Modern2023.EncodeWithFriendlyName(keyAlias, key, certs[0], cas, password)
 	case cmapi.LegacyDESPKCS12Profile:
-		return pkcs12.LegacyDES.Encode(key, certs[0], cas, password)
+		return pkcs12.LegacyDES.EncodeWithFriendlyName(keyAlias, key, certs[0], cas, password)
 	case cmapi.LegacyRC2PKCS12Profile:
-		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
+		return pkcs12.LegacyRC2.EncodeWithFriendlyName(keyAlias, key, certs[0], cas, password)
 	default:
-		return pkcs12.LegacyRC2.Encode(key, certs[0], cas, password)
+		return pkcs12.LegacyRC2.EncodeWithFriendlyName(keyAlias, key, certs[0], cas, password)
 	}
 }
 

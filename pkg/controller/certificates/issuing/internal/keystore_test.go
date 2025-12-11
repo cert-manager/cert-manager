@@ -23,13 +23,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cert-manager/go-pkcs12"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"sigs.k8s.io/randfill"
-	"software.sslmate.com/src/go-pkcs12"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -346,12 +346,14 @@ func TestEncodeJKSTruststore(t *testing.T) {
 func TestEncodePKCS12Keystore(t *testing.T) {
 	tests := map[string]struct {
 		password               string
+		alias                  string
 		rawKey, certPEM, caPEM []byte
 		verify                 func(t *testing.T, out []byte, err error)
 		run                    func(t testing.T)
 	}{
 		"encode a JKS bundle for a PKCS1 key and certificate only": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS1),
 			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
@@ -373,6 +375,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		},
 		"encode a JKS bundle for a PKCS8 key and certificate only": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
 			certPEM:  mustSelfSignCertificate(t),
 			verify: func(t *testing.T, out []byte, err error) {
@@ -394,6 +397,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		},
 		"encode a JKS bundle for a key, certificate and ca": {
 			password: "password",
+			alias:    "alias",
 			rawKey:   mustGeneratePrivateKey(t, cmapi.PKCS8),
 			certPEM:  mustSelfSignCertificate(t),
 			caPEM:    mustSelfSignCertificate(t),
@@ -421,7 +425,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
-				out, err := encodePKCS12Keystore(profile, test.password, test.rawKey, test.certPEM, test.caPEM)
+				out, err := encodePKCS12Keystore(profile, test.password, test.alias, test.rawKey, test.certPEM, test.caPEM)
 				test.verify(t, out, err)
 			}
 		})
@@ -432,7 +436,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 
 		chain := mustLeafWithChain(t)
 		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
-			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
+			out, err := encodePKCS12Keystore(profile, password, "alias", chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
 			require.NoError(t, err)
 
 			pkOut, certOut, caChain, err := pkcs12.DecodeChain(out, password)
@@ -453,7 +457,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 
 		chain := mustLeafWithChain(t)
 		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
-			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
+			out, err := encodePKCS12Keystore(profile, password, "alias", chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
 			require.NoError(t, err)
 
 			pkOut, certOut, caChainOut, err := pkcs12.DecodeChain(out, password)

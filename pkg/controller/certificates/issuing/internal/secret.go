@@ -276,8 +276,11 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 		}
 
 		profile := crt.Spec.Keystores.PKCS12.Profile
-
-		keystoreData, err := encodePKCS12Keystore(profile, string(pw), data.PrivateKey, data.Certificate, data.CA)
+		alias := "certificate"
+		if crt.Spec.Keystores.PKCS12.Alias != nil {
+			alias = *crt.Spec.Keystores.PKCS12.Alias
+		}
+		keystoreData, err := encodePKCS12Keystore(profile, string(pw), alias, data.PrivateKey, data.Certificate, data.CA)
 		if err != nil {
 			return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 		}

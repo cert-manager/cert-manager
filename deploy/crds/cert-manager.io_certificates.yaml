@@ -236,6 +236,11 @@ spec:
                       PKCS12 configures options for storing a PKCS12 keystore in the
                       `spec.secretName` Secret resource.
                     properties:
+                      alias:
+                        description: |-
+                          Alias specifies the alias of the key in the keystore, required by the PKCS12 format.
+                          If not provided, the default alias `certificate` will be used.
+                        type: string
                       create:
                         description: |-
                           Create enables PKCS12 keystore creation for the Certificate.
