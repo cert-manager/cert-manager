@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -43,8 +44,8 @@ func handleSecretReferenceWorkFunc(log logr.Logger,
 	lister clientv1.CertificateRequestLister,
 	helper issuer.Helper,
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
-) func(obj any) {
-	return func(obj any) {
+) func(metav1.Object) {
+	return func(obj metav1.Object) {
 		log := log.WithName("handleSecretReference")
 		secret, ok := controllerpkg.ToSecret(obj)
 		if !ok {
