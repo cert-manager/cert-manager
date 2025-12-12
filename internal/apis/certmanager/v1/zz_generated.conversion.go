@@ -1379,6 +1379,7 @@ func Convert_certmanager_OtherName_To_v1_OtherName(in *certmanager.OtherName, ou
 
 func autoConvert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *certmanagerv1.PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	out.Profile = certmanager.PKCS12Profile(in.Profile)
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
@@ -1394,6 +1395,7 @@ func Convert_v1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *certmanagerv1.P
 
 func autoConvert_certmanager_PKCS12Keystore_To_v1_PKCS12Keystore(in *certmanager.PKCS12Keystore, out *certmanagerv1.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	out.Profile = certmanagerv1.PKCS12Profile(in.Profile)
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err

@@ -27,6 +27,7 @@ import (
 // with apply.
 type PKCS12KeystoreApplyConfiguration struct {
 	Create            *bool                                       `json:"create,omitempty"`
+	Alias             *string                                     `json:"alias,omitempty"`
 	Profile           *certmanagerv1.PKCS12Profile                `json:"profile,omitempty"`
 	PasswordSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"passwordSecretRef,omitempty"`
 	Password          *string                                     `json:"password,omitempty"`
@@ -43,6 +44,14 @@ func PKCS12Keystore() *PKCS12KeystoreApplyConfiguration {
 // If called multiple times, the Create field is set to the value of the last call.
 func (b *PKCS12KeystoreApplyConfiguration) WithCreate(value bool) *PKCS12KeystoreApplyConfiguration {
 	b.Create = &value
+	return b
+}
+
+// WithAlias sets the Alias field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Alias field is set to the value of the last call.
+func (b *PKCS12KeystoreApplyConfiguration) WithAlias(value string) *PKCS12KeystoreApplyConfiguration {
+	b.Alias = &value
 	return b
 }
 

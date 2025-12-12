@@ -545,6 +545,11 @@ type PKCS12Keystore struct {
 	// Authority
 	Create bool `json:"create"`
 
+	// Alias specifies the alias of the key in the keystore, required by the PKCS12 format.
+	// If not provided, the default alias `certificate` will be used.
+	// +optional
+	Alias *string `json:"alias,omitempty"`
+
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
