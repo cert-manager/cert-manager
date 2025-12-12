@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -35,7 +36,7 @@ import (
 
 func Test_handleSecretReferenceWorkFunc(t *testing.T) {
 	tests := map[string]struct {
-		secret          runtime.Object
+		secret          metav1.Object
 		existingCRs     []runtime.Object
 		existingIssuers []runtime.Object
 		expectedQueue   []types.NamespacedName

@@ -28,9 +28,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -135,7 +138,22 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	}
 
 	// register handler functions
-	if _, err := challengeInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
+	if _, err := challengeInformer.Informer().AddEventHandler(
+		controllerpkg.FilterEventHandler(
+			controllerpkg.QueuingEventHandler(c.queue),
+			// Ignore any non-spec/ metadata changes. This prevents getting
+			// in a tight-loop when the status is updated due to an error. Instead,
+			// the expontial backoff should trigger a new reconcile after an error.
+			predicate.TypedFuncs[*cmacme.Challenge]{
+				UpdateFunc: func(e event.TypedUpdateEvent[*cmacme.Challenge]) bool {
+					// "The .metadata.generation value is incremented for all changes, except for
+					// changes to .metadata or .status."
+					// from https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#status-subresource
+					return e.ObjectOld.Generation != e.ObjectNew.Generation
+				},
+			},
+		),
+	); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

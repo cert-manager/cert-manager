@@ -21,13 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
-	"github.com/digitalocean/godo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -123,9 +118,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 			err = solver.CleanUp(ctx, ch)
 			if err != nil {
 				c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-				// stabilize the error message to avoid spurious updates which would
-				// cause repeated reconciles
-				ch.Status.Reason = stabilizeSolverErrorMessage(err)
+				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
 			}
@@ -170,9 +163,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
 			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
-			// stabilize the error message to avoid spurious updates which would
-			// cause repeated reconciles
-			ch.Status.Reason = stabilizeSolverErrorMessage(err)
+			ch.Status.Reason = err.Error()
 			return err
 		}
 
@@ -199,72 +190,6 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	}
 
 	return nil
-}
-
-// stabilizeSolverErrorMessage will attempt to remove any unique IDs from the given
-// error message so that it can be assigned to the Challenge.Status.Reason
-// field without causing spurious updates.
-//
-// For example,
-// - Azure SDK returns the contents of the HTTP requests in its error messages.
-// - AWS SDK adds request UIDs to its error messages.
-// - DigitalOcean SDK adds request UIDs to its error messages.
-//
-// TODO(wallrj): Ideally this would not be necessary. It should be possible to
-// add the unique error message to the status without triggering another
-// reconcile.
-//
-// TODO(wallrj): This won't work if one of the unstable errors is wrapped inside
-// another unstable error, because we only unwrap the first instance and the
-// strings.ReplaceAll calls won't find it. At time of wriging none of the DNS
-// SDKs returns nested unstable errors, so we do not expect this to be a problem
-// in practice.
-func stabilizeSolverErrorMessage(err error) string {
-	if err == nil {
-		return ""
-	}
-	fullMessage := err.Error()
-	{
-		var target *awshttp.ResponseError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted AWS SDK error: http.ResponseError: see events and logs for details>",
-			)
-		}
-	}
-	{
-		var target *azidentity.AuthenticationFailedError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted Azure SDK error: azidentity.AuthenticationFailedError: see events and logs for details>",
-			)
-		}
-	}
-	{
-		var target *azcore.ResponseError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted Azure SDK error: azcore.ResponseError: see events and logs for details>",
-			)
-		}
-	}
-	{
-		var target *godo.ErrorResponse
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted DigitalOcean SDK error: godo.ErrorResponse: see events and logs for details>",
-			)
-		}
-	}
-	return fullMessage
 }
 
 // handleError will handle ACME error types, updating the challenge resource
@@ -337,9 +262,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	err = solver.CleanUp(ctx, ch)
 	if err != nil {
 		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
-		// stabilize the error message to avoid spurious updates which would
-		// cause repeated reconciles
-		ch.Status.Reason = stabilizeSolverErrorMessage(err)
+		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil
 	}
