@@ -133,6 +133,10 @@ type ControllerConfiguration struct {
 
 	// ACMEDNS01Config configures the behaviour of the ACME DNS01 challenge solver
 	ACMEDNS01Config ACMEDNS01Config
+
+	// CertificateRequestBackoffDuration configures the initial backoff duration
+	// when a certificate request fails.
+	CertificateRequestBackoffDuration time.Duration
 }
 
 type LeaderElectionConfig struct {

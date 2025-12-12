@@ -155,6 +155,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	in.IngressShimConfig.DeepCopyInto(&out.IngressShimConfig)
 	in.ACMEHTTP01Config.DeepCopyInto(&out.ACMEHTTP01Config)
 	in.ACMEDNS01Config.DeepCopyInto(&out.ACMEDNS01Config)
+	if in.CertificateRequestBackoffDuration != nil {
+		in, out := &in.CertificateRequestBackoffDuration, &out.CertificateRequestBackoffDuration
+		*out = new(sharedv1alpha1.Duration)
+		**out = **in
+	}
 	return
 }
 

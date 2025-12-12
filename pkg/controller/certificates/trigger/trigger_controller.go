@@ -65,12 +65,13 @@ const (
 // It triggers re-issuance by adding the `Issuing` status condition when a new
 // certificate is required.
 type controller struct {
-	certificateLister        cmlisters.CertificateLister
-	certificateRequestLister cmlisters.CertificateRequestLister
-	secretLister             internalinformers.SecretLister
-	client                   cmclient.Interface
-	recorder                 record.EventRecorder
-	scheduledWorkQueue       scheduler.ScheduledWorkQueue[types.NamespacedName]
+	certificateLister         cmlisters.CertificateLister
+	certificateRequestLister  cmlisters.CertificateRequestLister
+	secretLister              internalinformers.SecretLister
+	client                    cmclient.Interface
+	recorder                  record.EventRecorder
+	scheduledWorkQueue        scheduler.ScheduledWorkQueue[types.NamespacedName]
+	certificateRequestBackoff time.Duration
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -129,13 +130,14 @@ func NewController(
 	}
 
 	return &controller{
-		certificateLister:        certificateInformer.Lister(),
-		certificateRequestLister: certificateRequestInformer.Lister(),
-		secretLister:             secretsInformer.Lister(),
-		client:                   ctx.CMClient,
-		recorder:                 ctx.Recorder,
-		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
-		fieldManager:             ctx.FieldManager,
+		certificateLister:         certificateInformer.Lister(),
+		certificateRequestLister:  certificateRequestInformer.Lister(),
+		secretLister:              secretsInformer.Lister(),
+		client:                    ctx.CMClient,
+		recorder:                  ctx.Recorder,
+		scheduledWorkQueue:        scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		fieldManager:              ctx.FieldManager,
+		certificateRequestBackoff: ctx.CertificateRequestBackoffDuration,
 
 		// The following are used for testing purposes.
 		clock:         ctx.Clock,
@@ -197,7 +199,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Don't trigger issuance if we need to back off due to previous failures and Certificate's spec has not changed.
-	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest)
+	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest, c.certificateRequestBackoff)
 	if backoff {
 		nextIssuanceRetry := c.clock.Now().Add(delay)
 		message := fmt.Sprintf("Backing off from issuance due to previously failed issuance(s). Issuance will next be attempted at %v", nextIssuanceRetry)
@@ -265,7 +267,7 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 //
 // Note that the request can be left nil: in that case, the returned back-off
 // will be 0 since it means the CR must be created immediately.
-func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (bool, time.Duration) {
+func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest, backoffDuration time.Duration) (bool, time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
 	}
@@ -297,7 +299,10 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	now := c.Now()
 	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
 
-	initialDelay := time.Hour
+	initialDelay := backoffDuration
+	if initialDelay <= 0 {
+		initialDelay = time.Hour
+	}
 	delay := initialDelay
 	failedIssuanceAttempts := 0
 	// It is possible that crt.Status.LastFailureTime != nil &&
@@ -306,7 +311,7 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	// attempts were introduced). In such case delay = initialDelay.
 	if crt.Status.FailedIssuanceAttempts != nil {
 		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts
-		delay = time.Hour * time.Duration(math.Pow(2, float64(failedIssuanceAttempts-1)))
+		delay = initialDelay * time.Duration(math.Pow(2, float64(failedIssuanceAttempts-1)))
 	}
 
 	// Ensure that maximum returned delay is 32 hours

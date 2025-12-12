@@ -227,6 +227,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	utilruntime.Must(fs.MarkHidden("internal-healthz-leader-election-timeout"))
 
+	fs.DurationVar(&c.CertificateRequestBackoffDuration, "certificate-request-backoff-duration", c.CertificateRequestBackoffDuration, ""+
+		"Duration of the initial certificate request backoff when a certificate request fails.")
+
 	logf.AddFlags(&c.Logging, fs)
 }
 

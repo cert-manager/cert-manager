@@ -60,6 +60,6 @@ func TestControllerConfigurationDefaults(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		require.Equal(t, expectedData, defaultData)
+		require.Equal(t, string(expectedData), string(defaultData))
 	}
 }
