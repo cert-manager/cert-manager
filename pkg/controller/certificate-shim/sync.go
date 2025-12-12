@@ -624,6 +624,14 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		}
 	}
 
+	if a.Spec.Duration != b.Spec.Duration {
+		return true
+	}
+
+	if a.Spec.RenewBefore != b.Spec.RenewBefore {
+		return true
+	}
+
 	return false
 }
 
