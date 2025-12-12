@@ -182,7 +182,16 @@ func (b blockingEventHandler) OnDelete(obj interface{}) {
 }
 
 // onlyUpdateWhenResourceChanged implements a predicate function only
-// keeping update events when the resources does not deepequal
+// keeping update events when the resource version changed and falls
+// back to deepequal compare when the resource version is missing.
+//
+// We need this predicate because otherwise we might unnecessarily
+// reconcile resources when they did not actually change. Update events
+// can be triggered for other reasons, e.g. periodic resyncs of informers.
+// see https://github.com/kubernetes/client-go/blob/v0.34.3/tools/cache/controller.go#L227-L232
+//
+// This predicate is similar to the predicate in controller-runtime but with fallback
+// see https://github.com/kubernetes-sigs/controller-runtime/blob/4b46eb04d57ff3bec4c3c05206c46af9aa647a24/pkg/predicate/predicate.go#L154
 type onlyUpdateWhenResourceChanged struct {
 	predicate.TypedFuncs[metav1.Object]
 }
@@ -198,7 +207,14 @@ func (onlyUpdateWhenResourceChanged) Update(e event.TypedUpdateEvent[metav1.Obje
 		return false
 	}
 
-	return !reflect.DeepEqual(e.ObjectOld, e.ObjectNew)
+	// Fallback to DeepEqual when ResourceVersion is missing
+	// this happens for example for our fake client tests.
+	if e.ObjectNew.GetResourceVersion() == "" ||
+		e.ObjectOld.GetResourceVersion() == "" {
+		return !reflect.DeepEqual(e.ObjectOld, e.ObjectNew)
+	}
+
+	return e.ObjectNew.GetResourceVersion() != e.ObjectOld.GetResourceVersion()
 }
 
 // filteredEventHandler is an implementation of cache.ResourceEventHandler that
