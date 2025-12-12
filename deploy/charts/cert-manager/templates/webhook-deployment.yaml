@@ -204,7 +204,9 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webhook.tolerations }}
+      {{- $tolerations := .Values.global.tolerations | default list }}
+      {{- $tolerations = concat $tolerations (.Values.webhook.tolerations | default list) }}
+      {{- with $tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
