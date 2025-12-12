@@ -565,7 +565,16 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		return true
 	}
 
-	if a.Spec.RevisionHistoryLimit != b.Spec.RevisionHistoryLimit {
+	var aRevisionHistoryLimit, bRevisionHistoryLimit int32
+	if a.Spec.RevisionHistoryLimit != nil {
+		aRevisionHistoryLimit = *a.Spec.RevisionHistoryLimit
+	}
+
+	if b.Spec.RevisionHistoryLimit != nil {
+		bRevisionHistoryLimit = *b.Spec.RevisionHistoryLimit
+	}
+
+	if aRevisionHistoryLimit != bRevisionHistoryLimit {
 		return true
 	}
 
@@ -624,11 +633,29 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		}
 	}
 
-	if a.Spec.Duration != b.Spec.Duration {
+	var aDuration, bDuration metav1.Duration
+	if a.Spec.Duration != nil {
+		aDuration = *a.Spec.Duration
+	}
+
+	if b.Spec.Duration != nil {
+		bDuration = *b.Spec.Duration
+	}
+
+	if aDuration != bDuration {
 		return true
 	}
 
-	if a.Spec.RenewBefore != b.Spec.RenewBefore {
+	var aRenewBefore, bRenewBefore metav1.Duration
+	if a.Spec.RenewBefore != nil {
+		aRenewBefore = *a.Spec.RenewBefore
+	}
+
+	if b.Spec.RenewBefore != nil {
+		bRenewBefore = *b.Spec.RenewBefore
+	}
+
+	if aRenewBefore != bRenewBefore {
 		return true
 	}
 
