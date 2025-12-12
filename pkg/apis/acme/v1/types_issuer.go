@@ -120,6 +120,10 @@ type ACMEIssuer struct {
 	// Supported profiles are listed by the server's ACME directory URL.
 	// +optional
 	Profile string `json:"profile,omitempty"`
+
+	// KeyType is the type of the account key (RSA or ECC), such as "RSA2048", "RSA4096", "P256", "P384"
+	// +optional
+	KeyType string `json:"keyType,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
