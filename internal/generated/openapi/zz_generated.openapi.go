@@ -4333,7 +4333,7 @@ func schema_pkg_apis_certmanager_v1_VaultClientCertificateAuth(ref common.Refere
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VaultKubernetesAuth is used to authenticate against Vault using a client certificate stored in a Secret.",
+				Description: "VaultClientCertificateAuth is used to authenticate against Vault using a client certificate stored in a Secret.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"mountPath": {
