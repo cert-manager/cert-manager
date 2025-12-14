@@ -66,7 +66,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v4.0.1
+tools += helm=v4.0.2
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.34.3
@@ -99,7 +99,7 @@ tools += trivy=v0.68.1
 tools += ytt=v0.52.1
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.72.0
+tools += rclone=v1.72.1
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.28.1
@@ -180,7 +180,7 @@ tools += govulncheck=v1.1.4
 tools += operator-sdk=v1.42.0
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.83.1
+tools += gh=v2.83.2
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.15.2
@@ -479,10 +479,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=e0365548f01ed52a58a1181ad310b604a3244f59257425bb1739499372bdff60
-helm_linux_arm64_SHA256SUM=959fa52d34e2e1f0154e3220ed5f22263c8593447647a43af07890bba4b004d1
-helm_darwin_amd64_SHA256SUM=a8d1ca46c3ff5484b2b635dfc25832add4f36fdd09cf2a36fb709829c05b4112
-helm_darwin_arm64_SHA256SUM=8e0b9615cf72a62faaa0cfc0e22115f05bcddfd3d7ee58406ef97bc1ba563ae8
+helm_linux_amd64_SHA256SUM=980756a9b2fd501a1d6ddd1b21741678875df005c91bb05bb41093988bb83bb7
+helm_linux_arm64_SHA256SUM=3de681b463fb783f49f5ab72d700c057124ef73fa74062624b8fe95deafded4b
+helm_darwin_amd64_SHA256SUM=1dd2ce37855f5380abc86d56ab38387d4f1b8b05be296760addfe32d7c56a393
+helm_darwin_arm64_SHA256SUM=fed6a23bba5db8a21e40175f44c159e057b26a6361f4280e24c820d0841e150b
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -660,10 +660,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=f3757aa829828c0f3359301bea25eef4d4fd62de735c47546ee6866c5b5545e2
-rclone_linux_arm64_SHA256SUM=c1669ef42d4ad65e3bb3f2cf0b2acf76cf0cbffefe463349a4f2244d8dbed701
-rclone_darwin_amd64_SHA256SUM=b1abd9e0287b19db435b7182faa0bc05478d6d412b839d7f819dee7ec4d9e5d0
-rclone_darwin_arm64_SHA256SUM=8396a06f793668da6cf0d8cf2e6a2da4c971bcbc7584286ffda7e3bf87f40148
+rclone_linux_amd64_SHA256SUM=b5c9b2fb6ada8a400c5fc5d48cd112dc1adea21a3b73b03857059374dd8a78d0
+rclone_linux_arm64_SHA256SUM=66ce9c7fbdf6ba38991fa2ac193ed051bd6d04aeec693900c848154bf549484f
+rclone_darwin_amd64_SHA256SUM=c349fd4c584374af58fc2c71f55a768e86aaebfc5924c36967db896e205e8058
+rclone_darwin_arm64_SHA256SUM=2a2fa94f66b90bfcdab8100011260dad7e1d59d67e6c2f80a251cd9e5f80ce05
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
