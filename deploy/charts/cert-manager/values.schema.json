@@ -57,6 +57,9 @@
         "extraArgs": {
           "$ref": "#/$defs/helm-values.extraArgs"
         },
+        "extraContainers": {
+          "$ref": "#/$defs/helm-values.extraContainers"
+        },
         "extraEnv": {
           "$ref": "#/$defs/helm-values.extraEnv"
         },
@@ -659,6 +662,12 @@
     "helm-values.extraArgs": {
       "default": [],
       "description": "Additional command line flags to pass to cert-manager controller binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.\n\nUse this flag to enable or disable arbitrary controllers. For example, to disable the CertificateRequests approver.\n\nFor example:\nextraArgs:\n  - --controllers=*,-certificaterequests-approver",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.extraContainers": {
+      "default": [],
+      "description": "Extra containers to add to the pod spec in the deployment of the cert-manager controller. For example, to deploy the [aws_signing_helper](https://github.com/aws/rolesanywhere-credential-helper) (replacing the ARNs as relevant):\nextraEnv:\n  - name: AWS_EC2_METADATA_SERVICE_ENDPOINT\n  - value: http://127.0.0.1:9911\nextraContainers:\n  - name: rolesanywhere-credential-helper\n    image: public.ecr.aws/rolesanywhere/credential-helper:latest\n    command: [aws_signing_helper]\n    args:\n      - serve\n      - --private-key\n      - /etc/cert/tls.key\n      - --certificate\n      - /etc/cert/tls.crt\n      - --role-arn\n      - $ROLE_ARN\n      - --profile-arn\n      - $PROFILE_ARN\n      - --trust-anchor-arn\n      - $TRUST_ANCHOR_ARN\n    volumeMounts:\n      - name: cert\n        mountPath: /etc/cert/\n        readOnly: true\nvolumes:\n  - name: cert\n    secret:\n      secretName: cert",
       "items": {},
       "type": "array"
     },
