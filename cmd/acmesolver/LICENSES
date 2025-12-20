@@ -45,7 +45,6 @@ github.com/davecgh/go-spew/spew,ISC
 github.com/fxamacker/cbor/v2,MIT
 github.com/go-logr/logr,Apache-2.0
 github.com/go-logr/zapr,Apache-2.0
-github.com/gogo/protobuf,BSD-3-Clause
 github.com/json-iterator/go,MIT
 github.com/modern-go/concurrent,Apache-2.0
 github.com/modern-go/reflect2,Apache-2.0
@@ -77,6 +76,7 @@ k8s.io/apimachinery/pkg,Apache-2.0
 k8s.io/apimachinery/third_party/forked/golang/reflect,BSD-3-Clause
 k8s.io/component-base,Apache-2.0
 k8s.io/klog/v2,Apache-2.0
+k8s.io/kube-openapi/pkg/util,Apache-2.0
 k8s.io/utils,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang/net,BSD-3-Clause
 sigs.k8s.io/gateway-api/apis/v1,Apache-2.0
