@@ -20,9 +20,20 @@ package v1
 
 // VenafiIssuerApplyConfiguration represents a declarative configuration of the VenafiIssuer type for use
 // with apply.
+//
+// Configures an issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
+// or SaaS policy zone.
 type VenafiIssuerApplyConfiguration struct {
-	Zone  *string                        `json:"zone,omitempty"`
-	TPP   *VenafiTPPApplyConfiguration   `json:"tpp,omitempty"`
+	// Zone is the Certificate Manager Policy Zone to use for this issuer.
+	// All requests made to the Certificate Manager platform will be restricted by the named
+	// zone policy.
+	// This field is required.
+	Zone *string `json:"zone,omitempty"`
+	// TPP specifies CyberArk Certificate Manager Self-Hosted configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
+	TPP *VenafiTPPApplyConfiguration `json:"tpp,omitempty"`
+	// Cloud specifies the CyberArk Certificate Manager SaaS configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
 	Cloud *VenafiCloudApplyConfiguration `json:"cloud,omitempty"`
 }
 

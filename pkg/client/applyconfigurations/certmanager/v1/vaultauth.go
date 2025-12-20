@@ -24,11 +24,22 @@ import (
 
 // VaultAuthApplyConfiguration represents a declarative configuration of the VaultAuth type for use
 // with apply.
+//
+// VaultAuth is configuration used to authenticate with a Vault server. The
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
 type VaultAuthApplyConfiguration struct {
-	TokenSecretRef    *metav1.SecretKeySelectorApplyConfiguration   `json:"tokenSecretRef,omitempty"`
-	AppRole           *VaultAppRoleApplyConfiguration               `json:"appRole,omitempty"`
+	// TokenSecretRef authenticates with Vault by presenting a token.
+	TokenSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"tokenSecretRef,omitempty"`
+	// AppRole authenticates with Vault using the App Role auth mechanism,
+	// with the role and secret stored in a Kubernetes Secret resource.
+	AppRole *VaultAppRoleApplyConfiguration `json:"appRole,omitempty"`
+	// ClientCertificate authenticates with Vault by presenting a client
+	// certificate during the request's TLS handshake.
+	// Works only when using HTTPS protocol.
 	ClientCertificate *VaultClientCertificateAuthApplyConfiguration `json:"clientCertificate,omitempty"`
-	Kubernetes        *VaultKubernetesAuthApplyConfiguration        `json:"kubernetes,omitempty"`
+	// Kubernetes authenticates with Vault by passing the ServiceAccount
+	// token stored in the named Secret resource to the Vault server.
+	Kubernetes *VaultKubernetesAuthApplyConfiguration `json:"kubernetes,omitempty"`
 }
 
 // VaultAuthApplyConfiguration constructs a declarative configuration of the VaultAuth type for use with
