@@ -382,6 +382,7 @@ func TestValidateControllerConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logsapi.SetRecommendedLoggingConfiguration(&tt.config.Logging)
 			errList := ValidateControllerConfiguration(tt.config, nil)
 			var expErrs field.ErrorList
 			if tt.errs != nil {

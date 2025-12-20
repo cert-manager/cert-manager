@@ -27,6 +27,7 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
+	logsapi "k8s.io/component-base/logs/api/v1"
 	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -55,6 +56,7 @@ func NewCAInjectorConfiguration() (*config.CAInjectorConfiguration, error) {
 	if err := scheme.Convert(versioned, config, nil); err != nil {
 		return nil, err
 	}
+	logsapi.SetRecommendedLoggingConfiguration(&config.Logging)
 	return config, nil
 }
 

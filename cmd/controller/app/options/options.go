@@ -32,6 +32,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	cliflag "k8s.io/component-base/cli/flag"
+	logsapi "k8s.io/component-base/logs/api/v1"
 )
 
 // ControllerFlags defines options that can only be configured via flags.
@@ -59,6 +60,7 @@ func NewControllerConfiguration() (*config.ControllerConfiguration, error) {
 	if err := scheme.Convert(versioned, config, nil); err != nil {
 		return nil, err
 	}
+	logsapi.SetRecommendedLoggingConfiguration(&config.Logging)
 	return config, nil
 }
 
