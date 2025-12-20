@@ -106,6 +106,8 @@ type ACMEIssuer struct {
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
 	Profile string `json:"profile,omitempty"`
+
+	KeyType string
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME

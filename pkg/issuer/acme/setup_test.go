@@ -67,8 +67,7 @@ func TestAcme_Setup(t *testing.T) {
 			gen.SetIssuerConditionLastTransitionTime(&nowMetaTime))
 		issuerSecretKeyName = "test"
 
-		ecdsaPrivKey = mustGenerateEDCSAKey(t)
-		rsaPrivKey   = mustGenerateRSAKey(t)
+		rsaPrivKey = mustGenerateRSAKey(t)
 
 		notFoundErr    = apierrors.NewNotFound(corev1.Resource("test"), "test")
 		invalidDataErr = errors.NewInvalidData("test")
@@ -210,16 +209,6 @@ func TestAcme_Setup(t *testing.T) {
 					gen.SetIssuerConditionMessage(messageAccountVerificationFailed+someErr.Error())),
 			},
 			wantsErr: true,
-		},
-		"ACME account's key is not an RSA key": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
-			kfsKey: ecdsaPrivKey,
-			expectedConditions: []cmapi.IssuerCondition{
-				*gen.IssuerConditionFrom(readyFalseCondition,
-					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
-			},
 		},
 		"ACME server URL is an invalid URL": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -539,7 +528,7 @@ func TestAcme_Setup(t *testing.T) {
 				AddClientFunc: func(string, accounts.NewClientOptions) {
 					addClientWasCalled = true
 				},
-				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 					return true
 				},
 			}
@@ -637,15 +626,6 @@ func clientBuilderMock(cl acmecl.Interface) accounts.NewClientFunc {
 func parseURLErr(s string) error {
 	_, err := url.Parse(s)
 	return err
-}
-
-func mustGenerateEDCSAKey(t *testing.T) crypto.Signer {
-	t.Helper()
-	key, err := pki.GenerateECPrivateKey(256)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return key
 }
 
 func mustGenerateRSAKey(t *testing.T) crypto.Signer {
