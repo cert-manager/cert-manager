@@ -82,6 +82,7 @@ func TestGetGenericIssuer(t *testing.T) {
 	for _, row := range tests {
 		t.Run(row.Name, func(t *testing.T) {
 			b := test.Builder{
+				T:                  t,
 				CertManagerObjects: row.CMObjects,
 			}
 			b.Init()
