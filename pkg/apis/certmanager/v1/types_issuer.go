@@ -294,7 +294,7 @@ type VaultAppRole struct {
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
 }
 
-// VaultKubernetesAuth is used to authenticate against Vault using a client
+// VaultClientCertificateAuth is used to authenticate against Vault using a client
 // certificate stored in a Secret.
 type VaultClientCertificateAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with
