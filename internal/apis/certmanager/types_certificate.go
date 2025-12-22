@@ -75,11 +75,9 @@ type PrivateKeyEncoding string
 
 const (
 	// PKCS1 private key encoding.
-	// PKCS1 produces a PEM block that contains the private key algorithm
-	// in the header and the private key in the body. A key that uses this
-	// can be recognised by its `BEGIN RSA PRIVATE KEY` or `BEGIN EC PRIVATE KEY` header.
-	// NOTE: This encoding is not supported for Ed25519 keys. Attempting to use
-	// this encoding with an Ed25519 key will be ignored and default to PKCS8.
+	// For RSA keys: produces PEM block with `BEGIN RSA PRIVATE KEY` header and private key in PKCS#1 format.
+	// For EC keys: produces PEM block with `BEGIN EC PRIVATE KEY` header and private key in SEC 1 format.
+	// For Ed25519 keys: option will be ignored and PKCS8 encoding will be used instead.
 	PKCS1 PrivateKeyEncoding = "PKCS1"
 
 	// PKCS8 private key encoding.
