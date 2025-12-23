@@ -133,6 +133,12 @@ type ControllerConfiguration struct {
 
 	// ACMEDNS01Config configures the behaviour of the ACME DNS01 challenge solver
 	ACMEDNS01Config ACMEDNS01Config
+
+	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
+	// when a certificate request fails. This duration is exponentially increased (up to
+	// a maximum of 32 hours) based on the number of consecutive failures and represents
+	// the minimum backoff applied.
+	CertificateRequestMinimumBackoffDuration time.Duration
 }
 
 type LeaderElectionConfig struct {

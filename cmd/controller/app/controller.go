@@ -355,8 +355,9 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
-			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
+			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
+			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
+			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
 		},
 
 		ConfigOptions: controller.ConfigOptions{
