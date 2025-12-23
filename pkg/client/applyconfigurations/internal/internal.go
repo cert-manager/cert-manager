@@ -318,6 +318,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuer
   map:
     fields:
+    - name: authorizationTimeout
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
     - name: caBundle
       type:
         scalar: string
