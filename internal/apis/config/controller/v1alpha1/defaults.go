@@ -98,6 +98,8 @@ var (
 	defaultACMEHTTP01SolverRunAsNonRoot          = true
 	defaultACMEHTTP01SolverNameservers           = []string{}
 
+	defaultCertificateRequestMinimumBackoffDuration = 1 * time.Hour
+
 	defaultAutoCertificateAnnotations  = []string{"kubernetes.io/tls-acme"}
 	defaultExtraCertificateAnnotations = []string{}
 
@@ -255,6 +257,10 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = defaultProfilerAddr
+	}
+
+	if obj.CertificateRequestMinimumBackoffDuration.IsZero() {
+		obj.CertificateRequestMinimumBackoffDuration = sharedv1alpha1.DurationFromTime(defaultCertificateRequestMinimumBackoffDuration)
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)

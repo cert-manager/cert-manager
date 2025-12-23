@@ -277,6 +277,8 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		FieldManager:              "cert-manager-certificates-trigger-test",
 	}
 
+	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
+
 	// Start the trigger controller
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
 	if err != nil {
