@@ -376,10 +376,12 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Valid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
+							gen.SetChallengeAccepted(true),
 							gen.SetChallengeReason("Successfully authorized domain"),
 						))),
 				},
 				ExpectedEvents: []string{
+					"Normal Accepted Accepted challenge",
 					`Normal DomainVerified Domain "test.com" verified with "HTTP-01" validation`,
 				},
 			},
@@ -390,11 +392,19 @@ func TestSyncHappyPath(t *testing.T) {
 					// status and not the challenges
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
-				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{URI: "testurl", Status: acmeapi.StatusValid},
+						},
+					}, nil
 				},
 			},
 		},
+		/*
+			the following test got obsolete, as we dont use the state of authorization anymore but rely
+			directly on the state of the challenger.
+		*
 		"mark certificate as failed if accepting the authorization fails": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
@@ -429,6 +439,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
+							gen.SetChallengeAccepted(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
 						))),
 				},
@@ -443,17 +454,19 @@ func TestSyncHappyPath(t *testing.T) {
 					// status and not the challenges
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
-				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return nil, &acmeapi.AuthorizationError{
-						URI:        "http://testerroruri",
-						Identifier: "example.com",
-						Errors: []error{
-							fmt.Errorf("an error happened"),
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{
+								URI: "testurl", Status: acmeapi.StatusInvalid,
+								Error: fmt.Errorf("an error happened"),
+							},
 						},
-					}
+					}, nil
 				},
 			},
 		},
+		*/
 		"correctly persist ACME authorization error details as Challenge failure reason": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
@@ -488,11 +501,12 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
+							gen.SetChallengeAccepted(true),
+							gen.SetChallengeReason("Waiting for HTTP-01 challenge acceptance"),
 						))),
 				},
 				ExpectedEvents: []string{
-					"Warning Failed Accepting challenge authorization failed: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error",
+					"Normal Accepted Accepted challenge",
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -502,18 +516,18 @@ func TestSyncHappyPath(t *testing.T) {
 					// status and not the challenges
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
-				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return nil, &acmeapi.AuthorizationError{
-						URI:        "http://testerroruri",
-						Identifier: "example.com",
-						Errors: []error{
-							&acmeapi.Error{
-								StatusCode:  400,
-								ProblemType: "fakeerror",
-								Detail:      "this is a very detailed error",
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{URI: "testurl", Status: acmeapi.StatusInvalid, 
+								Error: &acmeapi.Error{
+									StatusCode:  400,
+									ProblemType: "fakeerror",
+									Detail:      "this is a very detailed error",
+								},
 							},
 						},
-					}
+					}, nil
 				},
 			},
 		},

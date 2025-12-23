@@ -45,6 +45,8 @@ const (
 	reasonCleanUpError   = "CleanUpError"
 	reasonPresentError   = "PresentError"
 	reasonPresented      = "Presented"
+	reasonAcceptError    = "AcceptError"
+	reasonAccepted       = "Accepted"
 	reasonFailed         = "Failed"
 
 	// How long to wait for an authorization response from the ACME server in acceptChallenge()
@@ -193,10 +195,32 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
-	err = c.acceptChallenge(ctx, cl, ch)
-	if err != nil {
-		return err
+	if !ch.Status.ChallengeAccepted {
+		err = c.acceptChallenge(ctx, cl, ch)
+		if err != nil {
+			return err
+		}
+
+		ch.Status.ChallengeAccepted = true
+		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonAccepted, "Accepted challenge")
 	}
+
+	err = c.syncChallengeStatus(ctx, cl, ch)
+	if err != nil {
+		return c.handleAuthorizationError(ctx, ch, err)
+	}
+	if ch.Status.State == acmeapi.StatusValid {
+		ch.Status.Reason = "Successfully authorized domain"
+		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
+		return nil
+	}
+	log.Error(err, "challenge not (yet) accepted")
+	ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge acceptance", ch.Spec.Type)
+
+	c.queue.AddAfter(types.NamespacedName{
+		Namespace: ch.Namespace,
+		Name:      ch.Name,
+	}, c.DNS01CheckRetryPeriod)
 
 	return nil
 }
@@ -409,9 +433,12 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	return nil
 }
 
-// acceptChallenge will accept the challenge with the acme server and then wait
-// for the authorization to reach a 'final' state.
-// It will update the challenge's status to reflect the final state of the
+// acceptChallenge will accept the challenge with the acme server.
+// Next Step is to wait for the challenge to complete at ACME Server
+// by synching the status periodically in Sync method.
+// In previous versions of cert-manager WaitAuthorization has been called to
+// synchronously wait for the authorization to reach a 'final' state and
+// update the challenge's status to reflect the final state of the
 // challenge if it failed, or the final state of the challenge's authorization
 // if accepting the challenge succeeds.
 func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge) error {
@@ -433,25 +460,6 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
 		return handleError(ctx, ch, err)
 	}
-
-	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	// The underlying ACME implementation from golang.org/x/crypto of WaitAuthorization retries on
-	// response parsing errors.  In the event that an ACME server is not returning expected JSON
-	// responses, the call to WaitAuthorization can and has been seen to not return and loop forever,
-	// blocking the challenge's processing. Here, we defensively add a timeout for this exchange
-	// with the ACME server and a "context deadline reached" error will be returned by WaitAuthorization
-	// in the err variable.
-	ctxTimeout, cancelAuthorization := context.WithTimeout(ctx, authorizationTimeout)
-	defer cancelAuthorization()
-	authorization, err := cl.WaitAuthorization(ctxTimeout, ch.Spec.AuthorizationURL)
-	if err != nil {
-		log.Error(err, "error waiting for authorization")
-		return c.handleAuthorizationError(ctxTimeout, ch, err)
-	}
-
-	ch.Status.State = cmacme.State(authorization.Status)
-	ch.Status.Reason = "Successfully authorized domain"
-	c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
 
 	return nil
 }
