@@ -56,7 +56,7 @@ func NewClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Dura
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -81,7 +81,7 @@ func NewFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod t
 				}
 				return client.CertmanagerV1().ClusterIssuers().Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apiscertmanagerv1.ClusterIssuer{},
 		resyncPeriod,
 		indexers,

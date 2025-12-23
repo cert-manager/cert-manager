@@ -20,10 +20,25 @@ package v1
 
 // ACMEChallengeSolverApplyConfiguration represents a declarative configuration of the ACMEChallengeSolver type for use
 // with apply.
+//
+// An ACMEChallengeSolver describes how to solve ACME challenges for the issuer it is part of.
+// A selector may be provided to use different solving strategies for different DNS names.
+// Only one of HTTP01 or DNS01 must be provided.
 type ACMEChallengeSolverApplyConfiguration struct {
+	// Selector selects a set of DNSNames on the Certificate resource that
+	// should be solved using this challenge solver.
+	// If not specified, the solver will be treated as the 'default' solver
+	// with the lowest priority, i.e. if any other solver has a more specific
+	// match, it will be used instead.
 	Selector *CertificateDNSNameSelectorApplyConfiguration `json:"selector,omitempty"`
-	HTTP01   *ACMEChallengeSolverHTTP01ApplyConfiguration  `json:"http01,omitempty"`
-	DNS01    *ACMEChallengeSolverDNS01ApplyConfiguration   `json:"dns01,omitempty"`
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the HTTP01 challenge flow.
+	// It is not possible to obtain certificates for wildcard domain names
+	// (e.g., `*.example.com`) using the HTTP01 challenge mechanism.
+	HTTP01 *ACMEChallengeSolverHTTP01ApplyConfiguration `json:"http01,omitempty"`
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the DNS01 challenge flow.
+	DNS01 *ACMEChallengeSolverDNS01ApplyConfiguration `json:"dns01,omitempty"`
 }
 
 // ACMEChallengeSolverApplyConfiguration constructs a declarative configuration of the ACMEChallengeSolver type for use with

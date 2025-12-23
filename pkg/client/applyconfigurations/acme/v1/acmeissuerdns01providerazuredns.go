@@ -25,15 +25,34 @@ import (
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration represents a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use
 // with apply.
+//
+// ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
+// configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration struct {
-	ClientID          *string                                     `json:"clientID,omitempty"`
-	ClientSecret      *metav1.SecretKeySelectorApplyConfiguration `json:"clientSecretSecretRef,omitempty"`
-	SubscriptionID    *string                                     `json:"subscriptionID,omitempty"`
-	TenantID          *string                                     `json:"tenantID,omitempty"`
-	ResourceGroupName *string                                     `json:"resourceGroupName,omitempty"`
-	HostedZoneName    *string                                     `json:"hostedZoneName,omitempty"`
-	Environment       *acmev1.AzureDNSEnvironment                 `json:"environment,omitempty"`
-	ManagedIdentity   *AzureManagedIdentityApplyConfiguration     `json:"managedIdentity,omitempty"`
+	// Auth: Azure Service Principal:
+	// The ClientID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientSecret and TenantID must also be set.
+	ClientID *string `json:"clientID,omitempty"`
+	// Auth: Azure Service Principal:
+	// A reference to a Secret containing the password associated with the Service Principal.
+	// If set, ClientID and TenantID must also be set.
+	ClientSecret *metav1.SecretKeySelectorApplyConfiguration `json:"clientSecretSecretRef,omitempty"`
+	// ID of the Azure subscription
+	SubscriptionID *string `json:"subscriptionID,omitempty"`
+	// Auth: Azure Service Principal:
+	// The TenantID of the Azure Service Principal used to authenticate with Azure DNS.
+	// If set, ClientID and ClientSecret must also be set.
+	TenantID *string `json:"tenantID,omitempty"`
+	// resource group the DNS zone is located in
+	ResourceGroupName *string `json:"resourceGroupName,omitempty"`
+	// name of the DNS zone that should be used
+	HostedZoneName *string `json:"hostedZoneName,omitempty"`
+	// name of the Azure environment (default AzurePublicCloud)
+	Environment *acmev1.AzureDNSEnvironment `json:"environment,omitempty"`
+	// Auth: Azure Workload Identity or Azure Managed Service Identity:
+	// Settings to enable Azure Workload Identity or Azure Managed Service Identity
+	// If set, ClientID, ClientSecret and TenantID must not be set.
+	ManagedIdentity *AzureManagedIdentityApplyConfiguration `json:"managedIdentity,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use with

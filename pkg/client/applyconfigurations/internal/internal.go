@@ -39,6 +39,396 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: Affinity.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: nodeAffinity
+      type:
+        namedType: NodeAffinity.v1.core.api.k8s.io
+    - name: podAffinity
+      type:
+        namedType: PodAffinity.v1.core.api.k8s.io
+    - name: podAntiAffinity
+      type:
+        namedType: PodAntiAffinity.v1.core.api.k8s.io
+- name: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
+  scalar: string
+- name: FieldsV1.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: JSON.v1.apiextensions.apis.pkg.apiextensions-apiserver.k8s.io
+  scalar: untyped
+  list:
+    elementType:
+      namedType: __untyped_atomic_
+    elementRelationship: atomic
+  map:
+    elementType:
+      namedType: __untyped_deduced_
+    elementRelationship: separable
+- name: LabelSelector.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: matchExpressions
+      type:
+        list:
+          elementType:
+            namedType: LabelSelectorRequirement.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: atomic
+    - name: matchLabels
+      type:
+        map:
+          elementType:
+            scalar: string
+    elementRelationship: atomic
+- name: LabelSelectorRequirement.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: operator
+      type:
+        scalar: string
+      default: ""
+    - name: values
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: LocalObjectReference.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    elementRelationship: atomic
+- name: ManagedFieldsEntry.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: fieldsType
+      type:
+        scalar: string
+    - name: fieldsV1
+      type:
+        namedType: FieldsV1.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: manager
+      type:
+        scalar: string
+    - name: operation
+      type:
+        scalar: string
+    - name: subresource
+      type:
+        scalar: string
+    - name: time
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+- name: NodeAffinity.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: preferredDuringSchedulingIgnoredDuringExecution
+      type:
+        list:
+          elementType:
+            namedType: PreferredSchedulingTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+    - name: requiredDuringSchedulingIgnoredDuringExecution
+      type:
+        namedType: NodeSelector.v1.core.api.k8s.io
+- name: NodeSelector.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: nodeSelectorTerms
+      type:
+        list:
+          elementType:
+            namedType: NodeSelectorTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+    elementRelationship: atomic
+- name: NodeSelectorRequirement.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: operator
+      type:
+        scalar: string
+      default: ""
+    - name: values
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: NodeSelectorTerm.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: matchExpressions
+      type:
+        list:
+          elementType:
+            namedType: NodeSelectorRequirement.v1.core.api.k8s.io
+          elementRelationship: atomic
+    - name: matchFields
+      type:
+        list:
+          elementType:
+            namedType: NodeSelectorRequirement.v1.core.api.k8s.io
+          elementRelationship: atomic
+    elementRelationship: atomic
+- name: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: annotations
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: creationTimestamp
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: deletionGracePeriodSeconds
+      type:
+        scalar: numeric
+    - name: deletionTimestamp
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: finalizers
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: generateName
+      type:
+        scalar: string
+    - name: generation
+      type:
+        scalar: numeric
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: managedFields
+      type:
+        list:
+          elementType:
+            namedType: ManagedFieldsEntry.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: ownerReferences
+      type:
+        list:
+          elementType:
+            namedType: OwnerReference.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: associative
+          keys:
+          - uid
+    - name: resourceVersion
+      type:
+        scalar: string
+    - name: selfLink
+      type:
+        scalar: string
+    - name: uid
+      type:
+        scalar: string
+- name: OwnerReference.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+      default: ""
+    - name: blockOwnerDeletion
+      type:
+        scalar: boolean
+    - name: controller
+      type:
+        scalar: boolean
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: uid
+      type:
+        scalar: string
+      default: ""
+    elementRelationship: atomic
+- name: PodAffinity.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: preferredDuringSchedulingIgnoredDuringExecution
+      type:
+        list:
+          elementType:
+            namedType: WeightedPodAffinityTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+    - name: requiredDuringSchedulingIgnoredDuringExecution
+      type:
+        list:
+          elementType:
+            namedType: PodAffinityTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+- name: PodAffinityTerm.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: labelSelector
+      type:
+        namedType: LabelSelector.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: matchLabelKeys
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: mismatchLabelKeys
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: namespaceSelector
+      type:
+        namedType: LabelSelector.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: namespaces
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: topologyKey
+      type:
+        scalar: string
+      default: ""
+- name: PodAntiAffinity.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: preferredDuringSchedulingIgnoredDuringExecution
+      type:
+        list:
+          elementType:
+            namedType: WeightedPodAffinityTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+    - name: requiredDuringSchedulingIgnoredDuringExecution
+      type:
+        list:
+          elementType:
+            namedType: PodAffinityTerm.v1.core.api.k8s.io
+          elementRelationship: atomic
+- name: PreferredSchedulingTerm.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: preference
+      type:
+        namedType: NodeSelectorTerm.v1.core.api.k8s.io
+      default: {}
+    - name: weight
+      type:
+        scalar: numeric
+      default: 0
+- name: Quantity.resource.api.pkg.apimachinery.k8s.io
+  scalar: string
+- name: SELinuxOptions.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: level
+      type:
+        scalar: string
+    - name: role
+      type:
+        scalar: string
+    - name: type
+      type:
+        scalar: string
+    - name: user
+      type:
+        scalar: string
+- name: SeccompProfile.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: localhostProfile
+      type:
+        scalar: string
+    - name: type
+      type:
+        scalar: string
+      default: ""
+    unions:
+    - discriminator: type
+      fields:
+      - fieldName: localhostProfile
+        discriminatorValue: LocalhostProfile
+- name: Sysctl.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        scalar: string
+      default: ""
+- name: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+  scalar: untyped
+- name: Toleration.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: effect
+      type:
+        scalar: string
+    - name: key
+      type:
+        scalar: string
+    - name: operator
+      type:
+        scalar: string
+    - name: tolerationSeconds
+      type:
+        scalar: numeric
+    - name: value
+      type:
+        scalar: string
+- name: WeightedPodAffinityTerm.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: podAffinityTerm
+      type:
+        namedType: PodAffinityTerm.v1.core.api.k8s.io
+      default: {}
+    - name: weight
+      type:
+        scalar: numeric
+      default: 0
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEAuthorization
   map:
     fields:
@@ -204,12 +594,12 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         map:
           elementType:
-            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+            namedType: Quantity.resource.api.pkg.apimachinery.k8s.io
     - name: requests
       type:
         map:
           elementType:
-            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+            namedType: Quantity.resource.api.pkg.apimachinery.k8s.io
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSecurityContext
   map:
     fields:
@@ -230,10 +620,10 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: numeric
     - name: seLinuxOptions
       type:
-        namedType: io.k8s.api.core.v1.SELinuxOptions
+        namedType: SELinuxOptions.v1.core.api.k8s.io
     - name: seccompProfile
       type:
-        namedType: io.k8s.api.core.v1.SeccompProfile
+        namedType: SeccompProfile.v1.core.api.k8s.io
     - name: supplementalGroups
       type:
         list:
@@ -244,19 +634,19 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: io.k8s.api.core.v1.Sysctl
+            namedType: Sysctl.v1.core.api.k8s.io
           elementRelationship: atomic
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodSpec
   map:
     fields:
     - name: affinity
       type:
-        namedType: io.k8s.api.core.v1.Affinity
+        namedType: Affinity.v1.core.api.k8s.io
     - name: imagePullSecrets
       type:
         list:
           elementType:
-            namedType: io.k8s.api.core.v1.LocalObjectReference
+            namedType: LocalObjectReference.v1.core.api.k8s.io
           elementRelationship: associative
           keys:
           - name
@@ -281,7 +671,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: io.k8s.api.core.v1.Toleration
+            namedType: Toleration.v1.core.api.k8s.io
           elementRelationship: atomic
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverHTTP01IngressPodTemplate
   map:
@@ -497,7 +887,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: config
       type:
-        namedType: io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.JSON
+        namedType: JSON.v1.apiextensions.apis.pkg.apiextensions-apiserver.k8s.io
     - name: groupName
       type:
         scalar: string
@@ -561,7 +951,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -638,7 +1028,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -662,7 +1052,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: duration
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: ipAddresses
       type:
         list:
@@ -693,7 +1083,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: failureTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: finalizeURL
       type:
         scalar: string
@@ -767,7 +1157,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -789,7 +1179,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: lastTransitionTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: message
       type:
         scalar: string
@@ -842,7 +1232,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -857,7 +1247,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: lastTransitionTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: message
       type:
         scalar: string
@@ -877,7 +1267,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: duration
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: extra
       type:
         map:
@@ -933,7 +1323,7 @@ var schemaYAML = typed.YAMLObject(`types:
           - type
     - name: failureTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateSecretTemplate
   map:
     fields:
@@ -967,7 +1357,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: duration
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: emailAddresses
       type:
         list:
@@ -1010,7 +1400,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificatePrivateKey
     - name: renewBefore
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: renewBeforePercentage
       type:
         scalar: numeric
@@ -1058,19 +1448,19 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: numeric
     - name: lastFailureTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: nextPrivateKeySecretName
       type:
         scalar: string
     - name: notAfter
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: notBefore
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: renewalTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: revision
       type:
         scalar: numeric
@@ -1085,7 +1475,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -1106,7 +1496,7 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
     - name: metadata
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
       default: {}
     - name: spec
       type:
@@ -1121,7 +1511,7 @@ var schemaYAML = typed.YAMLObject(`types:
     fields:
     - name: lastTransitionTime
       type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: message
       type:
         scalar: string
@@ -1485,396 +1875,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: io.k8s.api.core.v1.Affinity
-  map:
-    fields:
-    - name: nodeAffinity
-      type:
-        namedType: io.k8s.api.core.v1.NodeAffinity
-    - name: podAffinity
-      type:
-        namedType: io.k8s.api.core.v1.PodAffinity
-    - name: podAntiAffinity
-      type:
-        namedType: io.k8s.api.core.v1.PodAntiAffinity
-- name: io.k8s.api.core.v1.LocalObjectReference
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
-    elementRelationship: atomic
-- name: io.k8s.api.core.v1.NodeAffinity
-  map:
-    fields:
-    - name: preferredDuringSchedulingIgnoredDuringExecution
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.PreferredSchedulingTerm
-          elementRelationship: atomic
-    - name: requiredDuringSchedulingIgnoredDuringExecution
-      type:
-        namedType: io.k8s.api.core.v1.NodeSelector
-- name: io.k8s.api.core.v1.NodeSelector
-  map:
-    fields:
-    - name: nodeSelectorTerms
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.NodeSelectorTerm
-          elementRelationship: atomic
-    elementRelationship: atomic
-- name: io.k8s.api.core.v1.NodeSelectorRequirement
-  map:
-    fields:
-    - name: key
-      type:
-        scalar: string
-      default: ""
-    - name: operator
-      type:
-        scalar: string
-      default: ""
-    - name: values
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-- name: io.k8s.api.core.v1.NodeSelectorTerm
-  map:
-    fields:
-    - name: matchExpressions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.NodeSelectorRequirement
-          elementRelationship: atomic
-    - name: matchFields
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.NodeSelectorRequirement
-          elementRelationship: atomic
-    elementRelationship: atomic
-- name: io.k8s.api.core.v1.PodAffinity
-  map:
-    fields:
-    - name: preferredDuringSchedulingIgnoredDuringExecution
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.WeightedPodAffinityTerm
-          elementRelationship: atomic
-    - name: requiredDuringSchedulingIgnoredDuringExecution
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.PodAffinityTerm
-          elementRelationship: atomic
-- name: io.k8s.api.core.v1.PodAffinityTerm
-  map:
-    fields:
-    - name: labelSelector
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
-    - name: matchLabelKeys
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: mismatchLabelKeys
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: namespaceSelector
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
-    - name: namespaces
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: topologyKey
-      type:
-        scalar: string
-      default: ""
-- name: io.k8s.api.core.v1.PodAntiAffinity
-  map:
-    fields:
-    - name: preferredDuringSchedulingIgnoredDuringExecution
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.WeightedPodAffinityTerm
-          elementRelationship: atomic
-    - name: requiredDuringSchedulingIgnoredDuringExecution
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.PodAffinityTerm
-          elementRelationship: atomic
-- name: io.k8s.api.core.v1.PreferredSchedulingTerm
-  map:
-    fields:
-    - name: preference
-      type:
-        namedType: io.k8s.api.core.v1.NodeSelectorTerm
-      default: {}
-    - name: weight
-      type:
-        scalar: numeric
-      default: 0
-- name: io.k8s.api.core.v1.SELinuxOptions
-  map:
-    fields:
-    - name: level
-      type:
-        scalar: string
-    - name: role
-      type:
-        scalar: string
-    - name: type
-      type:
-        scalar: string
-    - name: user
-      type:
-        scalar: string
-- name: io.k8s.api.core.v1.SeccompProfile
-  map:
-    fields:
-    - name: localhostProfile
-      type:
-        scalar: string
-    - name: type
-      type:
-        scalar: string
-      default: ""
-    unions:
-    - discriminator: type
-      fields:
-      - fieldName: localhostProfile
-        discriminatorValue: LocalhostProfile
-- name: io.k8s.api.core.v1.Sysctl
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-      default: ""
-    - name: value
-      type:
-        scalar: string
-      default: ""
-- name: io.k8s.api.core.v1.Toleration
-  map:
-    fields:
-    - name: effect
-      type:
-        scalar: string
-    - name: key
-      type:
-        scalar: string
-    - name: operator
-      type:
-        scalar: string
-    - name: tolerationSeconds
-      type:
-        scalar: numeric
-    - name: value
-      type:
-        scalar: string
-- name: io.k8s.api.core.v1.WeightedPodAffinityTerm
-  map:
-    fields:
-    - name: podAffinityTerm
-      type:
-        namedType: io.k8s.api.core.v1.PodAffinityTerm
-      default: {}
-    - name: weight
-      type:
-        scalar: numeric
-      default: 0
-- name: io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.JSON
-  scalar: untyped
-  list:
-    elementType:
-      namedType: __untyped_atomic_
-    elementRelationship: atomic
-  map:
-    elementType:
-      namedType: __untyped_deduced_
-    elementRelationship: separable
-- name: io.k8s.apimachinery.pkg.api.resource.Quantity
-  scalar: untyped
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-  scalar: string
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
-  map:
-    elementType:
-      scalar: untyped
-      list:
-        elementType:
-          namedType: __untyped_atomic_
-        elementRelationship: atomic
-      map:
-        elementType:
-          namedType: __untyped_deduced_
-        elementRelationship: separable
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
-  map:
-    fields:
-    - name: matchExpressions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement
-          elementRelationship: atomic
-    - name: matchLabels
-      type:
-        map:
-          elementType:
-            scalar: string
-    elementRelationship: atomic
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement
-  map:
-    fields:
-    - name: key
-      type:
-        scalar: string
-      default: ""
-    - name: operator
-      type:
-        scalar: string
-      default: ""
-    - name: values
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: fieldsType
-      type:
-        scalar: string
-    - name: fieldsV1
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
-    - name: manager
-      type:
-        scalar: string
-    - name: operation
-      type:
-        scalar: string
-    - name: subresource
-      type:
-        scalar: string
-    - name: time
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-  map:
-    fields:
-    - name: annotations
-      type:
-        map:
-          elementType:
-            scalar: string
-    - name: creationTimestamp
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-    - name: deletionGracePeriodSeconds
-      type:
-        scalar: numeric
-    - name: deletionTimestamp
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-    - name: finalizers
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: associative
-    - name: generateName
-      type:
-        scalar: string
-    - name: generation
-      type:
-        scalar: numeric
-    - name: labels
-      type:
-        map:
-          elementType:
-            scalar: string
-    - name: managedFields
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
-          elementRelationship: atomic
-    - name: name
-      type:
-        scalar: string
-    - name: namespace
-      type:
-        scalar: string
-    - name: ownerReferences
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
-          elementRelationship: associative
-          keys:
-          - uid
-    - name: resourceVersion
-      type:
-        scalar: string
-    - name: selfLink
-      type:
-        scalar: string
-    - name: uid
-      type:
-        scalar: string
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-      default: ""
-    - name: blockOwnerDeletion
-      type:
-        scalar: boolean
-    - name: controller
-      type:
-        scalar: boolean
-    - name: kind
-      type:
-        scalar: string
-      default: ""
-    - name: name
-      type:
-        scalar: string
-      default: ""
-    - name: uid
-      type:
-        scalar: string
-      default: ""
-    elementRelationship: atomic
-- name: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-  scalar: untyped
 - name: io.k8s.sigs.gateway-api.apis.v1.ParentReference
   map:
     fields:

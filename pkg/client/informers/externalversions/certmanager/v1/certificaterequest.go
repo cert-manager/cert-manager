@@ -57,7 +57,7 @@ func NewCertificateRequestInformer(client versioned.Interface, namespace string,
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredCertificateRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -82,7 +82,7 @@ func NewFilteredCertificateRequestInformer(client versioned.Interface, namespace
 				}
 				return client.CertmanagerV1().CertificateRequests(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apiscertmanagerv1.CertificateRequest{},
 		resyncPeriod,
 		indexers,
