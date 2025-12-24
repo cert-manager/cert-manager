@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -565,7 +566,7 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		return true
 	}
 
-	if a.Spec.RevisionHistoryLimit != b.Spec.RevisionHistoryLimit {
+	if !ptr.Equal(a.Spec.RevisionHistoryLimit, b.Spec.RevisionHistoryLimit) {
 		return true
 	}
 
@@ -622,6 +623,14 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		if aSize != bSize {
 			return true
 		}
+	}
+
+	if !ptr.Equal(a.Spec.Duration, b.Spec.Duration) {
+		return true
+	}
+
+	if !ptr.Equal(a.Spec.RenewBefore, b.Spec.RenewBefore) {
+		return true
 	}
 
 	return false
