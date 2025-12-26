@@ -21,7 +21,7 @@ global:
   # If a component-specific nodeSelector is also set, it will be merged and take precedence.
   # +docs:property
   nodeSelector: {}
-  
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -507,6 +507,11 @@ livenessProbe:
   timeoutSeconds: 15
   successThreshold: 1
   failureThreshold: 8
+
+# readinessProbe settings for the controller container of the controller Pod.
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 90
 
 # enableServiceLinks indicates whether information about services should be
 # injected into the pod's environment variables, matching the syntax of Docker
