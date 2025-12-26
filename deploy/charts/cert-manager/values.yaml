@@ -21,7 +21,7 @@ global:
   # If a component-specific nodeSelector is also set, it will be merged and take precedence.
   # +docs:property
   nodeSelector: {}
-  
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -424,6 +424,44 @@ hostAliases: []
 # +docs:property
 nodeSelector:
   kubernetes.io/os: linux
+
+# Enables default network policies for cert-manager.
+networkPolicy:
+  # Create network policies for cert-manager.
+  enabled: false
+
+  # Ingress rule for the cert-manager network policy. By default, it allows all
+  # inbound traffic.
+  # +docs:property
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    - ipBlock:
+        cidr: "::/0"
+
+  # Egress rule for the cert-manager network policy. By default, it allows all
+  # outbound traffic to ports 80 and 443, as well as DNS ports.
+  # +docs:property
+  egress:
+  - ports:
+    - port: 80
+      protocol: TCP
+    - port: 443
+      protocol: TCP
+    - port: 53
+      protocol: TCP
+    - port: 53
+      protocol: UDP
+    # On OpenShift and OKD, the Kubernetes API server listens on.
+    # port 6443.
+    - port: 6443
+      protocol: TCP
+    to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    - ipBlock:
+        cidr: "::/0"
 
 # +docs:ignore
 ingressShim: {}
@@ -1096,6 +1134,44 @@ cainjector:
       drop:
       - ALL
     readOnlyRootFilesystem: true
+
+  # Enables default network policies for cainjector.
+  networkPolicy:
+    # Create network policies for the cainjector.
+    enabled: false
+
+    # Ingress rule for the webhook cainjector policy. By default, it allows all
+    # inbound traffic.
+    # +docs:property
+    ingress:
+    - from:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+      - ipBlock:
+          cidr: "::/0"
+
+    # Egress rule for the cainjector network policy. By default, it allows all
+    # outbound traffic to ports 80 and 443, as well as DNS ports.
+    # +docs:property
+    egress:
+    - ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+      - port: 53
+        protocol: TCP
+      - port: 53
+        protocol: UDP
+      # On OpenShift and OKD, the Kubernetes API server listens on.
+      # port 6443.
+      - port: 6443
+        protocol: TCP
+      to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+      - ipBlock:
+          cidr: "::/0"
 
   podDisruptionBudget:
     # Enable or disable the PodDisruptionBudget resource.
