@@ -3496,8 +3496,8 @@ spec:
                               properties:
                                 audiences:
                                   description: |-
-                                    TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
-                                    consisting of the issuer's namespace and name is always included.
+                                    TokenAudiences is an optional list of extra audiences to include in the token passed to Vault.
+                                    The default audiences are always included in the token.
                                   items:
                                     type: string
                                   type: array
