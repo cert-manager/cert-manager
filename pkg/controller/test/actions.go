@@ -17,7 +17,12 @@ limitations under the License.
 package test
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	coretesting "k8s.io/client-go/testing"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
@@ -78,12 +83,40 @@ func (a *action) Action() coretesting.Action {
 
 // Matches compares action.action with another Action.
 func (a *action) Matches(act coretesting.Action) error {
-	return testutil.Diff(a.action, act,
-		// We ignore differences in .ManagedFields since the expected object does not have them.
-		// FIXME: don't ignore this field
-		cmp.FilterPath(func(p cmp.Path) bool {
-			// FIXME: Must ignore managed fields as newer fake clients are tracking them
-			return p.Last().String() == ".ManagedFields"
-		}, cmp.Ignore()),
-	)
+	// Same type? Just compare with cmp.Diff like today.
+	if reflect.TypeOf(a.action) == reflect.TypeOf(act) {
+		return testutil.Diff(a.action, act,
+			// We ignore differences in .ManagedFields since the expected object does not have them.
+			// FIXME: don't ignore this field
+			cmp.FilterPath(func(p cmp.Path) bool {
+				// FIXME: Must ignore managed fields as newer fake clients are tracking them
+				return p.Last().String() == ".ManagedFields"
+			}, cmp.Ignore()),
+		)
+	}
+
+	// Special case: CSA expected (UpdateAction), SSA actual (PatchAction)
+	expUpdate, okExp := a.action.(coretesting.UpdateAction)
+	gotPatch, okGot := act.(coretesting.PatchAction)
+	if okExp && okGot && gotPatch.GetPatchType() == types.ApplyPatchType {
+		expObj := expUpdate.GetObject()
+		gotObj := expObj.DeepCopyObject()
+		if err := json.Unmarshal(gotPatch.GetPatch(), gotObj); err != nil {
+			return fmt.Errorf("failed to unmarshal SSA patch: %v", err)
+		}
+
+		return testutil.Diff(expObj, gotObj,
+			cmp.FilterPath(func(p cmp.Path) bool {
+				if p.String() == "TypeMeta.APIVersion" {
+					return true
+				}
+				if p.String() == "TypeMeta.Kind" {
+					return true
+				}
+				return p.String() == "ObjectMeta.ManagedFields"
+			}, cmp.Ignore()),
+		)
+	}
+
+	return fmt.Errorf("unexpected action types: expected %T, got %T", a.action, act)
 }
