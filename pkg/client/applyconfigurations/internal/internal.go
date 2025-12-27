@@ -1221,6 +1221,30 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: size
       type:
         scalar: numeric
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewal
+  map:
+    fields:
+    - name: policy
+      type:
+        scalar: string
+    - name: windows
+      type:
+        list:
+          elementType:
+            namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewalWindows
+          elementRelationship: atomic
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewalWindows
+  map:
+    fields:
+    - name: cron
+      type:
+        scalar: string
+    - name: duration
+      type:
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: timeZone
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequest
   map:
     fields:
@@ -1404,6 +1428,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: renewBeforePercentage
       type:
         scalar: numeric
+    - name: renewal
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewal
     - name: revisionHistoryLimit
       type:
         scalar: numeric

@@ -1,3 +1,4 @@
+API rule violation: list_type_missing,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateRenewal,Windows
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolver,DNS01
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolver,HTTP01
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolverDNS01,DigitalOcean
@@ -20,6 +21,7 @@ API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/ac
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEIssuerDNS01ProviderRoute53,SecretAccessKeyID
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ServiceAccountRef,TokenAudiences
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateKeystores,PKCS12
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateRenewalWindows,Timezone
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateSpec,URIs
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,OtherName,UTF8Value
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,ServiceAccountRef,TokenAudiences
