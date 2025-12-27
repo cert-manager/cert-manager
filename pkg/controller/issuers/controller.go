@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -107,7 +108,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 }
 
 // TODO: replace with generic handleObject function (like Navigator)
-func (c *controller) secretEvent(obj interface{}) {
+func (c *controller) secretEvent(obj metav1.Object) {
 	log := c.log.WithName("secretEvent")
 	secret, ok := controllerpkg.ToSecret(obj)
 	if !ok {

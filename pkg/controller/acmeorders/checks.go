@@ -32,14 +32,8 @@ import (
 func handleGenericIssuerFunc(
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	orderLister cmacmelisters.OrderLister,
-) func(interface{}) {
-	return func(obj interface{}) {
-		iss, ok := obj.(cmapi.GenericIssuer)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))
-			return
-		}
-
+) func(cmapi.GenericIssuer) {
+	return func(iss cmapi.GenericIssuer) {
 		certs, err := ordersForGenericIssuer(iss, orderLister)
 		if err != nil {
 			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetNamespace(), iss.GetName()))
