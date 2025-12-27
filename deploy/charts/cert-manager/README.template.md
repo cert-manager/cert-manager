@@ -269,6 +269,11 @@ It cannot be used if `maxUnavailable` is set.
 This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%). it cannot be used if `minAvailable` is set.
 
 
+#### **podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
+
+
 #### **featureGates** ~ `string`
 > Default value:
 > ```yaml
@@ -1008,6 +1013,11 @@ This property configures the maximum unavailable pods for disruptions. Can eithe
 It cannot be used if `minAvailable` is set.
 
 
+#### **webhook.podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
+
+
 #### **webhook.deploymentAnnotations** ~ `object`
 
 Optional additional annotations to add to the webhook Deployment.
@@ -1505,6 +1515,11 @@ Cannot be used if `maxUnavailable` is set.
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
 an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `minAvailable` is set.
+
+
+#### **cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
 
 
 #### **cainjector.deploymentAnnotations** ~ `object`
