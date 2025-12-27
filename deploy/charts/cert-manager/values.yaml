@@ -21,7 +21,7 @@ global:
   # If a component-specific nodeSelector is also set, it will be merged and take precedence.
   # +docs:property
   nodeSelector: {}
-  
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -315,6 +315,38 @@ approveSignerNames:
 #  extraArgs:
 #    - --controllers=*,-certificaterequests-approver
 extraArgs: []
+
+# Extra containers to add to the pod spec in the deployment of the cert-manager controller.
+# For example, to deploy the [aws_signing_helper](https://github.com/aws/rolesanywhere-credential-helper) (replacing the ARNs as relevant):
+#
+# extraEnv:
+#   - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+#   - value: http://127.0.0.1:9911
+# extraContainers:
+#   - name: rolesanywhere-credential-helper
+#     image: public.ecr.aws/rolesanywhere/credential-helper:latest
+#     command: [aws_signing_helper]
+#     args:
+#       - serve
+#       - --private-key
+#       - /etc/cert/tls.key
+#       - --certificate
+#       - /etc/cert/tls.crt
+#       - --role-arn
+#       - $ROLE_ARN
+#       - --profile-arn
+#       - $PROFILE_ARN
+#       - --trust-anchor-arn
+#       - $TRUST_ANCHOR_ARN
+#     volumeMounts:
+#       - name: cert
+#         mountPath: /etc/cert/
+#         readOnly: true
+# volumes:
+#   - name: cert
+#     secret:
+#       secretName: cert
+extraContainers: []
 
 # Additional environment variables to pass to cert-manager controller binary.
 # For example:
