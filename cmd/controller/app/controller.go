@@ -386,12 +386,13 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 
 	// We only support leases for leader election. Previously we supported ConfigMap & Lease objects for leader
 	// election.
-	ml, err := resourcelock.New(resourcelock.LeasesResourceLock,
+	ml, err := resourcelock.NewWithLabels(resourcelock.LeasesResourceLock,
 		opts.LeaderElectionConfig.Namespace,
 		lockName,
 		leaderElectionClient.CoreV1(),
 		leaderElectionClient.CoordinationV1(),
 		lc,
+		map[string]string{"app.kubernetes.io/managed-by": "cert-manager"},
 	)
 	if err != nil {
 		return fmt.Errorf("error creating leader election lock: %v", err)
