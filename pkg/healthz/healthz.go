@@ -55,6 +55,7 @@ func NewServer(leaderElectionHealthzAdaptorTimeout time.Duration) *Server {
 	clockHealthAdaptor := NewClockHealthAdaptor(clock.RealClock{})
 	mux := http.NewServeMux()
 	healthz.InstallLivezHandler(mux, leaderHealthzAdaptor, clockHealthAdaptor)
+	healthz.InstallReadyzHandler(mux, healthz.PingHealthz)
 	return &Server{
 		server: &http.Server{
 			ReadTimeout:    healthzServerReadTimeout,
