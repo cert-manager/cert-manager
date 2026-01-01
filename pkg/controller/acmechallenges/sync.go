@@ -73,7 +73,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	ch := chOriginal.DeepCopy()
 
 	defer func() {
-		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
+		intent := ChallengeUpdateIntent{
+			Finalizers: ch.Finalizers,
+			Status:     &ch.Status,
+		}
+		if updateError := c.updateObject(ctx, chOriginal, intent); updateError != nil {
 			if errors.Is(updateError, errArgument) {
 				log.Error(updateError, "If this error occurs there is a bug in cert-manager. Please report it. Not retrying.")
 				return
@@ -83,7 +87,8 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	}()
 
 	if !ch.DeletionTimestamp.IsZero() {
-		return c.handleFinalizer(ctx, ch)
+		c.handleFinalizer(ctx, ch)
+		return
 	}
 
 	// bail out early on if processing=false, as this challenge has not been
@@ -307,31 +312,24 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 
 // handleFinalizer will attempt to 'finalize' the Challenge resource by calling
 // CleanUp if the resource is in a 'processing' state.
-func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
+func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) {
 	log := logf.FromContext(ctx, "finalizer")
 	if len(ch.Finalizers) == 0 {
-		return nil
+		return
 	}
 	if otherFinalizerPresent(ch) {
 		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
-		return nil
+		return
 	}
 
-	defer func() {
-		// call Update to remove the metadata.finalizers entry
-		ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-			return finalizer == cmacme.ACMEDomainQualifiedFinalizer || finalizer == cmacme.ACMELegacyFinalizer
-		})
-	}()
-
 	if !ch.Status.Processing {
-		return nil
+		return
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
 		log.Error(err, "error getting solver for challenge")
-		return nil
+		return
 	}
 
 	err = solver.CleanUp(ctx, ch)
@@ -341,10 +339,13 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 		// cause repeated reconciles
 		ch.Status.Reason = stabilizeSolverErrorMessage(err)
 		log.Error(err, "error cleaning up challenge")
-		return nil
+		return
 	}
 
-	return nil
+	// call Update to remove the metadata.finalizers entry
+	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+		return finalizer == cmacme.ACMEDomainQualifiedFinalizer || finalizer == cmacme.ACMELegacyFinalizer
+	})
 }
 
 // syncChallengeStatus will communicate with the ACME server to retrieve the current

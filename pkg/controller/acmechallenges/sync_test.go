@@ -132,7 +132,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
-		"if the challenge is deleted and the cleanup fails, set the reason (and remove the finalizer, which is a bug)": {
+		"if the challenge is deleted and the cleanup fails, set the reason": {
 			challenge: gen.ChallengeFrom(deletedChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -153,15 +153,6 @@ func TestSyncHappyPath(t *testing.T) {
 					testIssuerHTTP01Enabled,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
-						gen.DefaultTestNamespace,
-						gen.ChallengeFrom(deletedChallenge,
-							gen.SetChallengeProcessing(true),
-							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
-							gen.SetChallengeFinalizers([]string{}),
-							gen.SetChallengeReason(simulatedCleanupError.Error()),
-						))),
 					testpkg.NewAction(
 						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 							"status",
@@ -170,7 +161,6 @@ func TestSyncHappyPath(t *testing.T) {
 								gen.SetChallengeProcessing(true),
 								gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{}),
 								gen.SetChallengeReason(simulatedCleanupError.Error()),
 							))),
 				},
