@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
@@ -37,14 +36,8 @@ import (
 // call when enqueuing Certificate resources.
 // If no predicate constructors are given, all Certificate resources will be
 // enqueued on every invocation.
-func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName], lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(obj interface{}) {
-	return func(obj interface{}) {
-		s, ok := obj.(metav1.Object)
-		if !ok {
-			log.V(logf.ErrorLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
-			return
-		}
-
+func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName], lister cmlisters.CertificateLister, selector labels.Selector, predicateBuilders ...predicate.ExtractorFunc) func(metav1.Object) {
+	return func(s metav1.Object) {
 		// 'Construct' the predicate functions using the given Secret
 		predicates := make(predicate.Funcs, len(predicateBuilders))
 		for i, b := range predicateBuilders {
