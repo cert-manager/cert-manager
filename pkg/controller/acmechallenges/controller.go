@@ -190,7 +190,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		log := logf.WithResource(log, chOriginal)
 		ch := chOriginal.DeepCopy()
 		ch.Status.Processing = true
-		if err := c.updateObject(ctx, chOriginal, ch); err != nil {
+		if err := c.updateObject(ctx, chOriginal, ChallengeUpdateIntent{Status: &ch.Status}); err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return
 		}
