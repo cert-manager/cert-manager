@@ -79,6 +79,12 @@ delete the previously installed CustomResourceDefinition resources.
 
 ### Global
 
+#### **global.imageRegistry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
+
 #### **global.imagePullSecrets** ~ `array`
 > Default value:
 > ```yaml
@@ -295,7 +301,7 @@ The container registry to pull the manager image from.
 #### **image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-controller
+> jetstack/cert-manager-controller
 > ```
 
 The container image for the cert-manager controller.
@@ -1232,7 +1238,7 @@ The container registry to pull the webhook image from.
 #### **webhook.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-webhook
+> jetstack/cert-manager-webhook
 > ```
 
 The container image for the cert-manager webhook
@@ -1668,7 +1674,7 @@ The container registry to pull the cainjector image from.
 #### **cainjector.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-cainjector
+> jetstack/cert-manager-cainjector
 > ```
 
 The container image for the cert-manager cainjector
@@ -1749,7 +1755,7 @@ The container registry to pull the acmesolver image from.
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-acmesolver
+> jetstack/cert-manager-acmesolver
 > ```
 
 The container image for the cert-manager acmesolver.
@@ -1932,7 +1938,7 @@ The container registry to pull the startupapicheck image from.
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-startupapicheck
+> jetstack/cert-manager-startupapicheck
 > ```
 
 The container image for the cert-manager startupapicheck.
