@@ -776,6 +776,21 @@ LivenessProbe settings for the controller container of the controller Pod.
 This is enabled by default, in order to enable the clock-skew liveness probe that restarts the controller in case of a skew between the system clock and the monotonic clock. LivenessProbe durations and thresholds are based on those used for the Kubernetes controller-manager. For more information see the following on the  
 [Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245)
 
+#### **readinessProbe** ~ `object`
+> Default value:
+> ```yaml
+> enabled: true
+> failureThreshold: 3
+> initialDelaySeconds: 5
+> periodSeconds: 5
+> successThreshold: 1
+> timeoutSeconds: 5
+> ```
+
+ReadinessProbe settings for the controller container of the controller Pod.  
+  
+For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+
 #### **enableServiceLinks** ~ `bool`
 > Default value:
 > ```yaml
@@ -1691,6 +1706,32 @@ requests:
 ```
 
 For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+#### **cainjector.livenessProbe** ~ `object`
+> Default value:
+> ```yaml
+> failureThreshold: 3
+> initialDelaySeconds: 5
+> periodSeconds: 10
+> successThreshold: 1
+> timeoutSeconds: 1
+> ```
+
+Liveness probe values.  
+For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+
+#### **cainjector.readinessProbe** ~ `object`
+> Default value:
+> ```yaml
+> failureThreshold: 3
+> initialDelaySeconds: 5
+> periodSeconds: 10
+> successThreshold: 1
+> timeoutSeconds: 1
+> ```
+
+Readiness probe values.  
+For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+
 #### **cainjector.nodeSelector** ~ `object`
 > Default value:
 > ```yaml

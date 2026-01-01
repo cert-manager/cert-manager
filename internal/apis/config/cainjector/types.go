@@ -69,6 +69,10 @@ type CAInjectorConfiguration struct {
 
 	// Metrics endpoint TLS config
 	MetricsTLSConfig shared.TLSConfig
+
+	// The host and port address, separated by a ':', that the healthz server
+	// should listen on.
+	HealthzListenAddress string
 }
 
 type EnableDataSourceConfig struct {

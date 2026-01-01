@@ -36,5 +36,6 @@
 		"dynamic": {
 			"leafDuration": "168h0m0s"
 		}
-	}
+	},
+	"healthzListenAddress": "0.0.0.0:9440"
 }
