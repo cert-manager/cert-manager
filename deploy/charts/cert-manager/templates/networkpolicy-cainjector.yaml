@@ -1,38 +1,38 @@
-{{- if .Values.webhook.networkPolicy.enabled }}
+{{- if .Values.cainjector.networkPolicy.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ template "webhook.fullname" . }}-allow-ingress
+  name: {{ template "cainjector.fullname" . }}-allow-ingress
   namespace: {{ include "cert-manager.namespace" . }}
 spec:
   ingress:
-    {{- with .Values.webhook.networkPolicy.ingress }}
+    {{- with .Values.cainjector.networkPolicy.ingress }}
       {{- toYaml . | nindent 2 }}
     {{- end }}
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/name: {{ include "cainjector.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "webhook"
+      app.kubernetes.io/component: "cainjector"
   policyTypes:
   - Ingress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ template "webhook.fullname" . }}-allow-egress
+  name: {{ template "cainjector.fullname" . }}-allow-egress
   namespace: {{ include "cert-manager.namespace" . }}
 spec:
   egress:
-    {{- with .Values.webhook.networkPolicy.egress }}
+    {{- with .Values.cainjector.networkPolicy.egress }}
       {{- toYaml . | nindent 2 }}
     {{- end }}
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/name: {{ include "cainjector.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "webhook"
+      app.kubernetes.io/component: "cainjector"
   policyTypes:
   - Egress
 {{- end }}

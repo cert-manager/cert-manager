@@ -602,6 +602,39 @@ The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with mat
   
 This default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.
 
+#### **networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create network policies for cert-manager.
+#### **networkPolicy.ingress** ~ `array`
+> Default value:
+> ```yaml
+> - {}
+> ```
+
+Ingress rule for the cert-manager network policy. By default, it allows all inbound traffic.
+
+#### **networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 80
+>       protocol: TCP
+>     - port: 443
+>       protocol: TCP
+>     - port: 53
+>       protocol: TCP
+>     - port: 53
+>       protocol: UDP
+>     - port: 6443
+>       protocol: TCP
+> ```
+
+Egress rule for the cert-manager network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
+
 #### **ingressShim.defaultIssuerName** ~ `string`
 
 Optional default issuer to use for ingress resources.
@@ -1329,11 +1362,7 @@ Create network policies for the webhooks.
 #### **webhook.networkPolicy.ingress** ~ `array`
 > Default value:
 > ```yaml
-> - from:
->     - ipBlock:
->         cidr: 0.0.0.0/0
->     - ipBlock:
->         cidr: ::/0
+> - {}
 > ```
 
 Ingress rule for the webhook network policy. By default, it allows all inbound traffic.
@@ -1352,11 +1381,6 @@ Ingress rule for the webhook network policy. By default, it allows all inbound t
 >       protocol: UDP
 >     - port: 6443
 >       protocol: TCP
->   to:
->     - ipBlock:
->         cidr: 0.0.0.0/0
->     - ipBlock:
->         cidr: ::/0
 > ```
 
 Egress rule for the webhook network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
@@ -1492,6 +1516,39 @@ Pod Security Context to be set on the cainjector component Pod. For more informa
 > ```
 
 Container Security Context to be set on the cainjector component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
+
+#### **cainjector.networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create network policies for the cainjector.
+#### **cainjector.networkPolicy.ingress** ~ `array`
+> Default value:
+> ```yaml
+> - {}
+> ```
+
+Ingress rule for the webhook cainjector policy. By default, it allows all inbound traffic.
+
+#### **cainjector.networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 80
+>       protocol: TCP
+>     - port: 443
+>       protocol: TCP
+>     - port: 53
+>       protocol: TCP
+>     - port: 53
+>       protocol: UDP
+>     - port: 6443
+>       protocol: TCP
+> ```
+
+Egress rule for the cainjector network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
 
 #### **cainjector.podDisruptionBudget.enabled** ~ `bool`
 > Default value:

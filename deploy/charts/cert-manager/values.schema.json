@@ -102,6 +102,9 @@
         "namespace": {
           "$ref": "#/$defs/helm-values.namespace"
         },
+        "networkPolicy": {
+          "$ref": "#/$defs/helm-values.networkPolicy"
+        },
         "no_proxy": {
           "$ref": "#/$defs/helm-values.no_proxy"
         },
@@ -280,6 +283,9 @@
         "image": {
           "$ref": "#/$defs/helm-values.cainjector.image"
         },
+        "networkPolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy"
+        },
         "nodeSelector": {
           "$ref": "#/$defs/helm-values.cainjector.nodeSelector"
         },
@@ -428,6 +434,65 @@
     "helm-values.cainjector.image.tag": {
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion will be used.",
       "type": "string"
+    },
+    "helm-values.cainjector.networkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.egress"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.enabled"
+        },
+        "ingress": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.ingress"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.networkPolicy.egress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            },
+            {
+              "port": 443,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "UDP"
+            },
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Egress rule for the cainjector network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.networkPolicy.enabled": {
+      "default": false,
+      "description": "Create network policies for the cainjector.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.networkPolicy.ingress": {
+      "default": [
+        {}
+      ],
+      "description": "Ingress rule for the webhook cainjector policy. By default, it allows all inbound traffic.",
+      "items": {},
+      "type": "array"
     },
     "helm-values.cainjector.nodeSelector": {
       "default": {
@@ -950,6 +1015,65 @@
       "default": "",
       "description": "This namespace allows you to define where the services are installed into. If not set then they use the namespace of the release. This is helpful when installing cert manager as a chart dependency (sub chart).",
       "type": "string"
+    },
+    "helm-values.networkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/$defs/helm-values.networkPolicy.egress"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.networkPolicy.enabled"
+        },
+        "ingress": {
+          "$ref": "#/$defs/helm-values.networkPolicy.ingress"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.networkPolicy.egress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            },
+            {
+              "port": 443,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "UDP"
+            },
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Egress rule for the cert-manager network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.networkPolicy.enabled": {
+      "default": false,
+      "description": "Create network policies for cert-manager.",
+      "type": "boolean"
+    },
+    "helm-values.networkPolicy.ingress": {
+      "default": [
+        {}
+      ],
+      "description": "Ingress rule for the cert-manager network policy. By default, it allows all inbound traffic.",
+      "items": {},
+      "type": "array"
     },
     "helm-values.no_proxy": {
       "description": "Configures the NO_PROXY environment variable where a HTTP proxy is required, but certain domains should be excluded.",
@@ -1933,18 +2057,6 @@
               "port": 6443,
               "protocol": "TCP"
             }
-          ],
-          "to": [
-            {
-              "ipBlock": {
-                "cidr": "0.0.0.0/0"
-              }
-            },
-            {
-              "ipBlock": {
-                "cidr": "::/0"
-              }
-            }
           ]
         }
       ],
@@ -1959,20 +2071,7 @@
     },
     "helm-values.webhook.networkPolicy.ingress": {
       "default": [
-        {
-          "from": [
-            {
-              "ipBlock": {
-                "cidr": "0.0.0.0/0"
-              }
-            },
-            {
-              "ipBlock": {
-                "cidr": "::/0"
-              }
-            }
-          ]
-        }
+        {}
       ],
       "description": "Ingress rule for the webhook network policy. By default, it allows all inbound traffic.",
       "items": {},

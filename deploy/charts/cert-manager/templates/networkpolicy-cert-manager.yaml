@@ -1,38 +1,38 @@
-{{- if .Values.webhook.networkPolicy.enabled }}
+{{- if .Values.networkPolicy.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ template "webhook.fullname" . }}-allow-ingress
+  name: {{ template "cert-manager.fullname" . }}-allow-ingress
   namespace: {{ include "cert-manager.namespace" . }}
 spec:
   ingress:
-    {{- with .Values.webhook.networkPolicy.ingress }}
+    {{- with .Values.networkPolicy.ingress }}
       {{- toYaml . | nindent 2 }}
     {{- end }}
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/name: {{ include "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "webhook"
+      app.kubernetes.io/component: "controller"
   policyTypes:
   - Ingress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ template "webhook.fullname" . }}-allow-egress
+  name: {{ template "cert-manager.fullname" . }}-allow-egress
   namespace: {{ include "cert-manager.namespace" . }}
 spec:
   egress:
-    {{- with .Values.webhook.networkPolicy.egress }}
+    {{- with .Values.networkPolicy.egress }}
       {{- toYaml . | nindent 2 }}
     {{- end }}
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/name: {{ include "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: "webhook"
+      app.kubernetes.io/component: "controller"
   policyTypes:
   - Egress
 {{- end }}
