@@ -26,9 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	internalchallenges "github.com/cert-manager/cert-manager/internal/controller/challenges"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmacmeac "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -140,9 +140,31 @@ type objectUpdateClientSSA struct {
 }
 
 func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return internalchallenges.Apply(ctx, o.cl, o.fieldManager, challenge)
+	ac, err := cmacmeac.ExtractChallenge(challenge, o.fieldManager)
+	if err != nil {
+		return nil, err
+	}
+	ac.WithFinalizers(challenge.Finalizers...)
+	return o.cl.AcmeV1().Challenges(challenge.Namespace).Apply(
+		ctx, ac,
+		metav1.ApplyOptions{Force: true, FieldManager: o.fieldManager},
+	)
 }
 
 func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return internalchallenges.ApplyStatus(ctx, o.cl, o.fieldManager, challenge)
+	ac, err := cmacmeac.ExtractChallengeStatus(challenge, o.fieldManager)
+	if err != nil {
+		return nil, err
+	}
+	ac.WithStatus(
+		cmacmeac.ChallengeStatus().
+			WithProcessing(challenge.Status.Processing).
+			WithPresented(challenge.Status.Presented).
+			WithReason(challenge.Status.Reason).
+			WithState(challenge.Status.State),
+	)
+	return o.cl.AcmeV1().Challenges(challenge.Namespace).ApplyStatus(
+		ctx, ac,
+		metav1.ApplyOptions{Force: true, FieldManager: o.fieldManager},
+	)
 }
