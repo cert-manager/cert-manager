@@ -47,18 +47,8 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 	simulatedUpdateError := errors.New("simulated-update-error")
 	simulatedUpdateStatusError := errors.New("simulated-update-status-error")
 
-	// NOTE: We cannot test updates to both the main resource and status
-	// subresource in the same test using APPLY as the fake.NewClientset used
-	// in these tests uses a very simple object tracker that does not track main and
-	// subresource fields separately, which is required for SSA to function.
-	// For reference see these comments in upstream K8s code:
-	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L97-L99
-	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L167-L169
-	// The fake client works for UPDATE, but since the K8s ecosystem is moving towards SSA,
-	// we should try to improve our code (and/or test strategy) long-term.
 	tests := []struct {
 		name              string
-		skip              bool
 		mods              []gen.ChallengeModifier
 		notFound          bool
 		updateError       error
@@ -69,8 +59,6 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 		// finalizers and status being updated.
 		{
 			name: "success",
-			// FIXME: Skip test case when using SSA. See description above.
-			skip: verb == "patch",
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
 				gen.SetChallengePresented(true),
@@ -85,18 +73,6 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 				gen.SetChallengePresented(true),
 			},
 			notFound: true,
-		},
-		// Only the Finalizers and Status fields can be updated. Updates to any
-		// other fields suggests a programming error an argument error.
-		{
-			name: "error-on-non-finalizer-non-status-modifications",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeDNSName("new-dns-name"),
-			},
-			errorMessage: fmt.Sprintf(
-				"%s: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-				errArgument,
-			),
 		},
 		// If the Update API call fails, that error is returned.
 		{
@@ -134,10 +110,6 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skip {
-				t.Skip("The fake client doesn't support K8s subresources like status when using SSA.")
-			}
-
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
 			objects := []runtime.Object{oldChallenge}
@@ -160,7 +132,11 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 			}
 			updater := newObjectUpdater(cl, "test-fieldmanager")
 			t.Log("Calling updateObject")
-			updateObjectErr := updater.updateObject(t.Context(), oldChallenge, newChallenge)
+			intent := ChallengeUpdateIntent{
+				Finalizers: newChallenge.Finalizers,
+				Status:     &newChallenge.Status,
+			}
+			updateObjectErr := updater.updateObject(t.Context(), oldChallenge, intent)
 			if tt.errorMessage == "" {
 				assert.NoError(t, updateObjectErr)
 			} else {
