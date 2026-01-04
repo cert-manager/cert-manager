@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -51,6 +52,8 @@ const (
 	// before giving up
 	authorizationTimeout = 2 * time.Minute
 )
+
+var solverResourceNamePattern = regexp.MustCompile(`cm-acme-http-solver-[a-z0-9]+`)
 
 // solver solves ACME challenges by presenting the given token and key in an
 // appropriate way given the config in the Issuer and Certificate.
@@ -264,6 +267,7 @@ func stabilizeSolverErrorMessage(err error) string {
 			)
 		}
 	}
+	fullMessage = solverResourceNamePattern.ReplaceAllString(fullMessage, "cm-acme-http-solver-<redacted>")
 	return fullMessage
 }
 
