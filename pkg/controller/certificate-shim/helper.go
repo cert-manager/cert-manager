@@ -27,6 +27,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -299,4 +301,19 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	return nil
+}
+
+// translateXListenerToGWAPIV1Listener converts the experimental listener to v1 gateway listener.
+// Both listeners have the same fields for now but due to being in different versions,
+// we need to convert them for having a unified validation. If these types diverge, then this function
+// would need to account for that.
+func translateXListenerToGWAPIV1Listener(l gwapix.ListenerEntry) gwapi.Listener {
+	return gwapi.Listener{
+		Hostname:      l.Hostname,
+		Port:          l.Port,
+		Protocol:      l.Protocol,
+		TLS:           l.TLS,
+		Name:          l.Name,
+		AllowedRoutes: l.AllowedRoutes,
+	}
 }

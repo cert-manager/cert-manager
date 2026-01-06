@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
@@ -424,6 +425,23 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPINotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
 		default:
 			gatewayAvailable = true
+		}
+	}
+
+	// TODO: Once XListenerSets is graduated to ListenerSets we can remove this check.
+	// Check if the GatewayAPIx resources are present
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && opts.EnableGatewayAPI {
+		d := kubeClient.Discovery()
+		resources, err := d.ServerResourcesForGroupVersion(gwapix.GroupVersion.String())
+		var GatewayAPIXNotAvailable = "the Gateway API experimental CRDs do not seem to be present, but " + feature.XListenerSets +
+			" is set to true. Please install the gateway-apix CRDs."
+		switch {
+		case apierrors.IsNotFound(err):
+			return contextClients{}, fmt.Errorf("%s (%w)", GatewayAPIXNotAvailable, err)
+		case err != nil:
+			return contextClients{}, fmt.Errorf("while checking if the Gateway API CRD is installed: %w", err)
+		case len(resources.APIResources) == 0:
+			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPIXNotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
 		}
 	}
 

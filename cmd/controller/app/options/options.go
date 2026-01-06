@@ -26,6 +26,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	configv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
+	xlistenersetcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/listenerset"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/pflag"
@@ -262,6 +263,11 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && o.EnableGatewayAPI {
+		logf.Log.Info("enabling the sig-network Gateway API XListenerSet certificate-shim")
+		enabled = enabled.Insert(xlistenersetcontroller.ControllerName)
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
