@@ -27,8 +27,8 @@ CRI_ARCH := $(HOST_ARCH)
 K8S_VERSION := 1.34
 
 IMAGE_ingressnginx_amd64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:aadad8e26329d345dea3a69b8deb9f3c52899a97cbaf7e702b8dfbeae3082c15
-IMAGE_kyverno_amd64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:127def0e41f49fea6e260abf7b1662fe7bdfb9f33e8f9047fb74d0162a5697bb
-IMAGE_kyvernopre_amd64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d388cd67b38fb4f55eb5e38107dbbce9e06208b8e3839f0b63f8631f286181be
+IMAGE_kyverno_amd64 := reg.kyverno.io/kyverno/kyverno:v1.16.2@sha256:d9fcc85964a654a02fcde96704b7c4b5dc9bea3203bdfa41eeac1a100d04adea
+IMAGE_kyvernopre_amd64 := reg.kyverno.io/kyverno/kyvernopre:v1.16.2@sha256:1d13371ea80ec78900ea1139997c18b19117008007be2d7e4252414a41b9b2c7
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
 IMAGE_bind_amd64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:8c45ba363b2921950161451cf3ff58dff1816fa46b16fb8fa601d5500cdc2ffc
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
@@ -39,8 +39,8 @@ IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:bb7a
 IMAGE_projectcontourenvoy_amd64 := docker.io/bitnamilegacy/envoy:1.29.5-debian-12-r0@sha256:34be30978b7765699c4548a393374a5fea64613352078ec49581be26c2024dec
 
 IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:800048a4cdf4ad487a17f56d22ec6be7a34248fc18900d945bc869fee4ccb2f7
-IMAGE_kyverno_arm64 := ghcr.io/kyverno/kyverno:v1.12.3@sha256:c076a1ba9e0fb33d8eca3e7499caddfa3bb4f5e52e9dee589d8476ae1688cd34
-IMAGE_kyvernopre_arm64 := ghcr.io/kyverno/kyvernopre:v1.12.3@sha256:d8d750012ed4bb46fd41d8892e92af6fb9fd212317bc23e68a2a47199646b04a
+IMAGE_kyverno_arm64 := reg.kyverno.io/kyverno/kyverno:v1.16.2@sha256:b6fa2b1483438ad1faf7a34632d4eee90b477ef58d0bbe7164acbec601d66266
+IMAGE_kyvernopre_arm64 := reg.kyverno.io/kyverno/kyvernopre:v1.16.2@sha256:f48d37c99086a9b7311bc167750aba56a9681f37f46bf129f7a12b770c39e00f
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
 IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:7fcfebdfacf52fa0dee2b1ae37ebe235fe169cbc404974c396937599ca69da6f
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
@@ -414,7 +414,7 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--wait \
 		--namespace kyverno \
 		--create-namespace \
-		--version 3.2.4 \
+		--version 3.6.2 \
 		--set webhooksCleanup.enabled=false \
 		--set reportsController.enabled=false \
 		--set cleanupController.enabled=false \
