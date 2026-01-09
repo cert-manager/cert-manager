@@ -336,6 +336,35 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// If the CertificateRequest is valid and ready, verify its status and issue
 	// accordingly.
 	if crReadyCond.Reason == cmapi.CertificateRequestReasonIssued {
+		// Verify the signed certificate's public key matches the CSR's public key.
+		// If not, fail with backoff to prevent infinite re-issuance loops.
+		x509Cert, err := utilpki.DecodeX509CertificateBytes(req.Status.Certificate)
+		if err != nil {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Issuer returned an invalid certificate: failed to decode: %v", err),
+			})
+		}
+		certMatchesCSR, err := utilpki.PublicKeysEqual(x509Cert.PublicKey, csr.PublicKey)
+		if err != nil {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Failed to compare certificate and CSR public keys: %v", err),
+			})
+		}
+		if !certMatchesCSR {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: "Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+			})
+		}
+
 		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
 	}
 
