@@ -81,7 +81,7 @@ tools += vault=v1.21.2
 tools += azwi=v1.5.1
 # https://github.com/kyverno/kyverno/releases
 # renovate: datasource=github-releases packageName=kyverno/kyverno
-tools += kyverno=v1.16.1
+tools += kyverno=v1.16.2
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
 tools += yq=v4.50.1
@@ -156,7 +156,7 @@ tools += klone=v0.2.0
 tools += goreleaser=v2.13.2
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.39.0
+tools += syft=v1.40.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -565,10 +565,10 @@ $(DOWNLOAD_DIR)/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(
 	@source $(lock_script) $@; \
 		tar xfO $< controller-tools/envtest/kube-apiserver > $(outfile) && chmod 775 $(outfile)
 
-kyverno_linux_amd64_SHA256SUM=0c0216e4c3bb535eaf94ea1c2e13e4d66f7be2ec6446c37aee6c3133650167e7
-kyverno_linux_arm64_SHA256SUM=c1d349a272c2adf1bc9d2caf23a354ff4edc10687664c7a04da6fb84ce502c20
-kyverno_darwin_amd64_SHA256SUM=7985d522952e88adf7f21058439099b0e27c099baab0589b3a501862daebe842
-kyverno_darwin_arm64_SHA256SUM=25a704a74683a3da5bb50cb9e7a11a4df686121674d1271f49c0261618c94f1d
+kyverno_linux_amd64_SHA256SUM=957fd264f011644394e22877505841fe4ec62a2e4c194075cd4e4b14dd07cf82
+kyverno_linux_arm64_SHA256SUM=185a8969292c631362a37704952be5ca566ef139574a509bd8372297ab50691d
+kyverno_darwin_amd64_SHA256SUM=029aef2fff9c6e0bd963118c24a5d3102cb71fc0e2e8532c5449a5859534ddd3
+kyverno_darwin_arm64_SHA256SUM=fe1b558088399dbfd5693a06fc1337ef78c45ac5953c3945040222842278c12e
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
