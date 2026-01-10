@@ -139,7 +139,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 	}
 }
 
-func TestCheckAuthoritativeNss(t *testing.T) {
+func TestCheckTXTRecord(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		withMockDNSQuery(t, []interaction{
 			{"TXT 8.8.8.8.asn.routeviews.org.", &dns.Msg{
@@ -149,7 +149,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkTXTRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
@@ -160,7 +160,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkTXTRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -168,7 +168,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 	t.Run("errors out when DnsQuery fails", func(t *testing.T) {
 		withMockDNSQueryErr(t, fmt.Errorf("some error coming from DnsQuery"))
 
-		_, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		_, err := checkTXTRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		assert.EqualError(t, err, "some error coming from DnsQuery")
 	})
 }
