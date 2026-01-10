@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupNameserversOK(t *testing.T) {
+func TestLookupAuthoritativeNssOK(t *testing.T) {
 	tests := []struct {
 		givenFQDN string
 		expectNSs []string
@@ -112,14 +112,14 @@ func TestLookupNameserversOK(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.givenFQDN, func(t *testing.T) {
 			withMockDNSQuery(t, tc.mockDNS)
-			nss, err := lookupNameservers(t.Context(), tc.givenFQDN, []string{"not-used"})
+			nss, err := lookupAuthoritativeNss(t.Context(), tc.givenFQDN, []string{"not-used"})
 			require.NoError(t, err)
 			assert.ElementsMatch(t, tc.expectNSs, nss, "Expected nameservers do not match")
 		})
 	}
 }
 
-func TestLookupNameserversErr(t *testing.T) {
+func TestLookupAuthoritativeNssErr(t *testing.T) {
 	t.Run("no SOA record can be found", func(t *testing.T) {
 		withMockDNSQuery(t, []interaction{
 			{"SOA _null.n0n0.", &dns.Msg{
@@ -135,7 +135,7 @@ func TestLookupNameserversErr(t *testing.T) {
 				},
 			}},
 		})
-		_, err := lookupNameservers(t.Context(), "_null.n0n0.", []string{"not-used"})
+		_, err := lookupAuthoritativeNss(t.Context(), "_null.n0n0.", []string{"not-used"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Could not determine the zone")
 	})
@@ -256,7 +256,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 	}
 }
 
-func TestCheckAuthoritativeNss(t *testing.T) {
+func TestCheckTxtRecord(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		withMockDNSQuery(t, []interaction{
 			{"TXT 8.8.8.8.asn.routeviews.org.", &dns.Msg{
@@ -266,7 +266,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkTxtRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
@@ -277,7 +277,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
 			}},
 		})
-		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		ok, err := checkTxtRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		require.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -285,7 +285,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 	t.Run("errors out when DnsQuery fails", func(t *testing.T) {
 		withMockDNSQueryErr(t, fmt.Errorf("some error coming from DnsQuery"))
 
-		_, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
+		_, err := checkTxtRecord(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		assert.EqualError(t, err, "some error coming from DnsQuery")
 	})
 }
