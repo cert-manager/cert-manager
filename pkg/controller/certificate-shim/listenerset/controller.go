@@ -61,10 +61,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 	xlsInf := ctx.GWShared.Experimental().V1alpha1().XListenerSets().Informer()
 
-	if _, err := xlsInf.AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
-		return nil, nil, fmt.Errorf("error setting up event handler for xlistenerset %v", err)
-	}
-
 	// Adding an indexer for easier queries on xlistenerset
 	if err := xlsInf.AddIndexers(cache.Indexers{
 		indexByParentGateway: func(obj any) ([]string, error) {
@@ -85,6 +81,10 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 		},
 	}); err != nil {
 		return nil, nil, fmt.Errorf("error adding indexer for xlistenerset %v", err)
+	}
+
+	if _, err := xlsInf.AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
+		return nil, nil, fmt.Errorf("error setting up event handler for xlistenerset %v", err)
 	}
 
 	// we need to reconcile xlistenersets when gateways change
