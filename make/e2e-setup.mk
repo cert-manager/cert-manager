@@ -32,11 +32,11 @@ IMAGE_kyvernopre_amd64 := reg.kyverno.io/kyverno/kyvernopre:v1.16.2@sha256:1d133
 IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356720069c29229970466f4f686886289dcc94dfa21d3155
 IMAGE_bind_amd64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:8c45ba363b2921950161451cf3ff58dff1816fa46b16fb8fa601d5500cdc2ffc
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
-IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:bb7af851ac5832c315e0863d12ed583cee54c495d58a206f1d0897647505ed70
+IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.32.1@sha256:4d710f8b5e39302abc08c59f010edb92a562ea91035a3e0e2701713859361bb1
 # We use the bitnamilegacy image because Bitnami are deprecating support for
 # non-hardened, Debian-based software images in its free tier. See
 # https://github.com/bitnami/containers/issues/83267
-IMAGE_projectcontourenvoy_amd64 := docker.io/bitnamilegacy/envoy:1.29.5-debian-12-r0@sha256:34be30978b7765699c4548a393374a5fea64613352078ec49581be26c2024dec
+IMAGE_projectcontourenvoy_amd64 := docker.io/bitnamilegacy/envoy:1.34.5-debian-12-r0@sha256:9acd468fcaba47cf45f173fcca5735fc8a5e6b75af7b4a878708856a09fcfb3b
 
 IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:800048a4cdf4ad487a17f56d22ec6be7a34248fc18900d945bc869fee4ccb2f7
 IMAGE_kyverno_arm64 := reg.kyverno.io/kyverno/kyverno:v1.16.2@sha256:b6fa2b1483438ad1faf7a34632d4eee90b477ef58d0bbe7164acbec601d66266
@@ -44,11 +44,11 @@ IMAGE_kyvernopre_arm64 := reg.kyverno.io/kyverno/kyvernopre:v1.16.2@sha256:f48d3
 IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a66792191db5382f0cf9eeaf1ae91770634911facfcfe4837
 IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:7fcfebdfacf52fa0dee2b1ae37ebe235fe169cbc404974c396937599ca69da6f
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
-IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.29.1@sha256:dbfec77951e123bf383a09412a51df218b716aaf3fe7b2778bb2f208ac495dc5
+IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.32.1@sha256:66b662878c1e8ab63303e89476e7626336a25bc263dad6ac6ec46b93961dad7c
 # We use the bitnamilegacy image because Bitnami are deprecating support for
 # non-hardened, Debian-based software images in its free tier. See
 # https://github.com/bitnami/containers/issues/83267
-IMAGE_projectcontourenvoy_arm64 := docker.io/bitnamilegacy/envoy:1.29.5-debian-12-r0@sha256:0862aad6a034e822ef6cc0e2f2af697ec924d58b8e9acffba48be5b29a9d9776
+IMAGE_projectcontourenvoy_arm64 := docker.io/bitnamilegacy/envoy:1.34.5-debian-12-r0@sha256:e66a822b14cfa3d063de138a098bbd557a21da9d9cd467de4dfc16ae8e79e4db
 
 # We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
@@ -498,7 +498,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 	$(HELM) upgrade \
 		--install \
 		--wait \
-		--version 18.2.4 \
+		--version 21.1.4 \
 		--namespace projectcontour \
 		--create-namespace \
 		--set contour.ingressClass.create=false \
@@ -516,6 +516,7 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 		--set envoy.image.repository=envoy \
 		--set envoy.image.tag=$(ENVOY_TAG) \
 		--set envoy.image.pullPolicy=Never \
+		--set global.security.allowInsecureImages=true \
 		--set-file configInline=make/config/projectcontour/contour.yaml \
 		projectcontour bitnami/contour >/dev/null
 	$(KUBECTL) apply --server-side -f make/config/projectcontour/gateway.yaml

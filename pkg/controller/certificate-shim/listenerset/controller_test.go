@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
-	// gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwxclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apisx/v1alpha1"
@@ -61,6 +61,99 @@ func Test_controller_Register(t *testing.T) {
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{{Namespace: "namespace-1", Name: "xls-1"}},
+		},
+		{
+			name: "xlistenerset is re-queued when an 'Updated' event is received for this xlistenerset",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
+				_, err := cx.XListenerSets("namespace-1").Create(t.Context(),
+					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "xls-1",
+					}},
+					metav1.CreateOptions{},
+				)
+				require.NoError(t, err)
+
+				_, err = cx.XListenerSets("namespace-1").Update(t.Context(),
+					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "xls-1", Labels: map[string]string{"foo": "bar"},
+					}},
+					metav1.UpdateOptions{},
+				)
+				require.NoError(t, err)
+			},
+			expectAddCalls: []types.NamespacedName{
+				// Create
+				{Namespace: "namespace-1", Name: "xls-1"},
+				// Update
+				{Namespace: "namespace-1", Name: "xls-1"},
+			},
+		},
+		{
+			name: "xlistenerset is re-queued when a 'Deleted' event is received for this xlistenerset",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
+				_, err := cx.XListenerSets("namespace-1").Create(t.Context(),
+					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "xls-1",
+					}},
+					metav1.CreateOptions{},
+				)
+				require.NoError(t, err)
+
+				err = cx.XListenerSets("namespace-1").Delete(t.Context(), "xls-1", metav1.DeleteOptions{})
+				require.NoError(t, err)
+			},
+			expectAddCalls: []types.NamespacedName{
+				// Create
+				{Namespace: "namespace-1", Name: "xls-1"},
+				// Delete
+				{Namespace: "namespace-1", Name: "xls-1"},
+			},
+		},
+		{
+			name: "xlistenerset is re-queued when its parent Gateway is updated (default issuer changes, etc.)",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
+				// Create parent Gateway
+				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(),
+					&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gw-1",
+					}},
+					metav1.CreateOptions{},
+				)
+				require.NoError(t, err)
+
+				gwNS := gwapi.Namespace("namespace-1")
+				// Create XListenerSet referencing that Gateway.
+				_, err = cx.XListenerSets("namespace-1").Create(t.Context(),
+					&gwapix.XListenerSet{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "namespace-1", Name: "xls-3"},
+						Spec: gwapix.ListenerSetSpec{
+							ParentRef: gwapix.ParentGatewayReference{
+								Name:      "gw-1",
+								Namespace: &gwNS,
+							},
+						},
+					},
+					metav1.CreateOptions{},
+				)
+				require.NoError(t, err)
+
+				// Update Gateway -> should enqueue attached xls via the parent index.
+				_, err = c.GatewayV1().Gateways("namespace-1").Update(t.Context(),
+					&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "gw-1", Labels: map[string]string{"changed": "true"},
+					}},
+					metav1.UpdateOptions{},
+				)
+				require.NoError(t, err)
+			},
+			expectAddCalls: []types.NamespacedName{
+				// Create XListenerSet (its own add handler)
+				{Namespace: "namespace-1", Name: "xls-3"},
+				// Gateway update triggers requeue of xls-3 via parent index
+				{Namespace: "namespace-1", Name: "xls-3"},
+				// Certificate addition triggers queue of xls-3
+				{Namespace: "namespace-1", Name: "xls-3"},
+			},
 		},
 	}
 
