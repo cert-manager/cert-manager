@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -69,6 +70,49 @@ func TestBuildAnnotationsToCopy(t *testing.T) {
 			if got := BuildAnnotationsToCopy(test.allAnnotations, test.prefixes); !reflect.DeepEqual(got, test.want) {
 				t.Errorf("BuildAnnotationsToCopy() = %+#v, want %+#v", got, test.want)
 			}
+		})
+	}
+}
+
+func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
+	tests := map[string]struct {
+		oldObj *corev1.ConfigMap
+		newObj *corev1.ConfigMap
+		want   bool
+	}{
+		"different resource versions considered changed": {
+			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}},
+			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "2"}},
+			want:   true,
+		},
+		"same resource versions considered unchanged": {
+			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}, Data: map[string]string{"a": "b"}},
+			// WARNING: this tests that we only compare the resource versions, not the full object.
+			// A real API server would never return two different objects with the same resource version.
+			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}, Data: map[string]string{"a": "c"}},
+			want:   false,
+		},
+		"empty resource versions fallback to DeepEqual - equal objects": {
+			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
+			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
+			want:   false,
+		},
+		"empty resource versions fallback to DeepEqual - different objects": {
+			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
+			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "c"}},
+			want:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			predicate := onlyUpdateWhenResourceChanged{}
+			e := event.TypedUpdateEvent[metav1.Object]{
+				ObjectOld: tt.oldObj,
+				ObjectNew: tt.newObj,
+			}
+			got := predicate.Update(e)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
