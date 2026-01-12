@@ -305,3 +305,41 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 		})
 	}
 }
+
+func TestStartRenewalWatcher(t *testing.T) {
+	source := &DynamicSource{}
+
+	testCases := map[string]struct {
+		renewalAt      time.Time
+		renewalAfter   time.Time
+		expectedResult renewalReason
+	}{
+		"certificate about to expire": {
+			renewalAt:      time.Now().Add(200 * time.Millisecond),
+			renewalAfter:   time.Now().Add(400 * time.Millisecond),
+			expectedResult: certificateAboutToExpire,
+		},
+		"certificate renewal moment passed": {
+			// proving a timestamp in the past triggers the message channel immediately; that's why se set a time in the feature, before renewalAfter
+			renewalAt:      time.Now().Add(400 * time.Millisecond),
+			renewalAfter:   time.Now().Add(200 * time.Millisecond),
+			expectedResult: certificateRenewalMomentMissed,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+			defer cancel()
+			resultCh := source.startRenewalWatcher(ctx, testCase.renewalAt, testCase.renewalAfter, 100*time.Millisecond)
+
+			select {
+			case <-ctx.Done():
+				t.Errorf("expected renewal watcher to return, got: %v", ctx.Err())
+			case result := <-resultCh:
+				assert.Equal(t, testCase.expectedResult, result)
+			}
+		})
+	}
+
+}

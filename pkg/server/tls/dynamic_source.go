@@ -125,22 +125,18 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 
 		for {
 			if done := func() bool {
-				var timerChannel <-chan time.Time
-				if !renewMoment.IsZero() {
-					timer := time.NewTimer(time.Until(renewMoment))
-					defer timer.Stop()
-
-					renewMoment = time.Time{}
-					timerChannel = timer.C
-				}
+				watcherContext, cancel := context.WithCancel(ctx)
+				defer cancel()
+				needsRenewalChan := f.startRenewalWatcher(watcherContext, renewMoment, renewMoment.Add(5*time.Second), 1*time.Minute)
 
 				// Wait for the timer to expire, or for a new renewal moment to be received
 				select {
 				case <-ctx.Done():
 					// context was cancelled, return nil
 					return true
-				case <-timerChannel:
-					// Continue to the next select to try to send a message on renewalChan
+				case reason := <-needsRenewalChan:
+					f.log.V(logf.InfoLevel).Info("Certificate needs renewal", "reason", reason)
+					renewMoment = time.Time{}
 				case renewMoment = <-nextRenewCh:
 					// We received a renew moment, next loop iteration will update the timer
 					return false
@@ -151,7 +147,6 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 				case renewalChan <- struct{}{}:
 				default:
 				}
-
 				return false
 			}(); done {
 				return nil
@@ -295,4 +290,48 @@ func (f *DynamicSource) updateCertificate(ctx context.Context, pk crypto.Signer,
 	f.log.V(logf.InfoLevel).Info("Updated cert-manager TLS certificate", "DNSNames", f.DNSNames)
 
 	return nil
+}
+
+type renewalReason string
+
+const (
+	certificateAboutToExpire       renewalReason = "certificateAboutToExpire"
+	certificateRenewalMomentMissed renewalReason = "certificateRenewalMomentMissed"
+)
+
+func (f *DynamicSource) startRenewalWatcher(ctx context.Context, renewalAt time.Time, renewalAfter time.Time, retryPeriod time.Duration) <-chan renewalReason {
+	var renewalChan = make(chan renewalReason, 1)
+
+	go func() {
+
+		var timerChannel <-chan time.Time
+		if !renewalAt.IsZero() {
+			timer := time.NewTimer(time.Until(renewalAt))
+			defer timer.Stop()
+			timerChannel = timer.C
+		}
+
+		var certExpiredChan <-chan time.Time
+		if !renewalAfter.IsZero() {
+			ticker := time.NewTicker(retryPeriod)
+			defer ticker.Stop()
+			certExpiredChan = ticker.C
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-timerChannel:
+				renewalChan <- certificateAboutToExpire
+			case <-certExpiredChan:
+				if !time.Now().After(renewalAfter) {
+					continue
+				}
+				renewalChan <- certificateRenewalMomentMissed
+			}
+		}
+	}()
+
+	return renewalChan
 }
