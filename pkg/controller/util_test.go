@@ -76,8 +76,6 @@ func TestBuildAnnotationsToCopy(t *testing.T) {
 
 func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
 	tests := map[string]struct {
-		oldRV  string
-		newRV  string
 		oldObj *corev1.ConfigMap
 		newObj *corev1.ConfigMap
 		want   bool
