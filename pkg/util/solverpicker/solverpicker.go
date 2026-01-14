@@ -49,7 +49,7 @@ func Pick(ctx context.Context, domainToFind string, challenges []cmacme.ACMEChal
 
 	// 2. filter solvers to only those that matchLabels
 	for _, cfg := range solvers {
-		acmech := challengeForSolver(&cfg) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+		acmech := challengeForSolver(&cfg)
 		if acmech == nil {
 			dbg.Info("cannot use solver as the ACME authorization does not allow solvers of this type")
 			continue
