@@ -88,12 +88,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	}
 
 	// we need to reconcile xlistenersets when gateways change
-	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(controllerpkg.BlockingEventHandler(func(obj any) {
-		gw, ok := obj.(*gwapi.Gateway)
-		if !ok {
-			return
-		}
-
+	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(controllerpkg.BlockingEventHandler(func(gw *gwapi.Gateway) {
 		key := fmt.Sprintf("%s/%s", gw.Namespace, gw.Name)
 
 		indexed, err := xlsInf.GetIndexer().ByIndex(indexByParentGateway, key)
@@ -196,14 +191,8 @@ func inheritAnnotations(xls *gwapix.XListenerSet, gw *gwapi.Gateway) {
 	xls.SetAnnotations(xlsAnn)
 }
 
-func xListenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(obj any) {
-	return func(obj any) {
-		crt, ok := obj.(*cmapi.Certificate)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("not a certificate object %#v", obj))
-			return
-		}
-
+func xListenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(crt *cmapi.Certificate) {
+	return func(crt *cmapi.Certificate) {
 		ref := metav1.GetControllerOf(crt)
 		if ref == nil {
 			// No controller should care about orphans being deleted or

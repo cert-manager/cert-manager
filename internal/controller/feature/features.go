@@ -214,7 +214,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
-	XListenerSets:                                    {Default: true, PreRelease: featuregate.Alpha},
+	XListenerSets:                                    {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},

@@ -158,6 +158,8 @@ type ContextOptions struct {
 type ConfigOptions struct {
 	// EnableGatewayAPI indicates if the user has enabled GatewayAPI support.
 	EnableGatewayAPI bool
+	// EnableGatewayAPIXListenerSets indicates if the user has enabled XListenerSets support.
+	EnableGatewayAPIXListenerSets bool
 }
 
 type IssuerOptions struct {
@@ -430,7 +432,7 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 
 	// TODO: Once XListenerSets is graduated to ListenerSets we can remove this check.
 	// Check if the GatewayAPIx resources are present
-	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && opts.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && opts.EnableGatewayAPI && opts.EnableGatewayAPIXListenerSets {
 		d := kubeClient.Discovery()
 		resources, err := d.ServerResourcesForGroupVersion(gwapix.GroupVersion.String())
 		var GatewayAPIXNotAvailable = "the Gateway API experimental CRDs do not seem to be present, but " + feature.XListenerSets +

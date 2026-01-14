@@ -37,6 +37,7 @@ IMAGE_projectcontour_amd64 := ghcr.io/projectcontour/contour:v1.32.1@sha256:4d71
 # non-hardened, Debian-based software images in its free tier. See
 # https://github.com/bitnami/containers/issues/83267
 IMAGE_projectcontourenvoy_amd64 := docker.io/bitnamilegacy/envoy:1.34.5-debian-12-r0@sha256:9acd468fcaba47cf45f173fcca5735fc8a5e6b75af7b4a878708856a09fcfb3b
+IMAGE_kgateway_amd64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:a6f78f238fb24afce121c4bb8abb8a54bb2d4d0522382601d4e3cc868e9fcce9
 
 IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:800048a4cdf4ad487a17f56d22ec6be7a34248fc18900d945bc869fee4ccb2f7
 IMAGE_kyverno_arm64 := reg.kyverno.io/kyverno/kyverno:v1.16.2@sha256:b6fa2b1483438ad1faf7a34632d4eee90b477ef58d0bbe7164acbec601d66266
@@ -49,6 +50,7 @@ IMAGE_projectcontour_arm64 := ghcr.io/projectcontour/contour:v1.32.1@sha256:66b6
 # non-hardened, Debian-based software images in its free tier. See
 # https://github.com/bitnami/containers/issues/83267
 IMAGE_projectcontourenvoy_arm64 := docker.io/bitnamilegacy/envoy:1.34.5-debian-12-r0@sha256:e66a822b14cfa3d063de138a098bbd557a21da9d9cd467de4dfc16ae8e79e4db
+IMAGE_kgateway_arm64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:acdaa7669ac9b1be6be0581d7c2c3d8b294c89ea03a32c1b6201e1f5d73e70af
 
 # We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
@@ -114,7 +116,7 @@ kind-exists: $(bin_dir)/scratch/kind-exists
 ## created.
 ##
 ## @category Development
-e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-projectcontour
+e2e-setup: e2e-setup-gatewayapi e2e-setup-certmanager e2e-setup-vault e2e-setup-bind e2e-setup-sampleexternalissuer e2e-setup-samplewebhook e2e-setup-pebble e2e-setup-ingressnginx e2e-setup-kgateway
 
 # The function "image-tar" returns the path to the image tarball for a given
 # image name. For example:
@@ -174,7 +176,7 @@ preload-kind-image: $(call image-tar,kind) | $(NEEDS_CTR)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
-LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,projectcontourenvoy) load-$(call image-tar,sampleexternalissuer) load-$(call local-image-tar,vaultretagged) load-$(call local-image-tar,pebble) load-$(call local-image-tar,samplewebhook) load-$(bin_dir)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-startupapicheck-linux-$(CRI_ARCH).tar
+LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,bind) load-$(call image-tar,projectcontour) load-$(call image-tar,projectcontourenvoy) load-$(call image-tar,kgateway) load-$(call image-tar,sampleexternalissuer) load-$(call local-image-tar,vaultretagged) load-$(call local-image-tar,pebble) load-$(call local-image-tar,samplewebhook) load-$(bin_dir)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-startupapicheck-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
 $(LOAD_TARGETS): load-%: % $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 	$(KIND) load image-archive --name=$(shell cat $(bin_dir)/scratch/kind-exists) $*
@@ -200,7 +202,7 @@ $(LOAD_TARGETS): load-%: % $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 #    tag. The rule will fail and the new digest will be printed out.
 # 3. It prevents us accidentally using the wrong digest when we pin the images
 #    in the variables above.
-$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,projectcontourenvoy) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(bin_dir)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
+$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,projectcontour) $(call image-tar,kgateway) $(call image-tar,projectcontourenvoy) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(bin_dir)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -274,7 +276,7 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% XListenerSets=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
@@ -520,6 +522,32 @@ e2e-setup-projectcontour: $(call image-tar,projectcontour) load-$(call image-tar
 		--set-file configInline=make/config/projectcontour/contour.yaml \
 		projectcontour bitnami/contour >/dev/null
 	$(KUBECTL) apply --server-side -f make/config/projectcontour/gateway.yaml
+
+.PHONY: e2e-setup-kgateway
+e2e-setup-kgateway: $(call image-tar,kgateway) load-$(call image-tar,kgateway) make/config/kgateway/gateway.yaml make/config/kgateway/gwconfig.yaml $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
+	@$(eval KGATEWAY_TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	
+	$(HELM) upgrade \
+		--install \
+		--create-namespace \
+		--namespace kgateway-system \
+	  	--version v2.1.2 \
+		kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds >/dev/null
+	
+	$(HELM) upgrade \
+		--install \
+		--namespace kgateway-system \
+		--version v2.1.2 \
+		--set controller.image.registry=ghcr.io/kgateway-dev \
+		--set controller.image.repository=kgateway \
+		--set controller.image.tag=$(KGATEWAY_TAG) \
+		--set controller.image.pullPolicy=Never \
+		--set controller.extraEnv.KGW_ENABLE_GATEWAY_API_EXPERIMENTAL_FEATURES=true \
+		kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway >/dev/null
+	
+	@SERVICE_PREFIX=$(SERVICE_IP_PREFIX) \
+		envsubst < make/config/kgateway/gwconfig.yaml | $(KUBECTL) apply --server-side -f -
+	$(KUBECTL) apply --server-side -f make/config/kgateway/gateway.yaml
 
 .PHONY: e2e-setup-sampleexternalissuer
 e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL)
