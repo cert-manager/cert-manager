@@ -143,7 +143,7 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 	}
 
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
 	}
 
 	return el, warnings

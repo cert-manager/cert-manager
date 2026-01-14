@@ -129,7 +129,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 				Expect(err).NotTo(HaveOccurred())
 				var ownedReqs int
 				for _, req := range reqs.Items {
-					if predicate.ResourceOwnedBy(crt)(&req) /* #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010 */ {
+					if predicate.ResourceOwnedBy(crt)(&req) {
 						ownedReqs++
 					}
 				}
