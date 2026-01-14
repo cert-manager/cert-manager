@@ -86,6 +86,11 @@ type ControllerConfiguration struct {
 	// as of 1.15).
 	EnableGatewayAPI bool
 
+	// Specifies whether the XListenerSet controller should be enabled with-in cert-manager.
+	// This along with XListenerSet feature gate enabled allows the user to consume XListenerSet
+	// for self-service TLS.
+	EnableGatewayAPIXListenerSet bool
+
 	// Specify which annotations should/shouldn't be copied from Certificate to
 	// CertificateRequest and Order, as well as from CertificateSigningRequest to
 	// Order, by passing a list of annotation key prefixes. A prefix starting with

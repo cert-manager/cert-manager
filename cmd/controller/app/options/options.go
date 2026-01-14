@@ -174,6 +174,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableGatewayAPI, "enable-gateway-api", c.EnableGatewayAPI, ""+
 		"Whether gateway API integration is enabled within cert-manager. The ExperimentalGatewayAPISupport "+
 		"feature gate must also be enabled (default as of 1.15).")
+	fs.BoolVar(&c.EnableGatewayAPIXListenerSet, "enable-gateway-api-xlistenerset", c.EnableGatewayAPIXListenerSet, ""+
+		"Whether XListenerSets support is enabled within cert-manager. The XListenerSet "+
+		"feature gate must also be enabled.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
@@ -265,7 +268,7 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && o.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIXListenerSet {
 		logf.Log.Info("enabling the sig-network Gateway API XListenerSet certificate-shim")
 		enabled = enabled.Insert(xlistenersetcontroller.ControllerName)
 	}

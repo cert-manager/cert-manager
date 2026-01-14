@@ -36,11 +36,6 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
-// var (
-// 	gatewayGVK  = gwapi.SchemeGroupVersion.WithKind("Gateway")
-// 	gatewayXGVK = gwapix.SchemeGroupVersion.WithKind("XListenerSet")
-// )
-
 func Test_controller_Register(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -184,6 +179,66 @@ func Test_controller_Register(t *testing.T) {
 			assert.Equal(t, test.expectAddCalls, mock.callsToAdd)
 		})
 	}
+}
+
+func Test_inheritAnnotations(t *testing.T) {
+	var o []runtime.Object
+
+	// Build the controller test harness (same style as gateway controller tests).
+	b := &testpkg.Builder{T: t, CertManagerObjects: o}
+	b.Init()
+
+	// We don't care about HasSynced correctness; if events enqueue keys, handlers were wired.
+	mock := &mockWorkqueue{t: t}
+	_, _, err := (&controller{queue: mock}).Register(b.Context)
+	require.NoError(t, err)
+
+	b.Start()
+	defer b.Stop()
+
+	gw, err := b.GWClient.GatewayV1().Gateways("namespace-1").Create(t.Context(),
+		&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace-1",
+			Name:      "gw-1",
+			Annotations: map[string]string{
+				"cert-manager.io/issuer":       "test-issuer",
+				"cert-manager.io/issuer-kind":  "ClusterIssuer",
+				"cert-manager.io/issuer-group": "cert-manager.io",
+			},
+		}},
+		metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	gwNS := gwapi.Namespace("namespace-1")
+	// Create XListenerSet referencing that Gateway.
+	xls, err := b.GWClient.ExperimentalV1alpha1().XListenerSets("namespace-1").Create(t.Context(),
+		&gwapix.XListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "namespace-1",
+				Name:      "xls-3",
+				Annotations: map[string]string{
+					"cert-manager.io/issuer":       "test-issuer-1",
+					"cert-manager.io/issuer-group": "cert-manager.io",
+				},
+			},
+			Spec: gwapix.ListenerSetSpec{
+				ParentRef: gwapix.ParentGatewayReference{
+					Name:      "gw-1",
+					Namespace: &gwNS,
+				},
+			},
+		},
+		metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	// Shared informer async: allow time for handlers to enqueue.
+	time.Sleep(50 * time.Millisecond)
+	inheritAnnotations(xls, gw)
+
+	require.Equal(t, "test-issuer-1", xls.GetAnnotations()["cert-manager.io/issuer"])
+	require.Equal(t, "ClusterIssuer", xls.GetAnnotations()["cert-manager.io/issuer-kind"])
 }
 
 type mockWorkqueue struct {

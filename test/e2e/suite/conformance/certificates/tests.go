@@ -44,6 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -640,6 +641,83 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			// "testcert-gateway" instead of the secretName
 			// "testcert-gateway-tls".
 			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the gateway-shim has translated all the supplied
+			// annotations into equivalent Certificate field values
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.CommonName).To(Equal(domain))
+			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+		})
+
+		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.XListenerSets)
+
+			name := "testcert-gateway"
+			secretName := "testcert-gateway-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			duration := time.Hour * 999
+			renewBefore := time.Hour * 111
+			all := gwapi.FromNamespaces("All")
+
+			gw := &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "foo",
+					AllowedListeners: &gwapi.AllowedListeners{
+						Namespaces: &gwapi.ListenerNamespaces{
+							From: &all,
+						},
+					},
+					Listeners: []gwapi.Listener{
+						{
+							AllowedRoutes: &gwapi.AllowedRoutes{
+								Namespaces: &gwapi.RouteNamespaces{
+									From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
+									Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+										"gw": name,
+									}},
+								},
+								Kinds: nil,
+							},
+							Name:     "acme-solver",
+							Protocol: gwapi.TLSProtocolType,
+							Port:     gwapi.PortNumber(80),
+							Hostname: (*gwapi.Hostname)(&domain),
+						},
+					},
+				},
+			}
+
+			_, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			xls := e2eutil.NewListenerSet(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       ir.Name,
+				"cert-manager.io/issuer-kind":  ir.Kind,
+				"cert-manager.io/issuer-group": ir.Group,
+				"cert-manager.io/common-name":  domain,
+				"cert-manager.io/duration":     duration.String(),
+				"cert-manager.io/renew-before": renewBefore.String(),
+			}, domain)
+			xls, err = f.GWClientSet.ExperimentalV1alpha1().XListenerSets(f.Namespace.Name).Create(ctx, xls, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// The CertificateRef Name comes from the secretName (for example,
+			// "testcert-gateway-tls"), and is used as the Certificate name.
+			certName := string(xls.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
 
 			By("Waiting for the Certificate to exist...")
 			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)

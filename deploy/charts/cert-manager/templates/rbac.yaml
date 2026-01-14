@@ -315,7 +315,7 @@ rules:
     resources: ["xlistenersets/finalizers"]
     verbs: ["update"]
   - apiGroups: ["gateway.networking.k8s.io"]
-    resources: ["gateways/finalizers", httproutes/finalizers"]
+    resources: ["gateways/finalizers", "httproutes/finalizers"]
     verbs: ["update"]
   - apiGroups: [""]
     resources: ["events"]
