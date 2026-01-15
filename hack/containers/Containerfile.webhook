@@ -18,8 +18,6 @@ FROM $BASE_IMAGE
 
 LABEL org.opencontainers.image.source="https://github.com/cert-manager/cert-manager"
 
-USER 1000
-
 COPY webhook /app/cmd/webhook/webhook
 COPY cert-manager.license /licenses/LICENSE
 COPY cert-manager.licenses_notice /licenses/LICENSES
