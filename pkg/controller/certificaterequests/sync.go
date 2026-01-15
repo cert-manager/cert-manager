@@ -160,7 +160,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	if err != nil {
 		message := "Failed to decode returned certificate"
 		if issuerType == apiutil.IssuerCA {
-			message = "Failed to decode returned certificate: if using a CA issuer, ensure the Certificate's secretName is different from the CA issuer's secretName to avoid overwriting the CA secret"
+			message = "Failed to decode returned certificate: with CA issuers, ensure the Certificate's secretName is different from the CA issuer's secretName to avoid overwriting the CA secret"
 		}
 		c.reporter.Failed(crCopy, err, "DecodeError", message)
 		return nil
