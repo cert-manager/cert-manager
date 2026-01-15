@@ -93,20 +93,26 @@ func NewController(
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to any 'owned' secret resources
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ResourceOwnerOf,
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to any 'owned' secret resources
+			certificates.EnqueueCertificatesForResourceUsingPredicates[*corev1.Secret](
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+			),
 		),
-	)); err != nil {
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to certificates named as spec.secretName
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ExtractResourceName(predicate.CertificateSecretName),
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to certificates named as spec.secretName
+			certificates.EnqueueCertificatesForResourceUsingPredicates(
+				log, queue, certificateInformer.Lister(),
+				predicate.ExtractResourceName[*corev1.Secret](predicate.CertificateSecretName),
+			),
 		),
-	)); err != nil {
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -162,7 +168,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy(crt))
+	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy[*corev1.Secret](crt))
 	if err != nil {
 		return err
 	}

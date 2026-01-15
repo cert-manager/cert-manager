@@ -20,36 +20,35 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestFuncs_Evaluate(t *testing.T) {
-	falseFunc := func(_ runtime.Object) bool {
+	falseFunc := func(_ *cmapi.Certificate) bool {
 		return false
 	}
-	trueFunc := func(_ runtime.Object) bool {
+	trueFunc := func(_ *cmapi.Certificate) bool {
 		return true
 	}
 	tests := map[string]struct {
-		funcs    Funcs
+		funcs    Funcs[*cmapi.Certificate]
 		expected bool
 	}{
 		"returns false if one returns false": {
-			funcs:    Funcs{falseFunc},
+			funcs:    Funcs[*cmapi.Certificate]{falseFunc},
 			expected: false,
 		},
 		"returns false if at least one returns false": {
-			funcs:    Funcs{falseFunc, trueFunc},
+			funcs:    Funcs[*cmapi.Certificate]{falseFunc, trueFunc},
 			expected: false,
 		},
 		"returns false if at least one returns false (reversed)": {
-			funcs:    Funcs{trueFunc, falseFunc},
+			funcs:    Funcs[*cmapi.Certificate]{trueFunc, falseFunc},
 			expected: false,
 		},
 		"returns true if all return true": {
-			funcs:    Funcs{trueFunc, trueFunc},
+			funcs:    Funcs[*cmapi.Certificate]{trueFunc, trueFunc},
 			expected: true,
 		},
 	}
@@ -67,7 +66,7 @@ func TestExtractResourceName(t *testing.T) {
 	expectedValue := "expected-value"
 	called := false
 
-	fn := ExtractResourceName(func(s string) Func {
+	fn := ExtractResourceName[metav1.Object](func(s string) Func[*cmapi.Certificate] {
 		called = true
 		if s != expectedValue {
 			t.Errorf("function called with unexpected value: got=%s, exp=%s", s, expectedValue)
