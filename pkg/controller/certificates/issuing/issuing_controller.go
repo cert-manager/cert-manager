@@ -413,9 +413,9 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	return nil
 }
 
-// issueCertificate will ensure the public key of the CSR matches the signed
-// certificate, and then store the certificate, CA and private key into the
-// Secret in the appropriate format type.
+// issueCertificate stores the signed certificate, CA and private key into the
+// Secret in the appropriate format type. The caller must verify the certificate
+// public key matches the CSR before calling this function.
 func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
