@@ -22,7 +22,8 @@
         '(?<depName>gcr\\.io\/[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})',
       ],
       datasourceTemplate: 'docker',
-      currentValueTemplate: 'latest'
+      // this tag must match the tag used in hack/latest-base-images.sh
+      currentValueTemplate: 'nonroot'
     },
     {
       customType: 'regex',
