@@ -1369,6 +1369,53 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		"if certificate is in Issuing state, CertificateRequest is ready but returns certificate with mismatched public key, fail issuance with backoff": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestCertificate(exampleBundleAlt.CertBytes),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidCertificate",
+								Message:            "The certificate request has failed to complete and will be retried: Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidCertificate The certificate request has failed to complete and will be retried: Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+				},
+			},
+			expectedErr: false,
+		},
 	}
 
 	for name, test := range tests {
