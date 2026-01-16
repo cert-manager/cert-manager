@@ -249,8 +249,10 @@ E2E_SETUP_OPTION_BESTPRACTICE ?=
 ## which will allow cert-manager to be installed and used in a cluster where
 ## Kyverno and the policies in make/config/kyverno have been applied.
 ##
+## TODO(wallrj): Temporarily pulling the file from https://github.com/cert-manager/website/pull/1911
+##
 ## @category Development
-E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/ea5db62772e6b9d1430b9d63f581e74d5c18b627/public/docs/installation/best-practice/values.best-practice.yaml
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/wallrj-cyberark/cert-manager-website/refs/heads/8370-enable-network-policy/public/docs/installation/best-practice/values.best-practice.yaml?donotcache=$(shell date +%s)
 E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM := $(shell sha256sum <<<$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) | cut -d ' ' -f 1)
 
 ## A local Helm values file containing best-practice configuration values.
