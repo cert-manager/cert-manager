@@ -1,0 +1,16 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: custom-gw-params
+  namespace: kgateway-system
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+    service:
+      type: ClusterIP
+      clusterIP: ${SERVICE_PREFIX}.14
+      extraLabels:
+        gateway: custom
+      externalTrafficPolicy: ""
