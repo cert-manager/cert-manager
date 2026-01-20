@@ -233,7 +233,37 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set")
+	awsAuth := v.issuer.GetSpec().Vault.Auth.AWS
+	if awsAuth != nil {
+		token, err := v.requestTokenWithAWSAuth(ctx, client, awsAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the AWS auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	gcpAuth := v.issuer.GetSpec().Vault.Auth.GCP
+	if gcpAuth != nil {
+		token, err := v.requestTokenWithGCPAuth(ctx, client, gcpAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the GCP auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	azureAuth := v.issuer.GetSpec().Vault.Auth.Azure
+	if azureAuth != nil {
+		token, err := v.requestTokenWithAzureAuth(ctx, client, azureAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the Azure auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, AWS, GCP, or Azure auth must be set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -591,6 +621,232 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	mountPath := kubernetesAuth.Path
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth) (string, error) {
+	mountPath := awsAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/aws"
+	}
+
+	authType := awsAuth.AuthType
+	if authType == "" {
+		authType = "iam"
+	}
+
+	var jwt string
+	if awsAuth.ServiceAccountRef != nil {
+		defaultAudience := "vault://"
+		if v.issuer.GetNamespace() != "" {
+			defaultAudience += v.issuer.GetNamespace() + "/"
+		}
+		defaultAudience += v.issuer.GetName()
+
+		audiences := append([]string(nil), awsAuth.ServiceAccountRef.TokenAudiences...)
+		audiences = append(audiences, defaultAudience, v.issuer.GetSpec().Vault.Server)
+
+		tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				Audiences:         audiences,
+				ExpirationSeconds: ptr.To(int64(600)),
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
+		}
+		jwt = tokenrequest.Status.Token
+	}
+
+	parameters := map[string]interface{}{
+		"role": awsAuth.Role,
+	}
+
+	if jwt != "" {
+		parameters["jwt"] = jwt
+	}
+
+	if awsAuth.Region != "" {
+		parameters["region"] = awsAuth.Region
+	}
+
+	if awsAuth.VaultHeaderValue != "" {
+		parameters["iam_http_request_method"] = "POST"
+		parameters["iam_request_headers"] = map[string]interface{}{
+			"X-Vault-AWS-IAM-Server-ID": []string{awsAuth.VaultHeaderValue},
+		}
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpAuth *v1.VaultGCPAuth) (string, error) {
+	mountPath := gcpAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/gcp"
+	}
+
+	authType := gcpAuth.AuthType
+	if authType == "" {
+		authType = "iam"
+	}
+
+	var jwt string
+	if gcpAuth.ServiceAccountRef != nil {
+		defaultAudience := "vault://"
+		if v.issuer.GetNamespace() != "" {
+			defaultAudience += v.issuer.GetNamespace() + "/"
+		}
+		defaultAudience += v.issuer.GetName()
+
+		audiences := append([]string(nil), gcpAuth.ServiceAccountRef.TokenAudiences...)
+		audiences = append(audiences, defaultAudience, v.issuer.GetSpec().Vault.Server)
+
+		tokenrequest, err := v.createToken(ctx, gcpAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				Audiences:         audiences,
+				ExpirationSeconds: ptr.To(int64(600)),
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), gcpAuth.ServiceAccountRef.Name, err.Error())
+		}
+		jwt = tokenrequest.Status.Token
+	}
+
+	parameters := map[string]interface{}{
+		"role": gcpAuth.Role,
+	}
+
+	if jwt != "" {
+		parameters["jwt"] = jwt
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, azureAuth *v1.VaultAzureAuth) (string, error) {
+	mountPath := azureAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/azure"
+	}
+
+	authType := azureAuth.AuthType
+	if authType == "" {
+		authType = "msi"
+	}
+
+	var jwt string
+	if azureAuth.ServiceAccountRef != nil {
+		defaultAudience := "vault://"
+		if v.issuer.GetNamespace() != "" {
+			defaultAudience += v.issuer.GetNamespace() + "/"
+		}
+		defaultAudience += v.issuer.GetName()
+
+		audiences := append([]string(nil), azureAuth.ServiceAccountRef.TokenAudiences...)
+		audiences = append(audiences, defaultAudience, v.issuer.GetSpec().Vault.Server)
+
+		tokenrequest, err := v.createToken(ctx, azureAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				Audiences:         audiences,
+				ExpirationSeconds: ptr.To(int64(600)),
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), azureAuth.ServiceAccountRef.Name, err.Error())
+		}
+		jwt = tokenrequest.Status.Token
+	}
+
+	parameters := map[string]interface{}{
+		"role": azureAuth.Role,
+	}
+
+	if jwt != "" {
+		parameters["jwt"] = jwt
+	}
+
+	if azureAuth.TenantID != "" {
+		parameters["tenant_id"] = azureAuth.TenantID
+	}
+
+	if azureAuth.Resource != "" {
+		parameters["resource"] = azureAuth.Resource
 	}
 
 	url := filepath.Join(mountPath, "login")

@@ -253,7 +253,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	// +optional
@@ -274,6 +274,23 @@ type VaultAuth struct {
 	// token stored in the named Secret resource to the Vault server.
 	// +optional
 	Kubernetes *VaultKubernetesAuth `json:"kubernetes,omitempty"`
+
+	// AWS authenticates with Vault using AWS IAM authentication.
+	// This allows authentication using IAM roles for service accounts (IRSA)
+	// or EC2 instance profiles.
+	// +optional
+	AWS *VaultAWSAuth `json:"aws,omitempty"`
+
+	// GCP authenticates with Vault using Google Cloud authentication.
+	// This allows authentication using Workload Identity or GCE service accounts.
+	// +optional
+	GCP *VaultGCPAuth `json:"gcp,omitempty"`
+
+	// Azure authenticates with Vault using Azure authentication.
+	// This allows authentication using Managed Service Identity (MSI)
+	// or Azure AD Workload Identity.
+	// +optional
+	Azure *VaultAzureAuth `json:"azure,omitempty"`
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -359,6 +376,104 @@ type ServiceAccountRef struct {
 	// +optional
 	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
+}
+
+// VaultAWSAuth authenticates with Vault using AWS IAM authentication.
+// See https://www.vaultproject.io/docs/auth/aws for more details.
+type VaultAWSAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/aws" will be used.
+	// +optional
+	Path string `json:"mountPath,omitempty"`
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string `json:"role"`
+
+	// The AWS region to use for authentication. If not specified, the region
+	// will be determined from the environment or instance metadata.
+	// +optional
+	Region string `json:"region,omitempty"`
+
+	// The type of AWS authentication to use. Valid values are "iam" or "ec2".
+	// Defaults to "iam".
+	// +optional
+	// +kubebuilder:validation:Enum=iam;ec2
+	AuthType string `json:"authType,omitempty"`
+
+	// A reference to a service account that will be used to request a web identity
+	// token for IRSA (IAM Roles for Service Accounts) authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
+
+	// The Vault header value to include in the STS signing request.
+	// This is used to prevent replay attacks.
+	// +optional
+	VaultHeaderValue string `json:"vaultHeaderValue,omitempty"`
+}
+
+// VaultGCPAuth authenticates with Vault using Google Cloud authentication.
+// See https://www.vaultproject.io/docs/auth/gcp for more details.
+type VaultGCPAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/gcp" will be used.
+	// +optional
+	Path string `json:"mountPath,omitempty"`
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string `json:"role"`
+
+	// The type of GCP authentication to use. Valid values are "gce" or "iam".
+	// Defaults to "iam".
+	// +optional
+	// +kubebuilder:validation:Enum=gce;iam
+	AuthType string `json:"authType,omitempty"`
+
+	// A reference to a service account that will be used to request a token
+	// for Workload Identity authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
+
+	// The GCP project ID. Required for IAM authentication type.
+	// +optional
+	ProjectID string `json:"projectId,omitempty"`
+}
+
+// VaultAzureAuth authenticates with Vault using Azure authentication.
+// See https://www.vaultproject.io/docs/auth/azure for more details.
+type VaultAzureAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/azure" will be used.
+	// +optional
+	Path string `json:"mountPath,omitempty"`
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string `json:"role"`
+
+	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
+	// Defaults to "msi".
+	// +optional
+	// +kubebuilder:validation:Enum=msi;workload-identity
+	AuthType string `json:"authType,omitempty"`
+
+	// A reference to a service account that will be used to request a token
+	// for Azure Workload Identity authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
+
+	// The Azure tenant ID to use for authentication.
+	// +optional
+	TenantID string `json:"tenantId,omitempty"`
+
+	// The Azure resource/audience to request a token for.
+	// Defaults to the Vault server address if not specified.
+	// +optional
+	Resource string `json:"resource,omitempty"`
 }
 
 type CAIssuer struct {
