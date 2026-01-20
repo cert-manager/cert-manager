@@ -786,24 +786,17 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 		}
 		jwt = string(body)
 	} else {
-		// For IAM auth, use Application Default Credentials to get a signed JWT
-		tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+		// For IAM auth, we need to get a signed JWT from the GCP IAM API
+		// First, get credentials to call the IAM API
+		creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 		if err != nil {
-			return "", fmt.Errorf("error getting GCP token source: %w", err)
+			return "", fmt.Errorf("error finding GCP credentials: %w", err)
 		}
 
-		token, err := tokenSource.Token()
-		if err != nil {
-			return "", fmt.Errorf("error getting GCP token: %w", err)
-		}
-
-		// For Vault GCP IAM auth, we need the service account to sign a JWT
-		// The token from ADC can be used if it's a service account identity token
-		jwt = token.AccessToken
-
-		// If using Workload Identity with a Kubernetes ServiceAccount, get the projected token
+		// Get the service account email from the credentials
+		// For Workload Identity, use the Kubernetes ServiceAccount token
 		if gcpAuth.ServiceAccountRef != nil {
-			audience := v.issuer.GetSpec().Vault.Server
+			audience := "vault/" + gcpAuth.Role
 			if len(gcpAuth.ServiceAccountRef.TokenAudiences) > 0 {
 				audience = gcpAuth.ServiceAccountRef.TokenAudiences[0]
 			}
@@ -818,6 +811,36 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 				return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), gcpAuth.ServiceAccountRef.Name, err.Error())
 			}
 			jwt = tokenrequest.Status.Token
+		} else {
+			// Use the identity token from the metadata server with the Vault role as audience
+			// This works for GKE Workload Identity and Compute Engine
+			audience := "vault/" + gcpAuth.Role
+			metadataURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity"
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL+"?audience="+audience+"&format=full", nil)
+			if err != nil {
+				return "", fmt.Errorf("error creating metadata request: %w", err)
+			}
+			req.Header.Set("Metadata-Flavor", "Google")
+
+			httpClient := &http.Client{Timeout: 10 * time.Second}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				// Fallback: if metadata server is not available, try using the credentials token
+				// This is a best-effort approach for non-GCE environments
+				token, tokenErr := creds.TokenSource.Token()
+				if tokenErr != nil {
+					return "", fmt.Errorf("error fetching GCP identity token (metadata: %v, token: %v)", err, tokenErr)
+				}
+				jwt = token.AccessToken
+			} else {
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return "", fmt.Errorf("error reading GCP identity token: %w", err)
+				}
+				jwt = string(body)
+			}
 		}
 	}
 
