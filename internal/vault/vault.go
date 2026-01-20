@@ -33,8 +33,8 @@ import (
 	"strings"
 	"time"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	"golang.org/x/oauth2/google"
@@ -674,7 +674,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
 
 	// Create HTTP request for signing
-	stsReq, err := http.NewRequestWithContext(ctx, "POST", stsEndpoint, strings.NewReader(reqBody))
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
 	if err != nil {
 		return "", fmt.Errorf("error creating STS request: %w", err)
 	}
@@ -682,7 +682,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 
 	// Add Vault server ID header if specified (for replay protection)
 	if awsAuth.VaultHeaderValue != "" {
-		stsReq.Header.Set("X-Vault-AWS-IAM-Server-ID", awsAuth.VaultHeaderValue)
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
 	}
 
 	// Sign the request using AWS SDK
@@ -767,7 +767,7 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 			audience = gcpAuth.ServiceAccountRef.TokenAudiences[0]
 		}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", metadataURL+"?audience="+audience+"&format=full", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL+"?audience="+audience+"&format=full", nil)
 		if err != nil {
 			return "", fmt.Errorf("error creating metadata request: %w", err)
 		}
@@ -893,7 +893,7 @@ func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, az
 		// For MSI auth, get the token from Azure Instance Metadata Service (IMDS)
 		imdsURL := fmt.Sprintf("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%s", resource)
 
-		req, err := http.NewRequestWithContext(ctx, "GET", imdsURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, imdsURL, nil)
 		if err != nil {
 			return "", fmt.Errorf("error creating IMDS request: %w", err)
 		}
