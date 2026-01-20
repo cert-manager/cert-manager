@@ -39,6 +39,7 @@ import (
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
+
 var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
 		KeyID: "kid-1",
@@ -48,7 +49,7 @@ var _ = framework.ConformanceDescribe("Certificates with External Account Bindin
 func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
-	var unsupportedHTTP01Features = featureset.NewFeatureSet(
+	unsupportedHTTP01Features := featureset.NewFeatureSet(
 		featureset.DurationFeature,
 		featureset.WildcardsFeature,
 		featureset.URISANsFeature,
@@ -61,7 +62,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.OtherNamesFeature,
 	)
 
-	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Clone().Insert(
+	unsupportedHTTP01GatewayFeatures := unsupportedHTTP01Features.Clone().Insert(
 		// Gateway API does not allow raw IP addresses to be specified
 		// in HTTPRoutes, so challenges for an IP address will never work.
 		featureset.IPAddressFeature,
@@ -69,7 +70,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
 	// issuer type using DNS01
-	var unsupportedDNS01Features = featureset.NewFeatureSet(
+	unsupportedDNS01Features := featureset.NewFeatureSet(
 		featureset.IPAddressFeature,
 		featureset.DurationFeature,
 		featureset.URISANsFeature,
@@ -84,7 +85,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
 	// public ACME servers
-	var unsupportedPublicACMEServerFeatures = unsupportedHTTP01Features.Clone().Insert(
+	unsupportedPublicACMEServerFeatures := unsupportedHTTP01Features.Clone().Insert(
 		// Let's Encrypt doesn't yet support IP Address certificates.
 		featureset.IPAddressFeature,
 		// Ed25519 is not yet approved by the CA Browser forum.
@@ -391,7 +392,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 								Labels: labels,
 								ParentRefs: []gwapi.ParentReference{
 									{
-										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("projectcontour"); return &n }(),
+										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
 										Name:        "acmesolver",
 										SectionName: nil,
 									},
