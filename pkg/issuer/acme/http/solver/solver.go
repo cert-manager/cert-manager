@@ -18,8 +18,8 @@ package solver
 
 import (
 	"fmt"
+	"net"
 	"net/http"
-	"net/netip"
 	"path"
 	"strings"
 	"time"
@@ -117,18 +117,15 @@ func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
 }
 
 func parseHost(s string) string {
-	// ip v4/v6 with port
-	addrPort, err := netip.ParseAddrPort(s)
-	if err == nil {
-		return addrPort.Addr().String()
+	// According to RFC 3986 Section 3.2.2, IPv6 address literals must be enclosed in square brackets.
+	// In addition, per RFC 9110, the HTTP Host header follows URI host syntax.
+	// Therefore, square brackets are required for IPv6 addresses.
+
+	// with port
+	if host, _, err := net.SplitHostPort(s); err == nil {
+		return host
 	}
 
-	// ip v4/v6 without port
-	addr, err := netip.ParseAddr(s)
-	if err == nil {
-		return addr.String()
-	}
-
-	host := strings.Split(s, ":")
-	return host[0]
+	// without port
+	return strings.Trim(s, "[]")
 }
