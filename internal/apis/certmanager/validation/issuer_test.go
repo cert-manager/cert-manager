@@ -105,7 +105,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
-				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"),
+				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws, gcp, azure"),
 			},
 		},
 		"vault issuer with a CA bundle containing no valid certificates": {
