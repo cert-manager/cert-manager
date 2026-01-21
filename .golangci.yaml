@@ -2,31 +2,26 @@ version: "2"
 linters:
   default: none
   settings:
+    dogsled:
+      # Checks assignments with too many blank identifiers.
+      # Default: 2
+      max-blank-identifiers: 4
     exhaustive:
       default-signifies-exhaustive: true
-    govet:
-      enable:
-        - shadow
-      settings:
-        shadow:
-          strict: true
+    gosec:
+      excludes:
+        - G101 # Look for hardcoded credentials
+        - G204 # Audit use of command execution
+        - G306 # Poor file permissions used when writing to a file
     staticcheck:
       checks: ["all", "-ST1000", "-ST1001", "-ST1003", "-ST1005", "-ST1012", "-ST1016", "-ST1020", "-ST1021", "-ST1022", "-QF1001", "-QF1003", "-QF1008"]
   exclusions:
     generated: lax
     presets: [comments, common-false-positives, legacy, std-error-handling]
-    rules:
-      - linters:
-          - dogsled
-          - govet
-          - nakedret
-          - nilnil
-        text: .*
-      - linters:
-          - gosec
-        text: G(101|204|306)
     paths: [third_party, builtin$, examples$]
     warn-unused: true
+  disable:
+    - nilnil
   enable:
     - asasalint
     - asciicheck
