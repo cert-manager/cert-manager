@@ -144,18 +144,7 @@ spec:
             successThreshold: {{ .successThreshold }}
             failureThreshold: {{ .failureThreshold }}
           {{- end }}
-          {{- with .Values.cainjector.readinessProbe }}
-          readinessProbe:
-            httpGet:
-              port: http-healthz
-              path: /readyz
-              scheme: HTTP
-            initialDelaySeconds: {{ .initialDelaySeconds }}
-            periodSeconds: {{ .periodSeconds }}
-            timeoutSeconds: {{ .timeoutSeconds }}
-            successThreshold: {{ .successThreshold }}
-            failureThreshold: {{ .failureThreshold }}
-          {{- end }}
+
           {{- if or .Values.cainjector.config .Values.cainjector.volumeMounts }}
           volumeMounts:
             {{- if .Values.cainjector.config }}
