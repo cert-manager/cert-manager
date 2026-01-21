@@ -24,15 +24,6 @@ import (
 	"net/http"
 	"time"
 
-	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
-	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
-	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
-	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	cmservertls "github.com/cert-manager/cert-manager/pkg/server/tls"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,6 +42,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	cmservertls "github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -155,9 +156,6 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		return fmt.Errorf("error setting up health check: %v", err)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		return fmt.Errorf("error setting up ready check: %v", err)
 	}
 
 	if metricsServerCertificateSource != nil {
