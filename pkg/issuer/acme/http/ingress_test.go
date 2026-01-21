@@ -61,7 +61,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				s.testResources[createdIngressKey] = ing
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				resp := args[0].([]*networkingv1.Ingress)
 				if len(resp) != 1 {
@@ -95,7 +95,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				s.testResources[createdIngressKey] = ing
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				resp := args[0].([]*networkingv1.Ingress)
 				if len(resp) != 1 {
@@ -132,7 +132,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				s.testResources[createdIngressKey] = ing
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				resp := args[0].([]*networkingv1.Ingress)
 				if len(resp) != 1 {
@@ -168,7 +168,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				s.testResources[createdIngressKey] = ing
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				resp := args[0].([]*networkingv1.Ingress)
 				if len(resp) != 1 {
@@ -202,7 +202,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resp := args[0].([]*networkingv1.Ingress)
 				if len(resp) != 0 {
 					t.Errorf("expected zero ingresses to be returned, but got %d", len(resp))
@@ -252,7 +252,7 @@ func TestCleanupIngresses(t *testing.T) {
 				s.testResources[createdIngressKey] = ing
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				ing, err := s.Builder.FakeKubeClient().NetworkingV1().Ingresses(s.Challenge.Namespace).Get(t.Context(), createdIngress.Name, metav1.GetOptions{})
 				if err != nil && !apierrors.IsNotFound(err) {
@@ -286,7 +286,7 @@ func TestCleanupIngresses(t *testing.T) {
 				}
 				s.testResources[createdIngressKey] = ing
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 				_, err := s.Builder.FakeKubeClient().NetworkingV1().Ingresses(s.Challenge.Namespace).Get(t.Context(), createdIngress.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
@@ -359,7 +359,7 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				expectedIng := s.KubeObjects[0].(*networkingv1.Ingress).DeepCopy()
 				expectedIng.Spec.Rules = nil
 
@@ -458,7 +458,7 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				expectedIng := s.KubeObjects[0].(*networkingv1.Ingress).DeepCopy()
 				expectedIng.Spec.Rules = []networkingv1.IngressRule{expectedIng.Spec.Rules[1]}
 
@@ -541,7 +541,7 @@ func TestEnsureIngress(t *testing.T) {
 				}
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing ingresses: %v", err)
@@ -591,8 +591,8 @@ func TestEnsureIngress(t *testing.T) {
 	}
 }
 
-func checkOneIngress(check func(*testing.T, *networkingv1.Ingress)) func(*testing.T, *solverFixture, ...interface{}) {
-	return func(t *testing.T, s *solverFixture, _ ...interface{}) {
+func checkOneIngress(check func(*testing.T, *networkingv1.Ingress)) func(*testing.T, *solverFixture, ...any) {
+	return func(t *testing.T, s *solverFixture, _ ...any) {
 		ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
 		assert.NoError(t, err)
 		require.Len(t, ingresses, 1)
@@ -649,7 +649,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				s.testResources[createdIngressKey] = expectedIngress
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 
 				resp, ok := args[0].(*networkingv1.Ingress)
@@ -730,7 +730,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				s.testResources[createdIngressKey] = expectedIngress
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
 
 				resp, ok := args[0].(*networkingv1.Ingress)

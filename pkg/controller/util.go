@@ -147,7 +147,7 @@ func BlockingEventHandler[T metav1.Object](
 	}
 }
 
-func (b blockingEventHandler[T]) run(obj interface{}) {
+func (b blockingEventHandler[T]) run(obj any) {
 	tObj, ok := obj.(T)
 	if !ok {
 		logf.Log.Error(nil, "Object could not be casted to type", "object", obj, "type", fmt.Sprintf("%T", obj), "expected_type", fmt.Sprintf("%T", *new(T)))
@@ -158,17 +158,17 @@ func (b blockingEventHandler[T]) run(obj interface{}) {
 }
 
 // OnAdd synchronously adds a newly created object to the workqueue.
-func (b blockingEventHandler[T]) OnAdd(obj interface{}, isInInitialList bool) {
+func (b blockingEventHandler[T]) OnAdd(obj any, isInInitialList bool) {
 	b.run(obj)
 }
 
 // OnUpdate synchronously adds an updated object to the workqueue.
-func (b blockingEventHandler[T]) OnUpdate(oldObj, newObj interface{}) {
+func (b blockingEventHandler[T]) OnUpdate(oldObj, newObj any) {
 	b.run(newObj)
 }
 
 // OnDelete synchronously adds a deleted object to the workqueue.
-func (b blockingEventHandler[T]) OnDelete(obj interface{}) {
+func (b blockingEventHandler[T]) OnDelete(obj any) {
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if ok {
 		obj = tombstone.Obj
@@ -250,7 +250,7 @@ func FilterEventHandler[T metav1.Object](
 }
 
 // OnAdd adds a newly created object to the workqueue.
-func (q filteredEventHandler[T]) OnAdd(obj interface{}, isInInitialList bool) {
+func (q filteredEventHandler[T]) OnAdd(obj any, isInInitialList bool) {
 	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnAdd")
 
 	c := event.TypedCreateEvent[T]{
@@ -275,7 +275,7 @@ func (q filteredEventHandler[T]) OnAdd(obj interface{}, isInInitialList bool) {
 }
 
 // OnUpdate adds an updated object to the workqueue.
-func (q filteredEventHandler[T]) OnUpdate(oldObj, newObj interface{}) {
+func (q filteredEventHandler[T]) OnUpdate(oldObj, newObj any) {
 	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnUpdate")
 
 	u := event.TypedUpdateEvent[T]{}
@@ -305,7 +305,7 @@ func (q filteredEventHandler[T]) OnUpdate(oldObj, newObj interface{}) {
 }
 
 // OnDelete adds a deleted object to the workqueue for processing.
-func (q filteredEventHandler[T]) OnDelete(obj interface{}) {
+func (q filteredEventHandler[T]) OnDelete(obj any) {
 	log := logf.Log.WithName("filteredEventHandler").WithValues("event", "OnDelete")
 
 	d := event.TypedDeleteEvent[T]{}

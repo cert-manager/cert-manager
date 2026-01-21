@@ -28,7 +28,7 @@ import (
 // The algorithm in use is Fowler–Noll–Vo hash function and is not
 // cryptographically secure. Using a cryptographically secure hash is
 // not necessary.
-func ComputeName(prefix string, obj interface{}) (string, error) {
+func ComputeName(prefix string, obj any) (string, error) {
 	objectBytes, err := json.Marshal(obj)
 	if err != nil {
 		return "", err

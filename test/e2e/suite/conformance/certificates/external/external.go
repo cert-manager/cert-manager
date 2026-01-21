@@ -75,10 +75,10 @@ func newIssuerBuilder(issuerKind string) *issuerBuilder {
 	return &issuerBuilder{
 		clusterResourceNamespace: sampleExternalIssuerNamespace,
 		prototype: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "sample-issuer.example.com/v1alpha1",
 				"kind":       issuerKind,
-				"spec": map[string]interface{}{
+				"spec": map[string]any{
 					"url": "http://sample-issuer.example.com/api/v1",
 				},
 			},

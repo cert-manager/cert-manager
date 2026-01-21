@@ -34,13 +34,13 @@ func (f *FakeRecorder) Event(object runtime.Object, eventtype, reason, message s
 	f.Events = append(f.Events, fmt.Sprintf("%s %s %s", eventtype, reason, message))
 }
 
-func (f *FakeRecorder) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...interface{}) {
+func (f *FakeRecorder) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...any) {
 	f.Events = append(f.Events, fmt.Sprintf(eventtype+" "+reason+" "+messageFmt, args...))
 }
 
-func (f *FakeRecorder) PastEventf(object runtime.Object, timestamp metav1.Time, eventtype, reason, messageFmt string, args ...interface{}) {
+func (f *FakeRecorder) PastEventf(object runtime.Object, timestamp metav1.Time, eventtype, reason, messageFmt string, args ...any) {
 }
 
-func (f *FakeRecorder) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...interface{}) {
+func (f *FakeRecorder) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...any) {
 	f.Eventf(object, eventtype, reason, messageFmt, args...)
 }

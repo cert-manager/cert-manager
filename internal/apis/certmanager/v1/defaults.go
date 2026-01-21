@@ -23,10 +23,10 @@ import (
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&cmapi.Certificate{}, func(obj interface{}) { SetObjectDefaults_Certificate(obj.(*cmapi.Certificate)) })
-	scheme.AddTypeDefaultingFunc(&cmapi.CertificateList{}, func(obj interface{}) { SetObjectDefaults_CertificateList(obj.(*cmapi.CertificateList)) })
-	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequest{}, func(obj interface{}) { SetObjectDefaults_CertificateRequest(obj.(*cmapi.CertificateRequest)) })
-	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequestList{}, func(obj interface{}) {
+	scheme.AddTypeDefaultingFunc(&cmapi.Certificate{}, func(obj any) { SetObjectDefaults_Certificate(obj.(*cmapi.Certificate)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateList{}, func(obj any) { SetObjectDefaults_CertificateList(obj.(*cmapi.CertificateList)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequest{}, func(obj any) { SetObjectDefaults_CertificateRequest(obj.(*cmapi.CertificateRequest)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequestList{}, func(obj any) {
 		SetObjectDefaults_CertificateRequestList(obj.(*cmapi.CertificateRequestList))
 	})
 	return RegisterDefaults(scheme)

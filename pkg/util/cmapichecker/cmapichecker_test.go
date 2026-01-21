@@ -219,10 +219,10 @@ func TestCheck(t *testing.T) {
 	} {
 		tests["valid_failure_"+name] = testT{
 			createValidResponse: func(t *testing.T, r *http.Request) (int, []byte) {
-				byteResponse, err := json.Marshal(map[string]interface{}{
+				byteResponse, err := json.Marshal(map[string]any{
 					"kind":       "Status",
 					"apiVersion": "v1",
-					"metadata":   map[string]interface{}{},
+					"metadata":   map[string]any{},
 					"status":     "Failure",
 					"message":    test.message,
 					"reason":     test.reason,

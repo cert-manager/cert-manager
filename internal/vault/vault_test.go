@@ -234,7 +234,7 @@ type testSignT struct {
 
 func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Secret {
 	secret := &certutil.Secret{
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"certificate": testLeafCertificate,
 		},
 	}

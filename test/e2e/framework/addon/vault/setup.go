@@ -408,7 +408,7 @@ func (v *VaultInitializer) CreateAppRole(ctx context.Context) (string, string, e
 	}
 
 	// create approle role
-	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.appRoleAuthPath, "role", v.role), map[string]any{
 		"token_period":   "24h",
 		"token_policies": []string{v.role},
 	})
@@ -460,7 +460,7 @@ func (v *VaultInitializer) mountPKI(ctx context.Context, mount, ttl string) erro
 }
 
 func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error) {
-	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "generate", "internal"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "generate", "internal"), map[string]any{
 		"common_name":          "Root CA",
 		"ttl":                  "87600h",
 		"exclude_cn_from_sans": true,
@@ -474,7 +474,7 @@ func (v *VaultInitializer) generateRootCert(ctx context.Context) (string, error)
 }
 
 func (v *VaultInitializer) generateIntermediateSigningReq(ctx context.Context) (string, error) {
-	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.intermediateMount, "intermediate", "generate", "internal"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.intermediateMount, "intermediate", "generate", "internal"), map[string]any{
 		"common_name":          "Intermediate CA",
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": true,
@@ -488,7 +488,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq(ctx context.Context) (
 }
 
 func (v *VaultInitializer) signCertificate(ctx context.Context, csr string) (string, error) {
-	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "sign-intermediate"), map[string]interface{}{
+	resp, err := v.client.Logical().WriteWithContext(ctx, path.Join(v.rootMount, "root", "sign-intermediate"), map[string]any{
 		"use_csr_values":       true,
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": true,
@@ -502,7 +502,7 @@ func (v *VaultInitializer) signCertificate(ctx context.Context, csr string) (str
 }
 
 func (v *VaultInitializer) importSignIntermediate(ctx context.Context, caChain, intermediateMount string) error {
-	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(intermediateMount, "intermediate", "set-signed"), map[string]interface{}{
+	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(intermediateMount, "intermediate", "set-signed"), map[string]any{
 		"certificate": caChain,
 	})
 	if err != nil {
@@ -513,7 +513,7 @@ func (v *VaultInitializer) importSignIntermediate(ctx context.Context, caChain, 
 }
 
 func (v *VaultInitializer) configureCert(ctx context.Context, mount string) error {
-	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(mount, "config", "urls"), map[string]interface{}{
+	_, err := v.client.Logical().WriteWithContext(ctx, path.Join(mount, "config", "urls"), map[string]any{
 		"issuing_certificates":    []string{fmt.Sprintf("https://vault.vault:8200/v1/%s/ca", mount)},
 		"crl_distribution_points": []string{fmt.Sprintf("https://vault.vault:8200/v1/%s/crl", mount)},
 	})
@@ -525,7 +525,7 @@ func (v *VaultInitializer) configureCert(ctx context.Context, mount string) erro
 }
 
 func (v *VaultInitializer) configureIntermediateRoles(ctx context.Context) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"allow_any_name":     "true",
 		"max_ttl":            "2160h",
 		"key_type":           "any",
@@ -582,7 +582,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 	}
 
 	// vault write auth/kubernetes/config
-	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "config"), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "config"), map[string]any{
 		"kubernetes_host": v.kubernetesAPIServerURL,
 		// See https://www.vaultproject.io/docs/auth/kubernetes#kubernetes-1-21
 		"disable_iss_validation": true,
@@ -616,7 +616,7 @@ func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kube
 	}
 
 	// create kubernetes auth role
-	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "role", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.kubernetesAuthPath, "role", v.role), map[string]any{
 		"token_period":                     "24h",
 		"token_policies":                   []string{v.role},
 		"bound_service_account_names":      []string{boundSA},
@@ -765,7 +765,7 @@ func (v *VaultInitializer) CreateClientCertRole(ctx context.Context) (key []byte
 		return nil, nil, fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
-	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.clientCertAuthPath, "certs", v.role), map[string]interface{}{
+	_, err = v.client.Logical().WriteWithContext(ctx, path.Join("auth", v.clientCertAuthPath, "certs", v.role), map[string]any{
 		"display_name":   v.role,
 		"certificate":    string(certificatePEM),
 		"token_policies": []string{v.role},

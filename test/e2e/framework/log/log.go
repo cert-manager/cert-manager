@@ -31,11 +31,11 @@ func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
 }
 
-func logf(level string, format string, args ...interface{}) {
+func logf(level string, format string, args ...any) {
 	fmt.Fprintf(Writer, nowStamp()+": "+level+": "+format+"\n", args...)
 }
 
-func Logf(format string, args ...interface{}) {
+func Logf(format string, args ...any) {
 	logf("INFO", format, args...)
 }
 
@@ -50,7 +50,7 @@ func Logf(format string, args ...interface{}) {
 // The first log line is immediately printed, and the last message is
 // always printed even if the backoff isn't done. That's because the first
 // and last messages are often helpful to understand how things went.
-func LogBackoff() (logf func(format string, args ...interface{}), done func()) {
+func LogBackoff() (logf func(format string, args ...any), done func()) {
 	backoff := wait.Backoff{
 		Duration: 5 * time.Second,
 		Factor:   1.2,
@@ -66,7 +66,7 @@ func LogBackoff() (logf func(format string, args ...interface{}), done func()) {
 
 	once := sync.Once{}
 	step := time.Now()
-	return func(format string, args ...interface{}) {
+	return func(format string, args ...any) {
 		msg = fmt.Sprintf(format, args...)
 		once.Do(func() {
 			Logf(msg)

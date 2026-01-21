@@ -27,8 +27,8 @@ import (
 )
 
 // Funcs returns the fuzzer functions for the apps api group.
-var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
-	return append(acmefuzzer.Funcs(codecs), []interface{}{
+var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
+	return append(acmefuzzer.Funcs(codecs), []any{
 		func(s *certmanager.Certificate, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 

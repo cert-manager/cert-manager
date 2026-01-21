@@ -1216,11 +1216,11 @@ func newFakeLogSink() *fakeLogSink {
 	return &fakeLogSink{}
 }
 
-func (l *fakeLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
+func (l *fakeLogSink) Info(level int, msg string, keysAndValues ...any) {
 	l.messages = append(l.messages, fmt.Sprintf("%s %s", msg, keysAndValues))
 }
 
-func (l *fakeLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
+func (l *fakeLogSink) Error(err error, msg string, keysAndValues ...any) {
 	l.errMessages = append(l.errMessages, fmt.Sprintf("%s err=%q %v", msg, err, keysAndValues))
 }
 

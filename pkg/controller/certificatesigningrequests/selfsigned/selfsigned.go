@@ -52,7 +52,7 @@ const (
 	CSRControllerName = "certificatesigningrequests-issuer-selfsigned"
 )
 
-type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
+type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error)
 
 // SelfSigned is a controller for signing Kubernetes CertificateSigningRequest
 // using SelfSigning Issuers.

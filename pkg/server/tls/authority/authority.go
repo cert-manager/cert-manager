@@ -419,21 +419,21 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	return nil
 }
 
-func (d *DynamicAuthority) handleAdd(obj interface{}) {
+func (d *DynamicAuthority) handleAdd(obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")
 	}
 }
 
-func (d *DynamicAuthority) handleUpdate(_, obj interface{}) {
+func (d *DynamicAuthority) handleUpdate(_, obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")
 	}
 }
 
-func (d *DynamicAuthority) handleDelete(obj interface{}) {
+func (d *DynamicAuthority) handleDelete(obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")

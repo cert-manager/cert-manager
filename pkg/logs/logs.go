@@ -181,6 +181,6 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 }
 
 // Infof logs message with the given format and arguments.
-func (l *LogWithFormat) Infof(format string, a ...interface{}) {
+func (l *LogWithFormat) Infof(format string, a ...any) {
 	l.Info(fmt.Sprintf(format, a...))
 }
