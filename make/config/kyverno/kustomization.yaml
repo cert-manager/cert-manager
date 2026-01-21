@@ -36,6 +36,6 @@ patches:
               - gateway-system
               - ingress-nginx
               - pebble
-              - projectcontour
+              - kgateway-system
               - sample-external-issuer-system
               - samplewebhook
