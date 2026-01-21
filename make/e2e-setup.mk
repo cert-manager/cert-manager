@@ -241,8 +241,13 @@ E2E_SETUP_OPTION_BESTPRACTICE ?=
 ## which will allow cert-manager to be installed and used in a cluster where
 ## Kyverno and the policies in make/config/kyverno have been applied.
 ##
+## We use the "release-next" branch of the website, because that branch will
+## contain the latest recommendations, including those that rely on features in
+## the next-release of cert-manager.
+## https://github.com/cert-manager/website/blob/release-next/public/docs/installation/best-practice/values.best-practice.yaml
+##
 ## @category Development
-E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/ea5db62772e6b9d1430b9d63f581e74d5c18b627/public/docs/installation/best-practice/values.best-practice.yaml
+E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL ?= https://raw.githubusercontent.com/cert-manager/website/8336efc6466349e51d28dbb9f8c1c7bd2b654c33/public/docs/installation/best-practice/values.best-practice.yaml
 E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL_SUM := $(shell sha256sum <<<$(E2E_SETUP_OPTION_BESTPRACTICE_HELM_VALUES_URL) | cut -d ' ' -f 1)
 
 ## A local Helm values file containing best-practice configuration values.
@@ -477,18 +482,19 @@ e2e-setup-samplewebhook: load-$(call local-image-tar,samplewebhook) e2e-setup-ce
 .PHONY: e2e-setup-gwapi-provider
 e2e-setup-gwapi-provider: $(call image-tar,kgateway) load-$(call image-tar,kgateway) make/config/kgateway/gateway.yaml make/config/kgateway/gwconfig.yaml $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
 	@$(eval KGATEWAY_TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
-	
+	@$(eval KGATEWAY_HELM_VERSION=v2.1.2)
+	# Warning: When upgrading the version of this helm chart, bear in mind that the IMAGE_kgateway_* images above might need to be updated, too.
 	$(HELM) upgrade \
 		--install \
 		--create-namespace \
 		--namespace kgateway-system \
-		--version v2.1.2 \
+		--version $(KGATEWAY_HELM_VERSION) \
 		kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds >/dev/null
 	
 	$(HELM) upgrade \
 		--install \
 		--namespace kgateway-system \
-		--version v2.1.2 \
+		--version $(KGATEWAY_HELM_VERSION) \
 		--set controller.image.registry=ghcr.io/kgateway-dev \
 		--set controller.image.repository=kgateway \
 		--set controller.image.tag=$(KGATEWAY_TAG) \
