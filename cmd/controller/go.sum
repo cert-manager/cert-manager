@@ -29,8 +29,8 @@ github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/Venafi/vcert/v5 v5.12.3 h1:HLdlEVnK1haRLNblz282UbrZ/AmKWhkzZ0qQF3p6dPw=
 github.com/Venafi/vcert/v5 v5.12.3/go.mod h1:9ahHk4P0YeWfuacnf0jxSPy9qujonwFlfh2aMtOfdwc=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.2.0 h1:nDx/0X2EkxwCGN/W9o+a6LcUrTRaDFFJ+7wxMoh4+lU=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.2.0/go.mod h1:Bf6hnZkloZnfL4I/gFGnMMMdMHiu/ERnSOWtFgnodDk=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.3.0 h1:iGVPe/gPqzpXggbbmVLWR0TyJ9UoPoqKL+kspjseZzE=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.3.0/go.mod h1:76JtkiCKMwTdTOlKe9goT4Md+oWjfMouGBQgy+u1bgc=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e h1:4dAU9FXIyQktpoUAgOJK3OTFc/xug0PCXYCqU0FgDKI=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
