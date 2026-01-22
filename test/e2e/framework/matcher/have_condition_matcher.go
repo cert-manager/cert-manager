@@ -29,7 +29,7 @@ import (
 )
 
 // HaveCondition will wait for up to the
-func HaveCondition(f *framework.Framework, condition interface{}) *conditionMatcher {
+func HaveCondition(f *framework.Framework, condition any) *conditionMatcher {
 	return &conditionMatcher{
 		f:         f,
 		condition: condition,
@@ -39,7 +39,7 @@ func HaveCondition(f *framework.Framework, condition interface{}) *conditionMatc
 //// begin resource condition type mapping.
 // modify this block of code to add support for new types
 
-func toGenericCondition(c interface{}) (*genericCondition, error) {
+func toGenericCondition(c any) (*genericCondition, error) {
 	switch c := c.(type) {
 	case cmapi.CertificateCondition:
 		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
@@ -52,7 +52,7 @@ func toGenericCondition(c interface{}) (*genericCondition, error) {
 	}
 }
 
-func (c *conditionMatcher) getUpToDateResource(obj interface{}) (interface{}, error) {
+func (c *conditionMatcher) getUpToDateResource(obj any) (any, error) {
 	switch obj := obj.(type) {
 	case *cmapi.Certificate:
 		return c.f.CertManagerClientSet.CertmanagerV1().Certificates(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
@@ -65,8 +65,8 @@ func (c *conditionMatcher) getUpToDateResource(obj interface{}) (interface{}, er
 	}
 }
 
-func extractConditionSlice(obj interface{}) ([]interface{}, error) {
-	var actualConditions []interface{}
+func extractConditionSlice(obj any) ([]any, error) {
+	var actualConditions []any
 	switch obj := obj.(type) {
 	case *cmapi.Certificate:
 		for _, c := range obj.Status.Conditions {
@@ -90,7 +90,7 @@ func extractConditionSlice(obj interface{}) ([]interface{}, error) {
 
 type conditionMatcher struct {
 	f         *framework.Framework
-	condition interface{}
+	condition any
 }
 
 type genericCondition struct {
@@ -117,7 +117,7 @@ func (g *genericCondition) String() string {
 
 var _ types.GomegaMatcher = &conditionMatcher{}
 
-func (c *conditionMatcher) Match(actual interface{}) (bool, error) {
+func (c *conditionMatcher) Match(actual any) (bool, error) {
 	expected, err := toGenericCondition(c.condition)
 	if err != nil {
 		return false, err
@@ -179,7 +179,7 @@ func buildGenericCondition(cType, status, reason string) *genericCondition {
 	return g
 }
 
-func (c *conditionMatcher) FailureMessage(actual interface{}) string {
+func (c *conditionMatcher) FailureMessage(actual any) string {
 	expected, err := toGenericCondition(c.condition)
 	if err != nil {
 		return "Did not have required condition"
@@ -198,7 +198,7 @@ func (c *conditionMatcher) FailureMessage(actual interface{}) string {
 	return fmt.Sprintf("Did not have expected condition (%s), had conditions: %v", expected.String(), conditionsSlice)
 }
 
-func (c *conditionMatcher) NegatedFailureMessage(actual interface{}) string {
+func (c *conditionMatcher) NegatedFailureMessage(actual any) string {
 	expected, err := toGenericCondition(c.condition)
 	if err != nil {
 		return "Condition found"

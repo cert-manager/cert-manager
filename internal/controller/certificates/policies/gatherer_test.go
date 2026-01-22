@@ -161,7 +161,7 @@ func TestDataForCertificate(t *testing.T) {
 			// the Register(controller.Context) in these lister-only unit
 			// tests, we "force" the creation of the indexer for the CR
 			// type by registering a fake handler.
-			noop := cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {}}
+			noop := cache.ResourceEventHandlerFuncs{AddFunc: func(obj any) {}}
 			if _, err := test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(noop); err != nil {
 				t.Fatalf("failed to add event handler to CertificateRequest informer: %v", err)
 			}

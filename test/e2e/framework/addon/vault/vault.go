@@ -101,7 +101,7 @@ type Details struct {
 	EnforceMtls bool
 }
 
-func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
+func convertInterfaceToDetails(unmarshalled any) (Details, error) {
 	jsonEncoded, err := json.Marshal(unmarshalled)
 	if err != nil {
 		return Details{}, err

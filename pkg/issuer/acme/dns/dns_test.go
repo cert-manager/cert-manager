@@ -431,7 +431,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 	expectedDOCall := []fakeDNSProviderCall{
 		{
 			name: "digitalocean",
-			args: []interface{}{"FAKE-TOKEN", util.RecursiveNameservers},
+			args: []any{"FAKE-TOKEN", util.RecursiveNameservers},
 		},
 	}
 
@@ -489,7 +489,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []any{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -552,7 +552,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []any{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -596,7 +596,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -634,7 +634,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -694,7 +694,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -733,7 +733,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
 				},
 			},
 		},

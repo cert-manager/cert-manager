@@ -271,7 +271,7 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
 	computeNameSpec.Request = nil
 
-	var hashObj interface{}
+	var hashObj any
 	hashObj = computeNameSpec
 	if len(cr.Name) >= 52 {
 		// Pass a unique struct for hashing so that names at or longer than 52 characters

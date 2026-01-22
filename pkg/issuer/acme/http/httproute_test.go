@@ -50,7 +50,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				s.testResources[createdHTTPRouteKey] = httpRoute
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
@@ -78,7 +78,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				s.testResources[createdHTTPRouteKey] = httpRoute
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
@@ -107,7 +107,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if gotHttpRoute != nil {
 					t.Errorf("Expected function to not return an HTTPRoute, but got: %v", gotHttpRoute)
@@ -139,7 +139,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)
@@ -187,7 +187,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				}
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)
@@ -225,7 +225,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				}
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)

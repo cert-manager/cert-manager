@@ -488,9 +488,9 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (webhook.Solver, any, error) {
 	solverName := ""
-	var c interface{}
+	var c any
 	switch {
 	case config.Webhook != nil:
 		solverName = "webhook"

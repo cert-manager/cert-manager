@@ -12,8 +12,6 @@ linters:
           strict: true
     modernize:
       disable:
-        # TODO(erikgb): Enable this rule? It represents a massive change of files.
-        - any
         # TODO(erikgb): Enable this rule
         - omitzero
     staticcheck:

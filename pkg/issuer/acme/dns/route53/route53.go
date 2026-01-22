@@ -77,7 +77,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	log := logf.FromContext(ctx)
 	optFns := []func(*config.LoadOptions) error{
 		// Print AWS API requests but only at cert-manager debug level
-		config.WithLogger(logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
+		config.WithLogger(logging.LoggerFunc(func(classification logging.Classification, format string, v ...any) {
 			log := log.WithValues("aws-classification", classification)
 			if classification == logging.Debug {
 				log = log.V(logf.DebugLevel)

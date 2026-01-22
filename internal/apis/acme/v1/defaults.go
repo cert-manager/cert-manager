@@ -23,10 +23,10 @@ import (
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&acmev1.Challenge{}, func(obj interface{}) { SetObjectDefaults_Challenge(obj.(*acmev1.Challenge)) })
-	scheme.AddTypeDefaultingFunc(&acmev1.ChallengeList{}, func(obj interface{}) { SetObjectDefaults_ChallengeList(obj.(*acmev1.ChallengeList)) })
-	scheme.AddTypeDefaultingFunc(&acmev1.Order{}, func(obj interface{}) { SetObjectDefaults_Order(obj.(*acmev1.Order)) })
-	scheme.AddTypeDefaultingFunc(&acmev1.OrderList{}, func(obj interface{}) { SetObjectDefaults_OrderList(obj.(*acmev1.OrderList)) })
+	scheme.AddTypeDefaultingFunc(&acmev1.Challenge{}, func(obj any) { SetObjectDefaults_Challenge(obj.(*acmev1.Challenge)) })
+	scheme.AddTypeDefaultingFunc(&acmev1.ChallengeList{}, func(obj any) { SetObjectDefaults_ChallengeList(obj.(*acmev1.ChallengeList)) })
+	scheme.AddTypeDefaultingFunc(&acmev1.Order{}, func(obj any) { SetObjectDefaults_Order(obj.(*acmev1.Order)) })
+	scheme.AddTypeDefaultingFunc(&acmev1.OrderList{}, func(obj any) { SetObjectDefaults_OrderList(obj.(*acmev1.OrderList)) })
 	return RegisterDefaults(scheme)
 }
 

@@ -451,7 +451,7 @@ func TestProcessItem(t *testing.T) {
 				}),
 				gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
 			),
-			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error) {
 				return nil, nil, errors.New("this is a signing error")
 			},
 
@@ -522,7 +522,7 @@ func TestProcessItem(t *testing.T) {
 				}),
 				gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
 			),
-			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error) {
 				return []byte("signed-cert"), nil, nil
 			},
 

@@ -50,7 +50,7 @@ func testRecordBodyDataExist() *dns.RecordBody {
 
 // OpenEdgegrid DNS Stub
 type StubOpenDNSConfig struct {
-	FuncOutput map[string]interface{}
+	FuncOutput map[string]any
 	FuncErrors map[string]error
 }
 
@@ -87,7 +87,7 @@ func TestPresentBasicFlow(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundTrue
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordSave"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
@@ -104,7 +104,7 @@ func TestPresentExists(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -121,7 +121,7 @@ func TestPresentValueExists(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
@@ -137,7 +137,7 @@ func TestPresentFailGetRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["GetRecord"] = fmt.Errorf("Failed Get Test")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -154,7 +154,7 @@ func TestPresentFailSaveRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundTrue
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save fail")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
@@ -170,7 +170,7 @@ func TestPresentFailUpdateRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -188,7 +188,7 @@ func TestCleanUpBasicFlow(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordDelete"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -205,7 +205,7 @@ func TestCleanUpExists(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -222,7 +222,7 @@ func TestCleanUpExistsNoValue(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
@@ -239,7 +239,7 @@ func TestCleanUpNoRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundTrue // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
@@ -255,7 +255,7 @@ func TestCleanUpFailGetRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["GetRecord"] = fmt.Errorf("Failed Get Record")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -272,7 +272,7 @@ func TestCleanUpFailUpdateRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyDataExist()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
@@ -289,7 +289,7 @@ func TestCleanUpFailDeleteRecord(t *testing.T) {
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
-	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
+	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]any{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordDelete"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
