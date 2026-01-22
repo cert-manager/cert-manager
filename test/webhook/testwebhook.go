@@ -208,5 +208,5 @@ func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return
+	return caPEM, certificatePEM, privateKeyPEM, nil
 }

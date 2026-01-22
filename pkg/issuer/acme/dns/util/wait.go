@@ -211,7 +211,7 @@ func DNSQuery(ctx context.Context, fqdn string, rtype uint16, nameservers []stri
 			break
 		}
 	}
-	return
+	return in, err
 }
 
 type httpDNSClient struct {

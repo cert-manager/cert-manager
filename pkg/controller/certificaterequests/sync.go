@@ -79,11 +79,11 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	switch apiutil.CertificateRequestReadyReason(cr) {
 	case cmapi.CertificateRequestReasonFailed:
 		dbg.Info("certificate request Ready condition failed so skipping processing")
-		return
+		return nil
 
 	case cmapi.CertificateRequestReasonIssued:
 		dbg.Info("certificate request Ready condition true so skipping processing")
-		return
+		return nil
 	}
 
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
