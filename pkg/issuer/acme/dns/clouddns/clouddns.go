@@ -279,6 +279,8 @@ func (c *DNSProvider) getHostedZone(ctx context.Context, domain string) (string,
 func (c *DNSProvider) findTxtRecords(ctx context.Context, zone, fqdn, value string) ([]*dns.ResourceRecordSet, error) {
 	recs, err := c.client.ResourceRecordSets.
 		List(c.project, zone).
+		Name(fqdn).
+		Type("TXT").
 		Context(ctx).
 		Do()
 	if err != nil {
@@ -288,12 +290,10 @@ func (c *DNSProvider) findTxtRecords(ctx context.Context, zone, fqdn, value stri
 	found := []*dns.ResourceRecordSet{}
 RecLoop:
 	for _, r := range recs.Rrsets {
-		if r.Type == "TXT" && r.Name == fqdn {
-			for _, s := range r.Rrdatas {
-				if strings.Trim(s, "\"") == value {
-					found = append(found, r)
-					continue RecLoop
-				}
+		for _, s := range r.Rrdatas {
+			if strings.Trim(s, "\"") == value {
+				found = append(found, r)
+				continue RecLoop
 			}
 		}
 	}
