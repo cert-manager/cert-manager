@@ -66,7 +66,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v4.0.5
+tools += helm=v4.1.0
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.35.0
@@ -180,7 +180,7 @@ tools += govulncheck=v1.1.4
 tools += operator-sdk=v1.42.0
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.85.0
+tools += gh=v2.86.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.16.0
@@ -479,10 +479,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=730e4e9fbff94168249ddd0b9b1b8c357b7f64815462dd88c6b39f09bf18b814
-helm_linux_arm64_SHA256SUM=206a7747702d13994a93629eaed4259bd9d0aec6e23ca52d640f47f7edfdc863
-helm_darwin_amd64_SHA256SUM=270d906140eadbe95584d2cebae1fa0e46950027d82de0c4db937dc936b564a6
-helm_darwin_arm64_SHA256SUM=b4d04ccf68004604e13878fce4a893711490914512f8759879f848136a9f5fca
+helm_linux_amd64_SHA256SUM=8e7ae5cb890c56f53713bffec38e41cd8e7e4619ebe56f8b31cd383bfb3dbb83
+helm_linux_arm64_SHA256SUM=81315e404b6d09b65bee577a679ab269d6d44652ef2e1f66a8f922b51ca93f6b
+helm_darwin_amd64_SHA256SUM=a326073ae392bed8b73c415d1d9d6880b0f5accb18aa9456975562b44a87c650
+helm_darwin_arm64_SHA256SUM=f12e2723c5e8eaff3e4b3670536867289fb6ab7f797fa2efedd1c53cfaca62fb
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
