@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSolver(t *testing.T) {
@@ -135,7 +136,55 @@ func TestSolver(t *testing.T) {
 			if tc.solverKey != "" && response != tc.solverKey {
 				t.Errorf("Expected response body %q, got %q", tc.solverKey, response)
 			}
+		})
+	}
+}
 
+func Test_parseHost(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		input    string
+		expected string
+	}{
+		"FQDN with port": {
+			input:    "example.com:8080",
+			expected: "example.com",
+		},
+		"FQDN without port": {
+			input:    "example.com",
+			expected: "example.com",
+		},
+		"IPv4 address with port": {
+			input:    "192.168.1.1:8080",
+			expected: "192.168.1.1",
+		},
+		"IPv4 address without port": {
+			input:    "192.168.1.1",
+			expected: "192.168.1.1",
+		},
+		"IPv6 address with port": {
+			input:    "[2001:db8:3333:4444:5555:6666:7777:8888]:1234",
+			expected: "2001:db8:3333:4444:5555:6666:7777:8888",
+		},
+		"IPv6 address with port - 2": {
+			input:    "[2a00:8a00:4000:435::13a]:1234",
+			expected: "2a00:8a00:4000:435::13a",
+		},
+		"IPv6 address without port": {
+			input:    "[2001:db8:3333:4444:5555:6666:7777:8888]",
+			expected: "2001:db8:3333:4444:5555:6666:7777:8888",
+		},
+		"IPv6 address without bracket": {
+			input:    "2001:db8:3333:4444:5555:6666:7777:8888",
+			expected: "2001:db8:3333:4444:5555:6666:7777:8888",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			actual := parseHost(tc.input)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }
