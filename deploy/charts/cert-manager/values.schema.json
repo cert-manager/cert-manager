@@ -1500,6 +1500,9 @@
         "tolerations": {
           "$ref": "#/$defs/helm-values.startupapicheck.tolerations"
         },
+        "ttlSecondsAfterFinished": {
+          "$ref": "#/$defs/helm-values.startupapicheck.ttlSecondsAfterFinished"
+        },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.startupapicheck.volumeMounts"
         },
@@ -1719,6 +1722,9 @@
       "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
       "items": {},
       "type": "array"
+    },
+    "helm-values.startupapicheck.ttlSecondsAfterFinished": {
+      "description": "ttlSecondsAfterFinished for the startupapicheck Job"
     },
     "helm-values.startupapicheck.volumeMounts": {
       "default": [],
