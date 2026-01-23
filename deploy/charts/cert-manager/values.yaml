@@ -1457,6 +1457,9 @@ startupapicheck:
   # Timeout for 'kubectl check api' command.
   timeout: 1m
 
+  # ttlSecondsAfterFinished for the startupapicheck Job
+  ttlSecondsAfterFinished: 300
+
   # Job backoffLimit
   backoffLimit: 4
 
