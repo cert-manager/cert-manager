@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net"
 	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -141,13 +142,18 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 }
 
 func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRouteSpec {
+	// Gateway API HTTPRoutes do not support IP addresses in hostnames.
+	// Only add the hostname if it's a DNS name, not an IP address.
+	var hostnames []gwapi.Hostname
+	if net.ParseIP(ch.Spec.DNSName) == nil {
+		hostnames = []gwapi.Hostname{gwapi.Hostname(ch.Spec.DNSName)}
+	}
+
 	return gwapi.HTTPRouteSpec{
 		CommonRouteSpec: gwapi.CommonRouteSpec{
 			ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
 		},
-		Hostnames: []gwapi.Hostname{
-			gwapi.Hostname(ch.Spec.DNSName),
-		},
+		Hostnames: hostnames,
 		Rules: []gwapi.HTTPRouteRule{
 			{
 				Matches: []gwapi.HTTPRouteMatch{
