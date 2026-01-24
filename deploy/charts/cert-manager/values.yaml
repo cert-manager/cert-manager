@@ -586,7 +586,17 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 8
 
-
+# Readiness probe values for the controller container of the controller Pod.
+# For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+#
+# +docs:property
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 # enableServiceLinks indicates whether information about services should be
 # injected into the pod's environment variables, matching the syntax of Docker

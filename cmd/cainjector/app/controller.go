@@ -164,7 +164,8 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		if opts.MetricsListenAddress == "0" || opts.MetricsListenAddress == "" {
 			return nil
 		}
-		conn, err := net.DialTimeout("tcp", opts.MetricsListenAddress, 2*time.Second)
+		dialer := net.Dialer{Timeout: 2 * time.Second}
+		conn, err := dialer.DialContext(req.Context(), "tcp", opts.MetricsListenAddress)
 		if err != nil {
 			return err
 		}

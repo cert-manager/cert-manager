@@ -456,7 +456,8 @@ func (m *metricsChecker) Check(req *http.Request) error {
 	if m.addr == "0" || m.addr == "" {
 		return nil
 	}
-	conn, err := net.DialTimeout("tcp", m.addr, 2*time.Second)
+	dialer := net.Dialer{Timeout: 2 * time.Second}
+	conn, err := dialer.DialContext(req.Context(), "tcp", m.addr)
 	if err != nil {
 		return err
 	}
