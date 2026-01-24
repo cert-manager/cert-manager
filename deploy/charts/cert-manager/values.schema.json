@@ -403,8 +403,8 @@
     },
     "helm-values.cainjector.healthzPort": {
       "default": 9440,
-      "description": "The host and port address, separated by a ':', that the healthz server should listen on.",
-      "type": "integer"
+      "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/). The host and port address, separated by a ':', that the healthz server should listen on.",
+      "type": "number"
     },
     "helm-values.cainjector.image": {
       "additionalProperties": false,
@@ -582,7 +582,6 @@
     },
     "helm-values.cainjector.resources": {
       "default": {},
-      "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
     },
     "helm-values.cainjector.securityContext": {

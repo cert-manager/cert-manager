@@ -1674,10 +1674,10 @@ extraEnv:
 > ```
 
 Comma separated list of feature gates that should be enabled on the cainjector pod.
-#### **cainjector.resources** ~ `object`
+#### **cainjector.healthzPort** ~ `number`
 > Default value:
 > ```yaml
-> {}
+> 9440
 > ```
 
 Resources to provide to the cert-manager cainjector pod.  
@@ -1690,7 +1690,13 @@ requests:
   memory: 32Mi
 ```
 
-For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/). The host and port address, separated by a ':', that the healthz server should listen on.
+
+#### **cainjector.resources** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
 #### **cainjector.livenessProbe** ~ `object`
 > Default value:
 > ```yaml
