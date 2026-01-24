@@ -157,6 +157,23 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 		return fmt.Errorf("error setting up health check: %v", err)
 	}
 
+	if err := mgr.AddReadyzCheck("metrics", func(req *http.Request) error {
+		// If metrics server is disabled, we should probably still return success or skip?
+		// But ca-injector always enables metrics server unless configured otherwise?
+		// opts.MetricsListenAddress is used.
+		if opts.MetricsListenAddress == "0" || opts.MetricsListenAddress == "" {
+			return nil
+		}
+		conn, err := net.DialTimeout("tcp", opts.MetricsListenAddress, 2*time.Second)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error setting up readyz check: %v", err)
+	}
+
 	if metricsServerCertificateSource != nil {
 		if err := mgr.Add(metricsServerCertificateSource); err != nil {
 			return err

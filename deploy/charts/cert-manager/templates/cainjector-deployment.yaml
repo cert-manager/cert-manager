@@ -113,7 +113,7 @@ spec:
             name: http-metrics
             protocol: TCP
           {{- end }}
-          - containerPort: 9440
+          - containerPort: {{ .Values.cainjector.healthzPort }}
             name: http-healthz
             protocol: TCP
           env:

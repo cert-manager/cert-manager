@@ -1289,6 +1289,11 @@ cainjector:
   #    memory: 32Mi
   #
   # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+  # The host and port address, separated by a ':', that the healthz server
+  # should listen on.
+  # +docs:property
+  healthzPort: 9440
+
   resources: {}
 
   # Liveness probe values.

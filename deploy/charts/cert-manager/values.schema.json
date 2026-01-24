@@ -283,6 +283,9 @@
         "featureGates": {
           "$ref": "#/$defs/helm-values.cainjector.featureGates"
         },
+        "healthzPort": {
+          "$ref": "#/$defs/helm-values.cainjector.healthzPort"
+        },
         "image": {
           "$ref": "#/$defs/helm-values.cainjector.image"
         },
@@ -397,6 +400,11 @@
       "default": "",
       "description": "Comma separated list of feature gates that should be enabled on the cainjector pod.",
       "type": "string"
+    },
+    "helm-values.cainjector.healthzPort": {
+      "default": 9440,
+      "description": "The host and port address, separated by a ':', that the healthz server should listen on.",
+      "type": "integer"
     },
     "helm-values.cainjector.image": {
       "additionalProperties": false,

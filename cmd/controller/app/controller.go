@@ -43,6 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	k8shealthz "k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection"
@@ -172,7 +173,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on healthz address %s: %v", opts.HealthzListenAddress, err)
 	}
-	healthzServer := healthz.NewServer(opts.LeaderElectionConfig.HealthzTimeout)
+	healthzServer := healthz.NewServer(opts.LeaderElectionConfig.HealthzTimeout, &metricsChecker{addr: opts.MetricsListenAddress})
 	g.Go(func() error {
 		log.V(logf.InfoLevel).Info("starting healthz server", "address", healthzListener.Addr())
 		return healthzServer.Start(rootCtx, healthzListener)
@@ -440,5 +441,25 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 	default:
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
+	return nil
+}
+
+type metricsChecker struct {
+	addr string
+}
+
+var _ k8shealthz.HealthChecker = &metricsChecker{}
+
+func (m *metricsChecker) Name() string { return "metrics" }
+
+func (m *metricsChecker) Check(req *http.Request) error {
+	if m.addr == "0" || m.addr == "" {
+		return nil
+	}
+	conn, err := net.DialTimeout("tcp", m.addr, 2*time.Second)
+	if err != nil {
+		return err
+	}
+	_ = conn.Close()
 	return nil
 }
