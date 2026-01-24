@@ -38,7 +38,7 @@ jobs:
           scope: '{{REPLACE:GH-REPOSITORY}}'
           identity: make-self-upgrade
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
