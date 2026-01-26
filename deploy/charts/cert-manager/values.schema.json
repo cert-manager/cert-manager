@@ -132,9 +132,6 @@
         "prometheus": {
           "$ref": "#/$defs/helm-values.prometheus"
         },
-        "readinessProbe": {
-          "$ref": "#/$defs/helm-values.readinessProbe"
-        },
         "replicaCount": {
           "$ref": "#/$defs/helm-values.replicaCount"
         },
@@ -1383,18 +1380,6 @@
     "helm-values.prometheus.servicemonitor.targetPort": {
       "default": "http-metrics",
       "description": "The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics."
-    },
-    "helm-values.readinessProbe": {
-      "default": {
-        "enabled": true,
-        "failureThreshold": 3,
-        "initialDelaySeconds": 5,
-        "periodSeconds": 5,
-        "successThreshold": 1,
-        "timeoutSeconds": 5
-      },
-      "description": "Readiness probe values for the controller container of the controller Pod. For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).",
-      "type": "object"
     },
     "helm-values.replicaCount": {
       "default": 1,
