@@ -29,23 +29,8 @@ metadata:
 spec:
   jobLabel: app.kubernetes.io/name
   selector:
-    matchExpressions:
-      - key: app.kubernetes.io/name
-        operator: In
-        values:
-        - {{ include "cainjector.name" . }}
-        - {{ template "cert-manager.name" . }}
-        - {{ include "webhook.name" . }}
-      - key: app.kubernetes.io/instance
-        operator: In
-        values:
-        - {{ .Release.Name }}
-      - key: app.kubernetes.io/component
-        operator: In
-        values:
-        - cainjector
-        - controller
-        - webhook
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Values.prometheus.podmonitor.namespace }}
   namespaceSelector:
     matchNames:
