@@ -260,3 +260,54 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateHTTPRouteSpec(t *testing.T) {
+	tests := []struct {
+		name              string
+		dnsName           string
+		expectedHostnames []gwapi.Hostname
+	}{
+		{
+			name:              "should include hostname for DNS name",
+			dnsName:           "example.com",
+			expectedHostnames: []gwapi.Hostname{"example.com"},
+		},
+		{
+			name:              "should include hostname for subdomain",
+			dnsName:           "www.example.com",
+			expectedHostnames: []gwapi.Hostname{"www.example.com"},
+		},
+		{
+			name:              "should not include hostname for IPv4 address",
+			dnsName:           "192.0.2.1",
+			expectedHostnames: nil,
+		},
+		{
+			name:              "should not include hostname for IPv6 address",
+			dnsName:           "2001:db8::1",
+			expectedHostnames: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch := &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: tt.dnsName,
+					Token:   "test-token",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			}
+
+			spec := generateHTTPRouteSpec(ch, "fakeservice")
+
+			if !reflect.DeepEqual(spec.Hostnames, tt.expectedHostnames) {
+				t.Errorf("Expected hostnames %v, but got %v", tt.expectedHostnames, spec.Hostnames)
+			}
+		})
+	}
+}
