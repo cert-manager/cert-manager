@@ -18,6 +18,7 @@ package issuer
 
 import (
 	"fmt"
+	"maps"
 	"sync"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -30,19 +31,26 @@ import (
 type IssuerConstructor func(*controller.Context) (Interface, error)
 
 var (
-	constructors     = make(map[string]IssuerConstructor)
-	constructorsLock sync.RWMutex
+	// sharedFactory is a singleton used for global registration via the
+	// package-level RegisterIssuer function and for callers that explicitly
+	// want to interact with the shared registry.
+	sharedFactory     *factory
+	sharedFactoryInit sync.Once
 )
 
-// RegisterIssuer will register an issuer constructor so it can be used within the
-// application. 'name' should be unique, and should be used to identify this
-// issuer.
-// TODO: move this method to be on Factory, and invent a way to obtain a
-// SharedFactory. This will make testing easier.
+// RegisterIssuer registers an issuer constructor on this factory instance.
+// 'name' should be unique, and should be used to identify this issuer.
+func (f *factory) RegisterIssuer(name string, c IssuerConstructor) {
+	f.constructorsLock.Lock()
+	defer f.constructorsLock.Unlock()
+	f.constructors[name] = c
+}
+
+// RegisterIssuer registers an issuer constructor on the shared factory.
+// This preserves the existing package-level API used by issuer packages
+// during init().
 func RegisterIssuer(name string, c IssuerConstructor) {
-	constructorsLock.Lock()
-	defer constructorsLock.Unlock()
-	constructors[name] = c
+	SharedFactory().RegisterIssuer(name, c)
 }
 
 // Factory is an interface that can be used to obtain Issuer implementations.
@@ -50,17 +58,61 @@ func RegisterIssuer(name string, c IssuerConstructor) {
 // given Issuer resource.
 type Factory interface {
 	IssuerFor(v1.GenericIssuer) (Interface, error)
+	RegisterIssuer(name string, c IssuerConstructor)
 }
 
 // factory is the default Factory implementation
 type factory struct {
+	constructors     map[string]IssuerConstructor
+	constructorsLock sync.RWMutex
+
 	ctx *controller.Context
 }
 
 // NewFactory returns a new issuer factory with the given issuer context.
 // The context will be injected into each Issuer upon creation.
+// The factory is initialized with a snapshot of the shared registry at creation time.
+// Issuers registered to the shared registry after this factory is created will not be
+// visible to this factory instance. Use RegisterIssuer on the returned factory to add
+// instance-specific issuer registrations, or use SharedFactory() for dynamic registration.
 func NewFactory(ctx *controller.Context) Factory {
-	return &factory{ctx: ctx}
+	// copy the constructors registered on the shared factory so that issuers
+	// registered during init() are visible by default, while allowing tests
+	// to isolate registries per factory instance.
+	sf := getOrInitSharedFactory()
+	sf.constructorsLock.RLock()
+	defer sf.constructorsLock.RUnlock()
+	ctors := make(map[string]IssuerConstructor, len(sf.constructors))
+	maps.Copy(ctors, sf.constructors)
+	return &factory{
+		constructors: ctors,
+		ctx:          ctx,
+	}
+}
+
+// NewFactoryWithConstructors returns a factory that uses the provided
+// constructors map. Intended for tests to create fully isolated registries.
+func NewFactoryWithConstructors(ctx *controller.Context, ctors map[string]IssuerConstructor) Factory {
+	constructors := make(map[string]IssuerConstructor, len(ctors))
+	maps.Copy(constructors, ctors)
+	return &factory{
+		constructors: constructors,
+		ctx:          ctx,
+	}
+}
+
+// SharedFactory returns a singleton Factory backed by a shared registry.
+// Useful for package-level registration in init() functions and for callers
+// that need a process-wide registry.
+func SharedFactory() Factory {
+	return getOrInitSharedFactory()
+}
+
+func getOrInitSharedFactory() *factory {
+	sharedFactoryInit.Do(func() {
+		sharedFactory = &factory{constructors: make(map[string]IssuerConstructor)}
+	})
+	return sharedFactory
 }
 
 // IssuerFor will return an Issuer interface for the given Issuer. If the
@@ -74,9 +126,9 @@ func (f *factory) IssuerFor(issuer v1.GenericIssuer) (Interface, error) {
 		return nil, fmt.Errorf("could not get issuer type: %s", err.Error())
 	}
 
-	constructorsLock.RLock()
-	defer constructorsLock.RUnlock()
-	if constructor, ok := constructors[issuerType]; ok {
+	f.constructorsLock.RLock()
+	defer f.constructorsLock.RUnlock()
+	if constructor, ok := f.constructors[issuerType]; ok {
 		return constructor(f.ctx)
 	}
 
