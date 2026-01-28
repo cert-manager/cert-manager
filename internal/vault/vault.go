@@ -18,18 +18,26 @@ package vault
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
+	"golang.org/x/oauth2/google"
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -233,7 +241,37 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set")
+	awsAuth := v.issuer.GetSpec().Vault.Auth.AWS
+	if awsAuth != nil {
+		token, err := v.requestTokenWithAWSAuth(ctx, client, awsAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the AWS auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	gcpAuth := v.issuer.GetSpec().Vault.Auth.GCP
+	if gcpAuth != nil {
+		token, err := v.requestTokenWithGCPAuth(ctx, client, gcpAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the GCP auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	azureAuth := v.issuer.GetSpec().Vault.Auth.Azure
+	if azureAuth != nil {
+		token, err := v.requestTokenWithAzureAuth(ctx, client, azureAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the Azure auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, AWS, GCP, or Azure auth must be set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -592,6 +630,321 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth) (string, error) {
+	mountPath := awsAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/aws"
+	}
+
+	region := awsAuth.Region
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	// Create the STS GetCallerIdentity request
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
+	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	// Create HTTP request for signing
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("error creating STS request: %w", err)
+	}
+	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+
+	// Add Vault server ID header if specified (for replay protection)
+	if awsAuth.VaultHeaderValue != "" {
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
+	}
+
+	// Sign the request using AWS SDK
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return "", fmt.Errorf("error loading AWS config: %w", err)
+	}
+
+	credentials, err := cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error retrieving AWS credentials: %w", err)
+	}
+
+	signer := v4.NewSigner()
+	hash := sha256.Sum256([]byte(reqBody))
+	payloadHash := hex.EncodeToString(hash[:])
+
+	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
+	if err != nil {
+		return "", fmt.Errorf("error signing AWS request: %w", err)
+	}
+
+	// Base64 encode the request components for Vault
+	headersJSON, err := json.Marshal(stsReq.Header)
+	if err != nil {
+		return "", fmt.Errorf("error encoding headers: %w", err)
+	}
+
+	parameters := map[string]interface{}{
+		"role":                    awsAuth.Role,
+		"iam_http_request_method": "POST",
+		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsEndpoint)),
+		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
+		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpAuth *v1.VaultGCPAuth) (string, error) {
+	mountPath := gcpAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/gcp"
+	}
+
+	authType := gcpAuth.AuthType
+	if authType == "" {
+		authType = "iam"
+	}
+
+	var jwt string
+
+	if authType == "gce" {
+		// For GCE auth, get the identity token from the metadata server
+		metadataURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity"
+		audience := v.issuer.GetSpec().Vault.Server
+		if gcpAuth.ServiceAccountRef != nil && len(gcpAuth.ServiceAccountRef.TokenAudiences) > 0 {
+			audience = gcpAuth.ServiceAccountRef.TokenAudiences[0]
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL+"?audience="+audience+"&format=full", nil)
+		if err != nil {
+			return "", fmt.Errorf("error creating metadata request: %w", err)
+		}
+		req.Header.Set("Metadata-Flavor", "Google")
+
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("error fetching GCE identity token: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("error reading GCE identity token: %w", err)
+		}
+		jwt = string(body)
+	} else {
+		// For IAM auth, we need to get a signed JWT from the GCP IAM API
+		// First, get credentials to call the IAM API
+		creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			return "", fmt.Errorf("error finding GCP credentials: %w", err)
+		}
+
+		// Get the service account email from the credentials
+		// For Workload Identity, use the Kubernetes ServiceAccount token
+		if gcpAuth.ServiceAccountRef != nil {
+			audience := "vault/" + gcpAuth.Role
+			if len(gcpAuth.ServiceAccountRef.TokenAudiences) > 0 {
+				audience = gcpAuth.ServiceAccountRef.TokenAudiences[0]
+			}
+
+			tokenrequest, err := v.createToken(ctx, gcpAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+				Spec: authv1.TokenRequestSpec{
+					Audiences:         []string{audience},
+					ExpirationSeconds: ptr.To(int64(600)),
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), gcpAuth.ServiceAccountRef.Name, err.Error())
+			}
+			jwt = tokenrequest.Status.Token
+		} else {
+			// Use the identity token from the metadata server with the Vault role as audience
+			// This works for GKE Workload Identity and Compute Engine
+			audience := "vault/" + gcpAuth.Role
+			metadataURL := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity"
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL+"?audience="+audience+"&format=full", nil)
+			if err != nil {
+				return "", fmt.Errorf("error creating metadata request: %w", err)
+			}
+			req.Header.Set("Metadata-Flavor", "Google")
+
+			httpClient := &http.Client{Timeout: 10 * time.Second}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				// Fallback: if metadata server is not available, try using the credentials token
+				// This is a best-effort approach for non-GCE environments
+				token, tokenErr := creds.TokenSource.Token()
+				if tokenErr != nil {
+					return "", fmt.Errorf("error fetching GCP identity token (metadata: %v, token: %v)", err, tokenErr)
+				}
+				jwt = token.AccessToken
+			} else {
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return "", fmt.Errorf("error reading GCP identity token: %w", err)
+				}
+				jwt = string(body)
+			}
+		}
+	}
+
+	parameters := map[string]interface{}{
+		"role": gcpAuth.Role,
+		"jwt":  jwt,
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, azureAuth *v1.VaultAzureAuth) (string, error) {
+	mountPath := azureAuth.Path
+	if mountPath == "" {
+		mountPath = "/v1/auth/azure"
+	}
+
+	authType := azureAuth.AuthType
+	if authType == "" {
+		authType = "msi"
+	}
+
+	var jwt string
+
+	// Determine the resource/audience for the token
+	resource := azureAuth.Resource
+	if resource == "" {
+		resource = "https://management.azure.com/"
+	}
+
+	if authType == "workload-identity" && azureAuth.ServiceAccountRef != nil {
+		// For Workload Identity, get the projected token from Kubernetes
+		audience := resource
+		if len(azureAuth.ServiceAccountRef.TokenAudiences) > 0 {
+			audience = azureAuth.ServiceAccountRef.TokenAudiences[0]
+		}
+
+		tokenrequest, err := v.createToken(ctx, azureAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				Audiences:         []string{audience},
+				ExpirationSeconds: ptr.To(int64(600)),
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), azureAuth.ServiceAccountRef.Name, err.Error())
+		}
+		jwt = tokenrequest.Status.Token
+	} else {
+		// For MSI auth, get the token from Azure Instance Metadata Service (IMDS)
+		imdsURL := fmt.Sprintf("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%s", resource)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, imdsURL, nil)
+		if err != nil {
+			return "", fmt.Errorf("error creating IMDS request: %w", err)
+		}
+		req.Header.Set("Metadata", "true")
+
+		httpClient := &http.Client{Timeout: 10 * time.Second}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("error fetching Azure MSI token: %w", err)
+		}
+		defer resp.Body.Close()
+
+		var tokenResponse struct {
+			AccessToken string `json:"access_token"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+			return "", fmt.Errorf("error decoding Azure MSI token response: %w", err)
+		}
+		jwt = tokenResponse.AccessToken
+	}
+
+	parameters := map[string]interface{}{
+		"role": azureAuth.Role,
+		"jwt":  jwt,
+	}
+
+	// Add subscription_id, resource_group_name, vm_name, vmss_name if available from IMDS
+	// These are typically auto-detected by Vault from the JWT claims
 
 	url := filepath.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)

@@ -39,7 +39,7 @@ const (
 	messageVaultInitializedAndUnsealedFailed = "Failed to verify Vault is initialized and unsealed"
 	messageVaultConfigRequired               = "Vault config cannot be empty"
 	messageServerAndPathRequired             = "Vault server and path are required fields"
-	messageAuthFieldsRequired                = "Vault tokenSecretRef, appRole, clientCertificate, or kubernetes is required"
+	messageAuthFieldsRequired                = "Vault tokenSecretRef, appRole, clientCertificate, kubernetes, aws, gcp, or azure is required"
 	messageMultipleAuthFieldsSet             = "Multiple auth methods cannot be set on the same Vault issuer"
 
 	messageKubeAuthRoleRequired      = "Vault Kubernetes auth requires a role to be set"
@@ -48,6 +48,9 @@ const (
 	messageTokenAuthNameRequired     = "Vault Token auth requires tokenSecretRef.name"
 	messageAppRoleAuthFieldsRequired = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
 	messageAppRoleAuthKeyRequired    = "Vault AppRole auth requires secretRef.key"
+	messageAWSAuthRoleRequired       = "Vault AWS auth requires a role to be set"
+	messageGCPAuthRoleRequired       = "Vault GCP auth requires a role to be set"
+	messageAzureAuthRoleRequired     = "Vault Azure auth requires a role to be set"
 )
 
 // Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
@@ -70,19 +73,43 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	appRoleAuth := issuer.GetSpec().Vault.Auth.AppRole
 	clientCertificateAuth := issuer.GetSpec().Vault.Auth.ClientCertificate
 	kubeAuth := issuer.GetSpec().Vault.Auth.Kubernetes
+	awsAuth := issuer.GetSpec().Vault.Auth.AWS
+	gcpAuth := issuer.GetSpec().Vault.Auth.GCP
+	azureAuth := issuer.GetSpec().Vault.Auth.Azure
 
 	// check if at least one auth method is specified.
-	if tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil {
+	if tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil && awsAuth == nil && gcpAuth == nil && azureAuth == nil {
 		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAuthFieldsRequired, "issuer", klog.KObj(issuer))
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldsRequired)
 		return nil
 	}
 
+	// count how many auth methods are set
+	authCount := 0
+	if tokenAuth != nil {
+		authCount++
+	}
+	if appRoleAuth != nil {
+		authCount++
+	}
+	if clientCertificateAuth != nil {
+		authCount++
+	}
+	if kubeAuth != nil {
+		authCount++
+	}
+	if awsAuth != nil {
+		authCount++
+	}
+	if gcpAuth != nil {
+		authCount++
+	}
+	if azureAuth != nil {
+		authCount++
+	}
+
 	// check only one auth method is set
-	if !((tokenAuth != nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil) ||
-		(tokenAuth == nil && appRoleAuth != nil && clientCertificateAuth == nil && kubeAuth == nil) ||
-		(tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth != nil && kubeAuth == nil) ||
-		(tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth != nil)) {
+	if authCount > 1 {
 		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageMultipleAuthFieldsSet, "issuer", klog.KObj(issuer))
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageMultipleAuthFieldsSet)
 		return nil
@@ -127,6 +154,27 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	if kubeAuth != nil && (kubeAuth.SecretRef.Name != "" && kubeAuth.ServiceAccountRef != nil) {
 		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageKubeAuthSingleRequired, "issuer", klog.KObj(issuer))
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthSingleRequired)
+		return nil
+	}
+
+	// When using the AWS auth, giving a role is mandatory.
+	if awsAuth != nil && len(awsAuth.Role) == 0 {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAWSAuthRoleRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAWSAuthRoleRequired)
+		return nil
+	}
+
+	// When using the GCP auth, giving a role is mandatory.
+	if gcpAuth != nil && len(gcpAuth.Role) == 0 {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageGCPAuthRoleRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageGCPAuthRoleRequired)
+		return nil
+	}
+
+	// When using the Azure auth, giving a role is mandatory.
+	if azureAuth != nil && len(azureAuth.Role) == 0 {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAzureAuthRoleRequired, "issuer", klog.KObj(issuer))
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAzureAuthRoleRequired)
 		return nil
 	}
 

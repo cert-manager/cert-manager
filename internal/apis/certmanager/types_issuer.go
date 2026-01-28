@@ -221,7 +221,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
@@ -239,6 +239,18 @@ type VaultAuth struct {
 	// Kubernetes authenticates with Vault by passing the ServiceAccount
 	// token stored in the named Secret resource to the Vault server.
 	Kubernetes *VaultKubernetesAuth
+
+	// AWS authenticates with Vault using AWS IAM authentication.
+	// +optional
+	AWS *VaultAWSAuth
+
+	// GCP authenticates with Vault using Google Cloud authentication.
+	// +optional
+	GCP *VaultGCPAuth
+
+	// Azure authenticates with Vault using Azure authentication.
+	// +optional
+	Azure *VaultAzureAuth
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -323,6 +335,83 @@ type ServiceAccountRef struct {
 	// The default audiences are always included in the token.
 	// +optional
 	TokenAudiences []string
+}
+
+// VaultAWSAuth authenticates with Vault using AWS IAM authentication.
+type VaultAWSAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. If unspecified, the default value "/v1/auth/aws" will be used.
+	// +optional
+	Path string
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string
+
+	// The AWS region to use for STS API calls.
+	// +optional
+	Region string
+
+	// The Vault header value to include in the STS signing request.
+	// +optional
+	IamServerIdHeaderValue string
+
+	// Reference to a Secret containing the AWS credentials.
+	// +optional
+	SecretRef *cmmeta.SecretKeySelector
+
+	// A reference to a service account for IRSA authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef
+}
+
+// VaultGCPAuth authenticates with Vault using Google Cloud authentication.
+type VaultGCPAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. If unspecified, the default value "/v1/auth/gcp" will be used.
+	// +optional
+	Path string
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string
+
+	// The type of GCP authentication to use. Valid values are "gce" or "iam".
+	// +optional
+	AuthType string
+
+	// A reference to a service account for Workload Identity authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef
+
+	// The GCP project ID.
+	// +optional
+	ProjectID string
+}
+
+// VaultAzureAuth authenticates with Vault using Azure authentication.
+type VaultAzureAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. If unspecified, the default value "/v1/auth/azure" will be used.
+	// +optional
+	Path string
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string
+
+	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
+	// +optional
+	AuthType string
+
+	// A reference to a service account for Azure Workload Identity authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef
+
+	// The Azure tenant ID.
+	// +optional
+	TenantID string
+
+	// The Azure resource/audience to request a token for.
+	// +optional
+	Resource string
 }
 
 // CAIssuer configures an issuer that can issue certificates from its provided
