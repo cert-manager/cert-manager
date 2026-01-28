@@ -167,14 +167,33 @@ featureGates: ""
 # The maximum number of challenges that can be scheduled as 'processing' at once.
 maxConcurrentChallenges: 60
 
-image:
-  # The container registry to pull the manager image from.
-  # +docs:property
-  # registry: quay.io
+# The container registry used for all cert-manager images by default.
+# This can include path prefixes (e.g. `artifactory.example.com/docker`).
+# +docs:property
+imageRegistry: quay.io
 
-  # The container image for the cert-manager controller.
+# The repository namespace used for all cert-manager images by default.
+# Examples:
+# - jetstack
+# - cert-manager
+# +docs:property
+imageNamespace: jetstack
+
+image:
+  # Deprecated: per-component registry override.
+  # Prefer using the global `imageRegistry` value.
   # +docs:property
-  repository: quay.io/jetstack/cert-manager-controller
+  # registry: ""
+
+  # The image name for the cert-manager controller.
+  # This is used (together with `imageRegistry` and `imageNamespace`) to construct the full image reference.
+  # +docs:property
+  name: cert-manager-controller
+
+  # Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `image.name`).
+  # Example: quay.io/jetstack/cert-manager-controller
+  # +docs:property
+  repository: ""
 
   # Override the image tag to deploy by setting this variable.
   # If no value is set, the chart's appVersion is used.
@@ -977,13 +996,18 @@ webhook:
   serviceIPFamilies: []
 
   image:
-    # The container registry to pull the webhook image from.
+    # Deprecated: per-component registry override.
+    # Prefer using the global `imageRegistry` value.
     # +docs:property
-    # registry: quay.io
+    # registry: ""
 
-    # The container image for the cert-manager webhook
+    # The image name for the cert-manager webhook.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-webhook
+    name: cert-manager-webhook
+
+    # Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `webhook.image.name`).
+    # +docs:property
+    repository: ""
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
@@ -1344,13 +1368,18 @@ cainjector:
   serviceLabels: {}
 
   image:
-    # The container registry to pull the cainjector image from.
+    # Deprecated: per-component registry override.
+    # Prefer using the global `imageRegistry` value.
     # +docs:property
-    # registry: quay.io
+    # registry: ""
 
-    # The container image for the cert-manager cainjector
+    # The image name for the cert-manager cainjector.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-cainjector
+    name: cert-manager-cainjector
+
+    # Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `cainjector.image.name`).
+    # +docs:property
+    repository: ""
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
@@ -1403,13 +1432,18 @@ cainjector:
 
 acmesolver:
   image:
-    # The container registry to pull the acmesolver image from.
+    # Deprecated: per-component registry override.
+    # Prefer using the global `imageRegistry` value.
     # +docs:property
-    # registry: quay.io
+    # registry: ""
 
-    # The container image for the cert-manager acmesolver.
+    # The image name for the cert-manager acmesolver.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-acmesolver
+    name: cert-manager-acmesolver
+
+    # Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `acmesolver.image.name`).
+    # +docs:property
+    repository: ""
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion is used.
@@ -1536,13 +1570,18 @@ startupapicheck:
   podLabels: {}
 
   image:
-    # The container registry to pull the startupapicheck image from.
+    # Deprecated: per-component registry override.
+    # Prefer using the global `imageRegistry` value.
     # +docs:property
-    # registry: quay.io
+    # registry: ""
 
-    # The container image for the cert-manager startupapicheck.
+    # The image name for the cert-manager startupapicheck.
     # +docs:property
-    repository: quay.io/jetstack/cert-manager-startupapicheck
+    name: cert-manager-startupapicheck
+
+    # Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `startupapicheck.image.name`).
+    # +docs:property
+    repository: ""
 
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion is used.

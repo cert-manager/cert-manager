@@ -288,17 +288,41 @@ A comma-separated list of feature gates that should be enabled on the controller
 > ```
 
 The maximum number of challenges that can be scheduled as 'processing' at once.
+#### **imageRegistry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
+
+The container registry used for all cert-manager images by default. This can include path prefixes (for example: artifactory.example.com/docker).
+
+#### **imageNamespace** ~ `string`
+> Default value:
+> ```yaml
+> jetstack
+> ```
+
+The repository namespace used for all cert-manager images by default.
+
 #### **image.registry** ~ `string`
 
-The container registry to pull the manager image from.
+Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+
+#### **image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-controller
+> ```
+
+The image name for the cert-manager controller. This is combined with imageRegistry and imageNamespace to form the full image reference when image.repository is empty.
 
 #### **image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-controller
+> ""
 > ```
 
-The container image for the cert-manager controller.
+Full repository override for the cert-manager controller image. When set, this takes precedence over imageRegistry, imageNamespace, and image.name.
 
 #### **image.tag** ~ `string`
 
@@ -1303,15 +1327,23 @@ Optionally set the IP family policy for the controller Service to configure dual
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
-The container registry to pull the webhook image from.
+Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+
+#### **webhook.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-webhook
+> ```
+
+The image name for the cert-manager webhook. This is combined with imageRegistry and imageNamespace to form the full image reference when webhook.image.repository is empty.
 
 #### **webhook.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-webhook
+> ""
 > ```
 
-The container image for the cert-manager webhook
+Full repository override for the cert-manager webhook image. When set, this takes precedence over imageRegistry, imageNamespace, and webhook.image.name.
 
 #### **webhook.image.tag** ~ `string`
 
@@ -1775,15 +1807,23 @@ Optional additional labels to add to the CA Injector Pods.
 Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
 
-The container registry to pull the cainjector image from.
+Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+
+#### **cainjector.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-cainjector
+> ```
+
+The image name for the cert-manager cainjector. This is combined with imageRegistry and imageNamespace to form the full image reference when cainjector.image.repository is empty.
 
 #### **cainjector.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-cainjector
+> ""
 > ```
 
-The container image for the cert-manager cainjector
+Full repository override for the cert-manager cainjector image. When set, this takes precedence over imageRegistry, imageNamespace, and cainjector.image.name.
 
 #### **cainjector.image.tag** ~ `string`
 
@@ -1856,15 +1896,23 @@ enableServiceLinks indicates whether information about services should be inject
 
 #### **acmesolver.image.registry** ~ `string`
 
-The container registry to pull the acmesolver image from.
+Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+
+#### **acmesolver.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-acmesolver
+> ```
+
+The image name for the cert-manager acmesolver. This is combined with imageRegistry and imageNamespace to form the full image reference when acmesolver.image.repository is empty.
 
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-acmesolver
+> ""
 > ```
 
-The container image for the cert-manager acmesolver.
+Full repository override for the cert-manager acmesolver image. When set, this takes precedence over imageRegistry, imageNamespace, and acmesolver.image.name.
 
 #### **acmesolver.image.tag** ~ `string`
 
@@ -2039,15 +2087,23 @@ tolerations:
 Optional additional labels to add to the startupapicheck Pods.
 #### **startupapicheck.image.registry** ~ `string`
 
-The container registry to pull the startupapicheck image from.
+Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+
+#### **startupapicheck.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-startupapicheck
+> ```
+
+The image name for the cert-manager startupapicheck. This is combined with imageRegistry and imageNamespace to form the full image reference when startupapicheck.image.repository is empty.
 
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-startupapicheck
+> ""
 > ```
 
-The container image for the cert-manager startupapicheck.
+Full repository override for the cert-manager startupapicheck image. When set, this takes precedence over imageRegistry, imageNamespace, and startupapicheck.image.name.
 
 #### **startupapicheck.image.tag** ~ `string`
 
