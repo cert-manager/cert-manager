@@ -181,31 +181,22 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
 */}}
 {{- define "image" -}}
 {{- /*
-    Backwards compatible calling conventions:
-
-    - (tuple <imageValues> <defaultTag>)
-            Legacy behaviour: <imageValues.repository> is treated as full repository path.
-            <imageValues.registry> optionally prefixes it.
+    Calling convention:
 
     - (tuple <root> <imageValues> <defaultTag>)
-            New behaviour:
-                if <imageValues.repository> is set: use it as full repository path.
-                else build repository as:
-                    <registry>/<namespace>/<imageValues.name>
-                where registry comes from .Values.imageRegistry (or legacy per-image .registry),
-                and namespace comes from .Values.imageNamespace.
+        If <imageValues.repository> is set: use it as full repository path.
+        Else build repository as: <registry>/<namespace>/<imageValues.name>
+        where registry comes from .Values.imageRegistry (or legacy per-image .registry),
+        and namespace comes from .Values.imageNamespace.
 */ -}}
 
-{{- if eq (len .) 2 -}}
-    {{- $defaultTag := index . 1 -}}
-    {{- with index . 0 -}}
-        {{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
-        {{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
-    {{- end -}}
-{{- else -}}
-    {{- $root := index . 0 -}}
-    {{- $image := index . 1 -}}
-    {{- $defaultTag := index . 2 -}}
+{{- if ne (len .) 3 -}}
+  {{- fail (printf "ERROR: template \"image\" expects (tuple <root> <imageValues> <defaultTag>), got %d arguments" (len .)) -}}
+{{- end -}}
+
+{{- $root := index . 0 -}}
+{{- $image := index . 1 -}}
+{{- $defaultTag := index . 2 -}}
 
     {{- $repository := "" -}}
     {{- if $image.repository -}}
@@ -229,12 +220,11 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
         {{- end -}}
     {{- end -}}
 
-    {{- $repository -}}
-    {{- if $image.digest -}}
-        {{- printf "@%s" $image.digest -}}
-    {{- else -}}
-        {{- printf ":%s" (default $defaultTag $image.tag) -}}
-    {{- end -}}
+{{- $repository -}}
+{{- if $image.digest -}}
+    {{- printf "@%s" $image.digest -}}
+{{- else -}}
+    {{- printf ":%s" (default $defaultTag $image.tag) -}}
 {{- end -}}
 {{- end }}
 
