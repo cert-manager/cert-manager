@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cert-manager/cert-manager/internal/cron"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -135,4 +136,18 @@ func SplitWithEscapeCSV(in string) ([]string, error) {
 	}
 
 	return records[0], nil
+}
+
+func CronParse(origCronString, timeZone string) (cron.Schedule, error) {
+	cronString := origCronString
+	if timeZone != "" {
+		cronString = fmt.Sprintf("CRON_TZ=%s %s", timeZone, origCronString)
+	}
+	s, err := cron.
+		NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor).
+		Parse(cronString)
+	if err == nil {
+		return s, nil
+	}
+	return nil, fmt.Errorf("failed to parse cron spec '%s': %w", origCronString, err)
 }
