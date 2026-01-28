@@ -180,11 +180,62 @@ Any changes to this function should also be made in cert-manager, trust-manager,
 See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linked PRs.
 */}}
 {{- define "image" -}}
-{{- $defaultTag := index . 1 -}}
-{{- with index . 0 -}}
-{{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
-{{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
-{{- end }}
+{{- /*
+    Backwards compatible calling conventions:
+
+    - (tuple <imageValues> <defaultTag>)
+            Legacy behaviour: <imageValues.repository> is treated as full repository path.
+            <imageValues.registry> optionally prefixes it.
+
+    - (tuple <root> <imageValues> <defaultTag>)
+            New behaviour:
+                if <imageValues.repository> is set: use it as full repository path.
+                else build repository as:
+                    <registry>/<namespace>/<imageValues.name>
+                where registry comes from .Values.imageRegistry (or legacy per-image .registry),
+                and namespace comes from .Values.imageNamespace.
+*/ -}}
+
+{{- if eq (len .) 2 -}}
+    {{- $defaultTag := index . 1 -}}
+    {{- with index . 0 -}}
+        {{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
+        {{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
+    {{- end -}}
+{{- else -}}
+    {{- $root := index . 0 -}}
+    {{- $image := index . 1 -}}
+    {{- $defaultTag := index . 2 -}}
+
+    {{- $repository := "" -}}
+    {{- if $image.repository -}}
+        {{- $repository = $image.repository -}}
+    {{- else -}}
+        {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
+        {{- $repository = $name -}}
+
+        {{- $namespace := $root.Values.imageNamespace | default "" -}}
+        {{- if ne $namespace "" -}}
+            {{- $repository = printf "%s/%s" $namespace $repository -}}
+        {{- end -}}
+
+        {{- $registry := $root.Values.imageRegistry | default "" -}}
+        {{- /* Legacy per-component override. Prefer global imageRegistry. */ -}}
+        {{- if $image.registry -}}
+            {{- $registry = $image.registry -}}
+        {{- end -}}
+        {{- if ne $registry "" -}}
+            {{- $repository = printf "%s/%s" $registry $repository -}}
+        {{- end -}}
+    {{- end -}}
+
+    {{- $repository -}}
+    {{- if $image.digest -}}
+        {{- printf "@%s" $image.digest -}}
+    {{- else -}}
+        {{- printf ":%s" (default $defaultTag $image.tag) -}}
+    {{- end -}}
+{{- end -}}
 {{- end }}
 
 {{/*
