@@ -18,18 +18,17 @@ package predicate
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Func is a generic function used to filter various types of resources.
-type Func func(obj runtime.Object) bool
+type Func[T metav1.Object] func(obj T) bool
 
 // Funcs is a list of predicates to be AND'd together.
-type Funcs []Func
+type Funcs[T metav1.Object] []Func[T]
 
 // Evaluate will evaluate all the predicate functions in order, AND'ing
 // together the results.
-func (f Funcs) Evaluate(obj runtime.Object) bool {
+func (f Funcs[T]) Evaluate(obj T) bool {
 	for _, fn := range f {
 		if !fn(obj) {
 			return false
@@ -45,14 +44,15 @@ func (f Funcs) Evaluate(obj runtime.Object) bool {
 // enqueuing all Certificate resources that own a CertificateRequest that has
 // been observed, or enqueuing all Certificate resources that specify
 // `status.nextPrivateKeySecretName` as the name of the Secret being processed.
-type ExtractorFunc func(obj runtime.Object) Func
+// ExtractorFunc builds a predicate.Func for the target type based on the
+// provided object (usually the object from a watch event).
+type ExtractorFunc[T, U metav1.Object] func(obj U) Func[T]
 
 // ExtractResourceName is a helper function used to extract a name from a
 // metav1.Object being enqueued to construct a Func that is variadic
 // based on a string value.
-func ExtractResourceName(p func(s string) Func) ExtractorFunc {
-	return func(obj runtime.Object) Func {
-		metaObj := obj.(metav1.Object)
-		return p(metaObj.GetName())
+func ExtractResourceName[U, T metav1.Object](p func(name string) Func[T]) ExtractorFunc[T, U] {
+	return func(obj U) Func[T] {
+		return p(obj.GetName())
 	}
 }

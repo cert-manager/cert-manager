@@ -26,7 +26,6 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -73,12 +72,15 @@ func NewController(log logr.Logger, ctx *controllerpkg.Context) (*controller, wo
 	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to any 'owned' CertificateRequest resources
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ResourceOwnerOf,
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to any 'owned' CertificateRequest resources
+			certificates.EnqueueCertificatesForResourceUsingPredicates[*cmapi.CertificateRequest](
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+			),
 		),
-	)); err != nil {
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -127,7 +129,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// Get all CertificateRequests that are owned by this Certificate
 	requests, err := certificates.ListCertificateRequestsMatchingPredicates(
-		c.certificateRequestLister.CertificateRequests(crt.Namespace), labels.Everything(), predicate.ResourceOwnedBy(crt))
+		c.certificateRequestLister.CertificateRequests(crt.Namespace),
+		predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt))
 	if err != nil {
 		return err
 	}
