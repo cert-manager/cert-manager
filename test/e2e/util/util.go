@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 
@@ -313,7 +314,6 @@ func pathTypePrefix() *networkingv1.PathType {
 // actually route traffic, but can be used to test cert-manager controllers that
 // sync Gateways, such as gateway-shim.
 func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.Gateway {
-
 	return &gwapi.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        gatewayName,
@@ -327,6 +327,47 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
 						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
 							"gw": gatewayName,
+						}},
+					},
+					Kinds: nil,
+				},
+				Name:     "acme-solver",
+				Protocol: gwapi.TLSProtocolType,
+				Port:     gwapi.PortNumber(443),
+				Hostname: (*gwapi.Hostname)(&dnsNames[0]),
+				TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{
+						{
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      gwapi.ObjectName(secretName),
+							Group:     func() *gwapi.Group { g := gwapi.Group(corev1.GroupName); return &g }(),
+							Namespace: (*gwapi.Namespace)(&ns),
+						},
+					},
+				},
+			}},
+		},
+	}
+}
+
+func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapix.XListenerSet {
+	return &gwapix.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        ls,
+			Namespace:   ns,
+			Annotations: annotations,
+		},
+		Spec: gwapix.ListenerSetSpec{
+			ParentRef: gwapix.ParentGatewayReference{
+				Name:      gwapi.ObjectName(ls),
+				Namespace: (*gwapix.Namespace)(&ns),
+			},
+			Listeners: []gwapix.ListenerEntry{{
+				AllowedRoutes: &gwapi.AllowedRoutes{
+					Namespaces: &gwapi.RouteNamespaces{
+						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gw": ls,
 						}},
 					},
 					Kinds: nil,

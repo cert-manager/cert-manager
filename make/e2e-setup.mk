@@ -225,7 +225,7 @@ $(call local-image-tar,vaultretagged): $(call image-tar,vault)
 	tar cf $@ -C /tmp/vault .
 	@rm -rf /tmp/vault
 
-FEATURE_GATES ?= ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
+FEATURE_GATES ?= ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,XListenerSets=true,ServerSideApply=true,LiteralCertificateSubject=true,UseCertificateRequestBasicConstraints=true,NameConstraints=true,OtherNames=true
 
 ## Set this environment variable to a non empty string to cause cert-manager to
 ## be installed using best-practice configuration settings, and to install
@@ -271,7 +271,7 @@ comma = ,
 
 # Helm's "--set" interprets commas, which means we want to escape commas
 # for "--set featureGates". That's why we have "\$(comma)".
-feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
+feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ExperimentalCertificateSigningRequestControllers=% ExperimentalGatewayAPISupport=% XListenerSets=% ServerSideApply=% LiteralCertificateSubject=% UseCertificateRequestBasicConstraints=% NameConstraints=% SecretsFilteredCaching=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
@@ -315,7 +315,7 @@ e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(b
 		$(addprefix --version=,$(E2E_CERT_MANAGER_VERSION)) \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-xlistenerset}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
@@ -343,7 +343,7 @@ e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controll
 		--set startupapicheck.image.tag="$(TAG)" \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-xlistenerset}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
