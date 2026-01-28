@@ -31,18 +31,22 @@ import (
 	cmacmeac "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var errArgument = errors.New("invalid arguments")
 
+type ChallengeUpdateIntent struct {
+	Finalizers []string
+	Status     *cmacme.ChallengeStatus
+}
+
 type objectUpdateClient interface {
-	update(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
-	updateStatus(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
+	updateFinalizers(context.Context, *cmacme.Challenge, []string) (*cmacme.Challenge, error)
+	updateStatus(context.Context, *cmacme.Challenge, cmacme.ChallengeStatus) (*cmacme.Challenge, error)
 }
 
 type objectUpdater interface {
-	updateObject(context.Context, *cmacme.Challenge, *cmacme.Challenge) error
+	updateObject(context.Context, *cmacme.Challenge, ChallengeUpdateIntent) error
 }
 
 type defaultObjectUpdater struct {
@@ -72,23 +76,13 @@ func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater
 // Only the Finalizers and Status fields may be modified. If there are any
 // modifications to new object, outside of the Finalizers and Status fields,
 // this function return an error.
-func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, newChallenge *cmacme.Challenge) error {
-	if !apiequality.Semantic.DeepEqual(
-		gen.ChallengeFrom(oldChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
-		gen.ChallengeFrom(newChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
-	) {
-		return fmt.Errorf(
-			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-			errArgument,
-		)
-	}
-
+func (o *defaultObjectUpdater) updateObject(ctx context.Context, challenge *cmacme.Challenge, intent ChallengeUpdateIntent) error {
 	var updateFunctions []func() (*cmacme.Challenge, error)
-	if !apiequality.Semantic.DeepEqual(oldChallenge.Status, newChallenge.Status) {
+	if intent.Status != nil && !apiequality.Semantic.DeepEqual(challenge.Status, *intent.Status) {
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				if obj, err := o.updateStatus(ctx, newChallenge); err != nil {
+				if obj, err := o.updateStatus(ctx, challenge, *intent.Status); err != nil {
 					return obj, fmt.Errorf("when updating the status: %w", err)
 				} else {
 					return obj, nil
@@ -96,11 +90,11 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, n
 			},
 		)
 	}
-	if !apiequality.Semantic.DeepEqual(oldChallenge.Finalizers, newChallenge.Finalizers) {
+	if intent.Finalizers != nil && !apiequality.Semantic.DeepEqual(challenge.Finalizers, intent.Finalizers) {
 		updateFunctions = append(
 			updateFunctions,
 			func() (*cmacme.Challenge, error) {
-				if obj, err := o.update(ctx, newChallenge); err != nil {
+				if obj, err := o.updateFinalizers(ctx, challenge, intent.Finalizers); err != nil {
 					return obj, fmt.Errorf("when updating the finalizers: %w", err)
 				} else {
 					return obj, nil
@@ -116,7 +110,7 @@ func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, n
 				return nil
 			}
 		} else {
-			newChallenge = o
+			challenge = o
 		}
 	}
 	return utilerrors.NewAggregate(errors)
@@ -126,11 +120,13 @@ type objectUpdateClientDefault struct {
 	cl versioned.Interface
 }
 
-func (o *objectUpdateClientDefault) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientDefault) updateFinalizers(ctx context.Context, challenge *cmacme.Challenge, finalizers []string) (*cmacme.Challenge, error) {
+	challenge.Finalizers = finalizers
 	return o.cl.AcmeV1().Challenges(challenge.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
 }
 
-func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, challenge *cmacme.Challenge, status cmacme.ChallengeStatus) (*cmacme.Challenge, error) {
+	challenge.Status = status
 	return o.cl.AcmeV1().Challenges(challenge.Namespace).UpdateStatus(ctx, challenge, metav1.UpdateOptions{})
 }
 
@@ -139,24 +135,24 @@ type objectUpdateClientSSA struct {
 	fieldManager string
 }
 
-func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientSSA) updateFinalizers(ctx context.Context, challenge *cmacme.Challenge, finalizers []string) (*cmacme.Challenge, error) {
 	ac := cmacmeac.Challenge(challenge.Name, challenge.Namespace).
-		WithFinalizers(challenge.Finalizers...)
+		WithFinalizers(finalizers...)
 	return o.cl.AcmeV1().Challenges(challenge.Namespace).Apply(
 		ctx, ac,
 		metav1.ApplyOptions{Force: true, FieldManager: o.fieldManager},
 	)
 }
 
-func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge, status cmacme.ChallengeStatus) (*cmacme.Challenge, error) {
 	challengeStatus := cmacmeac.ChallengeStatus().
-		WithProcessing(challenge.Status.Processing).
-		WithPresented(challenge.Status.Presented)
-	if challenge.Status.Reason != "" {
-		challengeStatus = challengeStatus.WithReason(challenge.Status.Reason)
+		WithProcessing(status.Processing).
+		WithPresented(status.Presented)
+	if status.Reason != "" {
+		challengeStatus = challengeStatus.WithReason(status.Reason)
 	}
-	if challenge.Status.State != "" {
-		challengeStatus = challengeStatus.WithState(challenge.Status.State)
+	if status.State != "" {
+		challengeStatus = challengeStatus.WithState(status.State)
 	}
 	ac := cmacmeac.Challenge(challenge.Name, challenge.Namespace).
 		WithStatus(challengeStatus)
