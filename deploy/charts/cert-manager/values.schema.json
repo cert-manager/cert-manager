@@ -84,14 +84,14 @@
         "https_proxy": {
           "$ref": "#/$defs/helm-values.https_proxy"
         },
-        "imageRegistry": {
-          "$ref": "#/$defs/helm-values.imageRegistry"
+        "image": {
+          "$ref": "#/$defs/helm-values.image"
         },
         "imageNamespace": {
           "$ref": "#/$defs/helm-values.imageNamespace"
         },
-        "image": {
-          "$ref": "#/$defs/helm-values.image"
+        "imageRegistry": {
+          "$ref": "#/$defs/helm-values.imageRegistry"
         },
         "ingressShim": {
           "$ref": "#/$defs/helm-values.ingressShim"
@@ -225,7 +225,7 @@
     },
     "helm-values.acmesolver.image.name": {
       "default": "cert-manager-acmesolver",
-      "description": "The image name for the cert-manager acmesolver. This is combined with imageRegistry and imageNamespace to form the full image reference when acmesolver.image.repository is empty.",
+      "description": "The image name for the cert-manager acmesolver.",
       "type": "string"
     },
     "helm-values.acmesolver.image.pullPolicy": {
@@ -234,12 +234,12 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.registry": {
-      "description": "Deprecated: per-component registry override. Prefer using the global imageRegistry value.",
+      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
       "default": "",
-      "description": "Full repository override for the cert-manager acmesolver image. When set, this takes precedence over imageRegistry, imageNamespace, and acmesolver.image.name.",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `acmesolver.image.name`).",
       "type": "string"
     },
     "helm-values.acmesolver.image.tag": {
@@ -439,7 +439,7 @@
     },
     "helm-values.cainjector.image.name": {
       "default": "cert-manager-cainjector",
-      "description": "The image name for the cert-manager cainjector. This is combined with imageRegistry and imageNamespace to form the full image reference when cainjector.image.repository is empty.",
+      "description": "The image name for the cert-manager cainjector.",
       "type": "string"
     },
     "helm-values.cainjector.image.pullPolicy": {
@@ -448,12 +448,12 @@
       "type": "string"
     },
     "helm-values.cainjector.image.registry": {
-      "description": "Deprecated: per-component registry override. Prefer using the global imageRegistry value.",
+      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
       "default": "",
-      "description": "Full repository override for the cert-manager cainjector image. When set, this takes precedence over imageRegistry, imageNamespace, and cainjector.image.name.",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `cainjector.image.name`).",
       "type": "string"
     },
     "helm-values.cainjector.image.tag": {
@@ -983,7 +983,7 @@
     },
     "helm-values.image.name": {
       "default": "cert-manager-controller",
-      "description": "The image name for the cert-manager controller. This is combined with imageRegistry and imageNamespace to form the full image reference when image.repository is empty.",
+      "description": "The image name for the cert-manager controller.\nThis is used (together with `imageRegistry` and `imageNamespace`) to construct the full image reference.",
       "type": "string"
     },
     "helm-values.image.pullPolicy": {
@@ -992,26 +992,26 @@
       "type": "string"
     },
     "helm-values.image.registry": {
-      "description": "Deprecated: per-component registry override. Prefer using the global imageRegistry value.",
+      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
       "type": "string"
     },
     "helm-values.image.repository": {
       "default": "",
-      "description": "Full repository override for the cert-manager controller image. When set, this takes precedence over imageRegistry, imageNamespace, and image.name.",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `image.name`).\nExample: quay.io/jetstack/cert-manager-controller",
       "type": "string"
     },
     "helm-values.image.tag": {
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
       "type": "string"
     },
-    "helm-values.imageRegistry": {
-      "default": "quay.io",
-      "description": "The container registry used for all cert-manager images by default. This can include path prefixes (for example: artifactory.example.com/docker).",
-      "type": "string"
-    },
     "helm-values.imageNamespace": {
       "default": "jetstack",
-      "description": "The repository namespace used for all cert-manager images by default.",
+      "description": "The repository namespace used for all cert-manager images by default.\nExamples:\n- jetstack\n- cert-manager",
+      "type": "string"
+    },
+    "helm-values.imageRegistry": {
+      "default": "quay.io",
+      "description": "The container registry used for all cert-manager images by default. This can include path prefixes (e.g. `artifactory.example.com/docker`).",
       "type": "string"
     },
     "helm-values.ingressShim": {
@@ -1630,7 +1630,7 @@
     },
     "helm-values.startupapicheck.image.name": {
       "default": "cert-manager-startupapicheck",
-      "description": "The image name for the cert-manager startupapicheck. This is combined with imageRegistry and imageNamespace to form the full image reference when startupapicheck.image.repository is empty.",
+      "description": "The image name for the cert-manager startupapicheck.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.pullPolicy": {
@@ -1639,12 +1639,12 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.registry": {
-      "description": "Deprecated: per-component registry override. Prefer using the global imageRegistry value.",
+      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
       "default": "",
-      "description": "Full repository override for the cert-manager startupapicheck image. When set, this takes precedence over imageRegistry, imageNamespace, and startupapicheck.image.name.",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `startupapicheck.image.name`).",
       "type": "string"
     },
     "helm-values.startupapicheck.image.tag": {
@@ -2047,7 +2047,7 @@
     },
     "helm-values.webhook.image.name": {
       "default": "cert-manager-webhook",
-      "description": "The image name for the cert-manager webhook. This is combined with imageRegistry and imageNamespace to form the full image reference when webhook.image.repository is empty.",
+      "description": "The image name for the cert-manager webhook.",
       "type": "string"
     },
     "helm-values.webhook.image.pullPolicy": {
@@ -2056,12 +2056,12 @@
       "type": "string"
     },
     "helm-values.webhook.image.registry": {
-      "description": "Deprecated: per-component registry override. Prefer using the global imageRegistry value.",
+      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
       "type": "string"
     },
     "helm-values.webhook.image.repository": {
       "default": "",
-      "description": "Full repository override for the cert-manager webhook image. When set, this takes precedence over imageRegistry, imageNamespace, and webhook.image.name.",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `webhook.image.name`).",
       "type": "string"
     },
     "helm-values.webhook.image.tag": {
