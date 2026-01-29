@@ -139,6 +139,10 @@ type ControllerConfiguration struct {
 	// a maximum of 32 hours) based on the number of consecutive failures and represents
 	// the minimum backoff applied.
 	CertificateRequestMinimumBackoffDuration time.Duration
+
+	// Defines the timeout a challenge authorization can take before the request will be
+	// canceled.
+	ChallengeAuthorizationTimeout time.Duration
 }
 
 type LeaderElectionConfig struct {
