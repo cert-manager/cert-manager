@@ -204,15 +204,11 @@ usage through tuple/variable indirection.
         {{- $repository = $image.repository -}}
         {{- /*
             Backwards compatibility: if image.registry is set and image.repository is not already
-            registry-qualified, prefix the repository with the registry.
-
-            The repository is treated as registry-qualified when the first path segment contains
-            a '.' (e.g. ghcr.io), contains a ':' (e.g. localhost:5000), or equals 'localhost'.
+            prefixed with that registry, prefix the repository with the registry.
         */ -}}
         {{- if $image.registry -}}
-            {{- $firstSegment := index (splitList "/" $repository) 0 -}}
-            {{- $repositoryIsRegistryQualified := or (contains "." $firstSegment) (contains ":" $firstSegment) (eq $firstSegment "localhost") -}}
-            {{- if not $repositoryIsRegistryQualified -}}
+            {{- $registryPrefix := printf "%s/" $image.registry -}}
+            {{- if not (hasPrefix $registryPrefix $repository) -}}
                 {{- $repository = printf "%s/%s" $image.registry $repository -}}
             {{- end -}}
         {{- end -}}
