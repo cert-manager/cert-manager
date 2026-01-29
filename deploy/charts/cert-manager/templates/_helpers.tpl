@@ -236,7 +236,11 @@ usage through tuple/variable indirection.
 
 {{- $repository -}}
 {{- if $image.digest -}}
-    {{- printf "@%s" $image.digest -}}
+    {{- if $image.tag -}}
+        {{- printf ":%s@%s" $image.tag $image.digest -}}
+    {{- else -}}
+        {{- printf "@%s" $image.digest -}}
+    {{- end -}}
 {{- else -}}
     {{- printf ":%s" (default $defaultTag $image.tag) -}}
 {{- end -}}

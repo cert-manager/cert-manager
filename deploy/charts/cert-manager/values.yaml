@@ -200,7 +200,8 @@ image:
   # +docs:property
   # tag: vX.Y.Z
 
-  # Setting a digest will override any tag.
+  # Setting a digest pins the image. If a tag is also set, the rendered reference will include
+  # both ("image:tag@digest"), though only the digest will be used for pulling.
   # +docs:property
   # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
@@ -1014,7 +1015,8 @@ webhook:
     # +docs:property
     # tag: vX.Y.Z
 
-    # Setting a digest will override any tag
+    # Setting a digest pins the image. If a tag is also set, the rendered reference will include
+    # both ("image:tag@digest"), though only the digest will be used for pulling.
     # +docs:property
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
@@ -1386,7 +1388,8 @@ cainjector:
     # +docs:property
     # tag: vX.Y.Z
 
-    # Setting a digest will override any tag.
+    # Setting a digest pins the image. If a tag is also set, the rendered reference will include
+    # both ("image:tag@digest"), though only the digest will be used for pulling.
     # +docs:property
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
@@ -1450,7 +1453,8 @@ acmesolver:
     # +docs:property
     # tag: vX.Y.Z
 
-    # Setting a digest will override any tag.
+    # Setting a digest pins the image. If a tag is also set, the rendered reference will include
+    # both ("image:tag@digest"), though only the digest will be used for pulling.
     # +docs:property
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
@@ -1588,7 +1592,8 @@ startupapicheck:
     # +docs:property
     # tag: vX.Y.Z
 
-    # Setting a digest will override any tag.
+    # Setting a digest pins the image. If a tag is also set, the rendered reference will include
+    # both ("image:tag@digest"), though only the digest will be used for pulling.
     # +docs:property
     # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 

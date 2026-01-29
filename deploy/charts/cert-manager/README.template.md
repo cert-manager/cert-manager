@@ -336,7 +336,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **image.pullPolicy** ~ `string`
 > Default value:
@@ -1358,7 +1358,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **webhook.image.digest** ~ `string`
 
-Setting a digest will override any tag
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **webhook.image.pullPolicy** ~ `string`
 > Default value:
@@ -1839,7 +1839,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **cainjector.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **cainjector.image.pullPolicy** ~ `string`
 > Default value:
@@ -1929,7 +1929,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **acmesolver.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **acmesolver.image.pullPolicy** ~ `string`
 > Default value:
@@ -2121,7 +2121,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **startupapicheck.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **startupapicheck.image.pullPolicy** ~ `string`
 > Default value:

@@ -220,7 +220,7 @@
       "type": "object"
     },
     "helm-values.acmesolver.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
       "type": "string"
     },
     "helm-values.acmesolver.image.name": {
@@ -434,7 +434,7 @@
       "type": "object"
     },
     "helm-values.cainjector.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
       "type": "string"
     },
     "helm-values.cainjector.image.name": {
@@ -978,7 +978,7 @@
       "type": "object"
     },
     "helm-values.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
       "type": "string"
     },
     "helm-values.image.name": {
@@ -1625,7 +1625,7 @@
       "type": "object"
     },
     "helm-values.startupapicheck.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.name": {
@@ -2042,7 +2042,7 @@
       "type": "object"
     },
     "helm-values.webhook.image.digest": {
-      "description": "Setting a digest will override any tag",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
       "type": "string"
     },
     "helm-values.webhook.image.name": {
