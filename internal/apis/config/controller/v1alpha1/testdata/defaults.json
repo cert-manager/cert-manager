@@ -67,11 +67,6 @@
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
 	},
-<<<<<<< HEAD
-	"certificateRequestMinimumBackoffDuration": "1h0m0s"
-||||||| 3a80a798a
-	}
-=======
+	"certificateRequestMinimumBackoffDuration": "1h0m0s",
 	"challengeAuthorizationTimeout": "2m0s"
->>>>>>> refs/heads/rb-feature/add-acme-challange-timeout-option
 }
