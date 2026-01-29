@@ -245,6 +245,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Duration of the initial certificate request backoff when a certificate request fails. "+
 		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
 
+	fs.DurationVar(&c.ChallengeAuthorizationTimeout, "challenge-authorization-timeout", c.ChallengeAuthorizationTimeout, ""+
+		"Defines the timeout a challenge authorization can take before the request will be "+
+		"canceled.")
+
 	logf.AddFlags(&c.Logging, fs)
 }
 
