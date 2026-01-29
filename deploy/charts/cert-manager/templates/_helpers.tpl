@@ -201,6 +201,20 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
     {{- $repository := "" -}}
     {{- if $image.repository -}}
         {{- $repository = $image.repository -}}
+        {{- /*
+            Backwards compatibility: if image.registry is set and image.repository is not already
+            registry-qualified, prefix the repository with the registry.
+
+            The repository is treated as registry-qualified when the first path segment contains
+            a '.' (e.g. ghcr.io), contains a ':' (e.g. localhost:5000), or equals 'localhost'.
+        */ -}}
+        {{- if $image.registry -}}
+            {{- $firstSegment := index (splitList "/" $repository) 0 -}}
+            {{- $repositoryIsRegistryQualified := or (contains "." $firstSegment) (contains ":" $firstSegment) (eq $firstSegment "localhost") -}}
+            {{- if not $repositoryIsRegistryQualified -}}
+                {{- $repository = printf "%s/%s" $image.registry $repository -}}
+            {{- end -}}
+        {{- end -}}
     {{- else -}}
         {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
         {{- $repository = $name -}}
