@@ -54,7 +54,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-startupapicheck
-          image: "{{ template "image" (tuple $ .Values.startupapicheck.image $.Chart.AppVersion) }}"
+          image: "{{ template "image" (tuple .Values.startupapicheck.image .Values.imageRegistry .Values.imageNamespace .Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.startupapicheck.image.pullPolicy }}
           args:
           - check

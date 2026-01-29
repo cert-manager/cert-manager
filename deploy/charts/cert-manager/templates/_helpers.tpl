@@ -181,22 +181,23 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
 */}}
 {{- define "image" -}}
 {{- /*
-    Calling convention:
+Calling convention:
 
-    - (tuple <root> <imageValues> <defaultTag>)
-        If <imageValues.repository> is set: use it as full repository path.
-        Else build repository as: <registry>/<namespace>/<imageValues.name>
-        where registry comes from .Values.imageRegistry (or legacy per-image .registry),
-        and namespace comes from .Values.imageNamespace.
+- (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultTag>)
+
+We intentionally pass imageRegistry/imageNamespace as explicit arguments rather than reading
+from `.Values` inside this helper, because `helm-tool lint` does not reliably track `.Values.*`
+usage through tuple/variable indirection.
 */ -}}
 
-{{- if ne (len .) 3 -}}
-  {{- fail (printf "ERROR: template \"image\" expects (tuple <root> <imageValues> <defaultTag>), got %d arguments" (len .)) -}}
+{{- if ne (len .) 4 -}}
+    {{- fail (printf "ERROR: template \"image\" expects (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultTag>), got %d arguments" (len .)) -}}
 {{- end -}}
 
-{{- $root := index . 0 -}}
-{{- $image := index . 1 -}}
-{{- $defaultTag := index . 2 -}}
+{{- $image := index . 0 -}}
+{{- $imageRegistry := index . 1 | default "" -}}
+{{- $imageNamespace := index . 2 | default "" -}}
+{{- $defaultTag := index . 3 -}}
 
     {{- $repository := "" -}}
     {{- if $image.repository -}}
@@ -219,12 +220,11 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
         {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
         {{- $repository = $name -}}
 
-        {{- $namespace := $root.Values.imageNamespace | default "" -}}
-        {{- if ne $namespace "" -}}
-            {{- $repository = printf "%s/%s" $namespace $repository -}}
+        {{- if ne $imageNamespace "" -}}
+            {{- $repository = printf "%s/%s" $imageNamespace $repository -}}
         {{- end -}}
 
-        {{- $registry := $root.Values.imageRegistry | default "" -}}
+        {{- $registry := $imageRegistry -}}
         {{- /* Legacy per-component override. Prefer global imageRegistry. */ -}}
         {{- if $image.registry -}}
             {{- $registry = $image.registry -}}
