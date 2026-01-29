@@ -123,6 +123,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableGatewayAPIXListenerSet != nil {
+		in, out := &in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet
+		*out = new(bool)
+		**out = **in
+	}
 	if in.CopiedAnnotationPrefixes != nil {
 		in, out := &in.CopiedAnnotationPrefixes, &out.CopiedAnnotationPrefixes
 		*out = make([]string, len(*in))
