@@ -294,7 +294,7 @@ The maximum number of challenges that can be scheduled as 'processing' at once.
 > quay.io
 > ```
 
-The container registry used for all cert-manager images by default. This can include path prefixes (for example: artifactory.example.com/docker).
+The container registry used for all cert-manager images by default. This can include path prefixes (e.g. `artifactory.example.com/docker`).
 
 #### **imageNamespace** ~ `string`
 > Default value:
@@ -302,11 +302,15 @@ The container registry used for all cert-manager images by default. This can inc
 > jetstack
 > ```
 
-The repository namespace used for all cert-manager images by default.
+The repository namespace used for all cert-manager images by default.  
+Examples:  
+- jetstack  
+- cert-manager
 
 #### **image.registry** ~ `string`
 
-Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+Deprecated: per-component registry override.  
+Prefer using the global `imageRegistry` value.
 
 #### **image.name** ~ `string`
 > Default value:
@@ -314,7 +318,8 @@ Deprecated: per-component registry override. Prefer using the global imageRegist
 > cert-manager-controller
 > ```
 
-The image name for the cert-manager controller. This is combined with imageRegistry and imageNamespace to form the full image reference when image.repository is empty.
+The image name for the cert-manager controller.  
+This is used (together with `imageRegistry` and `imageNamespace`) to construct the full image reference.
 
 #### **image.repository** ~ `string`
 > Default value:
@@ -322,7 +327,8 @@ The image name for the cert-manager controller. This is combined with imageRegis
 > ""
 > ```
 
-Full repository override for the cert-manager controller image. When set, this takes precedence over imageRegistry, imageNamespace, and image.name.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `image.name`).  
+Example: quay.io/jetstack/cert-manager-controller
 
 #### **image.tag** ~ `string`
 
@@ -1327,7 +1333,8 @@ Optionally set the IP family policy for the controller Service to configure dual
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
-Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+Deprecated: per-component registry override.  
+Prefer using the global `imageRegistry` value.
 
 #### **webhook.image.name** ~ `string`
 > Default value:
@@ -1335,7 +1342,7 @@ Deprecated: per-component registry override. Prefer using the global imageRegist
 > cert-manager-webhook
 > ```
 
-The image name for the cert-manager webhook. This is combined with imageRegistry and imageNamespace to form the full image reference when webhook.image.repository is empty.
+The image name for the cert-manager webhook.
 
 #### **webhook.image.repository** ~ `string`
 > Default value:
@@ -1343,7 +1350,7 @@ The image name for the cert-manager webhook. This is combined with imageRegistry
 > ""
 > ```
 
-Full repository override for the cert-manager webhook image. When set, this takes precedence over imageRegistry, imageNamespace, and webhook.image.name.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `webhook.image.name`).
 
 #### **webhook.image.tag** ~ `string`
 
@@ -1807,7 +1814,8 @@ Optional additional labels to add to the CA Injector Pods.
 Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
 
-Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+Deprecated: per-component registry override.  
+Prefer using the global `imageRegistry` value.
 
 #### **cainjector.image.name** ~ `string`
 > Default value:
@@ -1815,7 +1823,7 @@ Deprecated: per-component registry override. Prefer using the global imageRegist
 > cert-manager-cainjector
 > ```
 
-The image name for the cert-manager cainjector. This is combined with imageRegistry and imageNamespace to form the full image reference when cainjector.image.repository is empty.
+The image name for the cert-manager cainjector.
 
 #### **cainjector.image.repository** ~ `string`
 > Default value:
@@ -1823,7 +1831,7 @@ The image name for the cert-manager cainjector. This is combined with imageRegis
 > ""
 > ```
 
-Full repository override for the cert-manager cainjector image. When set, this takes precedence over imageRegistry, imageNamespace, and cainjector.image.name.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `cainjector.image.name`).
 
 #### **cainjector.image.tag** ~ `string`
 
@@ -1896,7 +1904,8 @@ enableServiceLinks indicates whether information about services should be inject
 
 #### **acmesolver.image.registry** ~ `string`
 
-Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+Deprecated: per-component registry override.  
+Prefer using the global `imageRegistry` value.
 
 #### **acmesolver.image.name** ~ `string`
 > Default value:
@@ -1904,7 +1913,7 @@ Deprecated: per-component registry override. Prefer using the global imageRegist
 > cert-manager-acmesolver
 > ```
 
-The image name for the cert-manager acmesolver. This is combined with imageRegistry and imageNamespace to form the full image reference when acmesolver.image.repository is empty.
+The image name for the cert-manager acmesolver.
 
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
@@ -1912,7 +1921,7 @@ The image name for the cert-manager acmesolver. This is combined with imageRegis
 > ""
 > ```
 
-Full repository override for the cert-manager acmesolver image. When set, this takes precedence over imageRegistry, imageNamespace, and acmesolver.image.name.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `acmesolver.image.name`).
 
 #### **acmesolver.image.tag** ~ `string`
 
@@ -2087,7 +2096,8 @@ tolerations:
 Optional additional labels to add to the startupapicheck Pods.
 #### **startupapicheck.image.registry** ~ `string`
 
-Deprecated: per-component registry override. Prefer using the global imageRegistry value.
+Deprecated: per-component registry override.  
+Prefer using the global `imageRegistry` value.
 
 #### **startupapicheck.image.name** ~ `string`
 > Default value:
@@ -2095,7 +2105,7 @@ Deprecated: per-component registry override. Prefer using the global imageRegist
 > cert-manager-startupapicheck
 > ```
 
-The image name for the cert-manager startupapicheck. This is combined with imageRegistry and imageNamespace to form the full image reference when startupapicheck.image.repository is empty.
+The image name for the cert-manager startupapicheck.
 
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
@@ -2103,7 +2113,7 @@ The image name for the cert-manager startupapicheck. This is combined with image
 > ""
 > ```
 
-Full repository override for the cert-manager startupapicheck image. When set, this takes precedence over imageRegistry, imageNamespace, and startupapicheck.image.name.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `startupapicheck.image.name`).
 
 #### **startupapicheck.image.tag** ~ `string`
 
