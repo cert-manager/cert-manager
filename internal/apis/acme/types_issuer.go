@@ -97,6 +97,11 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	DisableAccountKeyGeneration bool
 
+	// AccountPrivateKey contains the configuration for the ACME account private key.
+	// If not specified, defaults to RSA with 2048 bit key size.
+	// +optional
+	AccountPrivateKey *AccountPrivateKey
+
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
@@ -138,6 +143,31 @@ const (
 	HS256 HMACKeyAlgorithm = "HS256"
 	HS384 HMACKeyAlgorithm = "HS384"
 	HS512 HMACKeyAlgorithm = "HS512"
+)
+
+// AccountPrivateKey specifies the configuration for the ACME account private key.
+type AccountPrivateKey struct {
+	// Algorithm is the algorithm used for the ACME account private key.
+	// Supported values are "RSA" and "ECDSA".
+	// If not specified, defaults to "RSA".
+	// +optional
+	Algorithm AccountKeyAlgorithm
+
+	// Size is the key bit size of the account private key.
+	// If `algorithm` is set to `RSA`, valid values are any integer between 2048 and 8192 (inclusive),
+	// and will default to 2048 if not specified.
+	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, corresponding to the
+	// P-256, P-384 and P-521 curves respectively, and will default to 256 if not specified.
+	// +optional
+	Size int
+}
+
+// AccountKeyAlgorithm is the name of a key algorithm used for the ACME account key.
+type AccountKeyAlgorithm string
+
+const (
+	RSAAccountKeyAlgorithm   AccountKeyAlgorithm = "RSA"
+	ECDSAAccountKeyAlgorithm AccountKeyAlgorithm = "ECDSA"
 )
 
 // Configures an issuer to solve challenges using the specified options.
