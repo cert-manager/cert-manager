@@ -28,6 +28,11 @@ import (
 // Funcs returns the fuzzer functions for the apps api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 	return []any{
+		func(s *acme.ACMEIssuer, c randfill.Continue) {
+			c.FillNoCustom(s) // fuzz self without calling this function again
+			// Ensure AccountPrivateKey is left empty to match JSON roundtrip behavior with omitempty
+			s.AccountPrivateKey = nil
+		},
 		func(s *acme.Order, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 

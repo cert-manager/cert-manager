@@ -36,6 +36,8 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=acme.cert-manager.io, Version=v1
+	case v1.SchemeGroupVersion.WithKind("AccountPrivateKey"):
+		return &acmev1.AccountPrivateKeyApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ACMEAuthorization"):
 		return &acmev1.ACMEAuthorizationApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ACMEChallenge"):
