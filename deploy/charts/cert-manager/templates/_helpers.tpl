@@ -221,10 +221,6 @@ usage through tuple/variable indirection.
         {{- end -}}
 
         {{- $registry := $imageRegistry -}}
-        {{- /* Legacy per-component override. Prefer global imageRegistry. */ -}}
-        {{- if $image.registry -}}
-            {{- $registry = $image.registry -}}
-        {{- end -}}
         {{- if ne $registry "" -}}
             {{- $repository = printf "%s/%s" $registry $repository -}}
         {{- end -}}
