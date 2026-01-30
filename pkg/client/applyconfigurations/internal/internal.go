@@ -708,6 +708,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuer
   map:
     fields:
+    - name: accountPrivateKey
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.AccountPrivateKey
     - name: caBundle
       type:
         scalar: string
@@ -911,6 +914,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: uri
       type:
         scalar: string
+- name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.AccountPrivateKey
+  map:
+    fields:
+    - name: algorithm
+      type:
+        scalar: string
+    - name: size
+      type:
+        scalar: numeric
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.AzureManagedIdentity
   map:
     fields:
