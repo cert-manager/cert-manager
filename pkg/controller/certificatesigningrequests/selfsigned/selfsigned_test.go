@@ -275,7 +275,7 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedEvents: []string{
-					`Warning ErrorParsingKey Failed to parse signing key from secret default-unit-test-ns/test-secret: error decoding private key PEM block`,
+					`Warning ErrorParsingKey Failed to parse signing key from secret default-unit-test-ns/test-secret: error decoding private key PEM block: no PEM data was found in given input`,
 				},
 
 				ExpectedActions: []testpkg.Action{
@@ -320,7 +320,7 @@ func TestProcessItem(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				KubeObjects:        []runtime.Object{csrBundle.secret},
 				ExpectedEvents: []string{
-					"Warning ErrorGenerating Error generating certificate template: error decoding certificate request PEM block",
+					"Warning ErrorGenerating Error generating certificate template: error decoding certificate request PEM block: no PEM data was found in given input",
 				},
 
 				ExpectedActions: []testpkg.Action{
@@ -364,7 +364,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorGenerating",
-								Message:            "Error generating certificate template: error decoding certificate request PEM block",
+								Message:            "Error generating certificate template: error decoding certificate request PEM block: no PEM data was found in given input",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
@@ -451,7 +451,7 @@ func TestProcessItem(t *testing.T) {
 				}),
 				gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
 			),
-			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error) {
 				return nil, nil, errors.New("this is a signing error")
 			},
 
@@ -522,7 +522,7 @@ func TestProcessItem(t *testing.T) {
 				}),
 				gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
 			),
-			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error) {
 				return []byte("signed-cert"), nil, nil
 			},
 

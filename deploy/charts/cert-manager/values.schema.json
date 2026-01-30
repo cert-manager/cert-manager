@@ -57,6 +57,9 @@
         "extraArgs": {
           "$ref": "#/$defs/helm-values.extraArgs"
         },
+        "extraContainers": {
+          "$ref": "#/$defs/helm-values.extraContainers"
+        },
         "extraEnv": {
           "$ref": "#/$defs/helm-values.extraEnv"
         },
@@ -101,6 +104,9 @@
         },
         "namespace": {
           "$ref": "#/$defs/helm-values.namespace"
+        },
+        "networkPolicy": {
+          "$ref": "#/$defs/helm-values.networkPolicy"
         },
         "no_proxy": {
           "$ref": "#/$defs/helm-values.no_proxy"
@@ -280,6 +286,9 @@
         "image": {
           "$ref": "#/$defs/helm-values.cainjector.image"
         },
+        "networkPolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy"
+        },
         "nodeSelector": {
           "$ref": "#/$defs/helm-values.cainjector.nodeSelector"
         },
@@ -429,6 +438,72 @@
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion will be used.",
       "type": "string"
     },
+    "helm-values.cainjector.networkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.egress"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.enabled"
+        },
+        "ingress": {
+          "$ref": "#/$defs/helm-values.cainjector.networkPolicy.ingress"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.networkPolicy.egress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            },
+            {
+              "port": 443,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "UDP"
+            },
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Egress rule for the cainjector network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.cainjector.networkPolicy.enabled": {
+      "default": false,
+      "description": "Create network policies for the cainjector.",
+      "type": "boolean"
+    },
+    "helm-values.cainjector.networkPolicy.ingress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": "http-metrics",
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Ingress rule for the webhook cainjector policy.\nBy default all pods are allowed access to:\n  http-metrics port",
+      "items": {},
+      "type": "array"
+    },
     "helm-values.cainjector.nodeSelector": {
       "default": {
         "kubernetes.io/os": "linux"
@@ -451,6 +526,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -465,6 +543,10 @@
     },
     "helm-values.cainjector.podDisruptionBudget.minAvailable": {
       "description": "`minAvailable` configures the minimum available pods for disruptions. It can either be set to\nan integer (e.g., 1) or a percentage value (e.g., 25%).\nCannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.cainjector.podLabels": {
       "default": {},
@@ -579,7 +661,7 @@
     },
     "helm-values.config": {
       "default": {},
-      "description": "This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\nconfig:\n  apiVersion: controller.config.cert-manager.io/v1alpha1\n  kind: ControllerConfiguration\n  logging:\n    verbosity: 2\n    format: text\n  leaderElectionConfig:\n    namespace: kube-system\n  kubernetesAPIQPS: 9000\n  kubernetesAPIBurst: 9000\n  numberOfConcurrentWorkers: 200\n  enableGatewayAPI: true\n  # Feature gates as of v1.18.1. Listed with their default values.\n  # See https://cert-manager.io/docs/cli/controller/\n  featureGates:\n    AdditionalCertificateOutputFormats: true # GA - default=true\n    AllAlpha: false # ALPHA - default=false\n    AllBeta: false # BETA - default=false\n    ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false\n    ExperimentalGatewayAPISupport: true # BETA - default=true\n    LiteralCertificateSubject: true # BETA - default=true\n    NameConstraints: true # BETA - default=true\n    OtherNames: false # ALPHA - default=false\n    SecretsFilteredCaching: true # BETA - default=true\n    ServerSideApply: false # ALPHA - default=false\n    StableCertificateRequestName: true # BETA - default=true\n    UseCertificateRequestBasicConstraints: false # ALPHA - default=false\n    UseDomainQualifiedFinalizer: true # GA - default=true\n    ValidateCAA: false # ALPHA - default=false\n    DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true\n    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true\n  # Configure the metrics server for TLS\n  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls\n  metricsTLSConfig:\n    dynamic:\n      secretNamespace: \"cert-manager\"\n      secretName: \"cert-manager-metrics-ca\"\n      dnsNames:\n      - cert-manager-metrics",
+      "description": "This property is used to configure options for the controller pod. This allows setting options that would usually be provided using flags.\n\nIf `apiVersion` and `kind` are unspecified they default to the current latest version (currently `controller.config.cert-manager.io/v1alpha1`). You can pin the version by specifying the `apiVersion` yourself.\n\nFor example:\nconfig:\n  apiVersion: controller.config.cert-manager.io/v1alpha1\n  kind: ControllerConfiguration\n  logging:\n    verbosity: 2\n    format: text\n  leaderElectionConfig:\n    namespace: kube-system\n  kubernetesAPIQPS: 9000\n  kubernetesAPIBurst: 9000\n  numberOfConcurrentWorkers: 200\n  enableGatewayAPI: true\n  # Feature gates as of v1.20.0. Listed with their default values.\n  # See https://cert-manager.io/docs/cli/controller/\n  featureGates:\n    AllAlpha: false # ALPHA - default=false\n    AllBeta: false # BETA - default=false\n    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true\n    ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false\n    ExperimentalGatewayAPISupport: true # BETA - default=true\n    LiteralCertificateSubject: true # BETA - default=true\n    NameConstraints: true # BETA - default=true\n    OtherNames: true # BETA - default=true\n    SecretsFilteredCaching: true # BETA - default=true\n    ServerSideApply: false # ALPHA - default=false\n    StableCertificateRequestName: true # BETA - default=true\n    UseCertificateRequestBasicConstraints: false # ALPHA - default=false\n  # Configure the metrics server for TLS\n  # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls\n  metricsTLSConfig:\n    dynamic:\n      secretNamespace: \"cert-manager\"\n      secretName: \"cert-manager-metrics-ca\"\n      dnsNames:\n      - cert-manager-metrics",
       "type": "object"
     },
     "helm-values.containerSecurityContext": {
@@ -662,6 +744,12 @@
       "items": {},
       "type": "array"
     },
+    "helm-values.extraContainers": {
+      "default": [],
+      "description": "Extra containers to add to the pod spec in the deployment of the cert-manager controller. For example, to deploy the [aws_signing_helper](https://github.com/aws/rolesanywhere-credential-helper) (replacing the ARNs as relevant):\nextraEnv:\n  - name: AWS_EC2_METADATA_SERVICE_ENDPOINT\n  - value: http://127.0.0.1:9911\nextraContainers:\n  - name: rolesanywhere-credential-helper\n    image: public.ecr.aws/rolesanywhere/credential-helper:latest\n    command: [aws_signing_helper]\n    args:\n      - serve\n      - --private-key\n      - /etc/cert/tls.key\n      - --certificate\n      - /etc/cert/tls.crt\n      - --role-arn\n      - $ROLE_ARN\n      - --profile-arn\n      - $PROFILE_ARN\n      - --trust-anchor-arn\n      - $TRUST_ANCHOR_ARN\n    volumeMounts:\n      - name: cert\n        mountPath: /etc/cert/\n        readOnly: true\nvolumes:\n  - name: cert\n    secret:\n      secretName: cert",
+      "items": {},
+      "type": "array"
+    },
     "helm-values.extraEnv": {
       "default": [],
       "description": "Additional environment variables to pass to cert-manager controller binary.\nFor example:\nextraEnv:\n- name: SOME_VAR\n  value: 'some value'",
@@ -688,6 +776,9 @@
       "properties": {
         "commonLabels": {
           "$ref": "#/$defs/helm-values.global.commonLabels"
+        },
+        "hostUsers": {
+          "$ref": "#/$defs/helm-values.global.hostUsers"
         },
         "imagePullSecrets": {
           "$ref": "#/$defs/helm-values.global.imagePullSecrets"
@@ -720,6 +811,10 @@
       "default": {},
       "description": "Labels to apply to all resources.\nPlease note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress. For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).\nFor example, secretTemplate in CertificateSpec\nFor more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).",
       "type": "object"
+    },
+    "helm-values.global.hostUsers": {
+      "description": "Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.\n\nRequirements:\n  - Kubernetes ≥ 1.33, or\n  - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.\n\nSet to false to run pods in a user namespace without host access.\n\nSee [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.",
+      "type": "boolean"
     },
     "helm-values.global.imagePullSecrets": {
       "default": [],
@@ -768,7 +863,7 @@
     },
     "helm-values.global.nodeSelector": {
       "default": {},
-      "description": "Global node selector\n\nThe nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nIf a component-specific nodeSelector is also set, it will take precedence.",
+      "description": "Global node selector\n\nThe nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nIf a component-specific nodeSelector is also set, it will be merged and take precedence.",
       "type": "object"
     },
     "helm-values.global.podSecurityPolicy": {
@@ -937,6 +1032,76 @@
       "description": "This namespace allows you to define where the services are installed into. If not set then they use the namespace of the release. This is helpful when installing cert manager as a chart dependency (sub chart).",
       "type": "string"
     },
+    "helm-values.networkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/$defs/helm-values.networkPolicy.egress"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.networkPolicy.enabled"
+        },
+        "ingress": {
+          "$ref": "#/$defs/helm-values.networkPolicy.ingress"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.networkPolicy.egress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": 80,
+              "protocol": "TCP"
+            },
+            {
+              "port": 443,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "TCP"
+            },
+            {
+              "port": 53,
+              "protocol": "UDP"
+            },
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Egress rule for the cert-manager network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.",
+      "items": {},
+      "type": "array"
+    },
+    "helm-values.networkPolicy.enabled": {
+      "default": false,
+      "description": "Create network policies for cert-manager.",
+      "type": "boolean"
+    },
+    "helm-values.networkPolicy.ingress": {
+      "default": [
+        {
+          "ports": [
+            {
+              "port": "http-metrics",
+              "protocol": "TCP"
+            },
+            {
+              "port": "http-healthz",
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "description": "Ingress rule for the cert-manager network policy.\nBy default all pods are allowed access to:\n  http-metrics and http-healthz ports",
+      "items": {},
+      "type": "array"
+    },
     "helm-values.no_proxy": {
       "description": "Configures the NO_PROXY environment variable where a HTTP proxy is required, but certain domains should be excluded.",
       "type": "string"
@@ -963,6 +1128,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -977,6 +1145,10 @@
     },
     "helm-values.podDisruptionBudget.minAvailable": {
       "description": "This configures the minimum available pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.podDnsConfig": {
       "description": "Pod DNS configuration. The podDnsConfig field is optional and can work with any podDnsPolicy settings. However, when a Pod's dnsPolicy is set to \"None\", the dnsConfig field has to be specified. For more information, see [Pod's DNS Config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config).",
@@ -1595,8 +1767,14 @@
         "affinity": {
           "$ref": "#/$defs/helm-values.webhook.affinity"
         },
+        "apiserverClientCertSubjects": {
+          "$ref": "#/$defs/helm-values.webhook.apiserverClientCertSubjects"
+        },
         "automountServiceAccountToken": {
           "$ref": "#/$defs/helm-values.webhook.automountServiceAccountToken"
+        },
+        "clientCAFile": {
+          "$ref": "#/$defs/helm-values.webhook.clientCAFile"
         },
         "config": {
           "$ref": "#/$defs/helm-values.webhook.config"
@@ -1606,6 +1784,9 @@
         },
         "deploymentAnnotations": {
           "$ref": "#/$defs/helm-values.webhook.deploymentAnnotations"
+        },
+        "enableClientVerification": {
+          "$ref": "#/$defs/helm-values.webhook.enableClientVerification"
         },
         "enableServiceLinks": {
           "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
@@ -1720,9 +1901,19 @@
       "description": "A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).\n\nFor example:\naffinity:\n  nodeAffinity:\n   requiredDuringSchedulingIgnoredDuringExecution:\n     nodeSelectorTerms:\n     - matchExpressions:\n       - key: foo.bar.com/role\n         operator: In\n         values:\n         - master",
       "type": "object"
     },
+    "helm-values.webhook.apiserverClientCertSubjects": {
+      "default": "",
+      "description": "Subject names to verify for the client certificate. Multiple values may be supplied as a comma-separated list.",
+      "type": "string"
+    },
     "helm-values.webhook.automountServiceAccountToken": {
       "description": "Automounting API credentials for a particular pod.",
       "type": "boolean"
+    },
+    "helm-values.webhook.clientCAFile": {
+      "default": "",
+      "description": "the client CA file to be used for verification",
+      "type": "string"
     },
     "helm-values.webhook.config": {
       "default": {},
@@ -1745,6 +1936,11 @@
     "helm-values.webhook.deploymentAnnotations": {
       "description": "Optional additional annotations to add to the webhook Deployment.",
       "type": "object"
+    },
+    "helm-values.webhook.enableClientVerification": {
+      "default": false,
+      "description": "enableClientVerification turns on client verification of requests made to the webhook server",
+      "type": "boolean"
     },
     "helm-values.webhook.enableServiceLinks": {
       "default": false,
@@ -1888,13 +2084,6 @@
               "port": 6443,
               "protocol": "TCP"
             }
-          ],
-          "to": [
-            {
-              "ipBlock": {
-                "cidr": "0.0.0.0/0"
-              }
-            }
           ]
         }
       ],
@@ -1910,16 +2099,23 @@
     "helm-values.webhook.networkPolicy.ingress": {
       "default": [
         {
-          "from": [
+          "ports": [
             {
-              "ipBlock": {
-                "cidr": "0.0.0.0/0"
-              }
+              "port": "https",
+              "protocol": "TCP"
+            },
+            {
+              "port": "healthcheck",
+              "protocol": "TCP"
+            },
+            {
+              "port": "http-metrics",
+              "protocol": "TCP"
             }
           ]
         }
       ],
-      "description": "Ingress rule for the webhook network policy. By default, it allows all inbound traffic.",
+      "description": "Ingress rule for the webhook network policy.\nBy default all pods are allowed access to:\n  https, http-metrics, and http-healthz ports",
       "items": {},
       "type": "array"
     },
@@ -1945,6 +2141,9 @@
         },
         "minAvailable": {
           "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.minAvailable"
+        },
+        "unhealthyPodEvictionPolicy": {
+          "$ref": "#/$defs/helm-values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy"
         }
       },
       "type": "object"
@@ -1959,6 +2158,10 @@
     },
     "helm-values.webhook.podDisruptionBudget.minAvailable": {
       "description": "This property configures the minimum available pods for disruptions. Can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%).\nIt cannot be used if `maxUnavailable` is set."
+    },
+    "helm-values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy": {
+      "description": "This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.",
+      "type": "string"
     },
     "helm-values.webhook.podLabels": {
       "default": {},

@@ -20,6 +20,10 @@ ifndef repo_name
 $(error repo_name is not set)
 endif
 
+ifndef golangci_lint_config
+$(error golangci_lint_config is not set)
+endif
+
 golangci_lint_override := $(dir $(lastword $(MAKEFILE_LIST)))/.golangci.override.yaml
 
 .PHONY: go-workspace
@@ -51,25 +55,30 @@ generate-go-mod-tidy: | $(NEEDS_GO)
 				echo "Running 'go mod tidy' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
 				$(GO) mod tidy || exit; \
+				$(GO) get toolchain@none || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
 
-shared_generate_targets += generate-go-mod-tidy
+shared_generate_targets := generate-go-mod-tidy $(shared_generate_targets)
 
-default_govulncheck_generate_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
-# The base directory used to copy the govulncheck GH action from. This can be
-# overwritten with an action with extra authentication or with a totally different
-# pipeline (eg. a GitLab pipeline).
-govulncheck_generate_base_dir ?= $(default_govulncheck_generate_base_dir)
+ifndef dont_generate_govulncheck
+
+govulncheck_base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
 
 .PHONY: generate-govulncheck
 ## Generate base files in the repository
 ## @category [shared] Generate/ Verify
 generate-govulncheck:
-	cp -r $(govulncheck_generate_base_dir)/. ./
+	cp -r $(govulncheck_base_dir)/. ./
+	cd $(govulncheck_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
 
 shared_generate_targets += generate-govulncheck
+
+endif # dont_generate_govulncheck
 
 .PHONY: verify-govulncheck
 ## Verify all Go modules for vulnerabilities using govulncheck
@@ -96,8 +105,6 @@ verify-govulncheck: | $(NEEDS_GOVULNCHECK)
 				echo ""; \
 			done
 
-ifdef golangci_lint_config
-
 .PHONY: generate-golangci-lint-config
 ## Generate a golangci-lint configuration file
 ## @category [shared] Generate/ Verify
@@ -110,7 +117,6 @@ generate-golangci-lint-config: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(bin_dir)/s
 	cp $(golangci_lint_config) $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) -i 'del(.linters.enable)' $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	$(YQ) eval-all -i '. as $$item ireduce ({}; . * $$item)' $(bin_dir)/scratch/golangci-lint.yaml.tmp $(golangci_lint_override)
-	$(YQ) -i '(.. | select(tag == "!!str")) |= sub("{{REPO-NAME}}", "$(repo_name)")' $(bin_dir)/scratch/golangci-lint.yaml.tmp
 	mv $(bin_dir)/scratch/golangci-lint.yaml.tmp $(golangci_lint_config)
 
 shared_generate_targets += generate-golangci-lint-config
@@ -140,11 +146,9 @@ fix-golangci-lint: | $(NEEDS_GOLANGCI-LINT) $(NEEDS_YQ) $(NEEDS_GCI) $(bin_dir)/
 	@find . -name go.mod -not \( -path "./$(bin_dir)/*" -or -path "./make/_shared/*" \) \
 		| while read d; do \
 				target=$$(dirname $${d}); \
-				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint fmt -c $(CURDIR)/$(golangci_lint_config)' in directory '$${target}'"; \
+				echo "Running 'GOVERSION=$(VENDORED_GO_VERSION) $(bin_dir)/tools/golangci-lint run --fix -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout)' in directory '$${target}'"; \
 				pushd "$${target}" >/dev/null; \
-				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) fmt -c $(CURDIR)/$(golangci_lint_config) || exit; \
+				GOVERSION=$(VENDORED_GO_VERSION) $(GOLANGCI-LINT) run --fix -c $(CURDIR)/$(golangci_lint_config) --timeout $(golangci_lint_timeout) || exit; \
 				popd >/dev/null; \
 				echo ""; \
 			done
-
-endif

@@ -100,7 +100,7 @@ type Details struct {
 	Namespace string
 }
 
-func (c *Chart) Setup(cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+func (c *Chart) Setup(_ context.Context, cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	var err error
 
 	c.config = cfg

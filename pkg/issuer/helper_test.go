@@ -82,6 +82,7 @@ func TestGetGenericIssuer(t *testing.T) {
 	for _, row := range tests {
 		t.Run(row.Name, func(t *testing.T) {
 			b := test.Builder{
+				T:                  t,
 				CertManagerObjects: row.CMObjects,
 			}
 			b.Init()
@@ -99,7 +100,7 @@ func TestGetGenericIssuer(t *testing.T) {
 			stopCh := make(chan struct{})
 			defer close(stopCh)
 
-			actual, err := c.GetGenericIssuer(cmmeta.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
+			actual, err := c.GetGenericIssuer(cmmeta.IssuerReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
 			if err != nil && !row.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}

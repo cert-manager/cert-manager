@@ -32,17 +32,11 @@ import (
 func handleGenericIssuerFunc(
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	orderLister cmacmelisters.OrderLister,
-) func(interface{}) {
-	return func(obj interface{}) {
-		iss, ok := obj.(cmapi.GenericIssuer)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))
-			return
-		}
-
+) func(cmapi.GenericIssuer) {
+	return func(iss cmapi.GenericIssuer) {
 		certs, err := ordersForGenericIssuer(iss, orderLister)
 		if err != nil {
-			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
+			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetNamespace(), iss.GetName()))
 			return
 		}
 		for _, crt := range certs {
@@ -69,11 +63,11 @@ func ordersForGenericIssuer(iss cmapi.GenericIssuer, orderLister cmacmelisters.O
 			continue
 		}
 		if !isClusterIssuer {
-			if o.Namespace != iss.GetObjectMeta().Namespace {
+			if o.Namespace != iss.GetNamespace() {
 				continue
 			}
 		}
-		if o.Spec.IssuerRef.Name != iss.GetObjectMeta().Name {
+		if o.Spec.IssuerRef.Name != iss.GetName() {
 			continue
 		}
 		affected = append(affected, o)

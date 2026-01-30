@@ -108,7 +108,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  baseIssuer.Kind,
@@ -201,7 +201,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
+					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -213,7 +213,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
+								Message:            "Failed to initialise vault client for signing: error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),

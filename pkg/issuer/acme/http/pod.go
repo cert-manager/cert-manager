@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"hash/adler32"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -252,25 +253,19 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Labels = make(map[string]string)
 	}
 
-	for k, v := range podTempl.Labels {
-		pod.Labels[k] = v
-	}
+	maps.Copy(pod.Labels, podTempl.Labels)
 
 	if pod.Annotations == nil {
 		pod.Annotations = make(map[string]string)
 	}
 
-	for k, v := range podTempl.Annotations {
-		pod.Annotations[k] = v
-	}
+	maps.Copy(pod.Annotations, podTempl.Annotations)
 
 	if pod.Spec.NodeSelector == nil {
 		pod.Spec.NodeSelector = make(map[string]string)
 	}
 
-	for k, v := range podTempl.Spec.NodeSelector {
-		pod.Spec.NodeSelector[k] = v
-	}
+	maps.Copy(pod.Spec.NodeSelector, podTempl.Spec.NodeSelector)
 
 	if pod.Spec.Tolerations == nil {
 		pod.Spec.Tolerations = []corev1.Toleration{}
@@ -307,6 +302,25 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.SecurityContext.Sysctls = podTempl.Spec.SecurityContext.Sysctls
 		pod.Spec.SecurityContext.FSGroupChangePolicy = podTempl.Spec.SecurityContext.FSGroupChangePolicy
 		pod.Spec.SecurityContext.SeccompProfile = podTempl.Spec.SecurityContext.SeccompProfile
+	}
+
+	// Merge container resources based on precedence:
+	// 1. If pod template resources are set, use them (highest priority)
+	// 2. Otherwise use values from ACMEOptions (already set in the 'buildDefaultPod' function)
+	if podTempl.Spec.Resources != nil {
+		container := &pod.Spec.Containers[0]
+		if podTempl.Spec.Resources.Requests != nil {
+			if container.Resources.Requests == nil {
+				container.Resources.Requests = make(corev1.ResourceList)
+			}
+			maps.Copy(container.Resources.Requests, podTempl.Spec.Resources.Requests)
+		}
+		if podTempl.Spec.Resources.Limits != nil {
+			if container.Resources.Limits == nil {
+				container.Resources.Limits = make(corev1.ResourceList)
+			}
+			maps.Copy(container.Resources.Limits, podTempl.Spec.Resources.Limits)
+		}
 	}
 
 	return pod

@@ -57,7 +57,7 @@ certmanager_clock_time_seconds %f
 			metricName: "certmanager_clock_time_seconds_gauge",
 			metric:     m.clockTimeSecondsGauge,
 			expected: fmt.Sprintf(`
-# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC).
+# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC). Gauge form of the deprecated clock_time_seconds counter. No labels.
 # TYPE certmanager_clock_time_seconds_gauge gauge
 certmanager_clock_time_seconds_gauge %f
 	`, float64(fixedClock.Now().Unix())),
@@ -92,7 +92,7 @@ func Test_ACMEChallenges(t *testing.T) {
 		gen.SetChallengeNamespace("test-challenge"),
 	))
 
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	factory := externalversions.NewSharedInformerFactory(fakeClient, 0)
 	challengesInformer := factory.Acme().V1().Challenges()
 	for _, ch := range challenges {

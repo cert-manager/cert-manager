@@ -19,20 +19,22 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&cmapi.Certificate{}, func(obj any) { SetObjectDefaults_Certificate(obj.(*cmapi.Certificate)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateList{}, func(obj any) { SetObjectDefaults_CertificateList(obj.(*cmapi.CertificateList)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequest{}, func(obj any) { SetObjectDefaults_CertificateRequest(obj.(*cmapi.CertificateRequest)) })
+	scheme.AddTypeDefaultingFunc(&cmapi.CertificateRequestList{}, func(obj any) {
+		SetObjectDefaults_CertificateRequestList(obj.(*cmapi.CertificateRequestList))
+	})
 	return RegisterDefaults(scheme)
 }
 
 // SetRuntimeDefaults_Certificate mutates the supplied Certificate object,
 // setting defaults for certain missing fields:
-// - Sets the default  private key rotation policy to:
-//   - Always, if the DefaultPrivateKeyRotationPolicyAlways feature is enabled
-//   - Never, if the DefaultPrivateKeyRotationPolicyAlways feature is disabled.
+// - Sets the default  private key rotation policy to Always
 //
 // NOTE: Do not supply Certificate objects retrieved from a client-go lister
 // because you may corrupt the cache. Do a DeepCopy first. See:
@@ -43,8 +45,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 // confusing because we don't (yet) have a defaulting webhook or use API default
 // annotations.
 //
-// TODO(wallrj): When DefaultPrivateKeyRotationPolicyAlways is GA, the default
-// value can probably be added as an API default by adding:
+// TODO(wallrj): Use an API default when we have them implemented, by adding:
 //
 //	`// +default="Always"`
 //
@@ -54,10 +55,39 @@ func SetRuntimeDefaults_Certificate(in *cmapi.Certificate) {
 		in.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
 	if in.Spec.PrivateKey.RotationPolicy == "" {
-		defaultRotationPolicy := cmapi.RotationPolicyNever
-		if utilfeature.DefaultFeatureGate.Enabled(feature.DefaultPrivateKeyRotationPolicyAlways) {
-			defaultRotationPolicy = cmapi.RotationPolicyAlways
-		}
+		defaultRotationPolicy := cmapi.RotationPolicyAlways
 		in.Spec.PrivateKey.RotationPolicy = defaultRotationPolicy
+	}
+}
+
+func SetObjectDefaults_Certificate(in *cmapi.Certificate) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_CertificateList(in *cmapi.CertificateList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Certificate(a)
+	}
+}
+
+func SetObjectDefaults_CertificateRequest(in *cmapi.CertificateRequest) {
+	if in.Spec.IssuerRef.Kind == "" {
+		in.Spec.IssuerRef.Kind = "Issuer"
+	}
+	if in.Spec.IssuerRef.Group == "" {
+		in.Spec.IssuerRef.Group = "cert-manager.io"
+	}
+}
+
+func SetObjectDefaults_CertificateRequestList(in *cmapi.CertificateRequestList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_CertificateRequest(a)
 	}
 }

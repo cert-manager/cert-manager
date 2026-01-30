@@ -33,6 +33,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -101,14 +101,14 @@ type Details struct {
 	EnforceMtls bool
 }
 
-func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
+func convertInterfaceToDetails(unmarshalled any) (Details, error) {
 	jsonEncoded, err := json.Marshal(unmarshalled)
 	if err != nil {
 		return Details{}, err
 	}
 
 	var details Details
-	err = json.Unmarshal(jsonEncoded, &details)
+	err = json.Unmarshal(jsonEncoded, &details) //nolint:musttag
 	if err != nil {
 		return Details{}, err
 	}
@@ -116,7 +116,7 @@ func convertInterfaceToDetails(unmarshalled interface{}) (Details, error) {
 	return details, nil
 }
 
-func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+func (v *Vault) Setup(ctx context.Context, cfg *config.Config, leaderData ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
 	if v.Name == "" {
 		return nil, fmt.Errorf("'Name' field must be set on Vault addon")
 	}
@@ -266,7 +266,7 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 		)
 	}
 
-	_, err := v.chart.Setup(cfg)
+	_, err := v.chart.Setup(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +298,7 @@ func (v *Vault) Setup(cfg *config.Config, leaderData ...internal.AddonTransferab
 			return nil, fmt.Errorf("path to kubectl must be specified")
 		}
 		v.proxy = newProxy(
+			ctx,
 			v.Base.Details().KubeClient,
 			v.Base.Details().KubeConfig,
 			v.Namespace,

@@ -66,7 +66,7 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
+func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error {
 	// if DigitalOcean does not have this zone then we will find out later
 	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
@@ -83,7 +83,6 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 		if record.Type == "TXT" && record.Data == value {
 			return nil
 		}
-
 	}
 
 	createRequest := &godo.DomainRecordEditRequest{
@@ -146,10 +145,7 @@ func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.Do
 
 	// The record Name doesn't contain the zoneName, so
 	// lets remove it before filtering the array of record
-	targetName := fqdn
-	if strings.HasSuffix(fqdn, zoneName) {
-		targetName = fqdn[:len(fqdn)-len(zoneName)]
-	}
+	targetName := strings.TrimSuffix(fqdn, zoneName)
 
 	for _, record := range allRecords {
 		if util.ToFqdn(record.Name) == targetName {

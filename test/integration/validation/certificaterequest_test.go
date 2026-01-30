@@ -20,6 +20,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cert-manager/cert-manager/pkg/api"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,10 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	"github.com/cert-manager/cert-manager/pkg/api"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var certGVK = schema.GroupVersionKind{
@@ -58,7 +58,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{},
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 				},
 			},
 			expectError: false,
@@ -77,7 +77,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 				},
 			},
 			expectError: false,
@@ -95,7 +95,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 							Usages:   []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 						},
 					}),
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 				},
 			},
 			expectError: true,
@@ -116,7 +116,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 				},
 			},
 			expectError: false,
@@ -135,7 +135,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageCodeSigning},
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 				},
 			},
 			expectError: true,
@@ -156,7 +156,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 						},
 					}),
 					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
-					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					IssuerRef: cmmeta.IssuerReference{Name: "test"},
 					Username:  "user-1",
 					Groups:    []string{"group-1", "group-2"},
 				},

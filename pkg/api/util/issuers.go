@@ -32,7 +32,7 @@ const (
 	IssuerVault string = "vault"
 	// IssuerSelfSigned is a self signing issuer
 	IssuerSelfSigned string = "selfsigned"
-	// IssuerVenafi uses Venafi Trust Protection Platform and Venafi Cloud
+	// IssuerVenafi uses CyberArk Certificate Manager
 	IssuerVenafi string = "venafi"
 )
 
@@ -51,11 +51,11 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 	case i.GetSpec().Venafi != nil:
 		return IssuerVenafi, nil
 	}
-	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
+	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetNamespace(), i.GetName())
 }
 
 // IssuerKind returns the kind of issuer for a certificate.
-func IssuerKind(ref cmmeta.ObjectReference) string {
+func IssuerKind(ref cmmeta.IssuerReference) string {
 	if ref.Kind == "" {
 		return cmapi.IssuerKind
 	}

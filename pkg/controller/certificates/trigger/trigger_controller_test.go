@@ -402,6 +402,9 @@ func Test_controller_ProcessItem(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// This is the default backoff duration set by the config API.
+			w.certificateRequestMinimumBackoffDuration = 1 * time.Hour
+
 			gotShouldReissueCalled := false
 			w.shouldReissue = func(i policies.Input) (string, string, bool) {
 				gotShouldReissueCalled = true
@@ -482,10 +485,11 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		givenCert   *cmapi.Certificate
-		givenNextCR *cmapi.CertificateRequest
-		wantBackoff bool
-		wantDelay   time.Duration
+		givenCert       *cmapi.Certificate
+		givenNextCR     *cmapi.CertificateRequest
+		wantBackoff     bool
+		backoffDuration time.Duration
+		wantDelay       time.Duration
 	}{
 		"no need to backoff from reissuing when the input request is nil": {
 			givenCert:   gen.Certificate("test", gen.SetCertificateNamespace("testns")),
@@ -815,10 +819,29 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			)),
 			wantBackoff: false,
 		},
+		"should not back off from reissuing if 1 issuance failed 16 minutes ago and custom back off is 15 minutes": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-16*time.Minute))),
+				gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+			),
+			givenNextCR: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+			)),
+			wantBackoff:     false,
+			backoffDuration: 15 * time.Minute,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(testr.New(t), clock, test.givenCert, test.givenNextCR)
+			if test.backoffDuration == 0 {
+				test.backoffDuration = 1 * time.Hour
+			}
+			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(testr.New(t), clock, test.givenCert, test.givenNextCR, test.backoffDuration)
 			assert.Equal(t, test.wantBackoff, gotBackoff)
 			assert.Equal(t, test.wantDelay, gotDelay)
 		})

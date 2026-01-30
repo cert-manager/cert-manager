@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	fakeregistry "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -604,11 +605,9 @@ func TestAcme_Setup(t *testing.T) {
 
 			// Verify issuer's state after Setup was called.
 			gotConditions := test.issuer.GetStatus().Conditions
-			// Issuer can only have a single condition, so no need to sort the
-			// conditions.
-			if !reflect.DeepEqual(gotConditions, test.expectedConditions) {
-				t.Errorf("Expected issuer's conditions: %#+v\ngot: %#+v",
-					test.expectedConditions, gotConditions)
+			diffErr := testutil.Diff(test.expectedConditions, gotConditions)
+			if diffErr != nil {
+				t.Errorf("Issuer conditions differ: %v", diffErr)
 			}
 
 			// Verify that the expected events were recorded.

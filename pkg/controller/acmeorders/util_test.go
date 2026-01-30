@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
@@ -54,29 +54,6 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		DNS01: &cmacme.ACMEChallengeSolverDNS01{
 			Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 				Email: "test-cloudflare-email",
-			},
-		},
-	}
-	nonMatchingSelectorSolver := cmacme.ACMEChallengeSolver{
-		Selector: &cmacme.CertificateDNSNameSelector{
-			MatchLabels: map[string]string{
-				"label":    "does-not-exist",
-				"does-not": "match",
-			},
-		},
-		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-			Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-				Name: "non-matching-selector-solver",
-			},
-		},
-	}
-	exampleComDNSNameSelectorSolver := cmacme.ACMEChallengeSolver{
-		Selector: &cmacme.CertificateDNSNameSelector{
-			DNSNames: []string{"example.com"},
-		},
-		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-			Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-				Name: "example-com-dns-name-selector-solver",
 			},
 		},
 	}
@@ -175,7 +152,45 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"should return an error if both ingress class and name override annotations are set": {
+		"should override the ingressClassName to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptr.To("test-ingressclassname-to-override"),
+						},
+					},
+				},
+			},
+		},
+		"should return an error if both ingress name and ingress class override annotations are set": {
 			acmeClient: basicACMEClient,
 			issuer: &cmapi.Issuer{
 				Spec: cmapi.IssuerSpec{
@@ -191,6 +206,91 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					Annotations: map[string]string{
 						cmacme.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
 						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress name and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if all ingress name, ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 					},
 				},
 				Spec: cmacme.OrderSpec{
@@ -235,144 +335,25 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Solver:  emptySelectorSolverDNS01,
 			},
 		},
-		"should use configured default solver when no others are present": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  emptySelectorSolverHTTP01,
-			},
-		},
-		"should use configured default solver when no others are present but selector is non-nil": {
-			acmeClient: basicACMEClient,
+		"should return an error if none match": {
 			issuer: &cmapi.Issuer{
 				Spec: cmapi.IssuerSpec{
 					IssuerConfig: cmapi.IssuerConfig{
 						ACME: &cmacme.ACMEIssuer{
 							Solvers: []cmacme.ACMEChallengeSolver{
 								{
-									Selector: &cmacme.CertificateDNSNameSelector{},
+									Selector: &cmacme.CertificateDNSNameSelector{
+										MatchLabels: map[string]string{
+											"label":    "does-not-exist",
+											"does-not": "match",
+										},
+									},
 									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "empty-selector-solver",
+											Name: "non-matching-selector-solver",
 										},
 									},
 								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "empty-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"should use configured default solver when others do not match": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverHTTP01,
-								nonMatchingSelectorSolver,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  emptySelectorSolverHTTP01,
-			},
-		},
-		"should use DNS01 solver over HTTP01 if challenge is of type DNS01": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverHTTP01,
-								emptySelectorSolverDNS01,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeDNS01,
-				DNSName: "example.com",
-				Token:   acmeChallengeDNS01.Token,
-				Solver:  emptySelectorSolverDNS01,
-			},
-		},
-		"should return an error if none match": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								nonMatchingSelectorSolver,
 							},
 						},
 					},
@@ -389,850 +370,6 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			expectedError: true,
 		},
-		"uses correct solver when selector explicitly names dnsName": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverHTTP01,
-								exampleComDNSNameSelectorSolver,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		"uses default solver if dnsName does not match": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverHTTP01,
-								exampleComDNSNameSelectorSolver,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"notexample.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "notexample.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "notexample.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  emptySelectorSolverHTTP01,
-			},
-		},
-		"if two solvers specify the same dnsName, the one with the most labels should be chosen": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								exampleComDNSNameSelectorSolver,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label": "exists",
-										},
-										DNSNames: []string{"example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dns-name-labels-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						MatchLabels: map[string]string{
-							"label": "exists",
-						},
-						DNSNames: []string{"example.com"},
-					},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "example-com-dns-name-labels-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"if one solver matches with dnsNames, and the other solver matches with labels, the dnsName solver should be chosen": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								exampleComDNSNameSelectorSolver,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label": "exists",
-										},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-labels-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		// identical to the test above, but the solvers are listed in reverse
-		// order to ensure that this behaviour isn't just incidental
-		"if one solver matches with dnsNames, and the other solver matches with labels, the dnsName solver should be chosen (solvers listed in reverse order)": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label": "exists",
-										},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-labels-selector-solver",
-										},
-									},
-								},
-								exampleComDNSNameSelectorSolver,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		"if one solver matches with dnsNames, and the other solver matches with 2 labels, the dnsName solver should be chosen": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								exampleComDNSNameSelectorSolver,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label":   "exists",
-											"another": "label",
-										},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-labels-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label":   "exists",
-						"another": "label",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		"should choose the solver with the most labels matching if multiple match": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label": "exists",
-										},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-labels-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label":   "exists",
-											"another": "matches",
-										},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-multiple-labels-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label":   "exists",
-						"another": "matches",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						MatchLabels: map[string]string{
-							"label":   "exists",
-							"another": "matches",
-						},
-					},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "example-com-multiple-labels-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"should match wildcard dnsName solver if authorization has Wildcard=true": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverDNS01,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSNames: []string{"*.example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "example-com-wc-dnsname-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"*.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Wildcard:   ptr.To(true),
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     cmacme.ACMEChallengeTypeDNS01,
-				DNSName:  "example.com",
-				Wildcard: true,
-				Token:    acmeChallengeDNS01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSNames: []string{"*.example.com"},
-					},
-					DNS01: &cmacme.ACMEChallengeSolverDNS01{
-						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "example-com-wc-dnsname-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"dnsName selectors should take precedence over dnsZone selectors": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								exampleComDNSNameSelectorSolver,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "com-dnszone-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		"dnsName selectors should take precedence over dnsZone selectors (reversed order)": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "com-dnszone-selector-solver",
-										},
-									},
-								},
-								exampleComDNSNameSelectorSolver,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
-		"should allow matching with dnsZones": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								emptySelectorSolverDNS01,
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "example-com-dnszone-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.example.com",
-				Wildcard:   ptr.To(true),
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     cmacme.ACMEChallengeTypeDNS01,
-				DNSName:  "www.example.com",
-				Wildcard: true,
-				Token:    acmeChallengeDNS01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSZones: []string{"example.com"},
-					},
-					DNS01: &cmacme.ACMEChallengeSolverDNS01{
-						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "example-com-dnszone-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"most specific dnsZone should be selected if multiple match": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "example-com-dnszone-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"prod.example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "prod-example-com-dnszone-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.prod.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     cmacme.ACMEChallengeTypeDNS01,
-				DNSName:  "www.prod.example.com",
-				Wildcard: true,
-				Token:    acmeChallengeDNS01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSZones: []string{"prod.example.com"},
-					},
-					DNS01: &cmacme.ACMEChallengeSolverDNS01{
-						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "prod-example-com-dnszone-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"most specific dnsZone should be selected if multiple match (reversed)": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"prod.example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "prod-example-com-dnszone-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-									},
-									DNS01: &cmacme.ACMEChallengeSolverDNS01{
-										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-											Email: "example-com-dnszone-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.prod.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     cmacme.ACMEChallengeTypeDNS01,
-				DNSName:  "www.prod.example.com",
-				Wildcard: true,
-				Token:    acmeChallengeDNS01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSZones: []string{"prod.example.com"},
-					},
-					DNS01: &cmacme.ACMEChallengeSolverDNS01{
-						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "prod-example-com-dnszone-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"if two solvers specify the same dnsZone, the one with the most labels should be chosen": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnszone-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										MatchLabels: map[string]string{
-											"label": "exists",
-										},
-										DNSZones: []string{"example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnszone-labels-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
-				},
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "www.example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						MatchLabels: map[string]string{
-							"label": "exists",
-						},
-						DNSZones: []string{"example.com"},
-					},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "example-com-dnszone-labels-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"if both solvers match dnsNames, and one also matches dnsZones, choose the one that matches dnsZones": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSNames: []string{"www.example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnsname-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-										DNSNames: []string{"www.example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnsname-dnszone-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "www.example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSZones: []string{"example.com"},
-						DNSNames: []string{"www.example.com"},
-					},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "example-com-dnsname-dnszone-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"if both solvers match dnsNames, and one also matches dnsZones, choose the one that matches dnsZones (reversed)": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSZones: []string{"example.com"},
-										DNSNames: []string{"www.example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnsname-dnszone-selector-solver",
-										},
-									},
-								},
-								{
-									Selector: &cmacme.CertificateDNSNameSelector{
-										DNSNames: []string{"www.example.com"},
-									},
-									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-											Name: "example-com-dnsname-selector-solver",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"www.example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "www.example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "www.example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver: cmacme.ACMEChallengeSolver{
-					Selector: &cmacme.CertificateDNSNameSelector{
-						DNSZones: []string{"example.com"},
-						DNSNames: []string{"www.example.com"},
-					},
-					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Name: "example-com-dnsname-dnszone-selector-solver",
-						},
-					},
-				},
-			},
-		},
-		"uses correct solver when selector explicitly names dnsName (reversed)": {
-			acmeClient: basicACMEClient,
-			issuer: &cmapi.Issuer{
-				Spec: cmapi.IssuerSpec{
-					IssuerConfig: cmapi.IssuerConfig{
-						ACME: &cmacme.ACMEIssuer{
-							Solvers: []cmacme.ACMEChallengeSolver{
-								exampleComDNSNameSelectorSolver,
-								emptySelectorSolverHTTP01,
-							},
-						},
-					},
-				},
-			},
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					DNSNames: []string{"example.com"},
-				},
-			},
-			authz: &cmacme.ACMEAuthorization{
-				Identifier: "example.com",
-				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
-			},
-			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    cmacme.ACMEChallengeTypeHTTP01,
-				DNSName: "example.com",
-				Token:   acmeChallengeHTTP01.Token,
-				Solver:  exampleComDNSNameSelectorSolver,
-			},
-		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -1245,7 +382,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				t.Errorf("expected to get an error, but got none")
 			}
 			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
-				t.Errorf("returned challenge spec was not as expected: %v", pretty.Diff(test.expectedChallengeSpec, cs))
+				t.Errorf("returned challenge spec was not as expected (-want +got):\n%s", cmp.Diff(test.expectedChallengeSpec, cs))
 			}
 		})
 	}

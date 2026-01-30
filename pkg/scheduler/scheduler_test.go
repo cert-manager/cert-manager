@@ -166,11 +166,9 @@ func TestConcurrentAdd(t *testing.T) {
 	queue.(*scheduledWorkQueue[int]).afterFunc = after.AfterFunc
 
 	for range 1000 {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			queue.Add(1, 1*time.Second)
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 

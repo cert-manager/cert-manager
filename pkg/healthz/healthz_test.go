@@ -196,7 +196,8 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
 
-			l, err := net.Listen("tcp", "127.0.0.1:0")
+			lc := net.ListenConfig{}
+			l, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 			require.NoError(t, err)
 
 			livezURL := "http://" + l.Addr().String() + "/livez/leaderElection"

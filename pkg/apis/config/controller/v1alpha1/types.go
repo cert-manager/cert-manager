@@ -33,6 +33,7 @@ type ControllerConfiguration struct {
 	KubeConfig string `json:"kubeConfig,omitempty"`
 
 	// apiServerHost is used to override the API server connection address.
+	//
 	// Deprecated: use `kubeConfig` instead.
 	APIServerHost string `json:"apiServerHost,omitempty"`
 
@@ -86,6 +87,11 @@ type ControllerConfiguration struct {
 	// as of 1.15).
 	EnableGatewayAPI *bool `json:"enableGatewayAPI,omitempty"`
 
+	// Specifies whether the XListenerSet controller should be enabled with-in cert-manager.
+	// This along with XListenerSet feature gate enabled allows the user to consume XListenerSet
+	// for self-service TLS.
+	EnableGatewayAPIXListenerSet *bool `json:"enableGatewayAPIXListenerSet,omitempty"`
+
 	// Specify which annotations should/shouldn't be copied from Certificate to
 	// CertificateRequest and Order, as well as from CertificateSigningRequest to
 	// Order, by passing a list of annotation key prefixes. A prefix starting with
@@ -128,16 +134,21 @@ type ControllerConfiguration struct {
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
 
 	// ingressShimConfig configures the behaviour of the ingress-shim controller
-	IngressShimConfig IngressShimConfig `json:"ingressShimConfig,omitempty"`
+	IngressShimConfig IngressShimConfig `json:"ingressShimConfig,omitzero"`
 
 	// acmeHTTP01Config configures the behaviour of the ACME HTTP01 challenge solver
-	ACMEHTTP01Config ACMEHTTP01Config `json:"acmeHTTP01Config,omitempty"`
+	ACMEHTTP01Config ACMEHTTP01Config `json:"acmeHTTP01Config,omitzero"`
 
 	// acmeDNS01Config configures the behaviour of the ACME DNS01 challenge solver
-	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitempty"`
+	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitzero"`
 
 	// pemSizeLimitsConfig configures the maximum sizes for PEM-encoded data
 	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitempty"`
+
+	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
+	// when a certificate request fails. This duration is exponentially increased
+	// (up to a maximum of 32 hours) based on the number of consecutive failures.
+	CertificateRequestMinimumBackoffDuration *sharedv1alpha1.Duration `json:"certificateRequestMinimumBackoffDuration,omitempty"`
 }
 
 type LeaderElectionConfig struct {

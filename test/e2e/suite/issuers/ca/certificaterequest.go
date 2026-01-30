@@ -23,15 +23,15 @@ import (
 	"net/url"
 	"time"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,7 +45,6 @@ func exampleURLs() (urls []*url.URL) {
 }
 
 var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
-	ctx := context.TODO()
 	f := framework.NewDefaultFramework("create-ca-certificate")
 	h := f.Helper()
 
@@ -59,15 +58,15 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 		[]byte{1, 1, 1, 1},
 	}
 
-	JustBeforeEach(func() {
+	JustBeforeEach(func(testingCtx context.Context) {
 		By("Creating an Issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerCASecretName(issuerSecretName))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
@@ -76,22 +75,22 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
-		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, issuerSecretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, issuerSecretName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when the CA is the root", func() {
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningKeypairSecret(issuerSecretName), metav1.CreateOptions{})
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, newSigningKeypairSecret(issuerSecretName), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should generate a valid certificate from CSR", func() {
+		It("should generate a valid certificate from CSR", func(testingCtx context.Context) {
 			certRequestClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 			By("Creating a CertificateRequest")
@@ -99,18 +98,18 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
-			_, err = certRequestClient.Create(ctx, cr, metav1.CreateOptions{})
+			_, err = certRequestClient.Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateRequestIssuedValidTLS(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
+			err = h.WaitCertificateRequestIssuedValidTLS(testingCtx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an ECDSA key from a RSA backed issuer", func() {
+		It("should be able to obtain an ECDSA key from a RSA backed issuer", func(testingCtx context.Context) {
 			certRequestClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 			By("Creating a CertificateRequest")
@@ -118,18 +117,18 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
-			_, err = certRequestClient.Create(ctx, cr, metav1.CreateOptions{})
+			_, err = certRequestClient.Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateRequestIssuedValidTLS(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
+			err = h.WaitCertificateRequestIssuedValidTLS(testingCtx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func() {
+		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func(testingCtx context.Context) {
 			certRequestClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 			By("Creating a CertificateRequest")
@@ -137,14 +136,14 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 90}),
 				gen.SetCertificateRequestCSR(csr),
 			)
-			_, err = certRequestClient.Create(ctx, cr, metav1.CreateOptions{})
+			_, err = certRequestClient.Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateRequestIssuedValidTLS(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
+			err = h.WaitCertificateRequestIssuedValidTLS(testingCtx, f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -165,18 +164,18 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			},
 		}
 		for _, v := range cases {
-			It("should generate a signed certificate valid for "+v.label, func() {
+			It("should generate a signed certificate valid for "+v.label, func(testingCtx context.Context) {
 				crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 				By("Creating a CertificateRequest with Usages")
 				csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(exampleDNSNames...), gen.SetCSRIPAddresses(exampleIPAddresses...), gen.SetCSRURIs(exampleURLs()...))
 				Expect(err).NotTo(HaveOccurred())
-				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
-				_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
+				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
+				_, err = crClient.Create(testingCtx, cr, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Verifying the CertificateRequest is valid")
-				err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Second*30, key)
+				err = h.WaitCertificateRequestIssuedValid(testingCtx, f.Namespace.Name, certificateRequestName, time.Second*30, key)
 				Expect(err).NotTo(HaveOccurred())
 				err = h.ValidateCertificateRequest(types.NamespacedName{
 					Namespace: f.Namespace.Name,

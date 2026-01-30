@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -96,7 +96,7 @@ func (t *tpp) createIssuer(ctx context.Context, f *framework.Framework) string {
 		Namespace: f.Namespace.Name,
 	}
 
-	_, err := t.Setup(f.Config)
+	_, err := t.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
@@ -118,7 +118,7 @@ func (t *tpp) createClusterIssuer(ctx context.Context, f *framework.Framework) s
 		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
-	_, err := t.Setup(f.Config)
+	_, err := t.Setup(ctx, f.Config)
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}

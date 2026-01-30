@@ -35,8 +35,8 @@ import (
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers  []string
-	recordClient      *dns.RecordSetsClient
-	zoneClient        *dns.ZonesClient
+	recordClient      RecordsClient
+	zoneClient        ZonesClient
 	resourceGroupName string
 	zoneName          string
 	log               logr.Logger
@@ -59,15 +59,18 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	if err != nil {
 		return nil, err
 	}
+	rcl := NewPublicRecordsClient(rc)
+
 	zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
 	if err != nil {
 		return nil, err
 	}
+	zcl := NewPublicZonesClient(zc)
 
 	return &DNSProvider{
 		dns01Nameservers:  dns01Nameservers,
-		recordClient:      rc,
-		zoneClient:        zc,
+		recordClient:      rcl,
+		zoneClient:        zcl,
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
 		log:               logf.Log.WithName("azure-dns"),
@@ -132,41 +135,44 @@ func getAuthorization(clientOpt policy.ClientOptions, clientID, clientSecret, te
 
 	cred, err := azidentity.NewManagedIdentityCredential(msiOpt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		return nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
 	}
 	return cred, nil
 }
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) error {
-	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
+	return c.updateTXTRecord(ctx, fqdn, func(set RecordSet) {
 		var found bool
-		for _, r := range set.Properties.TxtRecords {
-			if len(r.Value) > 0 && *r.Value[0] == value {
+		txtRecords := set.GetTXTRecords()
+		for _, r := range txtRecords {
+			if len(r) > 0 && *r[0] == value {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			set.Properties.TxtRecords = append(set.Properties.TxtRecords, &dns.TxtRecord{
-				Value: []*string{to.Ptr(value)},
+			txtRecords = append(txtRecords, []*string{
+				to.Ptr(value),
 			})
+			set.SetTXTRecords(txtRecords)
 		}
 	})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	return c.updateTXTRecord(ctx, fqdn, func(set *dns.RecordSet) {
-		var records []*dns.TxtRecord
-		for _, r := range set.Properties.TxtRecords {
-			if len(r.Value) > 0 && *r.Value[0] != value {
+	return c.updateTXTRecord(ctx, fqdn, func(set RecordSet) {
+		txtRecords := set.GetTXTRecords()
+		records := make([][]*string, 0, len(txtRecords))
+		for _, r := range txtRecords {
+			if len(r) > 0 && *r[0] != value {
 				records = append(records, r)
 			}
 		}
 
-		set.Properties.TxtRecords = records
+		set.SetTXTRecords(records)
 	})
 }
 
@@ -182,9 +188,9 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	if _, err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
+	if err := c.zoneClient.Get(ctx, c.resourceGroupName, util.UnFqdn(z), nil); err != nil {
 		c.log.Error(err, "Error getting Zone for domain", "zone", z, "domain", fqdn, "resource group", c.resourceGroupName)
-		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, stabilizeError(err))
+		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %w", z, fqdn, err)
 	}
 
 	return util.UnFqdn(z), nil
@@ -200,7 +206,7 @@ func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
 }
 
 // Updates or removes DNS TXT record while respecting optimistic concurrency control
-func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater func(*dns.RecordSet)) error {
+func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater func(RecordSet)) error {
 	zone, err := c.getHostedZoneName(ctx, fqdn)
 	if err != nil {
 		return err
@@ -208,49 +214,52 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 
 	name := c.trimFqdn(fqdn, zone)
 
-	var set *dns.RecordSet
+	var set RecordSet
 
-	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, nil)
+	resp, err := c.recordClient.Get(ctx, c.resourceGroupName, zone, name, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
 		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
-			set = &dns.RecordSet{
-				Properties: &dns.RecordSetProperties{
-					TTL:        to.Ptr(int64(60)),
-					TxtRecords: []*dns.TxtRecord{},
+			// Conditional initialization to avoid nil pointer
+			set = &PublicTXTRecordSet{
+				RS: &dns.RecordSet{
+					Properties: &dns.RecordSetProperties{
+						TTL:        to.Ptr[int64](60),
+						TxtRecords: []*dns.TxtRecord{},
+					},
+					Etag: to.Ptr(""),
 				},
-				Etag: to.Ptr(""),
 			}
 		} else {
 			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-			return stabilizeError(err)
+			return err
 		}
 	} else {
-		set = &resp.RecordSet
+		set = resp
 	}
 
 	updater(set)
 
-	if len(set.Properties.TxtRecords) == 0 {
-		if *set.Etag != "" {
+	if len(set.GetTXTRecords()) == 0 {
+		if etag := set.GetETag(); etag != nil && *etag != "" {
 			// Etag will cause the deletion to fail if any updates happen concurrently
-			_, err = c.recordClient.Delete(ctx, c.resourceGroupName, zone, name, dns.RecordTypeTXT, &dns.RecordSetsClientDeleteOptions{IfMatch: set.Etag})
+			err = c.recordClient.Delete(ctx, c.resourceGroupName, zone, name, &ClientOptions{IfMatch: set.GetETag()})
 			if err != nil {
 				c.log.Error(err, "Error deleting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-				return stabilizeError(err)
+				return err
 			}
 		}
 
 		return nil
 	}
 
-	opts := &dns.RecordSetsClientCreateOrUpdateOptions{}
-	if *set.Etag == "" {
+	opts := &ClientOptions{}
+	if etag := set.GetETag(); etag != nil && *etag == "" {
 		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
 		// Only relevant when this is a new record, for updates conflicts are solved with Etag
 		opts.IfNoneMatch = to.Ptr("*")
 	} else {
-		opts.IfMatch = set.Etag
+		opts.IfMatch = set.GetETag()
 	}
 
 	_, err = c.recordClient.CreateOrUpdate(
@@ -258,85 +267,12 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 		c.resourceGroupName,
 		zone,
 		name,
-		dns.RecordTypeTXT,
-		*set,
+		set,
 		opts)
 	if err != nil {
 		c.log.Error(err, "Error upserting TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
-		return stabilizeError(err)
+		return err
 	}
 
 	return nil
-}
-
-// The azure-sdk library returns the contents of the HTTP requests in its
-// error messages. We want our error messages to be the same when the cause
-// is the same to avoid spurious challenge updates.
-//
-// The given error must not be nil. This function must be called everywhere
-// we have a non-nil error coming from an azure-sdk func that makes API calls.
-func stabilizeError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	return NormalizedError{
-		Cause: err,
-	}
-}
-
-type NormalizedError struct {
-	Cause error
-}
-
-func (e NormalizedError) Error() string {
-	var (
-		authErr *azidentity.AuthenticationFailedError
-		respErr *azcore.ResponseError
-	)
-
-	switch {
-	case errors.As(e.Cause, &authErr):
-		msg := new(strings.Builder)
-		fmt.Fprintln(msg, "authentication failed:")
-
-		if authErr.RawResponse != nil {
-			if authErr.RawResponse.Request != nil {
-				fmt.Fprintf(msg, "%s %s://%s%s\n", authErr.RawResponse.Request.Method, authErr.RawResponse.Request.URL.Scheme, authErr.RawResponse.Request.URL.Host, authErr.RawResponse.Request.URL.Path)
-			}
-
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-			fmt.Fprintf(msg, "RESPONSE %s\n", authErr.RawResponse.Status)
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-		}
-
-		fmt.Fprint(msg, "see logs for more information")
-
-		return msg.String()
-	case errors.As(e.Cause, &respErr):
-		msg := new(strings.Builder)
-		fmt.Fprintln(msg, "request error:")
-
-		if respErr.RawResponse != nil {
-			if respErr.RawResponse.Request != nil {
-				fmt.Fprintf(msg, "%s %s://%s%s\n", respErr.RawResponse.Request.Method, respErr.RawResponse.Request.URL.Scheme, respErr.RawResponse.Request.URL.Host, respErr.RawResponse.Request.URL.Path)
-			}
-
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-			fmt.Fprintf(msg, "RESPONSE %s\n", respErr.RawResponse.Status)
-			if respErr.ErrorCode != "" {
-				fmt.Fprintf(msg, "ERROR CODE: %s\n", respErr.ErrorCode)
-			} else {
-				fmt.Fprintln(msg, "ERROR CODE UNAVAILABLE")
-			}
-			fmt.Fprintln(msg, "--------------------------------------------------------------------------------")
-		}
-
-		fmt.Fprint(msg, "see logs for more information")
-
-		return msg.String()
-
-	default:
-		return e.Cause.Error()
-	}
 }

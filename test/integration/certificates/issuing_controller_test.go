@@ -25,6 +25,16 @@ import (
 	"testing"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -37,16 +47,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/metrics"
-	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
-	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // TestIssuingController performs a basic test to ensure that the issuing
@@ -137,7 +137,7 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -346,7 +346,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		gen.SetCertificateKeyEncoding(cmapi.PKCS8),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -550,7 +550,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -783,7 +783,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -969,7 +969,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName("cert-manager-issuing-test-secret"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 	bundle := testcrypto.MustCreateCryptoBundle(t, crt, &clock.RealClock{})
 	secret, err := kubeClient.CoreV1().Secrets(ns.Name).Create(t.Context(), &corev1.Secret{

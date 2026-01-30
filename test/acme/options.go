@@ -118,7 +118,7 @@ func SetAllowAmbientCredentials(b bool) Option {
 	}
 }
 
-func SetConfig(i interface{}) Option {
+func SetConfig(i any) Option {
 	return func(f *fixture) {
 		d, err := json.Marshal(i)
 		if err != nil {

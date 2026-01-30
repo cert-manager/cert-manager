@@ -29,6 +29,7 @@ import (
 	"k8s.io/component-base/featuregate"
 
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -37,13 +38,13 @@ func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
 }
 
-func Failf(format string, args ...interface{}) {
+func Failf(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	Logf(msg)
 	Fail(nowStamp()+": "+msg, 1)
 }
 
-func Skipf(format string, args ...interface{}) {
+func Skipf(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	Logf("INFO", msg)
 	Skip(nowStamp() + ": " + msg)
@@ -56,7 +57,7 @@ func RequireFeatureGate(featureSet featuregate.FeatureGate, gate featuregate.Fea
 }
 
 // TODO: move this function into a different package
-func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb string, resource string) bool {
+func RbacClusterRoleHasAccessToResource(ctx context.Context, f *Framework, clusterRole string, verb string, resource string) bool {
 	By("Creating a service account")
 	viewServiceAccount := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -64,7 +65,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 		},
 	}
 	serviceAccountClient := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name)
-	serviceAccount, err := serviceAccountClient.Create(context.TODO(), viewServiceAccount, metav1.CreateOptions{})
+	serviceAccount, err := serviceAccountClient.Create(ctx, viewServiceAccount, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	viewServiceAccountName := serviceAccount.Name
 
@@ -83,7 +84,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 		},
 	}
 	roleBindingClient := f.KubeClientSet.RbacV1().ClusterRoleBindings()
-	_, err = roleBindingClient.Create(context.TODO(), viewRoleBinding, metav1.CreateOptions{})
+	_, err = roleBindingClient.Create(ctx, viewRoleBinding, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Sleeping for a second.")
@@ -108,7 +109,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 			},
 		},
 	}
-	response, err := sarClient.Create(context.TODO(), sar, metav1.CreateOptions{})
+	response, err := sarClient.Create(ctx, sar, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return response.Status.Allowed
 }

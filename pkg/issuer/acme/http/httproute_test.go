@@ -50,7 +50,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				s.testResources[createdHTTPRouteKey] = httpRoute
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
@@ -78,7 +78,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				s.testResources[createdHTTPRouteKey] = httpRoute
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
@@ -107,7 +107,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
 				if gotHttpRoute != nil {
 					t.Errorf("Expected function to not return an HTTPRoute, but got: %v", gotHttpRoute)
@@ -139,7 +139,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)
@@ -187,7 +187,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				}
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)
@@ -225,7 +225,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				}
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				httpRoutes, err := s.Solver.httpRouteLister.List(labels.NewSelector())
 				if err != nil {
 					t.Errorf("error listing HTTPRoutes: %v", err)
@@ -257,6 +257,57 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
 			test.Finish(t, resp, err)
+		})
+	}
+}
+
+func TestGenerateHTTPRouteSpec(t *testing.T) {
+	tests := []struct {
+		name              string
+		dnsName           string
+		expectedHostnames []gwapi.Hostname
+	}{
+		{
+			name:              "should include hostname for DNS name",
+			dnsName:           "example.com",
+			expectedHostnames: []gwapi.Hostname{"example.com"},
+		},
+		{
+			name:              "should include hostname for subdomain",
+			dnsName:           "www.example.com",
+			expectedHostnames: []gwapi.Hostname{"www.example.com"},
+		},
+		{
+			name:              "should not include hostname for IPv4 address",
+			dnsName:           "192.0.2.1",
+			expectedHostnames: nil,
+		},
+		{
+			name:              "should not include hostname for IPv6 address",
+			dnsName:           "2001:db8::1",
+			expectedHostnames: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch := &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: tt.dnsName,
+					Token:   "test-token",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			}
+
+			spec := generateHTTPRouteSpec(ch, "fakeservice")
+
+			if !reflect.DeepEqual(spec.Hostnames, tt.expectedHostnames) {
+				t.Errorf("Expected hostnames %v, but got %v", tt.expectedHostnames, spec.Hostnames)
+			}
 		})
 	}
 }

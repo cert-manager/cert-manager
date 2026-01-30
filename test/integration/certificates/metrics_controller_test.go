@@ -26,12 +26,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	fakeclock "k8s.io/utils/clock/testing"
-
-	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	acmemeta "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -40,6 +34,12 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	fakeclock "k8s.io/utils/clock/testing"
+
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
 
 var (
@@ -49,7 +49,7 @@ var (
 # TYPE certmanager_clock_time_seconds counter
 certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 	clockGaugeMetric = fmt.Sprintf(`
-# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC).
+# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC). Gauge form of the deprecated clock_time_seconds counter. No labels.
 # TYPE certmanager_clock_time_seconds_gauge gauge
 certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 )
@@ -60,18 +60,20 @@ certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 func TestMetricsController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	t.Cleanup(stopFn)
-
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log, fixedClock)
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	challengesInformer := cmFactory.Acme().V1().Challenges()
+	certsInformer := cmFactory.Certmanager().V1().Certificates()
 	metricsHandler.SetupACMECollector(challengesInformer.Lister())
+	metricsHandler.SetupCertificateCollector(certsInformer.Lister())
 
 	server := metricsHandler.NewServer(ln)
 
@@ -95,6 +97,7 @@ func TestMetricsController(t *testing.T) {
 		}
 	}()
 
+	// This is not required once the certificate controller is removed.
 	controllerContext := controllerpkg.Context{
 		Scheme:                    scheme,
 		KubeSharedInformerFactory: factory,
@@ -114,6 +117,7 @@ func TestMetricsController(t *testing.T) {
 		nil,
 		queue,
 	)
+
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
 
@@ -161,7 +165,7 @@ func TestMetricsController(t *testing.T) {
 		err = wait.PollUntilContextCancel(t.Context(), time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 			if err := testMetrics(expectedOutput); err != nil {
 				lastErr = err
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 
 			return true, nil
@@ -176,7 +180,7 @@ func TestMetricsController(t *testing.T) {
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Kind: "Issuer", Name: "test-issuer", Group: "test-issuer-group"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Kind: "Issuer", Name: "test-issuer", Group: "test-issuer-group"}),
 		gen.SetCertificateSecretName(crtName),
 		gen.SetCertificateCommonName(crtName),
 		gen.SetCertificateNamespace(namespace),
@@ -236,7 +240,7 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 0
 ` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 1
 `)
@@ -299,7 +303,7 @@ certmanager_certificate_ready_status{condition="Unknown",issuer_group="test-issu
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-group",issuer_kind="Issuer",issuer_name="test-issuer",name="testcrt",namespace="testns"} 100
 ` + clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
 `)
@@ -315,7 +319,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 
 	// Should expose no Certificates and only metrics sync count increase
 	waitForMetrics(clockCounterMetric + clockGaugeMetric + `
-# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 3
 `)

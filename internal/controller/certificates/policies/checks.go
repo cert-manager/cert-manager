@@ -31,8 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
-	"sigs.k8s.io/structured-merge-diff/v4/value"
+	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
+	"sigs.k8s.io/structured-merge-diff/v6/value"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"

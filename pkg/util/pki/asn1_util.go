@@ -85,50 +85,40 @@ func (uv UniversalValue) Type() UniversalValueType {
 }
 
 func MarshalUniversalValue(uv UniversalValue) ([]byte, error) {
-	// Make sure we have only one field set
-	uvType := uv.Type()
-	var bytes []byte
-
-	switch uvType {
+	switch uvType := uv.Type(); uvType {
 	case -1:
 		return nil, errors.New("UniversalValue should have exactly one field set")
 	case UniversalValueTypeBytes:
-		bytes = uv.Bytes
+		return uv.Bytes, nil
+	case UniversalValueTypeIA5String:
+		if err := isIA5String(uv.IA5String); err != nil {
+			return nil, errors.New("asn1: invalid IA5 string")
+		}
+		return marshalRawString(asn1.TagIA5String, []byte(uv.IA5String))
+	case UniversalValueTypeUTF8String:
+		if !utf8.ValidString(uv.UTF8String) {
+			return nil, errors.New("asn1: invalid UTF-8 string")
+		}
+		return marshalRawString(asn1.TagUTF8String, []byte(uv.UTF8String))
+	case UniversalValueTypePrintableString:
+		if !isPrintable(uv.PrintableString) {
+			return nil, errors.New("asn1: invalid PrintableString string")
+		}
+		return marshalRawString(asn1.TagPrintableString, []byte(uv.PrintableString))
 	default:
-		rawValue := asn1.RawValue{
-			Class:      asn1.ClassUniversal,
-			IsCompound: false,
-		}
+		return nil, fmt.Errorf("unsupported UniversalValue type: %d", uvType)
+	}
+}
 
-		switch uvType {
-		case UniversalValueTypeIA5String:
-			if err := isIA5String(uv.IA5String); err != nil {
-				return nil, errors.New("asn1: invalid IA5 string")
-			}
-			rawValue.Tag = asn1.TagIA5String
-			rawValue.Bytes = []byte(uv.IA5String)
-		case UniversalValueTypeUTF8String:
-			if !utf8.ValidString(uv.UTF8String) {
-				return nil, errors.New("asn1: invalid UTF-8 string")
-			}
-			rawValue.Tag = asn1.TagUTF8String
-			rawValue.Bytes = []byte(uv.UTF8String)
-		case UniversalValueTypePrintableString:
-			if !isPrintable(uv.PrintableString) {
-				return nil, errors.New("asn1: invalid PrintableString string")
-			}
-			rawValue.Tag = asn1.TagPrintableString
-			rawValue.Bytes = []byte(uv.PrintableString)
-		}
-
-		universalBytes, err := asn1.Marshal(rawValue)
-		if err != nil {
-			return nil, err
-		}
-		bytes = universalBytes
+func marshalRawString(tag int, value []byte) ([]byte, error) {
+	rawValue := asn1.RawValue{
+		Class:      asn1.ClassUniversal,
+		Tag:        tag,
+		IsCompound: false,
+		Bytes:      value,
 	}
 
-	return bytes, nil
+	return asn1.Marshal(rawValue)
 }
 
 func UnmarshalUniversalValue(rawValue asn1.RawValue) (UniversalValue, error) {

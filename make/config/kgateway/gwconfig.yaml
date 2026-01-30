@@ -1,0 +1,17 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: custom-gw-params
+  namespace: kgateway-system
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+    service:
+      type: ClusterIP
+      # This is the documented ip for gateway setup here https://cert-manager.io/docs/contributing/e2e/#cluster-ip-details
+      clusterIP: __SERVICE_IP__
+      extraLabels:
+        gateway: custom
+      externalTrafficPolicy: ""

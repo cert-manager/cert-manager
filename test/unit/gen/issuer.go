@@ -458,6 +458,6 @@ func AddIssuerCondition(c v1.IssuerCondition) IssuerModifier {
 
 func SetIssuerNamespace(namespace string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
-		iss.GetObjectMeta().Namespace = namespace
+		iss.SetNamespace(namespace)
 	}
 }

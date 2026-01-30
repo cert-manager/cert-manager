@@ -35,13 +35,13 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddConversionFunc((*meta.LocalObjectReference)(nil), (*metav1.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(a.(*meta.LocalObjectReference), b.(*metav1.LocalObjectReference), scope)
+	if err := s.AddConversionFunc((*meta.IssuerReference)(nil), (*metav1.IssuerReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_IssuerReference_To_v1_IssuerReference(a.(*meta.IssuerReference), b.(*metav1.IssuerReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*meta.ObjectReference)(nil), (*metav1.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_meta_ObjectReference_To_v1_ObjectReference(a.(*meta.ObjectReference), b.(*metav1.ObjectReference), scope)
+	if err := s.AddConversionFunc((*meta.LocalObjectReference)(nil), (*metav1.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(a.(*meta.LocalObjectReference), b.(*metav1.LocalObjectReference), scope)
 	}); err != nil {
 		return err
 	}
@@ -50,13 +50,13 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*metav1.LocalObjectReference)(nil), (*meta.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(a.(*metav1.LocalObjectReference), b.(*meta.LocalObjectReference), scope)
+	if err := s.AddConversionFunc((*metav1.IssuerReference)(nil), (*meta.IssuerReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_IssuerReference_To_meta_IssuerReference(a.(*metav1.IssuerReference), b.(*meta.IssuerReference), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*metav1.ObjectReference)(nil), (*meta.ObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_ObjectReference_To_meta_ObjectReference(a.(*metav1.ObjectReference), b.(*meta.ObjectReference), scope)
+	if err := s.AddConversionFunc((*metav1.LocalObjectReference)(nil), (*meta.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(a.(*metav1.LocalObjectReference), b.(*meta.LocalObjectReference), scope)
 	}); err != nil {
 		return err
 	}
@@ -68,6 +68,20 @@ func RegisterConversions(s *runtime.Scheme) error {
 	return nil
 }
 
+func autoConvert_v1_IssuerReference_To_meta_IssuerReference(in *metav1.IssuerReference, out *meta.IssuerReference, s conversion.Scope) error {
+	out.Name = in.Name
+	out.Kind = in.Kind
+	out.Group = in.Group
+	return nil
+}
+
+func autoConvert_meta_IssuerReference_To_v1_IssuerReference(in *meta.IssuerReference, out *metav1.IssuerReference, s conversion.Scope) error {
+	out.Name = in.Name
+	out.Kind = in.Kind
+	out.Group = in.Group
+	return nil
+}
+
 func autoConvert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *metav1.LocalObjectReference, out *meta.LocalObjectReference, s conversion.Scope) error {
 	out.Name = in.Name
 	return nil
@@ -75,20 +89,6 @@ func autoConvert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *metav1
 
 func autoConvert_meta_LocalObjectReference_To_v1_LocalObjectReference(in *meta.LocalObjectReference, out *metav1.LocalObjectReference, s conversion.Scope) error {
 	out.Name = in.Name
-	return nil
-}
-
-func autoConvert_v1_ObjectReference_To_meta_ObjectReference(in *metav1.ObjectReference, out *meta.ObjectReference, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Kind = in.Kind
-	out.Group = in.Group
-	return nil
-}
-
-func autoConvert_meta_ObjectReference_To_v1_ObjectReference(in *meta.ObjectReference, out *metav1.ObjectReference, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Kind = in.Kind
-	out.Group = in.Group
 	return nil
 }
 

@@ -135,7 +135,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	}
 
 	// register handler functions
-	if _, err := challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+	if _, err := challengeInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

@@ -22,15 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
-	"k8s.io/utils/clock"
-
-	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -45,6 +36,15 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
+	"k8s.io/utils/clock"
+
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
 
 func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: "issuer",
 			},
 			PrivateKey: &cmapi.CertificatePrivateKey{
@@ -209,7 +209,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: "issuer",
 			},
 			PrivateKey: &cmapi.CertificatePrivateKey{
@@ -354,6 +354,8 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 		Recorder:                  framework.NewEventRecorder(t, scheme),
 		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
+
+	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
 
 	// TODO: set field manager before calling each of those - is that what we do in actual code?
 	revCtrl, revQueue, revMustSync, err := revisionmanager.NewController(log, &controllerContext)

@@ -26,11 +26,14 @@ import (
 )
 
 // Funcs returns the fuzzer functions for the apps api group.
-var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
-	return []interface{}{
+var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
+	return []any{
 		func(s *acme.Order, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
@@ -38,6 +41,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 		func(s *acme.Challenge, c randfill.Continue) {
 			c.FillNoCustom(s) // fuzz self without calling this function again
 
+			if s.Spec.IssuerRef.Group == "" {
+				s.Spec.IssuerRef.Group = "cert-manager.io"
+			}
 			if s.Spec.IssuerRef.Kind == "" {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}

@@ -92,7 +92,7 @@ func FuzzVenafiCRController(f *testing.F) {
 			gen.SetCertificateRequestIsCA(isCA),
 			gen.SetCertificateRequestCSR(csrPEM),
 			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: tm}),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name:  baseIssuer.Name,
 				Group: certmanager.GroupName,
 				Kind:  baseIssuer.Kind,

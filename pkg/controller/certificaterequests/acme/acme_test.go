@@ -120,7 +120,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -240,7 +240,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestParsingError Failed to decode CSR in spec.request: error decoding certificate request PEM block",
+					"Warning RequestParsingError Failed to decode CSR in spec.request: error decoding certificate request PEM block: no PEM data was found in given input",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -253,7 +253,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapiv1.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapiv1.CertificateRequestReasonFailed,
-								Message:            "Failed to decode CSR in spec.request: error decoding certificate request PEM block",
+								Message:            "Failed to decode CSR in spec.request: error decoding certificate request PEM block: no PEM data was found in given input",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -670,7 +670,16 @@ func Test_buildOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cr := gen.CertificateRequest("test", gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}), gen.SetCertificateRequestCSR(csrPEM))
+	cr := gen.CertificateRequest("test",
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Name: "test-issuer"}),
+		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
+		gen.SetCertificateRequestCSR(csrPEM))
+	baseOrder := gen.Order("",
+		gen.SetOrderCsr(csrPEM),
+		gen.SetOrderCommonName("example.com"),
+		gen.SetOrderDNSNames("example.com"),
+		gen.SetOrderIssuer(cmmeta.IssuerReference{Name: "test-issuer"}))
+
 	type args struct {
 		cr                    *cmapiv1.CertificateRequest
 		csr                   *x509.CertificateRequest
@@ -690,13 +699,7 @@ func Test_buildOrder(t *testing.T) {
 				csr:                   csr,
 				enableDurationFeature: false,
 			},
-			want: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request:    csrPEM,
-					CommonName: "example.com",
-					DNSNames:   []string{"example.com"},
-				},
-			},
+			want:    baseOrder,
 			wantErr: false,
 		},
 		{
@@ -706,14 +709,8 @@ func Test_buildOrder(t *testing.T) {
 				csr:                   csr,
 				enableDurationFeature: true,
 			},
-			want: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request:    csrPEM,
-					CommonName: "example.com",
-					DNSNames:   []string{"example.com"},
-					Duration:   &metav1.Duration{Duration: time.Hour},
-				},
-			},
+			want: gen.OrderFrom(baseOrder,
+				gen.SetOrderDuration(time.Hour)),
 			wantErr: false,
 		},
 		{
@@ -723,14 +720,8 @@ func Test_buildOrder(t *testing.T) {
 				csr:     csr,
 				profile: "shortlived",
 			},
-			want: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request:    csrPEM,
-					CommonName: "example.com",
-					DNSNames:   []string{"example.com"},
-					Profile:    "shortlived",
-				},
-			},
+			want: gen.OrderFrom(baseOrder,
+				gen.SetOrderProfile("shortlived")),
 			wantErr: false,
 		},
 	}

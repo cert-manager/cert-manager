@@ -98,7 +98,7 @@ func (p resourceValidation) Validate(_ context.Context, request admissionv1.Admi
 		}
 		errs, warnings := pair.update(&request, oldObj, obj)
 		return warnings, errs.ToAggregate()
+	default:
+		return nil, nil
 	}
-
-	return nil, nil
 }

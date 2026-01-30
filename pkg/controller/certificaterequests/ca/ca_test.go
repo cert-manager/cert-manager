@@ -117,7 +117,7 @@ func TestSign(t *testing.T) {
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(testCSR),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.DeepCopy().Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -240,7 +240,7 @@ func TestSign(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -252,7 +252,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
+								Message:            "Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block: no PEM data was found in given input",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -482,7 +482,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -523,7 +523,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -542,7 +542,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -560,7 +560,7 @@ func TestCA_Sign(t *testing.T) {
 			})),
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",
@@ -579,7 +579,7 @@ func TestCA_Sign(t *testing.T) {
 			givenCR: gen.CertificateRequest("cr-1",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(testCSR),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 					Name:  "issuer-1",
 					Group: certmanager.GroupName,
 					Kind:  "Issuer",

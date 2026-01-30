@@ -12,22 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-base_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base/
-base_dependabot_dir := $(dir $(lastword $(MAKEFILE_LIST)))/base-dependabot/
-
-ifdef repository_base_no_dependabot
-.PHONY: generate-base
-## Generate base files in the repository
-## @category [shared] Generate/ Verify
-generate-base:
-	cp -r $(base_dir)/. ./
-else
-.PHONY: generate-base
-## Generate base files in the repository
-## @category [shared] Generate/ Verify
-generate-base:
-	cp -r $(base_dir)/. ./
-	cp -r $(base_dependabot_dir)/. ./
+ifndef repo_name
+$(error repo_name is not set)
 endif
+
+_repository_base_module_dir := $(dir $(lastword $(MAKEFILE_LIST)))
+repository_base_dir := $(_repository_base_module_dir)base/
+
+.PHONY: generate-base
+## Generate base files in the repository
+## @category [shared] Generate/ Verify
+generate-base:
+	cp -r $(repository_base_dir)/. ./
+	cd $(repository_base_dir) && \
+		find . -type f | while read file; do \
+			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
+		done
+	if [ ! -e ./.github/renovate.json5 ]; then \
+		mkdir -p ./.github; \
+		cp $(_repository_base_module_dir)/renovate-bootstrap-config.json5 ./.github/renovate.json5; \
+	fi
 
 shared_generate_targets += generate-base

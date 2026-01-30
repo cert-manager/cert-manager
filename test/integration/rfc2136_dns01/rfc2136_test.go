@@ -27,14 +27,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	testserver "github.com/cert-manager/cert-manager/test/acme/server"
 	"github.com/go-logr/logr/testr"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/rfc2136"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	testserver "github.com/cert-manager/cert-manager/test/acme/server"
 )
 
 var (
@@ -57,7 +56,7 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerHello),
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -84,7 +83,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnSuccess),
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -109,7 +108,7 @@ func TestRFC2136ServerError(t *testing.T) {
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnErr),
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -140,7 +139,7 @@ func TestRFC2136TsigClient(t *testing.T) {
 		TSIGKeyName:   rfc2136TestTsigKeyName,
 		TSIGKeySecret: rfc2136TestTsigSecret,
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -181,7 +180,6 @@ func TestRFC2136NameserverIPv4WithoutPort(t *testing.T) {
 	if dnsProvider.Nameserver() != nameserver+":"+defaultPort {
 		t.Errorf("dnsProvider.Nameserver() to be %v:%v, but it is %v", nameserver, defaultPort, dnsProvider.Nameserver())
 	}
-
 }
 
 func TestRFC2136NameserverIPv4WithEmptyPort(t *testing.T) {
@@ -324,7 +322,7 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 		T:     t,
 		Zones: []string{rfc2136TestZone},
 	}
-	if err := server.Run(ctx); err != nil {
+	if err := server.Run(ctx, "UDP"); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
 	defer func() {
@@ -350,6 +348,38 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+}
+
+func TestRFC2136TCPUpdate(t *testing.T) {
+	ctx := logf.NewContext(t.Context(), testr.New(t), t.Name())
+	server := &testserver.BasicServer{
+		T:     t,
+		Zones: []string{rfc2136TestZone},
+	}
+	if err := server.Run(ctx, "tcp"); err != nil {
+		t.Fatalf("failed to start test server: %v", err)
+	}
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Errorf("failed to gracefully shut down test server: %v", err)
+		}
+	}()
+
+	txtRR, _ := dns.NewRR(fmt.Sprintf("%s %d IN TXT %s", rfc2136TestFqdn, rfc2136TestTTL, rfc2136TestValue))
+	rrs := []dns.RR{txtRR}
+	m := new(dns.Msg)
+	m.SetUpdate(rfc2136TestZone)
+	m.RemoveRRset(rrs)
+	m.Insert(rrs)
+
+	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "", rfc2136.WithNetwork("tcp"))
+	if err != nil {
+		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
+	}
+
+	if err := provider.Present(rfc2136TestDomain, "_acme-challenge."+rfc2136TestDomain+".", rfc2136TestDomain+".", rfc2136TestValue); err != nil {
+		t.Errorf("Expected Present() to return no error but the error was -> %v", err)
+	}
 }
 
 // testHandlers provides DNS server handlers for use in tests and has a

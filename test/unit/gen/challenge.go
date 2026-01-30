@@ -19,6 +19,7 @@ package gen
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	internalv1 "github.com/cert-manager/cert-manager/internal/apis/acme/v1"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -26,13 +27,14 @@ import (
 type ChallengeModifier func(*cmacme.Challenge)
 
 func Challenge(name string, mods ...ChallengeModifier) *cmacme.Challenge {
-	c := &cmacme.Challenge{
+	ch := &cmacme.Challenge{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
-		mod(c)
+		mod(ch)
 	}
-	return c
+	internalv1.SetObjectDefaults_Challenge(ch)
+	return ch
 }
 
 func ChallengeFrom(ch *cmacme.Challenge, mods ...ChallengeModifier) *cmacme.Challenge {
@@ -40,6 +42,7 @@ func ChallengeFrom(ch *cmacme.Challenge, mods ...ChallengeModifier) *cmacme.Chal
 	for _, mod := range mods {
 		mod(ch)
 	}
+	internalv1.SetObjectDefaults_Challenge(ch)
 	return ch
 }
 
@@ -68,7 +71,7 @@ func SetChallengeKey(k string) ChallengeModifier {
 }
 
 // SetChallengeIssuer sets the challenge.spec.issuerRef field
-func SetChallengeIssuer(o cmmeta.ObjectReference) ChallengeModifier {
+func SetChallengeIssuer(o cmmeta.IssuerReference) ChallengeModifier {
 	return func(c *cmacme.Challenge) {
 		c.Spec.IssuerRef = o
 	}
@@ -131,5 +134,11 @@ func SetChallengeDeletionTimestamp(ts metav1.Time) ChallengeModifier {
 func ResetChallengeStatus() ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Status = cmacme.ChallengeStatus{}
+	}
+}
+
+func SetChallengeSolverDNS01(solver cmacme.ACMEChallengeSolverDNS01) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver.DNS01 = &solver
 	}
 }

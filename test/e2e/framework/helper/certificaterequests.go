@@ -26,6 +26,10 @@ import (
 	"strings"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -33,10 +37,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificaterequests"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // ErrCertificateRequestFailed is returned when the CertificateRequest has Ready condition False
@@ -201,8 +201,8 @@ func (h *Helper) WaitCertificateRequestIssuedValid(ctx context.Context, ns, name
 		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
 		return kerrors.NewAggregate([]error{
 			err,
-			h.Kubectl(ns).DescribeResource("certificaterequest", name),
-			h.Kubectl(ns).Describe("order", "challenge"),
+			h.Kubectl(ns).DescribeResource(ctx, "certificaterequest", name),
+			h.Kubectl(ns).Describe(ctx, "order", "challenge"),
 		})
 	}
 
@@ -211,8 +211,8 @@ func (h *Helper) WaitCertificateRequestIssuedValid(ctx context.Context, ns, name
 		log.Logf("Error validating issued certificate: %v", err)
 		return kerrors.NewAggregate([]error{
 			err,
-			h.Kubectl(ns).DescribeResource("certificaterequest", name),
-			h.Kubectl(ns).Describe("order", "challenge"),
+			h.Kubectl(ns).DescribeResource(ctx, "certificaterequest", name),
+			h.Kubectl(ns).Describe(ctx, "order", "challenge"),
 		})
 	}
 

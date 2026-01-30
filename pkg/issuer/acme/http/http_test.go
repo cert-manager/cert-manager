@@ -102,7 +102,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse url %s: %v", site, err)
 	}
-	ips, err := net.LookupIP(u.Host)
+	ips, err := net.LookupIP(u.Host) // nolint: noctx // We intentionally use LookupIP here for test compatibility
 	if err != nil {
 		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
 	}

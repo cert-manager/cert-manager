@@ -23,6 +23,8 @@ import (
 	"net/url"
 	"time"
 
+	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,8 +36,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificatesigningrequests"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
-	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,7 +62,7 @@ func (s *Suite) Define() {
 
 		// Wrap this in a BeforeEach else flags will not have been parsed and
 		// f.Config will not be populated at the time that this code is run.
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			s.validate()
 		})
 
@@ -458,9 +458,9 @@ func (s *Suite) Define() {
 				// Create the request, and delete at the end of the test
 				By("Creating a CertificateSigningRequest")
 				Expect(f.CRClient.Create(ctx, kubeCSR)).NotTo(HaveOccurred())
-				// nolint: contextcheck // This is a cleanup context
 				defer func() {
-					cleanupCtx := context.Background()
+					cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+					defer cancel()
 
 					err := f.CRClient.Delete(cleanupCtx, kubeCSR)
 					Expect(err).NotTo(HaveOccurred())

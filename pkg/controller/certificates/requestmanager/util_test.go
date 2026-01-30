@@ -19,6 +19,7 @@ package requestmanager
 import (
 	"crypto"
 	"crypto/x509"
+	"maps"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,9 +93,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 	}
 
 	annotations := make(map[string]string)
-	for k, v := range crt.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, crt.Annotations)
 
 	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = "NOT SET"
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName

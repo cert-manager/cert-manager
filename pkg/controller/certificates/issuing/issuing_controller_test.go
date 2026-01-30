@@ -64,7 +64,7 @@ func TestIssuingController(t *testing.T) {
 	nextPrivateKeySecretName := "next-private-key"
 
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateGeneration(3),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
@@ -1365,6 +1365,53 @@ func TestIssuingController(t *testing.T) {
 				},
 				ExpectedEvents: []string{
 					"Warning InvalidRequest The certificate request has failed to complete and will be retried: The certificate request is invalid",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, CertificateRequest is ready but returns certificate with mismatched public key, fail issuance with backoff": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestCertificate(exampleBundleAlt.CertBytes),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidCertificate",
+								Message:            "The certificate request has failed to complete and will be retried: Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(ptr.To(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidCertificate The certificate request has failed to complete and will be retried: Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
 				},
 			},
 			expectedErr: false,

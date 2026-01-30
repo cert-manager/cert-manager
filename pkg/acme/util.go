@@ -38,8 +38,9 @@ func IsFailureState(s cmacme.State) bool {
 	switch s {
 	case cmacme.Invalid, cmacme.Expired, cmacme.Errored:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // PrivateKeySelector will default the SecretKeySelector with a default secret key

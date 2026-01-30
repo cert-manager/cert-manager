@@ -21,6 +21,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	internalv1 "github.com/cert-manager/cert-manager/internal/apis/acme/v1"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -34,6 +35,7 @@ func Order(name string, mods ...OrderModifier) *cmacme.Order {
 	for _, mod := range mods {
 		mod(order)
 	}
+	internalv1.SetObjectDefaults_Order(order)
 	return order
 }
 
@@ -42,11 +44,12 @@ func OrderFrom(order *cmacme.Order, mods ...OrderModifier) *cmacme.Order {
 	for _, mod := range mods {
 		mod(order)
 	}
+	internalv1.SetObjectDefaults_Order(order)
 	return order
 }
 
 // SetOrderIssuer sets the Order.spec.issuerRef field
-func SetOrderIssuer(o cmmeta.ObjectReference) OrderModifier {
+func SetOrderIssuer(o cmmeta.IssuerReference) OrderModifier {
 	return func(order *cmacme.Order) {
 		order.Spec.IssuerRef = o
 	}
@@ -127,5 +130,11 @@ func SetOrderAnnotations(annotations map[string]string) OrderModifier {
 func SetOrderOwnerReference(ref metav1.OwnerReference) OrderModifier {
 	return func(order *cmacme.Order) {
 		order.OwnerReferences = []metav1.OwnerReference{ref}
+	}
+}
+
+func SetOrderProfile(profile string) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Spec.Profile = profile
 	}
 }

@@ -182,6 +182,8 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 	return nil
 }
 
+var ErrCertificateNotAvailable = errors.New("certificate not available")
+
 // Sign will sign the given certificate template using the current version of
 // the managed CA.
 // It will automatically set the NotBefore and NotAfter times appropriately.
@@ -190,7 +192,7 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 	defer d.signMutex.Unlock()
 
 	if d.currentCertData == nil || d.currentPrivateKeyData == nil {
-		return nil, fmt.Errorf("no tls.Certificate available yet, try again later")
+		return nil, ErrCertificateNotAvailable
 	}
 
 	// tls.X509KeyPair performs a number of verification checks against the
@@ -417,21 +419,21 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	return nil
 }
 
-func (d *DynamicAuthority) handleAdd(obj interface{}) {
+func (d *DynamicAuthority) handleAdd(obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")
 	}
 }
 
-func (d *DynamicAuthority) handleUpdate(_, obj interface{}) {
+func (d *DynamicAuthority) handleUpdate(_, obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")
 	}
 }
 
-func (d *DynamicAuthority) handleDelete(obj interface{}) {
+func (d *DynamicAuthority) handleDelete(obj any) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
 		d.log.Error(err, "error ensuring CA")

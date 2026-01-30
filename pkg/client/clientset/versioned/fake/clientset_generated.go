@@ -19,6 +19,7 @@ limitations under the License.
 package fake
 
 import (
+	applyconfigurations "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	fakeacmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1/fake"
@@ -37,7 +38,7 @@ import (
 // without applying any field management, validations and/or defaults. It shouldn't be considered a replacement
 // for a real clientset and is mostly useful in simple unit tests.
 //
-// DEPRECATED: NewClientset replaces this with support for field management, which significantly improves
+// Deprecated: NewClientset replaces this with support for field management, which significantly improves
 // server side apply testing. NewClientset is only available when apply configurations are generated (e.g.
 // via --with-applyconfig).
 func NewSimpleClientset(objects ...runtime.Object) *Clientset {
@@ -53,8 +54,8 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
 		var opts metav1.ListOptions
-		if watchActcion, ok := action.(testing.WatchActionImpl); ok {
-			opts = watchActcion.ListOptions
+		if watchAction, ok := action.(testing.WatchActionImpl); ok {
+			opts = watchAction.ListOptions
 		}
 		gvr := action.GetResource()
 		ns := action.GetNamespace()
@@ -83,6 +84,53 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
+}
+
+// IsWatchListSemanticsSupported informs the reflector that this client
+// doesn't support WatchList semantics.
+//
+// This is a synthetic method whose sole purpose is to satisfy the optional
+// interface check performed by the reflector.
+// Returning true signals that WatchList can NOT be used.
+// No additional logic is implemented here.
+func (c *Clientset) IsWatchListSemanticsUnSupported() bool {
+	return true
+}
+
+// NewClientset returns a clientset that will respond with the provided objects.
+// It's backed by a very simple object tracker that processes creates, updates and deletions as-is,
+// without applying any validations and/or defaults. It shouldn't be considered a replacement
+// for a real clientset and is mostly useful in simple unit tests.
+func NewClientset(objects ...runtime.Object) *Clientset {
+	o := testing.NewFieldManagedObjectTracker(
+		scheme,
+		codecs.UniversalDecoder(),
+		applyconfigurations.NewTypeConverter(scheme),
+	)
+	for _, obj := range objects {
+		if err := o.Add(obj); err != nil {
+			panic(err)
+		}
+	}
+
+	cs := &Clientset{tracker: o}
+	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
+	cs.AddReactor("*", "*", testing.ObjectReaction(o))
+	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
+		var opts metav1.ListOptions
+		if watchAction, ok := action.(testing.WatchActionImpl); ok {
+			opts = watchAction.ListOptions
+		}
+		gvr := action.GetResource()
+		ns := action.GetNamespace()
+		watch, err := o.Watch(gvr, ns, opts)
+		if err != nil {
+			return false, nil, err
+		}
+		return true, watch, nil
+	})
+
+	return cs
 }
 
 var (

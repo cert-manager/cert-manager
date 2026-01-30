@@ -24,11 +24,12 @@ import (
 	"testing"
 	"time"
 
-	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
+	clientfeatures "k8s.io/client-go/features"
+	clienttesting "k8s.io/client-go/features/testing"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	metadatafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -48,7 +49,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
-	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 func init() {
@@ -85,7 +85,7 @@ type Builder struct {
 	// as well as a list of all the arguments passed to the CheckAndFinish
 	// function (typically the list of return arguments from the function under
 	// test).
-	CheckFn func(*Builder, ...interface{})
+	CheckFn func(*Builder, ...any)
 
 	stopCh chan struct{}
 
@@ -126,33 +126,13 @@ func (b *Builder) Init() {
 		b.T.Fatalf("error adding meta to scheme: %v", err)
 	}
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
-	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
-	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
+	b.Client = kubefake.NewClientset(b.KubeObjects...)
+	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
+	// FIXME: It seems like the gateway-api fake.NewClientset is misbehaving and is not usable per July 2025
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
+	// FIXME: It seems like we need to disable the WatchListClient feature gate until our gateway-api dependency is bumped to K8s 1.35
+	clienttesting.SetFeatureDuringTest(b.T, clientfeatures.WatchListClient, false)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
-	b.DiscoveryClient = discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
-		if groupVersion == networkingv1.SchemeGroupVersion.String() {
-			return &metav1.APIResourceList{
-				TypeMeta:     metav1.TypeMeta{},
-				GroupVersion: networkingv1.SchemeGroupVersion.String(),
-				APIResources: []metav1.APIResource{
-					{
-						Name:               "ingresses",
-						SingularName:       "Ingress",
-						Namespaced:         true,
-						Group:              networkingv1.GroupName,
-						Version:            networkingv1.SchemeGroupVersion.Version,
-						Kind:               networkingv1.SchemeGroupVersion.WithKind("Ingress").Kind,
-						Verbs:              metav1.Verbs{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-						ShortNames:         []string{"ing"},
-						Categories:         []string{"all"},
-						StorageVersionHash: "testing",
-					},
-				},
-			}, nil
-		}
-		return &metav1.APIResourceList{}, nil
-	})
 	b.Recorder = new(FakeRecorder)
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
@@ -207,14 +187,10 @@ func (b *Builder) FakeMetadataClient() *metadatafake.FakeMetadataClient {
 	return b.Context.MetadataClient.(*metadatafake.FakeMetadataClient)
 }
 
-func (b *Builder) FakeDiscoveryClient() *discoveryfake.Discovery {
-	return b.Context.DiscoveryClient.(*discoveryfake.Discovery)
-}
-
 // CheckAndFinish will run ensure: all reactors are called, all actions are
 // expected, and all events are as expected.
 // It will then call the Builder's CheckFn, if defined.
-func (b *Builder) CheckAndFinish(args ...interface{}) {
+func (b *Builder) CheckAndFinish(args ...any) {
 	defer b.Stop()
 	if err := b.AllActionsExecuted(); err != nil {
 		b.T.Error(err)
@@ -255,6 +231,7 @@ func (b *Builder) AllActionsExecuted() error {
 		if a.GetVerb() == "list" || a.GetVerb() == "watch" {
 			continue
 		}
+
 		found := false
 		var err error
 		for i, expA := range missingActions {
@@ -276,6 +253,7 @@ func (b *Builder) AllActionsExecuted() error {
 			found = true
 			break
 		}
+
 		if !found {
 			unexpectedActions = append(unexpectedActions, a)
 
@@ -284,12 +262,15 @@ func (b *Builder) AllActionsExecuted() error {
 			}
 		}
 	}
+
 	for _, a := range missingActions {
 		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
 	}
+
 	for _, a := range unexpectedActions {
 		errs = append(errs, fmt.Errorf("unexpected action: %v", actionToString(a)))
 	}
+
 	return utilerrors.NewAggregate(errs)
 }
 

@@ -24,15 +24,15 @@ import (
 	"encoding/pem"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,10 +45,9 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		secretName = testName
 	)
 
-	ctx := context.TODO()
 	f := framework.NewDefaultFramework("certificate-literalsubject-rdns")
 
-	createCertificate := func(f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
+	createCertificate := func(testingCtx context.Context, f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
 		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
@@ -58,7 +57,7 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 			Spec: cmapi.CertificateSpec{
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 				LiteralSubject: literalSubject,
@@ -66,36 +65,35 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		}
 
 		By("creating Certificate with LiteralSubject")
-		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.Background(), crt, metav1.CreateOptions{})
-
+		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(testingCtx, crt, metav1.CreateOptions{})
 	}
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
-		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
+		Expect(f.CRClient.Create(testingCtx, issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.Background(), issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
+	AfterEach(func(testingCtx context.Context) {
+		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
 	// The parsed RDNSequence should be in REVERSE order as RDNs in String format are expected to be written in reverse order.
 	// Meaning, a string of "CN=Foo,OU=Bar,O=Baz" actually should have "O=Baz" as the first element in the RDNSequence.
-	It("Should create a certificate with all the supplied RDNs as subject names in reverse string order, including DC and UID", func() {
-		crt, err := createCertificate(f, "CN=James \\\"Jim\\\" Smith\\, III,UID=jamessmith,SERIALNUMBER=1234512345,OU=Admins,OU=IT,DC=net,DC=dc,O=Acme,STREET=La Rambla,L=Barcelona,C=Spain")
+	It("Should create a certificate with all the supplied RDNs as subject names in reverse string order, including DC and UID", func(testingCtx context.Context) {
+		crt, err := createCertificate(testingCtx, f, "CN=James \\\"Jim\\\" Smith\\, III,UID=jamessmith,SERIALNUMBER=1234512345,OU=Admins,OU=IT,DC=net,DC=dc,O=Acme,STREET=La Rambla,L=Barcelona,C=Spain")
 		Expect(err).NotTo(HaveOccurred())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingCtx, secretName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(secret.Data).To(HaveKey("tls.crt"))
 		crtPEM := secret.Data["tls.crt"]
@@ -118,8 +116,8 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 		}))
 	})
 
-	It("Should not allow unknown RDN component", func() {
-		_, err := createCertificate(f, "UNKNOWN=blah")
+	It("Should not allow unknown RDN component", func(testingCtx context.Context) {
+		_, err := createCertificate(testingCtx, f, "UNKNOWN=blah")
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Literal subject contains unrecognized key with value [blah]"))
 	})

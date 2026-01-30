@@ -86,6 +86,11 @@ type ControllerConfiguration struct {
 	// as of 1.15).
 	EnableGatewayAPI bool
 
+	// Specifies whether the XListenerSet controller should be enabled with-in cert-manager.
+	// This along with XListenerSet feature gate enabled allows the user to consume XListenerSet
+	// for self-service TLS.
+	EnableGatewayAPIXListenerSet bool
+
 	// Specify which annotations should/shouldn't be copied from Certificate to
 	// CertificateRequest and Order, as well as from CertificateSigningRequest to
 	// Order, by passing a list of annotation key prefixes. A prefix starting with
@@ -136,6 +141,12 @@ type ControllerConfiguration struct {
 
 	// PEMSizeLimitsConfig configures the maximum sizes for PEM-encoded data
 	PEMSizeLimitsConfig PEMSizeLimitsConfig
+
+	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
+	// when a certificate request fails. This duration is exponentially increased (up to
+	// a maximum of 32 hours) based on the number of consecutive failures and represents
+	// the minimum backoff applied.
+	CertificateRequestMinimumBackoffDuration time.Duration
 }
 
 type LeaderElectionConfig struct {

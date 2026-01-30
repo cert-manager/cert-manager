@@ -143,7 +143,7 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 	}
 
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...) // #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010
+		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
 	}
 
 	return el, warnings
@@ -197,7 +197,17 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if ingress.Class != nil && ingress.IngressClassName != nil && len(ingress.Name) > 0 {
+	numFieldsSpecified := 0
+	if ingress.Class != nil {
+		numFieldsSpecified++
+	}
+	if ingress.IngressClassName != nil {
+		numFieldsSpecified++
+	}
+	if len(ingress.Name) > 0 {
+		numFieldsSpecified++
+	}
+	if numFieldsSpecified > 1 {
 		el = append(el, field.Forbidden(fldPath, "only one of 'ingressClassName', 'name' or 'class' should be specified"))
 	}
 
@@ -490,7 +500,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			case "", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud:
 			default:
 				el = append(el, field.Invalid(fldPath.Child("azureDNS", "environment"), p.AzureDNS.Environment,
-					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud)))
+					fmt.Sprintf("must be either empty or one of %s, %s, %s, or %s", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud)))
 			}
 		}
 	}

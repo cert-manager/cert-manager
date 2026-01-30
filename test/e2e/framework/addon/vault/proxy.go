@@ -44,11 +44,12 @@ type proxy struct {
 }
 
 func newProxy(
+	ctx context.Context,
 	clientset kubernetes.Interface,
 	kubeConfig *rest.Config,
 	podNamespace, podName string,
 ) *proxy {
-	freePort, err := freePort()
+	freePort, err := freePort(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -65,9 +66,10 @@ func newProxy(
 	}
 }
 
-func freePort() (int, error) {
+func freePort(ctx context.Context) (int, error) {
 	// Reserve a port for the proxy.
-	listener, err := net.Listen("tcp", "localhost:0")
+	lc := net.ListenConfig{}
+	listener, err := lc.Listen(ctx, "tcp", "localhost:0")
 	if err != nil {
 		return -1, err
 	}

@@ -22,17 +22,17 @@ import (
 	"encoding/pem"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
+	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -50,9 +50,8 @@ var _ = framework.CertManagerDescribe("other name san processing", func() {
 	)
 
 	f := framework.NewDefaultFramework("certificate-other-name-san-processing")
-	ctx := context.TODO()
 
-	createCertificate := func(f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
+	createCertificate := func(testingCtx context.Context, f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: testName + "-",
@@ -61,7 +60,7 @@ var _ = framework.CertManagerDescribe("other name san processing", func() {
 			Spec: cmapi.CertificateSpec{
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: issuerName, Kind: "Issuer", Group: "cert-manager.io",
 				},
 				OtherNames:     OtherNames,
@@ -70,40 +69,40 @@ var _ = framework.CertManagerDescribe("other name san processing", func() {
 			},
 		}
 		By("creating Certificate with OtherNames")
-		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, crt, metav1.CreateOptions{})
+		return f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(testingCtx, crt, metav1.CreateOptions{})
 	}
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.OtherNames)
 
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
-		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
+		Expect(f.CRClient.Create(testingCtx, issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
+	AfterEach(func(testingCtx context.Context) {
+		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
-	It("Should create a certificate with the supplied otherName SAN value and emailAddress included", func() {
-		crt, err := createCertificate(f, []cmapi.OtherName{
+	It("Should create a certificate with the supplied otherName SAN value and emailAddress included", func(testingCtx context.Context) {
+		crt, err := createCertificate(testingCtx, f, []cmapi.OtherName{
 			{
 				OID:       "1.3.6.1.4.1.311.20.2.3",
 				UTF8Value: "upn@domain.test",
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Minute*2)
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), secretName, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingCtx, secretName, metav1.GetOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(secret.Data).To(HaveKey("tls.crt"))
 		crtPEM := secret.Data["tls.crt"]
@@ -141,8 +140,8 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 		Expect(cert.Extensions).To(HaveSameSANsAs(expectedSanExtension))
 	})
 
-	It("Should error if a certificate is supplied with an `otherName` containing an invalid oid value", func() {
-		_, err := createCertificate(f, []cmapi.OtherName{
+	It("Should error if a certificate is supplied with an `otherName` containing an invalid oid value", func(testingCtx context.Context) {
+		_, err := createCertificate(testingCtx, f, []cmapi.OtherName{
 			{
 				OID:       "BAD_OID",
 				UTF8Value: "userprincipal@domain.com",
@@ -153,12 +152,12 @@ YH0ROM05IRf2nOI6KInaiz4POk6JvdTb
 			},
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": oid syntax invalid"))
+		Expect(err.Error()).To(ContainSubstring("admission webhook \"webhook.cert-manager.io\" denied the request: spec.otherNames[0].oid: Invalid value: \"BAD_OID\": invalid oid syntax"))
 
 	})
 
-	It("Should error if a certificate is supplied with an `otherName` without a UTF8 value", func() {
-		_, err := createCertificate(f, []cmapi.OtherName{
+	It("Should error if a certificate is supplied with an `otherName` without a UTF8 value", func(testingCtx context.Context) {
+		_, err := createCertificate(testingCtx, f, []cmapi.OtherName{
 			{
 				OID: "1.3.6.1.4.1.311.20.2.3",
 			},

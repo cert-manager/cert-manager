@@ -57,7 +57,7 @@ func NewOrderInformer(client versioned.Interface, namespace string, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredOrderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -82,7 +82,7 @@ func NewFilteredOrderInformer(client versioned.Interface, namespace string, resy
 				}
 				return client.AcmeV1().Orders(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apisacmev1.Order{},
 		resyncPeriod,
 		indexers,

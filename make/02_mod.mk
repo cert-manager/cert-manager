@@ -19,7 +19,7 @@ GOTEST := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GO) test
 GOTESTSUM := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GOTESTSUM)
 
 # Version of Gateway API install bundle https://gateway-api.sigs.k8s.io/v1alpha2/guides/#installing-gateway-api
-GATEWAY_API_VERSION=v1.0.0
+GATEWAY_API_VERSION=v1.4.0
 
 $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(bin_dir)/scratch
 	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
@@ -36,6 +36,7 @@ include make/e2e-setup.mk
 include make/scan.mk
 include make/ko.mk
 include make/third_party.mk
+include make/_shared_new/helm/crds.mk
 
 generate-licenses: generate-go-licenses
 

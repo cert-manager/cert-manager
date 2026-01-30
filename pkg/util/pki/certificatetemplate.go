@@ -17,7 +17,6 @@ limitations under the License.
 package pki
 
 import (
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -144,16 +143,7 @@ func (k printKeyUsage) String() string {
 // CertificateTemplateFromCSR will create a x509.Certificate for the
 // given *x509.CertificateRequest.
 func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators ...CertificateTemplateValidatorMutator) (*x509.Certificate, error) {
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
-	}
-
 	cert := &x509.Certificate{
-		// Version must be 3 according to RFC5280.
-		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-		Version:            3,
-		SerialNumber:       serialNumber,
 		PublicKeyAlgorithm: csr.PublicKeyAlgorithm,
 		PublicKey:          csr.PublicKey,
 		Subject:            csr.Subject,
@@ -257,6 +247,7 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 	{
 		// If the certificate has an empty Subject, we set any SAN extensions to be critical
 		var asn1Subject []byte
+		var err error
 		if cert.RawSubject != nil {
 			asn1Subject = cert.RawSubject
 		} else {

@@ -19,9 +19,10 @@ package dnsproviders
 import (
 	"context"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 type RFC2136 struct {
@@ -29,8 +30,8 @@ type RFC2136 struct {
 	nameserver string
 }
 
-func (b *RFC2136) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
-	b.nameserver = c.Addons.ACMEServer.DNSServer
+func (b *RFC2136) Setup(_ context.Context, cfg *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
+	b.nameserver = cfg.Addons.ACMEServer.DNSServer
 	return nil, nil
 }
 

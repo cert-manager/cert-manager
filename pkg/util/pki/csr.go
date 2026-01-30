@@ -30,7 +30,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/big"
 	"net"
 	"net/netip"
 	"net/url"
@@ -86,8 +85,6 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 	return *crt.Spec.Subject
 }
-
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
@@ -235,7 +232,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	if len(commonName) == 0 && sans.Empty() {
-		return nil, fmt.Errorf("no common name (from the commonName field or from a literalSubject), DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
+		return nil, fmt.Errorf("at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set")
 	}
 
 	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
@@ -542,6 +539,8 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
+	default:
+		// ok
 	}
 
 	sigAlgo, err := signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)

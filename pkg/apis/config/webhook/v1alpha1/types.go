@@ -46,6 +46,7 @@ type WebhookConfiguration struct {
 	KubeConfig string `json:"kubeConfig,omitempty"`
 
 	// apiServerHost is used to override the API server connection address.
+	//
 	// Deprecated: use `kubeConfig` instead.
 	APIServerHost string `json:"apiServerHost,omitempty"`
 
@@ -72,4 +73,18 @@ type WebhookConfiguration struct {
 
 	// metricsTLSConfig is used to configure the metrics server TLS settings.
 	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
+
+	// EnableClientVerification turns on client verification of requests
+	// made to the webhook server
+	EnableClientVerification bool `json:"enableClientVerification,omitempty"`
+
+	// ClientCAPath is the CA certificate name which server used to verify remote(client)'s certificate.
+	// Defaults to "", which means server does not verify client's certificate.
+	ClientCAPath string `json:"clientCAPath,omitempty"`
+
+	// ClientCertificateSubjects is a list of acceptable subject names for client
+	// certificates used by the apiserver to contact webhooks. Each entry will
+	// be matched against the certificate's CommonName and DNS SubjectAltNames.
+	// Multiple values allow zero-downtime rotations.
+	ClientCertificateSubjects []string `json:"clientCertificateSubjects,omitempty"`
 }

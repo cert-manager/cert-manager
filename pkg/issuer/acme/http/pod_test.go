@@ -361,7 +361,23 @@ func TestGetPodsForChallenge(t *testing.T) {
 }
 
 func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
-	const createdPodKey = "createdPod"
+	const (
+		createdPodKey = "createdPod"
+
+		defaultCPURequest    = "10m"
+		defaultCPULimit      = "100m"
+		defaultMemoryRequest = "64Mi"
+		defaultMemoryLimit   = "64Mi"
+	)
+
+	// setupACMEOptionsWithDefaultsResources sets up ACMEOptions with default resource values from global controller flags
+	setupACMEOptionsWithDefaultsResources := func(s *solverFixture) {
+		s.Solver.ACMEOptions.HTTP01SolverResourceRequestCPU = resource.MustParse(defaultCPURequest)
+		s.Solver.ACMEOptions.HTTP01SolverResourceRequestMemory = resource.MustParse(defaultMemoryRequest)
+		s.Solver.ACMEOptions.HTTP01SolverResourceLimitsCPU = resource.MustParse(defaultCPULimit)
+		s.Solver.ACMEOptions.HTTP01SolverResourceLimitsMemory = resource.MustParse(defaultMemoryLimit)
+	}
+
 	tests := map[string]solverFixture{
 		"should use labels, annotations and spec fields from template": {
 			Challenge: &cmacme.Challenge{
@@ -434,7 +450,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -525,7 +541,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -562,7 +578,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
 				resp, ok := args[0].(*corev1.Pod)
@@ -595,13 +611,168 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				}
 			},
 		},
-	}
+		"should use ACMEOptions values when podTemplate resources are not set": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										// No resources specified in template
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				setupACMEOptionsWithDefaultsResources(s)
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
 
+				container := resp.Spec.Containers[0]
+
+				// Verify that actual container resources match values from ACMEOptions
+				expectedRequests := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse(defaultCPURequest),
+					corev1.ResourceMemory: resource.MustParse(defaultMemoryRequest),
+				}
+				expectedLimits := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse(defaultCPULimit),
+					corev1.ResourceMemory: resource.MustParse(defaultMemoryLimit),
+				}
+				validateContainerResources(t, container, expectedRequests, expectedLimits)
+			},
+		},
+		"should override ACMEOptions values when podTemplate resources are set": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										Resources: &cmacme.ACMEChallengeSolverHTTP01IngressPodResources{
+											Requests: corev1.ResourceList{
+												corev1.ResourceCPU:    resource.MustParse("75m"),
+												corev1.ResourceMemory: resource.MustParse("96Mi"),
+											},
+											Limits: corev1.ResourceList{
+												corev1.ResourceCPU:    resource.MustParse("150m"),
+												corev1.ResourceMemory: resource.MustParse("192Mi"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				setupACMEOptionsWithDefaultsResources(s)
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				container := resp.Spec.Containers[0]
+
+				// Verify that actual container resources match values from podTemplate
+				expectedRequests := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("75m"),
+					corev1.ResourceMemory: resource.MustParse("96Mi"),
+				}
+				expectedLimits := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("150m"),
+					corev1.ResourceMemory: resource.MustParse("192Mi"),
+				}
+				validateContainerResources(t, container, expectedRequests, expectedLimits)
+			},
+		},
+		"should handle partial resources in podTemplate by merging with ACMEOptions values": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										Resources: &cmacme.ACMEChallengeSolverHTTP01IngressPodResources{
+											// Only CPU request specified
+											Requests: corev1.ResourceList{
+												corev1.ResourceCPU: resource.MustParse("25m"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				setupACMEOptionsWithDefaultsResources(s)
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				container := resp.Spec.Containers[0]
+
+				// Verify that actual container resources match CPU request from template override, others from ACMEOptions
+				expectedRequests := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("25m"),
+					corev1.ResourceMemory: resource.MustParse(defaultMemoryRequest),
+				}
+				expectedLimits := corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse(defaultCPULimit),
+					corev1.ResourceMemory: resource.MustParse(defaultMemoryLimit),
+				}
+				validateContainerResources(t, container, expectedRequests, expectedLimits)
+			},
+		},
+	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
 			resp := test.Solver.buildPod(test.Challenge)
 			test.Finish(t, resp, nil)
 		})
+	}
+}
+
+// validateContainerResources checks that container resources match expected values
+func validateContainerResources(t *testing.T, container corev1.Container, expectedRequests, expectedLimits corev1.ResourceList) {
+	for resourceType, expectedQuantity := range expectedRequests {
+		actualQuantity := container.Resources.Requests[resourceType]
+		if !actualQuantity.Equal(expectedQuantity) {
+			t.Errorf("%s request mismatch: got %v, expected %v", resourceType, actualQuantity, expectedQuantity)
+		}
+	}
+	for resourceType, expectedQuantity := range expectedLimits {
+		actualQuantity := container.Resources.Limits[resourceType]
+		if !actualQuantity.Equal(expectedQuantity) {
+			t.Errorf("%s limit mismatch: got %v, expected %v", resourceType, actualQuantity, expectedQuantity)
+		}
 	}
 }

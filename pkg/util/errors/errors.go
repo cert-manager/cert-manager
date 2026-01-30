@@ -20,7 +20,7 @@ import "fmt"
 
 type invalidDataError struct{ error }
 
-func NewInvalidData(str string, obj ...interface{}) error {
+func NewInvalidData(str string, obj ...any) error {
 	return &invalidDataError{error: fmt.Errorf(str, obj...)}
 }
 

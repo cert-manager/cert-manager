@@ -29,7 +29,7 @@ metadata:
     {{- end }}
 {{- end }}
 spec:
-  jobLabel: {{ template "cert-manager.fullname" . }}
+  jobLabel: app.kubernetes.io/name
   selector:
     matchExpressions:
       - key: app.kubernetes.io/name

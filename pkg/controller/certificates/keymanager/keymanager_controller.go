@@ -89,24 +89,24 @@ func NewController(
 	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
-	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
 		// Trigger reconciles on changes to any 'owned' secret resources
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ResourceOwnerOf,
 		),
-	}); err != nil {
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
 		// Trigger reconciles on changes to certificates named as spec.secretName
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName),
 		),
-	}); err != nil {
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

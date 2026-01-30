@@ -29,6 +29,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -38,20 +44,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
-	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
-
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
+	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -61,11 +62,10 @@ import (
 // automatically called.
 func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
-		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
 		s.setup(f)
 
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			// Special case Public ACME Servers against being run in the standard
 			// e2e tests.
 			if strings.Contains(s.Name, "Public ACME Server") && strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
@@ -400,7 +400,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		}
 
 		defineTest := func(test testCase) {
-			s.it(f, test.name, func(issuerRef cmmeta.ObjectReference) {
+			s.it(f, test.name, func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 				requiredFeatures := sets.New(test.requiredFeatures...)
 
 				if requiredFeatures.Has(featureset.OtherNamesFeature) {
@@ -456,7 +456,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		////// Gateway/ Ingress Tests ///////
 		/////////////////////////////////////
 
-		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -508,7 +508,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
 				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
@@ -615,7 +615,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 
 			name := "testcert-gateway"
@@ -659,11 +659,88 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 		})
 
+		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.XListenerSets)
+
+			name := "testcert-gateway"
+			secretName := "testcert-gateway-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			duration := time.Hour * 999
+			renewBefore := time.Hour * 111
+			all := gwapi.FromNamespaces("All")
+
+			gw := &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "foo",
+					AllowedListeners: &gwapi.AllowedListeners{
+						Namespaces: &gwapi.ListenerNamespaces{
+							From: &all,
+						},
+					},
+					Listeners: []gwapi.Listener{
+						{
+							AllowedRoutes: &gwapi.AllowedRoutes{
+								Namespaces: &gwapi.RouteNamespaces{
+									From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
+									Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+										"gw": name,
+									}},
+								},
+								Kinds: nil,
+							},
+							Name:     "acme-solver",
+							Protocol: gwapi.TLSProtocolType,
+							Port:     gwapi.PortNumber(80),
+							Hostname: (*gwapi.Hostname)(&domain),
+						},
+					},
+				},
+			}
+
+			_, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			xls := e2eutil.NewListenerSet(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       ir.Name,
+				"cert-manager.io/issuer-kind":  ir.Kind,
+				"cert-manager.io/issuer-group": ir.Group,
+				"cert-manager.io/common-name":  domain,
+				"cert-manager.io/duration":     duration.String(),
+				"cert-manager.io/renew-before": renewBefore.String(),
+			}, domain)
+			xls, err = f.GWClientSet.ExperimentalV1alpha1().XListenerSets(f.Namespace.Name).Create(ctx, xls, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// The CertificateRef Name comes from the secretName (for example,
+			// "testcert-gateway-tls"), and is used as the Certificate name.
+			certName := string(xls.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, cert, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the gateway-shim has translated all the supplied
+			// annotations into equivalent Certificate field values
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.CommonName).To(Equal(domain))
+			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+		})
+
 		////////////////////////////////////////
 		/////// Complex behavioral tests ///////
 		////////////////////////////////////////
 
-		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -726,7 +803,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			}
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
-		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

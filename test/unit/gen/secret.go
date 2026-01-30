@@ -17,6 +17,8 @@ limitations under the License.
 package gen
 
 import (
+	"maps"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -49,17 +51,13 @@ func SetSecretNamespace(namespace string) SecretModifier {
 func SetSecretAnnotations(an map[string]string) SecretModifier {
 	return func(sec *corev1.Secret) {
 		sec.Annotations = make(map[string]string)
-		for k, v := range an {
-			sec.Annotations[k] = v
-		}
+		maps.Copy(sec.Annotations, an)
 	}
 }
 
 func SetSecretData(data map[string][]byte) SecretModifier {
 	return func(sec *corev1.Secret) {
 		sec.Data = make(map[string][]byte)
-		for k, v := range data {
-			sec.Data[k] = v
-		}
+		maps.Copy(sec.Data, data)
 	}
 }

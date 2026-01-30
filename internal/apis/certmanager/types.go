@@ -85,6 +85,9 @@ const (
 	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
 	// if the challenge type is set to http01
 	IngressACMEIssuerHTTP01IngressClassAnnotationKey = "acme.cert-manager.io/http01-ingress-class"
+	// acmeIssuerHTTP01IngressClassNameAnnotation can be used to override the http01 ingressClassName
+	// if the challenge type is set to http01
+	IngressACMEIssuerHTTP01IngressClassNameAnnotationKey = "acme.cert-manager.io/http01-ingress-ingressclassname"
 
 	// IngressClassAnnotationKey picks a specific "class" for the Ingress. The
 	// controller only processes Ingresses with this annotation either unset, or
@@ -149,8 +152,8 @@ const (
 
 // Issuer specific Annotations
 const (
-	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the Venafi issuer
-	// This will only work with Venafi TPP v19.3 and higher
+	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the Certificate Manager issuer
+	// This will only work with CyberArk Certificate Manager Self-Hosted v19.3 and higher
 	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"

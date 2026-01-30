@@ -93,7 +93,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block: no PEM data was found in given input",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt certificate data": {
@@ -105,7 +105,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidCertificate,
-			message: "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block",
+			message: "Issuing certificate as Secret contains an invalid certificate: error decoding certificate PEM block: no valid certificates found",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains corrupt private key data": {
@@ -119,7 +119,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  InvalidKeyPair,
-			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block",
+			message: "Issuing certificate as Secret contains invalid private key data: error decoding private key PEM block: no PEM data was found in given input",
 			reissue: true,
 		},
 		"trigger issuance as Secret contains a non-matching key-pair": {
@@ -139,7 +139,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer name' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "testissuer",
 				},
 			}},
@@ -163,7 +163,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer kind' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "testissuer",
 					Kind: "NewIssuerKind",
 				},
@@ -189,7 +189,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance as Secret has old or incorrect 'issuer group' annotation": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				SecretName: "something",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "old.example.com",
@@ -255,7 +255,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -273,7 +273,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"trigger issuance when CertificateRequest does not match certificate spec": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "new.example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -298,7 +298,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -314,7 +314,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"do nothing if CertificateRequest matches spec": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -339,7 +339,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			request: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -352,7 +352,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"compare signed x509 certificate in Secret with spec if CertificateRequest does not exist": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "new.example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -380,7 +380,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		"do nothing if signed x509 certificate in Secret matches spec (when request does not exist)": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  "testissuer",
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
@@ -406,7 +406,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -443,7 +443,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -480,7 +480,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -514,7 +514,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -1459,9 +1459,9 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
-							  "f:tls-combined.pem": {}
+							{"f:data": {
+								".": {},
+								"f:tls-combined.pem": {}
 							}}`),
 							}},
 						},
@@ -1482,9 +1482,9 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
-							  "f:key.der": {}
+							{"f:data": {
+								".": {},
+								"f:key.der": {}
 							}}`),
 							}},
 						},
@@ -1505,10 +1505,10 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
-							  "f:tls-combined.pem": {},
-							  "f:key.der": {}
+							{"f:data": {
+								".": {},
+								"f:tls-combined.pem": {},
+								"f:key.der": {}
 							}}`),
 							}},
 						},
@@ -1529,9 +1529,9 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
-							  "f:tls-combined.pem": {}
+							{"f:data": {
+								".": {},
+								"f:tls-combined.pem": {}
 							}}`),
 							}},
 						},
@@ -1552,9 +1552,9 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
-							  "f:key.der": {}
+							{"f:data": {
+								".": {},
+								"f:key.der": {}
 							}}`),
 							}},
 						},
@@ -1575,10 +1575,10 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {},
-							  "f:key.der": {}
+								"f:key.der": {}
 							}}`),
 							}},
 						},
@@ -1601,8 +1601,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {}
 							}}`),
 							}},
@@ -1626,8 +1626,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:key.der": {}
 							}}`),
 							}},
@@ -1652,8 +1652,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
 							}}`),
@@ -1678,8 +1678,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {}
 							}}`),
 							}},
@@ -1703,8 +1703,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:key.der": {}
 							}}`),
 							}},
@@ -1729,8 +1729,8 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:key.der": {},
 								"f:tls-combined.pem": {}
 							}}`),
@@ -1756,15 +1756,15 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:key.der": {}
 							}}`),
 							}},
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {}
 							}}`),
 							}},
@@ -1789,16 +1789,16 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
 							}}`),
 							}},
 							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-              {"f:data": {
-							  ".": {},
+							{"f:data": {
+								".": {},
 								"f:key.der": {},
 								"f:tls-combined.pem": {}
 							}}`),
@@ -1856,9 +1856,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+							{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
+								"k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
 							}}}`),
 							}},
 						},
@@ -1878,9 +1878,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+								{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"uid-123\"}": {}
+								"k:{\"uid\":\"uid-123\"}": {}
 							}}}`),
 							}},
 						},
@@ -1900,9 +1900,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+								{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"uid-123\"}": {}
+								"k:{\"uid\":\"uid-123\"}": {}
 							}}}`),
 							}},
 						},
@@ -1933,9 +1933,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+								{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
+								"k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
 							}}}`),
 							}},
 						},
@@ -1955,9 +1955,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+								{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"uid-123\"}": {}
+								"k:{\"uid\":\"uid-123\"}": {}
 							}}}`),
 							}},
 						},
@@ -1977,9 +1977,9 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 						ManagedFields: []metav1.ManagedFieldsEntry{
 							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
 								Raw: []byte(`
-                {"f:metadata": {
+								{"f:metadata": {
 								"f:ownerReferences": {
-                "k:{\"uid\":\"uid-123\"}": {}
+								"k:{\"uid\":\"uid-123\"}": {}
 							}}}`),
 							}},
 						},

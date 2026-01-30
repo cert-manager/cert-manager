@@ -21,15 +21,15 @@ import (
 	"crypto/x509"
 	"time"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/acme/dnsproviders"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,7 +46,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (DNS01)", func() 
 func testRFC2136DNSProvider() bool {
 	name := "rfc2136"
 	return Context("With "+name+" credentials configured", func() {
-		ctx := context.TODO()
 		f := framework.NewDefaultFramework("create-acme-certificate-request-dns01-" + name)
 		h := f.Helper()
 
@@ -57,7 +56,7 @@ func testRFC2136DNSProvider() bool {
 		p := &dnsproviders.RFC2136{}
 		f.RequireAddon(p)
 
-		BeforeEach(func() {
+		BeforeEach(func(testingCtx context.Context) {
 			By("Creating an Issuer")
 			dnsDomain = util.RandomSubdomain(p.Details().BaseDomain)
 			issuer := gen.Issuer(issuerName,
@@ -77,10 +76,10 @@ func testRFC2136DNSProvider() bool {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
+			_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 				issuerName,
 				v1.IssuerCondition{
 					Type:   v1.IssuerConditionReady,
@@ -88,7 +87,7 @@ func testRFC2136DNSProvider() bool {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
-			err = util.WaitForIssuerStatusFunc(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerStatusFunc(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 				issuerName,
 				func(i *v1.Issuer) (bool, error) {
 					if i.GetStatus().ACMEStatus().URI == "" {
@@ -98,22 +97,22 @@ func testRFC2136DNSProvider() bool {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying ACME account private key exists")
-			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, testingACMEPrivateKey, metav1.GetOptions{})
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingCtx, testingACMEPrivateKey, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			if len(secret.Data) != 1 {
 				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
 			}
 		})
 
-		AfterEach(func() {
+		AfterEach(func(testingCtx context.Context) {
 			By("Cleaning up")
-			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})
+			err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, testingACMEPrivateKey, metav1.DeleteOptions{})
+			err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, testingACMEPrivateKey, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should obtain a signed certificate for a regular domain", func() {
+		It("should obtain a signed certificate for a regular domain", func(testingCtx context.Context) {
 			By("Creating a CertificateRequest")
 
 			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
@@ -122,48 +121,48 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 
-			_, err = crClient.Create(ctx, cr, metav1.CreateOptions{})
+			_, err = crClient.Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Minute*5, key)
+			err = h.WaitCertificateRequestIssuedValid(testingCtx, f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should obtain a signed certificate for a wildcard domain", func() {
+		It("should obtain a signed certificate for a wildcard domain", func(testingCtx context.Context) {
 			By("Creating a CertificateRequest")
 
 			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("*."+dnsDomain), gen.SetCSRDNSNames("*."+dnsDomain))
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 
-			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
+			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Minute*5, key)
+			err = h.WaitCertificateRequestIssuedValid(testingCtx, f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should obtain a signed certificate for a wildcard and apex domain", func() {
+		It("should obtain a signed certificate for a wildcard and apex domain", func(testingCtx context.Context) {
 			By("Creating a CertificateRequest")
 
 			csr, key, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("*."+dnsDomain), gen.SetCSRDNSNames("*."+dnsDomain, dnsDomain))
 			Expect(err).NotTo(HaveOccurred())
 			cr := gen.CertificateRequest(certificateRequestName,
 				gen.SetCertificateRequestNamespace(f.Namespace.Name),
-				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1.IssuerKind, Name: issuerName}),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{Kind: v1.IssuerKind, Name: issuerName}),
 				gen.SetCertificateRequestCSR(csr),
 			)
 
-			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(ctx, cr, metav1.CreateOptions{})
+			_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(testingCtx, cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
-			err = h.WaitCertificateRequestIssuedValid(ctx, f.Namespace.Name, certificateRequestName, time.Minute*10, key)
+			err = h.WaitCertificateRequestIssuedValid(testingCtx, f.Namespace.Name, certificateRequestName, time.Minute*10, key)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

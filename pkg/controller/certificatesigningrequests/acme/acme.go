@@ -85,15 +85,15 @@ func controllerBuilder() *certificatesigningrequests.Controller {
 			orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 			csrLister := ctx.KubeSharedInformerFactory.CertificateSigningRequests().Lister()
 
-			if _, err := orderInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
-				WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(
+			if _, err := orderInformer.AddEventHandler(controllerpkg.BlockingEventHandler(
+				controllerpkg.HandleOwnedResourceNamespacedFunc(
 					log, queue,
 					certificatesv1.SchemeGroupVersion.WithKind("CertificateSigningRequest"),
 					func(_, name string) (*certificatesv1.CertificateSigningRequest, error) {
 						return csrLister.Get(name)
 					},
 				),
-			}); err != nil {
+			)); err != nil {
 				return nil, fmt.Errorf("error setting up event handler: %v", err)
 			}
 			return []cache.InformerSynced{orderInformer.HasSynced}, nil
@@ -278,7 +278,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 
 	spec := cmacme.OrderSpec{
 		Request: csr.Spec.Request,
-		IssuerRef: cmmeta.ObjectReference{
+		IssuerRef: cmmeta.IssuerReference{
 			Name:  ref.Name,
 			Kind:  kind,
 			Group: ref.Group,
@@ -304,7 +304,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	// NotAfter field.
 	computeNameSpec.Request = nil
 
-	var hashObj interface{}
+	var hashObj any
 	hashObj = computeNameSpec
 	if len(csr.Name) >= 52 {
 		// Pass a unique struct for hashing so that names at or longer than 52

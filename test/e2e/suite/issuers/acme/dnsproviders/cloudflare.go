@@ -19,6 +19,8 @@ package dnsproviders
 import (
 	"context"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -26,8 +28,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/base"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/util/errors"
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // Cloudflare provisions cloudflare credentials in a namespace for cert-manager
@@ -45,22 +45,22 @@ type Cloudflare struct {
 	createdSecret *corev1.Secret
 }
 
-func (b *Cloudflare) Setup(c *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
-	if c.Suite.ACME.Cloudflare.APIKey == "" ||
-		c.Suite.ACME.Cloudflare.Domain == "" ||
-		c.Suite.ACME.Cloudflare.Email == "" {
+func (b *Cloudflare) Setup(ctx context.Context, cfg *config.Config, _ ...addon.AddonTransferableData) (addon.AddonTransferableData, error) {
+	if cfg.Suite.ACME.Cloudflare.APIKey == "" ||
+		cfg.Suite.ACME.Cloudflare.Domain == "" ||
+		cfg.Suite.ACME.Cloudflare.Email == "" {
 		return nil, errors.NewSkip(ErrNoCredentials)
 	}
 
 	if b.Base == nil {
 		b.Base = &base.Base{}
-		_, err := b.Base.Setup(c)
+		_, err := b.Base.Setup(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	b.cf = c.Suite.ACME.Cloudflare
+	b.cf = cfg.Suite.ACME.Cloudflare
 
 	return nil, nil
 }

@@ -21,16 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/retry"
-
-	"github.com/cert-manager/cert-manager/e2e-tests/framework"
-	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
+
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,9 +46,8 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 	)
 
 	f := framework.NewDefaultFramework("certificates-duplicate-secret-name")
-	ctx := context.Background()
 
-	createCertificate := func(f *framework.Framework, pk cmapi.PrivateKeyAlgorithm) string {
+	createCertificate := func(testingCtx context.Context, f *framework.Framework, pk cmapi.PrivateKeyAlgorithm) string {
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-duplicate-secret-name-",
@@ -61,7 +60,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 					Algorithm:      pk,
 					RotationPolicy: cmapi.RotationPolicyAlways,
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name:  issuerName,
 					Kind:  "Issuer",
 					Group: "cert-manager.io",
@@ -71,21 +70,21 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 
 		By("creating Certificate")
 
-		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(ctx, crt, metav1.CreateOptions{})
+		crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(testingCtx, crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		return crt.Name
 	}
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer("self-signed",
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}))
-		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
+		Expect(f.CRClient.Create(testingCtx, issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			"self-signed", cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -97,40 +96,40 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		By("creating a CA Issuer")
 		crt := gen.Certificate(issuerName,
 			gen.SetCertificateNamespace(f.Namespace.Name),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "self-signed"}),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "self-signed"}),
 			gen.SetCertificateDNSNames("example.com"),
 			gen.SetCertificateIsCA(true),
 			gen.SetCertificateSecretName("ca-issuer"),
 		)
-		Expect(f.CRClient.Create(ctx, crt)).To(Succeed())
-		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Second*10)
+		Expect(f.CRClient.Create(testingCtx, crt)).To(Succeed())
+		_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, crt, time.Second*10)
 		Expect(err).NotTo(HaveOccurred())
 		issuer = gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "ca-issuer"}),
 		)
-		Expect(f.CRClient.Create(ctx, issuer)).To(Succeed())
-		err = e2eutil.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		Expect(f.CRClient.Create(testingCtx, issuer)).To(Succeed())
+		err = e2eutil.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(ctx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
+	AfterEach(func(testingCtx context.Context) {
+		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
-	It("if Certificates are created in the same Namespace with the same spec.secretName, they should block issuance, and never create more than one request.", func() {
-		crt1, crt2, crt3 := createCertificate(f, cmapi.ECDSAKeyAlgorithm), createCertificate(f, cmapi.RSAKeyAlgorithm), createCertificate(f, cmapi.ECDSAKeyAlgorithm)
+	It("if Certificates are created in the same Namespace with the same spec.secretName, they should block issuance, and never create more than one request.", func(testingCtx context.Context) {
+		crt1, crt2, crt3 := createCertificate(testingCtx, f, cmapi.ECDSAKeyAlgorithm), createCertificate(testingCtx, f, cmapi.RSAKeyAlgorithm), createCertificate(testingCtx, f, cmapi.ECDSAKeyAlgorithm)
 
 		for _, crtName := range []string{crt1, crt2, crt3} {
-			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
+			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(testingCtx, crtName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Consistently(func() int {
-				reqs, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).List(ctx, metav1.ListOptions{})
+				reqs, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).List(testingCtx, metav1.ListOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				var ownedReqs int
 				for _, req := range reqs.Items {
-					if predicate.ResourceOwnedBy(crt)(&req) /* #nosec G601 -- False positive. See https://github.com/golang/go/discussions/56010 */ {
+					if predicate.ResourceOwnedBy(crt)(&req) {
 						ownedReqs++
 					}
 				}
@@ -142,7 +141,7 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 			numberOfReadyCerts := 0
 
 			for _, crtName := range []string{crt1, crt2, crt3} {
-				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
+				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(testingCtx, crtName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
@@ -157,18 +156,18 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 		By("expect all Certificates to be successfully be issued once all SecretNames are unique")
 		for i, crtName := range []string{crt1, crt2, crt3} {
 			Expect(retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
+				crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(testingCtx, crtName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				crt.Spec.SecretName = fmt.Sprintf("unique-secret-%d", i)
-				_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(ctx, crt, metav1.UpdateOptions{})
+				_, err = f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Update(testingCtx, crt, metav1.UpdateOptions{})
 				return err
 			})).NotTo(HaveOccurred())
 		}
 
 		for _, crtName := range []string{crt1, crt2, crt3} {
-			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, crtName, metav1.GetOptions{})
+			crt, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(testingCtx, crtName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, crt, time.Second*10)
+			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, crt, time.Second*10)
 			Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 		}
 	})

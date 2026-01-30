@@ -19,6 +19,7 @@ package dns
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -78,12 +79,12 @@ type Solver struct {
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
-func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Present(ctx context.Context, _ v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "Present"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
 	webhookSolver, req, err := s.prepareChallengeRequest(ctx, ch)
-	if err != nil && err != errNotFound {
+	if err != nil && !errors.Is(err, errNotFound) {
 		return err
 	}
 	if err == nil {
@@ -378,7 +379,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			s.RESTConfig.UserAgent,
 		)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %w", err)
 		}
 	case providerConfig.AzureDNS != nil:
 		dbg.Info("preparing to create AzureDNS provider")
@@ -487,9 +488,9 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *cmacme.ACMEChallengeSolverDNS01) (webhook.Solver, any, error) {
 	solverName := ""
-	var c interface{}
+	var c any
 	switch {
 	case config.Webhook != nil:
 		solverName = "webhook"

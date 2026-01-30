@@ -127,7 +127,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		len(crt.EmailAddresses) == 0 &&
 		len(crt.IPAddresses) == 0 &&
 		len(crt.OtherNames) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"))
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -153,7 +153,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 				}
 
 				if _, err := pki.ParseObjectIdentifier(otherName.OID); err != nil {
-					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "oid syntax invalid"))
+					el = append(el, field.Invalid(fldPath.Child("otherNames").Index(i).Child("oid"), otherName.OID, "invalid oid syntax"))
 				}
 
 				if otherName.UTF8Value == "" || !utf8.ValidString(otherName.UTF8Value) {
@@ -237,9 +237,6 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (allErrs field.ErrorList, warnings []string) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs = ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	if crt.Spec.PrivateKey == nil || crt.Spec.PrivateKey.RotationPolicy == "" {
-		warnings = append(warnings, newDefaultPrivateKeyRotationPolicy)
-	}
 	return allErrs, warnings
 }
 
@@ -249,7 +246,7 @@ func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runt
 	return allErrs, nil
 }
 
-func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {
+func validateIssuerRef(issuerRef cmmeta.IssuerReference, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	issuerRefPath := fldPath.Child("issuerRef")

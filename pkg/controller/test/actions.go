@@ -17,11 +17,10 @@ limitations under the License.
 package test
 
 import (
-	"fmt"
-	"reflect"
-
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 	coretesting "k8s.io/client-go/testing"
+
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 // ActionMatchFn is a type of custom matcher for two Actions.
@@ -79,19 +78,12 @@ func (a *action) Action() coretesting.Action {
 
 // Matches compares action.action with another Action.
 func (a *action) Matches(act coretesting.Action) error {
-	matches := reflect.DeepEqual(a.action, act)
-	if matches {
-		return nil
-	}
-
-	objAct, ok := act.(coretesting.CreateAction)
-	if !ok {
-		return nil
-	}
-	objExp, ok := a.action.(coretesting.CreateAction)
-	if !ok {
-		return nil
-	}
-
-	return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objExp.GetObject(), objAct.GetObject()))
+	return testutil.Diff(a.action, act,
+		// We ignore differences in .ManagedFields since the expected object does not have them.
+		// FIXME: don't ignore this field
+		cmp.FilterPath(func(p cmp.Path) bool {
+			// FIXME: Must ignore managed fields as newer fake clients are tracking them
+			return p.Last().String() == ".ManagedFields"
+		}, cmp.Ignore()),
+	)
 }

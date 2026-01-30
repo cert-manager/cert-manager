@@ -91,8 +91,8 @@ func Test_serializeApplyStatus(t *testing.T) {
 	// meta/type object, empty spec. Status should be matched both via regex, and
 	// when empty.
 	const (
-		expReg   = `^{"kind":"CertificateRequest","apiVersion":"cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"issuerRef":{"name":""},"request":null},"status":{.*}}$`
-		expEmpty = `{"kind":"CertificateRequest","apiVersion":"cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar","creationTimestamp":null},"spec":{"issuerRef":{"name":""},"request":null},"status":{}}`
+		expReg   = `^{"kind":"CertificateRequest","apiVersion":"cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"issuerRef":{"name":""},"request":null},"status":{.*}}$`
+		expEmpty = `{"kind":"CertificateRequest","apiVersion":"cert-manager.io/v1","metadata":{"name":"foo","namespace":"bar"},"spec":{"issuerRef":{"name":""},"request":null},"status":{}}`
 		numJobs  = 10000
 	)
 

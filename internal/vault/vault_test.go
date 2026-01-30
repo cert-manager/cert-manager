@@ -234,7 +234,7 @@ type testSignT struct {
 
 func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Secret {
 	secret := &certutil.Secret{
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"certificate": testLeafCertificate,
 		},
 	}
@@ -445,7 +445,7 @@ func TestSetToken(t *testing.T) {
 
 		fakeClient *vaultfake.FakeClient
 	}{
-		"if neither token secret ref, app role secret ref, clientCertificate auth or kube auth not found then error": {
+		"error when no credentials are found": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
@@ -455,7 +455,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set",
+				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set",
 			),
 		},
 
@@ -782,6 +782,7 @@ func TestSetToken(t *testing.T) {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
+					Server:   "https://vault.example.com",
 					Auth: cmapiv1.VaultAuth{
 						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
@@ -796,7 +797,8 @@ func TestSetToken(t *testing.T) {
 			mockCreateToken: func(t *testing.T) CreateToken {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
-					assert.Equal(t, "vault://default-unit-test-ns/vault-issuer", req.Spec.Audiences[0])
+					assert.Contains(t, req.Spec.Audiences, "vault://default-unit-test-ns/vault-issuer")
+					assert.Contains(t, req.Spec.Audiences, "https://vault.example.com")
 					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
@@ -819,6 +821,7 @@ func TestSetToken(t *testing.T) {
 			issuer: gen.ClusterIssuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
+					Server:   "https://vault.example.com",
 					Auth: cmapiv1.VaultAuth{
 						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
@@ -833,7 +836,8 @@ func TestSetToken(t *testing.T) {
 			mockCreateToken: func(t *testing.T) CreateToken {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
-					assert.Equal(t, "vault://vault-issuer", req.Spec.Audiences[0])
+					assert.Contains(t, req.Spec.Audiences, "vault://vault-issuer")
+					assert.Contains(t, req.Spec.Audiences, "https://vault.example.com")
 					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
@@ -856,6 +860,7 @@ func TestSetToken(t *testing.T) {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
+					Server:   "https://vault.example.com",
 					Auth: cmapiv1.VaultAuth{
 						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
@@ -873,9 +878,10 @@ func TestSetToken(t *testing.T) {
 			mockCreateToken: func(t *testing.T) CreateToken {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
-					assert.Len(t, req.Spec.Audiences, 2)
+					assert.Len(t, req.Spec.Audiences, 3)
 					assert.Contains(t, req.Spec.Audiences, "https://custom-audience")
 					assert.Contains(t, req.Spec.Audiences, "vault://default-unit-test-ns/vault-issuer")
+					assert.Contains(t, req.Spec.Audiences, "https://vault.example.com")
 					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",
@@ -898,6 +904,7 @@ func TestSetToken(t *testing.T) {
 			issuer: gen.ClusterIssuer("vault-issuer",
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
+					Server:   "https://vault.example.com",
 					Auth: cmapiv1.VaultAuth{
 						Kubernetes: &cmapiv1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
@@ -915,9 +922,10 @@ func TestSetToken(t *testing.T) {
 			mockCreateToken: func(t *testing.T) CreateToken {
 				return func(_ context.Context, saName string, req *authv1.TokenRequest, _ metav1.CreateOptions) (*authv1.TokenRequest, error) {
 					assert.Equal(t, "my-service-account", saName)
-					assert.Len(t, req.Spec.Audiences, 2)
+					assert.Len(t, req.Spec.Audiences, 3)
 					assert.Contains(t, req.Spec.Audiences, "https://custom-audience")
 					assert.Contains(t, req.Spec.Audiences, "vault://vault-issuer")
+					assert.Contains(t, req.Spec.Audiences, "https://vault.example.com")
 					assert.Equal(t, int64(600), *req.Spec.ExpirationSeconds)
 					return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{
 						Token: "kube-sa-token",

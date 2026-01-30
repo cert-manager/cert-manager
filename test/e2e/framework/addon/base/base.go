@@ -58,8 +58,8 @@ func (d *Details) Helper() *helper.Helper {
 	}
 }
 
-func (b *Base) Setup(c *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
-	kubeConfig, err := util.LoadConfig(c.KubeConfig, c.KubeContext)
+func (b *Base) Setup(_ context.Context, cfg *config.Config, _ ...internal.AddonTransferableData) (internal.AddonTransferableData, error) {
+	kubeConfig, err := util.LoadConfig(cfg.KubeConfig, cfg.KubeContext)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (b *Base) Setup(c *config.Config, _ ...internal.AddonTransferableData) (int
 	}
 
 	b.details = &Details{
-		Config: c,
+		Config: cfg,
 
 		KubeConfig: kubeConfig,
 		KubeClient: kubeClientset,

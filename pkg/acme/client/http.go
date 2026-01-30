@@ -19,7 +19,6 @@ package client
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/metrics"
@@ -31,6 +30,13 @@ import (
 // We implement this as part of the HTTP client to ensure we don't miss any
 // calls made to the ACME server caused by retries in the underlying ACME
 // library.
+
+// MetricsContextKey is the type used for context keys in the metrics package.
+// Using a custom type prevents key collisions with other packages.
+type MetricsContextKey string
+
+// AcmeActionLabel is the context key for storing the logical ACME operation name.
+const AcmeActionLabel = MetricsContextKey("acme_action")
 
 // Transport is a http.RoundTripper that collects Prometheus metrics of every
 // request it processes. It allows to be configured with callbacks that process
@@ -74,11 +80,17 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if resp != nil {
 		statusCode = resp.StatusCode
 	}
-
+	var action string
+	if op, ok := req.Context().Value(AcmeActionLabel).(string); ok {
+		action = op
+	} else {
+		// Fallback for any requests where the context was not set.
+		action = "unnamed_action"
+	}
 	labels := []string{
 		req.URL.Scheme,
 		req.URL.Host,
-		pathProcessor(req.URL.Path),
+		action,
 		req.Method,
 		fmt.Sprintf("%d", statusCode),
 	}
@@ -88,15 +100,4 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// return the response and error reported from the next RoundTripper.
 	return resp, err
-}
-
-// pathProcessor will trim the provided path to only include the first 2
-// segments in order to reduce the number of prometheus labels generated
-func pathProcessor(path string) string {
-	p := strings.Split(path, "/")
-	// only record the first two path segments as a prometheus label value
-	if len(p) > 3 {
-		p = p[:3]
-	}
-	return strings.Join(p, "/")
 }

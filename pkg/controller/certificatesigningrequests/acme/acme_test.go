@@ -292,7 +292,7 @@ func Test_ProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning RequestParsingError Failed to decode CSR in spec.request: error decoding certificate request PEM block",
+					"Warning RequestParsingError Failed to decode CSR in spec.request: error decoding certificate request PEM block: no PEM data was found in given input",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -332,7 +332,7 @@ func Test_ProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "RequestParsingError",
-								Message:            "Failed to decode CSR in spec.request: error decoding certificate request PEM block",
+								Message:            "Failed to decode CSR in spec.request: error decoding certificate request PEM block: no PEM data was found in given input",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),
@@ -742,7 +742,7 @@ func Test_ProcessItem(t *testing.T) {
 					),
 				},
 				ExpectedEvents: []string{
-					"Warning OrderBadCertificate Deleting Order with bad certificate: error decoding certificate PEM block",
+					"Warning OrderBadCertificate Deleting Order with bad certificate: error decoding certificate PEM block: no valid certificates found",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -971,7 +971,7 @@ func Test_buildOrder(t *testing.T) {
 					Request:    csrPEM,
 					CommonName: "example.com",
 					DNSNames:   []string{"example.com"},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "test-name",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",
@@ -988,7 +988,7 @@ func Test_buildOrder(t *testing.T) {
 					CommonName: "example.com",
 					DNSNames:   []string{"example.com"},
 					Duration:   &metav1.Duration{Duration: time.Hour},
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "test-name",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",

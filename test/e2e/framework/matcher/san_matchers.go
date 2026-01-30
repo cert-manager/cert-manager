@@ -37,7 +37,7 @@ func HaveSameSANsAs(certWithExpectedSAN string) types.GomegaMatcher {
 }
 
 // HaveSans will check that the PEM of the certificates
-func SANEquals(sanExtensionExpected interface{}) *SANMatcher {
+func SANEquals(sanExtensionExpected any) *SANMatcher {
 	extension, ok := sanExtensionExpected.(pkix.Extension)
 	if !ok || !extension.Id.Equal(oidExtensionSubjectAltName) {
 		Fail("Invalid use of the SANEquals matcher, please supply a valid SAN pkix.Extension")
@@ -52,7 +52,7 @@ type SANMatcher struct {
 }
 
 // Comparing pkix.Extensions obtained from an expected pkix.Extension
-func (s *SANMatcher) Match(actual interface{}) (success bool, err error) {
+func (s *SANMatcher) Match(actual any) (success bool, err error) {
 	actualExtensions, ok := actual.([]pkix.Extension)
 	if !ok {
 		return false, fmt.Errorf("Invalid use of the SANEquals matcher, please supply a valid SAN pkix.Extension")
@@ -113,11 +113,11 @@ func sortGeneralNamesByTagBytes(generalNames []asn1.RawValue) {
 
 }
 
-func (s *SANMatcher) FailureMessage(actual interface{}) (message string) {
+func (s *SANMatcher) FailureMessage(actual any) (message string) {
 	return fmt.Sprintf("Supplied SAN did not match the expected SAN (even disregarding ordering).\n Actual: %v\nExpected:%v", actual, s.SANExtensionExpected)
 }
 
-func (s *SANMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (s *SANMatcher) NegatedFailureMessage(actual any) (message string) {
 	return fmt.Sprintf("Supplied SAN  matched the expected SAN (modulo ordering) which was not expected.\n Actual: %v\nExpected: %v", actual, s.SANExtensionExpected)
 
 }

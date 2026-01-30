@@ -19,16 +19,16 @@ package certificaterequests
 import (
 	"testing"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
 // Test_Apply ensures that the CertificateRequest Apply helpers can set both
@@ -53,7 +53,7 @@ func Test_Apply(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test-bundle-1",
-			IssuerRef:  cmmeta.ObjectReference{Name: "test-bundle-1"},
+			IssuerRef:  cmmeta.IssuerReference{Name: "test-bundle-1"},
 		}},
 		&fakeclock.FakeClock{},
 	)

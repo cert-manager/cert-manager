@@ -20,8 +20,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"github.com/digitalocean/godo"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -82,7 +90,7 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(cmmeta.ObjectReference{
+		gen.SetChallengeIssuer(cmmeta.IssuerReference{
 			Name: "testissuer",
 		}),
 		gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer}),
@@ -619,4 +627,59 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	test.builder.CheckAndFinish(err)
+}
+
+func Test_StabilizeSolverErrorMessage(t *testing.T) {
+	newResponseError := func() *smithyhttp.ResponseError {
+		return &smithyhttp.ResponseError{
+			Err: errors.New("foo"),
+			Response: &smithyhttp.Response{
+				Response: &http.Response{},
+			},
+		}
+	}
+
+	tests := []struct {
+		name            string
+		err             error
+		expectedMessage string
+	}{
+		{
+			name:            "aws response error",
+			err:             &smithy.OperationError{OperationName: "test", Err: &awshttp.ResponseError{RequestID: "SOMEREQUESTID", ResponseError: newResponseError()}},
+			expectedMessage: "operation error : test, <redacted AWS SDK error: http.ResponseError: see events and logs for details>",
+		},
+		{
+			name: "azure sdk azidentity.AuthenticationFailed error",
+			err: &azidentity.AuthenticationFailedError{
+				RawResponse: &http.Response{},
+			},
+			expectedMessage: "<redacted Azure SDK error: azidentity.AuthenticationFailedError: see events and logs for details>",
+		},
+		{
+			name: "azure sdk azcore.ResponseError other error",
+			err: fmt.Errorf("wrapper message: %w", &azcore.ResponseError{
+				StatusCode: 500,
+				ErrorCode:  "SomeOtherError",
+			}),
+			expectedMessage: "wrapper message: <redacted Azure SDK error: azcore.ResponseError: see events and logs for details>",
+		},
+		{
+			name: "DigitalOcean SDK error",
+			err: fmt.Errorf("wrapper message: %w", &godo.ErrorResponse{
+				Response: &http.Response{
+					Request: &http.Request{},
+				},
+				Message:   "some detailed error message",
+				RequestID: "SOMEREQUESTID",
+			}),
+
+			expectedMessage: "wrapper message: <redacted DigitalOcean SDK error: godo.ErrorResponse: see events and logs for details>",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expectedMessage, stabilizeSolverErrorMessage(tt.err))
+		})
+	}
 }

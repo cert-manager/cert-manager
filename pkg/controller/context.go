@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -42,6 +41,7 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
@@ -92,8 +92,6 @@ type Context struct {
 	GWClient gwclient.Interface
 	// MetadataClient is a PartialObjectMetadata client
 	MetadataClient metadata.Interface
-	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
-	DiscoveryClient discovery.DiscoveryInterface
 
 	// Clock should be used to access the current time instead of relying on
 	// time.Now, to make it easier to test controllers that utilise time
@@ -160,6 +158,8 @@ type ContextOptions struct {
 type ConfigOptions struct {
 	// EnableGatewayAPI indicates if the user has enabled GatewayAPI support.
 	EnableGatewayAPI bool
+	// EnableGatewayAPIXListenerSet indicates if the user has enabled XListenerSets support.
+	EnableGatewayAPIXListenerSet bool
 }
 
 type IssuerOptions struct {
@@ -231,6 +231,10 @@ type CertificateOptions struct {
 	// CopiedAnnotationPrefixes defines which annotations should be copied
 	// Certificate -> CertificateRequest, CertificateRequest -> Order.
 	CopiedAnnotationPrefixes []string
+	// CertificateRequestMinimumBackoffDuration defines the initial backoff duration
+	// when a certificate request fails. This duration is exponentially increased
+	// based on the number of consecutive failures.
+	CertificateRequestMinimumBackoffDuration time.Duration
 }
 
 type SchedulerOptions struct {
@@ -365,8 +369,6 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
 	ctx.GWClient = clients.gwClient
-	ctx.MetadataClient = clients.metadataOnlyClient
-	ctx.DiscoveryClient = clients.kubeClient.Discovery()
 	ctx.Recorder = recorder
 
 	return &ctx, nil
@@ -425,6 +427,23 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPINotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
 		default:
 			gatewayAvailable = true
+		}
+	}
+
+	// TODO: Once XListenerSets is graduated to ListenerSets we can remove this check.
+	// Check if the GatewayAPIx resources are present
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && opts.EnableGatewayAPI && opts.EnableGatewayAPIXListenerSet {
+		d := kubeClient.Discovery()
+		resources, err := d.ServerResourcesForGroupVersion(gwapix.GroupVersion.String())
+		var GatewayAPIXNotAvailable = "the Gateway API experimental CRDs do not seem to be present, but " + feature.XListenerSets +
+			" is set to true. Please install the gateway-apix CRDs."
+		switch {
+		case apierrors.IsNotFound(err):
+			return contextClients{}, fmt.Errorf("%s (%w)", GatewayAPIXNotAvailable, err)
+		case err != nil:
+			return contextClients{}, fmt.Errorf("while checking if the Gateway API CRD is installed: %w", err)
+		case len(resources.APIResources) == 0:
+			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPIXNotAvailable, len(resources.APIResources), gwapix.GroupVersion.String())
 		}
 	}
 

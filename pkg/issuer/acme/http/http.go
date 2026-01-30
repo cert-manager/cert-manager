@@ -266,7 +266,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 			// > When redirected to an HTTPS URL, it does not validate certificates (since
 			// > this challenge is intended to bootstrap valid certificates, it may encounter
 			// > self-signed or expired certificates along the way).
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // #nosec G402 -- false positive
 		},
 	}
 

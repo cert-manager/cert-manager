@@ -835,7 +835,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		cfg               *cmacme.ACMEChallengeSolverHTTP01
 		errs              []*field.Error
 	}{
-		"ingress field specified": {
+		"ingress name field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Name: "abc"},
 			},
@@ -859,6 +859,39 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{},
 			errs: []*field.Error{
 				field.Required(fldPath, "no HTTP01 solver type configured"),
+			},
+		},
+		"both ingress class and ingressClassName specified": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					Class:            ptr.To("abc"),
+					IngressClassName: ptr.To("abc"),
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("ingress"), "only one of 'ingressClassName', 'name' or 'class' should be specified"),
+			},
+		},
+		"both ingress class and ingress name specified": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					Class: ptr.To("abc"),
+					Name:  "abc",
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("ingress"), "only one of 'ingressClassName', 'name' or 'class' should be specified"),
+			},
+		},
+		"both ingressClassName and ingress name specified": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					IngressClassName: ptr.To("abc"),
+					Name:             "abc",
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("ingress"), "only one of 'ingressClassName', 'name' or 'class' should be specified"),
 			},
 		},
 		"all three fields specified": {
@@ -1110,7 +1143,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 				field.Invalid(fldPath.Child("azureDNS", "environment"), cmacme.AzureDNSEnvironment("an env"),
-					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
+					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud, or AzureUSGovernmentCloud"),
 			},
 		},
 		"invalid azuredns missing clientSecret and tenantID": {

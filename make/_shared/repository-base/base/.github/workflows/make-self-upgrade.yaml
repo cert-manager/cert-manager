@@ -15,11 +15,10 @@ jobs:
   self_upgrade:
     runs-on: ubuntu-latest
 
-    if: github.repository_owner == 'cert-manager'
+    if: github.repository == '{{REPLACE:GH-REPOSITORY}}'
 
     permissions:
-      contents: write
-      pull-requests: write
+      id-token: write
     
     env:
       SOURCE_BRANCH: "${{ github.ref_name }}"
@@ -32,17 +31,26 @@ jobs:
           echo "This workflow should not be run on a non-branch-head."
           exit 1
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Octo STS Token Exchange
+        uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
+        id: octo-sts
+        with:
+          scope: '{{REPLACE:GH-REPOSITORY}}'
+          identity: make-self-upgrade
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         # Adding `fetch-depth: 0` makes sure tags are also fetched. We need
         # the tags so `git describe` returns a valid version.
         # see https://github.com/actions/checkout/issues/701 for extra info about this option
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
 
       - id: go-version
         run: |
           make print-go-version >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ steps.go-version.outputs.result }}
 
@@ -73,8 +81,9 @@ jobs:
           git push -f origin "$SELF_UPGRADE_BRANCH"
 
       - if: ${{ steps.is-up-to-date.outputs.result != 'true' }}
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
+          github-token: ${{ steps.octo-sts.outputs.token }}
           script: |
             const { repo, owner } = context.repo;
             const pulls = await github.rest.pulls.list({
@@ -100,6 +109,6 @@ jobs:
                 owner,
                 repo,
                 issue_number: result.data.number,
-                labels: ['skip-review']
+                labels: ['ok-to-test', 'skip-review', 'release-note-none', 'kind/cleanup']
               });
             }

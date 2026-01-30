@@ -18,10 +18,10 @@ global:
   # matching labels.
   # For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
   #
-  # If a component-specific nodeSelector is also set, it will take precedence.
+  # If a component-specific nodeSelector is also set, it will be merged and take precedence.
   # +docs:property
   nodeSelector: {}
-  
+
   # Labels to apply to all resources.
   # Please note that this does not add labels to the resources created dynamically by the controllers.
   # For these resources, you have to add the labels in the template in the cert-manager custom resource:
@@ -37,6 +37,19 @@ global:
 
   # The optional priority class to be used for the cert-manager pods.
   priorityClassName: ""
+
+  # Set all pods to run in a user namespace without host access.
+  # Experimental: may be removed once the Kubernetes User Namespaces feature is GA.
+  #
+  # Requirements:
+  #   - Kubernetes ≥ 1.33, or
+  #   - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.
+  #
+  # Set to false to run pods in a user namespace without host access.
+  #
+  # See [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.
+  # +docs:property
+  # hostUsers: false
 
   rbac:
     # Create required ClusterRoles and ClusterRoleBindings for cert-manager.
@@ -140,6 +153,13 @@ podDisruptionBudget:
   # +docs:type=unknown
   # maxUnavailable: 1
 
+  # This configures how to act with unhealthy pods during eviction
+  # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+  # the cluster to work.
+  # +docs:property
+  # +docs:type=string
+  # unhealthyPodEvictionPolicy: AlwaysAllow
+
 # A comma-separated list of feature gates that should be enabled on the
 # controller pod.
 featureGates: ""
@@ -241,25 +261,21 @@ enableCertificateOwnerRef: false
 #    kubernetesAPIBurst: 9000
 #    numberOfConcurrentWorkers: 200
 #    enableGatewayAPI: true
-#    # Feature gates as of v1.18.1. Listed with their default values.
+#    # Feature gates as of v1.20.0. Listed with their default values.
 #    # See https://cert-manager.io/docs/cli/controller/
 #    featureGates:
-#      AdditionalCertificateOutputFormats: true # GA - default=true
 #      AllAlpha: false # ALPHA - default=false
 #      AllBeta: false # BETA - default=false
+#      ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
 #      ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
 #      ExperimentalGatewayAPISupport: true # BETA - default=true
 #      LiteralCertificateSubject: true # BETA - default=true
 #      NameConstraints: true # BETA - default=true
-#      OtherNames: false # ALPHA - default=false
+#      OtherNames: true # BETA - default=true
 #      SecretsFilteredCaching: true # BETA - default=true
 #      ServerSideApply: false # ALPHA - default=false
 #      StableCertificateRequestName: true # BETA - default=true
 #      UseCertificateRequestBasicConstraints: false # ALPHA - default=false
-#      UseDomainQualifiedFinalizer: true # GA - default=true
-#      ValidateCAA: false # ALPHA - default=false
-#      DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true
-#      ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
 #    # Configure the metrics server for TLS
 #    # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
 #    metricsTLSConfig:
@@ -313,6 +329,38 @@ approveSignerNames:
 #  extraArgs:
 #    - --controllers=*,-certificaterequests-approver
 extraArgs: []
+
+# Extra containers to add to the pod spec in the deployment of the cert-manager controller.
+# For example, to deploy the [aws_signing_helper](https://github.com/aws/rolesanywhere-credential-helper) (replacing the ARNs as relevant):
+#
+# extraEnv:
+#   - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+#   - value: http://127.0.0.1:9911
+# extraContainers:
+#   - name: rolesanywhere-credential-helper
+#     image: public.ecr.aws/rolesanywhere/credential-helper:latest
+#     command: [aws_signing_helper]
+#     args:
+#       - serve
+#       - --private-key
+#       - /etc/cert/tls.key
+#       - --certificate
+#       - /etc/cert/tls.crt
+#       - --role-arn
+#       - $ROLE_ARN
+#       - --profile-arn
+#       - $PROFILE_ARN
+#       - --trust-anchor-arn
+#       - $TRUST_ANCHOR_ARN
+#     volumeMounts:
+#       - name: cert
+#         mountPath: /etc/cert/
+#         readOnly: true
+# volumes:
+#   - name: cert
+#     secret:
+#       secretName: cert
+extraContainers: []
 
 # Additional environment variables to pass to cert-manager controller binary.
 # For example:
@@ -423,6 +471,45 @@ hostAliases: []
 nodeSelector:
   kubernetes.io/os: linux
 
+# Enables default network policies for cert-manager.
+# This provides a way for you to restrict network traffic
+# between cert-manager components and other pods.
+# For more information, see [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+# NOTE: an incorrect networkPolicy will cause traffic to be dropped
+networkPolicy:
+  # Create network policies for cert-manager.
+  enabled: false
+
+  # Ingress rule for the cert-manager network policy.
+  # By default all pods are allowed access to:
+  #   http-metrics and http-healthz ports
+  # +docs:property
+  ingress:
+  - ports:
+    - port: http-metrics
+      protocol: TCP
+    - port: http-healthz
+      protocol: TCP
+
+
+  # Egress rule for the cert-manager network policy. By default, it allows all
+  # outbound traffic to ports 80 and 443, as well as DNS ports.
+  # +docs:property
+  egress:
+  - ports:
+    - port: 80
+      protocol: TCP
+    - port: 443
+      protocol: TCP
+    - port: 53
+      protocol: TCP
+    - port: 53
+      protocol: UDP
+    # On OpenShift and OKD, the Kubernetes API server listens on.
+    # port 6443.
+    - port: 6443
+      protocol: TCP
+
 # +docs:ignore
 ingressShim: {}
 
@@ -452,7 +539,6 @@ ingressShim: {}
 # but certain domains should be excluded.
 # +docs:property
 # no_proxy: 127.0.0.1,localhost
-
 
 # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
 #
@@ -739,6 +825,13 @@ webhook:
     # +docs:type=unknown
     # maxUnavailable: 1
 
+    # This configures how to act with unhealthy pods during eviction
+    # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+    # the cluster to work.
+    # +docs:property
+    # +docs:type=string
+    # unhealthyPodEvictionPolicy: AlwaysAllow
+
   # Optional additional annotations to add to the webhook Deployment.
   # +docs:property
   # deploymentAnnotations: {}
@@ -968,17 +1061,26 @@ webhook:
     # host:
 
   # Enables default network policies for webhooks.
+  # This provides a way for you to restrict network traffic
+  # between cert-manager components and other pods.
+  # For more information, see [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+  # NOTE: an incorrect networkPolicy will cause traffic to be dropped
   networkPolicy:
     # Create network policies for the webhooks.
     enabled: false
 
-    # Ingress rule for the webhook network policy. By default, it allows all
-    # inbound traffic.
+    # Ingress rule for the webhook network policy.
+    # By default all pods are allowed access to:
+    #   https, http-metrics, and http-healthz ports
     # +docs:property
     ingress:
-    - from:
-      - ipBlock:
-          cidr: 0.0.0.0/0
+    - ports:
+      - port: https
+        protocol: TCP
+      - port: healthcheck
+        protocol: TCP
+      - port: http-metrics
+        protocol: TCP
 
     # Egress rule for the webhook network policy. By default, it allows all
     # outbound traffic to ports 80 and 443, as well as DNS ports.
@@ -997,9 +1099,6 @@ webhook:
       # port 6443.
       - port: 6443
         protocol: TCP
-      to:
-      - ipBlock:
-          cidr: 0.0.0.0/0
 
   # Additional volumes to add to the cert-manager controller pod.
   volumes: []
@@ -1011,6 +1110,15 @@ webhook:
   # injected into the pod's environment variables, matching the syntax of Docker
   # links.
   enableServiceLinks: false
+
+  # enableClientVerification turns on client verification of requests
+  # made to the webhook server
+  enableClientVerification: false
+  # the client CA file to be used for verification
+  clientCAFile: ""
+  # Subject names to verify for the client certificate.
+  # Multiple values may be supplied as a comma-separated list.
+  apiserverClientCertSubjects: ""
 
 # +docs:section=CA Injector
 
@@ -1083,6 +1191,42 @@ cainjector:
       - ALL
     readOnlyRootFilesystem: true
 
+  # Enables default network policies for cainjector.
+  # This provides a way for you to restrict network traffic
+  # between cert-manager components and other pods.
+  # For more information, see [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+  # NOTE: an incorrect networkPolicy will cause traffic to be dropped
+  networkPolicy:
+    # Create network policies for the cainjector.
+    enabled: false
+
+    # Ingress rule for the webhook cainjector policy.
+    # By default all pods are allowed access to:
+    #   http-metrics port
+    # +docs:property
+    ingress:
+    - ports:
+      - port: http-metrics
+        protocol: TCP
+
+    # Egress rule for the cainjector network policy. By default, it allows all
+    # outbound traffic to ports 80 and 443, as well as DNS ports.
+    # +docs:property
+    egress:
+    - ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+      - port: 53
+        protocol: TCP
+      - port: 53
+        protocol: UDP
+      # On OpenShift and OKD, the Kubernetes API server listens on.
+      # port 6443.
+      - port: 6443
+        protocol: TCP
+
   podDisruptionBudget:
     # Enable or disable the PodDisruptionBudget resource.
     #
@@ -1105,6 +1249,13 @@ cainjector:
     # +docs:property
     # +docs:type=unknown
     # maxUnavailable: 1
+
+    # This configures how to act with unhealthy pods during eviction
+    # Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for
+    # the cluster to work.
+    # +docs:property
+    # +docs:type=string
+    # unhealthyPodEvictionPolicy: AlwaysAllow
 
   # Optional additional annotations to add to the cainjector Deployment.
   # +docs:property

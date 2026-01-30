@@ -106,27 +106,27 @@ func NewController(
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	secretsInformer := ctx.KubeSharedInformerFactory.Secrets()
 
-	if _, err := certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue}); err != nil {
+	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	}); err != nil {
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
 		// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ResourceOwnerOf,
 			predicate.ExtractResourceName(predicate.CertificateNextPrivateKeySecretName)),
-	}); err != nil {
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
 		// Issuer reconciles on changes to the Secret named `spec.secretName`
-		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
 			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	}); err != nil {
+	)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -336,6 +336,35 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// If the CertificateRequest is valid and ready, verify its status and issue
 	// accordingly.
 	if crReadyCond.Reason == cmapi.CertificateRequestReasonIssued {
+		// Verify the signed certificate's public key matches the CSR's public key.
+		// If not, fail with backoff to prevent infinite re-issuance loops.
+		x509Cert, err := utilpki.DecodeX509CertificateBytes(req.Status.Certificate)
+		if err != nil {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Issuer returned an invalid certificate: failed to decode: %v", err),
+			})
+		}
+		certMatchesCSR, err := utilpki.PublicKeysEqual(x509Cert.PublicKey, csr.PublicKey)
+		if err != nil {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Failed to compare certificate and CSR public keys: %v", err),
+			})
+		}
+		if !certMatchesCSR {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: "Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+			})
+		}
+
 		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
 	}
 
@@ -384,9 +413,9 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	return nil
 }
 
-// issueCertificate will ensure the public key of the CSR matches the signed
-// certificate, and then store the certificate, CA and private key into the
-// Secret in the appropriate format type.
+// issueCertificate stores the signed certificate, CA and private key into the
+// Secret in the appropriate format type. The caller must verify the certificate
+// public key matches the CSR before calling this function.
 func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {

@@ -126,8 +126,9 @@ const (
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
 	NameConstraints featuregate.Feature = "NameConstraints"
 
-	// Owner: @SpectralHiss
+	// Owner: @SpectralHiss, @wallrj-cyberark
 	// Alpha: v1.14
+	// Beta: v1.20
 	//
 	// OtherNames adds support for OtherName Subject Alternative Name values in
 	// Certificate resources.
@@ -146,8 +147,8 @@ const (
 
 	// Owner: N/A
 	// Alpha: v0.7.2
-	// Deprecated: v1.17
-	// Removed: v1.18
+	// Flag deprecated: v1.17
+	// Flag removed: v1.18
 	//
 	// ValidateCAA is a now-removed feature gate which enabled CAA checking when issuing certificates
 	// This was never widely adopted, and without an owner to sponsor it we decided to deprecate
@@ -160,6 +161,7 @@ const (
 	// Owner: @wallrj
 	// Alpha: v1.18.0
 	// Beta: v1.18.0
+	// GA: v1.20.0
 	//
 	// DefaultPrivateKeyRotationPolicyAlways change the default value of
 	// `Certificate.Spec.PrivateKey.RotationPolicy` to `Always`.
@@ -188,6 +190,14 @@ const (
 	// You may need to disable the feature for compatibility with ingress-nginx.
 	// See: https://cert-manager.io/docs/releases/release-notes/release-notes-1.18
 	ACMEHTTP01IngressPathTypeExact featuregate.Feature = "ACMEHTTP01IngressPathTypeExact"
+
+	// Owner: @hjoshi123
+	// Alpha: v1.20.1
+
+	// XListenerSet enables listenerset controller which will allow support for
+	// self-service TLS configuration through the use of XListenerSet resources supported
+	// by GatewayAPI. This featuregate also requires GatewayAPI feature gate to be enabled.
+	XListenerSets featuregate.Feature = "XListenerSets"
 )
 
 func init() {
@@ -204,14 +214,15 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
+	XListenerSets:                                    {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
-	OtherNames:                                       {Default: false, PreRelease: featuregate.Alpha},
+	OtherNames:                                       {Default: true, PreRelease: featuregate.Beta},
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
-	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.Beta},
+	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.GA},
 	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
 
 	// NB: Deprecated + removed feature gates are kept here.

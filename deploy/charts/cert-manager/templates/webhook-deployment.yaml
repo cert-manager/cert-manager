@@ -66,6 +66,9 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ .Values.global.hostUsers }}       
+      {{- end }}
       {{- with .Values.webhook.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -95,6 +98,15 @@ spec:
           {{- if .Values.webhook.featureGates }}
           - --feature-gates={{ .Values.webhook.featureGates }}
           {{- end }}
+          {{- if .Values.webhook.enableClientVerification }}
+          - --enable-client-verification={{ .Values.webhook.enableClientVerification }}
+          {{- end }}
+          {{- if .Values.webhook.clientCAFile }}
+          - --client-ca-path={{ .Values.webhook.clientCAFile }}
+          {{- end }}
+          {{- if .Values.webhook.apiserverClientCertSubjects }}
+          - --client-subject-names={{ .Values.webhook.apiserverClientCertSubjects }}
+          {{- end }}
           {{- $tlsConfig := default $config.tlsConfig "" }}
           {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
@@ -102,7 +114,7 @@ spec:
           - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}
           - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE)
           - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE).svc
-          {{ if .Values.webhook.url.host }}
+          {{- if .Values.webhook.url.host }}
           - --dynamic-serving-dns-names={{ .Values.webhook.url.host }}
           {{- end }}
           {{- end }}
@@ -177,10 +189,12 @@ spec:
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.webhook.volumeMounts }}
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 10 }}
             {{- end }}
           {{- end }}
-      {{- with (coalesce .Values.webhook.nodeSelector .Values.global.nodeSelector) }}
+      {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
+      {{- $nodeSelector = merge $nodeSelector (.Values.webhook.nodeSelector | default dict) }}
+      {{- with $nodeSelector }}
       nodeSelector:
         {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}
@@ -206,6 +220,6 @@ spec:
             name: {{ include "webhook.fullname" . }}
         {{- end }}
         {{- with .Values.webhook.volumes }}
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 6 }}
         {{- end }}
       {{- end }}

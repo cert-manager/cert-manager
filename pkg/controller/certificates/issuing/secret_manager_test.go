@@ -615,7 +615,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-234")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -669,7 +669,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -727,7 +727,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -786,7 +786,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -843,7 +843,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -901,7 +901,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -959,7 +959,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -1018,7 +1018,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",
@@ -1075,7 +1075,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "testissuer",
 						Kind:  "IssuerKind",
 						Group: "group.example.com",

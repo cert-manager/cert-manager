@@ -18,17 +18,17 @@ limitations under the License.
 // upon to communicate information about why something has failed
 package errors
 
-type errSkipTest struct {
+type skipTestError struct {
 	error
 }
 
 func IsSkip(err error) bool {
-	if _, ok := err.(errSkipTest); ok {
+	if _, ok := err.(skipTestError); ok {
 		return true
 	}
 	return false
 }
 
 func NewSkip(err error) error {
-	return errSkipTest{error: err}
+	return skipTestError{error: err}
 }

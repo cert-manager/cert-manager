@@ -203,7 +203,7 @@ func forEachSAN(extension []byte, callback func(v asn1.RawValue) error) error {
 // SubjectAlternativeName extension.
 func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 	var rawValues []asn1.RawValue
-	addMarshalable := func(tag int, val interface{}) error {
+	addMarshalable := func(tag int, val any) error {
 		fullBytes, err := asn1.MarshalWithParams(val, fmt.Sprint("tag:", tag))
 		if err != nil {
 			return err

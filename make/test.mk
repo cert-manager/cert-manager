@@ -58,6 +58,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 	cd cmd/controller && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-controller.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd cmd/webhook    && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-webhook.xml    $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
 	cd test/integration && $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-integration.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ../../hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./...
+	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-thirdparty.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ./hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- ./third_party/...
 	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit_make-test-ci-livedns.xml $(GOTESTSUM_CI_FLAGS) --post-run-command $$'bash -c "$(GO) run ./hack/prune-junit-xml/prunexml.go $$GOTESTSUM_JUNITFILE"' -- --tags=livedns_test ./pkg/issuer/acme/dns/util/...
 
 .PHONY: unit-test
@@ -66,7 +67,7 @@ test-ci: setup-integration-tests | $(NEEDS_GOTESTSUM) $(NEEDS_ETCD) $(NEEDS_KUBE
 ## or an apiserver.
 ##
 ## @category Development
-unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook | $(NEEDS_GOTESTSUM)
+unit-test: unit-test-core-module unit-test-acmesolver unit-test-cainjector unit-test-controller unit-test-webhook unit-test-thirdparty | $(NEEDS_GOTESTSUM)
 
 .PHONY: unit-test-core-module
 unit-test-core-module: | $(NEEDS_GOTESTSUM)
@@ -88,6 +89,10 @@ unit-test-controller: | $(NEEDS_GOTESTSUM)
 unit-test-webhook: | $(NEEDS_GOTESTSUM)
 	cd cmd/webhook && $(GOTESTSUM) ./...
 
+.PHONY: unit-test-thirdparty
+unit-test-thirdparty: | $(NEEDS_GOTESTSUM)
+	$(GOTESTSUM) ./third_party/...
+
 .PHONY: update-config-api-defaults
 update-config-api-defaults: | $(NEEDS_GO)
 	cd internal/apis/config/cainjector/v1alpha1/ && UPDATE_DEFAULTS=true $(GO) test . && echo "cainjector config api defaults updated"
@@ -95,7 +100,7 @@ update-config-api-defaults: | $(NEEDS_GO)
 	cd internal/apis/config/webhook/v1alpha1/ && UPDATE_DEFAULTS=true $(GO) test . && echo "webhook config api defaults updated"
 
 .PHONY: setup-integration-tests
-setup-integration-tests: templated-crds
+setup-integration-tests: # No dependencies
 
 .PHONY: integration-test
 ## Same as `test` but only run the integration tests. By "integration tests",

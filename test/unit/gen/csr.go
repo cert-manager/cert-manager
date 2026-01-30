@@ -150,7 +150,7 @@ func CSRWithSigner(sk crypto.Signer, mods ...CSRModifier) (csr []byte, err error
 	for _, mod := range mods {
 		err = mod(cr)
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
 
@@ -161,7 +161,7 @@ func CSRWithSigner(sk crypto.Signer, mods ...CSRModifier) (csr []byte, err error
 	csr = pem.EncodeToMemory(&pem.Block{
 		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
 	})
-	return
+	return csr, nil
 }
 
 func SetCSRDNSNames(dnsNames ...string) CSRModifier {

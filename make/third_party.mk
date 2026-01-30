@@ -12,17 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# see https://stackoverflow.com/a/53408233
+sed_inplace := sed -i''
+ifeq ($(HOST_OS),darwin)
+	sed_inplace := sed -i ''
+endif
+
+
 .PHONY: update-third-party
 ## Update the code in the `third_party/` directory.
 ##
 ## @category Development
 update-third-party: | $(NEEDS_KLONE)
 	@pushd third_party && $(KLONE) sync
+	@echo acme: Removing autocert
+	@rm -rf third_party/forked/acme/autocert
 	@echo acme: Updating import statements
 	@find third_party/forked/acme -iname '*.go' \
-  | xargs sed -e 's%golang\.org/x/crypto/acme%github.com/cert-manager/cert-manager/third_party/forked/acme%g'  -i
+  | xargs $(sed_inplace) -e 's%golang\.org/x/crypto/acme%github.com/cert-manager/cert-manager/third_party/forked/acme%g'
 	@echo acme: Updating the package version in the user-agent string
-	@sed -e 's%golang\.org/x/crypto%github.com/cert-manager/cert-manager%' -i third_party/forked/acme/http.go
+	@$(sed_inplace) -e 's%golang\.org/x/crypto%github.com/cert-manager/cert-manager%' third_party/forked/acme/http.go
 	@pushd third_party/forked/acme && curl -fsSL \
 		-O https://raw.githubusercontent.com/golang/crypto/refs/heads/master/LICENSE \
 		-O https://raw.githubusercontent.com/golang/crypto/refs/heads/master/PATENTS

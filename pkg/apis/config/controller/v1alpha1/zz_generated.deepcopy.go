@@ -123,6 +123,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableGatewayAPIXListenerSet != nil {
+		in, out := &in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet
+		*out = new(bool)
+		**out = **in
+	}
 	if in.CopiedAnnotationPrefixes != nil {
 		in, out := &in.CopiedAnnotationPrefixes, &out.CopiedAnnotationPrefixes
 		*out = make([]string, len(*in))
@@ -156,6 +161,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	in.ACMEHTTP01Config.DeepCopyInto(&out.ACMEHTTP01Config)
 	in.ACMEDNS01Config.DeepCopyInto(&out.ACMEDNS01Config)
 	in.PEMSizeLimitsConfig.DeepCopyInto(&out.PEMSizeLimitsConfig)
+	if in.CertificateRequestMinimumBackoffDuration != nil {
+		in, out := &in.CertificateRequestMinimumBackoffDuration, &out.CertificateRequestMinimumBackoffDuration
+		*out = new(sharedv1alpha1.Duration)
+		**out = **in
+	}
 	return
 }
 

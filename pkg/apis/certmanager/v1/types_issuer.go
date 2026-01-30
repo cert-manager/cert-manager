@@ -25,9 +25,13 @@ import (
 
 // +genclient
 // +genclient:nonNamespaced
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Cluster,shortName=ciss,categories=cert-manager
+// +kubebuilder:subresource:status
 
 // A ClusterIssuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.
@@ -57,9 +61,13 @@ type ClusterIssuerList struct {
 }
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
+// +kubebuilder:resource:scope=Namespaced,shortName=iss,categories=cert-manager
+// +kubebuilder:subresource:status
 
 // An Issuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.
@@ -117,52 +125,52 @@ type IssuerConfig struct {
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
 
-	// Venafi configures this issuer to sign certificates using a Venafi TPP
-	// or Venafi Cloud policy zone.
+	// Venafi configures this issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
+	// or SaaS policy zone.
 	// +optional
 	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
-// Configures an issuer to sign certificates using a Venafi TPP
-// or Cloud policy zone.
+// Configures an issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
+// or SaaS policy zone.
 type VenafiIssuer struct {
-	// Zone is the Venafi Policy Zone to use for this issuer.
-	// All requests made to the Venafi platform will be restricted by the named
+	// Zone is the Certificate Manager Policy Zone to use for this issuer.
+	// All requests made to the Certificate Manager platform will be restricted by the named
 	// zone policy.
 	// This field is required.
 	Zone string `json:"zone"`
 
-	// TPP specifies Trust Protection Platform configuration settings.
-	// Only one of TPP or Cloud may be specified.
+	// TPP specifies CyberArk Certificate Manager Self-Hosted configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
 	// +optional
 	TPP *VenafiTPP `json:"tpp,omitempty"`
 
-	// Cloud specifies the Venafi cloud configuration settings.
-	// Only one of TPP or Cloud may be specified.
+	// Cloud specifies the CyberArk Certificate Manager SaaS configuration settings.
+	// Only one of CyberArk Certificate Manager may be specified.
 	// +optional
 	Cloud *VenafiCloud `json:"cloud,omitempty"`
 }
 
-// VenafiTPP defines connection configuration details for a Venafi TPP instance
+// VenafiTPP defines connection configuration details for a CyberArk Certificate Manager Self-Hosted instance
 type VenafiTPP struct {
-	// URL is the base URL for the vedsdk endpoint of the Venafi TPP instance,
+	// URL is the base URL for the vedsdk endpoint of the CyberArk Certificate Manager Self-Hosted instance,
 	// for example: "https://tpp.example.com/vedsdk".
 	URL string `json:"url"`
 
-	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
+	// CredentialsRef is a reference to a Secret containing the CyberArk Certificate Manager Self-Hosted API credentials.
 	// The secret must contain the key 'access-token' for the Access Token Authentication,
 	// or two keys, 'username' and 'password' for the API Keys Authentication.
 	CredentialsRef cmmeta.LocalObjectReference `json:"credentialsRef"`
 
 	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
-	// chain presented by the TPP server. Only used if using HTTPS; ignored for HTTP.
+	// chain presented by the CyberArk Certificate Manager Self-Hosted server. Only used if using HTTPS; ignored for HTTP.
 	// If undefined, the certificate bundle in the cert-manager controller container
 	// is used to validate the chain.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 
 	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
-	// which will be used to validate the certificate chain presented by the TPP server.
+	// which will be used to validate the certificate chain presented by the CyberArk Certificate Manager Self-Hosted server.
 	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
 	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
 	// the cert-manager controller container is used to validate the TLS connection.
@@ -170,14 +178,14 @@ type VenafiTPP struct {
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
 }
 
-// VenafiCloud defines connection configuration details for Venafi Cloud
+// VenafiCloud defines connection configuration details for CyberArk Certificate Manager SaaS
 type VenafiCloud struct {
-	// URL is the base URL for Venafi Cloud.
+	// URL is the base URL for CyberArk Certificate Manager SaaS.
 	// Defaults to "https://api.venafi.cloud/".
 	// +optional
 	URL string `json:"url,omitempty"`
 
-	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
+	// APITokenSecretRef is a secret key selector for the CyberArk Certificate Manager SaaS API token.
 	APITokenSecretRef cmmeta.SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
@@ -188,6 +196,7 @@ type SelfSignedIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 }
 
@@ -285,7 +294,7 @@ type VaultAppRole struct {
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
 }
 
-// VaultKubernetesAuth is used to authenticate against Vault using a client
+// VaultClientCertificateAuth is used to authenticate against Vault using a client
 // certificate stored in a Secret.
 type VaultClientCertificateAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with
@@ -338,16 +347,17 @@ type VaultKubernetesAuth struct {
 }
 
 // ServiceAccountRef is a service account used by cert-manager to request a
-// token. Default audience is generated by
-// cert-manager and takes the form `vault://namespace-name/issuer-name` for an
-// Issuer and `vault://issuer-name` for a ClusterIssuer. The expiration of the
+// token. By default two audiences are included: the address of the Vault server as specified
+// on the issuer, and a generated audience taking the form of `vault://namespace-name/issuer-name`
+// for an Issuer and `vault://issuer-name` for a ClusterIssuer. The expiration of the
 // token is also set by cert-manager to 10 minutes.
 type ServiceAccountRef struct {
 	// Name of the ServiceAccount used to request a token.
 	Name string `json:"name"`
-	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
-	// consisting of the issuer's namespace and name is always included.
+	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault.
+	// The default audiences are always included in the token.
 	// +optional
+	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
@@ -360,6 +370,7 @@ type CAIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
 	// +optional
+	// +listType=atomic
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 
 	// The OCSP server list is an X.509 v3 extension that defines a list of
@@ -368,12 +379,14 @@ type CAIssuer struct {
 	// certificate will be issued with no OCSP servers set. For example, an
 	// OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
 	// +optional
+	// +listType=atomic
 	OCSPServers []string `json:"ocspServers,omitempty"`
 
 	// IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
 	// it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details.
 	// As an example, such a URL might be "http://ca.domain.com/ca.crt".
 	// +optional
+	// +listType=atomic
 	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
 }
 
@@ -381,9 +394,9 @@ type CAIssuer struct {
 type IssuerStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
 	Conditions []IssuerCondition `json:"conditions,omitempty"`
 
 	// ACME specific status options.

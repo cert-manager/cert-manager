@@ -24,6 +24,15 @@ import (
 	"net/http"
 	"time"
 
+	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	cmservertls "github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -41,16 +50,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
-	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
-	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
-	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	cmservertls "github.com/cert-manager/cert-manager/pkg/server/tls"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -141,6 +140,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 			LeaderElectionNamespace:       opts.LeaderElectionConfig.Namespace,
 			LeaderElectionID:              "cert-manager-cainjector-leader-election",
 			LeaderElectionReleaseOnCancel: true,
+			LeaderElectionLabels:          map[string]string{"app.kubernetes.io/managed-by": "cert-manager-cainjector"},
 			LeaderElectionResourceLock:    resourcelock.LeasesResourceLock,
 			LeaseDuration:                 &opts.LeaderElectionConfig.LeaseDuration,
 			RenewDeadline:                 &opts.LeaderElectionConfig.RenewDeadline,
@@ -159,7 +159,8 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	// if a PprofAddr is provided, start the pprof listener
 	if opts.EnablePprof {
-		pprofListener, err := net.Listen("tcp", opts.PprofAddress)
+		lc := net.ListenConfig{}
+		pprofListener, err := lc.Listen(ctx, "tcp", opts.PprofAddress)
 		if err != nil {
 			return err
 		}

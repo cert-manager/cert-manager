@@ -23,11 +23,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/pflag"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/clientcmd"
-
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 var featureGates string

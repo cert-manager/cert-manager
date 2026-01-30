@@ -32,6 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const (
@@ -88,7 +89,7 @@ func TestClusterIssuerNamespace(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 					Kind: "ClusterIssuer", // ClusterIssuer reference, so should use the clusterResourceNamespace
 				},
@@ -142,14 +143,14 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*cloudflare.DNSProvider](),
 		},
 		"loads api token for cloudflare provider": {
 			solverFixture: &solverFixture{
@@ -178,14 +179,14 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*cloudflare.DNSProvider](),
 		},
 		"fails to load a cloudflare provider with a missing secret": {
 			solverFixture: &solverFixture{
@@ -208,7 +209,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -244,7 +245,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -280,7 +281,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -316,7 +317,7 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -352,14 +353,14 @@ func TestSolverFor(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
 				},
 			},
 			domain:             "example.com",
-			expectedSolverType: reflect.TypeOf(&acmedns.DNSProvider{}),
+			expectedSolverType: reflect.TypeFor[*acmedns.DNSProvider](),
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {
@@ -410,7 +411,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -430,7 +431,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 	expectedDOCall := []fakeDNSProviderCall{
 		{
 			name: "digitalocean",
-			args: []interface{}{"FAKE-TOKEN", util.RecursiveNameservers},
+			args: []any{"FAKE-TOKEN", util.RecursiveNameservers},
 		},
 	}
 
@@ -468,7 +469,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -488,7 +489,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []any{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -531,7 +532,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 						},
 					},
 				},
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "test-issuer",
 				},
 			},
@@ -551,7 +552,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			args: []any{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -583,28 +584,19 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
-					Spec: cmacme.ChallengeSpec{
-						Solver: cmacme.ACMEChallengeSolver{
-							DNS01: &cmacme.ACMEChallengeSolverDNS01{
-								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-									Region: "us-west-2",
-								},
-							},
-						},
-						IssuerRef: cmmeta.ObjectReference{
-							Name: "test-issuer",
-						},
-					},
-				},
+				Challenge: gen.Challenge("",
+					gen.SetChallengeNamespace(fakeIssuerNamespace),
+					gen.SetChallengeIssuer(cmmeta.IssuerReference{Name: "test-issuer"}),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						}}),
+				),
 			},
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -633,7 +625,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -642,7 +634,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -689,29 +681,20 @@ func TestRoute53AssumeRole(t *testing.T) {
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
-					Spec: cmacme.ChallengeSpec{
-						Solver: cmacme.ACMEChallengeSolver{
-							DNS01: &cmacme.ACMEChallengeSolverDNS01{
-								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-									Region: "us-west-2",
-									Role:   "my-role",
-								},
-							},
-						},
-						IssuerRef: cmmeta.ObjectReference{
-							Name: "test-issuer",
-						},
-					},
-				},
+				Challenge: gen.Challenge("",
+					gen.SetChallengeNamespace(fakeIssuerNamespace),
+					gen.SetChallengeIssuer(cmmeta.IssuerReference{Name: "test-issuer"}),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+							Role:   "my-role",
+						}}),
+				),
 			},
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -741,7 +724,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 								},
 							},
 						},
-						IssuerRef: cmmeta.ObjectReference{
+						IssuerRef: cmmeta.IssuerReference{
 							Name: "test-issuer",
 						},
 					},
@@ -750,7 +733,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
+					args: []any{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
 				},
 			},
 		},

@@ -50,7 +50,7 @@ const (
 	emptyDNMessage   = "Certificate will be issued with an empty Issuer DN, which contravenes RFC 5280 and could break some strict clients"
 )
 
-type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
+type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error)
 
 type SelfSigned struct {
 	issuerOptions controllerpkg.IssuerOptions
@@ -93,9 +93,9 @@ func init() {
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 						clusterIssuerLister,
 					)
-					if _, err := secretInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{
-						WorkFunc: handleSecretReferenceWorkFunc(log, certificateRequestLister, helper, queue),
-					}); err != nil {
+					if _, err := secretInformer.AddEventHandler(controllerpkg.BlockingEventHandler(
+						handleSecretReferenceWorkFunc(log, certificateRequestLister, helper, queue),
+					)); err != nil {
 						return nil, fmt.Errorf("error setting up event handler: %v", err)
 					}
 					return mustSync, nil

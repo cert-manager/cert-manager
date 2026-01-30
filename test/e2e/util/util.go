@@ -27,6 +27,13 @@ import (
 	"net/url"
 	"time"
 
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -40,16 +47,10 @@ import (
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	gwapiv1beta1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/predicate"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/gomega"
 )
@@ -203,7 +204,7 @@ func NewCertManagerBasicCertificateRequest(
 		gen.SetCertificateRequestNamespace(namespace),
 		gen.SetCertificateRequestDuration(duration),
 		gen.SetCertificateRequestCSR(csrPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name: issuerName,
 			Kind: issuerKind,
 		}),
@@ -220,7 +221,7 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 			SecretName:  secretName,
 			Duration:    duration,
 			RenewBefore: renewBefore,
-			IssuerRef: cmmeta.ObjectReference{
+			IssuerRef: cmmeta.IssuerReference{
 				Name: issuerName,
 				Kind: issuerKind,
 			},
@@ -312,19 +313,18 @@ func pathTypePrefix() *networkingv1.PathType {
 // watching the 'foo' gateway class, so this Gateway will not be used to
 // actually route traffic, but can be used to test cert-manager controllers that
 // sync Gateways, such as gateway-shim.
-func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapiv1beta1.Gateway {
-
-	return &gwapiv1beta1.Gateway{
+func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.Gateway {
+	return &gwapi.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        gatewayName,
 			Annotations: annotations,
 		},
-		Spec: gwapiv1beta1.GatewaySpec{
+		Spec: gwapi.GatewaySpec{
 			GatewayClassName: "foo",
-			Listeners: []gwapiv1beta1.Listener{{
-				AllowedRoutes: &gwapiv1beta1.AllowedRoutes{
-					Namespaces: &gwapiv1beta1.RouteNamespaces{
-						From: func() *gwapiv1beta1.FromNamespaces { f := gwapiv1beta1.NamespacesFromSame; return &f }(),
+			Listeners: []gwapi.Listener{{
+				AllowedRoutes: &gwapi.AllowedRoutes{
+					Namespaces: &gwapi.RouteNamespaces{
+						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
 						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
 							"gw": gatewayName,
 						}},
@@ -332,16 +332,57 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 					Kinds: nil,
 				},
 				Name:     "acme-solver",
-				Protocol: gwapiv1beta1.TLSProtocolType,
-				Port:     gwapiv1beta1.PortNumber(443),
-				Hostname: (*gwapiv1beta1.Hostname)(&dnsNames[0]),
-				TLS: &gwapiv1beta1.GatewayTLSConfig{
-					CertificateRefs: []gwapiv1beta1.SecretObjectReference{
+				Protocol: gwapi.TLSProtocolType,
+				Port:     gwapi.PortNumber(443),
+				Hostname: (*gwapi.Hostname)(&dnsNames[0]),
+				TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{
 						{
-							Kind:      func() *gwapiv1beta1.Kind { k := gwapiv1beta1.Kind("Secret"); return &k }(),
-							Name:      gwapiv1beta1.ObjectName(secretName),
-							Group:     func() *gwapiv1beta1.Group { g := gwapiv1beta1.Group(corev1.GroupName); return &g }(),
-							Namespace: (*gwapiv1beta1.Namespace)(&ns),
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      gwapi.ObjectName(secretName),
+							Group:     func() *gwapi.Group { g := gwapi.Group(corev1.GroupName); return &g }(),
+							Namespace: (*gwapi.Namespace)(&ns),
+						},
+					},
+				},
+			}},
+		},
+	}
+}
+
+func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapix.XListenerSet {
+	return &gwapix.XListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        ls,
+			Namespace:   ns,
+			Annotations: annotations,
+		},
+		Spec: gwapix.ListenerSetSpec{
+			ParentRef: gwapix.ParentGatewayReference{
+				Name:      gwapi.ObjectName(ls),
+				Namespace: (*gwapix.Namespace)(&ns),
+			},
+			Listeners: []gwapix.ListenerEntry{{
+				AllowedRoutes: &gwapi.AllowedRoutes{
+					Namespaces: &gwapi.RouteNamespaces{
+						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gw": ls,
+						}},
+					},
+					Kinds: nil,
+				},
+				Name:     "acme-solver",
+				Protocol: gwapi.TLSProtocolType,
+				Port:     gwapi.PortNumber(443),
+				Hostname: (*gwapi.Hostname)(&dnsNames[0]),
+				TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{
+						{
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      gwapi.ObjectName(secretName),
+							Group:     func() *gwapi.Group { g := gwapi.Group(corev1.GroupName); return &g }(),
+							Namespace: (*gwapi.Namespace)(&ns),
 						},
 					},
 				},

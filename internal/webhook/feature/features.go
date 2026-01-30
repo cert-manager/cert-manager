@@ -75,8 +75,9 @@ const (
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/3655
 	NameConstraints featuregate.Feature = "NameConstraints"
 
-	// Owner: @SpectralHiss
+	// Owner: @SpectralHiss, @wallrj-cyberark
 	// Alpha: v1.14
+	// Beta: v1.20
 	//
 	// OtherNames adds support for OtherName Subject Alternative Name values in
 	// Certificate resources.
@@ -101,5 +102,5 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.GA},
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
 	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
-	OtherNames:                         {Default: false, PreRelease: featuregate.Alpha},
+	OtherNames:                         {Default: true, PreRelease: featuregate.Beta},
 }

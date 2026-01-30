@@ -63,7 +63,7 @@ func extractSANsFromCertificateRequest(t *testing.T, csrDER string) pkix.Extensi
 
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
-		t.Fatalf("certificate.ParseCertificate returned an error: %v", err)
+		t.Fatalf("certificate.ParseCertificateRequest returned an error: %v", err)
 	}
 
 	for _, extension := range csr.Extensions {

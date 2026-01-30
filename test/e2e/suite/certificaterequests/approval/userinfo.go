@@ -22,6 +22,11 @@ import (
 	"fmt"
 	"time"
 
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,11 +34,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	testutil "github.com/cert-manager/cert-manager/e2e-tests/framework/util"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -44,7 +44,7 @@ import (
 var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 	f := framework.NewDefaultFramework("userinfo-certificaterequests")
 
-	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func() {
+	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func(testingCtx context.Context) {
 		var (
 			adminUsername = "kubernetes-admin"
 		)
@@ -62,13 +62,13 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		cr := gen.CertificateRequest("test-v1",
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestCSR(csr),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name: "issuer",
 			}),
 		)
 
 		By("Creating CertificateRequest")
-		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
+		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(testingCtx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Ensure UserInfo fields are set")
@@ -82,13 +82,13 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		By("Should error when attempting to update UserInfo fields")
 		cr.Spec.Username = "abc"
 		cr.Spec.UID = "123"
-		_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(context.TODO(), cr, metav1.UpdateOptions{})
+		_, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(testingCtx, cr, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("should populate UserInfo with ServiceAccount if is the requester", func() {
+	It("should populate UserInfo with ServiceAccount if is the requester", func(testingCtx context.Context) {
 		By("Creating ServiceAccount")
-		sa, err := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), &corev1.ServiceAccount{
+		sa, err := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(testingCtx, &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-sa",
 				Namespace: f.Namespace.Name,
@@ -97,7 +97,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating certificaterequest-creator role")
-		role, err := f.KubeClientSet.RbacV1().Roles(f.Namespace.Name).Create(context.TODO(), &rbacv1.Role{
+		role, err := f.KubeClientSet.RbacV1().Roles(f.Namespace.Name).Create(testingCtx, &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "certificaterequest-creator",
 				Namespace: f.Namespace.Name,
@@ -113,7 +113,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating certificaterequest-creator rolebinding for ServiceAccount")
-		_, err = f.KubeClientSet.RbacV1().RoleBindings(f.Namespace.Name).Create(context.TODO(), &rbacv1.RoleBinding{
+		_, err = f.KubeClientSet.RbacV1().RoleBindings(f.Namespace.Name).Create(testingCtx, &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "certificaterequest-creator",
 				Namespace: f.Namespace.Name,
@@ -135,7 +135,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 
 		// Manually create a Secret to be populated with Service Account token
 		// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), &corev1.Secret{
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "sa-secret-",
 				Name:         f.Namespace.Name,
@@ -151,7 +151,7 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 			ok    bool
 		)
 		By("Waiting for service account secret to be created")
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*10, true, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextTimeout(testingCtx, time.Second, time.Second*10, true, func(ctx context.Context) (bool, error) {
 			secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, err
@@ -188,13 +188,13 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		cr := gen.CertificateRequest("test-v1",
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestCSR(csr),
-			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 				Name: "issuer",
 			}),
 		)
 
 		By("Creating CertificateRequest")
-		cr, err = client.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
+		cr, err = client.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(testingCtx, cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		expUsername := fmt.Sprintf("system:serviceaccount:%s:%s", f.Namespace.Name, sa.Name)

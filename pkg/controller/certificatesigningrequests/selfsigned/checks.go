@@ -23,6 +23,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	clientv1 "k8s.io/client-go/listers/certificates/v1"
@@ -46,8 +47,8 @@ func handleSecretReferenceWorkFunc(log logr.Logger,
 	helper issuer.Helper,
 	queue workqueue.TypedRateLimitingInterface[types.NamespacedName],
 	issuerOptions controllerpkg.IssuerOptions,
-) func(obj any) {
-	return func(obj any) {
+) func(metav1.Object) {
+	return func(obj metav1.Object) {
 		log := log.WithName("handleSecretReference")
 		secret, ok := controllerpkg.ToSecret(obj)
 		if !ok {
@@ -101,7 +102,7 @@ func certificateSigningRequestsForSecret(log logr.Logger,
 			continue
 		}
 
-		issuerObj, err := helper.GetGenericIssuer(cmmeta.ObjectReference{
+		issuerObj, err := helper.GetGenericIssuer(cmmeta.IssuerReference{
 			Name:  ref.Name,
 			Kind:  kind,
 			Group: ref.Group,

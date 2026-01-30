@@ -66,6 +66,9 @@ spec:
       {{- with .Values.global.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ .Values.global.hostUsers }}
+      {{- end }}
       {{- with .Values.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -73,8 +76,8 @@ spec:
       {{- if or .Values.volumes .Values.config}}
       volumes:
         {{- if .Values.config }}
-        - name: config 
-          configMap: 
+        - name: config
+          configMap:
             name: {{ include "cert-manager.fullname" . }}
         {{- end }}
         {{ with .Values.volumes }}
@@ -160,7 +163,7 @@ spec:
           {{- if or .Values.config .Values.volumeMounts }}
           volumeMounts:
             {{- if .Values.config }}
-            - name: config 
+            - name: config
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.volumeMounts }}
@@ -209,7 +212,12 @@ spec:
             failureThreshold: {{ .failureThreshold }}
           {{- end }}
           {{- end }}
-      {{- with (coalesce .Values.nodeSelector .Values.global.nodeSelector) }}
+      {{- if .Values.extraContainers }}
+        {{- toYaml .Values.extraContainers | nindent 8 }}
+      {{- end }}
+      {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
+      {{- $nodeSelector = merge $nodeSelector (.Values.nodeSelector | default dict) }}
+      {{- with $nodeSelector }}
       nodeSelector:
         {{- range $key, $value := . }}
         {{ $key }}: {{ $value | quote }}

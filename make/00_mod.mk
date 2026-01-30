@@ -57,8 +57,6 @@ GOLDFLAGS := -w -s \
 
 golangci_lint_config := .golangci.yaml
 
-repository_base_no_dependabot := 1
-
 GINKGO_VERSION ?= $(shell awk '/ginkgo\/v2/ {print $$2}' test/e2e/go.mod)
 
 build_names := controller acmesolver webhook cainjector startupapicheck
@@ -68,3 +66,8 @@ go_acmesolver_mod_dir := ./cmd/acmesolver
 go_webhook_mod_dir := ./cmd/webhook
 go_cainjector_mod_dir := ./cmd/cainjector
 go_startupapicheck_mod_dir := ./cmd/startupapicheck
+
+crds_expression := or .Values.crds.enabled .Values.installCRDs
+
+helm_chart_source_dir := deploy/charts/cert-manager
+helm_labels_template_name := cert-manager.crd-labels

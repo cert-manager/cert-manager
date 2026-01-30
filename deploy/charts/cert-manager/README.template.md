@@ -4,7 +4,7 @@ cert-manager creates TLS certificates for workloads in your Kubernetes or OpenSh
 
 cert-manager can obtain certificates from a [variety of certificate authorities](https://cert-manager.io/docs/configuration/issuers/), including:
 [Let's Encrypt](https://cert-manager.io/docs/configuration/acme/), [HashiCorp Vault](https://cert-manager.io/docs/configuration/vault/),
-[Venafi](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
+[CyberArk](https://cert-manager.io/docs/configuration/venafi/) and [private PKI](https://cert-manager.io/docs/configuration/ca/).
 
 ## Prerequisites
 
@@ -103,7 +103,7 @@ Global node selector
   
 The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).  
   
-If a component-specific nodeSelector is also set, it will take precedence.
+If a component-specific nodeSelector is also set, it will be merged and take precedence.
 
 #### **global.commonLabels** ~ `object`
 > Default value:
@@ -126,6 +126,18 @@ The number of old ReplicaSets to retain to allow rollback (if not set, the defau
 > ```
 
 The optional priority class to be used for the cert-manager pods.
+#### **global.hostUsers** ~ `bool`
+
+Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.  
+  
+Requirements:  
+  - Kubernetes ≥ 1.33, or  
+  - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.  
+  
+Set to false to run pods in a user namespace without host access.  
+  
+See [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.
+
 #### **global.rbac.create** ~ `bool`
 > Default value:
 > ```yaml
@@ -255,6 +267,11 @@ It cannot be used if `maxUnavailable` is set.
 #### **podDisruptionBudget.maxUnavailable** ~ `unknown`
 
 This configures the maximum unavailable pods for disruptions. It can either be set to an integer (e.g., 1) or a percentage value (e.g., 25%). it cannot be used if `minAvailable` is set.
+
+
+#### **podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
 
 
 #### **featureGates** ~ `string`
@@ -389,25 +406,21 @@ config:
   kubernetesAPIBurst: 9000
   numberOfConcurrentWorkers: 200
   enableGatewayAPI: true
-  # Feature gates as of v1.18.1. Listed with their default values.
+  # Feature gates as of v1.20.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
-    AdditionalCertificateOutputFormats: true # GA - default=true
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
+    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true
     NameConstraints: true # BETA - default=true
-    OtherNames: false # ALPHA - default=false
+    OtherNames: true # BETA - default=true
     SecretsFilteredCaching: true # BETA - default=true
     ServerSideApply: false # ALPHA - default=false
     StableCertificateRequestName: true # BETA - default=true
     UseCertificateRequestBasicConstraints: false # ALPHA - default=false
-    UseDomainQualifiedFinalizer: true # GA - default=true
-    ValidateCAA: false # ALPHA - default=false
-    DefaultPrivateKeyRotationPolicyAlways: true # BETA - default=true
-    ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
   # Configure the metrics server for TLS
   # See https://cert-manager.io/docs/devops-tips/prometheus-metrics/#tls
   metricsTLSConfig:
@@ -463,6 +476,43 @@ For example:
 ```yaml
 extraArgs:
   - --controllers=*,-certificaterequests-approver
+```
+#### **extraContainers** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Extra containers to add to the pod spec in the deployment of the cert-manager controller. For example, to deploy the [aws_signing_helper](https://github.com/aws/rolesanywhere-credential-helper) (replacing the ARNs as relevant):
+
+```yaml
+extraEnv:
+  - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+  - value: http://127.0.0.1:9911
+extraContainers:
+  - name: rolesanywhere-credential-helper
+    image: public.ecr.aws/rolesanywhere/credential-helper:latest
+    command: [aws_signing_helper]
+    args:
+      - serve
+      - --private-key
+      - /etc/cert/tls.key
+      - --certificate
+      - /etc/cert/tls.crt
+      - --role-arn
+      - $ROLE_ARN
+      - --profile-arn
+      - $PROFILE_ARN
+      - --trust-anchor-arn
+      - $TRUST_ANCHOR_ARN
+    volumeMounts:
+      - name: cert
+        mountPath: /etc/cert/
+        readOnly: true
+volumes:
+  - name: cert
+    secret:
+      secretName: cert
 ```
 #### **extraEnv** ~ `array`
 > Default value:
@@ -588,6 +638,45 @@ Optional hostAliases for cert-manager-controller pods. May be useful when perfor
 The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).  
   
 This default ensures that Pods are only scheduled to Linux nodes. It prevents Pods being scheduled to Windows nodes in a mixed OS cluster.
+
+#### **networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create network policies for cert-manager.
+#### **networkPolicy.ingress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: http-metrics
+>       protocol: TCP
+>     - port: http-healthz
+>       protocol: TCP
+> ```
+
+Ingress rule for the cert-manager network policy.  
+By default all pods are allowed access to:  
+  http-metrics and http-healthz ports
+
+#### **networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 80
+>       protocol: TCP
+>     - port: 443
+>       protocol: TCP
+>     - port: 53
+>       protocol: TCP
+>     - port: 53
+>       protocol: UDP
+>     - port: 6443
+>       protocol: TCP
+> ```
+
+Egress rule for the cert-manager network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
 
 #### **ingressShim.defaultIssuerName** ~ `string`
 
@@ -1000,6 +1089,11 @@ This property configures the maximum unavailable pods for disruptions. Can eithe
 It cannot be used if `minAvailable` is set.
 
 
+#### **webhook.podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
+
+
 #### **webhook.deploymentAnnotations** ~ `object`
 
 Optional additional annotations to add to the webhook Deployment.
@@ -1311,12 +1405,18 @@ Create network policies for the webhooks.
 #### **webhook.networkPolicy.ingress** ~ `array`
 > Default value:
 > ```yaml
-> - from:
->     - ipBlock:
->         cidr: 0.0.0.0/0
+> - ports:
+>     - port: https
+>       protocol: TCP
+>     - port: healthcheck
+>       protocol: TCP
+>     - port: http-metrics
+>       protocol: TCP
 > ```
 
-Ingress rule for the webhook network policy. By default, it allows all inbound traffic.
+Ingress rule for the webhook network policy.  
+By default all pods are allowed access to:  
+  https, http-metrics, and http-healthz ports
 
 #### **webhook.networkPolicy.egress** ~ `array`
 > Default value:
@@ -1332,9 +1432,6 @@ Ingress rule for the webhook network policy. By default, it allows all inbound t
 >       protocol: UDP
 >     - port: 6443
 >       protocol: TCP
->   to:
->     - ipBlock:
->         cidr: 0.0.0.0/0
 > ```
 
 Egress rule for the webhook network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
@@ -1360,6 +1457,27 @@ Additional volume mounts to add to the cert-manager controller container.
 > ```
 
 enableServiceLinks indicates whether information about services should be injected into the pod's environment variables, matching the syntax of Docker links.
+#### **webhook.enableClientVerification** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+enableClientVerification turns on client verification of requests made to the webhook server
+#### **webhook.clientCAFile** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+the client CA file to be used for verification
+#### **webhook.apiserverClientCertSubjects** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+Subject names to verify for the client certificate. Multiple values may be supplied as a comma-separated list.
 ### CA Injector
 
 #### **cainjector.enabled** ~ `bool`
@@ -1450,6 +1568,43 @@ Pod Security Context to be set on the cainjector component Pod. For more informa
 
 Container Security Context to be set on the cainjector component container. For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
 
+#### **cainjector.networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create network policies for the cainjector.
+#### **cainjector.networkPolicy.ingress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: http-metrics
+>       protocol: TCP
+> ```
+
+Ingress rule for the webhook cainjector policy.  
+By default all pods are allowed access to:  
+  http-metrics port
+
+#### **cainjector.networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 80
+>       protocol: TCP
+>     - port: 443
+>       protocol: TCP
+>     - port: 53
+>       protocol: TCP
+>     - port: 53
+>       protocol: UDP
+>     - port: 6443
+>       protocol: TCP
+> ```
+
+Egress rule for the cainjector network policy. By default, it allows all outbound traffic to ports 80 and 443, as well as DNS ports.
+
 #### **cainjector.podDisruptionBudget.enabled** ~ `bool`
 > Default value:
 > ```yaml
@@ -1472,6 +1627,11 @@ Cannot be used if `maxUnavailable` is set.
 `maxUnavailable` configures the maximum unavailable pods for disruptions. It can either be set to  
 an integer (e.g., 1) or a percentage value (e.g., 25%).  
 Cannot be used if `minAvailable` is set.
+
+
+#### **cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy** ~ `string`
+
+This configures how to act with unhealthy pods during eviction. Note that this requires Kubernetes 1.31 or `PDBUnhealthyPodEvictionPolicy` feature gate enabled for the cluster to work.
 
 
 #### **cainjector.deploymentAnnotations** ~ `object`

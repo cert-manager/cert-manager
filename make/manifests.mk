@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CRDS_SOURCES=$(wildcard deploy/crds/*.yaml)
-CRDS_TEMPLATED=$(CRDS_SOURCES:deploy/crds/%.yaml=$(bin_dir)/yaml/templated-crds/%.templated.yaml)
-
 HELM_TEMPLATE_SOURCES=$(wildcard deploy/charts/cert-manager/templates/*.yaml)
 HELM_TEMPLATE_TARGETS=$(patsubst deploy/charts/cert-manager/templates/%,$(bin_dir)/helm/cert-manager/templates/%,$(HELM_TEMPLATE_SOURCES))
 
@@ -86,7 +83,7 @@ $(bin_dir)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(bin_dir)/rele
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(bin_dir)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl $(bin_dir)/helm/cert-manager/templates/crds.yaml | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
+$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(bin_dir)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
 	$(HELM) package --app-version=$(VERSION) --version=$(VERSION) --destination "$(dir $@)" ./$(bin_dir)/helm/cert-manager
 
 $(bin_dir)/cert-manager-$(VERSION).tgz.prov: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_CMREL) $(bin_dir)/helm/cert-manager
@@ -103,9 +100,6 @@ $(bin_dir)/helm/cert-manager/templates/_helpers.tpl: deploy/charts/cert-manager/
 
 $(bin_dir)/helm/cert-manager/templates/NOTES.txt: deploy/charts/cert-manager/templates/NOTES.txt | $(bin_dir)/helm/cert-manager/templates
 	cp $< $@
-
-$(bin_dir)/helm/cert-manager/templates/crds.yaml: $(CRDS_SOURCES) | $(bin_dir)/helm/cert-manager/templates
-	./hack/concat-yaml.sh $^ > $@
 
 $(bin_dir)/helm/cert-manager/values.yaml: deploy/charts/cert-manager/values.yaml | $(bin_dir)/helm/cert-manager
 	cp $< $@
@@ -136,12 +130,12 @@ $(bin_dir)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.templa
 # Renders all resources except the namespace and the CRDs
 $(bin_dir)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_HELM) $(bin_dir)/scratch/yaml
 	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM) template --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+	$(HELM) template --kube-version="1.29.0" --api-versions="" --namespace=cert-manager --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
 $(bin_dir)/scratch/yaml/cert-manager.all.unlicensed.yaml: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_HELM) $(bin_dir)/scratch/yaml
 	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM) template --api-versions="" --namespace=cert-manager --set="crds.enabled=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+	$(HELM) template --kube-version="1.29.0" --api-versions="" --namespace=cert-manager --set="crds.enabled=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
 $(bin_dir)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(bin_dir)/scratch/yaml/cert-manager.all.unlicensed.yaml | $(NEEDS_GO) $(bin_dir)/scratch/yaml
@@ -153,13 +147,6 @@ $(bin_dir)/yaml/cert-manager.yaml: $(bin_dir)/scratch/license.yaml deploy/manife
 
 $(bin_dir)/yaml/cert-manager.crds.yaml: $(bin_dir)/scratch/license.yaml $(bin_dir)/scratch/yaml/cert-manager.crds.unlicensed.yaml | $(bin_dir)/yaml
 	cat $^ > $@
-
-$(CRDS_TEMPLATED): $(bin_dir)/yaml/templated-crds/crd-%.templated.yaml: $(bin_dir)/scratch/license.yaml $(bin_dir)/scratch/yaml/cert-manager.crds.unlicensed.yaml | $(NEEDS_GO) $(bin_dir)/yaml/templated-crds
-	cat $< > $@
-	$(GO) run hack/extractcrd/main.go $(word 2,$^) $* >> $@
-
-.PHONY: templated-crds
-templated-crds: $(CRDS_TEMPLATED)
 
 ###############
 # Dir targets #
@@ -183,7 +170,4 @@ $(bin_dir)/scratch/manifests-unsigned:
 	@mkdir -p $@
 
 $(bin_dir)/scratch/manifests-signed:
-	@mkdir -p $@
-
-$(bin_dir)/yaml/templated-crds:
 	@mkdir -p $@

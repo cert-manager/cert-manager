@@ -31,7 +31,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
 	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
 	if err != nil {
-		return nil, errors.NewInvalidData("error decoding private key PEM block")
+		return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
 	}
 
 	switch block.Type {
@@ -90,13 +90,14 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 		// parse the tls certificate
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return nil, errors.NewInvalidData("error parsing TLS certificate: %s", err.Error())
+			return nil, errors.NewInvalidData("error parsing X.509 certificate: %s", err.Error())
 		}
+
 		certs = append(certs, cert)
 	}
 
 	if len(certs) == 0 {
-		return nil, errors.NewInvalidData("error decoding certificate PEM block")
+		return nil, errors.NewInvalidData("error decoding certificate PEM block: no valid certificates found")
 	}
 
 	return certs, nil
@@ -130,7 +131,7 @@ func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateRequest, error) {
 	block, _, err := pem.SafeDecodeCSR(csrBytes)
 	if err != nil {
-		return nil, errors.NewInvalidData("error decoding certificate request PEM block")
+		return nil, errors.NewInvalidData("error decoding certificate request PEM block: %s", err)
 	}
 
 	csr, err := x509.ParseCertificateRequest(block.Bytes)

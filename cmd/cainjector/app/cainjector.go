@@ -22,9 +22,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
-	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
@@ -32,6 +29,9 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/spf13/cobra"
+
+	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
 )
 
 const componentController = "cainjector"
@@ -40,6 +40,11 @@ func NewCAInjectorCommand(ctx context.Context) *cobra.Command {
 	return newCAInjectorCommand(
 		ctx,
 		func(ctx context.Context, cfg *config.CAInjectorConfiguration) error {
+			log := logf.FromContext(ctx, componentController)
+
+			versionInfo := util.VersionInfo()
+			log.Info("starting cert-manager ca-injector", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
+
 			return Run(cfg, ctx)
 		},
 		os.Args[1:],
@@ -61,8 +66,7 @@ func newCAInjectorCommand(
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentController,
-		Short: fmt.Sprintf("CA Injection Controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use: componentController,
 		Long: `
 cert-manager CA injector is a Kubernetes addon to automate the injection of CA data into
 webhooks and APIServices from cert-manager certificates.

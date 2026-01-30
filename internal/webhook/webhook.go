@@ -49,6 +49,7 @@ import (
 // resource types, validation, defaulting and conversion functions.
 func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
 	crlog.SetLogger(log)
+	// nolint:staticcheck // For backwards compatibility.
 	restcfg, err := kube.BuildClientConfig(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
@@ -71,20 +72,23 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 	metainstall.Install(scheme)
 
 	s := &server.Server{
-		ResourceScheme:           scheme,
-		ListenAddr:               int(opts.SecurePort),
-		HealthzAddr:              ptr.To(int(opts.HealthzPort)),
-		EnablePprof:              opts.EnablePprof,
-		PprofAddress:             opts.PprofAddress,
-		CertificateSource:        buildCertificateSource(log, opts.TLSConfig, restcfg),
-		CipherSuites:             opts.TLSConfig.CipherSuites,
-		MinTLSVersion:            opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook:        admissionHandler,
-		MutationWebhook:          admissionHandler,
-		MetricsListenAddress:     opts.MetricsListenAddress,
-		MetricsCertificateSource: buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
-		MetricsCipherSuites:      opts.MetricsTLSConfig.CipherSuites,
-		MetricsMinTLSVersion:     opts.MetricsTLSConfig.MinTLSVersion,
+		ResourceScheme:            scheme,
+		ListenAddr:                int(opts.SecurePort),
+		HealthzAddr:               ptr.To(int(opts.HealthzPort)),
+		EnablePprof:               opts.EnablePprof,
+		PprofAddress:              opts.PprofAddress,
+		CertificateSource:         buildCertificateSource(log, opts.TLSConfig, restcfg),
+		CipherSuites:              opts.TLSConfig.CipherSuites,
+		MinTLSVersion:             opts.TLSConfig.MinTLSVersion,
+		ValidationWebhook:         admissionHandler,
+		MutationWebhook:           admissionHandler,
+		MetricsListenAddress:      opts.MetricsListenAddress,
+		MetricsCertificateSource:  buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
+		MetricsCipherSuites:       opts.MetricsTLSConfig.CipherSuites,
+		MetricsMinTLSVersion:      opts.MetricsTLSConfig.MinTLSVersion,
+		EnableClientVerification:  opts.EnableClientVerification,
+		ClientCAPath:              opts.ClientCAPath,
+		ClientCertificateSubjects: opts.ClientCertificateSubjects,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)

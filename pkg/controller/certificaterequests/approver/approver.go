@@ -77,7 +77,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 	mustSync := []cache.InformerSynced{certificateRequestInformer.Informer().HasSynced}
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue}); err != nil {
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 

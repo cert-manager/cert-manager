@@ -109,7 +109,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 	// has been created.
 	vcertClient, err := vcert.NewClient(cfg, false)
 	if err != nil {
-		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
+		return nil, fmt.Errorf("error creating vcert client: %s", err.Error())
 	}
 
 	var tppc *tpp.Connector
@@ -126,6 +126,8 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		if ok {
 			cc = c
 		}
+	default:
+		return nil, fmt.Errorf("unsupported vcert connector type: %v", vcertClient.GetType())
 	}
 
 	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)
@@ -319,7 +321,7 @@ func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 	// Copy vcert's initialization of the TLS client config
 	tlsClientConfig := http.DefaultTransport.(*http.Transport).TLSClientConfig.Clone()
 	if tlsClientConfig == nil {
-		tlsClientConfig = &tls.Config{}
+		tlsClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 	if len(options.CABundle) > 0 {
 		rootCAs := x509.NewCertPool()

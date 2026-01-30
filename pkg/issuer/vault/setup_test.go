@@ -430,7 +430,7 @@ func TestVault_Setup(t *testing.T) {
 					IssuerConfig: tt.givenIssuer,
 				},
 			}
-			cmclient := cmfake.NewSimpleClientset(givenIssuer)
+			cmclient := cmfake.NewClientset(givenIssuer)
 
 			v := &Vault{
 				Context: &controller.Context{CMClient: cmclient},

@@ -22,16 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/segmentio/encoding/json"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/clock"
-	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/ptr"
-
-	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -42,6 +32,16 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/segmentio/encoding/json"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
+	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/ptr"
+
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
 
 // TestTriggerController performs a basic test to ensure that the trigger
@@ -98,7 +98,7 @@ func TestTriggerController(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
-			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:  cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -143,7 +143,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 			SecretName:  secretName,
 			CommonName:  "example.com",
 			RenewBefore: renewBefore,
-			IssuerRef:   cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:   cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}
 
@@ -261,7 +261,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		Spec: cmapi.CertificateSpec{
 			SecretName: secretName,
 			CommonName: "example.com",
-			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+			IssuerRef:  cmmeta.IssuerReference{Name: "testissuer"}, // doesn't need to exist
 		},
 	}
 
@@ -276,6 +276,8 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 		Recorder:                  framework.NewEventRecorder(t, scheme),
 		FieldManager:              "cert-manager-certificates-trigger-test",
 	}
+
+	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
 
 	// Start the trigger controller
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)

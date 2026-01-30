@@ -72,5 +72,6 @@
 		"maxPrivateKeySize": 13000,
 		"maxChainLength": 10,
 		"maxBundleSize": 330000
-	}
+	},
+	"certificateRequestMinimumBackoffDuration": "1h0m0s"
 }

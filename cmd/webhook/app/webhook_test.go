@@ -25,10 +25,9 @@ import (
 	"reflect"
 	"testing"
 
-	logsapi "k8s.io/component-base/logs/api/v1"
-
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
+	logsapi "k8s.io/component-base/logs/api/v1"
 )
 
 func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.WebhookConfiguration, error) {

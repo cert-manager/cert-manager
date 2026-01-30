@@ -292,14 +292,14 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 
 	if !r.Success {
 		if len(r.Errors) > 0 {
-			errStr := ""
+			var errStr strings.Builder
 			for _, apiErr := range r.Errors {
-				errStr += fmt.Sprintf("\t Error: %d: %s", apiErr.Code, apiErr.Message)
+				errStr.WriteString(fmt.Sprintf("\t Error: %d: %s", apiErr.Code, apiErr.Message))
 				for _, chainErr := range apiErr.ErrorChain {
-					errStr += fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message)
+					errStr.WriteString(fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message))
 				}
 			}
-			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr)
+			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr.String())
 		}
 		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q", method, uri)
 	}

@@ -126,7 +126,7 @@ func TestSign(t *testing.T) {
 			},
 		),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -327,7 +327,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{invalidKeySecret},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					`Normal ErrorParsingKey Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
+					`Normal ErrorParsingKey Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block: no PEM data was found in given input`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -339,7 +339,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
+								Message:            `Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block: no PEM data was found in given input`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -441,7 +441,7 @@ func TestSign(t *testing.T) {
 		},
 		"if signing fails then should report failure": {
 			certificateRequest: baseCR.DeepCopy(),
-			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, any) ([]byte, *x509.Certificate, error) {
 				return nil, nil, errors.New("this is a signing error")
 			},
 			builder: &testpkg.Builder{
@@ -471,7 +471,7 @@ func TestSign(t *testing.T) {
 		},
 		"should sign an RSA key set condition to Ready": {
 			certificateRequest: baseCR.DeepCopy(),
-			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk any) ([]byte, *x509.Certificate, error) {
 				// We still check that it will sign and not error
 				// Return error if we do
 				_, _, err := pki.SignCertificate(c1, c2, pk, sk)
@@ -509,7 +509,7 @@ func TestSign(t *testing.T) {
 		},
 		"should sign an EC key set condition to Ready": {
 			certificateRequest: ecCR.DeepCopy(),
-			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk any) ([]byte, *x509.Certificate, error) {
 				// We still check that it will sign and not error
 				// Return error if we do
 				_, _, err := pki.SignCertificate(c1, c2, pk, sk)
@@ -547,7 +547,7 @@ func TestSign(t *testing.T) {
 		},
 		"should sign a cert with no subject DN and create a warning event": {
 			certificateRequest: emptyCR.DeepCopy(),
-			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk interface{}) ([]byte, *x509.Certificate, error) {
+			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk any) ([]byte, *x509.Certificate, error) {
 				_, cert, err := pki.SignCertificate(c1, c2, pk, sk)
 				if err != nil {
 					return nil, nil, err

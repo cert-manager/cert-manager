@@ -20,19 +20,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/pflag"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
-	cliflag "k8s.io/component-base/cli/flag"
-
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	configscheme "github.com/cert-manager/cert-manager/internal/apis/config/controller/scheme"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	configv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
+	xlistenersetcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/listenerset"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/spf13/pflag"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
+	cliflag "k8s.io/component-base/cli/flag"
 )
 
 // ControllerFlags defines options that can only be configured via flags.
@@ -174,6 +174,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableGatewayAPI, "enable-gateway-api", c.EnableGatewayAPI, ""+
 		"Whether gateway API integration is enabled within cert-manager. The ExperimentalGatewayAPISupport "+
 		"feature gate must also be enabled (default as of 1.15).")
+	fs.BoolVar(&c.EnableGatewayAPIXListenerSet, "enable-gateway-api-xlistenerset", c.EnableGatewayAPIXListenerSet, ""+
+		"Whether XListenerSets support is enabled within cert-manager. The XListenerSet "+
+		"feature gate must also be enabled.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
@@ -238,6 +241,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.IntVar(&c.PEMSizeLimitsConfig.MaxBundleSize, "max-certificate-bundle-size", c.PEMSizeLimitsConfig.MaxBundleSize, ""+
 		"Maximum size in bytes for PEM-encoded certificate bundles.")
 
+	fs.DurationVar(&c.CertificateRequestMinimumBackoffDuration, "certificate-request-minimum-backoff-duration", c.CertificateRequestMinimumBackoffDuration, ""+
+		"Duration of the initial certificate request backoff when a certificate request fails. "+
+		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
+
 	logf.AddFlags(&c.Logging, fs)
 }
 
@@ -269,6 +276,11 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIXListenerSet {
+		logf.Log.Info("enabling the sig-network Gateway API XListenerSet certificate-shim")
+		enabled = enabled.Insert(xlistenersetcontroller.ControllerName)
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {

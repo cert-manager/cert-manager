@@ -19,14 +19,13 @@ package install
 import (
 	"testing"
 
-	crdfuzz "github.com/munnerz/crd-schema-fuzz"
-
 	acmefuzzer "github.com/cert-manager/cert-manager/internal/apis/acme/fuzzer"
 	apitesting "github.com/cert-manager/cert-manager/internal/test/paths"
 	"github.com/cert-manager/cert-manager/pkg/api"
+	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 )
 
 func TestPruneTypes(t *testing.T) {
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "orders"), acmefuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "challenges"), acmefuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "acme.cert-manager.io_orders"), acmefuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "acme.cert-manager.io_challenges"), acmefuzzer.Funcs)
 }

@@ -22,12 +22,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/clock"
-
-	"github.com/cert-manager/cert-manager/integration-tests/framework"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -36,6 +30,12 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
+
+	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
 
 // TestRevisionManagerController will ensure that the revision manager
@@ -88,7 +88,7 @@ func TestRevisionManagerController(t *testing.T) {
 		gen.SetCertificateCommonName("my-common-name"),
 		gen.SetCertificateSecretName(secretName),
 		gen.SetCertificateRevisionHistoryLimit(3),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
@@ -124,7 +124,7 @@ func TestRevisionManagerController(t *testing.T) {
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   csrPEM,
-				IssuerRef: cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
+				IssuerRef: cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"},
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {

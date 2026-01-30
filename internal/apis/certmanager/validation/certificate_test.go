@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	validIssuerRef = cmmeta.ObjectReference{
+	validIssuerRef = cmmeta.IssuerReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
 	}
@@ -74,7 +74,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 					},
 				},
@@ -86,7 +86,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "valid",
 						Kind: "Issuer",
 					},
@@ -112,7 +112,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "valid",
 						Kind:  "Issuer",
 						Group: "cert-manager.io",
@@ -126,7 +126,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name: "abc",
 						Kind: "AWSPCAClusterIssuer",
 					},
@@ -142,7 +142,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: cmmeta.ObjectReference{
+					IssuerRef: cmmeta.IssuerReference{
 						Name:  "abc",
 						Kind:  "AWSPCAClusterIssuer",
 						Group: "awspca.cert-manager.io",
@@ -185,7 +185,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set"),
 			},
 		},
 		"invalid with no issuerRef": {
@@ -702,7 +702,8 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(
 					fldPath.Child("secretTemplate", "labels"),
 					"invalid=chars", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an "+
-						"alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
+						"alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')").
+					WithOrigin("format=k8s-label-value"),
 			},
 		},
 		"valid with name constraints": {
@@ -895,11 +896,7 @@ func TestValidateCertificate(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, s.nameConstraintsFeatureEnabled)
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			assert.ElementsMatch(t, errs, s.errs)
-			if s.cfg.Spec.PrivateKey == nil || s.cfg.Spec.PrivateKey.RotationPolicy == "" {
-				assert.Contains(t, warnings, newDefaultPrivateKeyRotationPolicy, "a warning is expected when the rotation policy is omitted.")
-			} else {
-				assert.NotContains(t, warnings, newDefaultPrivateKeyRotationPolicy)
-			}
+			assert.Empty(t, warnings)
 		})
 	}
 }
@@ -1219,7 +1216,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, uriSANs, ipAddresses, emailSANs or otherNames must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set"),
 			},
 		},
 		"invalid with a `literalSubject` and any `Subject` other than serialNumber": {
@@ -1279,8 +1276,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.LiteralCertificateSubject, test.featureEnabled)
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			// None of these test inputs include a privateKey field, so they will all result in this warning.
-			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
+			assert.Empty(t, warnings)
 		})
 	}
 }
@@ -1431,8 +1427,7 @@ func Test_validateKeystores(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(test.a, test.cfg)
 			assert.ElementsMatch(t, errs, test.errs)
-			// None of these test inputs include a privateKey field, so they will all result in this warning.
-			assert.ElementsMatch(t, warnings, []string{newDefaultPrivateKeyRotationPolicy})
+			assert.Empty(t, warnings)
 		})
 	}
 }

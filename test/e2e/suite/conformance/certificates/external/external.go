@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -29,7 +30,6 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -75,10 +75,10 @@ func newIssuerBuilder(issuerKind string) *issuerBuilder {
 	return &issuerBuilder{
 		clusterResourceNamespace: sampleExternalIssuerNamespace,
 		prototype: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "sample-issuer.example.com/v1alpha1",
 				"kind":       issuerKind,
-				"spec": map[string]interface{}{
+				"spec": map[string]any{
 					"url": "http://sample-issuer.example.com/api/v1",
 				},
 			},
@@ -116,7 +116,7 @@ func (o *issuerBuilder) secretAndIssuerForTest(f *framework.Framework) (*corev1.
 	return secret, issuer, err
 }
 
-func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmmeta.ObjectReference {
+func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmmeta.IssuerReference {
 	By("Creating an Issuer")
 	secret, issuer, err := o.secretAndIssuerForTest(f)
 	Expect(err).NotTo(HaveOccurred(), "failed to initialise test objects")
@@ -130,14 +130,14 @@ func (o *issuerBuilder) create(ctx context.Context, f *framework.Framework) cmme
 	err = crt.Create(ctx, issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer")
 
-	return cmmeta.ObjectReference{
+	return cmmeta.IssuerReference{
 		Group: issuer.GroupVersionKind().Group,
 		Kind:  issuer.GroupVersionKind().Kind,
 		Name:  issuer.GetName(),
 	}
 }
 
-func (o *issuerBuilder) delete(ctx context.Context, f *framework.Framework, _ cmmeta.ObjectReference) {
+func (o *issuerBuilder) delete(ctx context.Context, f *framework.Framework, _ cmmeta.IssuerReference) {
 	By("Deleting the issuer")
 	crt, err := crtclient.New(f.KubeClientConfig, crtclient.Options{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create controller-runtime client")

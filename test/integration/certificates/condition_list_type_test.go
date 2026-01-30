@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,9 +30,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // Test_ConditionsListType ensures that the Certificate's Conditions API field
@@ -63,7 +63,7 @@ func Test_ConditionsListType(t *testing.T) {
 	crt := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Spec: cmapi.CertificateSpec{
-			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.ObjectReference{Name: "test"},
+			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.IssuerReference{Name: "test"},
 		},
 	}
 	_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})

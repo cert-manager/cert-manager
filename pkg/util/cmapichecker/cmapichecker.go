@@ -141,7 +141,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request: csrPEM.Bytes(),
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "cmapichecker",
 				},
 			},
@@ -152,7 +152,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request: []byte("invalid-csr"),
-				IssuerRef: cmmeta.ObjectReference{
+				IssuerRef: cmmeta.IssuerReference{
 					Name: "cmapichecker",
 				},
 			},

@@ -25,6 +25,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/cert-manager/cert-manager/controller-binary/app/options"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/pem"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/healthz"
+	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/server"
+	"github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	"github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -35,22 +50,6 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-
-	"github.com/cert-manager/cert-manager/controller-binary/app/options"
-	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
-	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	"github.com/cert-manager/cert-manager/internal/pem"
-	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
-	"github.com/cert-manager/cert-manager/pkg/controller"
-	"github.com/cert-manager/cert-manager/pkg/healthz"
-	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
-	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/server"
-	"github.com/cert-manager/cert-manager/pkg/server/tls"
-	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -70,6 +69,9 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 	log := logf.FromContext(rootCtx)
 	g, rootCtx := errgroup.WithContext(rootCtx)
+
+	versionInfo := util.VersionInfo()
+	log.Info("starting cert-manager controller", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
 
 	ctxFactory, err := buildControllerContextFactory(rootCtx, opts)
 	if err != nil {
@@ -106,7 +108,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 
 	// Start metrics server
-	metricsLn, err := server.Listen("tcp", opts.MetricsListenAddress,
+	metricsLn, err := server.Listen(rootCtx, "tcp", opts.MetricsListenAddress,
 		server.WithCertificateSource(certificateSource),
 		server.WithTLSCipherSuites(opts.MetricsTLSConfig.CipherSuites),
 		server.WithTLSMinVersion(opts.MetricsTLSConfig.MinTLSVersion),
@@ -116,6 +118,9 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 
 	ctx.Metrics.SetupACMECollector(ctx.SharedInformerFactory.Acme().V1().Challenges().Lister())
+	ctx.Metrics.SetupCertificateCollector(ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister())
+	ctx.Metrics.SetupIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister())
+	ctx.Metrics.SetupClusterIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister())
 	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {
@@ -137,7 +142,8 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 
 	// Start profiler if it is enabled
 	if opts.EnablePprof {
-		profilerLn, err := net.Listen("tcp", opts.PprofAddress)
+		lc := net.ListenConfig{}
+		profilerLn, err := lc.Listen(rootCtx, "tcp", opts.PprofAddress)
 		if err != nil {
 			return fmt.Errorf("failed to listen on profiler address %s: %v", opts.PprofAddress, err)
 		}
@@ -166,7 +172,8 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 			return nil
 		})
 	}
-	healthzListener, err := net.Listen("tcp", opts.HealthzListenAddress)
+	lc := net.ListenConfig{}
+	healthzListener, err := lc.Listen(rootCtx, "tcp", opts.HealthzListenAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen on healthz address %s: %v", opts.HealthzListenAddress, err)
 	}
@@ -353,12 +360,14 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
-			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
+			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
+			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
+			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
 		},
 
 		ConfigOptions: controller.ConfigOptions{
-			EnableGatewayAPI: opts.EnableGatewayAPI,
+			EnableGatewayAPI:             opts.EnableGatewayAPI,
+			EnableGatewayAPIXListenerSet: opts.EnableGatewayAPIXListenerSet,
 		},
 	})
 	if err != nil {
@@ -383,12 +392,13 @@ func startLeaderElection(ctx context.Context, opts *config.ControllerConfigurati
 
 	// We only support leases for leader election. Previously we supported ConfigMap & Lease objects for leader
 	// election.
-	ml, err := resourcelock.New(resourcelock.LeasesResourceLock,
+	ml, err := resourcelock.NewWithLabels(resourcelock.LeasesResourceLock,
 		opts.LeaderElectionConfig.Namespace,
 		lockName,
 		leaderElectionClient.CoreV1(),
 		leaderElectionClient.CoordinationV1(),
 		lc,
+		map[string]string{"app.kubernetes.io/managed-by": "cert-manager"},
 	)
 	if err != nil {
 		return fmt.Errorf("error creating leader election lock: %v", err)

@@ -197,6 +197,9 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableGatewayAPI, &out.EnableGatewayAPI, s); err != nil {
 		return err
 	}
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet, s); err != nil {
+		return err
+	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
 	if err := sharedv1alpha1.Convert_Pointer_int32_To_int(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
 		return err
@@ -225,6 +228,9 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 		return err
 	}
 	if err := Convert_v1alpha1_PEMSizeLimitsConfig_To_controller_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig, &out.PEMSizeLimitsConfig, s); err != nil {
+		return err
+	}
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CertificateRequestMinimumBackoffDuration, &out.CertificateRequestMinimumBackoffDuration, s); err != nil {
 		return err
 	}
 	return nil
@@ -262,6 +268,9 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableGatewayAPI, &out.EnableGatewayAPI, s); err != nil {
 		return err
 	}
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet, s); err != nil {
+		return err
+	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
 	if err := sharedv1alpha1.Convert_int_To_Pointer_int32(&in.NumberOfConcurrentWorkers, &out.NumberOfConcurrentWorkers, s); err != nil {
 		return err
@@ -290,6 +299,9 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 		return err
 	}
 	if err := Convert_controller_PEMSizeLimitsConfig_To_v1alpha1_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig, &out.PEMSizeLimitsConfig, s); err != nil {
+		return err
+	}
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CertificateRequestMinimumBackoffDuration, &out.CertificateRequestMinimumBackoffDuration, s); err != nil {
 		return err
 	}
 	return nil

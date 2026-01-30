@@ -28,7 +28,7 @@ type Addon interface {
 	// any arguments. For global addons, this function is called on ginkgo process #1
 	// without any arguments, but the returned data is passed to the Setup function
 	// on all other ginkgo processes.
-	Setup(*config.Config, ...AddonTransferableData) (AddonTransferableData, error)
+	Setup(ctx context.Context, cfg *config.Config, leaderData ...AddonTransferableData) (AddonTransferableData, error)
 
 	// For non-global addons, this function is called on all ginkgo processes. For global
 	// addons, this function is called only on ginkgo process #1.
@@ -49,4 +49,4 @@ type Addon interface {
 // it to all other ginkgo processes. Process #1 then starts a shared server that trusts the
 // certificate. All other ginkgo processes can authenticate to this server using the private
 // key and certificate that was transferred to them.
-type AddonTransferableData interface{}
+type AddonTransferableData any

@@ -19,6 +19,8 @@ package http
 import (
 	"context"
 	"fmt"
+	"maps"
+	"net"
 	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,9 +92,7 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 
 func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge, svcName string) (*gwapi.HTTPRoute, error) {
 	labels := podLabels(ch)
-	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
@@ -114,9 +114,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	expectedSpec := generateHTTPRouteSpec(ch, svcName)
 	actualSpec := httpRoute.Spec
 	expectedLabels := podLabels(ch)
-	for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
-		expectedLabels[k] = v
-	}
+	maps.Copy(expectedLabels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	actualLabels := httpRoute.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {
 		return httpRoute, nil
@@ -144,13 +142,18 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 }
 
 func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRouteSpec {
+	// Gateway API HTTPRoutes do not support IP addresses in hostnames.
+	// Only add the hostname if it's a DNS name, not an IP address.
+	var hostnames []gwapi.Hostname
+	if net.ParseIP(ch.Spec.DNSName) == nil {
+		hostnames = []gwapi.Hostname{gwapi.Hostname(ch.Spec.DNSName)}
+	}
+
 	return gwapi.HTTPRouteSpec{
 		CommonRouteSpec: gwapi.CommonRouteSpec{
 			ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
 		},
-		Hostnames: []gwapi.Hostname{
-			gwapi.Hostname(ch.Spec.DNSName),
-		},
+		Hostnames: hostnames,
 		Rules: []gwapi.HTTPRouteRule{
 			{
 				Matches: []gwapi.HTTPRouteMatch{

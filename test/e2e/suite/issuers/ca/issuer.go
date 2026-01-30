@@ -19,13 +19,13 @@ package ca
 import (
 	"context"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,32 +33,31 @@ import (
 
 var _ = framework.CertManagerDescribe("CA Issuer", func() {
 	f := framework.NewDefaultFramework("create-ca-issuer")
-	ctx := context.TODO()
 
 	issuerName := "test-ca-issuer"
 	secretName := "ca-issuer-signing-keypair"
 
-	BeforeEach(func() {
+	BeforeEach(func(testingCtx context.Context) {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(ctx, newSigningKeypairSecret(secretName), metav1.CreateOptions{})
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, newSigningKeypairSecret(secretName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
-		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(ctx, secretName, metav1.DeleteOptions{})
+		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, secretName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should generate a signing keypair", func() {
+	It("should generate a signing keypair", func(testingCtx context.Context) {
 		By("Creating an Issuer")
 		issuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
 			gen.SetIssuerCASecretName(secretName))
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(ctx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,

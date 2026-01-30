@@ -224,7 +224,7 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 			}(),
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
-			expErrString: "provided PEM data was larger than the maximum 65000B",
+			expErrString: "provided PEM data was larger than the maximum 95000B",
 		},
 	}
 

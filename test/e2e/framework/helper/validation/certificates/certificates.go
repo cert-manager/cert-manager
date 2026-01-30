@@ -25,15 +25,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kr/pretty"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/dump"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // ValidationFunc describes a Certificate validation helper function
@@ -44,11 +43,8 @@ func ExpectValidKeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error 
 	validKeys := []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.CertificateOutputFormatDERKey, cmapi.CertificateOutputFormatCombinedPEMKey}
 	nbValidKeys := 0
 	for k := range secret.Data {
-		for _, k2 := range validKeys {
-			if k == k2 {
-				nbValidKeys++
-				break
-			}
+		if slices.Contains(validKeys, k) {
+			nbValidKeys++
 		}
 	}
 	if nbValidKeys < 2 {
@@ -326,10 +322,10 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 
 	if _, err := cert.Verify(opts); err != nil {
 		return fmt.Errorf(
-			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%v\nERROR\n%s\n",
-			pretty.Sprint(cert),
-			pretty.Sprint(rootCertPool),
-			pretty.Sprint(intermediateCertPool),
+			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%s\nERROR\n%s\n",
+			dump.Pretty(cert),
+			dump.Pretty(rootCertPool),
+			dump.Pretty(intermediateCertPool),
 			err,
 		)
 	}

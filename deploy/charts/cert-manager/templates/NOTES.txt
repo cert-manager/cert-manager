@@ -2,11 +2,6 @@
 ⚠️  WARNING: `installCRDs` is deprecated, use `crds.enabled` instead.
 
 {{- end }}
-⚠️  WARNING: New default private key rotation policy for Certificate resources.
-The default private key rotation policy for Certificate resources was
-changed to `Always` in cert-manager >= v1.18.0.
-Learn more in the [1.18 release notes](https://cert-manager.io/docs/releases/release-notes/release-notes-1.18).
-
 cert-manager {{ .Chart.AppVersion }} has been deployed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -22,3 +17,9 @@ Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
 https://cert-manager.io/docs/usage/ingress/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Gateway API resources, take a look at the `gateway resource`
+documentation:
+
+https://cert-manager.io/docs/usage/gateway/

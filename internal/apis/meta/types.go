@@ -47,15 +47,20 @@ type LocalObjectReference struct {
 	Name string
 }
 
-// ObjectReference is a reference to an object with a given name, kind and group.
-type ObjectReference struct {
-	// Name of the resource being referred to.
+// IssuerReference is a reference to a certificate issuer object with a given name, kind and group.
+type IssuerReference struct {
+	// Name of the issuer being referred to.
 	Name string
-	// Kind of the resource being referred to.
+	// Kind of the issuer being referred to.
 	Kind string
-	// Group of the resource being referred to.
+	// Group of the issuer being referred to.
 	Group string
 }
+
+// ObjectReference is a reference to an object with a given name, kind and group.
+//
+// Deprecated: Use IssuerReference instead.
+type ObjectReference = IssuerReference
 
 // A reference to a specific 'key' within a Secret resource.
 // In some instances, `key` is a required field.
