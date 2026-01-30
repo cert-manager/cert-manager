@@ -108,6 +108,11 @@ type ACMEIssuer struct {
 	// +optional
 	DisableAccountKeyGeneration bool `json:"disableAccountKeyGeneration,omitempty"`
 
+	// AccountPrivateKey contains the configuration for the ACME account private key.
+	// If not specified, defaults to RSA with 2048 bit key size.
+	// +optional
+	AccountPrivateKey *AccountPrivateKey `json:"accountPrivateKey,omitempty"`
+
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
@@ -152,6 +157,31 @@ const (
 	HS256 HMACKeyAlgorithm = "HS256"
 	HS384 HMACKeyAlgorithm = "HS384"
 	HS512 HMACKeyAlgorithm = "HS512"
+)
+
+// AccountPrivateKey specifies the configuration for the ACME account private key.
+type AccountPrivateKey struct {
+	// Algorithm is the algorithm used for the ACME account private key.
+	// Supported values are "RSA" and "ECDSA".
+	// If not specified, defaults to "RSA".
+	// +optional
+	Algorithm AccountKeyAlgorithm `json:"algorithm,omitempty"`
+
+	// Size is the key size for the account private key.
+	// For RSA keys: 2048 or 4096
+	// For ECDSA keys: 256, 384, or 521
+	// If not specified, defaults to 2048 for RSA and 256 for ECDSA.
+	// +optional
+	Size int `json:"size,omitempty"`
+}
+
+// AccountKeyAlgorithm is the name of a key algorithm used for the ACME account key.
+// +kubebuilder:validation:Enum=RSA;ECDSA
+type AccountKeyAlgorithm string
+
+const (
+	RSAAccountKeyAlgorithm   AccountKeyAlgorithm = "RSA"
+	ECDSAAccountKeyAlgorithm AccountKeyAlgorithm = "ECDSA"
 )
 
 // An ACMEChallengeSolver describes how to solve ACME challenges for the issuer it is part of.
