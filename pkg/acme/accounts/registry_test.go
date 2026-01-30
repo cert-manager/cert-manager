@@ -17,6 +17,9 @@ limitations under the License.
 package accounts
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
@@ -187,7 +190,10 @@ func TestRegistry_AddClient_UpdatesClientPKChecksum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pkBytes := x509.MarshalPKCS1PrivateKey(pk)
+	pkBytes, err := x509.MarshalPKCS8PrivateKey(pk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pkChecksum := sha256.Sum256(pkBytes)
 	pkChecksumString := base64.StdEncoding.EncodeToString(pkChecksum[:])
 
@@ -208,5 +214,109 @@ func TestRegistry_AddClient_UpdatesClientPKChecksum(t *testing.T) {
 	isCached = r.IsKeyCheckSumCached(pkChecksumString, pk2)
 	if isCached == true {
 		t.Fatal("checksum reported same for different keys")
+	}
+}
+
+func TestRegistry_AddClient_WithECDSAKey(t *testing.T) {
+	r := NewDefaultRegistry(func(options NewClientOptions) client.Interface {
+		return newClientFromHTTPClient(http.DefaultClient, "cert-manager-test", options)
+	})
+
+	// Generate an ECDSA key
+	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Register a new client with ECDSA key
+	r.AddClient("abc", NewClientOptions{
+		PrivateKey: ecdsaKey,
+	})
+
+	c, err := r.GetClient("abc")
+	if err != nil {
+		t.Errorf("unexpected error getting client: %v", err)
+	}
+	if c == nil {
+		t.Error("nil client returned")
+	}
+}
+
+func TestRegistry_AddClient_UpdatesExistingWhenECDSAKeyChanges(t *testing.T) {
+	r := NewDefaultRegistry(func(options NewClientOptions) client.Interface {
+		return newClientFromHTTPClient(http.DefaultClient, "cert-manager-test", options)
+	})
+
+	// Generate two different ECDSA keys
+	ecdsaKey1, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ecdsaKey2, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Register a new client with first ECDSA key
+	r.AddClient("abc", NewClientOptions{
+		PrivateKey: ecdsaKey1,
+	})
+	l := r.ListClients()
+	if len(l) != 1 {
+		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
+	}
+
+	// Update the client with a different ECDSA key
+	r.AddClient("abc", NewClientOptions{
+		PrivateKey: ecdsaKey2,
+	})
+	l = r.ListClients()
+	if len(l) != 1 {
+		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
+	}
+}
+
+func TestRegistry_AddClient_UpdatesClientPKChecksum_ECDSA(t *testing.T) {
+	r := NewDefaultRegistry(func(options NewClientOptions) client.Interface {
+		return newClientFromHTTPClient(http.DefaultClient, "cert-manager-test", options)
+	})
+
+	// Generate two different ECDSA keys
+	ecdsaKey1, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ecdsaKey2, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Calculate checksum for first key
+	pkBytes, err := x509.MarshalPKCS8PrivateKey(ecdsaKey1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkChecksum := sha256.Sum256(pkBytes)
+	pkChecksumString := base64.StdEncoding.EncodeToString(pkChecksum[:])
+
+	// Register a new client with first ECDSA key
+	r.AddClient("abc", NewClientOptions{
+		PrivateKey: ecdsaKey1,
+	})
+	l := r.ListClients()
+	if len(l) != 1 {
+		t.Errorf("expected ListClients to have 1 item but it has %d", len(l))
+	}
+
+	// Verify checksum matches for same key
+	isCached := r.IsKeyCheckSumCached(pkChecksumString, ecdsaKey1)
+	if isCached == false {
+		t.Fatal("checksum failed for same ECDSA key")
+	}
+
+	// Verify checksum doesn't match for different key
+	isCached = r.IsKeyCheckSumCached(pkChecksumString, ecdsaKey2)
+	if isCached == true {
+		t.Fatal("checksum reported same for different ECDSA keys")
 	}
 }
