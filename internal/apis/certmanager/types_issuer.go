@@ -241,15 +241,12 @@ type VaultAuth struct {
 	Kubernetes *VaultKubernetesAuth
 
 	// AWS authenticates with Vault using AWS IAM authentication.
-	// +optional
 	AWS *VaultAWSAuth
 
 	// GCP authenticates with Vault using Google Cloud authentication.
-	// +optional
 	GCP *VaultGCPAuth
 
 	// Azure authenticates with Vault using Azure authentication.
-	// +optional
 	Azure *VaultAzureAuth
 }
 
@@ -341,26 +338,21 @@ type ServiceAccountRef struct {
 type VaultAWSAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with
 	// Vault. If unspecified, the default value "/v1/auth/aws" will be used.
-	// +optional
 	Path string
 
 	// A required field containing the Vault Role to assume when authenticating.
 	Role string
 
 	// The AWS region to use for STS API calls.
-	// +optional
 	Region string
 
 	// The Vault header value to include in the STS signing request.
-	// +optional
 	IamServerIdHeaderValue string
 
 	// Reference to a Secret containing the AWS credentials.
-	// +optional
 	SecretRef *cmmeta.SecretKeySelector
 
 	// A reference to a service account for IRSA authentication.
-	// +optional
 	ServiceAccountRef *ServiceAccountRef
 }
 
@@ -368,22 +360,18 @@ type VaultAWSAuth struct {
 type VaultGCPAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with
 	// Vault. If unspecified, the default value "/v1/auth/gcp" will be used.
-	// +optional
 	Path string
 
 	// A required field containing the Vault Role to assume when authenticating.
 	Role string
 
 	// The type of GCP authentication to use. Valid values are "gce" or "iam".
-	// +optional
 	AuthType string
 
 	// A reference to a service account for Workload Identity authentication.
-	// +optional
 	ServiceAccountRef *ServiceAccountRef
 
 	// The GCP project ID.
-	// +optional
 	ProjectID string
 }
 
@@ -391,26 +379,21 @@ type VaultGCPAuth struct {
 type VaultAzureAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with
 	// Vault. If unspecified, the default value "/v1/auth/azure" will be used.
-	// +optional
 	Path string
 
 	// A required field containing the Vault Role to assume when authenticating.
 	Role string
 
 	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
-	// +optional
 	AuthType string
 
 	// A reference to a service account for Azure Workload Identity authentication.
-	// +optional
 	ServiceAccountRef *ServiceAccountRef
 
 	// The Azure tenant ID.
-	// +optional
 	TenantID string
 
 	// The Azure resource/audience to request a token for.
-	// +optional
 	Resource string
 }
 
