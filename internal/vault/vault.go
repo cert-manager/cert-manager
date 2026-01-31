@@ -677,6 +677,69 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 		}
 	}
 
+	// If ServiceAccountRef is set, use IRSA (IAM Roles for Service Accounts)
+	// by requesting a web identity token from the Kubernetes API
+	if awsAuth.ServiceAccountRef != nil {
+		return v.requestTokenWithAWSIRSA(ctx, client, awsAuth, mountPath, region)
+	}
+
+	// Otherwise, use ambient credentials (EC2 instance profile, ECS task role, etc.)
+	return v.requestTokenWithAWSAmbient(ctx, client, awsAuth, mountPath, region)
+}
+
+func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, _ string) (string, error) {
+	// Request a web identity token from Kubernetes for IRSA
+	audience := "sts.amazonaws.com"
+	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
+		audience = awsAuth.ServiceAccountRef.TokenAudiences[0]
+	}
+
+	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+		Spec: authv1.TokenRequestSpec{
+			Audiences:         []string{audience},
+			ExpirationSeconds: ptr.To(int64(600)),
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
+	}
+
+	// For IRSA, we use the web identity token directly with Vault's AWS auth
+	// Vault will exchange this for AWS credentials via AssumeRoleWithWebIdentity
+	parameters := map[string]interface{}{
+		"role":       awsAuth.Role,
+		"jwt":        tokenrequest.Status.Token,
+		"iam_method": "web_identity",
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAWSAmbient(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
 	// Create the STS GetCallerIdentity request
 	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
 	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
@@ -693,7 +756,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
 	}
 
-	// Sign the request using AWS SDK
+	// Sign the request using AWS SDK with ambient credentials
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
 	if err != nil {
 		return "", fmt.Errorf("error loading AWS config: %w", err)
