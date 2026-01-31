@@ -335,6 +335,87 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				field.Forbidden(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"),
 			},
 		},
+		"valid auth.aws": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+				},
+			},
+		},
+		"valid auth.aws with serviceAccountRef": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+		},
+		"valid auth.gcp": {
+			auth: &cmapi.VaultAuth{
+				GCP: &cmapi.VaultGCPAuth{
+					Role: "my-role",
+				},
+			},
+		},
+		"valid auth.gcp with serviceAccountRef": {
+			auth: &cmapi.VaultAuth{
+				GCP: &cmapi.VaultGCPAuth{
+					Role: "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+		},
+		"valid auth.azure": {
+			auth: &cmapi.VaultAuth{
+				Azure: &cmapi.VaultAzureAuth{
+					Role: "my-role",
+				},
+			},
+		},
+		"valid auth.azure with serviceAccountRef": {
+			auth: &cmapi.VaultAuth{
+				Azure: &cmapi.VaultAzureAuth{
+					Role:     "my-role",
+					AuthType: "workload-identity",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+		},
+		"valid auth: all seven auth types can be set simultaneously": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+				TokenSecretRef: &validSecretKeyRef,
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "aws-role",
+				},
+				GCP: &cmapi.VaultGCPAuth{
+					Role: "gcp-role",
+				},
+				Azure: &cmapi.VaultAzureAuth{
+					Role: "azure-role",
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
