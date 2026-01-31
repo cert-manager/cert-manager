@@ -963,7 +963,8 @@ func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, az
 	// Determine the resource/audience for the token
 	resource := azureAuth.Resource
 	if resource == "" {
-		resource = "https://management.azure.com/"
+		// Default to the Vault server address as documented in the API
+		resource = v.issuer.GetSpec().Vault.Server
 	}
 
 	if authType == "workload-identity" && azureAuth.ServiceAccountRef != nil {
