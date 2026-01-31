@@ -394,15 +394,10 @@ type VaultAWSAuth struct {
 	Role string `json:"role"`
 
 	// The AWS region to use for authentication. If not specified, the region
-	// will be determined from the environment or instance metadata.
+	// will be determined from AWS_REGION or AWS_DEFAULT_REGION environment
+	// variables, falling back to "us-east-1" if not set.
 	// +optional
 	Region string `json:"region,omitempty"`
-
-	// The type of AWS authentication to use. Valid values are "iam" or "ec2".
-	// Defaults to "iam".
-	// +optional
-	// +kubebuilder:validation:Enum=iam;ec2
-	AuthType string `json:"authType,omitempty"`
 
 	// A reference to a service account that will be used to request a web identity
 	// token for IRSA (IAM Roles for Service Accounts) authentication.
