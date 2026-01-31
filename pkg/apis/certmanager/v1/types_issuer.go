@@ -436,7 +436,9 @@ type VaultGCPAuth struct {
 	// +optional
 	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
 
-	// The GCP project ID. Required for IAM authentication type.
+	// The GCP project ID used by Vault's GCP auth backend for IAM authentication.
+	// This field is optional and only needs to be set when your Vault role or
+	// environment requires an explicit project ID.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 }
