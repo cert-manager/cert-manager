@@ -1010,7 +1010,7 @@ func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, az
 		jwt = tokenResponse.AccessToken
 	}
 
-	parameters := map[string]interface{}{
+	parameters := map[string]any{
 		"role": azureAuth.Role,
 		"jwt":  jwt,
 	}
