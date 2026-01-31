@@ -389,6 +389,8 @@ type VaultAWSAuth struct {
 	Path string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
+	// +required
+	// +kubebuilder:validation:MinLength=1
 	Role string `json:"role"`
 
 	// The AWS region to use for authentication. If not specified, the region
@@ -424,6 +426,8 @@ type VaultGCPAuth struct {
 	Path string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
+	// +required
+	// +kubebuilder:validation:MinLength=1
 	Role string `json:"role"`
 
 	// The type of GCP authentication to use. Valid values are "gce" or "iam".
@@ -453,6 +457,8 @@ type VaultAzureAuth struct {
 	Path string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
+	// +required
+	// +kubebuilder:validation:MinLength=1
 	Role string `json:"role"`
 
 	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
