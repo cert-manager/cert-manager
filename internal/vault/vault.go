@@ -706,7 +706,7 @@ func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsA
 
 	// For IRSA, we use the web identity token directly with Vault's AWS auth
 	// Vault will exchange this for AWS credentials via AssumeRoleWithWebIdentity
-	parameters := map[string]interface{}{
+	parameters := map[string]any{
 		"role":       awsAuth.Role,
 		"jwt":        tokenrequest.Status.Token,
 		"iam_method": "web_identity",
@@ -782,7 +782,7 @@ func (v *Vault) requestTokenWithAWSAmbient(ctx context.Context, client Client, a
 		return "", fmt.Errorf("error encoding headers: %w", err)
 	}
 
-	parameters := map[string]interface{}{
+	parameters := map[string]any{
 		"role":                    awsAuth.Role,
 		"iam_http_request_method": "POST",
 		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsEndpoint)),
@@ -915,7 +915,7 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 		}
 	}
 
-	parameters := map[string]interface{}{
+	parameters := map[string]any{
 		"role": gcpAuth.Role,
 		"jwt":  jwt,
 	}
