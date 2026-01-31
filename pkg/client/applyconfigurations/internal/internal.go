@@ -1665,6 +1665,25 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAWSAuth
+  map:
+    fields:
+    - name: mountPath
+      type:
+        scalar: string
+    - name: region
+      type:
+        scalar: string
+    - name: role
+      type:
+        scalar: string
+      default: ""
+    - name: serviceAccountRef
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ServiceAccountRef
+    - name: vaultHeaderValue
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAppRole
   map:
     fields:
@@ -1686,15 +1705,46 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: appRole
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAppRole
+    - name: aws
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAWSAuth
+    - name: azure
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAzureAuth
     - name: clientCertificate
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultClientCertificateAuth
+    - name: gcp
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultGCPAuth
     - name: kubernetes
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultKubernetesAuth
     - name: tokenSecretRef
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.SecretKeySelector
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAzureAuth
+  map:
+    fields:
+    - name: authType
+      type:
+        scalar: string
+    - name: mountPath
+      type:
+        scalar: string
+    - name: resource
+      type:
+        scalar: string
+    - name: role
+      type:
+        scalar: string
+      default: ""
+    - name: serviceAccountRef
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ServiceAccountRef
+    - name: tenantId
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultClientCertificateAuth
   map:
     fields:
@@ -1707,6 +1757,25 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretName
       type:
         scalar: string
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultGCPAuth
+  map:
+    fields:
+    - name: authType
+      type:
+        scalar: string
+    - name: mountPath
+      type:
+        scalar: string
+    - name: projectId
+      type:
+        scalar: string
+    - name: role
+      type:
+        scalar: string
+      default: ""
+    - name: serviceAccountRef
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ServiceAccountRef
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultIssuer
   map:
     fields:

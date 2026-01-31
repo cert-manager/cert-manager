@@ -104,9 +104,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.PKCS12Keystore":                              schema_pkg_apis_certmanager_v1_PKCS12Keystore(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.SelfSignedIssuer":                            schema_pkg_apis_certmanager_v1_SelfSignedIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef":                           schema_pkg_apis_certmanager_v1_ServiceAccountRef(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth":                                schema_pkg_apis_certmanager_v1_VaultAWSAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole":                                schema_pkg_apis_certmanager_v1_VaultAppRole(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAuth":                                   schema_pkg_apis_certmanager_v1_VaultAuth(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAzureAuth":                              schema_pkg_apis_certmanager_v1_VaultAzureAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth":                  schema_pkg_apis_certmanager_v1_VaultClientCertificateAuth(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultGCPAuth":                                schema_pkg_apis_certmanager_v1_VaultGCPAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultIssuer":                                 schema_pkg_apis_certmanager_v1_VaultIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth":                         schema_pkg_apis_certmanager_v1_VaultKubernetesAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiCloud":                                 schema_pkg_apis_certmanager_v1_VenafiCloud(ref),
@@ -4254,6 +4257,57 @@ func schema_pkg_apis_certmanager_v1_ServiceAccountRef(ref common.ReferenceCallba
 	}
 }
 
+func schema_pkg_apis_certmanager_v1_VaultAWSAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VaultAWSAuth authenticates with Vault using AWS IAM authentication. See https://www.vaultproject.io/docs/auth/aws for more details.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"mountPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault mountPath here is the mount path to use when authenticating with Vault. For example, setting a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the default value \"/v1/auth/aws\" will be used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"role": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A required field containing the Vault Role to assume when authenticating.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"region": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The AWS region to use for authentication. If not specified, the region will be determined from AWS_REGION or AWS_DEFAULT_REGION environment variables, falling back to \"us-east-1\" if not set.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A reference to a service account that will be used to request a web identity token for IRSA (IAM Roles for Service Accounts) authentication.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"),
+						},
+					},
+					"vaultHeaderValue": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault header value to include in the STS signing request. This is used to prevent replay attacks.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"role"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"},
+	}
+}
+
 func schema_pkg_apis_certmanager_v1_VaultAppRole(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4297,7 +4351,7 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].",
+				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"tokenSecretRef": {
@@ -4324,11 +4378,87 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth"),
 						},
 					},
+					"aws": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AWS authenticates with Vault using AWS IAM authentication. This allows authentication using IAM roles for service accounts (IRSA) or EC2 instance profiles.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth"),
+						},
+					},
+					"gcp": {
+						SchemaProps: spec.SchemaProps{
+							Description: "GCP authenticates with Vault using Google Cloud authentication. This allows authentication using Workload Identity or GCE service accounts.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultGCPAuth"),
+						},
+					},
+					"azure": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure authenticates with Vault using Azure authentication. This allows authentication using Managed Service Identity (MSI) or Azure AD Workload Identity.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAzureAuth"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAzureAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultGCPAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_VaultAzureAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VaultAzureAuth authenticates with Vault using Azure authentication. See https://www.vaultproject.io/docs/auth/azure for more details.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"mountPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault mountPath here is the mount path to use when authenticating with Vault. For example, setting a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the default value \"/v1/auth/azure\" will be used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"role": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A required field containing the Vault Role to assume when authenticating.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"authType": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The type of Azure authentication to use. Valid values are \"msi\" or \"workload-identity\". Defaults to \"msi\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A reference to a service account that will be used to request a token for Azure Workload Identity authentication.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"),
+						},
+					},
+					"tenantId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Azure tenant ID to use for authentication.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"resource": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Azure resource/audience to request a token for. Defaults to the Vault server address if not specified.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"role"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"},
 	}
 }
 
@@ -4363,6 +4493,57 @@ func schema_pkg_apis_certmanager_v1_VaultClientCertificateAuth(ref common.Refere
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_VaultGCPAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VaultGCPAuth authenticates with Vault using Google Cloud authentication. See https://www.vaultproject.io/docs/auth/gcp for more details.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"mountPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault mountPath here is the mount path to use when authenticating with Vault. For example, setting a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the default value \"/v1/auth/gcp\" will be used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"role": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A required field containing the Vault Role to assume when authenticating.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"authType": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The type of GCP authentication to use. Valid values are \"gce\" or \"iam\". Defaults to \"iam\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A reference to a service account that will be used to request a token for Workload Identity authentication.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"),
+						},
+					},
+					"projectId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The GCP project ID used by Vault's GCP auth backend for IAM authentication. This field is optional and only needs to be set when your Vault role or environment requires an explicit project ID.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"role"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"},
 	}
 }
 

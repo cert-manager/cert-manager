@@ -23,7 +23,12 @@ API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/ce
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateSpec,URIs
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,OtherName,UTF8Value
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,ServiceAccountRef,TokenAudiences
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultAWSAuth,Path
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultAzureAuth,Path
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultAzureAuth,TenantID
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultClientCertificateAuth,Path
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultGCPAuth,Path
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultGCPAuth,ProjectID
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,VaultKubernetesAuth,Path
 API rule violation: names_match,k8s.io/api/core/v1,AzureDiskVolumeSource,DataDiskURI
 API rule violation: names_match,k8s.io/api/core/v1,ContainerStatus,LastTerminationState

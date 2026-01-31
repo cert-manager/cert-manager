@@ -346,14 +346,11 @@ type VaultAWSAuth struct {
 	// The AWS region to use for STS API calls.
 	Region string
 
-	// The Vault header value to include in the STS signing request.
-	IamServerIdHeaderValue string
-
-	// Reference to a Secret containing the AWS credentials.
-	SecretRef *cmmeta.SecretKeySelector
-
 	// A reference to a service account for IRSA authentication.
 	ServiceAccountRef *ServiceAccountRef
+
+	// The Vault header value to include in the STS signing request.
+	VaultHeaderValue string
 }
 
 // VaultGCPAuth authenticates with Vault using Google Cloud authentication.
