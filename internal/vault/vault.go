@@ -664,9 +664,17 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 		mountPath = "/v1/auth/aws"
 	}
 
+	// Determine region: use configured region, or fall back to environment variables
 	region := awsAuth.Region
 	if region == "" {
-		region = "us-east-1"
+		// Check AWS_REGION and AWS_DEFAULT_REGION environment variables
+		envConfig, err := awsconfig.NewEnvConfig()
+		if err == nil && envConfig.Region != "" {
+			region = envConfig.Region
+		} else {
+			// Default to us-east-1 as STS is a global service
+			region = "us-east-1"
+		}
 	}
 
 	// Create the STS GetCallerIdentity request
