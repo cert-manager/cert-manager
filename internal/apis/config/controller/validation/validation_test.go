@@ -31,9 +31,9 @@ import (
 // validPEMSizeLimitsConfig returns a valid PEMSizeLimitsConfig for testing
 func validPEMSizeLimitsConfig() config.PEMSizeLimitsConfig {
 	return config.PEMSizeLimitsConfig{
-		MaxCertificateSize: 6500,
+		MaxCertificateSize: 36500,
 		MaxPrivateKeySize:  13000,
-		MaxChainLength:     10,
+		MaxChainLength:     95000,
 		MaxBundleSize:      330000,
 	}
 }
@@ -142,8 +142,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				MetricsTLSConfig: shared.TLSConfig{
 					Filesystem: shared.FilesystemServingConfig{
@@ -246,8 +246,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEHTTP01Config: config.ACMEHTTP01Config{
 					SolverNameservers: []string{
@@ -267,8 +267,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEHTTP01Config: config.ACMEHTTP01Config{
 					SolverNameservers: []string{
@@ -292,8 +292,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
@@ -313,8 +313,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
@@ -338,8 +338,8 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 				ACMEDNS01Config: config.ACMEDNS01Config{
 					RecursiveNameservers: []string{
@@ -363,10 +363,10 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
-				Controllers:        []string{"issuers", "clusterissuers"},
+				Controllers:         []string{"issuers", "clusterissuers"},
 			},
 			nil,
 		},
@@ -379,10 +379,10 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
-				Controllers:        []string{"*"},
+				Controllers:         []string{"*"},
 			},
 			nil,
 		},
@@ -395,10 +395,10 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst: 1,
-				KubernetesAPIQPS:   1,
+				KubernetesAPIBurst:  1,
+				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
-				Controllers:        []string{"foo"},
+				Controllers:         []string{"foo"},
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -429,9 +429,9 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 		{
 			"with valid PEM size limits config",
 			&config.PEMSizeLimitsConfig{
-				MaxCertificateSize: 6500,
+				MaxCertificateSize: 36500,
 				MaxPrivateKeySize:  13000,
-				MaxChainLength:     10,
+				MaxChainLength:     95000,
 				MaxBundleSize:      330000,
 			},
 			nil,
@@ -441,7 +441,7 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 			&config.PEMSizeLimitsConfig{
 				MaxCertificateSize: 0,
 				MaxPrivateKeySize:  13000,
-				MaxChainLength:     10,
+				MaxChainLength:     95000,
 				MaxBundleSize:      330000,
 			},
 			field.ErrorList{
@@ -451,9 +451,9 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 		{
 			"with zero MaxPrivateKeySize",
 			&config.PEMSizeLimitsConfig{
-				MaxCertificateSize: 6500,
+				MaxCertificateSize: 36500,
 				MaxPrivateKeySize:  0,
-				MaxChainLength:     10,
+				MaxChainLength:     95000,
 				MaxBundleSize:      330000,
 			},
 			field.ErrorList{
@@ -463,7 +463,7 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 		{
 			"with zero MaxChainLength",
 			&config.PEMSizeLimitsConfig{
-				MaxCertificateSize: 6500,
+				MaxCertificateSize: 36500,
 				MaxPrivateKeySize:  13000,
 				MaxChainLength:     0,
 				MaxBundleSize:      330000,
@@ -475,15 +475,15 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 		{
 			"with zero MaxBundleSize",
 			&config.PEMSizeLimitsConfig{
-				MaxCertificateSize: 6500,
+				MaxCertificateSize: 36500,
 				MaxPrivateKeySize:  13000,
-				MaxChainLength:     10,
+				MaxChainLength:     95000,
 				MaxBundleSize:      0,
 			},
 			field.ErrorList{
 				field.Invalid(field.NewPath("").Child("maxBundleSize"), 0, "must be greater than 0"),
-				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 6500, "must not be larger than maxBundleSize"),
-				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 36500, "must not be larger than maxBundleSize"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 95000, "must not exceed maxBundleSize"),
 			},
 		},
 		{
@@ -491,24 +491,23 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 			&config.PEMSizeLimitsConfig{
 				MaxCertificateSize: 400000,
 				MaxPrivateKeySize:  13000,
-				MaxChainLength:     10,
+				MaxChainLength:     95000,
 				MaxBundleSize:      330000,
 			},
 			field.ErrorList{
 				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 400000, "must not be larger than maxBundleSize"),
-				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
 			},
 		},
 		{
 			"with chain size exceeding bundle size",
 			&config.PEMSizeLimitsConfig{
-				MaxCertificateSize: 50000,
+				MaxCertificateSize: 36500,
 				MaxPrivateKeySize:  13000,
-				MaxChainLength:     10,
+				MaxChainLength:     400000,
 				MaxBundleSize:      330000,
 			},
 			field.ErrorList{
-				field.Invalid(field.NewPath("").Child("maxChainLength"), 10, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 400000, "must not exceed maxBundleSize"),
 			},
 		},
 		{

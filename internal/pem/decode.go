@@ -121,9 +121,9 @@ type SizeLimits struct {
 // DefaultSizeLimits returns the default size limits used by cert-manager
 func DefaultSizeLimits() SizeLimits {
 	return SizeLimits{
-		MaxCertificateSize: maxCertificatePEMSize,
+		MaxCertificateSize: maxLeafCertificatePEMSize,
 		MaxPrivateKeySize:  maxPrivateKeyPEMSize,
-		MaxChainLength:     maxChainSize,
+		MaxChainLength:     maxCertificateChainSize,
 		MaxBundleSize:      maxBundleSize,
 	}
 }
@@ -200,7 +200,7 @@ func SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte, error) {
 // how large we expect a reasonable-length PEM-encoded X.509 certificate chain to be.
 // The baseline is many average sized CA certificates, plus one potentially much larger leaf certificate.
 func SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, globalSizeLimits.MaxCertificateSize*globalSizeLimits.MaxChainLength)
+	return safeDecodeInternal(b, globalSizeLimits.MaxChainLength)
 }
 
 // SafeDecodeCertificateBundle calls [encoding/pem.Decode] on the given input as long as it's within a sensible range for
@@ -229,7 +229,7 @@ func (s SizeLimits) SafeDecodeSingleCertificate(b []byte) (*stdpem.Block, []byte
 
 // SafeDecodeCertificateChainWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.
 func (s SizeLimits) SafeDecodeCertificateChain(b []byte) (*stdpem.Block, []byte, error) {
-	return safeDecodeInternal(b, s.MaxCertificateSize*s.MaxChainLength)
+	return safeDecodeInternal(b, s.MaxChainLength)
 }
 
 // SafeDecodeCertificateBundleWithLimits calls [encoding/pem.Decode] on the given input using configurable size limits.

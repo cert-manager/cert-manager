@@ -247,8 +247,8 @@ type PEMSizeLimitsConfig struct {
 	// Defaults to 13000 bytes.
 	MaxPrivateKeySize int
 
-	// Maximum number of certificates in a certificate chain.
-	// Defaults to 10.
+	// Maximum size for a PEM-encoded certificate chain (in bytes).
+	// Defaults to 95000 bytes.
 	MaxChainLength int
 
 	// Maximum size for PEM-encoded certificate bundles (in bytes).

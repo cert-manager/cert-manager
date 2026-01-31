@@ -68,9 +68,9 @@
 		"checkRetryPeriod": "10s"
 	},
 	"pemSizeLimitsConfig": {
-		"maxCertificateSize": 6500,
+		"maxCertificateSize": 36500,
 		"maxPrivateKeySize": 13000,
-		"maxChainLength": 10,
+		"maxChainLength": 95000,
 		"maxBundleSize": 330000
 	},
 	"certificateRequestMinimumBackoffDuration": "1h0m0s"

@@ -25,7 +25,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -50,6 +49,8 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+
+	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 )
 
 const (
@@ -473,15 +474,14 @@ func configurePEMSizeLimits(opts *config.ControllerConfiguration, log logr.Logge
 
 	// Check relationships between values
 	if opts.PEMSizeLimitsConfig.MaxCertificateSize > opts.PEMSizeLimitsConfig.MaxBundleSize {
-		return fmt.Errorf("maxCertificateSize (%d) must not be larger than maxBundleSize (%d)", 
+		return fmt.Errorf("maxCertificateSize (%d) must not be larger than maxBundleSize (%d)",
 			opts.PEMSizeLimitsConfig.MaxCertificateSize, opts.PEMSizeLimitsConfig.MaxBundleSize)
 	}
 
-	chainSize := opts.PEMSizeLimitsConfig.MaxChainLength * opts.PEMSizeLimitsConfig.MaxCertificateSize
-	if chainSize > opts.PEMSizeLimitsConfig.MaxBundleSize {
-		return fmt.Errorf("maxChainLength (%d) * maxCertificateSize (%d) = %d must not exceed maxBundleSize (%d)",
-			opts.PEMSizeLimitsConfig.MaxChainLength, opts.PEMSizeLimitsConfig.MaxCertificateSize, 
-			chainSize, opts.PEMSizeLimitsConfig.MaxBundleSize)
+	// MaxChainLength is in bytes (total chain size), not a count
+	if opts.PEMSizeLimitsConfig.MaxChainLength > opts.PEMSizeLimitsConfig.MaxBundleSize {
+		return fmt.Errorf("maxChainLength (%d) must not exceed maxBundleSize (%d)",
+			opts.PEMSizeLimitsConfig.MaxChainLength, opts.PEMSizeLimitsConfig.MaxBundleSize)
 	}
 
 	limits := pem.NewSizeLimitsFromConfig(
@@ -490,14 +490,14 @@ func configurePEMSizeLimits(opts *config.ControllerConfiguration, log logr.Logge
 		opts.PEMSizeLimitsConfig.MaxChainLength,
 		opts.PEMSizeLimitsConfig.MaxBundleSize,
 	)
-	
+
 	pem.SetGlobalSizeLimits(limits)
-	
+
 	log.V(logf.InfoLevel).Info("configured PEM size limits",
 		"maxCertificateSize", limits.MaxCertificateSize,
 		"maxPrivateKeySize", limits.MaxPrivateKeySize,
 		"maxChainLength", limits.MaxChainLength,
 		"maxBundleSize", limits.MaxBundleSize)
-	
+
 	return nil
 }

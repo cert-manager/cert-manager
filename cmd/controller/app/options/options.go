@@ -237,7 +237,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.IntVar(&c.PEMSizeLimitsConfig.MaxPrivateKeySize, "max-private-key-size", c.PEMSizeLimitsConfig.MaxPrivateKeySize, ""+
 		"Maximum size in bytes for a single PEM-encoded private key.")
 	fs.IntVar(&c.PEMSizeLimitsConfig.MaxChainLength, "max-certificate-chain-length", c.PEMSizeLimitsConfig.MaxChainLength, ""+
-		"Maximum number of certificates allowed in a certificate chain.")
+		"Maximum size in bytes for a PEM-encoded certificate chain.")
 	fs.IntVar(&c.PEMSizeLimitsConfig.MaxBundleSize, "max-certificate-bundle-size", c.PEMSizeLimitsConfig.MaxBundleSize, ""+
 		"Maximum size in bytes for PEM-encoded certificate bundles.")
 

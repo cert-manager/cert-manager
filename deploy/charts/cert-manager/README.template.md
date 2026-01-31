@@ -429,6 +429,13 @@ config:
       secretName: "cert-manager-metrics-ca"
       dnsNames:
       - cert-manager-metrics
+  # Configure PEM size limits for certificate validation
+  # Useful for certificates with many DNS names (e.g., Istio gateways with 100+ DNS names)
+  pemSizeLimitsConfig:
+    maxCertificateSize: 6500      # Maximum size in bytes for individual certificates (default: 6500)
+    maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
+    maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
+    maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
 ```
 #### **dns01RecursiveNameservers** ~ `string`
 > Default value:

@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/go-logr/logr"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
@@ -271,7 +272,7 @@ func TestConfigurePEMSizeLimits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := configurePEMSizeLimits(tt.config, log)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("expected error containing %q, got nil", tt.errMsg)
@@ -280,10 +281,8 @@ func TestConfigurePEMSizeLimits(t *testing.T) {
 				if tt.errMsg != "" && err.Error() != tt.errMsg {
 					t.Errorf("expected error %q, got %q", tt.errMsg, err.Error())
 				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
 		})
 	}

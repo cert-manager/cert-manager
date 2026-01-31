@@ -178,15 +178,15 @@ func BenchmarkPathologicalInput(b *testing.B) {
 
 func TestDefaultSizeLimits(t *testing.T) {
 	limits := DefaultSizeLimits()
-	
-	if limits.MaxCertificateSize != maxCertificatePEMSize {
-		t.Errorf("Expected MaxCertificateSize %d, got %d", maxCertificatePEMSize, limits.MaxCertificateSize)
+
+	if limits.MaxCertificateSize != maxLeafCertificatePEMSize {
+		t.Errorf("Expected MaxCertificateSize %d, got %d", maxLeafCertificatePEMSize, limits.MaxCertificateSize)
 	}
 	if limits.MaxPrivateKeySize != maxPrivateKeyPEMSize {
 		t.Errorf("Expected MaxPrivateKeySize %d, got %d", maxPrivateKeyPEMSize, limits.MaxPrivateKeySize)
 	}
-	if limits.MaxChainLength != maxChainSize {
-		t.Errorf("Expected MaxChainLength %d, got %d", maxChainSize, limits.MaxChainLength)
+	if limits.MaxChainLength != maxCertificateChainSize {
+		t.Errorf("Expected MaxChainLength %d, got %d", maxCertificateChainSize, limits.MaxChainLength)
 	}
 	if limits.MaxBundleSize != maxBundleSize {
 		t.Errorf("Expected MaxBundleSize %d, got %d", maxBundleSize, limits.MaxBundleSize)
@@ -197,7 +197,7 @@ func TestGlobalSizeLimits(t *testing.T) {
 	// Save the original global limits
 	originalLimits := GetGlobalSizeLimits()
 	defer SetGlobalSizeLimits(originalLimits)
-	
+
 	// Set custom limits
 	customLimits := SizeLimits{
 		MaxCertificateSize: 10000,
@@ -206,7 +206,7 @@ func TestGlobalSizeLimits(t *testing.T) {
 		MaxBundleSize:      500000,
 	}
 	SetGlobalSizeLimits(customLimits)
-	
+
 	// Verify they are set correctly
 	retrievedLimits := GetGlobalSizeLimits()
 	if retrievedLimits != customLimits {
@@ -216,14 +216,14 @@ func TestGlobalSizeLimits(t *testing.T) {
 
 func TestNewSizeLimitsFromConfig(t *testing.T) {
 	limits := NewSizeLimitsFromConfig(1000, 2000, 5, 10000)
-	
+
 	expected := SizeLimits{
 		MaxCertificateSize: 1000,
 		MaxPrivateKeySize:  2000,
 		MaxChainLength:     5,
 		MaxBundleSize:      10000,
 	}
-	
+
 	if limits != expected {
 		t.Errorf("Expected %+v, got %+v", expected, limits)
 	}
@@ -236,7 +236,7 @@ func TestSizeLimitsMethods(t *testing.T) {
 		MaxChainLength:     3,
 		MaxBundleSize:      5000,
 	}
-	
+
 	// Test data that should pass
 	smallCert := []byte(`-----BEGIN CERTIFICATE-----
 MIIBkTCB+wIJANbFABEA3+G2MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxv
@@ -246,7 +246,7 @@ dMl8h5qbRb5qZsJgDTfOvFwJ9QVv2+yH3Cqc2a3EeY4pJ9XpE7c1nE5lX3r2a9s
 VqHUcXBKrAgMBAAEwDQYJKoZIhvcNAQELBQADQQAOIQEwLNqh3uPJ6YpOZJ2g7C0
 rAu5E8qkP4OqxqvCDxJhyWrF9p7CnX3HvA8J2nzQ8qYpQ3QqE7M3G5rnE9+5v
 -----END CERTIFICATE-----`)
-	
+
 	// Test SafeDecodeSingleCertificate with custom limits
 	block, rest, err := limits.SafeDecodeSingleCertificate(smallCert)
 	if err != nil {
@@ -258,7 +258,7 @@ rAu5E8qkP4OqxqvCDxJhyWrF9p7CnX3HvA8J2nzQ8qYpQ3QqE7M3G5rnE9+5v
 	if len(rest) != 0 {
 		t.Error("Expected empty rest")
 	}
-	
+
 	// Test data that should fail due to size limits
 	largeCert := make([]byte, 2000)
 	copy(largeCert, smallCert)
@@ -266,7 +266,7 @@ rAu5E8qkP4OqxqvCDxJhyWrF9p7CnX3HvA8J2nzQ8qYpQ3QqE7M3G5rnE9+5v
 	for i := len(smallCert); i < len(largeCert); i++ {
 		largeCert[i] = 'A'
 	}
-	
+
 	block, _, err = limits.SafeDecodeSingleCertificate(largeCert)
 	if err == nil {
 		t.Error("Expected error for oversized certificate")
@@ -274,7 +274,7 @@ rAu5E8qkP4OqxqvCDxJhyWrF9p7CnX3HvA8J2nzQ8qYpQ3QqE7M3G5rnE9+5v
 	if block != nil {
 		t.Error("Expected nil block for oversized certificate")
 	}
-	
+
 	// Verify error is of correct type
 	if pemErr, ok := err.(ErrPEMDataTooLarge); !ok || int(pemErr) != limits.MaxCertificateSize {
 		t.Errorf("Expected ErrPEMDataTooLarge(%d), got %v", limits.MaxCertificateSize, err)
@@ -285,16 +285,16 @@ func TestSafeFunctionsUseGlobalLimits(t *testing.T) {
 	// Save the original global limits
 	originalLimits := GetGlobalSizeLimits()
 	defer SetGlobalSizeLimits(originalLimits)
-	
+
 	// Set very restrictive limits
 	restrictiveLimits := SizeLimits{
-		MaxCertificateSize: 100,  // Very small to ensure failure
+		MaxCertificateSize: 100, // Very small to ensure failure
 		MaxPrivateKeySize:  100,
 		MaxChainLength:     1,
 		MaxBundleSize:      200,
 	}
 	SetGlobalSizeLimits(restrictiveLimits)
-	
+
 	// Test data that would normally pass with default limits
 	normalCert := []byte(`-----BEGIN CERTIFICATE-----
 MIIBkTCB+wIJANbFABEA3+G2MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxv
@@ -304,23 +304,23 @@ dMl8h5qbRb5qZsJgDTfOvFwJ9QVv2+yH3Cqc2a3EeY4pJ9XpE7c1nE5lX3r2a9s
 VqHUcXBKrAgMBAAEwDQYJKoZIhvcNAQELBQADQQAOIQEwLNqh3uPJ6YpOZJ2g7C0
 rAu5E8qkP4OqxqvCDxJhyWrF9p7CnX3HvA8J2nzQ8qYpQ3QqE7M3G5rnE9+5v
 -----END CERTIFICATE-----`)
-	
+
 	// All global safe functions should now fail due to restrictive limits
 	_, _, err := SafeDecodeSingleCertificate(normalCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeSingleCertificate to fail with restrictive limits")
 	}
-	
+
 	_, _, err = SafeDecodeCSR(normalCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeCSR to fail with restrictive limits")
 	}
-	
+
 	_, _, err = SafeDecodeCertificateChain(normalCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeCertificateChain to fail with restrictive limits")
 	}
-	
+
 	_, _, err = SafeDecodeCertificateBundle(normalCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeCertificateBundle to fail with restrictive limits")
@@ -334,25 +334,24 @@ func TestChainSizeCalculation(t *testing.T) {
 		MaxChainLength:     3,
 		MaxBundleSize:      5000,
 	}
-	
+
 	// Create test data that should pass individual cert check but fail chain check
-	mediumCert := make([]byte, 900)  // Below single cert limit
+	mediumCert := make([]byte, 900) // Below single cert limit
 	copy(mediumCert, `-----BEGIN CERTIFICATE-----`)
-	
+
 	// Chain calculation: 900 * 3 = 2700, which is less than MaxBundleSize (5000), so should pass
 	_, _, err := limits.SafeDecodeCertificateChain(mediumCert)
-	if err == nil {
-		// This might fail due to invalid PEM format, but not due to size
-		// The important thing is we're testing the size calculation logic
-	}
-	
+	// This might fail due to invalid PEM format, but not due to size
+	// The important thing is we're testing the size calculation logic
+	_ = err
+
 	// Now test with a larger cert that would exceed chain size
-	largeCert := make([]byte, 2000)  // Above chain calculation: 2000 * 3 = 6000 > 5000
+	largeCert := make([]byte, 2000) // Above chain calculation: 2000 * 3 = 6000 > 5000
 	copy(largeCert, `-----BEGIN CERTIFICATE-----`)
 	for i := 25; i < len(largeCert); i++ {
 		largeCert[i] = 'A'
 	}
-	
+
 	_, _, err = limits.SafeDecodeCertificateChain(largeCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeCertificateChain to fail due to size limits")

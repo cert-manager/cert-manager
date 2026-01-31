@@ -122,12 +122,9 @@ func validatePEMSizeLimitsConfig(cfg *config.PEMSizeLimitsConfig, fldPath *field
 		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxCertificateSize"), cfg.MaxCertificateSize, "must not be larger than maxBundleSize"))
 	}
 
-	// Validate that chain size calculation is reasonable
-	if cfg.MaxChainLength > 0 && cfg.MaxCertificateSize > 0 {
-		chainSizeEstimate := cfg.MaxChainLength * cfg.MaxCertificateSize
-		if chainSizeEstimate > cfg.MaxBundleSize {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "maxChainLength * maxCertificateSize must not exceed maxBundleSize"))
-		}
+	// Validate that MaxChainLength is not larger than MaxBundleSize
+	if cfg.MaxChainLength > cfg.MaxBundleSize {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "must not exceed maxBundleSize"))
 	}
 
 	return allErrors

@@ -143,7 +143,7 @@ type ControllerConfiguration struct {
 	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitzero"`
 
 	// pemSizeLimitsConfig configures the maximum sizes for PEM-encoded data
-	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitempty"`
+	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitzero"`
 
 	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
 	// when a certificate request fails. This duration is exponentially increased
@@ -242,15 +242,15 @@ type ACMEDNS01Config struct {
 
 type PEMSizeLimitsConfig struct {
 	// Maximum size for a single PEM-encoded certificate (in bytes).
-	// Defaults to 6500 bytes.
+	// Defaults to 36500 bytes.
 	MaxCertificateSize *int32 `json:"maxCertificateSize,omitempty"`
 
 	// Maximum size for a single PEM-encoded private key (in bytes).
 	// Defaults to 13000 bytes.
 	MaxPrivateKeySize *int32 `json:"maxPrivateKeySize,omitempty"`
 
-	// Maximum number of certificates in a certificate chain.
-	// Defaults to 10.
+	// Maximum size for a PEM-encoded certificate chain (in bytes).
+	// Defaults to 95000 bytes.
 	MaxChainLength *int32 `json:"maxChainLength,omitempty"`
 
 	// Maximum size for PEM-encoded certificate bundles (in bytes).

@@ -289,7 +289,7 @@ enableCertificateOwnerRef: false
 #    pemSizeLimitsConfig:
 #      maxCertificateSize: 6500      # Maximum size in bytes for individual certificates (default: 6500)
 #      maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
-#      maxChainLength: 10            # Maximum number of certificates in a chain (default: 10)
+#      maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
 #      maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
 config: {}
 
