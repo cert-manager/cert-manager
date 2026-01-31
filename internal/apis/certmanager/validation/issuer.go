@@ -354,44 +354,14 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 
 	if auth.AWS != nil {
 		unionCount++
-
-		if auth.AWS.Role == "" {
-			el = append(el, field.Required(fldPath.Child("aws", "role"), ""))
-		}
-
-		if auth.AWS.ServiceAccountRef != nil {
-			if len(auth.AWS.ServiceAccountRef.Name) == 0 {
-				el = append(el, field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""))
-			}
-		}
 	}
 
 	if auth.GCP != nil {
 		unionCount++
-
-		if auth.GCP.Role == "" {
-			el = append(el, field.Required(fldPath.Child("gcp", "role"), ""))
-		}
-
-		if auth.GCP.ServiceAccountRef != nil {
-			if len(auth.GCP.ServiceAccountRef.Name) == 0 {
-				el = append(el, field.Required(fldPath.Child("gcp", "serviceAccountRef", "name"), ""))
-			}
-		}
 	}
 
 	if auth.Azure != nil {
 		unionCount++
-
-		if auth.Azure.Role == "" {
-			el = append(el, field.Required(fldPath.Child("azure", "role"), ""))
-		}
-
-		if auth.Azure.ServiceAccountRef != nil {
-			if len(auth.Azure.ServiceAccountRef.Name) == 0 {
-				el = append(el, field.Required(fldPath.Child("azure", "serviceAccountRef", "name"), ""))
-			}
-		}
 	}
 
 	if unionCount == 0 {
