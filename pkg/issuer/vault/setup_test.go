@@ -112,8 +112,8 @@ func TestVault_Setup(t *testing.T) {
 									Name: "cert-manager",
 								},
 							},
-							Path: "kubernetes",
-							Role: "cert-manager",
+							MountPath: "kubernetes",
+							Role:      "cert-manager",
 						},
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{

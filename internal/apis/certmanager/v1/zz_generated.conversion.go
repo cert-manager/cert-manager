@@ -1480,7 +1480,7 @@ func Convert_certmanager_ServiceAccountRef_To_v1_ServiceAccountRef(in *certmanag
 }
 
 func autoConvert_v1_VaultAWSAuth_To_certmanager_VaultAWSAuth(in *certmanagerv1.VaultAWSAuth, out *certmanager.VaultAWSAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.Region = in.Region
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
@@ -1494,7 +1494,7 @@ func Convert_v1_VaultAWSAuth_To_certmanager_VaultAWSAuth(in *certmanagerv1.Vault
 }
 
 func autoConvert_certmanager_VaultAWSAuth_To_v1_VaultAWSAuth(in *certmanager.VaultAWSAuth, out *certmanagerv1.VaultAWSAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.Region = in.Region
 	out.ServiceAccountRef = (*certmanagerv1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
@@ -1616,11 +1616,11 @@ func Convert_certmanager_VaultAuth_To_v1_VaultAuth(in *certmanager.VaultAuth, ou
 }
 
 func autoConvert_v1_VaultAzureAuth_To_certmanager_VaultAzureAuth(in *certmanagerv1.VaultAzureAuth, out *certmanager.VaultAzureAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.AuthType = in.AuthType
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
-	out.TenantID = in.TenantID
+	out.TenantId = in.TenantId
 	out.Resource = in.Resource
 	return nil
 }
@@ -1631,11 +1631,11 @@ func Convert_v1_VaultAzureAuth_To_certmanager_VaultAzureAuth(in *certmanagerv1.V
 }
 
 func autoConvert_certmanager_VaultAzureAuth_To_v1_VaultAzureAuth(in *certmanager.VaultAzureAuth, out *certmanagerv1.VaultAzureAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.AuthType = in.AuthType
 	out.ServiceAccountRef = (*certmanagerv1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
-	out.TenantID = in.TenantID
+	out.TenantId = in.TenantId
 	out.Resource = in.Resource
 	return nil
 }
@@ -1646,7 +1646,7 @@ func Convert_certmanager_VaultAzureAuth_To_v1_VaultAzureAuth(in *certmanager.Vau
 }
 
 func autoConvert_v1_VaultClientCertificateAuth_To_certmanager_VaultClientCertificateAuth(in *certmanagerv1.VaultClientCertificateAuth, out *certmanager.VaultClientCertificateAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.SecretName = in.SecretName
 	out.Name = in.Name
 	return nil
@@ -1658,7 +1658,7 @@ func Convert_v1_VaultClientCertificateAuth_To_certmanager_VaultClientCertificate
 }
 
 func autoConvert_certmanager_VaultClientCertificateAuth_To_v1_VaultClientCertificateAuth(in *certmanager.VaultClientCertificateAuth, out *certmanagerv1.VaultClientCertificateAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.SecretName = in.SecretName
 	out.Name = in.Name
 	return nil
@@ -1670,11 +1670,11 @@ func Convert_certmanager_VaultClientCertificateAuth_To_v1_VaultClientCertificate
 }
 
 func autoConvert_v1_VaultGCPAuth_To_certmanager_VaultGCPAuth(in *certmanagerv1.VaultGCPAuth, out *certmanager.VaultGCPAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.AuthType = in.AuthType
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
-	out.ProjectID = in.ProjectID
+	out.ProjectId = in.ProjectId
 	return nil
 }
 
@@ -1684,11 +1684,11 @@ func Convert_v1_VaultGCPAuth_To_certmanager_VaultGCPAuth(in *certmanagerv1.Vault
 }
 
 func autoConvert_certmanager_VaultGCPAuth_To_v1_VaultGCPAuth(in *certmanager.VaultGCPAuth, out *certmanagerv1.VaultGCPAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	out.Role = in.Role
 	out.AuthType = in.AuthType
 	out.ServiceAccountRef = (*certmanagerv1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
-	out.ProjectID = in.ProjectID
+	out.ProjectId = in.ProjectId
 	return nil
 }
 
@@ -1786,7 +1786,7 @@ func Convert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.VaultIssu
 }
 
 func autoConvert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *certmanagerv1.VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
@@ -1801,7 +1801,7 @@ func Convert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *certm
 }
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *certmanagerv1.VaultKubernetesAuth, s conversion.Scope) error {
-	out.Path = in.Path
+	out.MountPath = in.MountPath
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}

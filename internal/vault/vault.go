@@ -524,7 +524,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		"name": clientCertificateAuth.Name,
 	}
 
-	mountPath := clientCertificateAuth.Path
+	mountPath := clientCertificateAuth.MountPath
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
 	}
@@ -625,7 +625,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		"jwt":  jwt,
 	}
 
-	mountPath := kubernetesAuth.Path
+	mountPath := kubernetesAuth.MountPath
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
@@ -658,7 +658,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 }
 
 func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth) (string, error) {
-	mountPath := awsAuth.Path
+	mountPath := awsAuth.MountPath
 	if mountPath == "" {
 		mountPath = "/v1/auth/aws"
 	}
@@ -817,7 +817,7 @@ func (v *Vault) requestTokenWithAWSAmbient(ctx context.Context, client Client, a
 }
 
 func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpAuth *v1.VaultGCPAuth) (string, error) {
-	mountPath := gcpAuth.Path
+	mountPath := gcpAuth.MountPath
 	if mountPath == "" {
 		mountPath = "/v1/auth/gcp"
 	}
@@ -934,7 +934,7 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 }
 
 func (v *Vault) requestTokenWithAzureAuth(ctx context.Context, client Client, azureAuth *v1.VaultAzureAuth) (string, error) {
-	mountPath := azureAuth.Path
+	mountPath := azureAuth.MountPath
 	if mountPath == "" {
 		mountPath = "/v1/auth/azure"
 	}

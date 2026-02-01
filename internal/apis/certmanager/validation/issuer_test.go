@@ -207,8 +207,8 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 				TokenSecretRef: &validSecretKeyRef,
 				Kubernetes: &cmapi.VaultKubernetesAuth{
-					Path: "path",
-					Role: "role",
+					MountPath: "path",
+					Role:      "role",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
@@ -298,8 +298,8 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 		"valid auth.kubernetes.serviceAccountRef": {
 			auth: &cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
-					Path: "path",
-					Role: "role",
+					MountPath: "path",
+					Role:      "role",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
@@ -309,7 +309,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 		"invalid auth.kubernetes: role is required": {
 			auth: &cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
-					Path: "path",
+					MountPath: "path",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
@@ -399,8 +399,8 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 				TokenSecretRef: &validSecretKeyRef,
 				Kubernetes: &cmapi.VaultKubernetesAuth{
-					Path: "path",
-					Role: "role",
+					MountPath: "path",
+					Role:      "role",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},

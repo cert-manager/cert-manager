@@ -28,7 +28,7 @@ type VaultGCPAuthApplyConfiguration struct {
 	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/gcp" will be used.
-	Path *string `json:"mountPath,omitempty"`
+	MountPath *string `json:"mountPath,omitempty"`
 	// A required field containing the Vault Role to assume when authenticating.
 	Role *string `json:"role,omitempty"`
 	// The type of GCP authentication to use. Valid values are "gce" or "iam".
@@ -42,7 +42,7 @@ type VaultGCPAuthApplyConfiguration struct {
 	// environment requires an explicit project ID.
 	// Note: cert-manager currently does not pass this field to Vault during GCP
 	// IAM authentication, so setting it has no effect on authentication behavior.
-	ProjectID *string `json:"projectId,omitempty"`
+	ProjectId *string `json:"projectId,omitempty"`
 }
 
 // VaultGCPAuthApplyConfiguration constructs a declarative configuration of the VaultGCPAuth type for use with
@@ -51,11 +51,11 @@ func VaultGCPAuth() *VaultGCPAuthApplyConfiguration {
 	return &VaultGCPAuthApplyConfiguration{}
 }
 
-// WithPath sets the Path field in the declarative configuration to the given value
+// WithMountPath sets the MountPath field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Path field is set to the value of the last call.
-func (b *VaultGCPAuthApplyConfiguration) WithPath(value string) *VaultGCPAuthApplyConfiguration {
-	b.Path = &value
+// If called multiple times, the MountPath field is set to the value of the last call.
+func (b *VaultGCPAuthApplyConfiguration) WithMountPath(value string) *VaultGCPAuthApplyConfiguration {
+	b.MountPath = &value
 	return b
 }
 
@@ -83,10 +83,10 @@ func (b *VaultGCPAuthApplyConfiguration) WithServiceAccountRef(value *ServiceAcc
 	return b
 }
 
-// WithProjectID sets the ProjectID field in the declarative configuration to the given value
+// WithProjectId sets the ProjectId field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ProjectID field is set to the value of the last call.
-func (b *VaultGCPAuthApplyConfiguration) WithProjectID(value string) *VaultGCPAuthApplyConfiguration {
-	b.ProjectID = &value
+// If called multiple times, the ProjectId field is set to the value of the last call.
+func (b *VaultGCPAuthApplyConfiguration) WithProjectId(value string) *VaultGCPAuthApplyConfiguration {
+	b.ProjectId = &value
 	return b
 }

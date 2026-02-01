@@ -28,7 +28,7 @@ type VaultAzureAuthApplyConfiguration struct {
 	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/azure" will be used.
-	Path *string `json:"mountPath,omitempty"`
+	MountPath *string `json:"mountPath,omitempty"`
 	// A required field containing the Vault Role to assume when authenticating.
 	Role *string `json:"role,omitempty"`
 	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
@@ -41,7 +41,7 @@ type VaultAzureAuthApplyConfiguration struct {
 	// Note: this field is currently not used by the Azure authentication
 	// implementation and is reserved for future use. Authentication will
 	// use the default tenant configured for the environment.
-	TenantID *string `json:"tenantId,omitempty"`
+	TenantId *string `json:"tenantId,omitempty"`
 	// The Azure resource/audience to request a token for.
 	// Defaults to the Vault server address if not specified.
 	Resource *string `json:"resource,omitempty"`
@@ -53,11 +53,11 @@ func VaultAzureAuth() *VaultAzureAuthApplyConfiguration {
 	return &VaultAzureAuthApplyConfiguration{}
 }
 
-// WithPath sets the Path field in the declarative configuration to the given value
+// WithMountPath sets the MountPath field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Path field is set to the value of the last call.
-func (b *VaultAzureAuthApplyConfiguration) WithPath(value string) *VaultAzureAuthApplyConfiguration {
-	b.Path = &value
+// If called multiple times, the MountPath field is set to the value of the last call.
+func (b *VaultAzureAuthApplyConfiguration) WithMountPath(value string) *VaultAzureAuthApplyConfiguration {
+	b.MountPath = &value
 	return b
 }
 
@@ -85,11 +85,11 @@ func (b *VaultAzureAuthApplyConfiguration) WithServiceAccountRef(value *ServiceA
 	return b
 }
 
-// WithTenantID sets the TenantID field in the declarative configuration to the given value
+// WithTenantId sets the TenantId field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TenantID field is set to the value of the last call.
-func (b *VaultAzureAuthApplyConfiguration) WithTenantID(value string) *VaultAzureAuthApplyConfiguration {
-	b.TenantID = &value
+// If called multiple times, the TenantId field is set to the value of the last call.
+func (b *VaultAzureAuthApplyConfiguration) WithTenantId(value string) *VaultAzureAuthApplyConfiguration {
+	b.TenantId = &value
 	return b
 }
 

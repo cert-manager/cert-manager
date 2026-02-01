@@ -319,7 +319,7 @@ type VaultClientCertificateAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/cert" will be used.
 	// +optional
-	Path string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 
 	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
@@ -341,7 +341,7 @@ type VaultKubernetesAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/kubernetes" will be used.
 	// +optional
-	Path string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
@@ -386,7 +386,7 @@ type VaultAWSAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/aws" will be used.
 	// +optional
-	Path string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
 	// +required
@@ -418,7 +418,7 @@ type VaultGCPAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/gcp" will be used.
 	// +optional
-	Path string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
 	// +required
@@ -442,7 +442,7 @@ type VaultGCPAuth struct {
 	// Note: cert-manager currently does not pass this field to Vault during GCP
 	// IAM authentication, so setting it has no effect on authentication behavior.
 	// +optional
-	ProjectID string `json:"projectId,omitempty"`
+	ProjectId string `json:"projectId,omitempty"`
 }
 
 // VaultAzureAuth authenticates with Vault using Azure authentication.
@@ -453,7 +453,7 @@ type VaultAzureAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/azure" will be used.
 	// +optional
-	Path string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 
 	// A required field containing the Vault Role to assume when authenticating.
 	// +required
@@ -476,7 +476,7 @@ type VaultAzureAuth struct {
 	// implementation and is reserved for future use. Authentication will
 	// use the default tenant configured for the environment.
 	// +optional
-	TenantID string `json:"tenantId,omitempty"`
+	TenantId string `json:"tenantId,omitempty"`
 
 	// The Azure resource/audience to request a token for.
 	// Defaults to the Vault server address if not specified.

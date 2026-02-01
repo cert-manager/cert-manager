@@ -28,7 +28,7 @@ type VaultClientCertificateAuthApplyConfiguration struct {
 	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/cert" will be used.
-	Path *string `json:"mountPath,omitempty"`
+	MountPath *string `json:"mountPath,omitempty"`
 	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
 	// authentication.
@@ -44,11 +44,11 @@ func VaultClientCertificateAuth() *VaultClientCertificateAuthApplyConfiguration 
 	return &VaultClientCertificateAuthApplyConfiguration{}
 }
 
-// WithPath sets the Path field in the declarative configuration to the given value
+// WithMountPath sets the MountPath field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Path field is set to the value of the last call.
-func (b *VaultClientCertificateAuthApplyConfiguration) WithPath(value string) *VaultClientCertificateAuthApplyConfiguration {
-	b.Path = &value
+// If called multiple times, the MountPath field is set to the value of the last call.
+func (b *VaultClientCertificateAuthApplyConfiguration) WithMountPath(value string) *VaultClientCertificateAuthApplyConfiguration {
+	b.MountPath = &value
 	return b
 }
 
