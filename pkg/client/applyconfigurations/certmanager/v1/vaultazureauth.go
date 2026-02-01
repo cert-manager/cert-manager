@@ -37,7 +37,10 @@ type VaultAzureAuthApplyConfiguration struct {
 	// A reference to a service account that will be used to request a token
 	// for Azure Workload Identity authentication.
 	ServiceAccountRef *ServiceAccountRefApplyConfiguration `json:"serviceAccountRef,omitempty"`
-	// The Azure tenant ID to use for authentication.
+	// The Azure tenant ID associated with this configuration.
+	// Note: this field is currently not used by the Azure authentication
+	// implementation and is reserved for future use. Authentication will
+	// use the default tenant configured for the environment.
 	TenantID *string `json:"tenantId,omitempty"`
 	// The Azure resource/audience to request a token for.
 	// Defaults to the Vault server address if not specified.

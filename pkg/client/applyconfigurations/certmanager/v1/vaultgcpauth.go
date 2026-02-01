@@ -40,6 +40,8 @@ type VaultGCPAuthApplyConfiguration struct {
 	// The GCP project ID used by Vault's GCP auth backend for IAM authentication.
 	// This field is optional and only needs to be set when your Vault role or
 	// environment requires an explicit project ID.
+	// Note: cert-manager currently does not pass this field to Vault during GCP
+	// IAM authentication, so setting it has no effect on authentication behavior.
 	ProjectID *string `json:"projectId,omitempty"`
 }
 

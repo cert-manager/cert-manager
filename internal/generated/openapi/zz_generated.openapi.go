@@ -4441,7 +4441,7 @@ func schema_pkg_apis_certmanager_v1_VaultAzureAuth(ref common.ReferenceCallback)
 					},
 					"tenantId": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The Azure tenant ID to use for authentication.",
+							Description: "The Azure tenant ID associated with this configuration. Note: this field is currently not used by the Azure authentication implementation and is reserved for future use. Authentication will use the default tenant configured for the environment.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4533,7 +4533,7 @@ func schema_pkg_apis_certmanager_v1_VaultGCPAuth(ref common.ReferenceCallback) c
 					},
 					"projectId": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The GCP project ID used by Vault's GCP auth backend for IAM authentication. This field is optional and only needs to be set when your Vault role or environment requires an explicit project ID.",
+							Description: "The GCP project ID used by Vault's GCP auth backend for IAM authentication. This field is optional and only needs to be set when your Vault role or environment requires an explicit project ID. Note: cert-manager currently does not pass this field to Vault during GCP IAM authentication, so setting it has no effect on authentication behavior.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
