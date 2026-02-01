@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -34,7 +35,11 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
-var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
+var gatewayGVK = schema.GroupVersionKind{
+	Group:   gwapi.GroupVersion.Group,
+	Version: gwapi.GroupVersion.Version,
+	Kind:    "Gateway",
+}
 
 func Test_controller_Register(t *testing.T) {
 	tests := []struct {

@@ -62,8 +62,16 @@ const (
 const applysetLabel = "applyset.kubernetes.io/part-of"
 
 var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
-var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
-var xlistenerSetGVK = gwapix.SchemeGroupVersion.WithKind("XListenerSet")
+var gatewayGVK = schema.GroupVersionKind{
+	Group:   gwapi.GroupVersion.Group,
+	Version: gwapi.GroupVersion.Version,
+	Kind:    "Gateway",
+}
+var xlistenerSetGVK = schema.GroupVersionKind{
+	Group:   gwapix.GroupVersion.Group,
+	Version: gwapix.GroupVersion.Version,
+	Kind:    "XListenerSet",
+}
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
 // controller.

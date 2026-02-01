@@ -310,7 +310,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 func translateXListenerToGWAPIV1Listener(l gwapix.ListenerEntry) gwapi.Listener {
 	return gwapi.Listener{
 		Hostname:      l.Hostname,
-		Port:          l.Port,
+		Port:          gwapi.PortNumber(l.Port),
 		Protocol:      l.Protocol,
 		TLS:           l.TLS,
 		Name:          l.Name,
