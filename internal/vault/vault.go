@@ -37,7 +37,6 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
-	"golang.org/x/oauth2/google"
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,7 +195,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 	// the time of validation, we must still allow multiple authentication methods
 	// to be specified.
 	// In terms of implementation, we will use the first authentication method.
-	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes
+	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes, aws, gcp, azure
 
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef != nil {
@@ -857,14 +856,7 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 		}
 		jwt = string(body)
 	} else {
-		// For IAM auth, we need to get a signed JWT from the GCP IAM API
-		// First, get credentials to call the IAM API
-		creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
-		if err != nil {
-			return "", fmt.Errorf("error finding GCP credentials: %w", err)
-		}
-
-		// Get the service account email from the credentials
+		// For IAM auth, get a signed identity token
 		// For Workload Identity, use the Kubernetes ServiceAccount token
 		if gcpAuth.ServiceAccountRef != nil {
 			audience := "vault/" + gcpAuth.Role
@@ -897,21 +889,15 @@ func (v *Vault) requestTokenWithGCPAuth(ctx context.Context, client Client, gcpA
 			httpClient := &http.Client{Timeout: 10 * time.Second}
 			resp, err := httpClient.Do(req)
 			if err != nil {
-				// Fallback: if metadata server is not available, try using the credentials token
-				// This is a best-effort approach for non-GCE environments
-				token, tokenErr := creds.TokenSource.Token()
-				if tokenErr != nil {
-					return "", fmt.Errorf("error fetching GCP identity token (metadata: %v, token: %v)", err, tokenErr)
-				}
-				jwt = token.AccessToken
-			} else {
-				defer resp.Body.Close()
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return "", fmt.Errorf("error reading GCP identity token: %w", err)
-				}
-				jwt = string(body)
+				return "", fmt.Errorf("error fetching GCP identity token from metadata server: %w. "+
+					"GCP IAM auth requires access to the GCE metadata server or a ServiceAccountRef for Kubernetes Workload Identity", err)
 			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return "", fmt.Errorf("error reading GCP identity token: %w", err)
+			}
+			jwt = string(body)
 		}
 	}
 

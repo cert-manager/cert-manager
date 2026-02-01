@@ -439,6 +439,8 @@ type VaultGCPAuth struct {
 	// The GCP project ID used by Vault's GCP auth backend for IAM authentication.
 	// This field is optional and only needs to be set when your Vault role or
 	// environment requires an explicit project ID.
+	// Note: cert-manager currently does not pass this field to Vault during GCP
+	// IAM authentication, so setting it has no effect on authentication behavior.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 }
@@ -469,7 +471,10 @@ type VaultAzureAuth struct {
 	// +optional
 	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
 
-	// The Azure tenant ID to use for authentication.
+	// The Azure tenant ID associated with this configuration.
+	// Note: this field is currently not used by the Azure authentication
+	// implementation and is reserved for future use. Authentication will
+	// use the default tenant configured for the environment.
 	// +optional
 	TenantID string `json:"tenantId,omitempty"`
 
