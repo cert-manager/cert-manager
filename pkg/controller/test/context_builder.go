@@ -28,8 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
-	clientfeatures "k8s.io/client-go/features"
-	clienttesting "k8s.io/client-go/features/testing"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	metadatafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -128,10 +126,9 @@ func (b *Builder) Init() {
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
 	b.Client = kubefake.NewClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
-	// FIXME: It seems like the gateway-api fake.NewClientset is misbehaving and is not usable per July 2025
+	// FIXME: gwfake.NewClientset currently misbehaves in tests (resource guessing gateways vs. gatewaies) and is not usable as of Feb 2026.
+	//nolint:staticcheck // SA1019: gwfake.NewSimpleClientset is deprecated in favor of NewClientset, but we intentionally use it here because NewClientset does not work correctly in our tests.
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
-	// FIXME: It seems like we need to disable the WatchListClient feature gate until our gateway-api dependency is bumped to K8s 1.35
-	clienttesting.SetFeatureDuringTest(b.T, clientfeatures.WatchListClient, false)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
 	b.Recorder = new(FakeRecorder)
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
