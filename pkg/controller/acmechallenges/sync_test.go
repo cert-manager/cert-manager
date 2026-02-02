@@ -32,7 +32,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/utils/ptr"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -121,18 +123,17 @@ func TestSyncHappyPath(t *testing.T) {
 					testIssuerHTTP01Enabled,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+					testpkg.NewAction(coretesting.NewPatchActionWithOptions(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
-						gen.ChallengeFrom(deletedChallenge,
-							gen.SetChallengeProcessing(true),
-							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
-							gen.SetChallengeFinalizers([]string{}),
-						))),
+						"testchal",
+						types.ApplyPatchType,
+						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","resourceVersion":""}}`),
+						metav1.PatchOptions{Force: ptr.To(true), FieldManager: "test-manager"},
+					)),
 				},
 			},
 		},
-		"if the challenge is deleted and the cleanup fails, set the reason (and remove the finalizer, which is a bug)": {
+		"if the challenge is deleted and the cleanup fails, set the reason and keep the finalizer": {
 			challenge: gen.ChallengeFrom(deletedChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -153,15 +154,6 @@ func TestSyncHappyPath(t *testing.T) {
 					testIssuerHTTP01Enabled,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
-						gen.DefaultTestNamespace,
-						gen.ChallengeFrom(deletedChallenge,
-							gen.SetChallengeProcessing(true),
-							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
-							gen.SetChallengeFinalizers([]string{}),
-							gen.SetChallengeReason(simulatedCleanupError.Error()),
-						))),
 					testpkg.NewAction(
 						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 							"status",
@@ -170,7 +162,6 @@ func TestSyncHappyPath(t *testing.T) {
 								gen.SetChallengeProcessing(true),
 								gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 								gen.SetChallengeURL("testurl"),
-								gen.SetChallengeFinalizers([]string{}),
 								gen.SetChallengeReason(simulatedCleanupError.Error()),
 							))),
 				},
@@ -190,13 +181,13 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeFinalizers(nil),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(
-						coretesting.NewUpdateAction(
-							cmacme.SchemeGroupVersion.WithResource("challenges"),
-							gen.DefaultTestNamespace,
-							gen.ChallengeFrom(baseChallenge,
-								gen.SetChallengeProcessing(true),
-								gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer})))),
+					testpkg.NewAction(coretesting.NewPatchActionWithOptions(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						gen.DefaultTestNamespace,
+						"testchal",
+						types.ApplyPatchType,
+						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","resourceVersion":"","finalizers":["acme.cert-manager.io/finalizer"]}}`),
+						metav1.PatchOptions{Force: ptr.To(true), FieldManager: "test-manager"},
+					)),
 				},
 			},
 			expectErr: false,

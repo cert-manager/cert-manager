@@ -116,6 +116,9 @@ func (b *Builder) Init() {
 	if b.Context.RootContext == nil {
 		b.Context.RootContext = context.Background()
 	}
+	if b.Context.FieldManager == "" {
+		b.Context.FieldManager = "test-manager"
+	}
 	if b.StringGenerator == nil {
 		b.StringGenerator = rand.String
 	}
