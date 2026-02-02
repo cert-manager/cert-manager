@@ -202,8 +202,9 @@ usage through tuple/variable indirection.
 {{- $repository := "" -}}
 {{- if $image.repository -}}
     {{- $repository = $image.repository -}}
+
     {{- /*
-        Backwards compatibility: if image.registry is set, prefix the repository with the registry.
+        Backwards compatibility: if image.registry is set, additionally prefix the repository with this registry.
     */ -}}
     {{- if $image.registry -}}
         {{- $repository = printf "%s/%s" $image.registry $repository -}}
@@ -220,6 +221,9 @@ usage through tuple/variable indirection.
         {{- $repository = printf "%s/%s" $imageRegistry $repository -}}
     {{- end -}}
 
+    {{- /*
+        Backwards compatibility: if image.registry is set, additionally prefix the repository with this registry.
+    */ -}}
     {{- if $image.registry -}}
         {{- $repository = printf "%s/%s" $image.registry $repository -}}
     {{- end -}}
