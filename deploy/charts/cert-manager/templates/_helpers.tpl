@@ -203,14 +203,10 @@ usage through tuple/variable indirection.
 {{- if $image.repository -}}
     {{- $repository = $image.repository -}}
     {{- /*
-        Backwards compatibility: if image.registry is set and image.repository is not already
-        prefixed with that registry, prefix the repository with the registry.
+        Backwards compatibility: if image.registry is set, prefix the repository with the registry.
     */ -}}
     {{- if $image.registry -}}
-        {{- $registryPrefix := printf "%s/" $image.registry -}}
-        {{- if not (hasPrefix $registryPrefix $repository) -}}
-            {{- $repository = printf "%s/%s" $image.registry $repository -}}
-        {{- end -}}
+        {{- $repository = printf "%s/%s" $image.registry $repository -}}
     {{- end -}}
 {{- else -}}
     {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
