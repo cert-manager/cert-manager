@@ -387,6 +387,63 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 			},
 		},
+		"invalid auth.aws: role is required": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "role"), ""),
+			},
+		},
+		"invalid auth.aws: serviceAccountRef.name is required": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role:              "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""),
+			},
+		},
+		"invalid auth.gcp: role is required": {
+			auth: &cmapi.VaultAuth{
+				GCP: &cmapi.VaultGCPAuth{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("gcp", "role"), ""),
+			},
+		},
+		"invalid auth.gcp: serviceAccountRef.name is required": {
+			auth: &cmapi.VaultAuth{
+				GCP: &cmapi.VaultGCPAuth{
+					Role:              "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("gcp", "serviceAccountRef", "name"), ""),
+			},
+		},
+		"invalid auth.azure: role is required": {
+			auth: &cmapi.VaultAuth{
+				Azure: &cmapi.VaultAzureAuth{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azure", "role"), ""),
+			},
+		},
+		"invalid auth.azure: serviceAccountRef.name is required": {
+			auth: &cmapi.VaultAuth{
+				Azure: &cmapi.VaultAzureAuth{
+					Role:              "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azure", "serviceAccountRef", "name"), ""),
+			},
+		},
 		"valid auth: all seven auth types can be set simultaneously": {
 			auth: &cmapi.VaultAuth{
 				AppRole: &cmapi.VaultAppRole{
