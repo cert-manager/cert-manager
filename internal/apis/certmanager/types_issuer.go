@@ -349,6 +349,9 @@ type VaultAWSAuth struct {
 	// A reference to a service account for IRSA authentication.
 	ServiceAccountRef *ServiceAccountRef
 
+	// The ARN of the AWS IAM role to assume using the Kubernetes service account token.
+	IamRoleArn string
+
 	// The Vault header value to include in the STS signing request.
 	VaultHeaderValue string
 }

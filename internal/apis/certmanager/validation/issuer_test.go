@@ -349,6 +349,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
+					IamRoleArn: "arn:aws:iam::123456789012:role/my-role",
 				},
 			},
 		},
@@ -400,10 +401,24 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				AWS: &cmapi.VaultAWSAuth{
 					Role:              "my-role",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{},
+					IamRoleArn:        "arn:aws:iam::123456789012:role/my-role",
 				},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""),
+			},
+		},
+		"invalid auth.aws: iamRoleArn is required when serviceAccountRef is set": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"),
 			},
 		},
 		"invalid auth.gcp: role is required": {

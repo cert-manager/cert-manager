@@ -4292,6 +4292,13 @@ func schema_pkg_apis_certmanager_v1_VaultAWSAuth(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"),
 						},
 					},
+					"iamRoleArn": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The ARN of the AWS IAM role to assume using the Kubernetes service account token. Required when using IRSA (serviceAccountRef is set). This role must have a trust policy that allows the OIDC provider to assume it.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"vaultHeaderValue": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The Vault header value to include in the STS signing request. This is used to prevent replay attacks.",

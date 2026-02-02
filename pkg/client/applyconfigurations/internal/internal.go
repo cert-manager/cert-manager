@@ -1668,6 +1668,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAWSAuth
   map:
     fields:
+    - name: iamRoleArn
+      type:
+        scalar: string
     - name: mountPath
       type:
         scalar: string

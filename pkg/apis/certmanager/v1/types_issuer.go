@@ -404,6 +404,12 @@ type VaultAWSAuth struct {
 	// +optional
 	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
 
+	// The ARN of the AWS IAM role to assume using the Kubernetes service account
+	// token. Required when using IRSA (serviceAccountRef is set).
+	// This role must have a trust policy that allows the OIDC provider to assume it.
+	// +optional
+	IamRoleArn string `json:"iamRoleArn,omitempty"`
+
 	// The Vault header value to include in the STS signing request.
 	// This is used to prevent replay attacks.
 	// +optional

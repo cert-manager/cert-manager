@@ -3680,6 +3680,12 @@ spec:
                           This allows authentication using IAM roles for service accounts (IRSA)
                           or EC2 instance profiles.
                         properties:
+                          iamRoleArn:
+                            description: |-
+                              The ARN of the AWS IAM role to assume using the Kubernetes service account
+                              token. Required when using IRSA (serviceAccountRef is set).
+                              This role must have a trust policy that allows the OIDC provider to assume it.
+                            type: string
                           mountPath:
                             description: |-
                               The Vault mountPath here is the mount path to use when authenticating with

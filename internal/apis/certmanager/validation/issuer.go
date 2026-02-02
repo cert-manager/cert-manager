@@ -363,6 +363,9 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 			if len(auth.AWS.ServiceAccountRef.Name) == 0 {
 				el = append(el, field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""))
 			}
+			if auth.AWS.IamRoleArn == "" {
+				el = append(el, field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"))
+			}
 		}
 	}
 

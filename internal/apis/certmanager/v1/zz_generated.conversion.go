@@ -1484,6 +1484,7 @@ func autoConvert_v1_VaultAWSAuth_To_certmanager_VaultAWSAuth(in *certmanagerv1.V
 	out.Role = in.Role
 	out.Region = in.Region
 	out.ServiceAccountRef = (*certmanager.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
+	out.IamRoleArn = in.IamRoleArn
 	out.VaultHeaderValue = in.VaultHeaderValue
 	return nil
 }
@@ -1498,6 +1499,7 @@ func autoConvert_certmanager_VaultAWSAuth_To_v1_VaultAWSAuth(in *certmanager.Vau
 	out.Role = in.Role
 	out.Region = in.Region
 	out.ServiceAccountRef = (*certmanagerv1.ServiceAccountRef)(unsafe.Pointer(in.ServiceAccountRef))
+	out.IamRoleArn = in.IamRoleArn
 	out.VaultHeaderValue = in.VaultHeaderValue
 	return nil
 }

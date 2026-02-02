@@ -33,8 +33,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
@@ -686,7 +688,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	return v.requestTokenWithAWSAmbient(ctx, client, awsAuth, mountPath, region)
 }
 
-func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, _ string) (string, error) {
+func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
 	// Request a web identity token from Kubernetes for IRSA
 	audience := "sts.amazonaws.com"
 	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
@@ -703,12 +705,64 @@ func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsA
 		return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
 	}
 
-	// For IRSA, we use the web identity token directly with Vault's AWS auth
-	// Vault will exchange this for AWS credentials via AssumeRoleWithWebIdentity
+	// Use AssumeRoleWithWebIdentity to exchange the K8s token for AWS credentials
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return "", fmt.Errorf("error loading AWS config: %w", err)
+	}
+
+	stsClient := sts.NewFromConfig(cfg)
+	assumeResult, err := stsClient.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
+		RoleArn:          &awsAuth.IamRoleArn,
+		RoleSessionName:  ptr.To("cert-manager"),
+		WebIdentityToken: &tokenrequest.Status.Token,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error assuming role with web identity: %w", err)
+	}
+
+	// Now sign a GetCallerIdentity request with the temporary credentials
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
+	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("error creating STS request: %w", err)
+	}
+	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+
+	if awsAuth.VaultHeaderValue != "" {
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
+	}
+
+	// Sign the request using the temporary credentials from AssumeRoleWithWebIdentity
+	credentials := aws.Credentials{
+		AccessKeyID:     *assumeResult.Credentials.AccessKeyId,
+		SecretAccessKey: *assumeResult.Credentials.SecretAccessKey,
+		SessionToken:    *assumeResult.Credentials.SessionToken,
+	}
+
+	signer := v4.NewSigner()
+	hash := sha256.Sum256([]byte(reqBody))
+	payloadHash := hex.EncodeToString(hash[:])
+
+	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
+	if err != nil {
+		return "", fmt.Errorf("error signing AWS request: %w", err)
+	}
+
+	// Base64 encode the request components for Vault
+	headersJSON, err := json.Marshal(stsReq.Header)
+	if err != nil {
+		return "", fmt.Errorf("error encoding headers: %w", err)
+	}
+
 	parameters := map[string]any{
-		"role":       awsAuth.Role,
-		"jwt":        tokenrequest.Status.Token,
-		"iam_method": "web_identity",
+		"role":                    awsAuth.Role,
+		"iam_http_request_method": stsReq.Method,
+		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsReq.URL.String())),
+		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
+		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
 	}
 
 	url := filepath.Join(mountPath, "login")
