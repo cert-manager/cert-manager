@@ -690,14 +690,14 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 
 func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
 	// Request a web identity token from Kubernetes for IRSA
-	audience := "sts.amazonaws.com"
+	audiences := []string{"sts.amazonaws.com"}
 	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
-		audience = awsAuth.ServiceAccountRef.TokenAudiences[0]
+		audiences = awsAuth.ServiceAccountRef.TokenAudiences
 	}
 
 	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
-			Audiences:         []string{audience},
+			Audiences:         audiences,
 			ExpirationSeconds: ptr.To(int64(600)),
 		},
 	}, metav1.CreateOptions{})
