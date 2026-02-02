@@ -312,7 +312,14 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 		// ensure cachedEntry is not expired
 		if time.Now().Before(cachedEntryItem.ExpiryTime) {
 			logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached DNS response", "fqdn", fqdn)
-			return cachedEntryItem.Response.Answer[0].(*dns.SOA).Hdr.Name, nil
+
+			for _, ans := range cachedEntryItem.Response.Answer {
+				if soa, ok := ans.(*dns.SOA); ok {
+					return soa.Hdr.Name, nil
+				}
+			}
+
+			return "", fmt.Errorf("cached response has no SOA record")
 		}
 
 		// Remove expired entry
