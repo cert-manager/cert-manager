@@ -240,7 +240,7 @@ type ACMEDNS01Config struct {
 
 type PEMSizeLimitsConfig struct {
 	// Maximum size for a single PEM-encoded certificate (in bytes).
-	// Defaults to 6500 bytes.
+	// Defaults to 36500 bytes.
 	MaxCertificateSize int
 
 	// Maximum size for a single PEM-encoded private key (in bytes).
