@@ -86,7 +86,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-controller
-          image: "{{ template "image" (tuple .Values.image .Values.imageRegistry .Values.imageNamespace .Chart.AppVersion) }}"
+          image: "{{ template "image" (tuple .Values.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
@@ -114,7 +114,7 @@ spec:
           - --leader-election-retry-period={{ .retryPeriod }}
           {{- end }}
           {{- end }}
-          - --acme-http01-solver-image={{ template "image" (tuple .Values.acmesolver.image .Values.imageRegistry .Values.imageNamespace .Chart.AppVersion) }}
+          - --acme-http01-solver-image={{ template "image" (tuple .Values.acmesolver.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}
           {{- with .Values.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}

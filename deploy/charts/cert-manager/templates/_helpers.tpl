@@ -183,7 +183,7 @@ See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linke
 {{- /*
 Calling convention:
 
-- (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultTag>)
+- (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultReference>)
 
 We intentionally pass imageRegistry/imageNamespace as explicit arguments rather than reading
 from `.Values` inside this helper, because `helm-tool lint` does not reliably track `.Values.*`
@@ -191,50 +191,53 @@ usage through tuple/variable indirection.
 */ -}}
 
 {{- if ne (len .) 4 -}}
-    {{- fail (printf "ERROR: template \"image\" expects (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultTag>), got %d arguments" (len .)) -}}
+    {{- fail (printf "ERROR: template \"image\" expects (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultReference>), got %d arguments" (len .)) -}}
 {{- end -}}
 
 {{- $image := index . 0 -}}
 {{- $imageRegistry := index . 1 | default "" -}}
 {{- $imageNamespace := index . 2 | default "" -}}
-{{- $defaultTag := index . 3 -}}
+{{- $defaultReference := index . 3 -}}
 
-    {{- $repository := "" -}}
-    {{- if $image.repository -}}
-        {{- $repository = $image.repository -}}
-        {{- /*
-            Backwards compatibility: if image.registry is set and image.repository is not already
-            prefixed with that registry, prefix the repository with the registry.
-        */ -}}
-        {{- if $image.registry -}}
-            {{- $registryPrefix := printf "%s/" $image.registry -}}
-            {{- if not (hasPrefix $registryPrefix $repository) -}}
-                {{- $repository = printf "%s/%s" $image.registry $repository -}}
-            {{- end -}}
+{{- $repository := "" -}}
+{{- if $image.repository -}}
+    {{- $repository = $image.repository -}}
+    {{- /*
+        Backwards compatibility: if image.registry is set and image.repository is not already
+        prefixed with that registry, prefix the repository with the registry.
+    */ -}}
+    {{- if $image.registry -}}
+        {{- $registryPrefix := printf "%s/" $image.registry -}}
+        {{- if not (hasPrefix $registryPrefix $repository) -}}
+            {{- $repository = printf "%s/%s" $image.registry $repository -}}
         {{- end -}}
-    {{- else -}}
-        {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
-        {{- $repository = $name -}}
-
-        {{- if ne $imageNamespace "" -}}
-            {{- $repository = printf "%s/%s" $imageNamespace $repository -}}
-        {{- end -}}
-
-        {{- $registry := $imageRegistry -}}
-        {{- if ne $registry "" -}}
-            {{- $repository = printf "%s/%s" $registry $repository -}}
-        {{- end -}}
-    {{- end -}}
-
-{{- $repository -}}
-{{- if $image.digest -}}
-    {{- if $image.tag -}}
-        {{- printf ":%s@%s" $image.tag $image.digest -}}
-    {{- else -}}
-        {{- printf "@%s" $image.digest -}}
     {{- end -}}
 {{- else -}}
-    {{- printf ":%s" (default $defaultTag $image.tag) -}}
+    {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
+    {{- $repository = $name -}}
+
+    {{- if $imageNamespace -}}
+        {{- $repository = printf "%s/%s" $imageNamespace $repository -}}
+    {{- end -}}
+
+    {{- if $imageRegistry -}}
+        {{- $repository = printf "%s/%s" $imageRegistry $repository -}}
+    {{- end -}}
+
+    {{- if $image.registry -}}
+        {{- $repository = printf "%s/%s" $image.registry $repository -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $repository -}}
+{{- if and $image.tag $image.digest -}}
+    {{- printf ":%s@%s" $image.tag $image.digest -}}
+{{- else if $image.tag -}}
+    {{- printf ":%s" $image.tag -}}
+{{- else if $image.digest -}}
+    {{- printf "@%s" $image.digest -}}
+{{- else -}}
+    {{- printf "%s" $defaultReference -}}
 {{- end -}}
 {{- end }}
 
