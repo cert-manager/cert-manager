@@ -180,8 +180,14 @@ imageRegistry: quay.io
 imageNamespace: jetstack
 
 image:
-  # Deprecated: per-component registry override.
-  # Prefer using the global `imageRegistry` value.
+  # Deprecated: per-component registry prefix.
+  #
+  # If set, this value is *prepended* to the image repository that the chart would otherwise render.
+  # This applies both when `image.repository` is set and when the repository is computed from
+  # `imageRegistry` + `imageNamespace` + `image.name`.
+  #
+  # This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`.
+  # Prefer using the global `imageRegistry`/`imageNamespace` values.
   # +docs:property
   # registry: ""
 
@@ -997,8 +1003,14 @@ webhook:
   serviceIPFamilies: []
 
   image:
-    # Deprecated: per-component registry override.
-    # Prefer using the global `imageRegistry` value.
+    # Deprecated: per-component registry prefix.
+    #
+    # If set, this value is *prepended* to the image repository that the chart would otherwise render.
+    # This applies both when `webhook.image.repository` is set and when the repository is computed from
+    # `imageRegistry` + `imageNamespace` + `webhook.image.name`.
+    #
+    # This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`.
+    # Prefer using the global `imageRegistry`/`imageNamespace` values.
     # +docs:property
     # registry: ""
 
@@ -1370,8 +1382,14 @@ cainjector:
   serviceLabels: {}
 
   image:
-    # Deprecated: per-component registry override.
-    # Prefer using the global `imageRegistry` value.
+    # Deprecated: per-component registry prefix.
+    #
+    # If set, this value is *prepended* to the image repository that the chart would otherwise render.
+    # This applies both when `cainjector.image.repository` is set and when the repository is computed from
+    # `imageRegistry` + `imageNamespace` + `cainjector.image.name`.
+    #
+    # This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`.
+    # Prefer using the global `imageRegistry`/`imageNamespace` values.
     # +docs:property
     # registry: ""
 
@@ -1435,8 +1453,14 @@ cainjector:
 
 acmesolver:
   image:
-    # Deprecated: per-component registry override.
-    # Prefer using the global `imageRegistry` value.
+    # Deprecated: per-component registry prefix.
+    #
+    # If set, this value is *prepended* to the image repository that the chart would otherwise render.
+    # This applies both when `acmesolver.image.repository` is set and when the repository is computed from
+    # `imageRegistry` + `imageNamespace` + `acmesolver.image.name`.
+    #
+    # This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`.
+    # Prefer using the global `imageRegistry`/`imageNamespace` values.
     # +docs:property
     # registry: ""
 
@@ -1574,8 +1598,14 @@ startupapicheck:
   podLabels: {}
 
   image:
-    # Deprecated: per-component registry override.
-    # Prefer using the global `imageRegistry` value.
+    # Deprecated: per-component registry prefix.
+    #
+    # If set, this value is *prepended* to the image repository that the chart would otherwise render.
+    # This applies both when `startupapicheck.image.repository` is set and when the repository is computed from
+    # `imageRegistry` + `imageNamespace` + `startupapicheck.image.name`.
+    #
+    # This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`.
+    # Prefer using the global `imageRegistry`/`imageNamespace` values.
     # +docs:property
     # registry: ""
 
