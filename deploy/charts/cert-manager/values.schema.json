@@ -234,7 +234,7 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.registry": {
-      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `acmesolver.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `acmesolver.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
@@ -448,7 +448,7 @@
       "type": "string"
     },
     "helm-values.cainjector.image.registry": {
-      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `cainjector.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `cainjector.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
@@ -992,7 +992,7 @@
       "type": "string"
     },
     "helm-values.image.registry": {
-      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.image.repository": {
@@ -1639,7 +1639,7 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.registry": {
-      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `startupapicheck.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `startupapicheck.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
@@ -2056,7 +2056,7 @@
       "type": "string"
     },
     "helm-values.webhook.image.registry": {
-      "description": "Deprecated: per-component registry override.\nPrefer using the global `imageRegistry` value.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `webhook.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `webhook.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.webhook.image.repository": {

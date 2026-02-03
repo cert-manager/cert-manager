@@ -309,8 +309,12 @@ Examples:
 
 #### **image.registry** ~ `string`
 
-Deprecated: per-component registry override.  
-Prefer using the global `imageRegistry` value.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
 
 #### **image.name** ~ `string`
 > Default value:
@@ -1333,8 +1337,12 @@ Optionally set the IP family policy for the controller Service to configure dual
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
-Deprecated: per-component registry override.  
-Prefer using the global `imageRegistry` value.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `webhook.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `webhook.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
 
 #### **webhook.image.name** ~ `string`
 > Default value:
@@ -1814,8 +1822,12 @@ Optional additional labels to add to the CA Injector Pods.
 Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
 
-Deprecated: per-component registry override.  
-Prefer using the global `imageRegistry` value.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `cainjector.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `cainjector.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
 
 #### **cainjector.image.name** ~ `string`
 > Default value:
@@ -1904,8 +1916,12 @@ enableServiceLinks indicates whether information about services should be inject
 
 #### **acmesolver.image.registry** ~ `string`
 
-Deprecated: per-component registry override.  
-Prefer using the global `imageRegistry` value.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `acmesolver.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `acmesolver.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
 
 #### **acmesolver.image.name** ~ `string`
 > Default value:
@@ -2096,8 +2112,12 @@ tolerations:
 Optional additional labels to add to the startupapicheck Pods.
 #### **startupapicheck.image.registry** ~ `string`
 
-Deprecated: per-component registry override.  
-Prefer using the global `imageRegistry` value.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `startupapicheck.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `startupapicheck.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
 
 #### **startupapicheck.image.name** ~ `string`
 > Default value:
