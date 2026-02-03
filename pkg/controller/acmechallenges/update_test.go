@@ -23,8 +23,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clienttesting "k8s.io/client-go/testing"
 	featuretesting "k8s.io/component-base/featuregate/testing"
 
@@ -140,12 +142,13 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
-			objects := []runtime.Object{oldChallenge}
+			cl := fake.NewClientset(oldChallenge)
 			if tt.notFound {
-				t.Log("Simulating a situation where the target object has been deleted")
-				objects = nil
+				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a challenge that has been deleted")
+					return true, nil, k8sErrors.NewNotFound(schema.GroupResource{}, "")
+				})
 			}
-			cl := fake.NewClientset(objects...)
 			if tt.updateError != nil {
 				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge update error")
@@ -158,6 +161,7 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 					return true, nil, tt.updateStatusError
 				})
 			}
+
 			updater := newObjectUpdater(cl, "test-fieldmanager")
 			t.Log("Calling updateObject")
 			updateObjectErr := updater.updateObject(t.Context(), oldChallenge, newChallenge)
@@ -185,7 +189,7 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 					assert.Equal(t, expected, actual, "updateObject did not return an error so the object in the API should have been updated")
 				} else {
 					if !errors.Is(updateObjectErr, simulatedUpdateError) {
-						assert.Equal(t, newChallenge.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers  of the API object should have been updated")
+						assert.Equal(t, newChallenge.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers of the API object should have been updated")
 					}
 					if !errors.Is(updateObjectErr, simulatedUpdateStatusError) {
 						assert.Equal(t, newChallenge.Status, actual.Status, "The UpdateStatus did not fail so the Status of the API object should have been updated")
