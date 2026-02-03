@@ -312,6 +312,273 @@ func TestResolveConfServers(t *testing.T) {
 	}
 }
 
+func TestDNS01LookupFQDN(t *testing.T) {
+	tests := []struct {
+		name        string
+		domain      string
+		followCNAME bool
+		mockDNS     []interaction
+		expected    string
+		wantErr     bool
+	}{
+		{
+			name:        "no CNAME following",
+			domain:      "example.com",
+			followCNAME: false,
+			mockDNS:     []interaction{},
+			expected:    "_acme-challenge.example.com.",
+			wantErr:     false,
+		},
+		{
+			name:        "explicit CNAME to same zone - should follow",
+			domain:      "example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.delegated.example.com."},
+					},
+				}},
+				{"CNAME _acme-challenge.delegated.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+				// FindZoneByFqdn for resolved FQDN
+				{"SOA _acme-challenge.delegated.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA delegated.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+			},
+			expected: "_acme-challenge.delegated.example.com.",
+			wantErr:  false,
+		},
+		{
+			name:        "explicit CNAME to subdomain zone - should follow",
+			domain:      "example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.acme.example.com."},
+					},
+				}},
+				{"CNAME _acme-challenge.acme.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+				// FindZoneByFqdn for resolved FQDN
+				{"SOA _acme-challenge.acme.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA acme.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "acme.example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+			},
+			expected: "_acme-challenge.acme.example.com.",
+			wantErr:  false,
+		},
+		{
+			name:        "wildcard CNAME to unrelated zone - should fall back",
+			domain:      "monitoring.example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA monitoring.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs - wildcard *.monitoring.example.com matches
+				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.monitoring.westeurope.cloudapp.azure.com."},
+					},
+				}},
+				{"CNAME _acme-challenge.monitoring.westeurope.cloudapp.azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+				// FindZoneByFqdn for resolved FQDN - finds azure.com zone
+				{"SOA _acme-challenge.monitoring.westeurope.cloudapp.azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA monitoring.westeurope.cloudapp.azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA westeurope.cloudapp.azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA cloudapp.azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA azure.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "azure.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+			},
+			expected: "_acme-challenge.monitoring.example.com.", // Falls back to original
+			wantErr:  false,
+		},
+		{
+			name:        "no CNAME present - use original",
+			domain:      "example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs - no CNAME found
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+			},
+			expected: "_acme-challenge.example.com.",
+			wantErr:  false,
+		},
+		{
+			name:        "cannot find zone for resolved FQDN - fall back",
+			domain:      "example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.nonexistent.invalid."},
+					},
+				}},
+				{"CNAME _acme-challenge.nonexistent.invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+				// FindZoneByFqdn for resolved FQDN - fails
+				{"SOA _acme-challenge.nonexistent.invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA nonexistent.invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+			},
+			expected: "_acme-challenge.example.com.", // Falls back to original
+			wantErr:  false,
+		},
+		{
+			name:        "cannot find zone for original domain - fall back without CNAME following",
+			domain:      "nonexistent.invalid",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain - fails
+				{"SOA nonexistent.invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+				{"SOA invalid.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+			},
+			expected: "_acme-challenge.nonexistent.invalid.",
+			wantErr:  false,
+		},
+		{
+			name:        "CNAME loop detection - should error",
+			domain:      "example.com",
+			followCNAME: true,
+			mockDNS: []interaction{
+				// FindZoneByFqdn for original domain
+				{"SOA example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+				// followCNAMEs - loop
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.loop.example.com."},
+					},
+				}},
+				{"CNAME _acme-challenge.loop.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{Hdr: dns.RR_Header{Name: "_acme-challenge.loop.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "_acme-challenge.example.com."},
+					},
+				}},
+			},
+			expected: "",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear the zone cache before each test
+			fqdnToZoneLock.Lock()
+			fqdnToZone = map[string]cachedEntry{}
+			fqdnToZoneLock.Unlock()
+
+			withMockDNSQuery(t, tt.mockDNS)
+			result, err := DNS01LookupFQDN(t.Context(), tt.domain, tt.followCNAME, "not-used")
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func Test_followCNAMEs(t *testing.T) {
 	type args struct {
 		fqdn        string
