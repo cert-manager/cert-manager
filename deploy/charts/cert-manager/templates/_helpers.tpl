@@ -180,11 +180,65 @@ Any changes to this function should also be made in cert-manager, trust-manager,
 See https://github.com/cert-manager/cert-manager/issues/6329 for a list of linked PRs.
 */}}
 {{- define "image" -}}
-{{- $defaultTag := index . 1 -}}
-{{- with index . 0 -}}
-{{- if .registry -}}{{ printf "%s/%s" .registry .repository }}{{- else -}}{{- .repository -}}{{- end -}}
-{{- if .digest -}}{{ printf "@%s" .digest }}{{- else -}}{{ printf ":%s" (default $defaultTag .tag) }}{{- end -}}
-{{- end }}
+{{- /*
+Calling convention:
+
+- (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultReference>)
+
+We intentionally pass imageRegistry/imageNamespace as explicit arguments rather than reading
+from `.Values` inside this helper, because `helm-tool lint` does not reliably track `.Values.*`
+usage through tuple/variable indirection.
+*/ -}}
+
+{{- if ne (len .) 4 -}}
+    {{- fail (printf "ERROR: template \"image\" expects (tuple <imageValues> <imageRegistry> <imageNamespace> <defaultReference>), got %d arguments" (len .)) -}}
+{{- end -}}
+
+{{- $image := index . 0 -}}
+{{- $imageRegistry := index . 1 | default "" -}}
+{{- $imageNamespace := index . 2 | default "" -}}
+{{- $defaultReference := index . 3 -}}
+
+{{- $repository := "" -}}
+{{- if $image.repository -}}
+    {{- $repository = $image.repository -}}
+
+    {{- /*
+        Backwards compatibility: if image.registry is set, additionally prefix the repository with this registry.
+    */ -}}
+    {{- if $image.registry -}}
+        {{- $repository = printf "%s/%s" $image.registry $repository -}}
+    {{- end -}}
+{{- else -}}
+    {{- $name := required "ERROR: image.name must be set when image.repository is empty" $image.name -}}
+    {{- $repository = $name -}}
+
+    {{- if $imageNamespace -}}
+        {{- $repository = printf "%s/%s" $imageNamespace $repository -}}
+    {{- end -}}
+
+    {{- if $imageRegistry -}}
+        {{- $repository = printf "%s/%s" $imageRegistry $repository -}}
+    {{- end -}}
+
+    {{- /*
+        Backwards compatibility: if image.registry is set, additionally prefix the repository with this registry.
+    */ -}}
+    {{- if $image.registry -}}
+        {{- $repository = printf "%s/%s" $image.registry $repository -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $repository -}}
+{{- if and $image.tag $image.digest -}}
+    {{- printf ":%s@%s" $image.tag $image.digest -}}
+{{- else if $image.tag -}}
+    {{- printf ":%s" $image.tag -}}
+{{- else if $image.digest -}}
+    {{- printf "@%s" $image.digest -}}
+{{- else -}}
+    {{- printf "%s" $defaultReference -}}
+{{- end -}}
 {{- end }}
 
 {{/*

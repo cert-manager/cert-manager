@@ -288,17 +288,51 @@ A comma-separated list of feature gates that should be enabled on the controller
 > ```
 
 The maximum number of challenges that can be scheduled as 'processing' at once.
+#### **imageRegistry** ~ `string`
+> Default value:
+> ```yaml
+> quay.io
+> ```
+
+The container registry used for all cert-manager images by default. This can include path prefixes (e.g. `artifactory.example.com/docker`).
+
+#### **imageNamespace** ~ `string`
+> Default value:
+> ```yaml
+> jetstack
+> ```
+
+The repository namespace used for all cert-manager images by default.  
+Examples:  
+- jetstack  
+- cert-manager
+
 #### **image.registry** ~ `string`
 
-The container registry to pull the manager image from.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
+
+#### **image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-controller
+> ```
+
+The image name for the cert-manager controller.  
+This is used (together with `imageRegistry` and `imageNamespace`) to construct the full image reference.
 
 #### **image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-controller
+> ""
 > ```
 
-The container image for the cert-manager controller.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `image.name`).  
+Example: quay.io/jetstack/cert-manager-controller
 
 #### **image.tag** ~ `string`
 
@@ -306,7 +340,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **image.pullPolicy** ~ `string`
 > Default value:
@@ -1303,15 +1337,28 @@ Optionally set the IP family policy for the controller Service to configure dual
 Optionally set the IP families for the controller Service that should be supported, in the order in which they should be applied to ClusterIP. Can be IPv4 and/or IPv6.
 #### **webhook.image.registry** ~ `string`
 
-The container registry to pull the webhook image from.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `webhook.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `webhook.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
+
+#### **webhook.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-webhook
+> ```
+
+The image name for the cert-manager webhook.
 
 #### **webhook.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-webhook
+> ""
 > ```
 
-The container image for the cert-manager webhook
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `webhook.image.name`).
 
 #### **webhook.image.tag** ~ `string`
 
@@ -1319,7 +1366,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **webhook.image.digest** ~ `string`
 
-Setting a digest will override any tag
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **webhook.image.pullPolicy** ~ `string`
 > Default value:
@@ -1775,15 +1822,28 @@ Optional additional labels to add to the CA Injector Pods.
 Optional additional labels to add to the CA Injector metrics Service.
 #### **cainjector.image.registry** ~ `string`
 
-The container registry to pull the cainjector image from.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `cainjector.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `cainjector.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
+
+#### **cainjector.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-cainjector
+> ```
+
+The image name for the cert-manager cainjector.
 
 #### **cainjector.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-cainjector
+> ""
 > ```
 
-The container image for the cert-manager cainjector
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `cainjector.image.name`).
 
 #### **cainjector.image.tag** ~ `string`
 
@@ -1791,7 +1851,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **cainjector.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **cainjector.image.pullPolicy** ~ `string`
 > Default value:
@@ -1856,15 +1916,28 @@ enableServiceLinks indicates whether information about services should be inject
 
 #### **acmesolver.image.registry** ~ `string`
 
-The container registry to pull the acmesolver image from.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `acmesolver.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `acmesolver.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
+
+#### **acmesolver.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-acmesolver
+> ```
+
+The image name for the cert-manager acmesolver.
 
 #### **acmesolver.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-acmesolver
+> ""
 > ```
 
-The container image for the cert-manager acmesolver.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `acmesolver.image.name`).
 
 #### **acmesolver.image.tag** ~ `string`
 
@@ -1872,7 +1945,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **acmesolver.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **acmesolver.image.pullPolicy** ~ `string`
 > Default value:
@@ -2039,15 +2112,28 @@ tolerations:
 Optional additional labels to add to the startupapicheck Pods.
 #### **startupapicheck.image.registry** ~ `string`
 
-The container registry to pull the startupapicheck image from.
+Deprecated: per-component registry prefix.  
+  
+If set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `startupapicheck.image.repository` is set and when the repository is computed from  
+`imageRegistry` + `imageNamespace` + `startupapicheck.image.name`.  
+  
+This can produce "double registry" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.
+
+#### **startupapicheck.image.name** ~ `string`
+> Default value:
+> ```yaml
+> cert-manager-startupapicheck
+> ```
+
+The image name for the cert-manager startupapicheck.
 
 #### **startupapicheck.image.repository** ~ `string`
 > Default value:
 > ```yaml
-> quay.io/jetstack/cert-manager-startupapicheck
+> ""
 > ```
 
-The container image for the cert-manager startupapicheck.
+Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `startupapicheck.image.name`).
 
 #### **startupapicheck.image.tag** ~ `string`
 
@@ -2055,7 +2141,7 @@ Override the image tag to deploy by setting this variable. If no value is set, t
 
 #### **startupapicheck.image.digest** ~ `string`
 
-Setting a digest will override any tag.
+Setting a digest pins the image. If a tag is also set, the rendered reference will include both ("image:tag@digest"), though only the digest will be used for pulling.
 
 #### **startupapicheck.image.pullPolicy** ~ `string`
 > Default value:

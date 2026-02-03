@@ -2,6 +2,10 @@
 ⚠️  WARNING: `installCRDs` is deprecated, use `crds.enabled` instead.
 
 {{- end }}
+{{- if or .Values.image.registry .Values.webhook.image.registry .Values.cainjector.image.registry .Values.startupapicheck.image.registry .Values.acmesolver.image.registry }}
+⚠️  WARNING: `*.image.registry` is deprecated. Prefer using the global `imageRegistry` value.
+
+{{- end }}
 cert-manager {{ .Chart.AppVersion }} has been deployed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer

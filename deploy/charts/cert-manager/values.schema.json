@@ -87,6 +87,12 @@
         "image": {
           "$ref": "#/$defs/helm-values.image"
         },
+        "imageNamespace": {
+          "$ref": "#/$defs/helm-values.imageNamespace"
+        },
+        "imageRegistry": {
+          "$ref": "#/$defs/helm-values.imageRegistry"
+        },
         "ingressShim": {
           "$ref": "#/$defs/helm-values.ingressShim"
         },
@@ -195,6 +201,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.acmesolver.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.acmesolver.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.acmesolver.image.pullPolicy"
         },
@@ -211,7 +220,12 @@
       "type": "object"
     },
     "helm-values.acmesolver.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.image.name": {
+      "default": "cert-manager-acmesolver",
+      "description": "The image name for the cert-manager acmesolver.",
       "type": "string"
     },
     "helm-values.acmesolver.image.pullPolicy": {
@@ -220,12 +234,12 @@
       "type": "string"
     },
     "helm-values.acmesolver.image.registry": {
-      "description": "The container registry to pull the acmesolver image from.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `acmesolver.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `acmesolver.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.acmesolver.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-acmesolver",
-      "description": "The container image for the cert-manager acmesolver.",
+      "default": "",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `acmesolver.image.name`).",
       "type": "string"
     },
     "helm-values.acmesolver.image.tag": {
@@ -401,6 +415,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.cainjector.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.cainjector.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.cainjector.image.pullPolicy"
         },
@@ -417,7 +434,12 @@
       "type": "object"
     },
     "helm-values.cainjector.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
+      "type": "string"
+    },
+    "helm-values.cainjector.image.name": {
+      "default": "cert-manager-cainjector",
+      "description": "The image name for the cert-manager cainjector.",
       "type": "string"
     },
     "helm-values.cainjector.image.pullPolicy": {
@@ -426,12 +448,12 @@
       "type": "string"
     },
     "helm-values.cainjector.image.registry": {
-      "description": "The container registry to pull the cainjector image from.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `cainjector.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `cainjector.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.cainjector.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-cainjector",
-      "description": "The container image for the cert-manager cainjector",
+      "default": "",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `cainjector.image.name`).",
       "type": "string"
     },
     "helm-values.cainjector.image.tag": {
@@ -937,6 +959,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.image.pullPolicy"
         },
@@ -953,7 +978,12 @@
       "type": "object"
     },
     "helm-values.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
+      "type": "string"
+    },
+    "helm-values.image.name": {
+      "default": "cert-manager-controller",
+      "description": "The image name for the cert-manager controller.\nThis is used (together with `imageRegistry` and `imageNamespace`) to construct the full image reference.",
       "type": "string"
     },
     "helm-values.image.pullPolicy": {
@@ -962,16 +992,26 @@
       "type": "string"
     },
     "helm-values.image.registry": {
-      "description": "The container registry to pull the manager image from.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-controller",
-      "description": "The container image for the cert-manager controller.",
+      "default": "",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `image.name`).\nExample: quay.io/jetstack/cert-manager-controller",
       "type": "string"
     },
     "helm-values.image.tag": {
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
+      "type": "string"
+    },
+    "helm-values.imageNamespace": {
+      "default": "jetstack",
+      "description": "The repository namespace used for all cert-manager images by default.\nExamples:\n- jetstack\n- cert-manager",
+      "type": "string"
+    },
+    "helm-values.imageRegistry": {
+      "default": "quay.io",
+      "description": "The container registry used for all cert-manager images by default. This can include path prefixes (e.g. `artifactory.example.com/docker`).",
       "type": "string"
     },
     "helm-values.ingressShim": {
@@ -1566,6 +1606,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.startupapicheck.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.startupapicheck.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.startupapicheck.image.pullPolicy"
         },
@@ -1582,7 +1625,12 @@
       "type": "object"
     },
     "helm-values.startupapicheck.image.digest": {
-      "description": "Setting a digest will override any tag.",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
+      "type": "string"
+    },
+    "helm-values.startupapicheck.image.name": {
+      "default": "cert-manager-startupapicheck",
+      "description": "The image name for the cert-manager startupapicheck.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.pullPolicy": {
@@ -1591,12 +1639,12 @@
       "type": "string"
     },
     "helm-values.startupapicheck.image.registry": {
-      "description": "The container registry to pull the startupapicheck image from.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `startupapicheck.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `startupapicheck.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.startupapicheck.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-startupapicheck",
-      "description": "The container image for the cert-manager startupapicheck.",
+      "default": "",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `startupapicheck.image.name`).",
       "type": "string"
     },
     "helm-values.startupapicheck.image.tag": {
@@ -1975,6 +2023,9 @@
         "digest": {
           "$ref": "#/$defs/helm-values.webhook.image.digest"
         },
+        "name": {
+          "$ref": "#/$defs/helm-values.webhook.image.name"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/helm-values.webhook.image.pullPolicy"
         },
@@ -1991,7 +2042,12 @@
       "type": "object"
     },
     "helm-values.webhook.image.digest": {
-      "description": "Setting a digest will override any tag",
+      "description": "Setting a digest pins the image. If a tag is also set, the rendered reference will include both (\"image:tag@digest\"), though only the digest will be used for pulling.",
+      "type": "string"
+    },
+    "helm-values.webhook.image.name": {
+      "default": "cert-manager-webhook",
+      "description": "The image name for the cert-manager webhook.",
       "type": "string"
     },
     "helm-values.webhook.image.pullPolicy": {
@@ -2000,12 +2056,12 @@
       "type": "string"
     },
     "helm-values.webhook.image.registry": {
-      "description": "The container registry to pull the webhook image from.",
+      "description": "Deprecated: per-component registry prefix.\n\nIf set, this value is *prepended* to the image repository that the chart would otherwise render. This applies both when `webhook.image.repository` is set and when the repository is computed from\n`imageRegistry` + `imageNamespace` + `webhook.image.name`.\n\nThis can produce \"double registry\" style references such as `legacy.example.io/quay.io/jetstack/...`. Prefer using the global `imageRegistry`/`imageNamespace` values.",
       "type": "string"
     },
     "helm-values.webhook.image.repository": {
-      "default": "quay.io/jetstack/cert-manager-webhook",
-      "description": "The container image for the cert-manager webhook",
+      "default": "",
+      "description": "Full repository override (takes precedence over `imageRegistry`, `imageNamespace`, and `webhook.image.name`).",
       "type": "string"
     },
     "helm-values.webhook.image.tag": {
