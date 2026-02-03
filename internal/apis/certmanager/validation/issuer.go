@@ -369,36 +369,8 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 		}
 	}
 
-	if auth.GCP != nil {
-		unionCount++
-
-		if auth.GCP.Role == "" {
-			el = append(el, field.Required(fldPath.Child("gcp", "role"), ""))
-		}
-
-		if auth.GCP.ServiceAccountRef != nil {
-			if len(auth.GCP.ServiceAccountRef.Name) == 0 {
-				el = append(el, field.Required(fldPath.Child("gcp", "serviceAccountRef", "name"), ""))
-			}
-		}
-	}
-
-	if auth.Azure != nil {
-		unionCount++
-
-		if auth.Azure.Role == "" {
-			el = append(el, field.Required(fldPath.Child("azure", "role"), ""))
-		}
-
-		if auth.Azure.ServiceAccountRef != nil {
-			if len(auth.Azure.ServiceAccountRef.Name) == 0 {
-				el = append(el, field.Required(fldPath.Child("azure", "serviceAccountRef", "name"), ""))
-			}
-		}
-	}
-
 	if unionCount == 0 {
-		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws, gcp, azure"))
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws"))
 	}
 
 	// Due to the fact that there has not been any "oneOf" validation on

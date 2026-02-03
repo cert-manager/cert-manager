@@ -105,7 +105,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
-				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws, gcp, azure"),
+				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws"),
 			},
 		},
 		"vault issuer with a CA bundle containing no valid certificates": {
@@ -353,41 +353,6 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 			},
 		},
-		"valid auth.gcp": {
-			auth: &cmapi.VaultAuth{
-				GCP: &cmapi.VaultGCPAuth{
-					Role: "my-role",
-				},
-			},
-		},
-		"valid auth.gcp with serviceAccountRef": {
-			auth: &cmapi.VaultAuth{
-				GCP: &cmapi.VaultGCPAuth{
-					Role: "my-role",
-					ServiceAccountRef: &cmapi.ServiceAccountRef{
-						Name: "service-account",
-					},
-				},
-			},
-		},
-		"valid auth.azure": {
-			auth: &cmapi.VaultAuth{
-				Azure: &cmapi.VaultAzureAuth{
-					Role: "my-role",
-				},
-			},
-		},
-		"valid auth.azure with serviceAccountRef": {
-			auth: &cmapi.VaultAuth{
-				Azure: &cmapi.VaultAzureAuth{
-					Role:     "my-role",
-					AuthType: "workload-identity",
-					ServiceAccountRef: &cmapi.ServiceAccountRef{
-						Name: "service-account",
-					},
-				},
-			},
-		},
 		"invalid auth.aws: role is required": {
 			auth: &cmapi.VaultAuth{
 				AWS: &cmapi.VaultAWSAuth{},
@@ -421,45 +386,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"),
 			},
 		},
-		"invalid auth.gcp: role is required": {
-			auth: &cmapi.VaultAuth{
-				GCP: &cmapi.VaultGCPAuth{},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("gcp", "role"), ""),
-			},
-		},
-		"invalid auth.gcp: serviceAccountRef.name is required": {
-			auth: &cmapi.VaultAuth{
-				GCP: &cmapi.VaultGCPAuth{
-					Role:              "my-role",
-					ServiceAccountRef: &cmapi.ServiceAccountRef{},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("gcp", "serviceAccountRef", "name"), ""),
-			},
-		},
-		"invalid auth.azure: role is required": {
-			auth: &cmapi.VaultAuth{
-				Azure: &cmapi.VaultAzureAuth{},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("azure", "role"), ""),
-			},
-		},
-		"invalid auth.azure: serviceAccountRef.name is required": {
-			auth: &cmapi.VaultAuth{
-				Azure: &cmapi.VaultAzureAuth{
-					Role:              "my-role",
-					ServiceAccountRef: &cmapi.ServiceAccountRef{},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("azure", "serviceAccountRef", "name"), ""),
-			},
-		},
-		"valid auth: all seven auth types can be set simultaneously": {
+		"valid auth: all five auth types can be set simultaneously": {
 			auth: &cmapi.VaultAuth{
 				AppRole: &cmapi.VaultAppRole{
 					RoleId: "role-id",
@@ -479,12 +406,6 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				},
 				AWS: &cmapi.VaultAWSAuth{
 					Role: "aws-role",
-				},
-				GCP: &cmapi.VaultGCPAuth{
-					Role: "gcp-role",
-				},
-				Azure: &cmapi.VaultAzureAuth{
-					Role: "azure-role",
 				},
 			},
 		},

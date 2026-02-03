@@ -71,11 +71,9 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	clientCertificateAuth := issuer.GetSpec().Vault.Auth.ClientCertificate
 	kubeAuth := issuer.GetSpec().Vault.Auth.Kubernetes
 	awsAuth := issuer.GetSpec().Vault.Auth.AWS
-	gcpAuth := issuer.GetSpec().Vault.Auth.GCP
-	azureAuth := issuer.GetSpec().Vault.Auth.Azure
 
 	// check if at least one auth method is specified.
-	if tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil && awsAuth == nil && gcpAuth == nil && azureAuth == nil {
+	if tokenAuth == nil && appRoleAuth == nil && clientCertificateAuth == nil && kubeAuth == nil && awsAuth == nil {
 		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageAuthFieldsRequired, "issuer", klog.KObj(issuer))
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldsRequired)
 		return nil
@@ -96,12 +94,6 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		authCount++
 	}
 	if awsAuth != nil {
-		authCount++
-	}
-	if gcpAuth != nil {
-		authCount++
-	}
-	if azureAuth != nil {
 		authCount++
 	}
 

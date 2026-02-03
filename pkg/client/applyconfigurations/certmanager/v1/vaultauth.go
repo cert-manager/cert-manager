@@ -44,13 +44,6 @@ type VaultAuthApplyConfiguration struct {
 	// This allows authentication using IAM roles for service accounts (IRSA)
 	// or EC2 instance profiles.
 	AWS *VaultAWSAuthApplyConfiguration `json:"aws,omitempty"`
-	// GCP authenticates with Vault using Google Cloud authentication.
-	// This allows authentication using Workload Identity or GCE service accounts.
-	GCP *VaultGCPAuthApplyConfiguration `json:"gcp,omitempty"`
-	// Azure authenticates with Vault using Azure authentication.
-	// This allows authentication using Managed Service Identity (MSI)
-	// or Azure AD Workload Identity.
-	Azure *VaultAzureAuthApplyConfiguration `json:"azure,omitempty"`
 }
 
 // VaultAuthApplyConfiguration constructs a declarative configuration of the VaultAuth type for use with
@@ -96,21 +89,5 @@ func (b *VaultAuthApplyConfiguration) WithKubernetes(value *VaultKubernetesAuthA
 // If called multiple times, the AWS field is set to the value of the last call.
 func (b *VaultAuthApplyConfiguration) WithAWS(value *VaultAWSAuthApplyConfiguration) *VaultAuthApplyConfiguration {
 	b.AWS = value
-	return b
-}
-
-// WithGCP sets the GCP field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the GCP field is set to the value of the last call.
-func (b *VaultAuthApplyConfiguration) WithGCP(value *VaultGCPAuthApplyConfiguration) *VaultAuthApplyConfiguration {
-	b.GCP = value
-	return b
-}
-
-// WithAzure sets the Azure field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Azure field is set to the value of the last call.
-func (b *VaultAuthApplyConfiguration) WithAzure(value *VaultAzureAuthApplyConfiguration) *VaultAuthApplyConfiguration {
-	b.Azure = value
 	return b
 }

@@ -61,7 +61,7 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 		func(s *certmanager.VaultAuth, c randfill.Continue) {
 			// VaultAuth is a union type - only one auth method should be set.
 			// Pick one auth method randomly and only fuzz that one.
-			switch c.Int() % 7 {
+			switch c.Int() % 5 {
 			case 0:
 				c.Fill(&s.TokenSecretRef)
 			case 1:
@@ -72,10 +72,6 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				c.Fill(&s.Kubernetes)
 			case 4:
 				c.Fill(&s.AWS)
-			case 5:
-				c.Fill(&s.GCP)
-			case 6:
-				c.Fill(&s.Azure)
 			}
 		},
 	}...)

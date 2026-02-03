@@ -242,12 +242,6 @@ type VaultAuth struct {
 
 	// AWS authenticates with Vault using AWS IAM authentication.
 	AWS *VaultAWSAuth
-
-	// GCP authenticates with Vault using Google Cloud authentication.
-	GCP *VaultGCPAuth
-
-	// Azure authenticates with Vault using Azure authentication.
-	Azure *VaultAzureAuth
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -354,47 +348,6 @@ type VaultAWSAuth struct {
 
 	// The Vault header value to include in the STS signing request.
 	VaultHeaderValue string
-}
-
-// VaultGCPAuth authenticates with Vault using Google Cloud authentication.
-type VaultGCPAuth struct {
-	// The Vault mountPath here is the mount path to use when authenticating with
-	// Vault. If unspecified, the default value "/v1/auth/gcp" will be used.
-	MountPath string
-
-	// A required field containing the Vault Role to assume when authenticating.
-	Role string
-
-	// The type of GCP authentication to use. Valid values are "gce" or "iam".
-	AuthType string
-
-	// A reference to a service account for Workload Identity authentication.
-	ServiceAccountRef *ServiceAccountRef
-
-	// The GCP project ID.
-	ProjectId string
-}
-
-// VaultAzureAuth authenticates with Vault using Azure authentication.
-type VaultAzureAuth struct {
-	// The Vault mountPath here is the mount path to use when authenticating with
-	// Vault. If unspecified, the default value "/v1/auth/azure" will be used.
-	MountPath string
-
-	// A required field containing the Vault Role to assume when authenticating.
-	Role string
-
-	// The type of Azure authentication to use. Valid values are "msi" or "workload-identity".
-	AuthType string
-
-	// A reference to a service account for Azure Workload Identity authentication.
-	ServiceAccountRef *ServiceAccountRef
-
-	// The Azure tenant ID.
-	TenantId string
-
-	// The Azure resource/audience to request a token for.
-	Resource string
 }
 
 // CAIssuer configures an issuer that can issue certificates from its provided
