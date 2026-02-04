@@ -1214,3 +1214,156 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 		})
 	}
 }
+
+func Test_SubjectKeyIdentifier(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     crypto.Signer
+		wantLen int
+	}{
+		{
+			name:    "RSA key",
+			key:     rsaKey(t, 2048),
+			wantLen: 20, // SHA-1 hash is 20 bytes
+		},
+		{
+			name:    "ECDSA P-256 key",
+			key:     ecdsaKey(t, elliptic.P256()),
+			wantLen: 20,
+		},
+		{
+			name:    "Ed25519 key",
+			key:     ed25519Key(t),
+			wantLen: 20,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ski, err := SubjectKeyIdentifier(tt.key.Public())
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+			}
+			if len(ski) != tt.wantLen {
+				t.Errorf("SubjectKeyIdentifier() returned %d bytes, want %d", len(ski), tt.wantLen)
+			}
+
+			// Verify that calling it again with the same key returns the same value
+			ski2, err := SubjectKeyIdentifier(tt.key.Public())
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() second call error = %v", err)
+			}
+			if !bytes.Equal(ski, ski2) {
+				t.Errorf("SubjectKeyIdentifier() returned different values for same key")
+			}
+		})
+	}
+}
+
+func Test_SignCertificate_SubjectKeyIdentifier(t *testing.T) {
+	signerKey := ecdsaKey(t, elliptic.P256())
+
+	t.Run("self-signed certificate should have SKI", func(t *testing.T) {
+		tmpl := &x509.Certificate{
+			PublicKey: signerKey.Public(),
+			Subject:   pkix.Name{CommonName: "test-selfsigned"},
+			DNSNames:  []string{"example.com"},
+		}
+
+		// For self-signed, template and issuerCert are the same
+		_, cert, err := SignCertificate(tmpl, tmpl, signerKey.Public(), signerKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() error = %v", err)
+		}
+
+		// Verify SKI is set
+		if len(cert.SubjectKeyId) == 0 {
+			t.Error("SignCertificate() did not set SubjectKeyId")
+		}
+
+		// Note: Go's x509.CreateCertificate does not set AKI for self-signed certificates
+		// (when template == issuerCert), which is valid per RFC 5280 - AKI is optional for root CAs.
+
+		// Verify SKI matches the expected value for the public key
+		expectedSKI, err := SubjectKeyIdentifier(signerKey.Public())
+		if err != nil {
+			t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+		}
+		if !bytes.Equal(cert.SubjectKeyId, expectedSKI) {
+			t.Errorf("SubjectKeyId (%x) doesn't match expected value (%x)",
+				cert.SubjectKeyId, expectedSKI)
+		}
+	})
+
+	t.Run("CA-signed certificate should have SKI", func(t *testing.T) {
+		// Create a CA certificate first
+		caKey := ecdsaKey(t, elliptic.P256())
+		caTmpl := &x509.Certificate{
+			PublicKey:             caKey.Public(),
+			Subject:               pkix.Name{CommonName: "test-ca"},
+			BasicConstraintsValid: true,
+			IsCA:                  true,
+		}
+
+		_, caCert, err := SignCertificate(caTmpl, caTmpl, caKey.Public(), caKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() for CA error = %v", err)
+		}
+
+		// Now sign a leaf certificate with the CA
+		leafKey := ecdsaKey(t, elliptic.P256())
+		leafTmpl := &x509.Certificate{
+			PublicKey: leafKey.Public(),
+			Subject:   pkix.Name{CommonName: "test-leaf"},
+			DNSNames:  []string{"example.com"},
+		}
+
+		_, leafCert, err := SignCertificate(leafTmpl, caCert, leafKey.Public(), caKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() for leaf error = %v", err)
+		}
+
+		// Verify leaf has SKI
+		if len(leafCert.SubjectKeyId) == 0 {
+			t.Error("Leaf certificate does not have SubjectKeyId")
+		}
+
+		// Verify leaf SKI matches expected value for leaf public key
+		expectedLeafSKI, err := SubjectKeyIdentifier(leafKey.Public())
+		if err != nil {
+			t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+		}
+		if !bytes.Equal(leafCert.SubjectKeyId, expectedLeafSKI) {
+			t.Errorf("Leaf SubjectKeyId (%x) doesn't match expected value (%x)",
+				leafCert.SubjectKeyId, expectedLeafSKI)
+		}
+
+		// Verify leaf AKI matches CA's SKI
+		if !bytes.Equal(leafCert.AuthorityKeyId, caCert.SubjectKeyId) {
+			t.Errorf("Leaf AuthorityKeyId (%x) doesn't match CA SubjectKeyId (%x)",
+				leafCert.AuthorityKeyId, caCert.SubjectKeyId)
+		}
+	})
+
+	t.Run("should not override existing SubjectKeyId", func(t *testing.T) {
+		customSKI := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+
+		tmpl := &x509.Certificate{
+			PublicKey:    signerKey.Public(),
+			Subject:      pkix.Name{CommonName: "test-custom-ski"},
+			DNSNames:     []string{"example.com"},
+			SubjectKeyId: customSKI,
+		}
+
+		_, cert, err := SignCertificate(tmpl, tmpl, signerKey.Public(), signerKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() error = %v", err)
+		}
+
+		// Verify the custom SKI was preserved
+		if !bytes.Equal(cert.SubjectKeyId, customSKI) {
+			t.Errorf("SignCertificate() should preserve existing SubjectKeyId, got %x, want %x",
+				cert.SubjectKeyId, customSKI)
+		}
+	})
+}

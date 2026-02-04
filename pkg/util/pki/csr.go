@@ -24,6 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -336,6 +337,32 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	return cr, nil
 }
 
+// SubjectKeyIdentifier returns the subject key identifier for the given public key.
+// The subject key identifier is computed as the SHA-1 hash of the
+// subjectPublicKey BIT STRING value (excluding the tag, length, and number of
+// unused bits), as per RFC 5280, Section 4.2.1.2, method (1).
+func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
+	pkBytes, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	// MarshalPKIXPublicKey returns SubjectPublicKeyInfo which contains:
+	// - algorithm (AlgorithmIdentifier)
+	// - subjectPublicKey (BIT STRING)
+	// We need to extract just the subjectPublicKey BIT STRING value.
+	var spki struct {
+		Algorithm        pkix.AlgorithmIdentifier
+		SubjectPublicKey asn1.BitString
+	}
+	if _, err := asn1.Unmarshal(pkBytes, &spki); err != nil {
+		return nil, err
+	}
+
+	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
+	return hash[:], nil
+}
+
 // SignCertificate returns a signed *x509.Certificate given a template
 // *x509.Certificate crt and an issuer.
 // publicKey is the public key of the signee, and signerKey is the private
@@ -378,6 +405,19 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	template.SignatureAlgorithm, err = signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// Compute and set the Subject Key Identifier if not already set.
+	// This is required for RFC 5280 compliance and helps with certificate chain
+	// building. For self-signed certificates (where template == issuerCert),
+	// Go's x509.CreateCertificate will also set the Authority Key Identifier
+	// based on the issuer's SubjectKeyId.
+	if len(template.SubjectKeyId) == 0 {
+		ski, err := SubjectKeyIdentifier(publicKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error computing subject key identifier: %s", err.Error())
+		}
+		template.SubjectKeyId = ski
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
