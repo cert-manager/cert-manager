@@ -19,6 +19,7 @@ package vault
 import (
 	"context"
 	"fmt"
+	"time"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -53,6 +55,7 @@ type Vault struct {
 
 	certClient    certificatesclient.CertificateSigningRequestInterface
 	clientBuilder internalvault.ClientBuilder
+	metrics       *metrics.Metrics
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
@@ -75,6 +78,7 @@ func NewVault(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		clientBuilder: internalvault.New,
 		fieldManager:  ctx.FieldManager,
+		metrics:       ctx.Metrics,
 	}
 }
 
@@ -115,7 +119,9 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 		return nil
 	}
 
+	callStart := time.Now()
 	certPEM, _, err := client.Sign(csr.Spec.Request, duration)
+	v.metrics.ObserveVaultRequestDuration(time.Since(callStart), "sign_certificate")
 	if err != nil {
 		message := fmt.Sprintf("Vault failed to sign: %s", err)
 		log.Error(err, message)
