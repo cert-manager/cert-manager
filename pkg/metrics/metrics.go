@@ -22,6 +22,7 @@ limitations under the License.
 // certificate_challenge_status{status, domain, reason, processing, id, type}
 // acme_client_request_count{"scheme", "host", "action", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "action", "method", "status"}
+// vault_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // controller_sync_call_count{"controller"}
 package metrics
@@ -61,6 +62,7 @@ type Metrics struct {
 	acmeClientRequestDurationSeconds   *prometheus.SummaryVec
 	acmeClientRequestCount             *prometheus.CounterVec
 	venafiClientRequestDurationSeconds *prometheus.SummaryVec
+	vaultClientRequestDurationSeconds  *prometheus.SummaryVec
 	controllerSyncCallCount            *prometheus.CounterVec
 	controllerSyncErrorCount           *prometheus.CounterVec
 	challengeCollector                 prometheus.Collector
@@ -137,6 +139,21 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			[]string{"scheme", "host", "action", "method", "status"},
 		)
 
+		// vaultClientRequestDurationSeconds is a Prometheus summary to
+		// collect api call latencies for the Vault client. This metric is in
+		// alpha and can be moved to GA once it has been shown to help measure
+		// Vault call latency.
+		vaultClientRequestDurationSeconds = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:  namespace,
+				Name:       "vault_client_request_duration_seconds",
+				Help:       "ALPHA: The Vault API request latencies in seconds for the Certificate Manager client. This metric is currently alpha as we would like to understand whether it helps to measure Certificate Manager call latency. Please leave feedback if you have any.",
+				Subsystem:  "http",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"api_call"},
+		)
+
 		// venafiClientRequestDurationSeconds is a Prometheus summary to
 		// collect api call latencies for the Venafi client. This
 		// metric is in alpha since cert-manager 1.9. Move it to GA once
@@ -189,6 +206,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		acmeClientRequestCount:             acmeClientRequestCount,
 		acmeClientRequestDurationSeconds:   acmeClientRequestDurationSeconds,
 		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
+		vaultClientRequestDurationSeconds:  vaultClientRequestDurationSeconds,
 		controllerSyncCallCount:            controllerSyncCallCount,
 		controllerSyncErrorCount:           controllerSyncErrorCount,
 	}
