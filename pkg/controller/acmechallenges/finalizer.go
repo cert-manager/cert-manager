@@ -29,13 +29,11 @@ import (
 // deployed ("presented") resources and if successful, removes this finalizer
 // allowing the garbage collector to remove the challenge.
 
-// finalizerRequired returns true if the finalizer is not found on the challenge.
-func finalizerRequired(ch *cmacme.Challenge) bool {
-	return !sets.NewString(ch.Finalizers...).Has(cmacme.ACMEDomainQualifiedFinalizer)
-}
-
-func otherFinalizerPresent(ch *cmacme.Challenge) bool {
-	finalizers := sets.NewString(ch.Finalizers...).
-		Delete(cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMELegacyFinalizer)
-	return len(finalizers) > 0
+// applyFinalizersRequired returns true when the domain-qualified finalizer is missing
+// or when the legacy finalizer is present on the challenge, indicating finalizers
+// need to be (re)applied.
+func applyFinalizersRequired(ch *cmacme.Challenge) bool {
+	finalizers := sets.NewString(ch.Finalizers...)
+	return !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) ||
+		finalizers.Has(cmacme.ACMELegacyFinalizer)
 }
