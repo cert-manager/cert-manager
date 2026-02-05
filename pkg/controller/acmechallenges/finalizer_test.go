@@ -39,7 +39,7 @@ func Test_finalizerRequired(t *testing.T) {
 		{
 			name:       "only-native-legacy-finalizer",
 			finalizers: []string{cmacme.ACMELegacyFinalizer},
-			want:       true,
+			want:       false,
 		},
 		{
 			name:       "only-native-domain-qualified-finalizer",
@@ -54,7 +54,7 @@ func Test_finalizerRequired(t *testing.T) {
 		{
 			name:       "some-foreign-and-legacy-finalizer",
 			finalizers: []string{"f1", "f2", cmacme.ACMELegacyFinalizer, "f3"},
-			want:       true,
+			want:       false,
 		},
 		{
 			name:       "some-foreign-and-domain-qualified-finalizer",

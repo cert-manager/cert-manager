@@ -31,11 +31,6 @@ import (
 
 // finalizerRequired returns true if the finalizer is not found on the challenge.
 func finalizerRequired(ch *cmacme.Challenge) bool {
-	return !sets.NewString(ch.Finalizers...).Has(cmacme.ACMEDomainQualifiedFinalizer)
-}
-
-func otherFinalizerPresent(ch *cmacme.Challenge) bool {
-	finalizers := sets.NewString(ch.Finalizers...).
-		Delete(cmacme.ACMEDomainQualifiedFinalizer, cmacme.ACMELegacyFinalizer)
-	return len(finalizers) > 0
+	finalizers := sets.New(ch.Finalizers...)
+	return !finalizers.Has(cmacme.ACMELegacyFinalizer) && !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer)
 }

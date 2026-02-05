@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -32,7 +33,9 @@ import (
 )
 
 var (
-	orderGvk = cmacme.SchemeGroupVersion.WithKind("Order")
+	orderGvk         = cmacme.SchemeGroupVersion.WithKind("Order")
+	issuerGvk        = cmapi.SchemeGroupVersion.WithKind("Issuer")
+	clusterIssuerGvk = cmapi.SchemeGroupVersion.WithKind("ClusterIssuer")
 )
 
 // buildPartialRequiredChallenges builds partial required ACME challenges by
@@ -73,12 +76,26 @@ func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *c
 	if err != nil {
 		return nil, err
 	}
+	issuerOwnerRef := metav1.OwnerReference{
+		APIVersion:         issuerGvk.GroupVersion().String(),
+		Kind:               issuerGvk.Kind,
+		Name:               issuer.GetName(),
+		UID:                issuer.GetUID(),
+		BlockOwnerDeletion: ptr.To(true),
+	}
+
+	if _, ok := issuer.(*cmapi.ClusterIssuer); ok {
+		issuerOwnerRef.Kind = clusterIssuerGvk.Kind
+	}
 
 	return &cmacme.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            chName,
-			Namespace:       o.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
+			Name:      chName,
+			Namespace: o.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(o, orderGvk),
+				issuerOwnerRef,
+			},
 		},
 		Spec: *chSpec,
 	}, nil
