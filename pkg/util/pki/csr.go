@@ -359,7 +359,7 @@ func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
 		return nil, err
 	}
 
-	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
+	hash := sha1.Sum(spki.SubjectPublicKey.Bytes) // #nosec G401 -- SKI is SHA-1 hash
 	return hash[:], nil
 }
 
@@ -517,6 +517,7 @@ var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
 	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
 	v1.Ed25519KeyAlgorithm: x509.Ed25519,
 }
+
 var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.SHA256WithRSA:   x509.SHA256WithRSA,
 	v1.SHA384WithRSA:   x509.SHA384WithRSA,
