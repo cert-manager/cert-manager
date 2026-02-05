@@ -410,8 +410,8 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	// Compute and set the Subject Key Identifier if not already set.
 	// This is required for RFC 5280 compliance and helps with certificate chain
 	// building. For self-signed certificates (where template == issuerCert),
-	// Go's x509.CreateCertificate will also set the Authority Key Identifier
-	// based on the issuer's SubjectKeyId.
+	// Go's x509.CreateCertificate will NOT set the Authority Key Identifier,
+	// which is the expected behavior for root CAs as described in RFC 5280.
 	if len(template.SubjectKeyId) == 0 {
 		ski, err := SubjectKeyIdentifier(publicKey)
 		if err != nil {
