@@ -156,7 +156,7 @@ tools += klone=v0.2.0
 tools += goreleaser=v2.13.3
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.41.1
+tools += syft=v1.41.2
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -221,7 +221,7 @@ tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
 # renovate: datasource=golang-version packageName=go
-VENDORED_GO_VERSION := 1.25.6
+VENDORED_GO_VERSION := 1.25.7
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -468,10 +468,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=f022b6aad78e362bcba9b0b94d09ad58c5a70c6ba3b7582905fababf5fe0181a
-go_linux_arm64_SHA256SUM=738ef87d79c34272424ccdf83302b7b0300b8b096ed443896089306117943dd5
-go_darwin_amd64_SHA256SUM=e2b5b237f5c262931b8e280ac4b8363f156e19bfad5270c099998932819670b7
-go_darwin_arm64_SHA256SUM=984521ae978a5377c7d782fd2dd953291840d7d3d0bd95781a1f32f16d94a006
+go_linux_amd64_SHA256SUM=12e6d6a191091ae27dc31f6efc630e3a3b8ba409baf3573d955b196fdf086005
+go_linux_arm64_SHA256SUM=ba611a53534135a81067240eff9508cd7e256c560edd5d8c2fef54f083c07129
+go_darwin_amd64_SHA256SUM=bf5050a2152f4053837b886e8d9640c829dbacbc3370f913351eb0904cb706f5
+go_darwin_arm64_SHA256SUM=ff18369ffad05c57d5bed888b660b31385f3c913670a83ef557cdfd98ea9ae1b
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
