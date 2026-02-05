@@ -24,7 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- SHA-1 is required by RFC 5280 Section 4.2.1.2 for computing the Subject Key Identifier
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
