@@ -31,6 +31,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidCertificate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectValidBasicConstraints,
+		certificates.ExpectValidSubjectKeyIdentifier,
 
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidKeysInSecret,

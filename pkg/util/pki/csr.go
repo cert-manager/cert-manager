@@ -24,7 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1" // #nosec G505 -- SHA-1 is required by RFC 5280 Section 4.2.1.2 for computing the Subject Key Identifier
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -338,9 +338,13 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 }
 
 // SubjectKeyIdentifier returns the subject key identifier for the given public key.
-// The subject key identifier is computed as the SHA-1 hash of the
-// subjectPublicKey BIT STRING value (excluding the tag, length, and number of
-// unused bits), as per RFC 5280, Section 4.2.1.2, method (1).
+// The subject key identifier is computed as the leftmost 160 bits of the SHA-256 hash
+// of the subjectPublicKey BIT STRING value (excluding the tag, length, and number of
+// unused bits), as per RFC 7093, Section 2, method 1.
+//
+// This method is compatible with RFC 5280 Section 4.2.1.2 which allows for
+// alternative methods, and aligns with modern practices (e.g., Let's Encrypt)
+// that have moved away from SHA-1.
 func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
 	pkBytes, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
@@ -359,8 +363,9 @@ func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
 		return nil, err
 	}
 
-	hash := sha1.Sum(spki.SubjectPublicKey.Bytes) // #nosec G401 -- SKI is SHA-1 hash
-	return hash[:], nil
+	// Use SHA-256 and truncate to 160 bits (20 bytes) per RFC 7093
+	hash := sha256.Sum256(spki.SubjectPublicKey.Bytes)
+	return hash[:20], nil
 }
 
 // SignCertificate returns a signed *x509.Certificate given a template
