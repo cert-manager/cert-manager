@@ -17,10 +17,10 @@ can be found in our documentation:
 https://cert-manager.io/docs/configuration/
 
 For information on how to configure cert-manager to automatically provision
-Certificates for Ingress resources, take a look at the `ingress-shim`
+Certificates for Gateway API resources, take a look ats at the `gateway` resource
 documentation:
 
-https://cert-manager.io/docs/usage/ingress/
+https://cert-manager.io/docs/usage/gateway/
 
 For information on how to configure cert-manager to automatically provision
 Certificates for Gateway API resources, take a look at the `gateway resource`
