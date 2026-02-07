@@ -17,6 +17,8 @@ limitations under the License.
 package accounts
 
 import (
+	"crypto"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -44,7 +46,7 @@ type Registry interface {
 
 	// IsKeyCheckSumCached checks if the private key checksum is cached with registered client.
 	// If not cached, the account is re-verified for the private key.
-	IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
+	IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey crypto.Signer) bool
 
 	Getter
 }
@@ -99,19 +101,31 @@ func (c stableOptions) equalTo(c2 stableOptions) bool {
 }
 
 func newStableOptions(uid string, options NewClientOptions) stableOptions {
-	// Encoding a big.Int cannot fail
-	publicNBytes, _ := options.PrivateKey.PublicKey.N.GobEncode()
-	checksum := sha256.Sum256(x509.MarshalPKCS1PrivateKey(options.PrivateKey))
-
-	return stableOptions{
+	baseOpts := stableOptions{
 		serverURL:     options.Server,
 		skipVerifyTLS: options.SkipTLSVerify,
 		issuerUID:     uid,
-		publicKey:     string(publicNBytes),
-		exponent:      options.PrivateKey.PublicKey.E,
 		caBundle:      string(options.CABundle),
-		keyChecksum:   checksum,
 	}
+
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(options.PrivateKey)
+	if err == nil {
+		baseOpts.keyChecksum = sha256.Sum256(privateKeyBytes)
+	}
+
+	// For RSA keys, also set the public key and exponent for backwards compatibility
+	if rsaKey, ok := options.PrivateKey.(*rsa.PrivateKey); ok {
+		publicNBytes, _ := rsaKey.PublicKey.N.GobEncode()
+		baseOpts.publicKey = string(publicNBytes)
+		baseOpts.exponent = rsaKey.PublicKey.E
+	} else if ecdsaKey, ok := options.PrivateKey.(*ecdsa.PrivateKey); ok {
+		publicKeyBytes, err := x509.MarshalPKIXPublicKey(&ecdsaKey.PublicKey)
+		if err == nil {
+			baseOpts.publicKey = string(publicKeyBytes)
+		}
+	}
+
+	return baseOpts
 }
 
 // clientWithMeta wraps an ACME client with additional metadata used to
@@ -197,12 +211,17 @@ func (r *registry) ListClients() map[string]acmecl.Interface {
 // IsKeyCheckSumCached returns true when there is no difference in private key checksum.
 // This can be used to identify if the private key has changed for the existing
 // registered client.
-func (r *registry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+func (r *registry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
 	if privateKey != nil && lastPrivateKeyHash != "" {
-		privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+		privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+		if err != nil {
+			// If we can't encode the key, consider it not cached
+			return false
+		}
+
 		checksum := sha256.Sum256(privateKeyBytes)
 		checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 

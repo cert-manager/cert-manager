@@ -18,6 +18,8 @@ package acme
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -34,6 +36,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -60,11 +63,12 @@ const (
 	messageNoSecretKeyGenerationDisabled = "the ACME issuer config has 'disableAccountKeyGeneration' set to true, but the secret was not found: "
 	messageInvalidPrivateKey             = "Account private key is invalid: "
 
-	messageTemplateUpdateToV2              = "Your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q"
-	messageTemplateNotRSA                  = "ACME private key in %q is not of type RSA"
-	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
-	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
-	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
+	messageTemplateUpdateToV2                  = "Your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q"
+	messageTemplateInvalidKeyType              = "ACME private key in %q has unsupported key type: %T"
+	messageTemplateFailedToParseURL            = "Failed to parse existing ACME server URI %q: %v"
+	messageTemplateFailedToParseAccountURL     = "Failed to parse existing ACME account URI %q: %v"
+	messageTemplateFailedToGetEABKey           = "failed to get External Account Binding key from secret: %v"
+	messageTemplateAccountKeyAlgorithmMismatch = "Account private key algorithm mismatch: expected %s but key is %s."
 )
 
 // Setup will verify an existing ACME registration, or create one if not
@@ -122,7 +126,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	switch {
 	case !issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
 		log.V(logf.InfoLevel).Info("generating acme account private key")
-		pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, ns)
+		pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, ns, issuer.GetSpec().ACME.AccountPrivateKey)
 		if err != nil {
 			msg := messageAccountRegistrationFailed + err.Error()
 			return setupResult{
@@ -170,10 +174,39 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			message: msg,
 		}
 	}
-	rsaPk, ok := pk.(*rsa.PrivateKey)
-	if !ok {
-		msg := fmt.Sprintf(messageTemplateNotRSA,
-			issuer.GetSpec().ACME.PrivateKey.Name)
+
+	expectedAlgorithm := cmacme.RSAAccountKeyAlgorithm // default to RSA
+	if issuer.GetSpec().ACME.AccountPrivateKey != nil && issuer.GetSpec().ACME.AccountPrivateKey.Algorithm != "" {
+		expectedAlgorithm = issuer.GetSpec().ACME.AccountPrivateKey.Algorithm
+	}
+	// Validate that the key is either RSA or ECDSA
+	switch pk.(type) {
+	case *rsa.PrivateKey:
+		if expectedAlgorithm != "" && expectedAlgorithm != cmacme.RSAAccountKeyAlgorithm {
+			msg := fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, expectedAlgorithm, "RSA")
+			return setupResult{
+				err: nil,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountVerificationFailed,
+				message: msg,
+			}
+		}
+	case *ecdsa.PrivateKey:
+		if expectedAlgorithm != cmacme.ECDSAAccountKeyAlgorithm {
+			msg := fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, expectedAlgorithm, "ECDSA")
+			return setupResult{
+				err: nil,
+
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountVerificationFailed,
+				message: msg,
+			}
+		}
+		// Key type is valid
+	default:
+		msg := fmt.Sprintf(messageTemplateInvalidKeyType,
+			issuer.GetSpec().ACME.PrivateKey.Name, pk)
 		return setupResult{
 			err: nil,
 
@@ -183,7 +216,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		}
 	}
 
-	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, rsaPk)
+	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, pk)
 
 	// TODO: don't always clear the client cache.
 	//  In future we should intelligently manage items in the account cache
@@ -198,7 +231,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 		CABundle:      issuer.GetSpec().ACME.CABundle,
 		Server:        issuer.GetSpec().ACME.Server,
-		PrivateKey:    rsaPk,
+		PrivateKey:    pk,
 	})
 
 	// TODO: perform a complex check to determine whether we need to verify
@@ -260,7 +293,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 			CABundle:      issuer.GetSpec().ACME.CABundle,
 			Server:        issuer.GetSpec().ACME.Server,
-			PrivateKey:    rsaPk,
+			PrivateKey:    pk,
 		})
 
 		return setupResult{
@@ -408,7 +441,33 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	}
 
 	log.V(logf.InfoLevel).Info("verified existing registration with ACME server")
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(rsaPk)
+
+	var privateKeyBytes []byte
+	switch k := pk.(type) {
+	case *rsa.PrivateKey:
+		privateKeyBytes = x509.MarshalPKCS1PrivateKey(k)
+	case *ecdsa.PrivateKey:
+		var err error
+		privateKeyBytes, err = x509.MarshalECPrivateKey(k)
+		if err != nil {
+			msg := messageAccountUpdateFailed + err.Error()
+			return setupResult{
+				err:     nil,
+				status:  cmmeta.ConditionFalse,
+				reason:  errorAccountUpdateFailed,
+				message: msg,
+			}
+		}
+	default:
+		msg := fmt.Sprintf(messageTemplateInvalidKeyType, issuer.GetSpec().ACME.PrivateKey.Name, pk)
+		return setupResult{
+			err:     nil,
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountUpdateFailed,
+			message: msg,
+		}
+	}
+
 	checksum := sha256.Sum256(privateKeyBytes)
 	checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 	issuer.GetStatus().ACMEStatus().URI = account.URI
@@ -419,7 +478,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 		CABundle:      issuer.GetSpec().ACME.CABundle,
 		Server:        issuer.GetSpec().ACME.Server,
-		PrivateKey:    rsaPk,
+		PrivateKey:    pk,
 	})
 
 	return setupResult{
@@ -522,11 +581,69 @@ func (a *Acme) getEABKey(ctx context.Context, ns string, eab cmmeta.SecretKeySel
 	return keyData, nil
 }
 
-// createAccountPrivateKey will generate a new RSA private key, and create it
-// as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+// createAccountPrivateKey will generate a new account private key based on the specified
+// configuration, and create it as a secret resource in the apiserver.
+func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string, keyConfig *cmacme.AccountPrivateKey) (crypto.Signer, error) {
 	sel = acme.PrivateKeySelector(sel)
-	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
+
+	// Apply defaults if keyConfig is nil
+	if keyConfig == nil {
+		keyConfig = &cmacme.AccountPrivateKey{
+			Algorithm: cmacme.RSAAccountKeyAlgorithm,
+			Size:      pki.MinRSAKeySize,
+		}
+	}
+
+	algorithm := keyConfig.Algorithm
+	if algorithm == "" {
+		algorithm = cmacme.RSAAccountKeyAlgorithm
+	}
+
+	var privateKey crypto.Signer
+	var encodedKey []byte
+	var err error
+
+	// Generate key based on algorithm and size
+	switch algorithm {
+	case cmacme.ECDSAAccountKeyAlgorithm:
+		size := keyConfig.Size
+		if size == 0 {
+			size = pki.ECCurve256
+		}
+
+		// Validate ECDSA size
+		if size != pki.ECCurve256 && size != pki.ECCurve384 && size != pki.ECCurve521 {
+			return nil, fmt.Errorf("invalid ECDSA key size: %d. Supported values are 256, 384, or 521", size)
+		}
+
+		privateKey, err = pki.GenerateECPrivateKey(size)
+		if err != nil {
+			return nil, err
+		}
+		encodedKey, err = pki.EncodeECPrivateKey(privateKey.(*ecdsa.PrivateKey))
+
+	case cmacme.RSAAccountKeyAlgorithm:
+		size := keyConfig.Size
+		if size == 0 {
+			size = pki.MinRSAKeySize
+		}
+
+		// Validate RSA size - only allow 2048 or 4096
+		if size != 2048 && size != 4096 {
+			return nil, fmt.Errorf("invalid RSA key size: %d. Supported values are 2048 or 4096", size)
+		}
+
+		privateKey, err = pki.GenerateRSAPrivateKey(size)
+		if err != nil {
+			return nil, err
+		}
+		encodedKey = pki.EncodePKCS1PrivateKey(privateKey.(*rsa.PrivateKey))
+
+	default:
+		// Unsupported algorithm value
+		return nil, fmt.Errorf("unsupported account key algorithm: %q", algorithm)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -540,7 +657,7 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 			},
 		},
 		Data: map[string][]byte{
-			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
+			sel.Key: encodedKey,
 		},
 	}, metav1.CreateOptions{})
 
@@ -548,7 +665,7 @@ func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKey
 		return nil, err
 	}
 
-	return accountPrivKey, err
+	return privateKey, nil
 }
 
 var (
