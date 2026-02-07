@@ -270,9 +270,13 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notBefore := metav1.NewTime(x509Cert.NotBefore)
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
-		renewalTime := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 
-		renewIn := renewalTime.Time.Sub(c.Now())
+		if renewalTime.WindowError != nil {
+			return WindowError, fmt.Sprintf("Renewing certificate not possible due to window error %s", renewalTime.WindowError.Error()), false
+		}
+
+		renewIn := renewalTime.FinalRenewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {
 			// renewal time is in the future, no need to renew
 			return "", "", false
@@ -308,8 +312,10 @@ func formatIssuerRef(name, kind, group string) string {
 	return fmt.Sprintf("%s.%s/%s", kind, group, name)
 }
 
-const defaultIssuerKind = "Issuer"
-const defaultIssuerGroup = "cert-manager.io"
+const (
+	defaultIssuerKind  = "Issuer"
+	defaultIssuerGroup = "cert-manager.io"
+)
 
 func issuerKindsEqual(l, r string) bool {
 	if l == "" {
