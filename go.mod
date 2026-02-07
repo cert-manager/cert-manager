@@ -26,7 +26,7 @@ require (
 	github.com/google/gnostic-models v0.7.1
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/vault/api v1.22.0
-	github.com/hashicorp/vault/sdk v0.22.0
+	github.com/hashicorp/vault/sdk v0.23.0
 	github.com/miekg/dns v1.1.72
 	github.com/nrdcg/goacmedns v0.2.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
