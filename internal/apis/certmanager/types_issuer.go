@@ -221,7 +221,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
@@ -239,6 +239,9 @@ type VaultAuth struct {
 	// Kubernetes authenticates with Vault by passing the ServiceAccount
 	// token stored in the named Secret resource to the Vault server.
 	Kubernetes *VaultKubernetesAuth
+
+	// AWS authenticates with Vault using AWS IAM authentication.
+	AWS *VaultAWSAuth
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -267,7 +270,7 @@ type VaultClientCertificateAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/cert" will be used.
 	// +optional
-	Path string
+	MountPath string
 
 	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
@@ -288,7 +291,7 @@ type VaultKubernetesAuth struct {
 	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/kubernetes" will be used.
-	Path string
+	MountPath string
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
@@ -323,6 +326,28 @@ type ServiceAccountRef struct {
 	// The default audiences are always included in the token.
 	// +optional
 	TokenAudiences []string
+}
+
+// VaultAWSAuth authenticates with Vault using AWS IAM authentication.
+type VaultAWSAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. If unspecified, the default value "/v1/auth/aws" will be used.
+	MountPath string
+
+	// A required field containing the Vault Role to assume when authenticating.
+	Role string
+
+	// The AWS region to use for STS API calls.
+	Region string
+
+	// A reference to a service account for IRSA authentication.
+	ServiceAccountRef *ServiceAccountRef
+
+	// The ARN of the AWS IAM role to assume using the Kubernetes service account token.
+	IamRoleArn string
+
+	// The Vault header value to include in the STS signing request.
+	VaultHeaderValue string
 }
 
 // CAIssuer configures an issuer that can issue certificates from its provided

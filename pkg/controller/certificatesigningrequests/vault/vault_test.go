@@ -61,8 +61,8 @@ func TestProcessItem(t *testing.T) {
 		gen.SetIssuerVault(cmapi.VaultIssuer{
 			Auth: cmapi.VaultAuth{
 				Kubernetes: &cmapi.VaultKubernetesAuth{
-					Path: "/v1/kubernetes",
-					Role: "kube-pki",
+					MountPath: "/v1/kubernetes",
+					Role:      "kube-pki",
 					SecretRef: cmmeta.SecretKeySelector{
 						Key: "token",
 						LocalObjectReference: cmmeta.LocalObjectReference{

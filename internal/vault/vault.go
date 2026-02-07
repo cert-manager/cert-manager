@@ -18,8 +18,12 @@ package vault
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -28,6 +32,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	authv1 "k8s.io/api/authentication/v1"
@@ -188,7 +196,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 	// the time of validation, we must still allow multiple authentication methods
 	// to be specified.
 	// In terms of implementation, we will use the first authentication method.
-	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes
+	// The order of precedence is: tokenSecretRef, appRole, clientCertificate, kubernetes, aws
 
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef != nil {
@@ -233,7 +241,17 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 		return nil
 	}
 
-	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set")
+	awsAuth := v.issuer.GetSpec().Vault.Auth.AWS
+	if awsAuth != nil {
+		token, err := v.requestTokenWithAWSAuth(ctx, client, awsAuth)
+		if err != nil {
+			return fmt.Errorf("while requesting a Vault token using the AWS auth: %w", err)
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	return cmerrors.NewInvalidData("error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, or AWS auth must be set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -487,7 +505,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		"name": clientCertificateAuth.Name,
 	}
 
-	mountPath := clientCertificateAuth.Path
+	mountPath := clientCertificateAuth.MountPath
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
 	}
@@ -588,7 +606,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		"jwt":  jwt,
 	}
 
-	mountPath := kubernetesAuth.Path
+	mountPath := kubernetesAuth.MountPath
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
@@ -596,6 +614,217 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	url := filepath.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth) (string, error) {
+	mountPath := awsAuth.MountPath
+	if mountPath == "" {
+		mountPath = "/v1/auth/aws"
+	}
+
+	// Determine region: use configured region, or fall back to environment variables
+	region := awsAuth.Region
+	if region == "" {
+		// Check AWS_REGION and AWS_DEFAULT_REGION environment variables
+		envConfig, err := awsconfig.NewEnvConfig()
+		if err == nil && envConfig.Region != "" {
+			region = envConfig.Region
+		} else {
+			// Default to us-east-1 as STS is a global service
+			region = "us-east-1"
+		}
+	}
+
+	// If ServiceAccountRef is set, use IRSA (IAM Roles for Service Accounts)
+	// by requesting a web identity token from the Kubernetes API
+	if awsAuth.ServiceAccountRef != nil {
+		return v.requestTokenWithAWSIRSA(ctx, client, awsAuth, mountPath, region)
+	}
+
+	// Otherwise, use ambient credentials (EC2 instance profile, ECS task role, etc.)
+	return v.requestTokenWithAWSAmbient(ctx, client, awsAuth, mountPath, region)
+}
+
+func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
+	// Request a web identity token from Kubernetes for IRSA
+	audiences := []string{"sts.amazonaws.com"}
+	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
+		audiences = awsAuth.ServiceAccountRef.TokenAudiences
+	}
+
+	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+		Spec: authv1.TokenRequestSpec{
+			Audiences:         audiences,
+			ExpirationSeconds: ptr.To(int64(600)),
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
+	}
+
+	// Use AssumeRoleWithWebIdentity to exchange the K8s token for AWS credentials
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return "", fmt.Errorf("error loading AWS config: %w", err)
+	}
+
+	stsClient := sts.NewFromConfig(cfg)
+	assumeResult, err := stsClient.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
+		RoleArn:          &awsAuth.IamRoleArn,
+		RoleSessionName:  ptr.To("cert-manager"),
+		WebIdentityToken: &tokenrequest.Status.Token,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error assuming role with web identity: %w", err)
+	}
+
+	// Now sign a GetCallerIdentity request with the temporary credentials
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
+	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("error creating STS request: %w", err)
+	}
+	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+
+	if awsAuth.VaultHeaderValue != "" {
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
+	}
+
+	// Sign the request using the temporary credentials from AssumeRoleWithWebIdentity
+	credentials := aws.Credentials{
+		AccessKeyID:     *assumeResult.Credentials.AccessKeyId,
+		SecretAccessKey: *assumeResult.Credentials.SecretAccessKey,
+		SessionToken:    *assumeResult.Credentials.SessionToken,
+	}
+
+	signer := v4.NewSigner()
+	hash := sha256.Sum256([]byte(reqBody))
+	payloadHash := hex.EncodeToString(hash[:])
+
+	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
+	if err != nil {
+		return "", fmt.Errorf("error signing AWS request: %w", err)
+	}
+
+	// Base64 encode the request components for Vault
+	headersJSON, err := json.Marshal(stsReq.Header)
+	if err != nil {
+		return "", fmt.Errorf("error encoding headers: %w", err)
+	}
+
+	parameters := map[string]any{
+		"role":                    awsAuth.Role,
+		"iam_http_request_method": stsReq.Method,
+		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsReq.URL.String())),
+		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
+		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithAWSAmbient(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
+	// Create the STS GetCallerIdentity request
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
+	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	// Create HTTP request for signing
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("error creating STS request: %w", err)
+	}
+	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+
+	// Add Vault server ID header if specified (for replay protection)
+	if awsAuth.VaultHeaderValue != "" {
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
+	}
+
+	// Sign the request using AWS SDK with ambient credentials
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return "", fmt.Errorf("error loading AWS config: %w", err)
+	}
+
+	credentials, err := cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error retrieving AWS credentials: %w", err)
+	}
+
+	signer := v4.NewSigner()
+	hash := sha256.Sum256([]byte(reqBody))
+	payloadHash := hex.EncodeToString(hash[:])
+
+	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
+	if err != nil {
+		return "", fmt.Errorf("error signing AWS request: %w", err)
+	}
+
+	// Base64 encode the request components for Vault
+	headersJSON, err := json.Marshal(stsReq.Header)
+	if err != nil {
+		return "", fmt.Errorf("error encoding headers: %w", err)
+	}
+
+	parameters := map[string]any{
+		"role":                    awsAuth.Role,
+		"iam_http_request_method": "POST",
+		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsEndpoint)),
+		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
+		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}

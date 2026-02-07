@@ -26,7 +26,7 @@ import (
 // with apply.
 //
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
 type VaultAuthApplyConfiguration struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"tokenSecretRef,omitempty"`
@@ -40,6 +40,10 @@ type VaultAuthApplyConfiguration struct {
 	// Kubernetes authenticates with Vault by passing the ServiceAccount
 	// token stored in the named Secret resource to the Vault server.
 	Kubernetes *VaultKubernetesAuthApplyConfiguration `json:"kubernetes,omitempty"`
+	// AWS authenticates with Vault using AWS IAM authentication.
+	// This allows authentication using IAM roles for service accounts (IRSA)
+	// or EC2 instance profiles.
+	AWS *VaultAWSAuthApplyConfiguration `json:"aws,omitempty"`
 }
 
 // VaultAuthApplyConfiguration constructs a declarative configuration of the VaultAuth type for use with
@@ -77,5 +81,13 @@ func (b *VaultAuthApplyConfiguration) WithClientCertificate(value *VaultClientCe
 // If called multiple times, the Kubernetes field is set to the value of the last call.
 func (b *VaultAuthApplyConfiguration) WithKubernetes(value *VaultKubernetesAuthApplyConfiguration) *VaultAuthApplyConfiguration {
 	b.Kubernetes = value
+	return b
+}
+
+// WithAWS sets the AWS field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AWS field is set to the value of the last call.
+func (b *VaultAuthApplyConfiguration) WithAWS(value *VaultAWSAuthApplyConfiguration) *VaultAuthApplyConfiguration {
+	b.AWS = value
 	return b
 }
