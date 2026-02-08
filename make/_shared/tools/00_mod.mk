@@ -93,7 +93,7 @@ tools += ko=0.18.1
 tools += protoc=v33.5
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
-tools += trivy=v0.69.0
+tools += trivy=v0.69.1
 # https://github.com/vmware-tanzu/carvel-ytt/releases
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-ytt
 tools += ytt=v0.53.0
@@ -630,10 +630,10 @@ $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-trivy_linux_amd64_SHA256SUM=fff5813d6888fa6f8bd40042a08c4f072b3e65aec9f13dd9ab1d7b26146ad046
-trivy_linux_arm64_SHA256SUM=425e883f37cad0b512478df2803f58532e7d235267303375a3d0f97e4790a1ca
-trivy_darwin_amd64_SHA256SUM=4264e4fcc73259de36a68c112a586d65bf6cd488ef2aea857f37d00d8cb5c4e6
-trivy_darwin_arm64_SHA256SUM=bd35348d963d3f661ff4d7d138e65a75fedbfade0378689f3a349c824c6e5b75
+trivy_linux_amd64_SHA256SUM=dd93975bc1e58053810a9bafea89923e5df42ddd3f99905fdf840fd797145157
+trivy_linux_arm64_SHA256SUM=7a98c13e6c5799fc46219c94fa500b807532b4555501cce85fa4eead9f755516
+trivy_darwin_amd64_SHA256SUM=1054f37ba02173a7e1a05e2bcc1179d7573124cea1502a37cc59de89582de307
+trivy_darwin_arm64_SHA256SUM=ae5ce4a7b9bf2bd3794ccb3c257993526fa47470b3814d729a73788d36aff3d0
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
