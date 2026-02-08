@@ -67,5 +67,6 @@
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
 	},
-	"certificateRequestMinimumBackoffDuration": "1h0m0s"
+	"certificateRequestMinimumBackoffDuration": "1h0m0s",
+	"challengeAuthorizationTimeout": "2m0s"
 }
