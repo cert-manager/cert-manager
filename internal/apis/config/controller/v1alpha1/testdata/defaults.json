@@ -67,5 +67,11 @@
 		"recursiveNameserversOnly": false,
 		"checkRetryPeriod": "10s"
 	},
+	"pemSizeLimitsConfig": {
+		"maxCertificateSize": 36500,
+		"maxPrivateKeySize": 13000,
+		"maxChainLength": 95000,
+		"maxBundleSize": 330000
+	},
 	"certificateRequestMinimumBackoffDuration": "1h0m0s"
 }

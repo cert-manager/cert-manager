@@ -103,6 +103,12 @@ var (
 	defaultAutoCertificateAnnotations  = []string{"kubernetes.io/tls-acme"}
 	defaultExtraCertificateAnnotations = []string{}
 
+	// PEM size limits based on existing constants in internal/pem/decode.go
+	defaultMaxCertificateSize int32 = 36500  // maxLeafCertificatePEMSize
+	defaultMaxPrivateKeySize  int32 = 13000  // maxPrivateKeyPEMSize
+	defaultMaxChainLength     int32 = 95000  // maxCertificateChainSize
+	defaultMaxBundleSize      int32 = 330000 // maxBundleSize
+
 	AllControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
@@ -335,5 +341,26 @@ func SetDefaults_ACMEDNS01Config(obj *v1alpha1.ACMEDNS01Config) {
 
 	if obj.CheckRetryPeriod.IsZero() {
 		obj.CheckRetryPeriod = sharedv1alpha1.DurationFromTime(defaultDNS01CheckRetryPeriod)
+	}
+}
+
+// SetDefaults_PEMSizeLimitsConfig sets default values for PEM size limits configuration.
+// These limits control the maximum sizes for PEM-encoded certificates and keys.
+// For configuration examples, see deploy/examples/controller-config-example.yaml
+func SetDefaults_PEMSizeLimitsConfig(obj *v1alpha1.PEMSizeLimitsConfig) {
+	if obj.MaxCertificateSize == nil {
+		obj.MaxCertificateSize = &defaultMaxCertificateSize
+	}
+
+	if obj.MaxPrivateKeySize == nil {
+		obj.MaxPrivateKeySize = &defaultMaxPrivateKeySize
+	}
+
+	if obj.MaxChainLength == nil {
+		obj.MaxChainLength = &defaultMaxChainLength
+	}
+
+	if obj.MaxBundleSize == nil {
+		obj.MaxBundleSize = &defaultMaxBundleSize
 	}
 }

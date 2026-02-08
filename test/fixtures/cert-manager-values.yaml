@@ -21,6 +21,11 @@ extraArgs:
 - --leader-election-lease-duration=10s
 - --leader-election-renew-deadline=3s
 - --leader-election-retry-period=2s
+# Example PEM size limits configuration for large certificates
+# - --max-certificate-size=10000
+# - --max-private-key-size=15000
+# - --max-certificate-chain-length=15
+# - --max-certificate-bundle-size=500000
 
 webhook:
   enabled: true
