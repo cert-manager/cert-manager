@@ -212,7 +212,6 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -260,9 +259,9 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		// certificate request revision when the certificate's revision is nil,
 		// hence the above if revision != nil.
 
-		reqs, err := certificates.ListCertificateRequestsMatchingPredicates(g.CertificateRequestLister.CertificateRequests(crt.Namespace),
-			labels.Everything(),
-			predicate.ResourceOwnedBy(crt),
+		reqs, err := certificates.ListCertificateRequestsMatchingPredicates(
+			g.CertificateRequestLister.CertificateRequests(crt.Namespace),
+			predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 			predicate.CertificateRequestRevision(*crt.Status.Revision),
 		)
 		if err != nil {
@@ -287,9 +286,9 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		// nil.
 		nextCRRevision = *crt.Status.Revision + 1
 	}
-	reqs, err := certificates.ListCertificateRequestsMatchingPredicates(g.CertificateRequestLister.CertificateRequests(crt.Namespace),
-		labels.Everything(),
-		predicate.ResourceOwnedBy(crt),
+	reqs, err := certificates.ListCertificateRequestsMatchingPredicates(
+		g.CertificateRequestLister.CertificateRequests(crt.Namespace),
+		predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 		predicate.CertificateRequestRevision(nextCRRevision),
 	)
 	if err != nil {
