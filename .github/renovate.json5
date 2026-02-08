@@ -39,6 +39,13 @@
   ],
   packageRules: [
     {
+      // FIXME: Ungroup sigs.k8s.io/gateway-api temporarily waiting for a new release.
+      groupName: null,
+      matchPackageNames: [
+        'sigs.k8s.io/gateway-api',
+      ],
+    },
+    {
       groupName: 'Base Images',
       matchManagers: [
         'custom.regex',
