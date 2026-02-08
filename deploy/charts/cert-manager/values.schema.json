@@ -174,6 +174,9 @@
         "topologySpreadConstraints": {
           "$ref": "#/$defs/helm-values.topologySpreadConstraints"
         },
+        "verticalPodAutoscaler": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler"
+        },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.volumeMounts"
         },
@@ -341,6 +344,9 @@
         },
         "topologySpreadConstraints": {
           "$ref": "#/$defs/helm-values.cainjector.topologySpreadConstraints"
+        },
+        "verticalPodAutoscaler": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler"
         },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.cainjector.volumeMounts"
@@ -663,6 +669,65 @@
       "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
       "items": {},
       "type": "array"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "controlledValues": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.controlledValues"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.enabled"
+        },
+        "maxAllowed": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.maxAllowed"
+        },
+        "minAllowed": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.minAllowed"
+        },
+        "mode": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.mode"
+        },
+        "updatePolicy": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.updatePolicy"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.controlledValues": {
+      "default": "RequestsAndLimits",
+      "type": "string"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.maxAllowed": {
+      "default": {},
+      "description": "maxAllowed\nIf not set, it allows unlimited scaling\ncpu: 1",
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.minAllowed": {
+      "default": {},
+      "description": "minAllowed. If not set, it will default to the current resource requests\ncpu: 50m\nmemory: 64Mi",
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.mode": {
+      "default": "Auto",
+      "type": "string"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.updatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "updateMode": {
+          "$ref": "#/$defs/helm-values.cainjector.verticalPodAutoscaler.updatePolicy.updateMode"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.cainjector.verticalPodAutoscaler.updatePolicy.updateMode": {
+      "default": "Auto",
+      "type": "string"
     },
     "helm-values.cainjector.volumeMounts": {
       "default": [],
@@ -1796,6 +1861,65 @@
       "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
       "items": {},
       "type": "array"
+    },
+    "helm-values.verticalPodAutoscaler": {
+      "additionalProperties": false,
+      "properties": {
+        "controlledValues": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.controlledValues"
+        },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.enabled"
+        },
+        "maxAllowed": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.maxAllowed"
+        },
+        "minAllowed": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.minAllowed"
+        },
+        "mode": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.mode"
+        },
+        "updatePolicy": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.updatePolicy"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.controlledValues": {
+      "default": "RequestsAndLimits",
+      "type": "string"
+    },
+    "helm-values.verticalPodAutoscaler.enabled": {
+      "default": false,
+      "type": "boolean"
+    },
+    "helm-values.verticalPodAutoscaler.maxAllowed": {
+      "default": {},
+      "description": "maxAllowed\nIf not set, it allows unlimited scaling\ncpu: 1",
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.minAllowed": {
+      "default": {},
+      "description": "minAllowed. If not set, it will default to the current resource requests\ncpu: 50m\nmemory: 64Mi",
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.mode": {
+      "default": "Auto",
+      "type": "string"
+    },
+    "helm-values.verticalPodAutoscaler.updatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "updateMode": {
+          "$ref": "#/$defs/helm-values.verticalPodAutoscaler.updatePolicy.updateMode"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.verticalPodAutoscaler.updatePolicy.updateMode": {
+      "default": "Auto",
+      "type": "string"
     },
     "helm-values.volumeMounts": {
       "default": [],
