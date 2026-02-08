@@ -3855,7 +3855,7 @@ func TestSync(t *testing.T) {
 						cr.Namespace,
 						cr,
 						metav1.CreateOptions{
-							FieldManager: "cert-manager-test",
+							FieldManager: testpkg.FieldManager,
 						},
 					)),
 				)
@@ -3897,7 +3897,7 @@ func TestSync(t *testing.T) {
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
 				ExtraCertificateAnnotations:       []string{"venafi.cert-manager.io/custom-fields"},
-			}, "cert-manager-test")
+			}, testpkg.FieldManager)
 			b.Start()
 
 			err := sync(t.Context(), test.IngressLike)

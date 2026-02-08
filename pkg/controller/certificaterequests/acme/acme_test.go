@@ -332,10 +332,11 @@ func TestSign(t *testing.T) {
 					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-3104426127",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(
+					testpkg.NewAction(coretesting.NewCreateActionWithOptions(
 						cmacme.SchemeGroupVersion.WithResource("orders"),
 						gen.DefaultTestNamespace,
 						ipBaseOrder,
+						metav1.CreateOptions{FieldManager: testpkg.FieldManager},
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapiv1.SchemeGroupVersion.WithResource("certificaterequests"),
@@ -366,10 +367,11 @@ func TestSign(t *testing.T) {
 					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1733622556",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(
+					testpkg.NewAction(coretesting.NewCreateActionWithOptions(
 						cmacme.SchemeGroupVersion.WithResource("orders"),
 						gen.DefaultTestNamespace,
 						baseOrder,
+						metav1.CreateOptions{FieldManager: testpkg.FieldManager},
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapiv1.SchemeGroupVersion.WithResource("certificaterequests"),
