@@ -107,20 +107,20 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []string,
+func checkDNSPropagation(ctx context.Context, fqdn, value string, configuredNss []string,
 	useAuthoritative bool) (bool, error) {
 
 	var err error
-	fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
+	fqdn, err = followCNAMEs(ctx, fqdn, configuredNss)
 	if err != nil {
 		return false, err
 	}
 
 	if !useAuthoritative {
-		return checkAuthoritativeNss(ctx, fqdn, value, nameservers)
+		return checkTxtRecord(ctx, fqdn, value, configuredNss)
 	}
 
-	authoritativeNss, err := lookupNameservers(ctx, fqdn, nameservers)
+	authoritativeNss, err := lookupAuthoritativeNss(ctx, fqdn, configuredNss)
 	if err != nil {
 		return false, err
 	}
@@ -128,11 +128,11 @@ func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []
 	for i, ans := range authoritativeNss {
 		authoritativeNss[i] = net.JoinHostPort(ans, "53")
 	}
-	return checkAuthoritativeNss(ctx, fqdn, value, authoritativeNss)
+	return checkTxtRecord(ctx, fqdn, value, authoritativeNss)
 }
 
-// checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
-func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
+// checkTxtRecord queries each of the given nameservers for the expected TXT record.
+func checkTxtRecord(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
 		r, err := dnsQuery(ctx, fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
@@ -272,8 +272,8 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 	return r, rtt, nil
 }
 
-// lookupNameservers returns the authoritative nameservers for the given fqdn.
-func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) ([]string, error) {
+// lookupAuthoritativeNss returns the authoritative nameservers for the given fqdn.
+func lookupAuthoritativeNss(ctx context.Context, fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
 	logf.FromContext(ctx).V(logf.DebugLevel).Info("Searching fqdn", "fqdn", fqdn, "seedNameservers", nameservers)
