@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	"github.com/go-logr/logr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -40,11 +41,22 @@ type DNSProvider struct {
 	resourceGroupName string
 	zoneName          string
 	log               logr.Logger
+	zoneType          cmacme.AzureZoneType
+}
+
+// TODO:(@hjoshi123) change all arguments of NewDNSProviderCredentials to use variadic functions
+type ProviderOption func(*DNSProvider)
+
+// WithAzureZone is a provider option for specifying the type of Azure DNS zone (public or private) to be used by the DNSProvider.
+func WithAzureZone(zone cmacme.AzureZoneType) ProviderOption {
+	return func(d *DNSProvider) {
+		d.zoneType = zone
+	}
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*DNSProvider, error) {
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...ProviderOption) (*DNSProvider, error) {
 	cloudCfg, err := getCloudConfiguration(environment)
 	if err != nil {
 		return nil, err
@@ -55,26 +67,45 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	if err != nil {
 		return nil, err
 	}
-	rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
-	if err != nil {
-		return nil, err
-	}
-	rcl := NewPublicRecordsClient(rc)
 
-	zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
-	if err != nil {
-		return nil, err
-	}
-	zcl := NewPublicZonesClient(zc)
-
-	return &DNSProvider{
+	provider := &DNSProvider{
 		dns01Nameservers:  dns01Nameservers,
-		recordClient:      rcl,
-		zoneClient:        zcl,
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
 		log:               logf.Log.WithName("azure-dns"),
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(provider)
+	}
+
+	if provider.zoneType == cmacme.PrivateAzureZone {
+		rc, err := privatedns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+		provider.recordClient = NewPrivateRecordsClient(rc)
+
+		zc, err := privatedns.NewPrivateZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+		provider.zoneClient = NewPrivateZonesClient(zc)
+	} else {
+		rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+		provider.recordClient = NewPublicRecordsClient(rc)
+
+		zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		if err != nil {
+			return nil, err
+		}
+		provider.zoneClient = NewPublicZonesClient(zc)
+	}
+
+	return provider, nil
 }
 
 func getCloudConfiguration(name string) (cloud.Configuration, error) {
@@ -221,14 +252,26 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 		var respErr *azcore.ResponseError
 		if errors.As(err, &respErr); respErr != nil && respErr.StatusCode == http.StatusNotFound {
 			// Conditional initialization to avoid nil pointer
-			set = &PublicTXTRecordSet{
-				RS: &dns.RecordSet{
-					Properties: &dns.RecordSetProperties{
-						TTL:        to.Ptr[int64](60),
-						TxtRecords: []*dns.TxtRecord{},
+			if c.zoneType == cmacme.PrivateAzureZone {
+				set = &PrivateTXTRecordSet{
+					RS: &privatedns.RecordSet{
+						Properties: &privatedns.RecordSetProperties{
+							TTL:        to.Ptr[int64](60),
+							TxtRecords: []*privatedns.TxtRecord{},
+						},
+						Etag: to.Ptr(""),
 					},
-					Etag: to.Ptr(""),
-				},
+				}
+			} else {
+				set = &PublicTXTRecordSet{
+					RS: &dns.RecordSet{
+						Properties: &dns.RecordSetProperties{
+							TTL:        to.Ptr[int64](60),
+							TxtRecords: []*dns.TxtRecord{},
+						},
+						Etag: to.Ptr(""),
+					},
+				}
 			}
 		} else {
 			c.log.Error(err, "Error reading TXT", "zone", zone, "domain", fqdn, "resource group", c.resourceGroupName)
