@@ -51,7 +51,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/gateway-api v1.3.1-0.20260131163224-716f2c52c75b
 	sigs.k8s.io/randfill v1.0.0
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.2-0.20260122202528-d9cc6641c482
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.2
 	software.sslmate.com/src/go-pkcs12 v0.7.0
 )
 
