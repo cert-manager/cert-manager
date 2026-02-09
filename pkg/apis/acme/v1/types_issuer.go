@@ -738,7 +738,19 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// If set, ClientID, ClientSecret and TenantID must not be set.
 	// +optional
 	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
+
+	// Determines the type of zone. By default, this is public.
+	// +optional
+	ZoneType AzureZoneType `json:"zoneType,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=AzurePublicZone;AzurePrivateZone
+type AzureZoneType string
+
+const (
+	PrivateAzureZone AzureZoneType = "AzurePrivateZone"
+	PublicAzureZone  AzureZoneType = "AzurePublicZone"
+)
 
 // AzureManagedIdentity contains the configuration for Azure Workload Identity or Azure Managed Service Identity
 // If the AZURE_FEDERATED_TOKEN_FILE environment variable is set, the Azure Workload Identity will be used.

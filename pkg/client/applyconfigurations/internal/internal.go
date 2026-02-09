@@ -805,6 +805,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tenantID
       type:
         scalar: string
+    - name: zoneType
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuerDNS01ProviderCloudDNS
   map:
     fields:

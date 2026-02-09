@@ -53,6 +53,8 @@ type ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration struct {
 	// Settings to enable Azure Workload Identity or Azure Managed Service Identity
 	// If set, ClientID, ClientSecret and TenantID must not be set.
 	ManagedIdentity *AzureManagedIdentityApplyConfiguration `json:"managedIdentity,omitempty"`
+	// Determines the type of zone. By default, this is public.
+	ZoneType *acmev1.AzureZoneType `json:"zoneType,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAzureDNS type for use with
@@ -122,5 +124,13 @@ func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithEnvironment(valu
 // If called multiple times, the ManagedIdentity field is set to the value of the last call.
 func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithManagedIdentity(value *AzureManagedIdentityApplyConfiguration) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
 	b.ManagedIdentity = value
+	return b
+}
+
+// WithZoneType sets the ZoneType field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ZoneType field is set to the value of the last call.
+func (b *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration) WithZoneType(value acmev1.AzureZoneType) *ACMEIssuerDNS01ProviderAzureDNSApplyConfiguration {
+	b.ZoneType = &value
 	return b
 }
