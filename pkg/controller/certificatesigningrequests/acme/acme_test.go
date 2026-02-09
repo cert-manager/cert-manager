@@ -503,10 +503,11 @@ func Test_ProcessItem(t *testing.T) {
 							},
 						},
 					)),
-					testpkg.NewAction(coretesting.NewCreateAction(
+					testpkg.NewAction(coretesting.NewCreateActionWithOptions(
 						cmacme.SchemeGroupVersion.WithResource("orders"),
 						gen.DefaultTestNamespace,
 						baseOrder,
+						metav1.CreateOptions{FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},

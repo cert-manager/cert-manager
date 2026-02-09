@@ -56,6 +56,8 @@ func init() {
 	ctrl.SetLogger(logs.Log)
 }
 
+const FieldManager = "cert-manager-test"
+
 type StringGenerator func(n int) string
 
 // Builder is a structure used to construct new Contexts for use during tests.
@@ -115,6 +117,9 @@ func (b *Builder) Init() {
 	}
 	if b.Context.RootContext == nil {
 		b.Context.RootContext = context.Background()
+	}
+	if b.Context.FieldManager == "" {
+		b.Context.FieldManager = FieldManager
 	}
 	if b.StringGenerator == nil {
 		b.StringGenerator = rand.String
