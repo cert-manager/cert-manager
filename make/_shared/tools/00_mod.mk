@@ -66,7 +66,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v4.1.0
+tools += helm=v4.1.1
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.35.0
@@ -110,7 +110,7 @@ tools += istioctl=1.28.3
 tools += controller-gen=v0.20.0
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 # renovate: datasource=go packageName=golang.org/x/tools
-tools += goimports=v0.41.0
+tools += goimports=v0.42.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
 # renovate: datasource=go packageName=github.com/inteon/go-licenses/v2
 tools += go-licenses=v2.0.0-20250821024731-e4be79958780
@@ -119,7 +119,7 @@ tools += go-licenses=v2.0.0-20250821024731-e4be79958780
 tools += gotestsum=v1.13.0
 # https://pkg.go.dev/sigs.k8s.io/kustomize/kustomize/v5?tab=versions
 # renovate: datasource=go packageName=sigs.k8s.io/kustomize/kustomize/v5
-tools += kustomize=v5.8.0
+tools += kustomize=v5.8.1
 # https://pkg.go.dev/github.com/itchyny/gojq?tab=versions
 # renovate: datasource=go packageName=github.com/itchyny/gojq
 tools += gojq=v0.12.18
@@ -479,10 +479,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=8e7ae5cb890c56f53713bffec38e41cd8e7e4619ebe56f8b31cd383bfb3dbb83
-helm_linux_arm64_SHA256SUM=81315e404b6d09b65bee577a679ab269d6d44652ef2e1f66a8f922b51ca93f6b
-helm_darwin_amd64_SHA256SUM=a326073ae392bed8b73c415d1d9d6880b0f5accb18aa9456975562b44a87c650
-helm_darwin_arm64_SHA256SUM=f12e2723c5e8eaff3e4b3670536867289fb6ab7f797fa2efedd1c53cfaca62fb
+helm_linux_amd64_SHA256SUM=5d4c7623283e6dfb1971957f4b755468ab64917066a8567dd50464af298f4031
+helm_linux_arm64_SHA256SUM=02a5fb7742469d2d132e24cb7c3f52885894043576588c6788b6813297629edd
+helm_darwin_amd64_SHA256SUM=6b8dbb03abb74e9ab8e69ca3f9b6459178be11317d0ac502f922621c05fdc866
+helm_darwin_arm64_SHA256SUM=b8f49e105b1d2fd8c8a90ba3fc9af48db91d2d1ca3b9e788352fc7c896bbb71a
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
