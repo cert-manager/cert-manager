@@ -31,7 +31,6 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidCertificate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectValidBasicConstraints,
-		certificates.ExpectValidSubjectKeyIdentifier,
 
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidKeysInSecret,
@@ -39,6 +38,10 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidAdditionalOutputFormats,
 
 		certificates.ExpectConditionReadyObservedGeneration,
+	}
+
+	if !fs.Has(featureset.SubjectKeyIdentifierFeature) {
+		out = append(out, certificates.ExpectValidSubjectKeyIdentifier)
 	}
 
 	if !fs.Has(featureset.CommonNameFeature) {
