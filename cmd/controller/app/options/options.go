@@ -26,7 +26,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	configv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/controller/v1alpha1"
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
-	xlistenersetcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/listenerset"
+	listenersetcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/listenerset"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/pflag"
@@ -174,8 +174,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableGatewayAPI, "enable-gateway-api", c.EnableGatewayAPI, ""+
 		"Whether gateway API integration is enabled within cert-manager. The ExperimentalGatewayAPISupport "+
 		"feature gate must also be enabled (default as of 1.15).")
-	fs.BoolVar(&c.EnableGatewayAPIXListenerSet, "enable-gateway-api-xlistenerset", c.EnableGatewayAPIXListenerSet, ""+
-		"Whether XListenerSets support is enabled within cert-manager. The XListenerSet "+
+	fs.BoolVar(&c.EnableGatewayAPIListenerSet, "enable-gateway-api-listenerset", c.EnableGatewayAPIListenerSet, ""+
+		"Whether ListenerSets support is enabled within cert-manager. The ListenerSet "+
 		"feature gate must also be enabled.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
@@ -268,9 +268,9 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIXListenerSet {
-		logf.Log.Info("enabling the sig-network Gateway API XListenerSet certificate-shim")
-		enabled = enabled.Insert(xlistenersetcontroller.ControllerName)
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIListenerSet {
+		logf.Log.Info("enabling the sig-network Gateway API ListenerSet certificate-shim")
+		enabled = enabled.Insert(listenersetcontroller.ControllerName)
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {

@@ -194,10 +194,10 @@ const (
 	// Owner: @hjoshi123
 	// Alpha: v1.20.1
 
-	// XListenerSet enables listenerset controller which will allow support for
-	// self-service TLS configuration through the use of XListenerSet resources supported
+	// ListenerSet enables listenerset controller which will allow support for
+	// self-service TLS configuration through the use of ListenerSet resources supported
 	// by GatewayAPI. This featuregate also requires GatewayAPI feature gate to be enabled.
-	XListenerSets featuregate.Feature = "XListenerSets"
+	ListenerSets featuregate.Feature = "ListenerSets"
 )
 
 func init() {
@@ -214,7 +214,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
-	XListenerSets:                                    {Default: false, PreRelease: featuregate.Alpha},
+	ListenerSets:                                     {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},

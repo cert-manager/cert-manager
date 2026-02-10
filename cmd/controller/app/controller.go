@@ -361,8 +361,8 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		ConfigOptions: controller.ConfigOptions{
-			EnableGatewayAPI:             opts.EnableGatewayAPI,
-			EnableGatewayAPIXListenerSet: opts.EnableGatewayAPIXListenerSet,
+			EnableGatewayAPI:            opts.EnableGatewayAPI,
+			EnableGatewayAPIListenerSet: opts.EnableGatewayAPIListenerSet,
 		},
 	})
 	if err != nil {

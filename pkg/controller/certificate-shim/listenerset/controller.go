@@ -27,9 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1"
-	gwxlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apisx/v1alpha1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
@@ -43,8 +41,8 @@ const (
 )
 
 type controller struct {
-	gatewayLister      gwlisters.GatewayLister
-	xlistenerSetLister gwxlisters.XListenerSetLister
+	gatewayLister     gwlisters.GatewayLister
+	listenerSetLister gwlisters.ListenerSetLister
 
 	sync shimhelper.SyncFn
 
@@ -54,17 +52,17 @@ type controller struct {
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
 	c.gatewayLister = ctx.GWShared.Gateway().V1().Gateways().Lister()
-	c.xlistenerSetLister = ctx.GWShared.Experimental().V1alpha1().XListenerSets().Lister()
+	c.listenerSetLister = ctx.GWShared.Gateway().V1().ListenerSets().Lister()
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
 
-	xlsInf := ctx.GWShared.Experimental().V1alpha1().XListenerSets().Informer()
+	xlsInf := ctx.GWShared.Gateway().V1().ListenerSets().Informer()
 
 	// Adding an indexer for easier queries on xlistenerset
 	if err := xlsInf.AddIndexers(cache.Indexers{
 		indexByParentGateway: func(obj any) ([]string, error) {
-			xls, ok := obj.(*gwapix.XListenerSet)
+			xls, ok := obj.(*gwapi.ListenerSet)
 			if !ok {
 				return nil, nil
 			}
@@ -98,7 +96,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 		}
 
 		for _, in := range indexed {
-			ls, ok := in.(*gwapix.XListenerSet)
+			ls, ok := in.(*gwapi.ListenerSet)
 			if !ok {
 				continue
 			}
@@ -119,7 +117,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 	mustSync := []cache.InformerSynced{
 		ctx.GWShared.Gateway().V1().Gateways().Informer().HasSynced,
-		ctx.GWShared.Experimental().V1alpha1().XListenerSets().Informer().HasSynced,
+		ctx.GWShared.Gateway().V1().ListenerSets().Informer().HasSynced,
 		ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().HasSynced,
 	}
 
@@ -127,7 +125,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
-	xls, err := c.xlistenerSetLister.XListenerSets(key.Namespace).Get(key.Name)
+	xls, err := c.listenerSetLister.ListenerSets(key.Namespace).Get(key.Name)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
@@ -161,10 +159,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	return c.sync(ctx, toSyncXLS)
 }
 
-func inheritAnnotations(xls *gwapix.XListenerSet, gw *gwapi.Gateway) {
-	xlsAnn := xls.GetAnnotations()
-	if xlsAnn == nil {
-		xlsAnn = map[string]string{}
+func inheritAnnotations(xls *gwapi.ListenerSet, gw *gwapi.Gateway) {
+	lsAnn := xls.GetAnnotations()
+	if lsAnn == nil {
+		lsAnn = map[string]string{}
 	}
 
 	gwAnn := gw.GetAnnotations()
@@ -172,28 +170,28 @@ func inheritAnnotations(xls *gwapix.XListenerSet, gw *gwapi.Gateway) {
 		return
 	}
 
-	_, hasClusterIssuer := xlsAnn[cmapi.IngressClusterIssuerNameAnnotationKey]
-	_, hasIssuer := xlsAnn[cmapi.IngressIssuerNameAnnotationKey]
+	_, hasClusterIssuer := lsAnn[cmapi.IngressClusterIssuerNameAnnotationKey]
+	_, hasIssuer := lsAnn[cmapi.IngressIssuerNameAnnotationKey]
 
 	if !hasClusterIssuer && !hasIssuer {
 		if v, ok := gwAnn[cmapi.IngressClusterIssuerNameAnnotationKey]; ok {
-			xlsAnn[cmapi.IngressClusterIssuerNameAnnotationKey] = v
+			lsAnn[cmapi.IngressClusterIssuerNameAnnotationKey] = v
 		}
 
 		if v, ok := gwAnn[cmapi.IngressIssuerNameAnnotationKey]; ok {
-			xlsAnn[cmapi.IngressIssuerNameAnnotationKey] = v
+			lsAnn[cmapi.IngressIssuerNameAnnotationKey] = v
 		}
 	}
 
 	if v, ok := gwAnn[cmapi.IssuerKindAnnotationKey]; ok {
-		xlsAnn[cmapi.IssuerKindAnnotationKey] = v
+		lsAnn[cmapi.IssuerKindAnnotationKey] = v
 	}
 
 	if v, ok := gwAnn[cmapi.IssuerGroupAnnotationKey]; ok {
-		xlsAnn[cmapi.IssuerGroupAnnotationKey] = v
+		lsAnn[cmapi.IssuerGroupAnnotationKey] = v
 	}
 
-	xls.SetAnnotations(xlsAnn)
+	xls.SetAnnotations(lsAnn)
 }
 
 func xListenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(crt *cmapi.Certificate) {

@@ -123,8 +123,8 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.EnableGatewayAPIXListenerSet != nil {
-		in, out := &in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet
+	if in.EnableGatewayAPIListenerSet != nil {
+		in, out := &in.EnableGatewayAPIListenerSet, &out.EnableGatewayAPIListenerSet
 		*out = new(bool)
 		**out = **in
 	}
