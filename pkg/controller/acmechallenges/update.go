@@ -24,7 +24,10 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/util/csaupgrade"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -140,7 +143,16 @@ type objectUpdateClientSSA struct {
 }
 
 func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	if err := o.upgradeManagedFields(ctx, challenge); err != nil {
+		return nil, err
+	}
+
 	ac := cmacmeac.Challenge(challenge.Name, challenge.Namespace).
+		// Set UID to ensure we never create a new challenge.
+		// Apply semantics are always create-or-update,
+		// and the challenge might have been deleted.
+		WithUID(challenge.UID).
+		// FIXME: This will claim ownership of all finalizers, which is obviously wrong.
 		WithFinalizers(challenge.Finalizers...)
 	return o.cl.AcmeV1().Challenges(challenge.Namespace).Apply(
 		ctx, ac,
@@ -149,6 +161,10 @@ func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Ch
 }
 
 func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	if err := o.upgradeManagedFields(ctx, challenge, csaupgrade.Subresource("status")); err != nil {
+		return nil, err
+	}
+
 	challengeStatus := cmacmeac.ChallengeStatus().
 		WithProcessing(challenge.Status.Processing).
 		WithPresented(challenge.Status.Presented)
@@ -164,4 +180,29 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 		ctx, ac,
 		metav1.ApplyOptions{Force: true, FieldManager: o.fieldManager},
 	)
+}
+
+// upgradeManagedFields upgrades the managed fields from CSA to SSA.
+// This is required to ensure a server side apply request can reset/unset fields based on
+// field manager managed fields.
+func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge, opts ...csaupgrade.Option) error {
+	patchData, err := csaupgrade.UpgradeManagedFieldsPatch(challenge, sets.New(o.fieldManager), o.fieldManager, opts...)
+	if err != nil {
+		return fmt.Errorf("when creating managed fields patch: %w", err)
+	}
+
+	if len(patchData) == 0 {
+		// No work to be done, return early
+		return nil
+	}
+
+	_, err = o.cl.AcmeV1().Challenges(challenge.Namespace).Patch(
+		ctx, challenge.Name,
+		types.JSONPatchType, patchData,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("when patching managed fields: %w", err)
+	}
+	return nil
 }
