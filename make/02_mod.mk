@@ -52,3 +52,5 @@ update-licenses: generate-licenses
 
 .PHONY: verify-licenses
 verify-licenses: verify-generate-licenses
+
+include make/kube-api-lint.mk
