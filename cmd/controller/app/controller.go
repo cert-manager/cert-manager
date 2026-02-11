@@ -28,6 +28,7 @@ import (
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
@@ -83,6 +84,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx, err := ctxFactory.Build()
 	if err != nil {
 		return err
+	}
+
+	// Configure PEM size limits from controller configuration
+	if err := configurePEMSizeLimits(opts, log); err != nil {
+		return fmt.Errorf("failed to configure PEM size limits: %w", err)
 	}
 
 	enabledControllers := options.EnabledControllers(opts)
@@ -441,5 +447,57 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 	default:
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
+	return nil
+}
+
+// configurePEMSizeLimits sets the global PEM size limits from the controller configuration
+func configurePEMSizeLimits(opts *config.ControllerConfiguration, log logr.Logger) error {
+	// Validate that the configuration is not nil
+	if opts == nil {
+		return fmt.Errorf("controller configuration is nil")
+	}
+
+	// Additional runtime validation beyond what the validation package does
+	// This catches cases where values might have been modified after validation
+	if opts.PEMSizeLimitsConfig.MaxCertificateSize <= 0 {
+		return fmt.Errorf("maxCertificateSize must be greater than 0, got %d", opts.PEMSizeLimitsConfig.MaxCertificateSize)
+	}
+	if opts.PEMSizeLimitsConfig.MaxPrivateKeySize <= 0 {
+		return fmt.Errorf("maxPrivateKeySize must be greater than 0, got %d", opts.PEMSizeLimitsConfig.MaxPrivateKeySize)
+	}
+	if opts.PEMSizeLimitsConfig.MaxChainLength <= 0 {
+		return fmt.Errorf("maxChainLength must be greater than 0, got %d", opts.PEMSizeLimitsConfig.MaxChainLength)
+	}
+	if opts.PEMSizeLimitsConfig.MaxBundleSize <= 0 {
+		return fmt.Errorf("maxBundleSize must be greater than 0, got %d", opts.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	// Check relationships between values
+	if opts.PEMSizeLimitsConfig.MaxCertificateSize > opts.PEMSizeLimitsConfig.MaxBundleSize {
+		return fmt.Errorf("maxCertificateSize (%d) must not be larger than maxBundleSize (%d)",
+			opts.PEMSizeLimitsConfig.MaxCertificateSize, opts.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	// MaxChainLength is in bytes (total chain size), not a count
+	if opts.PEMSizeLimitsConfig.MaxChainLength > opts.PEMSizeLimitsConfig.MaxBundleSize {
+		return fmt.Errorf("maxChainLength (%d) must not exceed maxBundleSize (%d)",
+			opts.PEMSizeLimitsConfig.MaxChainLength, opts.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	limits := pem.NewSizeLimitsFromConfig(
+		opts.PEMSizeLimitsConfig.MaxCertificateSize,
+		opts.PEMSizeLimitsConfig.MaxPrivateKeySize,
+		opts.PEMSizeLimitsConfig.MaxChainLength,
+		opts.PEMSizeLimitsConfig.MaxBundleSize,
+	)
+
+	pem.SetGlobalSizeLimits(limits)
+
+	log.V(logf.InfoLevel).Info("configured PEM size limits",
+		"maxCertificateSize", limits.MaxCertificateSize,
+		"maxPrivateKeySize", limits.MaxPrivateKeySize,
+		"maxChainLength", limits.MaxChainLength,
+		"maxBundleSize", limits.MaxBundleSize)
+
 	return nil
 }

@@ -142,6 +142,9 @@ type ControllerConfiguration struct {
 	// acmeDNS01Config configures the behaviour of the ACME DNS01 challenge solver
 	ACMEDNS01Config ACMEDNS01Config `json:"acmeDNS01Config,omitzero"`
 
+	// pemSizeLimitsConfig configures the maximum sizes for PEM-encoded data
+	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitzero"`
+
 	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
 	// when a certificate request fails. This duration is exponentially increased
 	// (up to a maximum of 32 hours) based on the number of consecutive failures.
@@ -235,4 +238,22 @@ type ACMEDNS01Config struct {
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
 	CheckRetryPeriod *sharedv1alpha1.Duration `json:"checkRetryPeriod,omitempty"`
+}
+
+type PEMSizeLimitsConfig struct {
+	// Maximum size for a single PEM-encoded certificate (in bytes).
+	// Defaults to 36500 bytes.
+	MaxCertificateSize *int32 `json:"maxCertificateSize,omitempty"`
+
+	// Maximum size for a single PEM-encoded private key (in bytes).
+	// Defaults to 13000 bytes.
+	MaxPrivateKeySize *int32 `json:"maxPrivateKeySize,omitempty"`
+
+	// Maximum size for a PEM-encoded certificate chain (in bytes).
+	// Defaults to 95000 bytes.
+	MaxChainLength *int32 `json:"maxChainLength,omitempty"`
+
+	// Maximum size for PEM-encoded certificate bundles (in bytes).
+	// Defaults to 330000 bytes.
+	MaxBundleSize *int32 `json:"maxBundleSize,omitempty"`
 }

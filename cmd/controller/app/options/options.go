@@ -231,6 +231,16 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Leader election healthz checks within this timeout period after the lease expires will still return healthy")
 	utilruntime.Must(fs.MarkHidden("internal-healthz-leader-election-timeout"))
 
+	// PEM size limits configuration
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxCertificateSize, "max-certificate-size", c.PEMSizeLimitsConfig.MaxCertificateSize, ""+
+		"Maximum size in bytes for a single PEM-encoded certificate. Large certificates with many DNS names may need larger values.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxPrivateKeySize, "max-private-key-size", c.PEMSizeLimitsConfig.MaxPrivateKeySize, ""+
+		"Maximum size in bytes for a single PEM-encoded private key.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxChainLength, "max-certificate-chain-length", c.PEMSizeLimitsConfig.MaxChainLength, ""+
+		"Maximum size in bytes for a PEM-encoded certificate chain.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxBundleSize, "max-certificate-bundle-size", c.PEMSizeLimitsConfig.MaxBundleSize, ""+
+		"Maximum size in bytes for PEM-encoded certificate bundles.")
+
 	fs.DurationVar(&c.CertificateRequestMinimumBackoffDuration, "certificate-request-minimum-backoff-duration", c.CertificateRequestMinimumBackoffDuration, ""+
 		"Duration of the initial certificate request backoff when a certificate request fails. "+
 		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")

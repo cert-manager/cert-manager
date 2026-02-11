@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/go-logr/logr"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
@@ -207,6 +208,81 @@ ingressShimConfig: {}
 				if !reflect.DeepEqual(config, expConfig) {
 					t.Errorf("expected config %v but got %v", expConfig, config)
 				}
+			}
+		})
+	}
+}
+
+func TestConfigurePEMSizeLimits(t *testing.T) {
+	// Create a discarding logger for tests
+	log := logr.Discard()
+
+	tests := []struct {
+		name      string
+		config    *config.ControllerConfiguration
+		expectErr bool
+		errMsg    string
+	}{
+		{
+			name:      "nil configuration",
+			config:    nil,
+			expectErr: true,
+			errMsg:    "controller configuration is nil",
+		},
+		{
+			name: "valid configuration",
+			config: &config.ControllerConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 6500,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "zero certificate size",
+			config: &config.ControllerConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 0,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: true,
+			errMsg:    "maxCertificateSize must be greater than 0, got 0",
+		},
+		{
+			name: "certificate size larger than bundle size",
+			config: &config.ControllerConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 400000,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: true,
+			errMsg:    "maxCertificateSize (400000) must not be larger than maxBundleSize (330000)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := configurePEMSizeLimits(tt.config, log)
+
+			if tt.expectErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errMsg)
+					return
+				}
+				if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("expected error %q, got %q", tt.errMsg, err.Error())
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
 		})
 	}
