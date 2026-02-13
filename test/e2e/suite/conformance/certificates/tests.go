@@ -659,6 +659,11 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		})
 
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
+			// TODO: @hjoshi123 No gwapi provider supports ListenerSet yet. Remove this once we upgrade to something that does support it.
+			if s.HTTP01TestType != "ListenerSet" {
+				Skip("skipping test as there is no gwapi provider with LS support")
+				return
+			}
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ListenerSets)
 

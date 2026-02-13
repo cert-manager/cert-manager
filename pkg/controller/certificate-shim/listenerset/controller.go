@@ -57,31 +57,31 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
 
-	xlsInf := ctx.GWShared.Gateway().V1().ListenerSets().Informer()
+	lsInf := ctx.GWShared.Gateway().V1().ListenerSets().Informer()
 
 	// Adding an indexer for easier queries on xlistenerset
-	if err := xlsInf.AddIndexers(cache.Indexers{
+	if err := lsInf.AddIndexers(cache.Indexers{
 		indexByParentGateway: func(obj any) ([]string, error) {
-			xls, ok := obj.(*gwapi.ListenerSet)
+			ls, ok := obj.(*gwapi.ListenerSet)
 			if !ok {
 				return nil, nil
 			}
 
-			ns := xls.GetNamespace()
-			if xls.Spec.ParentRef.Namespace != nil && string(*xls.Spec.ParentRef.Namespace) != "" {
-				ns = string(*xls.Spec.ParentRef.Namespace)
+			ns := ls.GetNamespace()
+			if ls.Spec.ParentRef.Namespace != nil && string(*ls.Spec.ParentRef.Namespace) != "" {
+				ns = string(*ls.Spec.ParentRef.Namespace)
 			}
-			if xls.Spec.ParentRef.Name == "" {
+			if ls.Spec.ParentRef.Name == "" {
 				return nil, nil
 			}
 
-			return []string{fmt.Sprintf("%s/%s", ns, xls.Spec.ParentRef.Name)}, nil
+			return []string{fmt.Sprintf("%s/%s", ns, ls.Spec.ParentRef.Name)}, nil
 		},
 	}); err != nil {
 		return nil, nil, fmt.Errorf("error adding indexer for xlistenerset %v", err)
 	}
 
-	if _, err := xlsInf.AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
+	if _, err := lsInf.AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler for xlistenerset %v", err)
 	}
 
@@ -89,7 +89,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	if _, err := ctx.GWShared.Gateway().V1().Gateways().Informer().AddEventHandler(controllerpkg.BlockingEventHandler(func(gw *gwapi.Gateway) {
 		key := fmt.Sprintf("%s/%s", gw.Namespace, gw.Name)
 
-		indexed, err := xlsInf.GetIndexer().ByIndex(indexByParentGateway, key)
+		indexed, err := lsInf.GetIndexer().ByIndex(indexByParentGateway, key)
 		if err != nil {
 			runtime.HandleError(fmt.Errorf("cannot get object for index %v", err))
 			return
@@ -110,7 +110,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	// Requeue parent XListenerSet when a Certificate is added/updated/deleted,
 	// mirroring the existing gateway-shim behavior
 	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(
-		controllerpkg.BlockingEventHandler(xListenerSetCertificateHandler(c.queue)),
+		controllerpkg.BlockingEventHandler(listenerSetCertificateHandler(c.queue)),
 	); err != nil {
 		return nil, nil, fmt.Errorf("error setting up certificate handler: %v", err)
 	}
@@ -125,21 +125,21 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
-	xls, err := c.listenerSetLister.ListenerSets(key.Namespace).Get(key.Name)
+	ls, err := c.listenerSetLister.ListenerSets(key.Namespace).Get(key.Name)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
 
-	if xls == nil || xls.DeletionTimestamp != nil {
+	if ls == nil || ls.DeletionTimestamp != nil {
 		return nil
 	}
 
-	parentNS := xls.Namespace
-	if xls.Spec.ParentRef.Namespace != nil && string(*xls.Spec.ParentRef.Namespace) != "" {
-		parentNS = string(*xls.Spec.ParentRef.Namespace)
+	parentNS := ls.Namespace
+	if ls.Spec.ParentRef.Namespace != nil && string(*ls.Spec.ParentRef.Namespace) != "" {
+		parentNS = string(*ls.Spec.ParentRef.Namespace)
 	}
 
-	parentName := string(xls.Spec.ParentRef.Name)
+	parentName := string(ls.Spec.ParentRef.Name)
 	if parentName == "" {
 		return nil
 	}
@@ -153,7 +153,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
-	toSyncXLS := xls.DeepCopy()
+	toSyncXLS := ls.DeepCopy()
 	inheritAnnotations(toSyncXLS, gw)
 
 	return c.sync(ctx, toSyncXLS)
@@ -194,7 +194,7 @@ func inheritAnnotations(xls *gwapi.ListenerSet, gw *gwapi.Gateway) {
 	xls.SetAnnotations(lsAnn)
 }
 
-func xListenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(crt *cmapi.Certificate) {
+func listenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(crt *cmapi.Certificate) {
 	return func(crt *cmapi.Certificate) {
 		ref := metav1.GetControllerOf(crt)
 		if ref == nil {
@@ -203,7 +203,7 @@ func xListenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[t
 			return
 		}
 
-		if ref.Kind != "XListenerSet" {
+		if ref.Kind != "ListenerSet" {
 			return
 		}
 

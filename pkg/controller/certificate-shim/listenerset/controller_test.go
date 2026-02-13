@@ -42,7 +42,7 @@ func Test_controller_Register(t *testing.T) {
 		expectAddCalls []types.NamespacedName
 	}{
 		{
-			name: "listenerset is re-queued when an 'Added' event is received for this xlistenerset",
+			name: "listenerset is re-queued when an 'Added' event is received for this listenerset",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				// Prefer Create calls for gateway-api fake clients; see Gateway test rationale.
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
@@ -56,7 +56,7 @@ func Test_controller_Register(t *testing.T) {
 			expectAddCalls: []types.NamespacedName{{Namespace: "namespace-1", Name: "ls-1"}},
 		},
 		{
-			name: "xlistenerset is re-queued when an 'Updated' event is received for this xlistenerset",
+			name: "listenerset is re-queued when an 'Updated' event is received for this listenerset",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
 					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
@@ -82,7 +82,7 @@ func Test_controller_Register(t *testing.T) {
 			},
 		},
 		{
-			name: "listenerset is re-queued when a 'Deleted' event is received for this xlistenerset",
+			name: "listenerset is re-queued when a 'Deleted' event is received for this listenerset",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
 					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +140,7 @@ func Test_controller_Register(t *testing.T) {
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
-				// Create XListenerSet (its own add handler)
+				// Create ListenerSet (its own add handler)
 				{Namespace: "namespace-1", Name: "ls-3"},
 				// Gateway update triggers requeue of ls-3 via parent index
 				{Namespace: "namespace-1", Name: "ls-3"},
@@ -209,7 +209,7 @@ func Test_inheritAnnotations(t *testing.T) {
 	require.NoError(t, err)
 
 	gwNS := gwapi.Namespace("namespace-1")
-	// Create XListenerSet referencing that Gateway.
+	// Create ListenerSet referencing that Gateway.
 	xls, err := b.GWClient.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
 		&gwapi.ListenerSet{
 			ObjectMeta: metav1.ObjectMeta{

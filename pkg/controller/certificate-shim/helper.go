@@ -302,10 +302,10 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	return nil
 }
 
-// translateXListenerToGWAPIV1Listener converts the experimental listener to v1 gateway listener.
-// Both listeners have the same fields for now but due to being in different versions,
-// we need to convert them for having a unified validation. If these types diverge, then this function
-// would need to account for that.
-func translateXListenerToGWAPIV1Listener(l gwapi.ListenerEntry) gwapi.Listener {
+// translateListenerToGWAPIV1Listener adapts a ListenerEntry to a Listener by casting.
+// In gwapi v1, ListenerEntry and Listener currently share the same underlying structure,
+// so this cast is a no-op and is safe. This helper exists to allow code that expects a
+// gwapi.Listener (for example, shared validation logic) to also work with ListenerEntry.
+func translateListenerToGWAPIV1Listener(l gwapi.ListenerEntry) gwapi.Listener {
 	return gwapi.Listener(l)
 }

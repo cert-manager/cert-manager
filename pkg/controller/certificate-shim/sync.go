@@ -67,13 +67,12 @@ var (
 		Version: gwapi.GroupVersion.Version,
 		Kind:    "Gateway",
 	}
+	listenerSetGVK = schema.GroupVersionKind{
+		Group:   gwapi.GroupVersion.Group,
+		Version: gwapi.GroupVersion.Version,
+		Kind:    "ListenerSet",
+	}
 )
-
-var listenerSetGVK = schema.GroupVersionKind{
-	Group:   gwapi.GroupVersion.Group,
-	Version: gwapi.GroupVersion.Version,
-	Kind:    "ListenerSet",
-}
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
 // controller.
@@ -207,7 +206,7 @@ func validateIngressLike(ingLike metav1.Object) field.ErrorList {
 	case *gwapi.ListenerSet:
 		return nil
 	default:
-		panic(fmt.Errorf("programmer mistake: validateIngressLike can't handle %T, expected Ingress or Gateway", ingLike))
+		panic(fmt.Errorf("programmer mistake: validateIngressLike can't handle %T, expected Ingress, Gateway or ListenerSet", ingLike))
 	}
 }
 
@@ -345,7 +344,7 @@ func buildCertificates(
 				continue
 			}
 
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), translateXListenerToGWAPIV1Listener(l), ingLike).ToAggregate()
+			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), translateListenerToGWAPIV1Listener(l), ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
 				continue
