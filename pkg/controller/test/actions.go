@@ -107,6 +107,10 @@ func (a *action) Matches(act coretesting.Action) error {
 
 		return testutil.Diff(expObj, gotObj,
 			cmp.FilterPath(func(p cmp.Path) bool {
+				if p.String() == "Spec" {
+					// Filter out spec if this action is for the status sub-resource
+					return a.action.GetSubresource() == "status"
+				}
 				if p.String() == "TypeMeta.APIVersion" {
 					return true
 				}
