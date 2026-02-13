@@ -134,7 +134,7 @@ tools += protoc-gen-go=v1.36.11
 tools += cosign=v2.6.2
 # https://pkg.go.dev/github.com/cert-manager/boilersuite?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/boilersuite
-tools += boilersuite=v0.1.0
+tools += boilersuite=v0.2.0
 # https://pkg.go.dev/github.com/princjef/gomarkdoc/cmd/gomarkdoc?tab=versions
 # renovate: datasource=go packageName=github.com/princjef/gomarkdoc
 tools += gomarkdoc=v1.1.0
