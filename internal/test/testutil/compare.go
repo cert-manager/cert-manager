@@ -31,14 +31,14 @@ import (
 func Diff(a any, b any, opts ...cmp.Option) error {
 	allOpts := []cmp.Option{
 		cmp.Transformer("metav1.Time", func(in metav1.Time) string {
-			return in.Time.Format(time.RFC3339)
+			return in.Time.UTC().Format(time.RFC3339)
 		}),
 		cmp.Transformer("metav1.TimePtr", func(in *metav1.Time) *string {
 			if in == nil {
 				return nil
 			}
 
-			out := in.Time.Format(time.RFC3339)
+			out := in.Time.UTC().Format(time.RFC3339)
 			return &out
 		}),
 	}
