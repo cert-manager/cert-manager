@@ -221,7 +221,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
@@ -270,7 +270,7 @@ type VaultClientCertificateAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/cert" will be used.
 	// +optional
-	MountPath string
+	Path string
 
 	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
@@ -291,7 +291,7 @@ type VaultKubernetesAuth struct {
 	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/kubernetes" will be used.
-	MountPath string
+	Path string
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not

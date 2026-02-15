@@ -1594,7 +1594,7 @@ func Convert_certmanager_VaultAuth_To_v1_VaultAuth(in *certmanager.VaultAuth, ou
 }
 
 func autoConvert_v1_VaultClientCertificateAuth_To_certmanager_VaultClientCertificateAuth(in *certmanagerv1.VaultClientCertificateAuth, out *certmanager.VaultClientCertificateAuth, s conversion.Scope) error {
-	out.MountPath = in.MountPath
+	out.Path = in.Path
 	out.SecretName = in.SecretName
 	out.Name = in.Name
 	return nil
@@ -1606,7 +1606,7 @@ func Convert_v1_VaultClientCertificateAuth_To_certmanager_VaultClientCertificate
 }
 
 func autoConvert_certmanager_VaultClientCertificateAuth_To_v1_VaultClientCertificateAuth(in *certmanager.VaultClientCertificateAuth, out *certmanagerv1.VaultClientCertificateAuth, s conversion.Scope) error {
-	out.MountPath = in.MountPath
+	out.Path = in.Path
 	out.SecretName = in.SecretName
 	out.Name = in.Name
 	return nil
@@ -1706,7 +1706,7 @@ func Convert_certmanager_VaultIssuer_To_v1_VaultIssuer(in *certmanager.VaultIssu
 }
 
 func autoConvert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *certmanagerv1.VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
-	out.MountPath = in.MountPath
+	out.Path = in.Path
 	if err := internalapismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
@@ -1721,7 +1721,7 @@ func Convert_v1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *certm
 }
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *certmanagerv1.VaultKubernetesAuth, s conversion.Scope) error {
-	out.MountPath = in.MountPath
+	out.Path = in.Path
 	if err := internalapismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}

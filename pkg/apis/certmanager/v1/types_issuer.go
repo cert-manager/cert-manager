@@ -308,7 +308,7 @@ type VaultClientCertificateAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/cert" will be used.
 	// +optional
-	MountPath string `json:"mountPath,omitempty"`
+	Path string `json:"mountPath,omitempty"`
 
 	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
 	// tls.crt and tls.key) used to authenticate to Vault using TLS client
@@ -330,7 +330,7 @@ type VaultKubernetesAuth struct {
 	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
 	// default value "/v1/auth/kubernetes" will be used.
 	// +optional
-	MountPath string `json:"mountPath,omitempty"`
+	Path string `json:"mountPath,omitempty"`
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not

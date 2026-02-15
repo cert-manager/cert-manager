@@ -168,8 +168,8 @@ func (k *kubernetes) issuerSpec() cmapi.IssuerSpec {
 				CABundle: addon.Vault.Details().VaultCA,
 				Auth: cmapi.VaultAuth{
 					Kubernetes: &cmapi.VaultKubernetesAuth{
-						MountPath: k.setup.KubernetesAuthPath(),
-						Role:      k.setup.Role(),
+						Path: k.setup.KubernetesAuthPath(),
+						Role: k.setup.Role(),
 						SecretRef: cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: k.saTokenSecretName,
