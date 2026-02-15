@@ -395,7 +395,7 @@ func SetIssuerVaultClientCertificateAuth(path, secretName string) IssuerModifier
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.Auth.ClientCertificate = &v1.VaultClientCertificateAuth{
-			MountPath:  path,
+			Path:       path,
 			SecretName: secretName,
 		}
 	}
@@ -408,7 +408,7 @@ func SetIssuerVaultKubernetesAuthSecret(secretKey, secretName, vaultRole, vaultP
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
-			MountPath: vaultPath,
+			Path: vaultPath,
 			SecretRef: cmmeta.SecretKeySelector{
 				Key: secretKey,
 				LocalObjectReference: cmmeta.LocalObjectReference{
@@ -428,8 +428,8 @@ func SetIssuerVaultKubernetesAuthServiceAccount(serviceAccount, role, path strin
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
-			MountPath: path,
-			Role:      role,
+			Path: path,
+			Role: role,
 			ServiceAccountRef: &v1.ServiceAccountRef{
 				Name: serviceAccount,
 			},

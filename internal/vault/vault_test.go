@@ -789,7 +789,7 @@ func TestSetToken(t *testing.T) {
 							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 							},
-							MountPath: "my-path",
+							Path: "my-path",
 						},
 					},
 				}),
@@ -828,7 +828,7 @@ func TestSetToken(t *testing.T) {
 							ServiceAccountRef: &cmapiv1.ServiceAccountRef{
 								Name: "my-service-account",
 							},
-							MountPath: "my-path",
+							Path: "my-path",
 						},
 					},
 				}),
@@ -870,7 +870,7 @@ func TestSetToken(t *testing.T) {
 									"https://custom-audience",
 								},
 							},
-							MountPath: "my-path",
+							Path: "my-path",
 						},
 					},
 				}),
@@ -914,7 +914,7 @@ func TestSetToken(t *testing.T) {
 									"https://custom-audience",
 								},
 							},
-							MountPath: "my-path",
+							Path: "my-path",
 						},
 					},
 				}),
@@ -1660,9 +1660,9 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 					},
 				})
 			require.NoError(t, err)
-			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vault.Client).Namespace(),
+			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vaultClientWrapper).Client.Namespace(),
 				"The vault client should have the namespace provided in the Issuer resource")
-			assert.Equal(t, "", c.(*Vault).clientSys.(*vault.Client).Namespace(),
+			assert.Equal(t, "", c.(*Vault).clientSys.(*vaultClientWrapper).Client.Namespace(),
 				"The vault sys client should never have a namespace")
 		})
 	}

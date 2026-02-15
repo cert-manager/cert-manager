@@ -46,6 +46,7 @@ import (
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -70,6 +71,16 @@ type Client interface {
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
 	CloneConfig() *vault.Config
+	Write(path string, data map[string]any) (*vault.Secret, error)
+}
+
+// vaultClientWrapper wraps *vault.Client to satisfy the Client interface.
+type vaultClientWrapper struct {
+	*vault.Client
+}
+
+func (w *vaultClientWrapper) Write(path string, data map[string]any) (*vault.Secret, error) {
+	return w.Client.Logical().Write(path, data)
 }
 
 // For mocking purposes.
@@ -125,7 +136,7 @@ func New(ctx context.Context, namespace string, createTokenFn func(ns string) Cr
 
 	// Set the Vault namespace.
 	// An empty namespace string will cause the client to not send the namespace related HTTP headers to Vault.
-	clientNS := client.WithNamespace(issuer.GetSpec().Vault.Namespace)
+	clientNS := &vaultClientWrapper{client.WithNamespace(issuer.GetSpec().Vault.Namespace)}
 
 	// Use the (maybe) namespaced client to authenticate.
 	// If a Vault namespace is configured, then the authentication endpoints are
@@ -142,7 +153,7 @@ func New(ctx context.Context, namespace string, createTokenFn func(ns string) Cr
 	// although this is probably unnecessary / bad practice, since we only
 	// interact with the sys/health endpoint which is an unauthenticated endpoint:
 	// https://github.com/hashicorp/vault/issues/209#issuecomment-102485565.
-	v.clientSys = clientNS.WithNamespace("")
+	v.clientSys = &vaultClientWrapper{clientNS.WithNamespace("")}
 
 	return v, nil
 }
@@ -495,17 +506,18 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		tmpTransport := cfg.HttpClient.Transport.(*http.Transport).Clone()
 		tmpTransport.TLSClientConfig.Certificates = append(tmpTransport.TLSClientConfig.Certificates, clientCertificate)
 		cfg.HttpClient.Transport = tmpTransport
-		client, err = vault.NewClient(cfg)
+		rawClient, err := vault.NewClient(cfg)
 		if err != nil {
 			return "", fmt.Errorf("error initializing intermediary Vault client: %s", err.Error())
 		}
+		client = &vaultClientWrapper{rawClient}
 	}
 
 	parameters := map[string]string{
 		"name": clientCertificateAuth.Name,
 	}
 
-	mountPath := clientCertificateAuth.MountPath
+	mountPath := clientCertificateAuth.Path
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
 	}
@@ -606,7 +618,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		"jwt":  jwt,
 	}
 
-	mountPath := kubernetesAuth.MountPath
+	mountPath := kubernetesAuth.Path
 	if mountPath == "" {
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
@@ -644,31 +656,97 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 		mountPath = "/v1/auth/aws"
 	}
 
-	// Determine region: use configured region, or fall back to environment variables
-	region := awsAuth.Region
-	if region == "" {
-		// Check AWS_REGION and AWS_DEFAULT_REGION environment variables
+	// Determine region, mirroring the logic used in the Route53 DNS solver.
+	// When using ambient credentials and a region is found from environment
+	// variables, the environment region takes precedence.
+	useAmbientCredentials := awsAuth.ServiceAccountRef == nil
+
+	var envRegionFound bool
+	{
 		envConfig, err := awsconfig.NewEnvConfig()
 		if err == nil && envConfig.Region != "" {
-			region = envConfig.Region
-		} else {
-			// Default to us-east-1 as STS is a global service
-			region = "us-east-1"
+			envRegionFound = true
 		}
 	}
 
-	// If ServiceAccountRef is set, use IRSA (IAM Roles for Service Accounts)
-	// by requesting a web identity token from the Kubernetes API
-	if awsAuth.ServiceAccountRef != nil {
-		return v.requestTokenWithAWSIRSA(ctx, client, awsAuth, mountPath, region)
+	log := logf.FromContext(ctx)
+
+	region := awsAuth.Region
+	if region != "" && envRegionFound && useAmbientCredentials {
+		// When using ambient credentials and the environment has a region,
+		// ignore the user-provided region (consistent with Route53 behavior).
+		log.Info(
+			"Ignoring Issuer region",
+			"reason", "Issuer is configured to use ambient credentials and AWS_REGION or AWS_DEFAULT_REGION environment variables were found",
+			"suggestion", "The Issuer region field is optional when using ambient credentials and can be removed from your Issuer or ClusterIssuer",
+			"issuer-region", region,
+		)
+		region = ""
+	}
+	if region == "" && !envRegionFound {
+		// Default to us-east-1 as STS is a global service
+		region = "us-east-1"
 	}
 
-	// Otherwise, use ambient credentials (EC2 instance profile, ECS task role, etc.)
-	return v.requestTokenWithAWSAmbient(ctx, client, awsAuth, mountPath, region)
+	var creds aws.Credentials
+	var resolvedRegion string
+
+	// Get AWS credentials either via IRSA or ambient credentials
+	if awsAuth.ServiceAccountRef != nil {
+		var err error
+		creds, resolvedRegion, err = v.getAWSCredentialsFromIRSA(ctx, awsAuth, region)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		var err error
+		creds, resolvedRegion, err = getAWSCredentialsFromAmbient(ctx, region)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Use resolved region if original was empty
+	if region == "" {
+		region = resolvedRegion
+	}
+
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	// Generate the login data by signing a GetCallerIdentity request
+	// (equivalent to hashicorp/go-secure-stdlib/awsutil.GenerateLoginData
+	// but using AWS SDK v2 instead of v1)
+	loginData, err := generateAWSLoginData(ctx, creds, awsAuth.VaultHeaderValue, region)
+	if err != nil {
+		return "", fmt.Errorf("error generating AWS login data: %w", err)
+	}
+	loginData["role"] = awsAuth.Role
+
+	// Send the signed request to Vault's AWS auth endpoint using logical write
+	loginPath := path.Join(mountPath, "login")
+	secret, err := client.Write(loginPath, loginData)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	// Guard against empty secret
+	if secret == nil {
+		return "", fmt.Errorf("vault returned empty secret")
+	}
+
+	token, err := secret.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
+
+	return token, nil
 }
 
-func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
-	// Request a web identity token from Kubernetes for IRSA
+// getAWSCredentialsFromIRSA exchanges a Kubernetes ServiceAccount token for AWS credentials
+// using AssumeRoleWithWebIdentity. Returns the credentials and the resolved region from config.
+func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.VaultAWSAuth, region string) (aws.Credentials, string, error) {
 	audiences := []string{"sts.amazonaws.com"}
 	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
 		audiences = awsAuth.ServiceAccountRef.TokenAudiences
@@ -681,13 +759,17 @@ func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsA
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
+		return aws.Credentials{}, "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), awsAuth.ServiceAccountRef.Name, err.Error())
 	}
 
-	// Use AssumeRoleWithWebIdentity to exchange the K8s token for AWS credentials
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	// Exchange the K8s token for AWS credentials via AssumeRoleWithWebIdentity
+	var cfgOpts []func(*awsconfig.LoadOptions) error
+	if region != "" {
+		cfgOpts = append(cfgOpts, awsconfig.WithRegion(region))
+	}
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, cfgOpts...)
 	if err != nil {
-		return "", fmt.Errorf("error loading AWS config: %w", err)
+		return aws.Credentials{}, "", fmt.Errorf("error loading AWS config: %w", err)
 	}
 
 	stsClient := sts.NewFromConfig(cfg)
@@ -697,156 +779,77 @@ func (v *Vault) requestTokenWithAWSIRSA(ctx context.Context, client Client, awsA
 		WebIdentityToken: &tokenrequest.Status.Token,
 	})
 	if err != nil {
-		return "", fmt.Errorf("error assuming role with web identity: %w", err)
+		return aws.Credentials{}, "", fmt.Errorf("error assuming role with web identity: %w", err)
 	}
 
-	// Now sign a GetCallerIdentity request with the temporary credentials
-	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
-	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
-
-	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
-	if err != nil {
-		return "", fmt.Errorf("error creating STS request: %w", err)
-	}
-	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-
-	if awsAuth.VaultHeaderValue != "" {
-		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
-	}
-
-	// Sign the request using the temporary credentials from AssumeRoleWithWebIdentity
-	credentials := aws.Credentials{
+	creds := aws.Credentials{
 		AccessKeyID:     *assumeResult.Credentials.AccessKeyId,
 		SecretAccessKey: *assumeResult.Credentials.SecretAccessKey,
 		SessionToken:    *assumeResult.Credentials.SessionToken,
 	}
 
-	signer := v4.NewSigner()
+	return creds, cfg.Region, nil
+}
+
+// getAWSCredentialsFromAmbient retrieves AWS credentials from the environment
+// (EC2 instance profile, ECS task role, etc.). Returns the credentials and the resolved region from config.
+func getAWSCredentialsFromAmbient(ctx context.Context, region string) (aws.Credentials, string, error) {
+	var cfgOpts []func(*awsconfig.LoadOptions) error
+	if region != "" {
+		cfgOpts = append(cfgOpts, awsconfig.WithRegion(region))
+	}
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, cfgOpts...)
+	if err != nil {
+		return aws.Credentials{}, "", fmt.Errorf("error loading AWS config: %w", err)
+	}
+
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return aws.Credentials{}, "", fmt.Errorf("error retrieving AWS credentials: %w", err)
+	}
+
+	return creds, cfg.Region, nil
+}
+
+// generateAWSLoginData creates a signed AWS GetCallerIdentity request and returns
+// the login data map expected by Vault's AWS auth backend.
+// This is equivalent to hashicorp/go-secure-stdlib/awsutil.GenerateLoginData
+// but uses AWS SDK v2 instead of v1.
+func generateAWSLoginData(ctx context.Context, creds aws.Credentials, headerValue, region string) (map[string]any, error) {
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
+	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("error creating STS request: %w", err)
+	}
+	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+
+	if headerValue != "" {
+		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{headerValue}
+	}
+
 	hash := sha256.Sum256([]byte(reqBody))
 	payloadHash := hex.EncodeToString(hash[:])
 
-	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
-	if err != nil {
-		return "", fmt.Errorf("error signing AWS request: %w", err)
+	signer := v4.NewSigner()
+	if err := signer.SignHTTP(ctx, creds, stsReq, payloadHash, "sts", region, time.Now()); err != nil {
+		return nil, fmt.Errorf("error signing AWS request: %w", err)
 	}
 
-	// Base64 encode the request components for Vault
 	headersJSON, err := json.Marshal(stsReq.Header)
 	if err != nil {
-		return "", fmt.Errorf("error encoding headers: %w", err)
+		return nil, fmt.Errorf("error encoding headers: %w", err)
 	}
 
-	parameters := map[string]any{
-		"role":                    awsAuth.Role,
+	loginData := map[string]any{
 		"iam_http_request_method": stsReq.Method,
 		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsReq.URL.String())),
 		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
 		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
 	}
 
-	url := filepath.Join(mountPath, "login")
-	request := client.NewRequest("POST", url)
-	err = request.SetJSONBody(parameters)
-	if err != nil {
-		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
-	}
-
-	resp, err := client.RawRequest(request)
-	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
-	}
-
-	defer resp.Body.Close()
-	vaultResult := vault.Secret{}
-	err = resp.DecodeJSON(&vaultResult)
-	if err != nil {
-		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
-	}
-
-	token, err := vaultResult.TokenID()
-	if err != nil {
-		return "", fmt.Errorf("unable to read token: %s", err.Error())
-	}
-
-	return token, nil
-}
-
-func (v *Vault) requestTokenWithAWSAmbient(ctx context.Context, client Client, awsAuth *v1.VaultAWSAuth, mountPath, region string) (string, error) {
-	// Create the STS GetCallerIdentity request
-	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com/", region)
-	reqBody := "Action=GetCallerIdentity&Version=2011-06-15"
-
-	// Create HTTP request for signing
-	stsReq, err := http.NewRequestWithContext(ctx, http.MethodPost, stsEndpoint, strings.NewReader(reqBody))
-	if err != nil {
-		return "", fmt.Errorf("error creating STS request: %w", err)
-	}
-	stsReq.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-
-	// Add Vault server ID header if specified (for replay protection)
-	if awsAuth.VaultHeaderValue != "" {
-		stsReq.Header["X-Vault-AWS-IAM-Server-ID"] = []string{awsAuth.VaultHeaderValue}
-	}
-
-	// Sign the request using AWS SDK with ambient credentials
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
-	if err != nil {
-		return "", fmt.Errorf("error loading AWS config: %w", err)
-	}
-
-	credentials, err := cfg.Credentials.Retrieve(ctx)
-	if err != nil {
-		return "", fmt.Errorf("error retrieving AWS credentials: %w", err)
-	}
-
-	signer := v4.NewSigner()
-	hash := sha256.Sum256([]byte(reqBody))
-	payloadHash := hex.EncodeToString(hash[:])
-
-	err = signer.SignHTTP(ctx, credentials, stsReq, payloadHash, "sts", region, time.Now())
-	if err != nil {
-		return "", fmt.Errorf("error signing AWS request: %w", err)
-	}
-
-	// Base64 encode the request components for Vault
-	headersJSON, err := json.Marshal(stsReq.Header)
-	if err != nil {
-		return "", fmt.Errorf("error encoding headers: %w", err)
-	}
-
-	parameters := map[string]any{
-		"role":                    awsAuth.Role,
-		"iam_http_request_method": "POST",
-		"iam_request_url":         base64.StdEncoding.EncodeToString([]byte(stsEndpoint)),
-		"iam_request_body":        base64.StdEncoding.EncodeToString([]byte(reqBody)),
-		"iam_request_headers":     base64.StdEncoding.EncodeToString(headersJSON),
-	}
-
-	url := filepath.Join(mountPath, "login")
-	request := client.NewRequest("POST", url)
-	err = request.SetJSONBody(parameters)
-	if err != nil {
-		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
-	}
-
-	resp, err := client.RawRequest(request)
-	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
-	}
-
-	defer resp.Body.Close()
-	vaultResult := vault.Secret{}
-	err = resp.DecodeJSON(&vaultResult)
-	if err != nil {
-		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
-	}
-
-	token, err := vaultResult.TokenID()
-	if err != nil {
-		return "", fmt.Errorf("unable to read token: %s", err.Error())
-	}
-
-	return token, nil
+	return loginData, nil
 }
 
 func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
