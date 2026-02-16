@@ -38,7 +38,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -61,17 +60,19 @@ const (
 
 const applysetLabel = "applyset.kubernetes.io/part-of"
 
-var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
-var gatewayGVK = schema.GroupVersionKind{
-	Group:   gwapi.GroupVersion.Group,
-	Version: gwapi.GroupVersion.Version,
-	Kind:    "Gateway",
-}
-var xlistenerSetGVK = schema.GroupVersionKind{
-	Group:   gwapix.GroupVersion.Group,
-	Version: gwapix.GroupVersion.Version,
-	Kind:    "XListenerSet",
-}
+var (
+	ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
+	gatewayGVK   = schema.GroupVersionKind{
+		Group:   gwapi.GroupVersion.Group,
+		Version: gwapi.GroupVersion.Version,
+		Kind:    "Gateway",
+	}
+	listenerSetGVK = schema.GroupVersionKind{
+		Group:   gwapi.GroupVersion.Group,
+		Version: gwapi.GroupVersion.Version,
+		Kind:    "ListenerSet",
+	}
+)
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
 // controller.
@@ -202,10 +203,10 @@ func validateIngressLike(ingLike metav1.Object) field.ErrorList {
 		return checkForDuplicateSecretNames(field.NewPath("spec", "tls"), o.Spec.TLS)
 	case *gwapi.Gateway:
 		return nil
-	case *gwapix.XListenerSet:
+	case *gwapi.ListenerSet:
 		return nil
 	default:
-		panic(fmt.Errorf("programmer mistake: validateIngressLike can't handle %T, expected Ingress or Gateway", ingLike))
+		panic(fmt.Errorf("programmer mistake: validateIngressLike can't handle %T, expected Ingress, Gateway or ListenerSet", ingLike))
 	}
 }
 
@@ -332,7 +333,7 @@ func buildCertificates(
 				Name:      tls.SecretName,
 			}] = tls.Hosts
 		}
-	case *gwapix.XListenerSet:
+	case *gwapi.ListenerSet:
 		for i, l := range ingLike.Spec.Listeners {
 			if l.Protocol != gwapi.HTTPSProtocolType && l.Protocol != gwapi.TLSProtocolType {
 				continue
@@ -343,7 +344,7 @@ func buildCertificates(
 				continue
 			}
 
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), translateXListenerToGWAPIV1Listener(l), ingLike).ToAggregate()
+			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), translateListenerToGWAPIV1Listener(l), ingLike).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
 				continue
@@ -407,15 +408,13 @@ func buildCertificates(
 		switch ingLike.(type) {
 		case *networkingv1.Ingress:
 			controllerGVK = ingressV1GVK
-		case *gwapix.XListenerSet:
-			controllerGVK = xlistenerSetGVK
+		case *gwapi.ListenerSet:
+			controllerGVK = listenerSetGVK
 		case *gwapi.Gateway:
 			controllerGVK = gatewayGVK
 		}
 
-		var (
-			ipAddress, dnsNames []string
-		)
+		var ipAddress, dnsNames []string
 		for _, h := range hosts {
 			if ip := net.ParseIP(h); ip != nil {
 				ipAddress = append(ipAddress, h)
@@ -466,7 +465,7 @@ func buildCertificates(
 		switch o := ingLike.(type) {
 		case *networkingv1.Ingress:
 			ingLike = o.DeepCopy()
-		case *gwapix.XListenerSet:
+		case *gwapi.ListenerSet:
 			ingLike = o.DeepCopy()
 		case *gwapi.Gateway:
 			ingLike = o.DeepCopy()
@@ -516,7 +515,6 @@ func buildCertificates(
 
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
-
 			newCrts = append(newCrts, crt)
 		}
 	}
@@ -547,6 +545,7 @@ func mergeAnnotations(a, b map[string]string) map[string]string {
 
 	return merged
 }
+
 func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 	switch o := ingLike.(type) {
 	case *networkingv1.Ingress:
@@ -555,7 +554,7 @@ func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 				return true
 			}
 		}
-	case *gwapix.XListenerSet:
+	case *gwapi.ListenerSet:
 		for _, l := range o.Spec.Listeners {
 			if l.TLS == nil {
 				continue

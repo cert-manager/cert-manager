@@ -221,7 +221,6 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 						var dns pkix.RDNSequence
 						rest, err := asn1.Unmarshal(createdCert.RawSubject, &dns)
-
 						if err != nil {
 							return err
 						}
@@ -660,8 +659,13 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		})
 
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
+			// TODO: @hjoshi123 No gwapi provider supports ListenerSet yet. Remove this once we upgrade to something that does support it.
+			if s.HTTP01TestType != "ListenerSet" {
+				Skip("skipping test as there is no gwapi provider with LS support")
+				return
+			}
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
-			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.XListenerSets)
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ListenerSets)
 
 			name := "testcert-gateway"
 			secretName := "testcert-gateway-tls"
@@ -712,7 +716,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				"cert-manager.io/duration":     duration.String(),
 				"cert-manager.io/renew-before": renewBefore.String(),
 			}, domain)
-			xls, err = f.GWClientSet.ExperimentalV1alpha1().XListenerSets(f.Namespace.Name).Create(ctx, xls, metav1.CreateOptions{})
+			xls, err = f.GWClientSet.GatewayV1().ListenerSets(f.Namespace.Name).Create(ctx, xls, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// The CertificateRef Name comes from the secretName (for example,

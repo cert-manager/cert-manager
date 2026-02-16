@@ -48,7 +48,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 
@@ -104,7 +103,6 @@ func wrapErrorWithIssuerStatusCondition(ctx context.Context, client clientset.Is
 		if cond.Type == conditionType {
 			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
 		}
-
 	}
 
 	return pollErr
@@ -142,7 +140,6 @@ func wrapErrorWithClusterIssuerStatusCondition(ctx context.Context, client clien
 		if cond.Type == conditionType {
 			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
 		}
-
 	}
 
 	return pollErr
@@ -350,19 +347,19 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 	}
 }
 
-func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapix.XListenerSet {
-	return &gwapix.XListenerSet{
+func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.ListenerSet {
+	return &gwapi.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        ls,
 			Namespace:   ns,
 			Annotations: annotations,
 		},
-		Spec: gwapix.ListenerSetSpec{
-			ParentRef: gwapix.ParentGatewayReference{
+		Spec: gwapi.ListenerSetSpec{
+			ParentRef: gwapi.ParentGatewayReference{
 				Name:      gwapi.ObjectName(ls),
-				Namespace: (*gwapix.Namespace)(&ns),
+				Namespace: (*gwapi.Namespace)(&ns),
 			},
-			Listeners: []gwapix.ListenerEntry{{
+			Listeners: []gwapi.ListenerEntry{{
 				AllowedRoutes: &gwapi.AllowedRoutes{
 					Namespaces: &gwapi.RouteNamespaces{
 						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),

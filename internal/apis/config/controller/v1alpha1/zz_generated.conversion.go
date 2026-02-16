@@ -197,7 +197,7 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableGatewayAPI, &out.EnableGatewayAPI, s); err != nil {
 		return err
 	}
-	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableGatewayAPIListenerSet, &out.EnableGatewayAPIListenerSet, s); err != nil {
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))
@@ -268,7 +268,7 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableGatewayAPI, &out.EnableGatewayAPI, s); err != nil {
 		return err
 	}
-	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableGatewayAPIXListenerSet, &out.EnableGatewayAPIXListenerSet, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableGatewayAPIListenerSet, &out.EnableGatewayAPIListenerSet, s); err != nil {
 		return err
 	}
 	out.CopiedAnnotationPrefixes = *(*[]string)(unsafe.Pointer(&in.CopiedAnnotationPrefixes))

@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -286,7 +285,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		decoder := json.NewDecoder(strings.NewReader(secretTemplateJson))
 		decoder.DisallowUnknownFields()
 
-		var secretTemplate = new(cmapi.CertificateSecretTemplate)
+		secretTemplate := new(cmapi.CertificateSecretTemplate)
 		if err := decoder.Decode(secretTemplate); err != nil {
 			return fmt.Errorf("%w %q: error parsing secret template JSON: %v", errInvalidIngressAnnotation, cmapi.IngressSecretTemplate, err)
 		}
@@ -303,17 +302,10 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	return nil
 }
 
-// translateXListenerToGWAPIV1Listener converts the experimental listener to v1 gateway listener.
-// Both listeners have the same fields for now but due to being in different versions,
-// we need to convert them for having a unified validation. If these types diverge, then this function
-// would need to account for that.
-func translateXListenerToGWAPIV1Listener(l gwapix.ListenerEntry) gwapi.Listener {
-	return gwapi.Listener{
-		Hostname:      l.Hostname,
-		Port:          gwapi.PortNumber(l.Port),
-		Protocol:      l.Protocol,
-		TLS:           l.TLS,
-		Name:          l.Name,
-		AllowedRoutes: l.AllowedRoutes,
-	}
+// translateListenerToGWAPIV1Listener adapts a ListenerEntry to a Listener by casting.
+// In gwapi v1, ListenerEntry and Listener currently share the same underlying structure,
+// so this cast is a no-op and is safe. This helper exists to allow code that expects a
+// gwapi.Listener (for example, shared validation logic) to also work with ListenerEntry.
+func translateListenerToGWAPIV1Listener(l gwapi.ListenerEntry) gwapi.Listener {
+	return gwapi.Listener(l)
 }

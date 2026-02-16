@@ -27,9 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
-	gwxclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apisx/v1alpha1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -40,37 +38,37 @@ func Test_controller_Register(t *testing.T) {
 	tests := []struct {
 		name           string
 		existingCert   *cmapi.Certificate
-		givenCall      func(*testing.T, cmclient.Interface, gwclient.Interface, gwxclient.ExperimentalV1alpha1Interface)
+		givenCall      func(*testing.T, cmclient.Interface, gwclient.Interface)
 		expectAddCalls []types.NamespacedName
 	}{
 		{
-			name: "xlistenerset is re-queued when an 'Added' event is received for this xlistenerset",
-			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
+			name: "listenerset is re-queued when an 'Added' event is received for this listenerset",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				// Prefer Create calls for gateway-api fake clients; see Gateway test rationale.
-				_, err := cx.XListenerSets("namespace-1").Create(t.Context(),
-					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "xls-1",
+				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "ls-1",
 					}},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
 			},
-			expectAddCalls: []types.NamespacedName{{Namespace: "namespace-1", Name: "xls-1"}},
+			expectAddCalls: []types.NamespacedName{{Namespace: "namespace-1", Name: "ls-1"}},
 		},
 		{
-			name: "xlistenerset is re-queued when an 'Updated' event is received for this xlistenerset",
-			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
-				_, err := cx.XListenerSets("namespace-1").Create(t.Context(),
-					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "xls-1",
+			name: "listenerset is re-queued when an 'Updated' event is received for this listenerset",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
+				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "ls-1",
 					}},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
 
-				_, err = cx.XListenerSets("namespace-1").Update(t.Context(),
-					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "xls-1", Labels: map[string]string{"foo": "bar"},
+				_, err = c.GatewayV1().ListenerSets("namespace-1").Update(t.Context(),
+					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "ls-1", Labels: map[string]string{"foo": "bar"},
 					}},
 					metav1.UpdateOptions{},
 				)
@@ -78,35 +76,35 @@ func Test_controller_Register(t *testing.T) {
 			},
 			expectAddCalls: []types.NamespacedName{
 				// Create
-				{Namespace: "namespace-1", Name: "xls-1"},
+				{Namespace: "namespace-1", Name: "ls-1"},
 				// Update
-				{Namespace: "namespace-1", Name: "xls-1"},
+				{Namespace: "namespace-1", Name: "ls-1"},
 			},
 		},
 		{
-			name: "xlistenerset is re-queued when a 'Deleted' event is received for this xlistenerset",
-			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
-				_, err := cx.XListenerSets("namespace-1").Create(t.Context(),
-					&gwapix.XListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "xls-1",
+			name: "listenerset is re-queued when a 'Deleted' event is received for this listenerset",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
+				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace-1", Name: "ls-1",
 					}},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
 
-				err = cx.XListenerSets("namespace-1").Delete(t.Context(), "xls-1", metav1.DeleteOptions{})
+				err = c.GatewayV1().ListenerSets("namespace-1").Delete(t.Context(), "ls-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
 				// Create
-				{Namespace: "namespace-1", Name: "xls-1"},
+				{Namespace: "namespace-1", Name: "ls-1"},
 				// Delete
-				{Namespace: "namespace-1", Name: "xls-1"},
+				{Namespace: "namespace-1", Name: "ls-1"},
 			},
 		},
 		{
-			name: "xlistenerset is re-queued when its parent Gateway is updated (default issuer changes, etc.)",
-			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, cx gwxclient.ExperimentalV1alpha1Interface) {
+			name: "listenerset is re-queued when its parent Gateway is updated (default issuer changes, etc.)",
+			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface) {
 				// Create parent Gateway
 				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(),
 					&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
@@ -117,12 +115,12 @@ func Test_controller_Register(t *testing.T) {
 				require.NoError(t, err)
 
 				gwNS := gwapi.Namespace("namespace-1")
-				// Create XListenerSet referencing that Gateway.
-				_, err = cx.XListenerSets("namespace-1").Create(t.Context(),
-					&gwapix.XListenerSet{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "namespace-1", Name: "xls-3"},
-						Spec: gwapix.ListenerSetSpec{
-							ParentRef: gwapix.ParentGatewayReference{
+				// Create ListenerSet referencing that Gateway.
+				_, err = c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+					&gwapi.ListenerSet{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "namespace-1", Name: "ls-3"},
+						Spec: gwapi.ListenerSetSpec{
+							ParentRef: gwapi.ParentGatewayReference{
 								Name:      "gw-1",
 								Namespace: &gwNS,
 							},
@@ -142,12 +140,12 @@ func Test_controller_Register(t *testing.T) {
 				require.NoError(t, err)
 			},
 			expectAddCalls: []types.NamespacedName{
-				// Create XListenerSet (its own add handler)
-				{Namespace: "namespace-1", Name: "xls-3"},
-				// Gateway update triggers requeue of xls-3 via parent index
-				{Namespace: "namespace-1", Name: "xls-3"},
-				// Certificate addition triggers queue of xls-3
-				{Namespace: "namespace-1", Name: "xls-3"},
+				// Create ListenerSet (its own add handler)
+				{Namespace: "namespace-1", Name: "ls-3"},
+				// Gateway update triggers requeue of ls-3 via parent index
+				{Namespace: "namespace-1", Name: "ls-3"},
+				// Certificate addition triggers queue of ls-3
+				{Namespace: "namespace-1", Name: "ls-3"},
 			},
 		},
 	}
@@ -171,7 +169,7 @@ func Test_controller_Register(t *testing.T) {
 			b.Start()
 			defer b.Stop()
 
-			test.givenCall(t, b.CMClient, b.GWClient, b.GWClient.ExperimentalV1alpha1())
+			test.givenCall(t, b.CMClient, b.GWClient)
 
 			// Shared informer async: allow time for handlers to enqueue.
 			time.Sleep(50 * time.Millisecond)
@@ -211,19 +209,19 @@ func Test_inheritAnnotations(t *testing.T) {
 	require.NoError(t, err)
 
 	gwNS := gwapi.Namespace("namespace-1")
-	// Create XListenerSet referencing that Gateway.
-	xls, err := b.GWClient.ExperimentalV1alpha1().XListenerSets("namespace-1").Create(t.Context(),
-		&gwapix.XListenerSet{
+	// Create ListenerSet referencing that Gateway.
+	xls, err := b.GWClient.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+		&gwapi.ListenerSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1",
-				Name:      "xls-3",
+				Name:      "ls-3",
 				Annotations: map[string]string{
 					"cert-manager.io/issuer":       "test-issuer-1",
 					"cert-manager.io/issuer-group": "cert-manager.io",
 				},
 			},
-			Spec: gwapix.ListenerSetSpec{
-				ParentRef: gwapix.ParentGatewayReference{
+			Spec: gwapi.ListenerSetSpec{
+				ParentRef: gwapi.ParentGatewayReference{
 					Name:      "gw-1",
 					Namespace: &gwNS,
 				},
@@ -289,7 +287,6 @@ func (m *mockWorkqueue) ShutDown() {
 
 func (m *mockWorkqueue) ShutDownWithDrain() {
 	m.t.Error("workqueue.ShutDownWithDrain was called but was not expected to be called")
-
 }
 
 func (m *mockWorkqueue) ShuttingDown() bool {

@@ -41,7 +41,6 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
-	gwapix "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
@@ -158,8 +157,8 @@ type ContextOptions struct {
 type ConfigOptions struct {
 	// EnableGatewayAPI indicates if the user has enabled GatewayAPI support.
 	EnableGatewayAPI bool
-	// EnableGatewayAPIXListenerSet indicates if the user has enabled XListenerSets support.
-	EnableGatewayAPIXListenerSet bool
+	// EnableGatewayAPIListenerSet indicates if the user has enabled ListenerSets support.
+	EnableGatewayAPIListenerSet bool
 }
 
 type IssuerOptions struct {
@@ -308,7 +307,6 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		// here. If we start using it for other resources then we'll
 		// have to set the selectors on individual informers instead.
 		listOptions.LabelSelector = isHTTP01ChallengeResourceLabelSelector.String()
-
 	})
 
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
@@ -416,8 +414,10 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 		// return an error which will cause cert-manager to crashloopbackoff.
 		d := kubeClient.Discovery()
 		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-		var GatewayAPINotAvailable = "the Gateway API CRDs do not seem to be present, but " + feature.ExperimentalGatewayAPISupport +
+		GatewayAPINotAvailable := "the Gateway API CRDs do not seem to be present, but " + feature.ExperimentalGatewayAPISupport +
 			" is set to true. Please install the gateway-api CRDs."
+		GatewayAPIListenerSetsNotAvailable := "the Gateway API ListenerSet CRD do not seem to be present, but " + feature.ListenerSets +
+			" is set to true. Please install the gateway-api ListenerSet CRD."
 		switch {
 		case apierrors.IsNotFound(err):
 			return contextClients{}, fmt.Errorf("%s (%w)", GatewayAPINotAvailable, err)
@@ -426,24 +426,20 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 		case len(resources.APIResources) == 0:
 			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPINotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
 		default:
-			gatewayAvailable = true
-		}
-	}
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && opts.EnableGatewayAPIListenerSet {
+				var listenerSetsAvailable bool
+				for _, res := range resources.APIResources {
+					if res.Kind == "ListenerSet" {
+						listenerSetsAvailable = true
+						break
+					}
+				}
 
-	// TODO: Once XListenerSets is graduated to ListenerSets we can remove this check.
-	// Check if the GatewayAPIx resources are present
-	if utilfeature.DefaultFeatureGate.Enabled(feature.XListenerSets) && opts.EnableGatewayAPI && opts.EnableGatewayAPIXListenerSet {
-		d := kubeClient.Discovery()
-		resources, err := d.ServerResourcesForGroupVersion(gwapix.GroupVersion.String())
-		var GatewayAPIXNotAvailable = "the Gateway API experimental CRDs do not seem to be present, but " + feature.XListenerSets +
-			" is set to true. Please install the gateway-apix CRDs."
-		switch {
-		case apierrors.IsNotFound(err):
-			return contextClients{}, fmt.Errorf("%s (%w)", GatewayAPIXNotAvailable, err)
-		case err != nil:
-			return contextClients{}, fmt.Errorf("while checking if the Gateway API CRD is installed: %w", err)
-		case len(resources.APIResources) == 0:
-			return contextClients{}, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPIXNotAvailable, len(resources.APIResources), gwapix.GroupVersion.String())
+				if !listenerSetsAvailable {
+					return contextClients{}, fmt.Errorf("found GatewayAPI CRDs; however %s", GatewayAPIListenerSetsNotAvailable)
+				}
+			}
+			gatewayAvailable = true
 		}
 	}
 
