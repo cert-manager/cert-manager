@@ -18,14 +18,11 @@ package acmechallenges
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/csaupgrade"
 
@@ -34,117 +31,48 @@ import (
 	cmacmeac "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-var errArgument = errors.New("invalid arguments")
-
-type objectUpdateClient interface {
-	update(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
-	updateStatus(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
+var ignoreNotFound = func(err error) error {
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 type objectUpdater interface {
-	updateObject(context.Context, *cmacme.Challenge, *cmacme.Challenge) error
+	applyFinalizers(context.Context, *cmacme.Challenge, []string) (*cmacme.Challenge, error)
+	updateStatus(context.Context, *cmacme.Challenge) (*cmacme.Challenge, error)
 }
 
 type defaultObjectUpdater struct {
-	objectUpdateClient
-}
-
-func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater {
-	o := &defaultObjectUpdater{
-		objectUpdateClient: &objectUpdateClientDefault{cl: cl},
-	}
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		o.objectUpdateClient = &objectUpdateClientSSA{
-			fieldManager: fieldManager,
-			cl:           cl,
-		}
-	}
-	return o
-}
-
-// updateObject updates the Finalizers if they have changed and updates the Status if it has changed.
-// Finalizers are updated using the Update method while Status is updated using
-// the UpdateStatus method.
-// Both updates will be attempted, even if one fails, except in the case where
-// one of the updates fails with a Not Found error.
-// If any of the API operations results in a Not Found error, updateObject
-// will exit without error and the remaining operations will be skipped.
-// Only the Finalizers and Status fields may be modified. If there are any
-// modifications to new object, outside of the Finalizers and Status fields,
-// this function return an error.
-func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, newChallenge *cmacme.Challenge) error {
-	if !apiequality.Semantic.DeepEqual(
-		gen.ChallengeFrom(oldChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
-		gen.ChallengeFrom(newChallenge, gen.SetChallengeFinalizers(nil), gen.ResetChallengeStatus()),
-	) {
-		return fmt.Errorf(
-			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-			errArgument,
-		)
-	}
-
-	var updateFunctions []func() (*cmacme.Challenge, error)
-	if !apiequality.Semantic.DeepEqual(oldChallenge.Status, newChallenge.Status) {
-		updateFunctions = append(
-			updateFunctions,
-			func() (*cmacme.Challenge, error) {
-				if obj, err := o.updateStatus(ctx, newChallenge); err != nil {
-					return obj, fmt.Errorf("when updating the status: %w", err)
-				} else {
-					return obj, nil
-				}
-			},
-		)
-	}
-	if !apiequality.Semantic.DeepEqual(oldChallenge.Finalizers, newChallenge.Finalizers) {
-		updateFunctions = append(
-			updateFunctions,
-			func() (*cmacme.Challenge, error) {
-				if obj, err := o.update(ctx, newChallenge); err != nil {
-					return obj, fmt.Errorf("when updating the finalizers: %w", err)
-				} else {
-					return obj, nil
-				}
-			},
-		)
-	}
-	var errors []error
-	for _, f := range updateFunctions {
-		if o, err := f(); err != nil {
-			errors = append(errors, err)
-			if k8sErrors.IsNotFound(err) {
-				return nil
-			}
-		} else {
-			newChallenge = o
-		}
-	}
-	return utilerrors.NewAggregate(errors)
-}
-
-type objectUpdateClientDefault struct {
-	cl versioned.Interface
-}
-
-func (o *objectUpdateClientDefault) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return o.cl.AcmeV1().Challenges(challenge.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
-}
-
-func (o *objectUpdateClientDefault) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
-	return o.cl.AcmeV1().Challenges(challenge.Namespace).UpdateStatus(ctx, challenge, metav1.UpdateOptions{})
-}
-
-type objectUpdateClientSSA struct {
 	cl           versioned.Interface
 	fieldManager string
 }
 
-func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater {
+	return &defaultObjectUpdater{
+		cl:           cl,
+		fieldManager: fieldManager,
+	}
+}
+
+func (o *defaultObjectUpdater) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		obj, err := o.updateStatusSSA(ctx, challenge)
+		return obj, ignoreNotFound(err)
+	}
+	obj, err := o.updateStatusCSA(ctx, challenge)
+	return obj, ignoreNotFound(err)
+}
+
+func (o *defaultObjectUpdater) updateStatusCSA(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	return o.cl.AcmeV1().Challenges(challenge.Namespace).UpdateStatus(ctx, challenge, metav1.UpdateOptions{})
+}
+
+func (o *defaultObjectUpdater) applyFinalizers(ctx context.Context, challenge *cmacme.Challenge, finalizers []string) (*cmacme.Challenge, error) {
 	if err := o.upgradeManagedFields(ctx, challenge); err != nil {
-		return nil, err
+		return nil, ignoreNotFound(err)
 	}
 
 	ac := cmacmeac.Challenge(challenge.Name, challenge.Namespace).
@@ -152,15 +80,15 @@ func (o *objectUpdateClientSSA) update(ctx context.Context, challenge *cmacme.Ch
 		// Apply semantics are always create-or-update,
 		// and the challenge might have been deleted.
 		WithUID(challenge.UID).
-		// FIXME: This will claim ownership of all finalizers, which is obviously wrong.
-		WithFinalizers(challenge.Finalizers...)
-	return o.cl.AcmeV1().Challenges(challenge.Namespace).Apply(
+		WithFinalizers(finalizers...)
+	obj, err := o.cl.AcmeV1().Challenges(challenge.Namespace).Apply(
 		ctx, ac,
 		metav1.ApplyOptions{Force: true, FieldManager: o.fieldManager},
 	)
+	return obj, ignoreNotFound(err)
 }
 
-func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+func (o *defaultObjectUpdater) updateStatusSSA(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
 	if err := o.upgradeManagedFields(ctx, challenge, csaupgrade.Subresource("status")); err != nil {
 		return nil, err
 	}
@@ -185,7 +113,7 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 // upgradeManagedFields upgrades the managed fields from CSA to SSA.
 // This is required to ensure a server side apply request can reset/unset fields based on
 // field manager managed fields.
-func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge, opts ...csaupgrade.Option) error {
+func (o *defaultObjectUpdater) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge, opts ...csaupgrade.Option) error {
 	patchData, err := csaupgrade.UpgradeManagedFieldsPatch(challenge, sets.New(o.fieldManager), o.fieldManager, opts...)
 	if err != nil {
 		return fmt.Errorf("when creating managed fields patch: %w", err)

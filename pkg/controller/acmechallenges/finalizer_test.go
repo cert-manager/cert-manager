@@ -25,7 +25,7 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func Test_finalizerRequired(t *testing.T) {
+func Test_applyFinalizersRequired(t *testing.T) {
 	tests := []struct {
 		name       string
 		finalizers []string
@@ -39,7 +39,7 @@ func Test_finalizerRequired(t *testing.T) {
 		{
 			name:       "only-native-legacy-finalizer",
 			finalizers: []string{cmacme.ACMELegacyFinalizer},
-			want:       false,
+			want:       true,
 		},
 		{
 			name:       "only-native-domain-qualified-finalizer",
@@ -49,12 +49,12 @@ func Test_finalizerRequired(t *testing.T) {
 		{
 			name:       "both-native-finalizers",
 			finalizers: []string{cmacme.ACMELegacyFinalizer, cmacme.ACMEDomainQualifiedFinalizer},
-			want:       false,
+			want:       true,
 		},
 		{
 			name:       "some-foreign-and-legacy-finalizer",
 			finalizers: []string{"f1", "f2", cmacme.ACMELegacyFinalizer, "f3"},
-			want:       false,
+			want:       true,
 		},
 		{
 			name:       "some-foreign-and-domain-qualified-finalizer",
@@ -64,7 +64,7 @@ func Test_finalizerRequired(t *testing.T) {
 		{
 			name:       "some-foreign-and-legacy-finalizer-and-domain-qualified-finalizer",
 			finalizers: []string{"f1", "f2", cmacme.ACMELegacyFinalizer, cmacme.ACMEDomainQualifiedFinalizer, "f3"},
-			want:       false,
+			want:       true,
 		},
 		{
 			name:       "only-foreign-finalizers",
@@ -77,7 +77,7 @@ func Test_finalizerRequired(t *testing.T) {
 			assert.Equal(
 				t,
 				tt.want,
-				finalizerRequired(
+				applyFinalizersRequired(
 					gen.Challenge("example", gen.SetChallengeFinalizers(tt.finalizers)),
 				),
 			)

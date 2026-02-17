@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -72,15 +71,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	ctx = logf.NewContext(ctx, log)
 	ch := chOriginal.DeepCopy()
 
-	defer func() {
-		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
-			if errors.Is(updateError, errArgument) {
-				log.Error(updateError, "If this error occurs there is a bug in cert-manager. Please report it. Not retrying.")
-				return
-			}
+	updateStatus := func() {
+		if _, updateError := c.updateStatus(ctx, ch); updateError != nil {
 			err = utilerrors.NewAggregate([]error{err, updateError})
 		}
-	}()
+	}
 
 	// If the challenge has been deleted or is in a finished state then attempt
 	// to cleanup any presented resources, remove the finalizer and reset the
@@ -88,13 +83,21 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// Once the challenge reaches this final state, we always return here.
 	challengeFinished := !ch.DeletionTimestamp.IsZero() || acme.IsFinalState(ch.Status.State)
 	if challengeFinished {
-		if err := c.handleFinalizer(ctx, ch); err != nil {
+		if err = c.finalize(ctx, ch); err != nil {
+			logf.FromContext(ctx, "finalizer").
+				Error(err, "error finalizing challenge")
+			updateStatus()
+			// Return to ensure the finalizer is only removed when cleanup is successful
 			return err
 		}
 
 		ch.Status.Presented = false
 		ch.Status.Processing = false
+		updateStatus()
 
+		if _, err = c.applyFinalizers(ctx, ch, nil); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -104,18 +107,20 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
-	// Remove legacy finalizer
-	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-		return finalizer == cmacme.ACMELegacyFinalizer
-	})
-
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	if finalizerRequired(ch) {
-		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
+	if applyFinalizersRequired(ch) {
+		ch, err = c.applyFinalizers(ctx, ch, []string{cmacme.ACMEDomainQualifiedFinalizer})
+		if err != nil {
+			return err
+		}
+		// After adding the finalizer, return and let the controller reconcile again
+		// so that subsequent processing happens with the finalizer already in place.
 		return nil
 	}
+
+	defer updateStatus()
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
@@ -289,35 +294,27 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	return err
 }
 
-// handleFinalizer will attempt to 'finalize' the Challenge resource by calling
+// finalize will attempt to 'finalize' the Challenge resource by calling
 // CleanUp if the resource is in a 'processing' state.
-func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
-	log := logf.FromContext(ctx, "finalizer")
-	if finalizerRequired(ch) {
-		return nil // nothing to do
+func (c *controller) finalize(ctx context.Context, ch *cmacme.Challenge) (err error) {
+	if !ch.Status.Processing {
+		return nil
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
-		log.Error(err, "error getting solver for challenge")
-		return err
+		return fmt.Errorf("error getting solver for challenge: %w", err)
 	}
 
 	err = solver.CleanUp(ctx, ch)
 	if err != nil {
-		err := fmt.Errorf("Error cleaning up challenge: %v", err)
+		err := fmt.Errorf("error cleaning up challenge: %w", err)
 		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
 		// stabilize the error message to avoid spurious updates which would
 		// cause repeated reconciles
 		ch.Status.Reason = stabilizeSolverErrorMessage(err)
-		log.Error(err, "error cleaning up challenge")
 		return err
 	}
-
-	// call Update to remove the metadata.finalizers entry
-	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-		return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
-	})
 
 	return nil
 }
