@@ -2008,6 +2008,10 @@ Timeout for 'kubectl check api' command.
 > ```
 
 Job backoffLimit
+#### **startupapicheck.ttlSecondsAfterFinished** ~ `unknown`
+
+Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this field is set, once the Job finishes, it will be automatically cleaned up after ttlSecondsAfterFinished seconds. This is disabled by default (field is not set) to preserve backward compatibility and avoid issues with GitOps tools (e.g. Argo CD) that may attempt to reconcile or recreate Jobs after they are automatically deleted. For more information, see [Automatic Cleanup for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/).
+
 #### **startupapicheck.jobAnnotations** ~ `object`
 > Default value:
 > ```yaml
