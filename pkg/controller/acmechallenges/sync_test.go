@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -613,6 +612,45 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		"don't cleanup if no finalizer is present": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeFinalizers(nil),
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Valid),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+			),
+			httpSolver: &fakeSolver{
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
+					panic("unexpected call to CleanUp")
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeFinalizers(nil),
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Valid),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeFinalizers(nil),
+							gen.SetChallengeProcessing(false),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(false),
+						))),
+				},
+			},
+			expectErr: false,
+		},
 	}
 
 	for name, test := range tests {
@@ -706,68 +744,6 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expectedMessage, stabilizeSolverErrorMessage(tt.err))
-		})
-	}
-}
-
-func TestHandleCleanup(t *testing.T) {
-	simulatedCleanupError := errors.New("simulated-cleanup-error")
-	tests := []struct {
-		name         string
-		mods         []gen.ChallengeModifier
-		cleanupError error
-		errorMessage string
-	}{
-		// Invoke solver.Cleanup if the finalizer is present and remove the
-		// finalizer and reset the status fields if it succeeds
-		{
-			name: "success-with-cleanup",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeFinalizers([]string{cmacme.ACMELegacyFinalizer}),
-			},
-		},
-		// Skip the solver.Cleanup when the finalizer absent, but reset the
-		// status fields if it succeeds
-		{
-			name:         "success-skip-cleanup",
-			cleanupError: simulatedCleanupError,
-		},
-		// Return the solver.Cleanup error if it fails and do not remove the
-		// finalizer nor update he status fields.
-		{
-			name: "cleanup-error",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeFinalizers([]string{cmacme.ACMELegacyFinalizer}),
-			},
-			cleanupError: simulatedCleanupError,
-			errorMessage: "Error cleaning up challenge: simulated-cleanup-error",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := controller{
-				dnsSolver: &fakeSolver{
-					fakeCleanUp: func(ctx context.Context, ch *cmacme.Challenge) error {
-						return tt.cleanupError
-					},
-				},
-				recorder: new(testpkg.FakeRecorder),
-			}
-			ch := gen.Challenge("challenge1", append(
-				slices.Clone(tt.mods),
-				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
-				gen.SetChallengeProcessing(true),
-				gen.SetChallengePresented(true),
-			)...)
-			err := ctrl.handleFinalizer(t.Context(), ch)
-			if tt.errorMessage == "" {
-				assert.NoError(t, err)
-				assert.NotContains(t, ch.Finalizers, cmacme.ACMELegacyFinalizer, "The finalizer should be removed if cleanup succeeded")
-			} else {
-				assert.EqualError(t, err, tt.errorMessage)
-				assert.Contains(t, ch.Finalizers, cmacme.ACMELegacyFinalizer, "The finalizer should not be removed if cleanup failed")
-				assert.Equal(t, tt.errorMessage, ch.Status.Reason, "The status reason should be set to the cleanup error")
-			}
 		})
 	}
 }
