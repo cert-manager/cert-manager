@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -88,8 +89,18 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// Once the challenge reaches this final state, we always return here.
 	challengeFinished := !ch.DeletionTimestamp.IsZero() || acme.IsFinalState(ch.Status.State)
 	if challengeFinished {
-		if err := c.handleFinalizer(ctx, ch); err != nil {
-			return err
+		if finalizers := sets.New(ch.Finalizers...); finalizers.Has(cmacme.ACMELegacyFinalizer) ||
+			finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) {
+			// the resource still has ACME finalizers, we attempt to finalize the resource
+			// by calling CleanUp and then remove the finalizers if successful
+			if err := c.finalize(ctx, ch); err != nil {
+				return err
+			}
+
+			// remove the ACME finalizers since cleanup has been completed successfully
+			ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
+				return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
+			})
 		}
 
 		ch.Status.Presented = false
@@ -112,7 +123,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// This finalizer ensures that the challenge is not garbage collected before
 	// cert-manager has a chance to clean up resources created for the
 	// challenge.
-	if finalizerRequired(ch) {
+	if finalizers := sets.New(ch.Finalizers...); !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) {
 		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
 		return nil
 	}
@@ -289,13 +300,9 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	return err
 }
 
-// handleFinalizer will attempt to 'finalize' the Challenge resource by calling
-// CleanUp if the resource is in a 'processing' state.
-func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
+// finalize will attempt to 'finalize' the Challenge resource by calling CleanUp
+func (c *controller) finalize(ctx context.Context, ch *cmacme.Challenge) (err error) {
 	log := logf.FromContext(ctx, "finalizer")
-	if finalizerRequired(ch) {
-		return nil // nothing to do
-	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
@@ -313,11 +320,6 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 		log.Error(err, "error cleaning up challenge")
 		return err
 	}
-
-	// call Update to remove the metadata.finalizers entry
-	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-		return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
-	})
 
 	return nil
 }
