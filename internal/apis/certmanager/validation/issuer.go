@@ -239,9 +239,22 @@ func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMECh
 	default:
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), gateway.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
 	}
-	if len(gateway.ParentRefs) == 0 {
-		el = append(el, field.Required(fldPath.Child("parentRefs"), `at least 1 parentRef is required`))
+
+	// We dont need to check if parentRefs are present since we have the override annotations
+	// on the certificate either through certificate-shim or manually. We only need to validate if
+	// kind is present and if name is not present or if name is present without kind.
+	for i, g := range gateway.ParentRefs {
+		if g.Kind != nil && g.Name == "" {
+			el = append(el, field.Required(fldPath.Child("parentRefs").Index(i).Child("name"), "name is required when kind is specified"))
+			return el
+		}
+
+		if g.Name != "" && g.Kind == nil {
+			el = append(el, field.Required(fldPath.Child("parentRefs").Index(i).Child("kind"), "kind is required when name is specified"))
+			return el
+		}
 	}
+
 	return el
 }
 
