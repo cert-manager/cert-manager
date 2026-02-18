@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -73,6 +72,13 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	ctx = logf.NewContext(ctx, log)
 	ch := chOriginal.DeepCopy()
 
+	// Upgrade from CSA to SSA if needed. This might result in a resource conflict if another
+	// controller has updated the Challenge since it was read, but that's ok - we'll just retry
+	// and upgrade again on the next sync.
+	if err := c.upgradeManagedFields(ctx, ch); err != nil {
+		return fmt.Errorf("error upgrading managed fields: %w", err)
+	}
+
 	defer func() {
 		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
 			if errors.Is(updateError, errArgument) {
@@ -91,16 +97,14 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	if challengeFinished {
 		if finalizers := sets.New(ch.Finalizers...); finalizers.Has(cmacme.ACMELegacyFinalizer) ||
 			finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) {
-			// the resource still has ACME finalizers, we attempt to finalize the resource
+			// The resource still has ACME finalizers, we attempt to finalize the resource
 			// by calling CleanUp and then remove the finalizers if successful
 			if err := c.finalize(ctx, ch); err != nil {
 				return err
 			}
 
-			// remove the ACME finalizers since cleanup has been completed successfully
-			ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-				return finalizer == cmacme.ACMELegacyFinalizer || finalizer == cmacme.ACMEDomainQualifiedFinalizer
-			})
+			// Remove the ACME finalizers since cleanup has been completed successfully.
+			return c.applyFinalizers(ctx, ch, nil)
 		}
 
 		ch.Status.Presented = false
@@ -115,17 +119,12 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		return nil
 	}
 
-	// Remove legacy finalizer
-	ch.Finalizers = slices.DeleteFunc(ch.Finalizers, func(finalizer string) bool {
-		return finalizer == cmacme.ACMELegacyFinalizer
-	})
-
-	// This finalizer ensures that the challenge is not garbage collected before
-	// cert-manager has a chance to clean up resources created for the
-	// challenge.
-	if finalizers := sets.New(ch.Finalizers...); !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) {
-		ch.Finalizers = append(ch.Finalizers, cmacme.ACMEDomainQualifiedFinalizer)
-		return nil
+	// Add finalizer or replace legacy finalizer if needed. This ensures that the
+	// challenge is not garbage collected before cert-manager has a chance to clean
+	// up resources created for the challenge.
+	if finalizers := sets.New(ch.Finalizers...); !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) ||
+		finalizers.Has(cmacme.ACMELegacyFinalizer) {
+		return c.applyFinalizers(ctx, ch, []string{cmacme.ACMEDomainQualifiedFinalizer})
 	}
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
