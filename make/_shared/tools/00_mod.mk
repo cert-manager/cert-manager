@@ -172,7 +172,7 @@ ADDITIONAL_TOOLS ?=
 tools += $(ADDITIONAL_TOOLS)
 
 # https://go.dev/dl/
-VENDORED_GO_VERSION := 1.24.12
+VENDORED_GO_VERSION := 1.24.13
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -398,10 +398,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # NB: updated manually by running all combinations of
 # `make vendor-go HOST_OS={linux,darwin} HOST_ARCH={amd64,arm64}`
 # and noting the `got` checksum in the checksum failure message.
-go_linux_amd64_SHA256SUM=bddf8e653c82429aea7aec2520774e79925d4bb929fe20e67ecc00dd5af44c50
-go_linux_arm64_SHA256SUM=4e02e2979e53b40f3666bba9f7e5ea0b99ea5156e0824b343fd054742c25498d
-go_darwin_amd64_SHA256SUM=4b9cc6771b56645da35a83a5424ae507f3250829b0d227e75f57b73e72da1f76
-go_darwin_arm64_SHA256SUM=098d0c039357c3652ec6c97d5451bc4dc24f7cf30ed902373ed9a8134aab2d29
+go_linux_amd64_SHA256SUM=1fc94b57134d51669c72173ad5d49fd62afb0f1db9bf3f798fd98ee423f8d730
+go_linux_arm64_SHA256SUM=74d97be1cc3a474129590c67ebf748a96e72d9f3a2b6fef3ed3275de591d49b3
+go_darwin_amd64_SHA256SUM=6cc6549b06725220b342b740497ffd24e0ebdcef75781a77931ca199f46ad781
+go_darwin_arm64_SHA256SUM=f282d882c3353485e2fc6c634606d85caf36e855167d59b996dbeae19fa7629a
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
