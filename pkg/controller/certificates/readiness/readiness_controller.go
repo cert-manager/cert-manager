@@ -19,6 +19,7 @@ package readiness
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -66,6 +68,11 @@ type controller struct {
 	policyEvaluator policyEvaluatorFunc
 	// renewalTimeCalculator calculates renewal time of a certificate
 	renewalTimeCalculator pki.RenewalTimeFunc
+
+	// queue is used to schedule delayed re-syncs, e.g. at certificate expiry time
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
+	// clock is used for time-based calculations
+	clock clock.Clock
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -136,6 +143,8 @@ func NewController(
 		},
 		policyEvaluator:       policyEvaluator,
 		renewalTimeCalculator: renewalTimeCalculator,
+		queue:                 queue,
+		clock:                 ctx.Clock,
 		fieldManager:          ctx.FieldManager,
 	}, queue, mustSync, nil
 }
@@ -198,9 +207,35 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
 			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
 			crt.Status.RenewalTime)
-		return c.updateOrApplyStatus(ctx, crt)
+		if err := c.updateOrApplyStatus(ctx, crt); err != nil {
+			return err
+		}
 	}
+
+	// Schedule a re-queue at the certificate's expiry time so that the Ready
+	// condition is updated promptly when the certificate expires. Without this,
+	// a certificate that is Ready=True will remain in that state even after it
+	// has expired, because no event triggers a re-evaluation.
+	c.scheduleRequeueAtExpiry(log, key, crt)
+
 	return nil
+}
+
+// scheduleRequeueAtExpiry schedules a delayed requeue of the Certificate at its
+// NotAfter time so the readiness condition is re-evaluated upon expiry.
+func (c *controller) scheduleRequeueAtExpiry(log logr.Logger, key types.NamespacedName, crt *cmapi.Certificate) {
+	if crt.Status.NotAfter == nil {
+		return
+	}
+
+	// Only schedule requeue if the certificate has not yet expired
+	now := c.clock.Now()
+	expiryTime := crt.Status.NotAfter.Time
+	if now.Before(expiryTime) {
+		requeueAfter := expiryTime.Sub(now) + time.Second // add 1s buffer to ensure we're past expiry
+		log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
+		c.queue.AddAfter(key, requeueAfter)
+	}
 }
 
 // updateOrApplyStatus will update the controller status. If the
