@@ -2001,6 +2001,13 @@ Container Security Context to be set on the controller component container. For 
 > ```
 
 Timeout for 'kubectl check api' command.
+#### **startupapicheck.ttlSecondsAfterFinished** ~ `unknown`
+> Default value:
+> ```yaml
+> null
+> ```
+
+ttlSecondsAfterFinished for the startupapicheck Job
 #### **startupapicheck.backoffLimit** ~ `number`
 > Default value:
 > ```yaml
