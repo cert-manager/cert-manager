@@ -287,6 +287,13 @@ spec:
                               The TenantID of the Azure Service Principal used to authenticate with Azure DNS.
                               If set, ClientID and ClientSecret must also be set.
                             type: string
+                          zoneType:
+                            description: Determines the type of zone. By default,
+                              this is public.
+                            enum:
+                            - AzurePublicZone
+                            - AzurePrivateZone
+                            type: string
                         required:
                         - resourceGroupName
                         - subscriptionID
