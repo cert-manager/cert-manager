@@ -11,6 +11,95 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIsRelatedZone(t *testing.T) {
+	tests := []struct {
+		name     string
+		zone1    string
+		zone2    string
+		expected bool
+	}{
+		{
+			name:     "same zone",
+			zone1:    "example.com.",
+			zone2:    "example.com.",
+			expected: true,
+		},
+		{
+			name:     "parent/child relationship - zone1 is parent",
+			zone1:    "example.com.",
+			zone2:    "sub.example.com.",
+			expected: true,
+		},
+		{
+			name:     "parent/child relationship - zone2 is parent",
+			zone1:    "sub.example.com.",
+			zone2:    "example.com.",
+			expected: true,
+		},
+		{
+			name:     "sibling zones with common parent",
+			zone1:    "foo.example.com.",
+			zone2:    "bar.example.com.",
+			expected: true,
+		},
+		{
+			name:     "deeply nested sibling zones",
+			zone1:    "a.b.example.com.",
+			zone2:    "c.d.example.com.",
+			expected: true,
+		},
+		{
+			name:     "completely unrelated zones",
+			zone1:    "example.com.",
+			zone2:    "azure.com.",
+			expected: false,
+		},
+		{
+			name:     "wildcard to external zone (azure scenario)",
+			zone1:    "example.com.",
+			zone2:    "cloudapp.azure.com.",
+			expected: false,
+		},
+		{
+			name:     "same TLD but different orgs",
+			zone1:    "example.co.uk.",
+			zone2:    "other.co.uk.",
+			expected: true, // co.uk is shared, matches 2 labels
+		},
+		{
+			name:     "only TLD in common",
+			zone1:    "example.com.",
+			zone2:    "other.com.",
+			expected: false, // only 1 label matches (com)
+		},
+		{
+			name:     "zone1 too short",
+			zone1:    "com.",
+			zone2:    "example.com.",
+			expected: true, // parent/child via IsSubDomain
+		},
+		{
+			name:     "both zones are TLDs",
+			zone1:    "com.",
+			zone2:    "org.",
+			expected: false,
+		},
+		{
+			name:     "three labels matching",
+			zone1:    "a.b.example.com.",
+			zone2:    "c.b.example.com.",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isRelatedZone(tt.zone1, tt.zone2)
+			assert.Equal(t, tt.expected, result, "isRelatedZone(%q, %q)", tt.zone1, tt.zone2)
+		})
+	}
+}
+
 type input struct {
 	query   string
 	domains []string
