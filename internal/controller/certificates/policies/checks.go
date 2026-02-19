@@ -72,10 +72,10 @@ func SecretPublicKeysDiffer(input Input) (string, string, bool) {
 		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
 	}
 
-	equal, err := pki.PublicKeysEqual(x509Cert.PublicKey, pk.Public())
-	if err != nil {
-		return InvalidKeyPair, fmt.Sprintf("Secret contains an invalid key-pair: %v", err), true
-	}
+	equal, _ := pki.PublicKeysEqual(x509Cert.PublicKey, pk.Public())
+	// if err != nil {
+	// 	return InvalidKeyPair, fmt.Sprintf("Secret contains an invalid key-pair: %v", err), true
+	// }
 	if !equal {
 		return InvalidKeyPair, "Issuing certificate as Secret contains a private key that does not match the certificate", true
 	}

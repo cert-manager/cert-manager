@@ -33,6 +33,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 )
 
 // PrivateKeyMatchesSpec returns a list of violations for the provided private
@@ -53,6 +54,8 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []s
 		return ed25519PrivateKeyMatchesSpec(pk)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
+	case cmapi.MLDSA65KeyAlgorithm:
+		return mldsa65PrivateKeyMatchesSpec(pk)
 	default:
 		// This should never happen as the CertificateSpec validation should
 		// catch this before it reaches this point.
@@ -104,6 +107,14 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 
 func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) []string {
 	_, ok := pk.(ed25519.PrivateKey)
+	if !ok {
+		return []string{"spec.privateKey.algorithm"}
+	}
+
+	return nil
+}
+func mldsa65PrivateKeyMatchesSpec(pk crypto.PrivateKey) []string {
+	_, ok := pk.(*mldsa65.PrivateKey)
 	if !ok {
 		return []string{"spec.privateKey.algorithm"}
 	}
