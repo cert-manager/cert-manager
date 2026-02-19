@@ -16,6 +16,9 @@ metadata:
   {{- end }}
 spec:
   backoffLimit: {{ .Values.startupapicheck.backoffLimit }}
+  {{- with .Values.startupapicheck.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
   template:
     metadata:
       labels:
