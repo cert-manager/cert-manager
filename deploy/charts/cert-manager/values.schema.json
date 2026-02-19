@@ -835,7 +835,7 @@
       "type": "object"
     },
     "helm-values.global.hostUsers": {
-      "description": "Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.\n\nRequirements:\n  - Kubernetes ≥ 1.33, or\n  - Kubernetes 1.27–1.32 with UserNamespacesSupport feature gate enabled.\n\nSet to false to run pods in a user namespace without host access.\n\nSee [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.",
+      "description": "Set all pods to run in a user namespace without host access. Experimental: may be removed once the Kubernetes User Namespaces feature is GA.\n\nRequirements:\n  - Kubernetes \u2265 1.33, or\n  - Kubernetes 1.27\u20131.32 with UserNamespacesSupport feature gate enabled.\n\nSet to false to run pods in a user namespace without host access.\n\nSee [limitations](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#limitations) for details.",
       "type": "boolean"
     },
     "helm-values.global.imagePullSecrets": {
@@ -1540,6 +1540,9 @@
         "tolerations": {
           "$ref": "#/$defs/helm-values.startupapicheck.tolerations"
         },
+        "ttlSecondsAfterFinished": {
+          "$ref": "#/$defs/helm-values.startupapicheck.ttlSecondsAfterFinished"
+        },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.startupapicheck.volumeMounts"
         },
@@ -1767,6 +1770,10 @@
       "description": "A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule",
       "items": {},
       "type": "array"
+    },
+    "helm-values.startupapicheck.ttlSecondsAfterFinished": {
+      "description": "Setting ttlSecondsAfterFinished will allow the Job to be cleaned up automatically after it has finished. If unset, the Job will not be automatically deleted.\nFor more information, see [TTL Controller for Finished Resources](https://kubernetes.io/docs/concepts/workloads/controllers/ttl-after-finished/).",
+      "type": "number"
     },
     "helm-values.startupapicheck.volumeMounts": {
       "default": [],

@@ -1529,6 +1529,13 @@ startupapicheck:
   # Job backoffLimit
   backoffLimit: 4
 
+  # Setting ttlSecondsAfterFinished will allow the Job to be cleaned up
+  # automatically after it has finished. If unset, the Job will not be
+  # automatically deleted.
+  # For more information, see [TTL Controller for Finished Resources](https://kubernetes.io/docs/concepts/workloads/controllers/ttl-after-finished/).
+  # +docs:property
+  # ttlSecondsAfterFinished: 60
+
   # Optional additional annotations to add to the startupapicheck Job.
   # +docs:property
   jobAnnotations:
