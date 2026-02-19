@@ -19,16 +19,13 @@ package predicate
 import (
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // CertificateRequestRevision returns a predicate that used to filter
 // CertificateRequest to only those with a given 'revision' number.
-func CertificateRequestRevision(revision int) Func {
-	return func(obj runtime.Object) bool {
-		req := obj.(*cmapi.CertificateRequest)
+func CertificateRequestRevision(revision int) Func[*cmapi.CertificateRequest] {
+	return func(req *cmapi.CertificateRequest) bool {
 		if req.Annotations == nil {
 			return false
 		}

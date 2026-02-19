@@ -446,16 +446,17 @@ type ObjectListPtrConstraint[T any] interface {
 }
 
 // ListMatchingPredicates will list the objects that match a set of predicates
-func ListMatchingPredicates[O any, OL any, P ObjectPtrConstraint[O], PL ObjectListPtrConstraint[OL]](g Gomega, ctx context.Context, cli client.Client, predicates ...predicate.Func) []O {
+func ListMatchingPredicates[O any, OL any, P ObjectPtrConstraint[O], PL ObjectListPtrConstraint[OL]](g Gomega, ctx context.Context, cli client.Client, predicates ...predicate.Func[P]) []O {
 	list := PL(new(OL))
 	g.Expect(cli.List(ctx, list)).ToNot(HaveOccurred(), "failed to list objects")
 
 	// Evaluate predicates
-	funcs := predicate.Funcs(predicates)
+	funcs := predicate.Funcs[P](predicates)
 	out := make([]O, 0)
 	err := meta.EachListItem(list, func(o runtime.Object) error {
-		if funcs.Evaluate(o) {
-			out = append(out, *(o.(P)))
+		typedObj := o.(P)
+		if funcs.Evaluate(typedObj) {
+			out = append(out, *typedObj)
 		}
 		return nil
 	})

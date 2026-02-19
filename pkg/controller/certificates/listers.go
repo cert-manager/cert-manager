@@ -29,12 +29,12 @@ import (
 // ListCertificateRequestsMatchingPredicates will list CertificateRequest
 // resources using the provided lister, optionally applying the given predicate
 // functions to filter the CertificateRequest resources returned.
-func ListCertificateRequestsMatchingPredicates(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicates ...predicate.Func) ([]*cmapi.CertificateRequest, error) {
-	reqs, err := lister.List(selector)
+func ListCertificateRequestsMatchingPredicates(lister cmlisters.CertificateRequestNamespaceLister, predicates ...predicate.Func[*cmapi.CertificateRequest]) ([]*cmapi.CertificateRequest, error) {
+	reqs, err := lister.List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
-	funcs := predicate.Funcs(predicates)
+	funcs := predicate.Funcs[*cmapi.CertificateRequest](predicates)
 	out := make([]*cmapi.CertificateRequest, 0)
 	for _, req := range reqs {
 		if funcs.Evaluate(req) {
@@ -48,12 +48,12 @@ func ListCertificateRequestsMatchingPredicates(lister cmlisters.CertificateReque
 // ListCertificatesMatchingPredicates will list Certificate resources using
 // the provided lister, optionally applying the given predicate functions to
 // filter the Certificate resources returned.
-func ListCertificatesMatchingPredicates(lister cmlisters.CertificateNamespaceLister, selector labels.Selector, predicates ...predicate.Func) ([]*cmapi.Certificate, error) {
+func ListCertificatesMatchingPredicates(lister cmlisters.CertificateNamespaceLister, selector labels.Selector, predicates ...predicate.Func[*cmapi.Certificate]) ([]*cmapi.Certificate, error) {
 	reqs, err := lister.List(selector)
 	if err != nil {
 		return nil, err
 	}
-	funcs := predicate.Funcs(predicates)
+	funcs := predicate.Funcs[*cmapi.Certificate](predicates)
 	out := make([]*cmapi.Certificate, 0)
 	for _, req := range reqs {
 		if funcs.Evaluate(req) {
@@ -67,12 +67,12 @@ func ListCertificatesMatchingPredicates(lister cmlisters.CertificateNamespaceLis
 // ListSecretsMatchingPredicates will list Secret resources using
 // the provided lister, optionally applying the given predicate functions to
 // filter the Secret resources returned.
-func ListSecretsMatchingPredicates(lister corelisters.SecretNamespaceLister, selector labels.Selector, predicates ...predicate.Func) ([]*corev1.Secret, error) {
+func ListSecretsMatchingPredicates(lister corelisters.SecretNamespaceLister, selector labels.Selector, predicates ...predicate.Func[*corev1.Secret]) ([]*corev1.Secret, error) {
 	reqs, err := lister.List(selector)
 	if err != nil {
 		return nil, err
 	}
-	funcs := predicate.Funcs(predicates)
+	funcs := predicate.Funcs[*corev1.Secret](predicates)
 	out := make([]*corev1.Secret, 0)
 	for _, req := range reqs {
 		if funcs.Evaluate(req) {
