@@ -3534,7 +3534,7 @@ spec:
                               items:
                                 type: string
                               type: array
-                              x-kubernetes-list-type: atomic
+                              x-kubernetes-list-type: set
                             dnsZones:
                               description: |-
                                 List of DNSZones that this solver will be used to solve.
@@ -3549,7 +3549,7 @@ spec:
                               items:
                                 type: string
                               type: array
-                              x-kubernetes-list-type: atomic
+                              x-kubernetes-list-type: set
                             matchLabels:
                               additionalProperties:
                                 type: string
@@ -3579,7 +3579,7 @@ spec:
                     items:
                       type: string
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-type: set
                   issuingCertificateURLs:
                     description: |-
                       IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
@@ -3588,7 +3588,7 @@ spec:
                     items:
                       type: string
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-type: set
                   ocspServers:
                     description: |-
                       The OCSP server list is an X.509 v3 extension that defines a list of
@@ -3599,7 +3599,7 @@ spec:
                     items:
                       type: string
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-type: set
                   secretName:
                     description: |-
                       SecretName is the name of the secret used to sign Certificates issued
@@ -3621,7 +3621,7 @@ spec:
                     items:
                       type: string
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-type: set
                 type: object
               vault:
                 description: |-

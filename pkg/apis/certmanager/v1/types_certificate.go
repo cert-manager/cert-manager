@@ -208,17 +208,17 @@ type CertificateSpec struct {
 
 	// Requested DNS subject alternative names.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// Requested IP address subject alternative names.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// Requested URI subject alternative names.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	URIs []string `json:"uris,omitempty"`
 
 	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
@@ -226,12 +226,14 @@ type CertificateSpec struct {
 	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
 	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
 	// +optional
-	// +listType=atomic
+	// +listType=map
+	// +listMapKey=oid
+	// +listMapKey=utf8Value
 	OtherNames []OtherName `json:"otherNames,omitempty"`
 
 	// Requested email subject alternative names.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	EmailAddresses []string `json:"emailAddresses,omitempty"`
 
 	// Name of the Secret resource that will be automatically created and
@@ -277,7 +279,7 @@ type CertificateSpec struct {
 	//
 	// If unset, defaults to `digital signature` and `key encipherment`.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	Usages []KeyUsage `json:"usages,omitempty"`
 
 	// Private key options. These include the key algorithm and size, the used
@@ -313,7 +315,8 @@ type CertificateSpec struct {
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
 	// +optional
-	// +listType=atomic
+	// +listType=map
+	// +listMapKey=type
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 
 	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
@@ -330,11 +333,13 @@ type OtherName struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
 	// example, "1.2.840.113556.1.4.221".
-	OID string `json:"oid,omitempty"`
+	// +required
+	OID string `json:"oid"`
 
 	// utf8Value is the string value of the otherName SAN.
 	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
-	UTF8Value string `json:"utf8Value,omitempty"`
+	// +required
+	UTF8Value string `json:"utf8Value"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -444,6 +449,7 @@ const (
 type CertificateAdditionalOutputFormat struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
+	// +required
 	Type CertificateOutputFormatType `json:"type"`
 }
 
