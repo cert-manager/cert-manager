@@ -240,6 +240,22 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 		return nil
 
+	// ACME orders transition from ready -> processing -> (valid|invalid). If a server takes a long time
+	// to fulfill an order, the underlying order finalizer may return an order still in the processing state.
+	// In that case the worker should continue to poll the ACME server until the order transitions to either
+	// valid or invalid.
+	case acmeOrder.Status == acmeapi.StatusProcessing:
+		log.V(logf.InfoLevel).Info("Order is in processing state, waiting for ACME server to update the status of the order...")
+		c.setOrderState(&o.Status, string(cmacme.Processing))
+
+		// Re-queue the Order to be processed again after RequeuePeriod has passed.
+		c.scheduledWorkQueue.Add(types.NamespacedName{
+			Name:      o.Name,
+			Namespace: o.Namespace,
+		}, RequeuePeriod)
+
+		return nil
+
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
