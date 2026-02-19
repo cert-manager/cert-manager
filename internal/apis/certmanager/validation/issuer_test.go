@@ -105,7 +105,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
-				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"),
+				field.Required(fldPath.Child("auth"), "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws"),
 			},
 		},
 		"vault issuer with a CA bundle containing no valid certificates": {
@@ -333,6 +333,80 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Forbidden(fldPath.Child("kubernetes"), "please supply one of: secretRef, serviceAccountRef"),
+			},
+		},
+		"valid auth.aws": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+				},
+			},
+		},
+		"valid auth.aws with serviceAccountRef": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+					IamRoleArn: "arn:aws:iam::123456789012:role/my-role",
+				},
+			},
+		},
+		"invalid auth.aws: role is required": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "role"), ""),
+			},
+		},
+		"invalid auth.aws: serviceAccountRef.name is required": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role:              "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{},
+					IamRoleArn:        "arn:aws:iam::123456789012:role/my-role",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""),
+			},
+		},
+		"invalid auth.aws: iamRoleArn is required when serviceAccountRef is set": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "my-role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"),
+			},
+		},
+		"valid auth: all five auth types can be set simultaneously": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "path",
+				},
+				TokenSecretRef: &validSecretKeyRef,
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "path",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+				AWS: &cmapi.VaultAWSAuth{
+					Role: "aws-role",
+				},
 			},
 		},
 	}
