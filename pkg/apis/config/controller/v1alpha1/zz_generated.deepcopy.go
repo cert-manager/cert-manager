@@ -166,6 +166,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(sharedv1alpha1.Duration)
 		**out = **in
 	}
+	if in.ChallengeAuthorizationTimeout != nil {
+		in, out := &in.ChallengeAuthorizationTimeout, &out.ChallengeAuthorizationTimeout
+		*out = new(sharedv1alpha1.Duration)
+		**out = **in
+	}
 	return
 }
 

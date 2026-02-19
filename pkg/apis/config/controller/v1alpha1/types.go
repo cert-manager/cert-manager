@@ -149,6 +149,10 @@ type ControllerConfiguration struct {
 	// when a certificate request fails. This duration is exponentially increased
 	// (up to a maximum of 32 hours) based on the number of consecutive failures.
 	CertificateRequestMinimumBackoffDuration *sharedv1alpha1.Duration `json:"certificateRequestMinimumBackoffDuration,omitempty"`
+
+	// Defines the timeout a challenge authorization can take before the request will be
+	// canceled.
+	ChallengeAuthorizationTimeout *sharedv1alpha1.Duration `json:"challengeAuthorizationTimeout,omitempty"`
 }
 
 type LeaderElectionConfig struct {
