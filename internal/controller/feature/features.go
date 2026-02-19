@@ -66,6 +66,7 @@ const (
 
 	// Owner: @joshvanl
 	// Alpha: v1.8
+	// Beta: v1.19
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
@@ -216,7 +217,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
 	ListenerSets:                                     {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
-	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
+	ServerSideApply:                                  {Default: true, PreRelease: featuregate.Beta},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
 	UseCertificateRequestBasicConstraints:            {Default: false, PreRelease: featuregate.Alpha},
 	NameConstraints:                                  {Default: true, PreRelease: featuregate.Beta},
