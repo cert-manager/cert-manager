@@ -740,6 +740,11 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 
 			expectedMessage: "wrapper message: <redacted DigitalOcean SDK error: godo.ErrorResponse: see events and logs for details>",
 		},
+		{
+			name:            "http01 solver resource name",
+			err:             errors.New("pods \"cm-acme-http-solver-22csz\" is forbidden: exceeded quota: default-resource-quota, requested: limits.ephemeral-storage=256Mi, used: limits.ephemeral-storage=100Mi, limited: limits.ephemeral-storage=200Mi"),
+			expectedMessage: "pods \"cm-acme-http-solver-<redacted>\" is forbidden: exceeded quota: default-resource-quota, requested: limits.ephemeral-storage=256Mi, used: limits.ephemeral-storage=100Mi, limited: limits.ephemeral-storage=200Mi",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
