@@ -181,12 +181,18 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+
+		// We check the window error in trigger controller if we can't find a time for renewal. So we don't need to check here.
+		if renewalTime.NonWindowError != nil {
+			crt.Status.RenewalTime = nil
+			break
+		}
 
 		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
-		crt.Status.RenewalTime = renewalTime
+		crt.Status.RenewalTime = renewalTime.FinalRenewalTime
 
 	default:
 		// clear status fields if the secret does not have any data
