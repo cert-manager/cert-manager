@@ -392,8 +392,12 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 								Labels: labels,
 								ParentRefs: []gwapi.ParentReference{
 									{
-										Namespace:   func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
-										Name:        "acmesolver",
+										Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
+										Name:      "acmesolver",
+										Kind: func() *gwapi.Kind {
+											g := gwapi.Kind("Gateway")
+											return &g
+										}(),
 										SectionName: nil,
 									},
 								},

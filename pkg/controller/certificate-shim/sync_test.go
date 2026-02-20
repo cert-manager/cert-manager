@@ -2286,8 +2286,9 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-com-tls",
-						Namespace: gen.DefaultTestNamespace,
+						Name:        "example-com-tls",
+						Namespace:   gen.DefaultTestNamespace,
+						Annotations: buildParentRefAnnotations(),
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
@@ -2353,6 +2354,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2416,6 +2418,8 @@ func TestSync(t *testing.T) {
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "gateway-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
+							cmacme.ACMECertificateHTTP01ParentRefName:       "gateway-name",
+							cmacme.ACMECertificateHTTP01ParentRefKind:       "Gateway",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -2479,6 +2483,8 @@ func TestSync(t *testing.T) {
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "gateway-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
+							cmacme.ACMECertificateHTTP01ParentRefName:       "gateway-name",
+							cmacme.ACMECertificateHTTP01ParentRefKind:       "Gateway",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -2532,6 +2538,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2585,6 +2592,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2642,6 +2650,8 @@ func TestSync(t *testing.T) {
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+							cmacme.ACMECertificateHTTP01ParentRefName:        "gateway-name",
+							cmacme.ACMECertificateHTTP01ParentRefKind:        "Gateway",
 						},
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2696,6 +2706,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2748,6 +2759,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2853,6 +2865,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2916,6 +2929,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -2978,6 +2992,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3498,6 +3513,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3570,6 +3586,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "foo-example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3587,6 +3604,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "bar-example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3679,8 +3697,9 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-com-tls",
-						Namespace: gen.DefaultTestNamespace,
+						Name:        "example-com-tls",
+						Namespace:   gen.DefaultTestNamespace,
+						Annotations: buildParentRefAnnotations(),
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
@@ -3755,8 +3774,9 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-com-tls",
-						Namespace: gen.DefaultTestNamespace,
+						Name:        "example-com-tls",
+						Namespace:   gen.DefaultTestNamespace,
+						Annotations: buildParentRefAnnotations(),
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 							// note that the applyset label should not be here
@@ -3822,7 +3842,9 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels:    map[string]string{},
 						Annotations: map[string]string{
-							"venafi.cert-manager.io/custom-fields": "foo",
+							"venafi.cert-manager.io/custom-fields":    "foo",
+							cmacme.ACMECertificateHTTP01ParentRefName: "gateway-name",
+							cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -4089,6 +4111,13 @@ func buildIngressOwnerReferences(name string) []metav1.OwnerReference {
 func buildGatewayOwnerReferences(name string) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(buildGateway(name, gen.DefaultTestNamespace, nil), gatewayGVK),
+	}
+}
+
+func buildParentRefAnnotations() map[string]string {
+	return map[string]string{
+		cmacme.ACMECertificateHTTP01ParentRefName: "gateway-name",
+		cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
 	}
 }
 

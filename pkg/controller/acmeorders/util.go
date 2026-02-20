@@ -22,6 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -136,7 +137,13 @@ func partialChallengeSpecForAuthorization(ctx context.Context, issuer cmapi.Gene
 		return nil, err
 	}
 
-	// 5. construct Challenge resource with spec.solver field set
+	// 5. handle overriding of HTTP01 HTTPRoute parentRef annotations using
+	// ACMECertificateHTTP01ParentRefName, Kind, and Namespace annotations
+	if err := applyGatewayAPIAnnotationParentRefOverride(o, selectedSolver); err != nil {
+		return nil, err
+	}
+
+	// 6. construct Challenge resource with spec.solver field set
 	return &cmacme.ChallengeSpec{
 		AuthorizationURL: authz.URL,
 		Type:             chType,
@@ -199,6 +206,49 @@ func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMECha
 	}
 	if hasManualIngressClassName {
 		s.HTTP01.Ingress.IngressClassName = &manualIngressClassName
+	}
+
+	return nil
+}
+
+func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEChallengeSolver) error {
+	if s.HTTP01 == nil || s.HTTP01.GatewayHTTPRoute == nil || o.Annotations == nil {
+		return nil
+	}
+
+	parentRefName, hasParentRefName := o.Annotations[cmacme.ACMECertificateHTTP01ParentRefName]
+	parentRefKind, hasParentRefKind := o.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind]
+
+	// We are ok if both of them don't exist as we fall back to the parentRef from solver config
+	// in the issuer.
+	if hasParentRefName != hasParentRefKind {
+		return fmt.Errorf("cannot specify only one of parentRefName, parentRefKind override annotations")
+	}
+
+	if hasParentRefKind && hasParentRefName {
+		if s.HTTP01.GatewayHTTPRoute.ParentRefs == nil {
+			s.HTTP01.GatewayHTTPRoute.ParentRefs = []gwapi.ParentReference{}
+		}
+
+		parentRefNs := o.GetNamespace()
+		s.HTTP01.GatewayHTTPRoute.ParentRefs = append(s.HTTP01.GatewayHTTPRoute.ParentRefs, gwapi.ParentReference{
+			Kind: func() *gwapi.Kind {
+				g := gwapi.Kind(parentRefKind)
+				return &g
+			}(),
+			Name: gwapi.ObjectName(parentRefName),
+			Namespace: func() *gwapi.Namespace {
+				ns := gwapi.Namespace(parentRefNs)
+				return &ns
+			}(),
+		})
+	}
+
+	// If after processing annotations we don't find any parentRefs this means the HTTPRoute
+	// would be invalid logically (if not according to spec). This validation was before in
+	// admission webhook but we can't use it because parentRefs on solver config is optional now.
+	if len(s.HTTP01.GatewayHTTPRoute.ParentRefs) == 0 {
+		return fmt.Errorf("must specify parentRefs either through annotations or solver config")
 	}
 
 	return nil

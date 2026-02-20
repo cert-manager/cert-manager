@@ -22,8 +22,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -48,6 +51,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 				Name: "empty-selector-solver",
 			},
+		},
+	}
+	emptySelectorSolverHTTP01HTTPRoute := cmacme.ACMEChallengeSolver{
+		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+			GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
 		},
 	}
 	emptySelectorSolverDNS01 := cmacme.ACMEChallengeSolver{
@@ -335,6 +343,54 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Solver:  emptySelectorSolverDNS01,
 			},
 		},
+		"should set parentRef on Challenge based on annotations": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01HTTPRoute},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01ParentRefName: "test-parent-ref-name",
+						cmacme.ACMECertificateHTTP01ParentRefKind: "ListenerSet",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: []gwapi.ParentReference{
+								{
+									Kind: func() *gwapi.Kind {
+										ls := gwapi.Kind("ListenerSet")
+										return &ls
+									}(),
+									Name:      gwapi.ObjectName("test-parent-ref-name"),
+									Namespace: (*gwapi.Namespace)(ptr.To("")),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		"should return an error if none match": {
 			issuer: &cmapi.Issuer{
 				Spec: cmapi.IssuerSpec{
@@ -458,3 +514,184 @@ func Test_ensureKeysForChallenges(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
+	tests := []struct {
+		name               string
+		issuer             *cmapi.Issuer
+		orderAnnotations   map[string]string
+		existingParentRefs []gwapi.ParentReference
+		orderNS            string
+		want               []gwapi.ParentReference
+		wantErr            string
+	}{
+		{
+			name:   "both annotations present",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "test-namespace",
+			want:    parentRefs("Gateway", "test-gateway", "test-namespace"),
+		},
+		{
+			name:   "only name annotation",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+			},
+			wantErr: "cannot specify only one of parentRefName, parentRefKind override annotations",
+		},
+		{
+			name:   "only kind annotation",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			wantErr: "cannot specify only one of parentRefName, parentRefKind override annotations",
+		},
+		{
+			// Let's imagine a Certificate was created directly (user isn't
+			// using certificate-shim), and they haven't provided any parentref
+			// annotation. This is impossible: HTTPRoute always needs a
+			// parentref.
+			name:             "no annotations and no parentRefs on issuer",
+			issuer:           gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{},
+			wantErr:          "must specify parentRefs either through annotations or solver config",
+		},
+		{
+			name:   "annotations on non-gateway solver",
+			issuer: ingressIssuer(),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			want: noParentRef,
+		},
+		{
+			name:   "append to existing parentRefs",
+			issuer: gatewayIssuer(parentRefs("Gateway", "existing-gateway", "default")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "ListenerSet",
+			},
+			orderNS: "test-namespace",
+			want: []gwapi.ParentReference{
+				ref("Gateway", "existing-gateway", "default"),
+				ref("ListenerSet", "test-gateway", "test-namespace"),
+			},
+		},
+		{
+			name:   "namespace inherited from Order",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "custom-namespace",
+			want:    parentRefs("Gateway", "test-gateway", "custom-namespace"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order := &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tt.orderNS,
+					Annotations: tt.orderAnnotations,
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			}
+			authz := cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{acmeChallengeHTTP01()},
+			}
+
+			got, err := partialChallengeSpecForAuthorization(t.Context(), tt.issuer, order, authz)
+
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			require.NotNil(t, got)
+			if containsGatewayParentRefs(tt.issuer) {
+				assert.Equal(t, tt.want, got.Solver.HTTP01.GatewayHTTPRoute.ParentRefs)
+			}
+		})
+	}
+}
+
+func gatewayIssuer(parentRefs []gwapi.ParentReference) *cmapi.Issuer {
+	return gen.Issuer("test-gw-issuer",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Name: "ingress-solver",
+						},
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: parentRefs,
+						},
+					},
+				},
+			},
+		}),
+	)
+}
+
+func containsGatewayParentRefs(issuer cmapi.GenericIssuer) bool {
+	if issuer.GetSpec().ACME == nil {
+		return false
+	}
+	for _, solver := range issuer.GetSpec().ACME.Solvers {
+		if solver.HTTP01 != nil && solver.HTTP01.GatewayHTTPRoute != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func ingressIssuer() *cmapi.Issuer {
+	return gen.Issuer("test-issuer",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Name: "ingress-solver",
+						},
+					},
+				},
+			},
+		}),
+	)
+}
+
+func acmeChallengeHTTP01() cmacme.ACMEChallenge {
+	return cmacme.ACMEChallenge{
+		Type:  "http-01",
+		Token: "http-01-token",
+	}
+}
+
+func ref(kind, name, namespace string) gwapi.ParentReference {
+	return gwapi.ParentReference{
+		Kind:      ptr.To(gwapi.Kind(kind)),
+		Name:      gwapi.ObjectName(name),
+		Namespace: ptr.To(gwapi.Namespace(namespace)),
+	}
+}
+
+func parentRefs(kind, name, namespace string) []gwapi.ParentReference {
+	return []gwapi.ParentReference{
+		ref(kind, name, namespace),
+	}
+}
+
+var noParentRef []gwapi.ParentReference = nil
