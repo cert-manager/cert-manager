@@ -46,6 +46,7 @@ type DNSProvider struct {
 	authToken        string
 
 	userAgent string
+	timeout   time.Duration
 }
 
 // DNSZone is the Zone-Record returned from Cloudflare (we'll ignore everything we don't need)
@@ -58,15 +59,15 @@ type DNSZone struct {
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
 // and CLOUDFLARE_API_KEY.
-func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string, userAgent string, timeout time.Duration) (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key, "", dns01Nameservers, userAgent)
+	return NewDNSProviderCredentials(email, key, "", dns01Nameservers, userAgent, timeout)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string, userAgent string, timeout time.Duration) (*DNSProvider, error) {
 	if (email == "" && key != "") || (key == "" && token == "") {
 		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
 	}
@@ -93,6 +94,7 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 		authToken:        token,
 		dns01Nameservers: dns01Nameservers,
 		userAgent:        userAgent,
+		timeout:          timeout,
 	}, nil
 }
 
@@ -275,7 +277,7 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 	req.Header.Set("User-Agent", c.userAgent)
 
 	client := http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: c.timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {

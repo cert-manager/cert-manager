@@ -236,6 +236,13 @@ type ACMEDNS01Config struct {
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
 	CheckRetryPeriod time.Duration
+
+	// The maximum time allowed for DNS01 provider API calls to complete.
+	// This is the timeout applied to HTTP requests made to DNS provider APIs
+	// (e.g., Cloudflare, DigitalOcean). Increase this value in environments
+	// with slow or restricted internet connectivity. This should be a valid
+	// duration string, for example 30s or 1m
+	Timeout time.Duration
 }
 
 type PEMSizeLimitsConfig struct {

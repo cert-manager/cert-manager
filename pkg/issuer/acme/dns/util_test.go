@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -122,7 +123,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient, hostedZoneName)
 			return nil, nil
 		},
-		cloudFlare: func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error) {
+		cloudFlare: func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string, timeout time.Duration) (*cloudflare.DNSProvider, error) {
 			f.call("cloudflare", email, apikey, apiToken, util.RecursiveNameservers)
 			if email == "" || (apikey == "" && apiToken == "") {
 				return nil, errors.New("invalid email or apikey or apitoken")

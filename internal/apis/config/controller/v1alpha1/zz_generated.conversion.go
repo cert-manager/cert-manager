@@ -110,6 +110,9 @@ func autoConvert_v1alpha1_ACMEDNS01Config_To_controller_ACMEDNS01Config(in *cont
 	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
 		return err
 	}
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.Timeout, &out.Timeout, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -124,6 +127,9 @@ func autoConvert_controller_ACMEDNS01Config_To_v1alpha1_ACMEDNS01Config(in *cont
 		return err
 	}
 	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CheckRetryPeriod, &out.CheckRetryPeriod, s); err != nil {
+		return err
+	}
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.Timeout, &out.Timeout, s); err != nil {
 		return err
 	}
 	return nil
