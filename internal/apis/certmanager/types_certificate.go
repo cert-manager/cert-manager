@@ -69,6 +69,9 @@ const (
 
 	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
+
+	// MLDSA65 private key algorithm (ML-DSA-65 post-quantum signature scheme).
+	MLDSA65KeyAlgorithm PrivateKeyAlgorithm = "MLDSA65"
 )
 
 type PrivateKeyEncoding string

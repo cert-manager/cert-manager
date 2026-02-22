@@ -76,7 +76,7 @@ type CertificateList struct {
 	Items []Certificate `json:"items"`
 }
 
-// +kubebuilder:validation:Enum=RSA;ECDSA;Ed25519
+// +kubebuilder:validation:Enum=RSA;ECDSA;Ed25519;MLDSA65
 type PrivateKeyAlgorithm string
 
 const (
@@ -88,6 +88,9 @@ const (
 
 	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
+
+	// MLDSA65 private key algorithm (ML-DSA-65 post-quantum signature scheme).
+	MLDSA65KeyAlgorithm PrivateKeyAlgorithm = "MLDSA65"
 )
 
 // +kubebuilder:validation:Enum=PKCS1;PKCS8
@@ -107,7 +110,7 @@ const (
 	PKCS8 PrivateKeyEncoding = "PKCS8"
 )
 
-// +kubebuilder:validation:Enum=SHA256WithRSA;SHA384WithRSA;SHA512WithRSA;ECDSAWithSHA256;ECDSAWithSHA384;ECDSAWithSHA512;PureEd25519
+// +kubebuilder:validation:Enum=SHA256WithRSA;SHA384WithRSA;SHA512WithRSA;ECDSAWithSHA256;ECDSAWithSHA384;ECDSAWithSHA512;PureEd25519;PureMLDSA65
 type SignatureAlgorithm string
 
 const (
@@ -118,6 +121,7 @@ const (
 	ECDSAWithSHA384 SignatureAlgorithm = "ECDSAWithSHA384"
 	ECDSAWithSHA512 SignatureAlgorithm = "ECDSAWithSHA512"
 	PureEd25519     SignatureAlgorithm = "PureEd25519"
+	PureMLDSA65     SignatureAlgorithm = "PureMLDSA65"
 )
 
 // CertificateSpec defines the desired state of Certificate.
