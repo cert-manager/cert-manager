@@ -763,6 +763,21 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassNameOverride] = ingressClassNameVal
 	}
 
+	switch ingLike.(type) {
+	case *gwapi.Gateway:
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "Gateway"
+		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = ingLike.GetName()
+	case *gwapi.ListenerSet:
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "ListenerSet"
+		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = ingLike.GetName()
+	}
+
 	ingLike.SetAnnotations(ingAnnotations)
 }
 

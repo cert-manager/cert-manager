@@ -540,6 +540,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
+										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
 									},
 								},
 							},
@@ -556,15 +557,21 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+								ParentRefs: []gwapi.ParentReference{
+									{
+										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 			errs: []*field.Error{
 				field.Required(
-					fldPath.Child("solvers").Index(0).Child("http01", "gateway").Child("parentRefs"),
-					"at least 1 parentRef is required",
+					fldPath.Child("solvers").Index(0).Child("http01", "gateway").Child("parentRefs").Index(0).Child("name"),
+					"name is required when kind is specified",
 				),
 			},
 		},
@@ -584,6 +591,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
+										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
 									},
 								},
 							},
@@ -694,6 +702,95 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				}
 			}
 			assert.Equal(t, s.warnings, warnings)
+		})
+	}
+}
+
+func TestValidateACMEIssuerGatewayParentRefs(t *testing.T) {
+	fldPath := (*field.Path)(nil)
+
+	tests := []struct {
+		name            string
+		parentRefs      []gwapi.ParentReference
+		wantErrContains string // Empty string means no error expected
+	}{
+		{
+			name: "kind without name",
+			parentRefs: []gwapi.ParentReference{
+				{
+					Kind: ptr.To(gwapi.Kind("Gateway")),
+				},
+			},
+			wantErrContains: "name is required",
+		},
+		{
+			name: "name without kind",
+			parentRefs: []gwapi.ParentReference{
+				{Name: gwapi.ObjectName("test-gateway")},
+			},
+			wantErrContains: "kind is required",
+		},
+		{
+			name:       "empty parentRefs array",
+			parentRefs: []gwapi.ParentReference{},
+		},
+		{
+			name: "both name and kind present",
+			parentRefs: []gwapi.ParentReference{
+				{
+					Name: gwapi.ObjectName("test-gateway"),
+					Kind: ptr.To(gwapi.Kind("Gateway")),
+				},
+			},
+		},
+		{
+			name: "multiple valid parentRefs",
+			parentRefs: []gwapi.ParentReference{
+				{
+					Name: gwapi.ObjectName("gateway-1"),
+					Kind: ptr.To(gwapi.Kind("Gateway")),
+				},
+				{
+					Name: gwapi.ObjectName("gateway-2"),
+					Kind: ptr.To(gwapi.Kind("Gateway")),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spec := &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+								ParentRefs: tt.parentRefs,
+							},
+						},
+					},
+				},
+			}
+
+			errs, _ := ValidateACMEIssuerConfig(spec, fldPath)
+
+			if tt.wantErrContains != "" {
+				assert.NotEmpty(t, errs, "expected validation errors")
+
+				found := false
+				for _, err := range errs {
+					if assert.Contains(t, err.Error(), tt.wantErrContains) {
+						found = true
+						break
+					}
+				}
+				assert.True(t, found, "expected error containing %q", tt.wantErrContains)
+			} else {
+				assert.Empty(t, errs, "expected no validation errors")
+			}
 		})
 	}
 }

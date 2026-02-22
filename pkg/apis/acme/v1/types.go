@@ -58,6 +58,15 @@ const (
 	// SolverIdentificationLabelKey is added to the labels of a Pod serving an ACME challenge.
 	// Its value will be the "true" if the Pod is an HTTP-01 solver.
 	SolverIdentificationLabelKey = "acme.cert-manager.io/http01-solver"
+
+	// ACMECertificateHTTP01ParentRefName is an annotation to specify the parent ref
+	// for the HTTPRoute that would be created by using the HTTP01 solver. If not specified
+	// then parentRef mentioned in the HTTP01 solver config will be used.
+	ACMECertificateHTTP01ParentRefName = "acme.cert-manager.io/http01-parentrefname"
+
+	// ACMECertificateHTTP01ParentRefKind is an annotation to specify the parent ref kind
+	// for the HTTPRoute that would be created by using the HTTP01 solver.
+	ACMECertificateHTTP01ParentRefKind = "acme.cert-manager.io/http01-parentrefkind"
 )
 
 const (
