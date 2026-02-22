@@ -25,15 +25,12 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"testing"
 	"time"
 
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/util"
-	"github.com/cert-manager/cert-manager/pkg/util/predicate"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/miekg/dns"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -45,11 +42,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 
 	. "github.com/onsi/gomega"
 )
@@ -462,4 +468,46 @@ func ListMatchingPredicates[O any, OL any, P ObjectPtrConstraint[O], PL ObjectLi
 	Expect(err).NotTo(HaveOccurred(), "failed to iterate over objects")
 
 	return out
+}
+
+// You can test this yourself by running:
+//
+//	$ kubectl create svc clusterip bind-tcp -n bind --tcp=8053:8053
+//	$ kubectl port-forward -n bind deploy/bind 8053:8053
+//	$ nsupdate -d -v <<EOF
+//	server 127.0.0.1 <bind-port>
+//	zone example.com
+//	update add foo.http01.example.com 300 A 11.22.33.44
+//	send
+//	EOF
+//
+//	$ dig +short foo.http01.example.com. @127.0.0.1 -p <bind-port> +tcp
+//	11.22.33.44
+func SetARecords(t testing.TB, kubeClient kubernetes.Interface, restConfig *rest.Config, zone, fqdn string, targetIP string) {
+	bindAddr, err := withPortForwardToBind(t, kubeClient, restConfig)
+	require.NoError(t, err, "failed to start port-forward to Bind")
+
+	rec := fmt.Sprintf("%s 300 IN A %s", fqdn, targetIP)
+	rr, err := dns.NewRR(rec)
+	require.NoError(t, err, "dns.NewRR(record = '%s') failed, zone set to '%s'", rec, rec, zone)
+
+	msg := new(dns.Msg)
+	msg.SetUpdate(zone)
+	msg.Insert([]dns.RR{rr})
+
+	client := dns.Client{Net: "tcp"}
+
+	reply, _, err := client.Exchange(msg, bindAddr)
+	require.NoError(t, err, "while adding record to Bind, error came from client.Exchange(record = '%s', addr = '%s'), zone set to '%s'", rec, bindAddr, zone)
+	assert.Equal(t, dns.RcodeToString[dns.RcodeSuccess], dns.RcodeToString[reply.Rcode], "while adding record to Bind, expected RcodeSuccess but got %s, record = '%s', addr = '%s', zone set to '%s'", dns.RcodeToString[reply.Rcode], rec, bindAddr, zone)
+
+	t.Cleanup(func() {
+		msg := new(dns.Msg)
+		msg.SetUpdate(zone)
+		msg.Remove([]dns.RR{rr})
+
+		reply, _, err := client.Exchange(msg, bindAddr)
+		require.NoError(t, err, "while removing record to Bind, error came from client.Exchange(record = '%s', addr = '%s'), zone set to '%s'", rec, bindAddr, zone)
+		assert.Equal(t, dns.RcodeToString[dns.RcodeSuccess], dns.RcodeToString[reply.Rcode])
+	})
 }

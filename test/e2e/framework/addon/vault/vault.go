@@ -44,6 +44,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/chart"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/addon/internal"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/config"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/portforward"
 )
 
 const (
@@ -68,8 +69,10 @@ type Vault struct {
 	// and clients must provide client certificates
 	EnforceMtls bool
 
-	// Proxy is the proxy that can be used to connect to Vault
-	proxy *proxy
+	// proxy is the port-forward to the Vault pod.
+	proxy        *portforward.Proxy
+	podNamespace string
+	podName      string
 
 	// vaultCert and vaultCertPrivateKey are the certificate and private key
 	// used to sign the Vault serving certificate
@@ -294,19 +297,23 @@ func (v *Vault) Setup(ctx context.Context, cfg *config.Config, leaderData ...int
 		v.details.VaultClientPrivateKey = vaultClientPrivateKey
 		v.details.EnforceMtls = v.EnforceMtls
 
-		if cfg.Kubectl == "" {
-			return nil, fmt.Errorf("path to kubectl must be specified")
-		}
-		v.proxy = newProxy(
+		v.podNamespace = v.Namespace
+		v.podName = fmt.Sprintf("%s-0", v.chart.ReleaseName)
+		var proxyErr error
+		v.proxy, proxyErr = portforward.New(
 			ctx,
 			v.Base.Details().KubeClient,
 			v.Base.Details().KubeConfig,
-			v.Namespace,
-			fmt.Sprintf("%s-0", v.chart.ReleaseName),
+			v.podNamespace,
+			v.podName,
+			8200,
 		)
+		if proxyErr != nil {
+			return nil, fmt.Errorf("creating port-forward proxy for Vault: %w", proxyErr)
+		}
 
 		v.details.URL = fmt.Sprintf("https://%s", net.JoinHostPort(dnsName, "8200"))
-		v.details.ProxyURL = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", strconv.Itoa(v.proxy.listenPort)))
+		v.details.ProxyURL = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", strconv.Itoa(v.proxy.LocalPort())))
 	}
 
 	return v.details, nil
@@ -368,7 +375,7 @@ func (v *Vault) Provision(ctx context.Context) error {
 
 		var lastError error
 		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
-			pod, err := kubeClient.CoreV1().Pods(v.proxy.podNamespace).Get(ctx, v.proxy.podName, metav1.GetOptions{})
+			pod, err := kubeClient.CoreV1().Pods(v.podNamespace).Get(ctx, v.podName, metav1.GetOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
 				return false, err
 			}
@@ -393,8 +400,8 @@ func (v *Vault) Provision(ctx context.Context) error {
 		if err != nil {
 			logs, err := kubeClient.
 				CoreV1().
-				Pods(v.proxy.podNamespace).
-				GetLogs(v.proxy.podName, &corev1.PodLogOptions{
+				Pods(v.podNamespace).
+				GetLogs(v.podName, &corev1.PodLogOptions{
 					TailLines: ptr.To(int64(100)),
 				}).
 				DoRaw(ctx)
@@ -407,7 +414,7 @@ func (v *Vault) Provision(ctx context.Context) error {
 		}
 	}
 
-	if err := v.proxy.start(); err != nil {
+	if err := v.proxy.Start(); err != nil {
 		return err
 	}
 
@@ -421,7 +428,7 @@ func (v *Vault) Details() *Details {
 
 // Deprovision will destroy this instance of Vault
 func (v *Vault) Deprovision(ctx context.Context) error {
-	if err := v.proxy.stop(ctx); err != nil {
+	if err := v.proxy.Stop(ctx); err != nil {
 		return err
 	}
 

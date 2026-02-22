@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// The warning "should pass the context parameter" warning shows whenever
+// testing.TB is passed down and t.Context() is used.
+
+//nolint:contextcheck
 package certificates
 
 import (
@@ -24,6 +28,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -35,6 +40,7 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/maelvls/undent"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -42,6 +48,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -50,6 +57,7 @@ import (
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation/certificates"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/log"
 	. "github.com/cert-manager/cert-manager/e2e-tests/framework/matcher"
 	e2eutil "github.com/cert-manager/cert-manager/e2e-tests/util"
 
@@ -273,14 +281,14 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			{
 				name: "should issue a certificate that defines an IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(s.SharedIPAddress),
+					gen.SetCertificateIPs(s.IngressIPAddress),
 				},
 				requiredFeatures: []featureset.Feature{featureset.IPAddressFeature},
 			},
 			{
 				name: "should issue a certificate that defines a DNS Name and IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(s.SharedIPAddress),
+					gen.SetCertificateIPs(s.IngressIPAddress),
 					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.IPAddressFeature},
@@ -288,7 +296,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			{
 				name: "should issue a certificate that defines a Common Name and IP Address",
 				certModifiers: []gen.CertificateModifier{
-					gen.SetCertificateIPs(s.SharedIPAddress),
+					gen.SetCertificateIPs(s.IngressIPAddress),
 					// Some issuers use the CN to define the cert's "ID"
 					// if one cert manages to be in an error state in the issuer it might throw an error
 					// this makes the CN more unique
@@ -455,10 +463,9 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		////// Gateway/ Ingress Tests ///////
 		/////////////////////////////////////
 
-		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an Ingress with annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
-				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
-				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				Skip("this is an Ingress-specific test case but we are running the suite in mode " + s.HTTP01TestType)
 				return
 			}
 			var certName string
@@ -507,10 +514,9 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+		s.it(f, "should issue a certificate defined by an Ingress with certificate field annotations", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if s.HTTP01TestType != "Ingress" {
-				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
-				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				Skip("this is an Ingress-specific test case but we are running the suite in mode " + s.HTTP01TestType)
 				return
 			}
 			var certName string
@@ -615,34 +621,56 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		})
 
 		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			if s.HTTP01TestType != "Gateway" {
+				Skip("this is an Gateway-specific test case but we are running the suite in mode " + s.HTTP01TestType)
+				return
+			}
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 
-			name := "testcert-gateway"
-			secretName := "testcert-gateway-tls"
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
-			duration := time.Hour * 999
-			renewBefore := time.Hour * 111
 
-			By("Creating a Gateway with annotations for issuerRef and other Certificate fields")
-			gw := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
-				"cert-manager.io/issuer":       issuerRef.Name,
-				"cert-manager.io/issuer-kind":  issuerRef.Kind,
-				"cert-manager.io/issuer-group": issuerRef.Group,
-				"cert-manager.io/common-name":  domain,
-				"cert-manager.io/duration":     duration.String(),
-				"cert-manager.io/renew-before": renewBefore.String(),
-			}, domain)
-
-			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			f.Helper().Kubectl("")
+			manifests := undent.Undent(`
+				apiVersion: gateway.networking.k8s.io/v1
+				kind: Gateway
+				metadata:
+				  name: testcert-gateway
+				  annotations:
+				    cert-manager.io/issuer: ` + issuerRef.Name + `
+				    cert-manager.io/issuer-kind: ` + issuerRef.Kind + `
+				    cert-manager.io/issuer-group: ` + issuerRef.Group + `
+				    cert-manager.io/common-name: ` + domain + `
+				    cert-manager.io/duration: 999h
+				    cert-manager.io/renew-before: 111h
+				spec:
+				  gatewayClassName: ` + s.GatewayClassName + `
+				  listeners:
+				    - name: http
+				      port: 80
+				      protocol: HTTP
+				    - hostname: ` + domain + `
+				      name: https
+				      port: 443
+				      protocol: HTTPS
+				      tls:
+				        mode: Terminate
+				        certificateRefs:
+				        - name: testcert-gateway-tls
+				          kind: Secret
+			`)
+			err := f.Helper().Kubectl(f.Namespace.Name).RunStdin(ctx, manifests, "apply", "-f", "-")
 			Expect(err).NotTo(HaveOccurred())
 
-			// XXX(Mael): the CertificateRef seems to contain the Gateway name
-			// "testcert-gateway" instead of the secretName
-			// "testcert-gateway-tls".
-			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+			By("Waiting for the cluster IP address to be assigned to the Gateway")
+			ip, err := WaitForIP(ctx, f, "testcert-gateway")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ip).ToNot(BeEmpty(), "expected to get an IP address assigned to the Gateway")
+
+			By("Adding A record " + domain + " -> " + ip)
+			e2eutil.SetARecords(GinkgoTB(), f.KubeClientSet, f.KubeClientConfig, "example.com.", domain, ip)
 
 			By("Waiting for the Certificate to exist...")
-			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, "testcert-gateway-tls", 5*time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
@@ -654,77 +682,82 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			By("Validating the created Certificate")
 			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
 			Expect(cert.Spec.CommonName).To(Equal(domain))
-			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
-			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+			Expect(cert.Spec.Duration.Duration).To(Equal(time.Hour * 999))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(time.Hour * 111))
 		})
 
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
-			// TODO: @hjoshi123 No gwapi provider supports ListenerSet yet. Remove this once we upgrade to something that does support it.
-			if s.HTTP01TestType != "ListenerSet" {
-				Skip("skipping test as there is no gwapi provider with LS support")
+			if s.HTTP01TestType != "Gateway" {
+				Skip("this is a Gateway-specific test case but we are running the suite in mode " + s.HTTP01TestType)
 				return
 			}
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ListenerSets)
-
-			name := "testcert-gateway"
-			secretName := "testcert-gateway-tls"
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
-			duration := time.Hour * 999
-			renewBefore := time.Hour * 111
-			all := gwapi.FromNamespaces("All")
 
-			gw := &gwapi.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-				Spec: gwapi.GatewaySpec{
-					GatewayClassName: "foo",
-					AllowedListeners: &gwapi.AllowedListeners{
-						Namespaces: &gwapi.ListenerNamespaces{
-							From: &all,
-						},
-					},
-					Listeners: []gwapi.Listener{
-						{
-							AllowedRoutes: &gwapi.AllowedRoutes{
-								Namespaces: &gwapi.RouteNamespaces{
-									From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
-									Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-										"gw": name,
-									}},
-								},
-								Kinds: nil,
-							},
-							Name:     "acme-solver",
-							Protocol: gwapi.TLSProtocolType,
-							Port:     gwapi.PortNumber(80),
-							Hostname: (*gwapi.Hostname)(&domain),
-						},
-					},
-				},
-			}
-
-			_, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			// Dummy listener: for now, each Gateway needs to have at least one
+			// listener. We thus set one 80 listener on the Gateway, and let
+			// individual ListenerSets set the 443 listener. See:
+			// https://github.com/kubernetes-sigs/gateway-api/issues/4425
+			manifests := undent.Undent(`
+				apiVersion: gateway.networking.k8s.io/v1
+				kind: Gateway
+				metadata:
+				  name: testcert-gateway
+				  namespace: ` + f.Namespace.Name + `
+				spec:
+				  gatewayClassName: ` + s.GatewayClassName + `
+				  listeners:
+				    - name: dummy
+				      port: 80
+				      protocol: HTTP
+				  allowedListeners:
+				    namespaces:
+				      from: Same
+				---
+				kind: ListenerSet
+				apiVersion: gateway.networking.k8s.io/v1
+				metadata:
+				  name: testcert-listenerset
+				  namespace: ` + f.Namespace.Name + `
+				  annotations:
+				    cert-manager.io/issuer: ` + ir.Name + `
+				    cert-manager.io/issuer-kind: ` + ir.Kind + `
+				    cert-manager.io/issuer-group: ` + ir.Group + `
+				    cert-manager.io/common-name: ` + domain + `
+				    cert-manager.io/duration: 999h
+				    cert-manager.io/renew-before: 111h
+				spec:
+				  parentRef:
+				    name: testcert-gateway
+				    namespace: ` + f.Namespace.Name + `
+				  listeners:
+				    - name: http
+				      hostname: ` + domain + `
+				      port: 80
+				      protocol: HTTP
+				    - name: https
+				      hostname: ` + domain + `
+				      port: 443
+				      protocol: HTTPS
+				      tls:
+				        mode: Terminate
+				        certificateRefs:
+				          - name: testcert-listenerset-tls
+			`)
+			err := f.Helper().Kubectl(f.Namespace.Name).RunStdin(ctx, manifests, "apply", "-f", "-")
 			Expect(err).NotTo(HaveOccurred())
 
-			xls := e2eutil.NewListenerSet(name, f.Namespace.Name, secretName, map[string]string{
-				"cert-manager.io/issuer":       ir.Name,
-				"cert-manager.io/issuer-kind":  ir.Kind,
-				"cert-manager.io/issuer-group": ir.Group,
-				"cert-manager.io/common-name":  domain,
-				"cert-manager.io/duration":     duration.String(),
-				"cert-manager.io/renew-before": renewBefore.String(),
-			}, domain)
-			xls, err = f.GWClientSet.GatewayV1().ListenerSets(f.Namespace.Name).Create(ctx, xls, metav1.CreateOptions{})
+			By("Waiting for the cluster IP address to be assigned to the Gateway")
+			ip, err := WaitForIP(ctx, f, "testcert-gateway")
 			Expect(err).NotTo(HaveOccurred())
+			Expect(ip).ToNot(BeEmpty(), "expected to get an IP address assigned to the Gateway")
 
-			// The CertificateRef Name comes from the secretName (for example,
-			// "testcert-gateway-tls"), and is used as the Certificate name.
-			certName := string(xls.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+			By("Adding A record " + domain + " -> " + ip)
+			e2eutil.SetARecords(GinkgoTB(), f.KubeClientSet, f.KubeClientConfig, "example.com.", domain, ip)
 
 			By("Waiting for the Certificate to exist...")
-			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, "testcert-listenerset-tls", time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
@@ -736,8 +769,8 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			By("Validating the created Certificate")
 			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
 			Expect(cert.Spec.CommonName).To(Equal(domain))
-			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
-			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+			Expect(cert.Spec.Duration.Duration).To(Equal(999 * time.Hour))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(111 * time.Hour))
 		})
 
 		////////////////////////////////////////
@@ -860,3 +893,37 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		}, featureset.OnlySAN)
 	})
 }
+
+func WaitForIP(ctx context.Context, f *framework.Framework, gwName string) (string, error) {
+	logf, done := log.LogBackoff()
+	defer done()
+
+	var ipAddress string
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 2*time.Minute, pollImmediately, func(ctx context.Context) (done bool, err error) {
+		logf("Waiting for IP address to be assigned to the Gateway %q in namespace %q", gwName, f.Namespace.Name)
+
+		gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Get(ctx, gwName, metav1.GetOptions{})
+		if err != nil {
+			logf("Error getting Gateway: %v", err)
+			return false, nil
+		}
+
+		if len(gw.Status.Addresses) == 0 {
+			logf("Gateway does not have any addresses yet")
+			return false, nil
+		}
+		for _, addr := range gw.Status.Addresses {
+			if addr.Type != nil && *addr.Type == gwapi.IPAddressType && net.ParseIP(addr.Value) != nil {
+				logf("Gateway has been assigned IP address: %s", addr.Value)
+				ipAddress = addr.Value
+				return true, nil
+			}
+		}
+		logf("Gateway does not have an IP address assigned yet, current addresses: %v", gw.Status.Addresses)
+		return false, nil
+	})
+
+	return ipAddress, err
+}
+
+var pollImmediately = true
