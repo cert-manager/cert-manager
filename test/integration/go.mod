@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/integration-tests
 
-go 1.25.0
+go 1.25.7
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
