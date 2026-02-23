@@ -360,11 +360,17 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 			corev1.TLSPrivateKeyKey: pkData,
 		},
 	}
+	secretName := s.Name
+	secretNamespace := s.Namespace
 	if s.Name == "" {
 		// TODO: handle certificate resources that have especially long names
-		s.GenerateName = crt.Name + "-"
+		secretName = crt.Name + "-next-private-key"
+		s.Name = secretName
 	}
-	s, err = c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+	s, err = c.coreClient.CoreV1().Secrets(secretNamespace).Create(ctx, s, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		s, err = c.coreClient.CoreV1().Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
+	}
 	if err != nil {
 		return nil, err
 	}
