@@ -39,9 +39,9 @@ import (
 var errArgument = errors.New("invalid arguments")
 
 type objectUpdater interface {
-	updateObject(context.Context, *cmacme.Challenge, *cmacme.Challenge) error
+	updateStatus(context.Context, *cmacme.Challenge, *cmacme.Challenge) error
 	applyFinalizers(context.Context, *cmacme.Challenge, []string) error
-	upgradeManagedFields(context.Context, *cmacme.Challenge) error
+	upgradeManagedFields(context.Context, *cmacme.Challenge) (bool, error)
 }
 
 type defaultObjectUpdater struct {
@@ -60,16 +60,16 @@ func newObjectUpdater(cl versioned.Interface, fieldManager string) objectUpdater
 	return o
 }
 
-// updateObject updates the Status if it has changed.
-// Only the Status fields may be modified. If there are any modifications to new
-// object, outside of the Status fields, this function return an error.
-func (o *defaultObjectUpdater) updateObject(ctx context.Context, oldChallenge, newChallenge *cmacme.Challenge) error {
+// updateStatus updates the Status if it has changed.
+// Only the Status fields may be modified. If there are any modifications to new object, outside of
+// the Status fields, this function return an error.
+func (o *defaultObjectUpdater) updateStatus(ctx context.Context, oldChallenge, newChallenge *cmacme.Challenge) error {
 	if !apiequality.Semantic.DeepEqual(
 		gen.ChallengeFrom(oldChallenge, gen.ResetChallengeStatus()),
 		gen.ChallengeFrom(newChallenge, gen.ResetChallengeStatus()),
 	) {
 		return fmt.Errorf(
-			"%w: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
+			"%w: in updateObject: unexpected differences between old and new: only the status fields may be modified",
 			errArgument,
 		)
 	}
@@ -141,19 +141,18 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 // upgradeManagedFields upgrades the managed fields from CSA to SSA.
 // This is required to ensure a server side apply request can reset/unset fields based on
 // field manager managed fields.
-func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge) error {
+func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge) (bool, error) {
 	for _, opts := range [][]csaupgrade.Option{
 		nil,                                // Upgrade the main object managed fields.
 		{csaupgrade.Subresource("status")}, // Upgrade the status subresource managed fields.
 	} {
 		patchData, err := csaupgrade.UpgradeManagedFieldsPatch(challenge, sets.New(o.fieldManager), o.fieldManager, opts...)
 		if err != nil {
-			return fmt.Errorf("when creating managed fields patch: %w", err)
+			return false, fmt.Errorf("when creating managed fields patch: %w", err)
 		}
 
 		if len(patchData) == 0 {
-			// No work to be done, return early
-			return nil
+			continue
 		}
 
 		_, err = o.cl.AcmeV1().Challenges(challenge.Namespace).Patch(
@@ -162,9 +161,11 @@ func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challe
 			metav1.PatchOptions{},
 		)
 		if err != nil {
-			return fmt.Errorf("when patching managed fields: %w", err)
+			return false, fmt.Errorf("when patching managed fields: %w", err)
 		}
+
+		return true, nil // Return early if we patched the managed fields, to avoid patching twice, which would cause a conflict.
 	}
 
-	return nil
+	return false, nil // No managed fields needed to be upgraded, continue with the sync.
 }

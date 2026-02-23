@@ -100,7 +100,7 @@ func runUpdateStatusTests(t *testing.T, verb string) {
 
 			updater := newObjectUpdater(cl, "test-fieldmanager")
 			t.Log("Calling updateStatus")
-			updateStatusErr := updater.updateObject(t.Context(), oldChallenge, newChallenge)
+			updateStatusErr := updater.updateStatus(t.Context(), oldChallenge, newChallenge)
 			if tt.errorMessage == "" {
 				assert.NoError(t, updateStatusErr)
 			} else {

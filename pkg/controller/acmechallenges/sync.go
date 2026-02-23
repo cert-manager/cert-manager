@@ -75,12 +75,15 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// Upgrade from CSA to SSA if needed. This might result in a resource conflict if another
 	// controller has updated the Challenge since it was read, but that's ok - we'll just retry
 	// and upgrade again on the next sync.
-	if err := c.upgradeManagedFields(ctx, ch); err != nil {
+	if upgraded, err := c.upgradeManagedFields(ctx, ch); err != nil {
 		return fmt.Errorf("error upgrading managed fields: %w", err)
+	} else if upgraded {
+		log.V(logf.DebugLevel).Info("upgraded managed fields from CSA to SSA, will reconcile again with updated managed fields")
+		return nil
 	}
 
 	defer func() {
-		if updateError := c.updateObject(ctx, chOriginal, ch); updateError != nil {
+		if updateError := c.updateStatus(ctx, chOriginal, ch); updateError != nil {
 			if errors.Is(updateError, errArgument) {
 				log.Error(updateError, "If this error occurs there is a bug in cert-manager. Please report it. Not retrying.")
 				return
@@ -124,6 +127,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	// up resources created for the challenge.
 	if finalizers := sets.New(ch.Finalizers...); !finalizers.Has(cmacme.ACMEDomainQualifiedFinalizer) ||
 		finalizers.Has(cmacme.ACMELegacyFinalizer) {
+		// Apply the ACME finalizer, replacing the legacy finalizer if it is present.
+		// We return early and wait for the next sync to make sure we have the latest
+		// resourceVersion for follow-up updates. Once we move to SSA for status updates,
+		// we will no longer have to worry about conflicts in following code and don't have
+		// to return early here.
 		return c.applyFinalizers(ctx, ch, []string{cmacme.ACMEDomainQualifiedFinalizer})
 	}
 
