@@ -142,10 +142,18 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 // This is required to ensure a server side apply request can reset/unset fields based on
 // field manager managed fields.
 func (o *objectUpdateClientSSA) upgradeManagedFields(ctx context.Context, challenge *cmacme.Challenge) (bool, error) {
-	for _, opts := range [][]csaupgrade.Option{
-		nil,                                // Upgrade the main object managed fields.
-		{csaupgrade.Subresource("status")}, // Upgrade the status subresource managed fields.
-	} {
+	var upgradeOptions [][]csaupgrade.Option
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		upgradeOptions = [][]csaupgrade.Option{
+			nil, // Upgrade the main object managed fields.
+		}
+	} else {
+		upgradeOptions = [][]csaupgrade.Option{
+			nil,                                // Upgrade the main object managed fields.
+			{csaupgrade.Subresource("status")}, // Upgrade the status subresource managed fields.
+		}
+	}
+	for _, opts := range upgradeOptions {
 		patchData, err := csaupgrade.UpgradeManagedFieldsPatch(challenge, sets.New(o.fieldManager), o.fieldManager, opts...)
 		if err != nil {
 			return false, fmt.Errorf("when creating managed fields patch: %w", err)
