@@ -1647,7 +1647,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderRFC2136(ref common.Reference
 				Properties: map[string]spec.Schema{
 					"nameserver": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1])\u00a0; port is optional. This field is required.",
+							Description: "The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]); port is optional. This field is required.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
