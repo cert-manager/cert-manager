@@ -545,7 +545,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
-		"cleanup and mark the challenge as not processing if it is already valid (step1: with finalizers)": {
+		"cleanup the challenge resources if it is in a valid state and finalizers are still set": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -577,7 +577,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
-		"cleanup and mark the challenge as not processing if it is already valid (step2: without finalizers)": {
+		"mark the challenge as not processing if it is in a valid state and finalizers have been removed": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeFinalizers(nil),
 				gen.SetChallengeProcessing(true),
@@ -615,7 +615,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
-		"cleanup and mark the challenge as not processing if it is already failed (step1: with finalizers)": {
+		"cleanup the challenge resources if it is in a failed state and finalizers are still set": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -647,7 +647,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
-		"cleanup and mark the challenge as not processing if it is already failed (step2: without finalizers)": {
+		"mark the challenge as not processing if it is in a failed state and finalizers have been removed": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeFinalizers(nil),
 				gen.SetChallengeProcessing(true),
