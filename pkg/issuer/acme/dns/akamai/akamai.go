@@ -141,7 +141,8 @@ func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 		}
 
 		record.Target = append(record.Target, `"`+value+`"`)
-		record.TTL = &a.TTL
+		ttl := a.TTL
+		record.TTL = &ttl
 
 		err = a.dnsclient.RecordUpdate(ctx, record, hostedDomain)
 		if err != nil {
@@ -151,10 +152,11 @@ func (a *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 		return nil
 	}
 
+	ttl := a.TTL
 	record = &dns.RecordBody{
 		Name:       recordName,
 		RecordType: "TXT",
-		TTL:        &a.TTL,
+		TTL:        &ttl,
 		Target:     []string{`"` + value + `"`},
 	}
 
