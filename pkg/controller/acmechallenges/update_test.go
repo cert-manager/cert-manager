@@ -18,12 +18,11 @@ package acmechallenges
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,45 +35,29 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func TestUpdateObjectStandard(t *testing.T) {
-	runUpdateObjectTests(t, "update")
+func TestUpdateStatusStandard(t *testing.T) {
+	runUpdateStatusTests(t, "update")
 }
 
-func TestUpdateObjectSSA(t *testing.T) {
+func TestUpdateStatusApply(t *testing.T) {
 	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
-	runUpdateObjectTests(t, "patch")
+	runUpdateStatusTests(t, "patch")
 }
 
-func runUpdateObjectTests(t *testing.T, verb string) {
-	simulatedUpdateError := errors.New("simulated-update-error")
+func runUpdateStatusTests(t *testing.T, verb string) {
 	simulatedUpdateStatusError := errors.New("simulated-update-status-error")
 
-	// NOTE: We cannot test updates to both the main resource and status
-	// subresource in the same test using APPLY as the fake.NewClientset used
-	// in these tests uses a very simple object tracker that does not track main and
-	// subresource fields separately, which is required for SSA to function.
-	// For reference see these comments in upstream K8s code:
-	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L97-L99
-	// - https://github.com/kubernetes/kubernetes/blob/790393ae92e97262827d4f1fba24e8ae65bbada0/staging/src/k8s.io/client-go/testing/fixture.go#L167-L169
-	// The fake client works for UPDATE, but since the K8s ecosystem is moving towards SSA,
-	// we should try to improve our code (and/or test strategy) long-term.
 	tests := []struct {
 		name              string
-		skip              bool
 		mods              []gen.ChallengeModifier
 		notFound          bool
-		updateError       error
 		updateStatusError error
 		errorMessage      string
 	}{
-		// Modifying the finalizers and any status fields results in both
-		// finalizers and status being updated.
+		// Modifying any status fields results in status being updated.
 		{
 			name: "success",
-			// FIXME: Skip test case when using SSA. See description above.
-			skip: verb == "patch",
 			mods: []gen.ChallengeModifier{
-				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
 				gen.SetChallengePresented(true),
 			},
 		},
@@ -88,74 +71,27 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 			},
 			notFound: true,
 		},
-		// Only the Finalizers and Status fields can be updated. Updates to any
-		// other fields suggests a programming error an argument error.
-		{
-			name: "error-on-non-finalizer-non-status-modifications",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeDNSName("new-dns-name"),
-			},
-			errorMessage: fmt.Sprintf(
-				"%s: in updateObject: unexpected differences between old and new: only the finalizers and status fields may be modified",
-				errArgument,
-			),
-		},
-		// If the Update API call fails, that error is returned.
-		{
-			name: "update-error-only",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
-			},
-			updateError:  simulatedUpdateError,
-			errorMessage: fmt.Sprintf("when updating the finalizers: %s", simulatedUpdateError),
-		},
 		// If the UpdateStatus API call fails, that error is returned.
 		{
-			name: "update-status-error-only",
+			name: "update-status-error",
 			mods: []gen.ChallengeModifier{
 				gen.SetChallengePresented(true),
 			},
 			updateStatusError: simulatedUpdateStatusError,
-			errorMessage:      fmt.Sprintf("when updating the status: %s", simulatedUpdateStatusError),
-		},
-		// If both Update and UpdateStatus API calls fail, both errors are returned.
-		{
-			name: "all-updates-fail",
-			mods: []gen.ChallengeModifier{
-				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
-				gen.SetChallengePresented(true),
-			},
-			updateError:       simulatedUpdateError,
-			updateStatusError: simulatedUpdateStatusError,
-			errorMessage: fmt.Sprintf(
-				"[when updating the status: %s, when updating the finalizers: %s]",
-				simulatedUpdateStatusError,
-				simulatedUpdateError,
-			),
+			errorMessage:      simulatedUpdateStatusError.Error(),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skip {
-				t.Skip("The fake client doesn't support K8s subresources like status when using SSA.")
-			}
-
 			oldChallenge := gen.Challenge("c1")
 			newChallenge := gen.ChallengeFrom(oldChallenge, tt.mods...)
 			cl := fake.NewClientset(oldChallenge)
 			if tt.notFound {
-				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-					t.Log("Simulating a challenge that has been deleted")
-					return true, nil, k8sErrors.NewNotFound(schema.GroupResource{}, "")
+				cl.PrependReactor(verb, "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a situation where the target object has been deleted")
+					return true, nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 				})
-			}
-			if tt.updateError != nil {
-				cl.PrependReactor(verb, "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-					t.Log("Simulating a challenge update error")
-					return true, nil, tt.updateError
-				})
-			}
-			if tt.updateStatusError != nil {
+			} else if tt.updateStatusError != nil {
 				cl.PrependReactor(verb, "challenges/status", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 					t.Log("Simulating a challenge/status update error")
 					return true, nil, tt.updateStatusError
@@ -163,12 +99,12 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 			}
 
 			updater := newObjectUpdater(cl, "test-fieldmanager")
-			t.Log("Calling updateObject")
-			updateObjectErr := updater.updateObject(t.Context(), oldChallenge, newChallenge)
+			t.Log("Calling updateStatus")
+			updateStatusErr := updater.updateStatus(t.Context(), oldChallenge, newChallenge)
 			if tt.errorMessage == "" {
-				assert.NoError(t, updateObjectErr)
+				assert.NoError(t, updateStatusErr)
 			} else {
-				assert.EqualError(t, updateObjectErr, tt.errorMessage)
+				assert.EqualError(t, updateStatusErr, tt.errorMessage)
 			}
 
 			if len(tt.mods) == 0 {
@@ -179,21 +115,105 @@ func runUpdateObjectTests(t *testing.T, verb string) {
 				t.Log("Checking whether the object was updated")
 				actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
 				require.NoError(t, err)
-				if updateObjectErr == nil {
+				if updateStatusErr == nil {
 					expected := newChallenge
 					expected.APIVersion = actual.APIVersion
 					expected.Kind = actual.Kind
 					// We ignore differences in .ManagedFields since the expected object does not have them.
 					// FIXME: don't ignore this field
 					expected.ManagedFields = actual.ManagedFields
-					assert.Equal(t, expected, actual, "updateObject did not return an error so the object in the API should have been updated")
-				} else {
-					if !errors.Is(updateObjectErr, simulatedUpdateError) {
-						assert.Equal(t, newChallenge.Finalizers, actual.Finalizers, "The Update did not fail so the Finalizers of the API object should have been updated")
-					}
-					if !errors.Is(updateObjectErr, simulatedUpdateStatusError) {
-						assert.Equal(t, newChallenge.Status, actual.Status, "The UpdateStatus did not fail so the Status of the API object should have been updated")
-					}
+					assert.Equal(t, expected, actual, "updateStatus did not return an error so the object in the API should have been updated")
+				} else if !errors.Is(updateStatusErr, simulatedUpdateStatusError) {
+					assert.Equal(t, newChallenge.Status, actual.Status, "The updateStatus did not fail so the Status of the API object should have been updated")
+				}
+			}
+		})
+	}
+}
+
+func TestApplyFinalizers(t *testing.T) {
+	simulatedApplyError := errors.New("simulated-apply-error")
+
+	tests := []struct {
+		name         string
+		mods         []gen.ChallengeModifier
+		finalizers   []string
+		notFound     bool
+		applyError   error
+		errorMessage string
+	}{
+		// Modifying the finalizers results in finalizers being updated.
+		{
+			name:       "success",
+			finalizers: []string{"example.com/another-finalizer"},
+			mods: []gen.ChallengeModifier{
+				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
+			},
+		},
+		// If the API server responds with a NOT FOUND error, the error is
+		// ignored. Presumably the object has been deleted since the Sync
+		// function began executing.
+		{
+			name:       "not-found",
+			finalizers: []string{"example.com/another-finalizer"},
+			mods: []gen.ChallengeModifier{
+				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
+			},
+			notFound: true,
+		},
+		// If the Apply API call fails, that error is returned.
+		{
+			name:       "apply-error",
+			finalizers: []string{"example.com/another-finalizer"},
+			mods: []gen.ChallengeModifier{
+				gen.SetChallengeFinalizers([]string{"example.com/another-finalizer"}),
+			},
+			applyError:   simulatedApplyError,
+			errorMessage: simulatedApplyError.Error(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			challenge := gen.Challenge("c1")
+			cl := fake.NewClientset(challenge)
+			if tt.notFound {
+				cl.PrependReactor("patch", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a situation where the target object has been deleted")
+					return true, nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+				})
+			} else if tt.applyError != nil {
+				cl.PrependReactor("patch", "challenges", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					t.Log("Simulating a challenge update error")
+					return true, nil, tt.applyError
+				})
+			}
+			updater := newObjectUpdater(cl, "test-fieldmanager")
+			t.Log("Calling applyFinalizers")
+			applyFinalizersErr := updater.applyFinalizers(t.Context(), challenge, tt.finalizers)
+			if tt.errorMessage == "" {
+				assert.NoError(t, applyFinalizersErr)
+			} else {
+				assert.EqualError(t, applyFinalizersErr, tt.errorMessage)
+			}
+
+			if len(tt.mods) == 0 {
+				assert.Empty(t, cl.Actions(), "There should not be any API interactions unless the object was modified")
+			}
+
+			if !tt.notFound {
+				t.Log("Checking whether the object was updated")
+				actual, err := cl.AcmeV1().Challenges(challenge.Namespace).Get(t.Context(), challenge.Name, metav1.GetOptions{})
+				require.NoError(t, err)
+				if applyFinalizersErr == nil {
+					expected := gen.ChallengeFrom(challenge, tt.mods...)
+					expected.APIVersion = actual.APIVersion
+					expected.Kind = actual.Kind
+					// We ignore differences in .ManagedFields since the expected object does not have them.
+					// FIXME: don't ignore this field
+					expected.ManagedFields = actual.ManagedFields
+					assert.Equal(t, expected, actual, "applyFinalizers did not return an error so the object in the API should have been updated")
+				} else if !errors.Is(applyFinalizersErr, simulatedApplyError) {
+					assert.Equal(t, tt.finalizers, actual.Finalizers, "The applyFinalizers failed with a different error so the Finalizers of the API object should have been updated")
 				}
 			}
 		})
