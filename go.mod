@@ -13,7 +13,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/Venafi/vcert/v5 v5.12.3
-	github.com/akamai/AkamaiOPEN-edgegrid-golang/v12 v12.3.0
+	github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.0.0
 	github.com/aws/aws-sdk-go-v2 v1.41.2
 	github.com/aws/aws-sdk-go-v2/config v1.32.10
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.10

@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg/dns"
+	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
