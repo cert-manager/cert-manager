@@ -24,6 +24,7 @@ import (
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -34,7 +35,7 @@ func testRecordBodyData() *dns.RecordBody {
 		Name:       "_acme-challenge.test.example.com",
 		RecordType: "TXT",
 		Target:     []string{`"` + "dns01-key" + `"`},
-		TTL:        300,
+		TTL:        ptr.To(300),
 	}
 }
 
@@ -44,7 +45,7 @@ func testRecordBodyDataExist() *dns.RecordBody {
 		Name:       "_acme-challenge.test.example.com",
 		RecordType: "TXT",
 		Target:     []string{`"` + "dns01-key" + `"`, `"` + "dns01-key-stub" + `"`},
-		TTL:        300,
+		TTL:        ptr.To(300),
 	}
 }
 
@@ -343,7 +344,7 @@ func (o StubOpenDNSConfig) RecordSave(ctx context.Context, rec *dns.RecordBody, 
 		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
 			return fmt.Errorf("RecordSave: expected/actual Target don't match")
 		}
-		if rec.TTL != exp.(*dns.RecordBody).TTL {
+		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
 			return fmt.Errorf("RecordSave: expected/actual TTL don't match")
 		}
 	}
@@ -370,7 +371,7 @@ func (o StubOpenDNSConfig) RecordUpdate(ctx context.Context, rec *dns.RecordBody
 		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
 			return fmt.Errorf("RecordUpdate: expected/actual Target don't match")
 		}
-		if rec.TTL != exp.(*dns.RecordBody).TTL {
+		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
 			return fmt.Errorf("RecordUpdate: expected/actual TTL don't match")
 		}
 	}
@@ -396,7 +397,7 @@ func (o StubOpenDNSConfig) RecordDelete(ctx context.Context, rec *dns.RecordBody
 		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
 			return fmt.Errorf("RecordDelete: expected/actual Target don't match")
 		}
-		if rec.TTL != exp.(*dns.RecordBody).TTL {
+		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
 			return fmt.Errorf("RecordDelete: expected/actual TTL don't match")
 		}
 	}
