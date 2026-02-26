@@ -27,6 +27,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	logrtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 
@@ -100,6 +101,55 @@ func (fpr *fakePublicRecordsClient) Get(ctx context.Context, resourceGroupName s
 }
 
 func (fpr *fakePublicRecordsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) error {
+	if len(fpr.records) == 0 {
+		return nil
+	}
+	delete(fpr.records, fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName))
+	return nil
+}
+
+type fakePrivateZonesClient struct {
+	zones map[string]dns.Zone
+}
+
+func newFakePrivateZonesClient(zones map[string]dns.Zone) ZonesClient {
+	return &fakePrivateZonesClient{zones: zones}
+}
+
+func (fpz *fakePrivateZonesClient) Get(ctx context.Context, resourceGroupName string, zoneName string, options *ClientOptions) error {
+	_, ok := fpz.zones[zoneName]
+	if !ok {
+		return errors.New("no zone found")
+	}
+
+	return nil
+}
+
+type fakePrivateRecordsClient struct {
+	records map[string]RecordSet
+}
+
+func newFakePrivateRecordSetsClient(records map[string]RecordSet) RecordsClient {
+	return &fakePrivateRecordsClient{records: records}
+}
+
+func (fpr *fakePrivateRecordsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, set RecordSet, options *ClientOptions) (RecordSet, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName)
+	fpr.records[key] = set
+	return set, nil
+}
+
+func (fpr *fakePrivateRecordsClient) Get(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) (RecordSet, error) {
+	key := fmt.Sprintf("%s.%s", relativeRecordSetName, zoneName)
+	r, ok := fpr.records[key]
+	if !ok {
+		return nil, errors.New("no record found")
+	}
+
+	return r, nil
+}
+
+func (fpr *fakePrivateRecordsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) error {
 	if len(fpr.records) == 0 {
 		return nil
 	}
@@ -428,6 +478,58 @@ func TestMockAzurePublicDNSPresent(t *testing.T) {
 	}
 }
 
+func TestMockAzurePrivateDNSPresent(t *testing.T) {
+	tests := []struct {
+		name               string
+		domain             string
+		relativeRecordName string
+		fqdn               string
+		value              string
+		expectError        bool
+	}{
+		{
+			name:               "Present challenge in private zone",
+			domain:             "test.internal.example.com",
+			relativeRecordName: "_acme-challenge",
+			fqdn:               "_acme-challenge.test.internal.example.com",
+			value:              "validation-token-123",
+			expectError:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pzc := newFakePrivateZonesClient(map[string]dns.Zone{
+				tt.domain: {Name: &tt.domain},
+			})
+			recordSets := map[string]RecordSet{
+				tt.fqdn: &PrivateTXTRecordSet{
+					RS: &privatedns.RecordSet{
+						Name: &tt.fqdn,
+						Etag: new(string),
+						Properties: &privatedns.RecordSetProperties{
+							TxtRecords: make([]*privatedns.TxtRecord, 0),
+						},
+					},
+				},
+			}
+			prc := newFakePrivateRecordSetsClient(recordSets)
+			provider := &DNSProvider{
+				recordClient:      prc,
+				zoneClient:        pzc,
+				resourceGroupName: "test-rg",
+				zoneName:          "internal.example.com",
+				log:               logrtesting.NewTestLogger(t),
+			}
+
+			err := provider.Present(t.Context(), tt.domain, tt.fqdn, tt.value)
+			assert.NoError(t, err)
+			val := *(recordSets[tt.fqdn].GetTXTRecords()[0][0])
+			assert.Equal(t, tt.value, val)
+		})
+	}
+}
+
 func TestMockAzurePublicDNSCleanUp(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -459,6 +561,62 @@ func TestMockAzurePublicDNSCleanUp(t *testing.T) {
 						Etag: to.Ptr("etag-123"),
 						Properties: &dns.RecordSetProperties{
 							TxtRecords: []*dns.TxtRecord{
+								{
+									Value: []*string{to.Ptr("validation-token-123")},
+								},
+							},
+						},
+					},
+				},
+			}
+			prc := newFakeRecordSetsClient(recordSets)
+			provider := &DNSProvider{
+				recordClient:      prc,
+				zoneClient:        pzc,
+				resourceGroupName: "test-rg",
+				zoneName:          "internal.example.com",
+				log:               logrtesting.NewTestLogger(t),
+			}
+
+			assert.Equal(t, len(recordSets[tt.fqdn].GetTXTRecords()), 1)
+			err := provider.CleanUp(t.Context(), tt.domain, tt.fqdn, tt.value)
+			assert.NoError(t, err)
+			assert.Equal(t, len(recordSets), 0)
+		})
+	}
+}
+
+func TestMockAzurePrivateDNSCleanUp(t *testing.T) {
+	tests := []struct {
+		name               string
+		domain             string
+		relativeRecordName string
+		fqdn               string
+		value              string
+		expectError        bool
+	}{
+		{
+			name:               "Cleanup entry in private zone",
+			domain:             "test.internal.example.com",
+			relativeRecordName: "_acme-challenge",
+			fqdn:               "_acme-challenge.test.internal.example.com",
+			value:              "validation-token-123",
+			expectError:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pzc := newFakePrivateZonesClient(map[string]dns.Zone{
+				tt.domain: {Name: &tt.domain},
+			})
+			recordSets := map[string]RecordSet{
+				tt.fqdn: &PrivateTXTRecordSet{
+					RS: &privatedns.RecordSet{
+						Name: &tt.fqdn,
+						Etag: to.Ptr("etag-123"),
+						Properties: &privatedns.RecordSetProperties{
+							TxtRecords: []*privatedns.TxtRecord{
 								{
 									Value: []*string{to.Ptr("validation-token-123")},
 								},

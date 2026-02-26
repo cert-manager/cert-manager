@@ -617,7 +617,16 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	Environment AzureDNSEnvironment
 
 	ManagedIdentity *AzureManagedIdentity
+
+	ZoneType AzureZoneType `json:"zoneType,omitempty"`
 }
+
+type AzureZoneType string
+
+const (
+	PrivateAzureZone AzureZoneType = "AzurePrivateZone"
+	PublicAzureZone  AzureZoneType = "AzurePublicZone"
+)
 
 type AzureManagedIdentity struct {
 	ClientID string

@@ -1558,6 +1558,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderAzureDNS(ref common.Referenc
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AzureManagedIdentity"),
 						},
 					},
+					"zoneType": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ZoneType determines which type of Azure DNS zone to use.\n\nValid values are:\n  - AzurePublicZone  (default): Use a public Azure DNS zone.\n  - AzurePrivateZone: Use an Azure Private DNS zone.\n\nIf not specified, AzurePublicZone is used.\n\nSupport for Azure Private DNS zones is currently experimental and may change in future releases.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"subscriptionID", "resourceGroupName"},
 			},

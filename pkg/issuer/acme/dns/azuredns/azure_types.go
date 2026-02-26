@@ -22,6 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 )
 
 type ClientOptions struct {
@@ -102,6 +103,59 @@ func (ps *PublicRecordsClient) Delete(ctx context.Context, resourceGroupName str
 	return nil
 }
 
+type PrivateRecordsClient struct {
+	client *privatedns.RecordSetsClient
+}
+
+func NewPrivateRecordsClient(cl *privatedns.RecordSetsClient) RecordsClient {
+	return &PrivateRecordsClient{
+		client: cl,
+	}
+}
+
+func (ps *PrivateRecordsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, set RecordSet, options *ClientOptions) (RecordSet, error) {
+	privSet, ok := set.(*PrivateTXTRecordSet)
+	if !ok {
+		return nil, fmt.Errorf("expected *PrivateTXTRecordSet, got %T", set)
+	}
+	opt := new(privatedns.RecordSetsClientCreateOrUpdateOptions)
+	if options != nil {
+		opt.IfMatch = options.IfMatch
+		opt.IfNoneMatch = options.IfNoneMatch
+	}
+
+	resp, err := ps.client.CreateOrUpdate(ctx, resourceGroupName, zoneName, privatedns.RecordTypeTXT, relativeRecordSetName, *privSet.RS, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PrivateTXTRecordSet{RS: &resp.RecordSet}, nil
+}
+
+func (ps *PrivateRecordsClient) Get(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) (RecordSet, error) {
+	opt := new(privatedns.RecordSetsClientGetOptions)
+	resp, err := ps.client.Get(ctx, resourceGroupName, zoneName, privatedns.RecordTypeTXT, relativeRecordSetName, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PrivateTXTRecordSet{RS: &resp.RecordSet}, nil
+}
+
+func (ps *PrivateRecordsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, options *ClientOptions) error {
+	opt := new(privatedns.RecordSetsClientDeleteOptions)
+	if options != nil {
+		opt.IfMatch = options.IfMatch
+	}
+
+	_, err := ps.client.Delete(ctx, resourceGroupName, zoneName, privatedns.RecordTypeTXT, relativeRecordSetName, opt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type PublicZonesClient struct {
 	client *dns.ZonesClient
 }
@@ -114,6 +168,26 @@ func NewPublicZonesClient(cl *dns.ZonesClient) ZonesClient {
 
 func (pc *PublicZonesClient) Get(ctx context.Context, resourceGroupName string, zoneName string, options *ClientOptions) error {
 	opt := new(dns.ZonesClientGetOptions)
+	_, err := pc.client.Get(ctx, resourceGroupName, zoneName, opt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type PrivateZonesClient struct {
+	client *privatedns.PrivateZonesClient
+}
+
+func NewPrivateZonesClient(cl *privatedns.PrivateZonesClient) ZonesClient {
+	return &PrivateZonesClient{
+		client: cl,
+	}
+}
+
+func (pc *PrivateZonesClient) Get(ctx context.Context, resourceGroupName string, zoneName string, options *ClientOptions) error {
+	opt := new(privatedns.PrivateZonesClientGetOptions)
 	_, err := pc.client.Get(ctx, resourceGroupName, zoneName, opt)
 	if err != nil {
 		return err
@@ -160,6 +234,51 @@ func (ps *PublicTXTRecordSet) SetTXTRecords(records [][]*string) {
 	var txtRecords []*dns.TxtRecord
 	for _, r := range records {
 		txtRecords = append(txtRecords, &dns.TxtRecord{
+			Value: r,
+		})
+	}
+
+	ps.RS.Properties.TxtRecords = txtRecords
+}
+
+type PrivateTXTRecordSet struct {
+	RS *privatedns.RecordSet
+}
+
+func (ps *PrivateTXTRecordSet) GetETag() *string {
+	if ps.RS == nil {
+		return nil
+	}
+	return ps.RS.Etag
+}
+
+func (ps *PrivateTXTRecordSet) GetTXTRecords() [][]*string {
+	if ps.RS == nil || ps.RS.Properties == nil {
+		return nil
+	}
+
+	out := make([][]*string, 0, len(ps.RS.Properties.TxtRecords))
+	for _, txtRec := range ps.RS.Properties.TxtRecords {
+		out = append(out, txtRec.Value)
+	}
+
+	return out
+}
+
+func (ps *PrivateTXTRecordSet) SetTXTRecords(records [][]*string) {
+	if ps.RS == nil || ps.RS.Properties == nil {
+		ps.RS = &privatedns.RecordSet{
+			Properties: &privatedns.RecordSetProperties{
+				TTL:        to.Ptr[int64](60),
+				TxtRecords: []*privatedns.TxtRecord{},
+			},
+			Etag: to.Ptr(""),
+		}
+	}
+
+	var txtRecords []*privatedns.TxtRecord
+	for _, r := range records {
+		txtRecords = append(txtRecords, &privatedns.TxtRecord{
 			Value: r,
 		})
 	}
