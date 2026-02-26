@@ -92,23 +92,21 @@ func RunControlPlane(t *testing.T, optionFunctions ...RunControlPlaneOption) (*r
 		t.Fatal(err)
 	}
 
-	f, err := os.CreateTemp(t.TempDir(), "integration-")
-	if err != nil {
+	// Use TempDir + WriteFile instead of CreateTemp + manual Remove
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "integration-kubeconfig")
+
+	if err := os.WriteFile(filePath, kubeconfig, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
-	defer func() {
-		os.Remove(f.Name())
-	}()
-	if _, err := f.Write(kubeconfig); err != nil {
-		t.Fatal(err)
-	}
+
+	// `t.TempDir()` will clean up the file automatically
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
 		// Disable the metrics server to avoid multiple webhook servers
 		// attempting to listen on metrics port 9402 when tests are running in
 		// parallel.
-		t, []string{"--kubeconfig", f.Name(), "--metrics-listen-address=0"},
+		t, []string{"--kubeconfig", filePath, "--metrics-listen-address=0"},
 	)
 
 	crds := readCustomResourcesAtPath(t, *options.crdsDir)

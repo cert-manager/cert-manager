@@ -37,6 +37,7 @@ func testExitCode(
 		os.Exit(0)
 	}
 
+	// #nosec G702 -- test re-exec of current binary; no shell involved
 	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run="+t.Name())
 	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
 	cmd.Stdout = os.Stdout

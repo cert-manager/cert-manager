@@ -228,6 +228,7 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 						return
 					}
 
+					//nolint:staticcheck // SA1019: acceptable in test for ECDSA key validation
 					if !curve.IsOnCurve(key.PublicKey.X, key.PublicKey.Y) {
 						t.Error("expected key to be on specified curve")
 						return

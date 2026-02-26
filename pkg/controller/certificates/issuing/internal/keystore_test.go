@@ -541,7 +541,7 @@ func TestManyPasswordLengths(t *testing.T) {
 	var passwords [10000]string
 	for testi := range passwords {
 		// fill the password with random characters
-		f.Fill(&passwords[testi])
+		f.Fill(&passwords[testi]) // #nosec G602 -- indexing is safe: testi is always within [0, len(passwords))
 	}
 
 	// Run these tests in parallel

@@ -338,6 +338,7 @@ func TestCheck(t *testing.T) {
 					return
 				}
 
+				// #nosec G705 -- test code writing controlled content, not exposed to web
 				if _, err := w.Write(content); err != nil {
 					t.Errorf("failed to write response: %v", err)
 				}

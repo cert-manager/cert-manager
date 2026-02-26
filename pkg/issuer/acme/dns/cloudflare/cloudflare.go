@@ -277,6 +277,7 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 	client := http.Client{
 		Timeout: 30 * time.Second,
 	}
+	// #nosec G704 -- the URI is prepared in our own code, and is controlled
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q: %v", method, uri, err)
@@ -294,9 +295,9 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 		if len(r.Errors) > 0 {
 			var errStr strings.Builder
 			for _, apiErr := range r.Errors {
-				errStr.WriteString(fmt.Sprintf("\t Error: %d: %s", apiErr.Code, apiErr.Message))
+				fmt.Fprintf(&errStr, "\t Error: %d: %s", apiErr.Code, apiErr.Message)
 				for _, chainErr := range apiErr.ErrorChain {
-					errStr.WriteString(fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message))
+					fmt.Fprintf(&errStr, "<- %d: %s", chainErr.Code, chainErr.Message)
 				}
 			}
 			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr.String())

@@ -32,7 +32,7 @@ type ACME struct {
 type Cloudflare struct {
 	Domain string
 	Email  string
-	APIKey string
+	APIKey string // #nosec G117 -- test config only
 }
 
 func (f *Suite) AddFlags(fs *flag.FlagSet) {

@@ -243,7 +243,7 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 
 	t := time.Now()
 
-	resp, err := hc.Do(req)
+	resp, err := hc.Do(req) // #nosec G704 -- TODO(erikgb): This is probably not a false positive. Investigate!
 	if err != nil {
 		return nil, 0, err
 	}

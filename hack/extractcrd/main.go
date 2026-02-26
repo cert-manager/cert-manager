@@ -55,7 +55,7 @@ func main() {
 		wantedCRDName = &val
 	}
 
-	rawYAMLBytes, err := os.ReadFile(filename)
+	rawYAMLBytes, err := os.ReadFile(filename) // #nosec G703 -- filename provided by CLI user in dev tool
 	if err != nil {
 		logger.Printf("failed to read %q: %s", filename, err)
 		os.Exit(1)
@@ -89,13 +89,13 @@ func main() {
 			if foundAny {
 				fmt.Fprintln(outWriter, "---")
 			}
-			fmt.Fprintln(outWriter, doc)
+			fmt.Fprintln(outWriter, doc) // #nosec G705 -- CLI tool writing YAML, not HTML context
 			foundAny = true
 			continue
 		} else {
 			crdName := strings.ToLower(crd.Spec.Names.Plural)
 			if crdName == *wantedCRDName {
-				fmt.Fprintln(outWriter, doc)
+				fmt.Fprintln(outWriter, doc) // #nosec G705 -- CLI tool writing YAML, not HTML context
 				return
 			}
 		}

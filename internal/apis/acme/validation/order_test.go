@@ -75,22 +75,14 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 		}
 	})
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
-		expectedErrs := []*field.Error{}
 		var expectedWarnings []string
 		oldOrder := &cmacme.Order{}
 		newOrder := &cmacme.Order{}
 		setter(oldOrder, testValueNone)
 		setter(newOrder, testValueOptionOne)
 		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
-		if len(errs) != len(expectedErrs) {
-			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
-			return
-		}
-		for i, e := range errs {
-			expectedErr := expectedErrs[i]
-			if !reflect.DeepEqual(e, expectedErr) {
-				t.Errorf("Expected error %v but got %v", expectedErr, e)
-			}
+		if len(errs) != 0 {
+			t.Errorf("Expected no errors but got %v", errs)
 		}
 		if !reflect.DeepEqual(warnings, expectedWarnings) {
 			t.Errorf("Expected warnings %+#v but got %+#v", expectedWarnings, warnings)

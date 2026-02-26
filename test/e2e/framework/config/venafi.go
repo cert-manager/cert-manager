@@ -31,13 +31,13 @@ type VenafiTPPConfiguration struct {
 	URL         string
 	Zone        string
 	Username    string
-	Password    string
-	AccessToken string
+	Password    string // #nosec G117 -- test config only
+	AccessToken string // #nosec G117 -- test config only
 }
 
 type VenafiCloudConfiguration struct {
 	Zone     string
-	APIToken string
+	APIToken string // #nosec G117 -- test config only
 }
 
 func (v *Venafi) AddFlags(fs *flag.FlagSet) {
