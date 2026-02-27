@@ -32,7 +32,7 @@
         'make/02_mod.mk',
       ],
       matchStrings: [
-        '(?m)^#\s*renovate:\s*datasource=(?<datasource>[a-z-]+)\s+packageName=(?<packageName>\S+)\s*\n(?<depName>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*v?(?<currentValue>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$'
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+packageName=(?<packageName>\\S+)\\s*\\n(?<varName>[A-Za-z0-9_]+)\\s*(?::=|\\?=|=)\\s*(?<currentValue>\\S+)"
       ]
     },
   ],
