@@ -279,6 +279,7 @@ func TestHealthzLivezLeaderElection(t *testing.T) {
 			assert.Eventually(t, func() bool {
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, livezURL, nil)
 				require.NoError(t, err)
+				// #nosec G704 -- safe in test: request targets controlled test server
 				resp, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 				defer func() {

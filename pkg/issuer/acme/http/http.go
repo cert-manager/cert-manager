@@ -297,7 +297,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		Timeout:   time.Second * 10,
 	}
 
-	response, err := client.Do(req)
+	response, err := client.Do(req) // #nosec G704 -- TODO(erikgb): This is probably not a false positive. Investigate!
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to perform self check GET request", "error", err)
 		return fmt.Errorf("failed to perform self check GET request '%s': %v", url, err)

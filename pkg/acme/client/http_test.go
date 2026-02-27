@@ -114,6 +114,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 					t.Fatalf("Failed to create request: %v", err)
 				}
 
+				// #nosec G704 -- test code using controlled httptest server
 				resp, err := httpClient.Do(req)
 				if err != nil {
 					t.Fatalf("failed to make request: %v", err)

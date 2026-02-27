@@ -61,7 +61,7 @@ type SecretsManager struct {
 
 // SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
-	PrivateKey, Certificate, CA         []byte
+	PrivateKey, Certificate, CA         []byte // #nosec G117 -- holds runtime certificate material; not a hardcoded secret
 	CertificateName                     string
 	IssuerName, IssuerKind, IssuerGroup string
 }

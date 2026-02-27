@@ -241,6 +241,7 @@ func TestAuthenticationError(t *testing.T) {
 func populateFederatedToken(t *testing.T, filename string, content string) {
 	t.Helper()
 
+	// #nosec G703 -- test code creating a file, safe from path traversal
 	f, err := os.Create(filename)
 	if err != nil {
 		assert.FailNow(t, err.Error())

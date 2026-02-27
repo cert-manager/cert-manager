@@ -435,7 +435,7 @@ type JKSKeystore struct {
 	// Mutually exclusive with passwordSecretRef.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
 	// +optional
-	Password *string
+	Password *string // #nosec G117 -- field is part of API spec and may contain a secret; not hardcoded
 }
 
 // PKCS12 configures options for storing a PKCS12 keystore in the
@@ -474,7 +474,7 @@ type PKCS12Keystore struct {
 	// Mutually exclusive with passwordSecretRef.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
 	// +optional
-	Password *string
+	Password *string // #nosec G117 -- field is part of API spec and may contain a secret; not hardcoded
 }
 
 type PKCS12Profile string
