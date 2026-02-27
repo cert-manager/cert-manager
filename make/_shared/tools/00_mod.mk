@@ -69,7 +69,7 @@ tools :=
 tools += helm=v4.1.1
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.35.1
+tools += kubectl=v1.35.2
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
 tools += kind=v0.31.0
@@ -90,7 +90,7 @@ tools += yq=v4.52.4
 tools += ko=0.18.1
 # https://github.com/protocolbuffers/protobuf/releases
 # renovate: datasource=github-releases packageName=protocolbuffers/protobuf
-tools += protoc=v33.5
+tools += protoc=v34.0
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
 tools += trivy=v0.69.1
@@ -125,7 +125,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.18
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.0
+tools += crane=v0.21.1
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
@@ -153,7 +153,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.2.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.14.0
+tools += goreleaser=v2.14.1
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.42.1
@@ -165,7 +165,7 @@ tools += helm-tool=v0.5.3
 tools += image-tool=v0.1.0
 # https://github.com/cert-manager/cmctl/releases
 # renovate: datasource=github-releases packageName=cert-manager/cmctl
-tools += cmctl=v2.4.0
+tools += cmctl=v2.4.1
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/release
 tools += cmrel=v1.12.15-0.20241121151736-e3cbe5171488
@@ -180,7 +180,7 @@ tools += govulncheck=v1.1.4
 tools += operator-sdk=v1.42.0
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.87.2
+tools += gh=v2.87.3
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.16.0
@@ -197,7 +197,7 @@ tools += kubeconform=v0.7.0
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.35.1
+K8S_CODEGEN_VERSION ?= v0.35.2
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -493,10 +493,10 @@ $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubectl_linux_amd64_SHA256SUM=36e2f4ac66259232341dd7866952d64a958846470f6a9a6a813b9117bd965207
-kubectl_linux_arm64_SHA256SUM=706256e21a4e9192ee62d1a007ac0bfcff2b0b26e92cc7baad487a6a5d08ff82
-kubectl_darwin_amd64_SHA256SUM=07a04d82bc2de2f5d53dfd81f2109ca864f634a82b225257daa2f9c2db15ccef
-kubectl_darwin_arm64_SHA256SUM=2b000dded317319b1ebca19c2bc70f772c7aaa0e8962fae2d987ba04dd1a1b50
+kubectl_linux_amd64_SHA256SUM=924eb50779153f20cb668117d141440b95df2f325a64452d78dff9469145e277
+kubectl_linux_arm64_SHA256SUM=cd859449f54ad2cb05b491c490c13bb836cdd0886ae013c0aed3dd67ff747467
+kubectl_darwin_amd64_SHA256SUM=163955964d4ed9e66656eab45c0114f5c1110d1b430ace432b20ddc430023df5
+kubectl_darwin_arm64_SHA256SUM=b0b59cdd7ba20ca20b85214943100e578dd50ddd85242fcddf277a87c2249706
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -612,10 +612,10 @@ $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-protoc_linux_amd64_SHA256SUM=24e58fb231d50306ee28491f33a170301e99540f7e29ca461e0e80fd1239f8d1
-protoc_linux_arm64_SHA256SUM=2b0fcf9b2c32cbadccc0eb7a88b841fffecd4a06fc80acdba2b5be45e815c38a
-protoc_darwin_amd64_SHA256SUM=7f31625f8bec4929082ae9209e101c1c03692624457cc6332f83736db495ee92
-protoc_darwin_arm64_SHA256SUM=7084c6482e3bb416a33fe2162ba566711773b842e6953bf6cb181647b9ef57c0
+protoc_linux_amd64_SHA256SUM=e9a91b6fcfe4177ec2cd35fc8f15c1e811fa0ecdef9372755cd6d3513d5faaab
+protoc_linux_arm64_SHA256SUM=f0b8aad28be5ea6150c082f96ac57e028154afb9ee29f4ce092b5a39df8ae6c8
+protoc_darwin_amd64_SHA256SUM=d58fcd413a9ed458283d54023e409fd5cf767da4ed225d1ffaffd83cf2764f53
+protoc_darwin_arm64_SHA256SUM=3ef35187a3c8aed81ee57e792227e483e558fa56c93fce525e569bff55794c1a
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
