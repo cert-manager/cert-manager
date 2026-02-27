@@ -24,15 +24,15 @@
       datasourceTemplate: 'docker',
       // this tag must match the tag used in hack/latest-base-images.sh
       currentValueTemplate: 'nonroot'
-    }, 
+    },
     {
       customType: 'regex',
       managerFilePatterns: [
-	'hack/latest-kind-images.sh',
-	'make/02_mod.mk',
+        'hack/latest-kind-images.sh',
+        'make/02_mod.mk',
       ],
       matchStrings: [
-	'(?m)^#\s*renovate:\s*datasource=(?<datasource>[a-z-]+)\s+packageName=(?<packageName>\S+)\s*\n(?<depName>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*v?(?<currentValue>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$'
+        '(?m)^#\s*renovate:\s*datasource=(?<datasource>[a-z-]+)\s+packageName=(?<packageName>\S+)\s*\n(?<depName>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*v?(?<currentValue>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$'
       ]
     },
   ],
