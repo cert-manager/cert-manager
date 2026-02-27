@@ -48,7 +48,7 @@ github.com/Azure/go-ntlmssp,MIT
 github.com/AzureAD/microsoft-authentication-library-for-go/apps,MIT
 github.com/Khan/genqlient/graphql,MIT
 github.com/Venafi/vcert/v5,Apache-2.0
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg,Apache-2.0
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg,Apache-2.0
 github.com/aws/aws-sdk-go-v2,Apache-2.0
 github.com/aws/aws-sdk-go-v2/config,Apache-2.0
 github.com/aws/aws-sdk-go-v2/credentials,Apache-2.0

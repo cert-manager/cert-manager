@@ -50,7 +50,7 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps,MIT
 github.com/Khan/genqlient/graphql,MIT
 github.com/NYTimes/gziphandler,Apache-2.0
 github.com/Venafi/vcert/v5,Apache-2.0
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v12/pkg,Apache-2.0
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg,Apache-2.0
 github.com/antlr4-go/antlr/v4,BSD-3-Clause
 github.com/aws/aws-sdk-go-v2,Apache-2.0
 github.com/aws/aws-sdk-go-v2/config,Apache-2.0
