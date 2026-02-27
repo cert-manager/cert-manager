@@ -29,22 +29,14 @@
       customType: 'regex',
       managerFilePatterns: [
         'hack/latest-kind-images.sh',
+        'make/02_mod.mk',
       ],
       matchStrings: [
-        'kind_version=(?<currentValue>.*)',
-      ],
-      datasourceTemplate: 'github-releases',
-      depNameTemplate: 'kubernetes-sigs/kind',
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+packageName=(?<packageName>\\S+)\\s*\\n(?<varName>[A-Za-z0-9_]+)\\s*(?::=|\\?=|=)\\s*(?<currentValue>\\S+)"
+      ]
     },
   ],
   packageRules: [
-    {
-      // FIXME: Ungroup sigs.k8s.io/gateway-api temporarily waiting for a new release.
-      groupName: null,
-      matchPackageNames: [
-        'sigs.k8s.io/gateway-api',
-      ],
-    },
     {
       groupName: 'Base Images',
       matchManagers: [
