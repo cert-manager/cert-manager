@@ -29,7 +29,7 @@ import (
 // It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
-	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
+	block, rest, err := pem.SafeDecodePrivateKey(keyBytes)
 	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
 	}
@@ -63,6 +63,13 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
+		return key, nil
+	case "EC PARAMETERS":
+		key, err := DecodePrivateKeyBytes(rest)
+		if err != nil {
+			return nil, err
+		}
+
 		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
