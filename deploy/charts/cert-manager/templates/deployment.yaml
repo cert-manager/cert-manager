@@ -41,11 +41,17 @@ spec:
         {{- end }}
       {{- with .Values.podAnnotations }}
       annotations:
+        {{- if .Values.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/controller-config.yaml") $ | sha256sum }}
+        {{- end }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
       {{- if not .Values.podAnnotations }}
       annotations:
+        {{- if .Values.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/controller-config.yaml") $ | sha256sum }}
+        {{- end }}
       {{- end }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
