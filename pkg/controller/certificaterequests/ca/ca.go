@@ -117,6 +117,14 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 	template.IssuingCertificateURL = issuerObj.GetSpec().CA.IssuingCertificateURLs
 
+	template.NotAfter, err = pki.CertificateNotAfterValidity(template, caCerts)
+	if err != nil {
+		message := "Error calculating certificate validity"
+		c.reporter.Failed(cr, err, "SigningError", message)
+		log.Error(err, message)
+		return nil, err
+	}
+
 	bundle, err := c.signingFn(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"

@@ -511,7 +511,12 @@ func TestCA_Sign(t *testing.T) {
 				// injecting a time (instead of time.Now) to the template
 				// functions. This work is being tracked in this issue:
 				// https://github.com/cert-manager/cert-manager/issues/3738
-				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
+				//
+				// Leaf Cert expectNotAfter will honor Signing CA Validity
+				// As self-signed Signing CA is valid for a minute, the client
+				// expectNotAfter will be a minute. Refer:
+				// https://github.com/cert-manager/cert-manager/issues/5864
+				expectNotAfter := time.Now().UTC().Add(time.Minute)
 				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
 				assert.LessOrEqualf(t, deltaSec, 1., "expected a time delta lower than 1 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
