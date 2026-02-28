@@ -904,9 +904,10 @@ func TestValidateCertificate(t *testing.T) {
 func TestValidateDuration(t *testing.T) {
 	usefulDurations := map[string]*metav1.Duration{
 		"one second":  {Duration: time.Second},
-		"ten minutes": {Duration: time.Minute * 10},
+		"one minute":  {Duration: time.Minute},
+		"two minutes": {Duration: time.Minute * 2},
 		"half hour":   {Duration: time.Minute * 30},
-		"one hour":    {Duration: time.Hour},
+		"one day":     {Duration: time.Hour * 24},
 		"one month":   {Duration: time.Hour * 24 * 30},
 		"half year":   {Duration: time.Hour * 24 * 180},
 		"one year":    {Duration: time.Hour * 24 * 365},
@@ -941,7 +942,7 @@ func TestValidateDuration(t *testing.T) {
 		"unset duration, valid renewBefore for default": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBefore: usefulDurations["one month"],
+					RenewBefore: usefulDurations["one day"],
 					CommonName:  "testcn",
 					SecretName:  "abc",
 					IssuerRef:   validIssuerRef,
@@ -995,7 +996,7 @@ func TestValidateDuration(t *testing.T) {
 		"renewBefore and renewBeforePercentage both set": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBefore:           usefulDurations["one month"],
+					RenewBefore:           usefulDurations["one day"],
 					RenewBeforePercentage: ptr.To(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
@@ -1003,7 +1004,7 @@ func TestValidateDuration(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one month"].Duration, "renewBefore and renewBeforePercentage are mutually exclusive and cannot both be set"),
+				field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one day"].Duration, "renewBefore and renewBeforePercentage are mutually exclusive and cannot both be set"),
 				field.Invalid(fldPath.Child("renewBeforePercentage"), int32(95), "renewBefore and renewBeforePercentage are mutually exclusive and cannot both be set"),
 			},
 		},
@@ -1053,14 +1054,14 @@ func TestValidateDuration(t *testing.T) {
 		"duration is less than the minimum permitted value": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					Duration:    usefulDurations["half hour"],
-					RenewBefore: usefulDurations["ten minutes"],
+					Duration:    usefulDurations["two minutes"],
+					RenewBefore: usefulDurations["one minute"],
 					CommonName:  "testcn",
 					SecretName:  "abc",
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapi.MinimumCertificateDuration))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["two minutes"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapi.MinimumCertificateDuration))},
 		},
 	}
 	for n, s := range scenarios {
