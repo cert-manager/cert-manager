@@ -30,6 +30,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
@@ -655,4 +659,490 @@ func mustGenerateRSAKey(t *testing.T) crypto.Signer {
 		t.Fatal(err)
 	}
 	return key
+}
+
+func TestValidateDNSSolvers(t *testing.T) {
+	tests := []struct {
+		name             string
+		issuer           cmapi.GenericIssuer
+		secrets          []*corev1.Secret
+		wantWarnings     []string
+		wantWarningCount int
+	}{
+		{
+			name: "no DNS solvers configured",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{},
+						},
+					},
+				},
+			},
+			secrets:      []*corev1.Secret{},
+			wantWarnings: nil,
+		},
+		{
+			name: "HTTP01 solver only, no warnings",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets:      []*corev1.Secret{},
+			wantWarnings: nil,
+		},
+		{
+			name: "AcmeDNS solver with existing secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+											AccountSecret: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "acme-dns-secret",
+												},
+												Key: "account",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "acme-dns-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"account": []byte("test-account-data"),
+					},
+				},
+			},
+			wantWarnings: nil,
+		},
+		{
+			name: "AcmeDNS solver with missing secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+											AccountSecret: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "missing-secret",
+												},
+												Key: "account",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets:          []*corev1.Secret{},
+			wantWarningCount: 1,
+		},
+		{
+			name: "Cloudflare solver with existing secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+											APIKey: &cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "cloudflare-api-key",
+												},
+												Key: "api-key",
+											},
+											APIToken: &cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "cloudflare-api-token",
+												},
+												Key: "api-token",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cloudflare-api-key",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"api-key": []byte("test-api-key"),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cloudflare-api-token",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"api-token": []byte("test-api-token"),
+					},
+				},
+			},
+			wantWarnings: nil,
+		},
+		{
+			name: "Route53 solver with missing secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+											SecretAccessKey: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "route53-secret",
+												},
+												Key: "secret-access-key",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets:          []*corev1.Secret{},
+			wantWarningCount: 1,
+		},
+		{
+			name: "multiple DNS solvers with mixed results",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										DigitalOcean: &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{
+											Token: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "do-token",
+												},
+												Key: "token",
+											},
+										},
+									},
+								},
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+											AccountSecret: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "missing-secret",
+												},
+												Key: "account",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "do-token",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"token": []byte("test-token"),
+					},
+				},
+			},
+			wantWarningCount: 1,
+		},
+		{
+			name: "Akamai solver with all required secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
+											ClientSecret: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "akamai-secret",
+												},
+												Key: "client-secret",
+											},
+											ClientToken: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "akamai-secret",
+												},
+												Key: "client-token",
+											},
+											AccessToken: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "akamai-secret",
+												},
+												Key: "access-token",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "akamai-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"client-secret": []byte("test-client-secret"),
+						"client-token":  []byte("test-client-token"),
+						"access-token":  []byte("test-access-token"),
+					},
+				},
+			},
+			wantWarnings: nil,
+		},
+		{
+			name: "RFC2136 solver with TSIG secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+											TSIGSecret: cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "tsig-secret",
+												},
+												Key: "tsig-key",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "tsig-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"tsig-key": []byte("test-tsig-key"),
+					},
+				},
+			},
+			wantWarnings: nil,
+		},
+		{
+			name: "AzureDNS solver with client secret",
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "default",
+				},
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									DNS01: &cmacme.ACMEChallengeSolverDNS01{
+										AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+											ClientSecret: &cmmeta.SecretKeySelector{
+												LocalObjectReference: cmmeta.LocalObjectReference{
+													Name: "azure-secret",
+												},
+												Key: "client-secret",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			secrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "azure-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"client-secret": []byte("test-client-secret"),
+					},
+				},
+			},
+			wantWarnings: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			a := &Acme{
+				secretsClient: &fakeSecretGetter{secrets: tt.secrets},
+			}
+
+			warnings := a.validateDNSSolvers(context.Background(), tt.issuer)
+
+			if tt.wantWarnings != nil {
+				if len(warnings) != len(tt.wantWarnings) {
+					t.Errorf("validateDNSSolvers() returned %d warnings, want %d", len(warnings), len(tt.wantWarnings))
+				}
+				for i, wantWarning := range tt.wantWarnings {
+					if i < len(warnings) && warnings[i] != wantWarning {
+						t.Errorf("validateDNSSolvers() warning[%d] = %v, want %v", i, warnings[i], wantWarning)
+					}
+				}
+			}
+
+			if tt.wantWarningCount > 0 {
+				if len(warnings) != tt.wantWarningCount {
+					t.Errorf("validateDNSSolvers() returned %d warnings, want %d. Warnings: %v", len(warnings), tt.wantWarningCount, warnings)
+				}
+			}
+
+			if tt.wantWarnings == nil && tt.wantWarningCount == 0 && len(warnings) > 0 {
+				t.Errorf("validateDNSSolvers() returned unexpected warnings: %v", warnings)
+			}
+		})
+	}
+}
+
+type fakeSecretGetter struct {
+	secrets []*corev1.Secret
+}
+
+func (f *fakeSecretGetter) Secrets(namespace string) v1.SecretInterface {
+	return &fakeSecretClient{secret: f.secrets}
+}
+
+type fakeSecretClient struct {
+	secret []*corev1.Secret
+}
+
+func (s *fakeSecretClient) Create(ctx context.Context, secret *corev1.Secret, opts metav1.CreateOptions) (*corev1.Secret, error) {
+	return nil, nil
+}
+
+func (s *fakeSecretClient) Update(ctx context.Context, secret *corev1.Secret, opts metav1.UpdateOptions) (*corev1.Secret, error) {
+	return nil, nil
+}
+
+func (s *fakeSecretClient) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return nil
+
+}
+
+func (s *fakeSecretClient) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return nil
+}
+
+func (s *fakeSecretClient) Get(ctx context.Context, name string, opts metav1.GetOptions) (*corev1.Secret, error) {
+	for _, v := range s.secret {
+		if v.Name == name {
+			return v, nil
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (s *fakeSecretClient) List(ctx context.Context, opts metav1.ListOptions) (*corev1.SecretList, error) {
+	return nil, nil
+}
+
+func (s *fakeSecretClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, nil
+}
+
+func (s *fakeSecretClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *corev1.Secret, err error) {
+	return nil, nil
+}
+
+func (s *fakeSecretClient) Apply(ctx context.Context, secret *applycorev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *corev1.Secret, err error) {
+	return nil, nil
 }
