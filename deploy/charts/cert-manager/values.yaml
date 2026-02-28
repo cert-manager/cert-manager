@@ -70,6 +70,9 @@ global:
 
   leaderElection:
     # Override the namespace used for the leader election lease.
+    # Certain installations (ex: GKE Autopilot) restrict permissions in the kube-system namespace.
+    # leaderElection.namespace must be overridden to `cert-manager` or another namespace where the
+    # cert-manager service account has write access to `leases`.
     namespace: "kube-system"
 
     # The duration that non-leader candidates will wait after observing a
