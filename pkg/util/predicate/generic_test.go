@@ -57,7 +57,7 @@ func TestResourceOwnedBy(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ResourceOwnedBy(test.owner)(test.obj)
+			got := ResourceOwnedBy[*cmapi.CertificateRequest](test.owner.(metav1.Object))(test.obj.(*cmapi.CertificateRequest))
 			if got != test.expected {
 				t.Errorf("unexpected response: got=%t, exp=%t", got, test.expected)
 			}
@@ -95,7 +95,7 @@ func TestResourceOwnerOf(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ResourceOwnerOf(test.ownee)(test.obj)
+			got := ResourceOwnerOf[*cmapi.CertificateRequest](test.ownee.(metav1.Object))(test.obj.(*cmapi.CertificateRequest))
 			if got != test.expected {
 				t.Errorf("unexpected response: got=%t, exp=%t", got, test.expected)
 			}

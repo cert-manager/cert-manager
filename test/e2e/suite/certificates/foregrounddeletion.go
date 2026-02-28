@@ -26,7 +26,6 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -142,7 +141,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 			WithContext(testingCtx).
 			WithArguments(
 				f.CRClient,
-				predicate.ResourceOwnedBy(crt),
+				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 			).
 			WithTimeout(time.Second * 10).
 			MustPassRepeatedly(10).
@@ -155,8 +154,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 			WithContext(testingCtx).
 			WithArguments(
 				f.CRClient,
-				func(obj runtime.Object) bool {
-					secret := obj.(*corev1.Secret)
+				func(secret *corev1.Secret) bool {
 					return secret.Annotations != nil &&
 						secret.Annotations["cert-manager.io/certificate-name"] == crt.Name &&
 						secret.Namespace == crt.Namespace

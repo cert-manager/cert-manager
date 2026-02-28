@@ -18,21 +18,20 @@ package predicate
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // ResourceOwnedBy will filter returned results to only those with the
 // given resource as an owner.
-func ResourceOwnedBy(owner runtime.Object) Func {
-	return func(obj runtime.Object) bool {
-		return metav1.IsControlledBy(obj.(metav1.Object), owner.(metav1.Object))
+func ResourceOwnedBy[T, U metav1.Object](ownerObj U) Func[T] {
+	return func(obj T) bool {
+		return metav1.IsControlledBy(obj, ownerObj)
 	}
 }
 
 // ResourceOwnerOf will filter returned results to only those that own the given
 // resource.
-func ResourceOwnerOf(obj runtime.Object) Func {
-	return func(ownerObj runtime.Object) bool {
-		return metav1.IsControlledBy(obj.(metav1.Object), ownerObj.(metav1.Object))
+func ResourceOwnerOf[T, U metav1.Object](owned U) Func[T] {
+	return func(ownerObj T) bool {
+		return metav1.IsControlledBy(owned, ownerObj)
 	}
 }
