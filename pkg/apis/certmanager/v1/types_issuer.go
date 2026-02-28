@@ -253,7 +253,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	// +optional
@@ -274,6 +274,12 @@ type VaultAuth struct {
 	// token stored in the named Secret resource to the Vault server.
 	// +optional
 	Kubernetes *VaultKubernetesAuth `json:"kubernetes,omitempty"`
+
+	// AWS authenticates with Vault using AWS IAM authentication.
+	// This allows authentication using IAM roles for service accounts (IRSA)
+	// or EC2 instance profiles.
+	// +optional
+	AWS *VaultAWSAuth `json:"aws,omitempty"`
 }
 
 // VaultAppRole authenticates with Vault using the App Role auth mechanism,
@@ -359,6 +365,44 @@ type ServiceAccountRef struct {
 	// +optional
 	// +listType=atomic
 	TokenAudiences []string `json:"audiences,omitempty"`
+}
+
+// VaultAWSAuth authenticates with Vault using AWS IAM authentication.
+// See https://www.vaultproject.io/docs/auth/aws for more details.
+type VaultAWSAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/aws" will be used.
+	// +optional
+	MountPath string `json:"mountPath,omitempty"`
+
+	// A required field containing the Vault Role to assume when authenticating.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Role string `json:"role"`
+
+	// The AWS region to use for authentication. If not specified, the region
+	// will be determined from AWS_REGION or AWS_DEFAULT_REGION environment
+	// variables, falling back to "us-east-1" if not set.
+	// +optional
+	Region string `json:"region,omitempty"`
+
+	// A reference to a service account that will be used to request a web identity
+	// token for IRSA (IAM Roles for Service Accounts) authentication.
+	// +optional
+	ServiceAccountRef *ServiceAccountRef `json:"serviceAccountRef,omitempty"`
+
+	// The ARN of the AWS IAM role to assume using the Kubernetes service account
+	// token. Required when using IRSA (serviceAccountRef is set).
+	// This role must have a trust policy that allows the OIDC provider to assume it.
+	// +optional
+	IamRoleArn string `json:"iamRoleArn,omitempty"`
+
+	// The Vault header value to include in the STS signing request.
+	// This is used to prevent replay attacks.
+	// +optional
+	VaultHeaderValue string `json:"vaultHeaderValue,omitempty"`
 }
 
 type CAIssuer struct {

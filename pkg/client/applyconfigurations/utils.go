@@ -168,6 +168,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.VaultAppRoleApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("VaultAuth"):
 		return &applyconfigurationscertmanagerv1.VaultAuthApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("VaultAWSAuth"):
+		return &applyconfigurationscertmanagerv1.VaultAWSAuthApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("VaultClientCertificateAuth"):
 		return &applyconfigurationscertmanagerv1.VaultClientCertificateAuthApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("VaultIssuer"):

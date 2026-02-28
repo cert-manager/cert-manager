@@ -365,8 +365,25 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 		}
 	}
 
+	if auth.AWS != nil {
+		unionCount++
+
+		if auth.AWS.Role == "" {
+			el = append(el, field.Required(fldPath.Child("aws", "role"), ""))
+		}
+
+		if auth.AWS.ServiceAccountRef != nil {
+			if len(auth.AWS.ServiceAccountRef.Name) == 0 {
+				el = append(el, field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""))
+			}
+			if auth.AWS.IamRoleArn == "" {
+				el = append(el, field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"))
+			}
+		}
+	}
+
 	if unionCount == 0 {
-		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate"))
+		el = append(el, field.Required(fldPath, "please supply one of: appRole, kubernetes, tokenSecretRef, clientCertificate, aws"))
 	}
 
 	// Due to the fact that there has not been any "oneOf" validation on

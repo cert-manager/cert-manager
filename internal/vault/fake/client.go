@@ -26,6 +26,7 @@ import (
 type FakeClient struct {
 	NewRequestS  *vault.Request
 	RawRequestFn func(r *vault.Request) (*vault.Response, error)
+	WriteFn      func(path string, data map[string]any) (*vault.Secret, error)
 	GotToken     string
 	T            *testing.T
 }
@@ -72,4 +73,11 @@ func (c *FakeClient) SetToken(v string) {
 
 func (c *FakeClient) RawRequest(r *vault.Request) (*vault.Response, error) {
 	return c.RawRequestFn(r)
+}
+
+func (c *FakeClient) Write(path string, data map[string]any) (*vault.Secret, error) {
+	if c.WriteFn != nil {
+		return c.WriteFn(path, data)
+	}
+	return nil, errors.New("unexpected Write call")
 }
