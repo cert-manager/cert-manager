@@ -94,7 +94,9 @@ spec:
                   - type
                   type: object
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               commonName:
                 description: |-
                   Requested common name X509 certificate subject attribute.
@@ -110,7 +112,7 @@ spec:
                 items:
                   type: string
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-type: set
               duration:
                 description: |-
                   Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
@@ -126,7 +128,7 @@ spec:
                 items:
                   type: string
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-type: set
               encodeUsagesInRequest:
                 description: |-
                   Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
@@ -139,7 +141,7 @@ spec:
                 items:
                   type: string
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-type: set
               isCA:
                 description: |-
                   Requested basic constraints isCA value.
@@ -410,9 +412,15 @@ spec:
                         utf8Value is the string value of the otherName SAN.
                         The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
                       type: string
+                  required:
+                  - oid
+                  - utf8Value
                   type: object
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-map-keys:
+                - oid
+                - utf8Value
+                x-kubernetes-list-type: map
               privateKey:
                 description: |-
                   Private key options. These include the key algorithm and size, the used
@@ -623,7 +631,7 @@ spec:
                 items:
                   type: string
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-type: set
               usages:
                 description: |-
                   Requested key usages and extended key usages.
@@ -689,7 +697,7 @@ spec:
                   - netscape sgc
                   type: string
                 type: array
-                x-kubernetes-list-type: atomic
+                x-kubernetes-list-type: set
             required:
             - issuerRef
             - secretName
