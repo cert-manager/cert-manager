@@ -50,11 +50,13 @@ type Server struct {
 // NewServer creates a new healthz.Server.
 // The supplied leaderElectionHealthzAdaptorTimeout controls how long after the
 // leader lease time, the leader election will be considered to have failed.
-func NewServer(leaderElectionHealthzAdaptorTimeout time.Duration) *Server {
+func NewServer(leaderElectionHealthzAdaptorTimeout time.Duration, checks ...healthz.HealthChecker) *Server {
 	leaderHealthzAdaptor := leaderelection.NewLeaderHealthzAdaptor(leaderElectionHealthzAdaptorTimeout)
 	clockHealthAdaptor := NewClockHealthAdaptor(clock.RealClock{})
 	mux := http.NewServeMux()
 	healthz.InstallLivezHandler(mux, leaderHealthzAdaptor, clockHealthAdaptor)
+	healthz.InstallReadyzHandler(mux, checks...)
+
 	return &Server{
 		server: &http.Server{
 			ReadTimeout:    healthzServerReadTimeout,

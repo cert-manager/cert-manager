@@ -297,8 +297,14 @@
         "featureGates": {
           "$ref": "#/$defs/helm-values.cainjector.featureGates"
         },
+        "healthzPort": {
+          "$ref": "#/$defs/helm-values.cainjector.healthzPort"
+        },
         "image": {
           "$ref": "#/$defs/helm-values.cainjector.image"
+        },
+        "livenessProbe": {
+          "$ref": "#/$defs/helm-values.cainjector.livenessProbe"
         },
         "networkPolicy": {
           "$ref": "#/$defs/helm-values.cainjector.networkPolicy"
@@ -409,6 +415,11 @@
       "description": "Comma separated list of feature gates that should be enabled on the cainjector pod.",
       "type": "string"
     },
+    "helm-values.cainjector.healthzPort": {
+      "default": 9440,
+      "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/). The host and port address, separated by a ':', that the healthz server should listen on.",
+      "type": "number"
+    },
     "helm-values.cainjector.image": {
       "additionalProperties": false,
       "properties": {
@@ -459,6 +470,17 @@
     "helm-values.cainjector.image.tag": {
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion will be used.",
       "type": "string"
+    },
+    "helm-values.cainjector.livenessProbe": {
+      "default": {
+        "failureThreshold": 3,
+        "initialDelaySeconds": 5,
+        "periodSeconds": 10,
+        "successThreshold": 1,
+        "timeoutSeconds": 1
+      },
+      "description": "Liveness probe values.\nFor more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).",
+      "type": "object"
     },
     "helm-values.cainjector.networkPolicy": {
       "additionalProperties": false,
@@ -582,7 +604,6 @@
     },
     "helm-values.cainjector.resources": {
       "default": {},
-      "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
     },
     "helm-values.cainjector.securityContext": {

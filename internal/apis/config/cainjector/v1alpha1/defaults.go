@@ -24,7 +24,10 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 )
 
-const defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+const (
+	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+	defaultHealthzServerAddress           = "0.0.0.0:9440"
+)
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
@@ -37,6 +40,10 @@ func SetDefaults_CAInjectorConfiguration(obj *v1alpha1.CAInjectorConfiguration) 
 
 	if obj.MetricsListenAddress == "" {
 		obj.MetricsListenAddress = defaultPrometheusMetricsServerAddress
+	}
+
+	if obj.HealthzListenAddress == "" {
+		obj.HealthzListenAddress = defaultHealthzServerAddress
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)

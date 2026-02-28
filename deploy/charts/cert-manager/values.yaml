@@ -619,6 +619,8 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 8
 
+
+
 # enableServiceLinks indicates whether information about services should be
 # injected into the pod's environment variables, matching the syntax of Docker
 # links.
@@ -1332,7 +1334,24 @@ cainjector:
   #    memory: 32Mi
   #
   # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+  # The host and port address, separated by a ':', that the healthz server
+  # should listen on.
+  # +docs:property
+  healthzPort: 9440
+
   resources: {}
+
+  # Liveness probe values.
+  # For more information, see [Container probes](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes).
+  #
+  # +docs:property
+  livenessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
 
 
   # The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with
