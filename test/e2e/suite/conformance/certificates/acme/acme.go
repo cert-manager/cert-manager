@@ -60,6 +60,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	unsupportedHTTP01GatewayFeatures := unsupportedHTTP01Features.Clone().Insert(
@@ -81,6 +82,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by

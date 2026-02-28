@@ -24,6 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -336,6 +337,37 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	return cr, nil
 }
 
+// SubjectKeyIdentifier returns the subject key identifier for the given public key.
+// The subject key identifier is computed as the leftmost 160 bits of the SHA-256 hash
+// of the subjectPublicKey BIT STRING value (excluding the tag, length, and number of
+// unused bits), as per RFC 7093, Section 2, method 1.
+//
+// This method is compatible with RFC 5280 Section 4.2.1.2 which allows for
+// alternative methods, and aligns with modern practices (e.g., Let's Encrypt)
+// that have moved away from SHA-1.
+func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
+	pkBytes, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	// MarshalPKIXPublicKey returns SubjectPublicKeyInfo which contains:
+	// - algorithm (AlgorithmIdentifier)
+	// - subjectPublicKey (BIT STRING)
+	// We need to extract just the subjectPublicKey BIT STRING value.
+	var spki struct {
+		Algorithm        pkix.AlgorithmIdentifier
+		SubjectPublicKey asn1.BitString
+	}
+	if _, err := asn1.Unmarshal(pkBytes, &spki); err != nil {
+		return nil, err
+	}
+
+	// Use SHA-256 and truncate to 160 bits (20 bytes) per RFC 7093
+	hash := sha256.Sum256(spki.SubjectPublicKey.Bytes)
+	return hash[:20], nil
+}
+
 // SignCertificate returns a signed *x509.Certificate given a template
 // *x509.Certificate crt and an issuer.
 // publicKey is the public key of the signee, and signerKey is the private
@@ -378,6 +410,19 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	template.SignatureAlgorithm, err = signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// Compute and set the Subject Key Identifier if not already set.
+	// This is required for RFC 5280 compliance and helps with certificate chain
+	// building. For self-signed certificates (where template == issuerCert),
+	// Go's x509.CreateCertificate will NOT set the Authority Key Identifier,
+	// which is the expected behavior for root CAs as described in RFC 5280.
+	if len(template.SubjectKeyId) == 0 {
+		ski, err := SubjectKeyIdentifier(publicKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error computing subject key identifier: %s", err.Error())
+		}
+		template.SubjectKeyId = ski
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
@@ -477,6 +522,7 @@ var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
 	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
 	v1.Ed25519KeyAlgorithm: x509.Ed25519,
 }
+
 var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.SHA256WithRSA:   x509.SHA256WithRSA,
 	v1.SHA384WithRSA:   x509.SHA384WithRSA,

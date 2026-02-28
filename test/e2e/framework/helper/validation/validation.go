@@ -40,6 +40,10 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectConditionReadyObservedGeneration,
 	}
 
+	if !fs.Has(featureset.SubjectKeyIdentifierFeature) {
+		out = append(out, certificates.ExpectValidSubjectKeyIdentifier)
+	}
+
 	if !fs.Has(featureset.CommonNameFeature) {
 		out = append(out, certificates.ExpectValidCommonName)
 	}

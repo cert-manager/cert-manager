@@ -67,6 +67,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// ACME does not match the duration specified
 		// in the CertificateRequest resource.
 		featureset.DurationFeature,
+		// ACME servers compute their own Subject Key Identifier
+		featureset.SubjectKeyIdentifierFeature,
 	)
 	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
