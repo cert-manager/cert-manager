@@ -1,0 +1,21 @@
+kind: GatewayParameters
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: clusterip
+  namespace: default
+spec:
+  kube:
+    service:
+      type: ClusterIP
+---
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: clusterip
+    namespace: default

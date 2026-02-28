@@ -162,7 +162,7 @@ func (s *Suite) Define() {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
 					gen.SetCSRCommonName("test-common-name-" + rand.String(10)),
-					gen.SetCSRIPAddresses(net.ParseIP(s.SharedIPAddress)),
+					gen.SetCSRIPAddresses(net.ParseIP(s.IngressIPAddress)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -174,7 +174,7 @@ func (s *Suite) Define() {
 				name:    "should issue a certificate that defines an IP Address",
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRIPAddresses(net.ParseIP(s.SharedIPAddress)),
+					gen.SetCSRIPAddresses(net.ParseIP(s.IngressIPAddress)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -186,7 +186,7 @@ func (s *Suite) Define() {
 				name:    "should issue a certificate that defines a DNS Name and IP Address",
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRIPAddresses(net.ParseIP(s.SharedIPAddress)),
+					gen.SetCSRIPAddresses(net.ParseIP(s.IngressIPAddress)),
 					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{

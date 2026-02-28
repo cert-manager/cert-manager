@@ -22,8 +22,8 @@ GOTESTSUM := CGO_ENABLED=$(CGO_ENABLED) GOEXPERIMENT=$(GOEXPERIMENT) $(GOTESTSUM
 # renovate: datasource=go packageName=sigs.k8s.io/gateway-api
 GATEWAY_API_VERSION=v1.5.0
 
-$(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml: | $(bin_dir)/scratch
-	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml -o $@
+$(bin_dir)/scratch/gateway-api-standard-$(GATEWAY_API_VERSION).yaml: | $(bin_dir)/scratch
+	$(CURL) https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/standard-install.yaml -o $@
 
 include make/ci.mk
 include make/test.mk

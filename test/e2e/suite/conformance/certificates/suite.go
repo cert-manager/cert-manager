@@ -49,10 +49,16 @@ type Suite struct {
 	// If not specified, this function will be skipped.
 	DeleteIssuerFunc func(context.Context, *framework.Framework, cmmeta.IssuerReference)
 
-	// SharedIPAddress is the IP address that will be used in all certificates
+	// IngressIPAddress is the IP address that will be used in all certificates
 	// that require an IP address to be set. For HTTP-01 tests, this IP address
-	// will be set to the IP address of the Ingress/ Gateway controller.
-	SharedIPAddress string
+	// will be set to the IP address of the Ingress controller. Only used in the
+	// Ingress-based HTTP-01 tests.
+	IngressIPAddress string
+
+	// GatewayClassName is the name of the GatewayClass that will be used in all
+	// Gateway resources created in the tests. Only used in the Gateway-based
+	// HTTP-01 tests.
+	GatewayClassName string
 
 	// DomainSuffix is a suffix used on all domain requests.
 	// This is useful when the issuer being tested requires special
@@ -78,14 +84,12 @@ type Suite struct {
 
 // setup will set default values for fields on the Suite struct.
 func (s *Suite) setup(f *framework.Framework) {
-	if s.SharedIPAddress == "" {
+	if s.IngressIPAddress == "" {
 		switch s.HTTP01TestType {
 		case "Ingress":
-			s.SharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
-		case "Gateway":
-			s.SharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
+			s.IngressIPAddress = f.Config.Addons.ACMEServer.IngressIP
 		default:
-			s.SharedIPAddress = "127.0.0.1"
+			s.IngressIPAddress = "127.0.0.1"
 		}
 	}
 
@@ -98,6 +102,10 @@ func (s *Suite) setup(f *framework.Framework) {
 		default:
 			s.DomainSuffix = "example.com"
 		}
+	}
+
+	if s.GatewayClassName == "" {
+		s.GatewayClassName = f.Config.Addons.Gateway.GatewayClassName
 	}
 
 	if s.UnsupportedFeatures == nil {
@@ -121,6 +129,10 @@ func (s *Suite) validate() {
 
 	if s.HTTP01TestType == "Gateway" {
 		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+	}
+
+	if s.GatewayClassName == "" {
+		Fail("GatewayClassName must be set when HTTP01TestType is set to Gateway")
 	}
 
 	s.validated = true

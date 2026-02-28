@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 type Gateway struct {
 	// Domain is a domain name that is used during e2e tests to solve
@@ -28,6 +31,10 @@ type Gateway struct {
 	// Labels is a comma separated list of key=value labels set on the
 	// HTTPRoutes created by the Gateway API solver
 	Labels string
+
+	// GatewayClassName selects which GatewayClass to use when creating Gateway
+	// resources.
+	GatewayClassName string
 }
 
 func (g *Gateway) AddFlags(fs *flag.FlagSet) {
@@ -36,7 +43,7 @@ func (g *Gateway) AddFlags(fs *flag.FlagSet) {
 		"gateway-domain",
 		"gateway.http01.example.com",
 		"The domain name used during e2e tests to solve HTTP-01 "+
-			"challenges. This must resolve to the IP of the Gateway's service.",
+			"challenges.",
 	)
 	fs.StringVar(
 		&g.Labels,
@@ -45,8 +52,18 @@ func (g *Gateway) AddFlags(fs *flag.FlagSet) {
 		"Labels is a comma separated list of key=value labels set on the "+
 			"HTTPRoutes created by the Gateway API solver",
 	)
+
+	fs.StringVar(
+		&g.GatewayClassName,
+		"gateway-class-name",
+		"",
+		"Selects which GatewayClass to use when creating Gateway resources",
+	)
 }
 
 func (g *Gateway) Validate() []error {
+	if g.GatewayClassName == "" {
+		return []error{fmt.Errorf("--gateway-class-name must be provided")}
+	}
 	return nil
 }
