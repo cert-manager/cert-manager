@@ -22,11 +22,9 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
@@ -328,9 +326,6 @@ var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", fun
 	})
 
 	It("if a third party set additional output formats, they then get added to the Certificate, when they are removed again they should persist as they are still owned by a third party", func(testingCtx context.Context) {
-		// This e2e test requires that the ServerSideApply feature gate is enabled.
-		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ServerSideApply)
-
 		crtName, crt := createCertificate(testingCtx, f, nil)
 
 		By("add additional output formats manually to the secret")

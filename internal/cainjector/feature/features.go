@@ -43,6 +43,7 @@ const (
 
 	// Owner: @inteon
 	// Alpha: v1.12
+	// Beta: v1.19
 	//
 	// ServerSideApply enables the use of ServerSideApply in all API calls.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
@@ -68,6 +69,6 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ServerSideApply:   {Default: false, PreRelease: featuregate.Alpha},
+	ServerSideApply:   {Default: true, PreRelease: featuregate.Beta},
 	CAInjectorMerging: {Default: true, PreRelease: featuregate.Beta},
 }
