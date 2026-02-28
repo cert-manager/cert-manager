@@ -243,7 +243,7 @@ func TestRFC_postKID(t *testing.T) {
 		},
 	}
 	req := json.RawMessage(`{"msg":"ping"}`)
-	res, err := cl.post(ctx, nil /* use kid */, ts.URL+"/post", req, wantStatus(http.StatusOK))
+	res, err := cl.post(ctx, nil /* use kid */, false, ts.URL+"/post", req, wantStatus(http.StatusOK))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -422,8 +422,12 @@ func TestRFC_Register(t *testing.T) {
 	if !didPrompt {
 		t.Error("tos prompt wasn't called")
 	}
-	if v := cl.accountKID(ctx); v != KeyID(okAccount.URI) {
+	v, err := cl.accountKID(ctx)
+	if v != KeyID(okAccount.URI) {
 		t.Errorf("account kid = %q; want %q", v, okAccount.URI)
+	}
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
 	}
 }
 
@@ -559,8 +563,12 @@ func TestRFC_RegisterExternalAccountBinding(t *testing.T) {
 	if !didPrompt {
 		t.Error("tos prompt wasn't called")
 	}
-	if v := cl.accountKID(ctx); v != KeyID(okAccount.URI) {
+	v, err := cl.accountKID(ctx)
+	if v != KeyID(okAccount.URI) {
 		t.Errorf("account kid = %q; want %q", v, okAccount.URI)
+	}
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
 	}
 }
 
@@ -580,7 +588,11 @@ func TestRFC_RegisterExisting(t *testing.T) {
 		t.Errorf("err = %v; want %v", err, ErrAccountAlreadyExists)
 	}
 	kid := KeyID(s.url("/accounts/1"))
-	if v := cl.accountKID(context.Background()); v != kid {
+	v, err := cl.accountKID(context.Background())
+	if err != nil {
+		t.Errorf("account kid error %+v", err)
+	}
+	if v != kid {
 		t.Errorf("account kid = %q; want %q", v, kid)
 	}
 }
@@ -1120,6 +1132,11 @@ func TestRFC_AlreadyRevokedCert(t *testing.T) {
 
 func TestRFC_ListCertAlternates(t *testing.T) {
 	s := newACMEServer()
+	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", s.url("/accounts/1"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "valid"}`))
+	})
 	s.handle("/crt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/pem-certificate-chain")
 		w.Header().Add("Link", `<https://example.com/crt/2>;rel="alternate"`)
@@ -1147,5 +1164,98 @@ func TestRFC_ListCertAlternates(t *testing.T) {
 	}
 	if crts != nil {
 		t.Errorf("ListCertAlternates(/crt2): %v; want nil", crts)
+	}
+}
+
+func TestRFC_RequireKidEndpoints(t *testing.T) {
+	s := newACMEServer()
+	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		var payload struct {
+			OnlyReturnExisting bool `json:"onlyReturnExisting,omitempty"`
+		}
+		decodeJWSRequest(t, &payload, bytes.NewReader(b))
+		if payload.OnlyReturnExisting {
+			// get account req
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			// new account req
+			w.Header().Set("Location", "/account-1")
+			w.Write([]byte(`{"status":"valid"}`))
+		}
+	})
+	s.start()
+	defer s.close()
+
+	tests := []struct {
+		name string
+		op   func(client *Client) error
+	}{
+		{"AuthorizeOrder", func(cl *Client) error {
+			_, err := cl.AuthorizeOrder(context.Background(), DomainIDs("example.org"))
+			return err
+		}},
+		{"GetOrder", func(cl *Client) error {
+			_, err := cl.GetOrder(context.Background(), s.url("/orders/1"))
+			return err
+		}},
+		{"WaitOrder", func(cl *Client) error {
+			_, err := cl.WaitOrder(context.Background(), s.url("/orders/1"))
+			return err
+		}},
+		{"CreateOrderCert", func(cl *Client) error {
+			q := &x509.CertificateRequest{
+				Subject: pkix.Name{CommonName: "example.org"},
+			}
+			csr, err := x509.CreateCertificateRequest(rand.Reader, q, testKeyEC)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, _, err = cl.CreateOrderCert(context.Background(), s.url("/pleaseissue"), csr, true)
+			return err
+		}},
+		{"ListCertAlternates", func(cl *Client) error {
+			_, err := cl.ListCertAlternates(context.Background(), s.url("/crt"))
+			return err
+		}},
+		{"Authorize", func(cl *Client) error {
+			_, err := cl.Authorize(context.Background(), s.url("example.com"))
+			return err
+		}},
+		{"AuthorizeIP", func(cl *Client) error {
+			_, err := cl.AuthorizeIP(context.Background(), s.url("1.1.1.1"))
+			return err
+		}},
+		{"GetAuthorization", func(cl *Client) error {
+			_, err := cl.GetAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"RevokeAuthorization", func(cl *Client) error {
+			err := cl.RevokeAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"WaitAuthorization", func(cl *Client) error {
+			_, err := cl.WaitAuthorization(context.Background(), s.url("/authz/1"))
+			return err
+		}},
+		{"GetChallenge", func(cl *Client) error {
+			_, err := cl.GetChallenge(context.Background(), s.url("/chall/1"))
+			return err
+		}},
+		{"Accept", func(cl *Client) error {
+			_, err := cl.Accept(context.Background(), &Challenge{Type: "http-01", URI: "/chall/1", Token: "test"})
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cl := &Client{Key: testKeyEC, DirectoryURL: s.url("/")}
+			err := tt.op(cl)
+			expected := "acme: the operation requires account KID but the value is not provided and encountered error while retrieving it from the server: 400 : 400 Bad Request"
+			if err == nil || err.Error() != expected {
+				t.Errorf("err: %v; want %v", err, expected)
+			}
+		})
 	}
 }
