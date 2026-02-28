@@ -67,6 +67,28 @@ spec:
                   ACME configures this issuer to communicate with a RFC8555 (ACME) server
                   to obtain signed x509 certificates.
                 properties:
+                  accountPrivateKey:
+                    description: |-
+                      AccountPrivateKey contains the configuration for the ACME account private key.
+                      If not specified, defaults to RSA with 2048 bit key size.
+                    properties:
+                      algorithm:
+                        description: |-
+                          Algorithm is the algorithm used for the ACME account private key.
+                          Supported values are "RSA" and "ECDSA".
+                          If not specified, defaults to "RSA".
+                        enum:
+                        - RSA
+                        - ECDSA
+                        type: string
+                      size:
+                        description: |-
+                          Size is the key size for the account private key.
+                          For RSA keys: 2048 or 4096
+                          For ECDSA keys: 256, 384, or 521
+                          If not specified, defaults to 2048 for RSA and 256 for ECDSA.
+                        type: integer
+                    type: object
                   caBundle:
                     description: |-
                       Base64-encoded bundle of PEM CAs which can be used to validate the certificate
