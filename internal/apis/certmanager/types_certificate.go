@@ -169,6 +169,11 @@ type CertificateSpec struct {
 	// +optional
 	RenewBeforePercentage *int32
 
+	// `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+	// `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.
+	// +optional
+	Renewal *CertificateRenewal
+
 	// Requested DNS subject alternative names.
 	DNSNames []string
 
@@ -489,6 +494,34 @@ const (
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
 )
+
+type CertificateRenewal struct {
+	// `policy` must be one of `Disabled`, `RenewBefore`.
+	Policy CertificateRenewalPolicy
+
+	// `windows` mentions the behavior of when the renewal must happen.
+	Windows []CertificateRenewalWindows
+}
+
+type CertificateRenewalPolicy string
+
+const (
+	RenewBefore CertificateRenewalPolicy = "RenewBefore"
+	Disabled    CertificateRenewalPolicy = "Disabled"
+)
+
+// CertificateRenewalWindows is the definition for renewal windows
+type CertificateRenewalWindows struct {
+	// `timezone` is IANA compliant timezone.
+	Timezone string
+
+	// `windowDuration` is how long the cron definition is active for.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+	WindowDuration *metav1.Duration
+
+	// `cron` is a cron compliant string to allow when the renewal should be allowed.
+	Cron string
+}
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {

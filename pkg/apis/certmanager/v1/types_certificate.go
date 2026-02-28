@@ -206,6 +206,11 @@ type CertificateSpec struct {
 	// +optional
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 
+	// `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+	// `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.
+	// +optional
+	Renewal *CertificateRenewal `json:"renewal,omitempty"`
+
 	// Requested DNS subject alternative names.
 	// +optional
 	// +listType=atomic
@@ -582,6 +587,52 @@ const (
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
 )
+
+type CertificateRenewal struct {
+	// `policy` must be one of `Disabled`, `RenewBefore`.
+	// +kubebuilder:validation:Enum=RenewBefore;Disabled
+	Policy CertificateRenewalPolicy `json:"policy,omitempty"`
+
+	// `windows` mentions the behavior of when the renewal must happen.
+	// +listType=atomic
+	// +optional
+	Windows []CertificateRenewalWindows `json:"windows,omitempty"`
+}
+
+type CertificateRenewalPolicy string
+
+const (
+	CertificateRenewalPolicyRenewBefore CertificateRenewalPolicy = "RenewBefore"
+	CertificateRenewalPolicyDisabled    CertificateRenewalPolicy = "Disabled"
+)
+
+// CertificateRenewalWindows is the definition for renewal windows
+type CertificateRenewalWindows struct {
+	// `timezone` is IANA compliant timezone. For example America/Denver.
+	// If this field is not set, timezone is treated as UTC.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Timezone string `json:"timezone,omitempty"`
+
+	// `windowDuration` is how long the cron definition is active for.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(s|m|h))+$"
+	// +required
+	WindowDuration *metav1.Duration `json:"windowDuration,omitempty"`
+
+	// `cron` is a cron compliant string to allow when the renewal should be allowed. Format is as shown below:
+	// * * * * *
+	// | | | | |
+	// | | | | day of the week (0–6) (Sunday to Saturday;
+	// | | | month (1–12)             7 is also Sunday on some systems)
+	// | | day of the month (1–31)
+	// | hour (0–23)
+	// minute (0–59)
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	Cron string `json:"cron,omitempty"`
+}
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {

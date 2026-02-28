@@ -43,9 +43,9 @@ func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 }
 
 // renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
-func renewalTimeBuilder(rt *metav1.Time) pki.RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32) *metav1.Time {
-		return rt
+func renewalTimeBuilder(rt *metav1.Time, err error) pki.RenewalTimeFunc {
+	return func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal) (*metav1.Time, error) {
+		return rt, err
 	}
 }
 
@@ -282,7 +282,10 @@ func TestProcessItem(t *testing.T) {
 			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
 
 			// Override controller's renewalTime func with a fake that returns test.renewalTime.
-			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime)
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime, nil)
+
+			// Override controller's event recorder with a fake recorder to capture some events.
+			w.controller.recorder = new(testpkg.FakeRecorder)
 
 			// If Certificate's status should be updated,
 			// build the expected Certificate and use it to set the expected update action on builder.

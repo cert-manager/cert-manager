@@ -37,6 +37,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	"github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilpkg "github.com/cert-manager/cert-manager/pkg/util"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -72,7 +73,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
-	var commonName = crt.CommonName
+	commonName := crt.CommonName
 	if crt.LiteralSubject != "" {
 		if !utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject) {
 			el = append(el, field.Forbidden(fldPath.Child("literalSubject"), "Feature gate LiteralCertificateSubject must be enabled on both webhook and controller to use the alpha `literalSubject` field"))
@@ -229,6 +230,10 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 
 	if crt.Keystores != nil {
 		el = append(el, validateKeystores(crt, fldPath)...)
+	}
+
+	if crt.Renewal != nil {
+		el = append(el, validateCertificateRenewal(crt, fldPath)...)
 	}
 
 	return el
@@ -441,6 +446,46 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 		if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
 			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
 		}
+	}
+
+	return el
+}
+
+func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+	switch crt.Renewal.Policy {
+	case internalcmapi.RenewBefore:
+	case internalcmapi.Disabled:
+		if len(crt.Renewal.Windows) > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("renewal", "windows"), "windows cannot be set when `renewal.policy` is set to Disabled"))
+		}
+		return el
+	default:
+		el = append(el, field.NotSupported(fldPath.Child("renewal", "policy"), fmt.Sprintf("unsupported field %s", crt.Renewal.Policy), []string{string(internalcmapi.Disabled), string(internalcmapi.RenewBefore)}))
+	}
+
+	if crt.Renewal.Windows != nil {
+		for i, window := range crt.Renewal.Windows {
+			el = append(el, validateCertificateRenewalWindows(window, fldPath.Child("renewal", "windows").Index(i))...)
+		}
+	}
+
+	return el
+}
+
+func validateCertificateRenewalWindows(window internalcmapi.CertificateRenewalWindows, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+
+	if window.WindowDuration == nil {
+		el = append(el, field.Required(fldPath.Child("windowDuration"), "windowDuration must be specified and should be greater than 0"))
+	}
+
+	if _, err := time.LoadLocation(window.Timezone); err != nil && window.Timezone != "" {
+		el = append(el, field.Invalid(fldPath.Child("timezone"), window.Timezone, "invalid value for timezone. timezone must be IANA compliant"))
+	}
+
+	if _, err := utilpkg.CronParse(window.Cron, window.Timezone); err != nil {
+		el = append(el, field.Invalid(fldPath.Child("cron"), window.Cron, fmt.Sprintf("invalid cron syntax: %s. cron needs to follow: cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow", err.Error())))
 	}
 
 	return el

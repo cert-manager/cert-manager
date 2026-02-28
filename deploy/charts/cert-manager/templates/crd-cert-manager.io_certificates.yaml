@@ -502,6 +502,53 @@ spec:
                     Cannot be set if the `renewBefore` field is set.
                   format: int32
                   type: integer
+                renewal:
+                  description: |-
+                    `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+                    `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.
+                  properties:
+                    policy:
+                      description: '`policy` must be one of `Disabled`, `RenewBefore`.'
+                      enum:
+                        - RenewBefore
+                        - Disabled
+                      type: string
+                    windows:
+                      description: '`windows` mentions the behavior of when the renewal must happen.'
+                      items:
+                        description: CertificateRenewalWindows is the definition for renewal windows
+                        properties:
+                          cron:
+                            description: |-
+                              `cron` is a cron compliant string to allow when the renewal should be allowed. Format is as shown below:
+                              * * * * *
+                              | | | | |
+                              | | | | day of the week (0–6) (Sunday to Saturday;
+                              | | | month (1–12)             7 is also Sunday on some systems)
+                              | | day of the month (1–31)
+                              | hour (0–23)
+                              minute (0–59)
+                            minLength: 1
+                            type: string
+                          timezone:
+                            description: |-
+                              `timezone` is IANA compliant timezone. For example America/Denver.
+                              If this field is not set, timezone is treated as UTC.
+                            minLength: 1
+                            type: string
+                          windowDuration:
+                            description: |-
+                              `windowDuration` is how long the cron definition is active for.
+                              Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+                            pattern: ^([0-9]+(\.[0-9]+)?(s|m|h))+$
+                            type: string
+                        required:
+                          - cron
+                          - windowDuration
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
+                  type: object
                 revisionHistoryLimit:
                   description: |-
                     The maximum number of CertificateRequest revisions that are maintained in
