@@ -1,7 +1,7 @@
 {
   "$defs": {
     "helm-values": {
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "acmesolver": {
           "$ref": "#/$defs/helm-values.acmesolver"
