@@ -167,6 +167,11 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.DurationVar(&c.ACMEDNS01Config.CheckRetryPeriod, "dns01-check-retry-period", c.ACMEDNS01Config.CheckRetryPeriod, ""+
 		"The duration the controller should wait between a propagation check. Despite the name, this flag is used to configure the wait period for both DNS01 and HTTP01 challenge propagation checks. For DNS01 challenges the propagation check verifies that a TXT record with the challenge token has been created. For HTTP01 challenges the propagation check verifies that the challenge token is served at the challenge URL."+
 		"This should be a valid duration string, for example 180s or 1h")
+	fs.DurationVar(&c.ACMEDNS01Config.Timeout, "dns01-timeout", c.ACMEDNS01Config.Timeout, ""+
+		"The maximum time allowed for DNS01 provider API calls to complete. "+
+		"This is the timeout applied to HTTP requests made to DNS provider APIs (e.g., Cloudflare, DigitalOcean). "+
+		"Increase this value in environments with slow or restricted internet connectivity. "+
+		"This should be a valid duration string, for example 30s or 1m")
 
 	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
