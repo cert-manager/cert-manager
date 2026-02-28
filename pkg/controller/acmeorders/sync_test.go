@@ -286,6 +286,8 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	}
 
 	testOrderPending := gen.OrderFrom(testOrder, gen.SetOrderStatus(pendingStatus))
+	testOrderProcessing := testOrderPending.DeepCopy()
+	testOrderProcessing.Status.State = cmacme.Processing
 	testOrderInvalid := testOrderPending.DeepCopy()
 	testOrderInvalid.Status.State = cmacme.Invalid
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
@@ -865,6 +867,45 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 					return "key", nil
 				},
 			},
+		},
+		"reschedule if the ACME Order is still processing": {
+			order: gen.OrderFrom(testOrder, gen.SetOrderStatus(
+				cmacme.OrderStatus{
+					State:       cmacme.Processing,
+					URL:         "http://testurl.com/abcde",
+					FinalizeURL: "http://testurl.com/abcde/finalize",
+					Authorizations: []cmacme.ACMEAuthorization{
+						{
+							URL:          "http://authzurl",
+							Identifier:   "test.com",
+							InitialState: cmacme.Valid,
+							Challenges: []cmacme.ACMEChallenge{
+								{
+									URL:   "http://chalurl",
+									Token: "token",
+									Type:  "http-01",
+								},
+							},
+						},
+					},
+				},
+			)),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessing},
+				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents:     []string{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(ctx context.Context, url string) (*acmeapi.Order, error) {
+					return &acmeapi.Order{
+						URI:         "http://testurl.com/abcde",
+						Status:      acmeapi.StatusProcessing,
+						FinalizeURL: "http://testurl.com/abcde/finalize",
+						CertURL:     "",
+					}, nil
+				},
+			},
+			shouldSchedule: true,
 		},
 		"preferred chain is default cert chain": {
 			order: testOrderReady.DeepCopy(),
