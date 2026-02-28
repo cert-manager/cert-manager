@@ -19,18 +19,81 @@ import (
 // challenge
 // TODO: move this into the pkg/acme package
 func DNS01LookupFQDN(ctx context.Context, domain string, followCNAME bool, nameservers ...string) (string, error) {
-	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
+	originalFQDN := fmt.Sprintf("_acme-challenge.%s.", domain)
 
-	// Check if the domain has CNAME then return that
-	if followCNAME {
-		var err error
-		fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
-		if err != nil {
-			return "", err
+	if !followCNAME {
+		return originalFQDN, nil
+	}
+
+	// Get zone for original domain to compare against later.
+	// We use the domain (not originalFQDN) since _acme-challenge subdomain may not exist yet.
+	originalZone, err := FindZoneByFqdn(ctx, fmt.Sprintf("%s.", domain), nameservers)
+	if err != nil {
+		// Can't find original zone, don't follow CNAMEs
+		return originalFQDN, nil
+	}
+
+	// Try to follow CNAMEs
+	resolvedFQDN, err := followCNAMEs(ctx, originalFQDN, nameservers)
+	if err != nil {
+		return "", err
+	}
+
+	// No CNAME found
+	if resolvedFQDN == originalFQDN {
+		return originalFQDN, nil
+	}
+
+	// Validate target zone is related to original.
+	// This prevents wildcard CNAMEs (e.g., *.example.com → external.azure.com)
+	// from redirecting ACME challenges to unrelated external zones.
+	resolvedZone, err := FindZoneByFqdn(ctx, resolvedFQDN, nameservers)
+	if err != nil {
+		// Can't find zone for target - likely wildcard to external domain
+		return originalFQDN, nil
+	}
+
+	if !isRelatedZone(originalZone, resolvedZone) {
+		// Zones are unrelated - likely wildcard CNAME, fall back to original
+		return originalFQDN, nil
+	}
+
+	return resolvedFQDN, nil
+}
+
+// isRelatedZone checks if two zones share common ancestry.
+// Returns true if zones are same, parent/child, or share common parent.
+// This is used to detect wildcard CNAME matches that point to unrelated zones.
+func isRelatedZone(zone1, zone2 string) bool {
+	if zone1 == zone2 {
+		return true
+	}
+
+	// Check parent/child relationship
+	if dns.IsSubDomain(zone1, zone2) || dns.IsSubDomain(zone2, zone1) {
+		return true
+	}
+
+	// Check common ancestry (at least 2 matching suffix labels).
+	// This allows sibling zones like foo.example.com and bar.example.com
+	// but rejects completely unrelated zones like example.com and azure.com.
+	labels1 := dns.SplitDomainName(zone1)
+	labels2 := dns.SplitDomainName(zone2)
+
+	if len(labels1) < 2 || len(labels2) < 2 {
+		return false
+	}
+
+	matchingLabels := 0
+	for i := 1; i <= min(len(labels1), len(labels2)); i++ {
+		if labels1[len(labels1)-i] == labels2[len(labels2)-i] {
+			matchingLabels++
+		} else {
+			break
 		}
 	}
 
-	return fqdn, nil
+	return matchingLabels >= 2
 }
 
 // FindBestMatch returns the longest match for a given domain within a list of domains
