@@ -149,6 +149,12 @@ type ControllerConfiguration struct {
 	// when a certificate request fails. This duration is exponentially increased
 	// (up to a maximum of 32 hours) based on the number of consecutive failures.
 	CertificateRequestMinimumBackoffDuration *sharedv1alpha1.Duration `json:"certificateRequestMinimumBackoffDuration,omitempty"`
+
+	// CertificateRenewOnWindowFailure configures if a certificate should be renewed if a
+	// renewal time is not found with the windows configured for renewal. This value has no
+	// impact if windows are not configured. By default, this value is true i.e. certificates
+	// renew despite readiness controller not able to find a renewal time.
+	CertificateRenewOnWindowFailure *bool `json:"certificateRenewOnWindowFailure,omitempty"`
 }
 
 type LeaderElectionConfig struct {

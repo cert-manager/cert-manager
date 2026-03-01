@@ -72,6 +72,7 @@ type controller struct {
 	recorder                                 record.EventRecorder
 	scheduledWorkQueue                       scheduler.ScheduledWorkQueue[types.NamespacedName]
 	certificateRequestMinimumBackoffDuration time.Duration
+	certificateRenewOnWindowFailure          bool
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -138,6 +139,7 @@ func NewController(
 		scheduledWorkQueue:                       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
 		fieldManager:                             ctx.FieldManager,
 		certificateRequestMinimumBackoffDuration: ctx.CertificateRequestMinimumBackoffDuration,
+		certificateRenewOnWindowFailure:          ctx.CertificateRenewOnWindowFailure,
 
 		// The following are used for testing purposes.
 		clock:         ctx.Clock,
@@ -215,9 +217,21 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	reason, message, reissue := c.shouldReissue(input)
-	if !reissue {
+	switch reason {
+	case policies.WindowError:
+		// If we are not able to find a renewal time and certificate is configured to not renew then no re-issuance is required.
+		if !c.certificateRenewOnWindowFailure {
+			return nil
+		}
+
+		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+		message = "Renewing certificate without satisfying renewal windows"
+		reason = policies.Renewing
+	default:
 		// no re-issuance required, return early
-		return nil
+		if !reissue {
+			return nil
+		}
 	}
 
 	// Although the below recorder.Event already logs the event, the log

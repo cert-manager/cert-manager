@@ -166,6 +166,11 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(sharedv1alpha1.Duration)
 		**out = **in
 	}
+	if in.CertificateRenewOnWindowFailure != nil {
+		in, out := &in.CertificateRenewOnWindowFailure, &out.CertificateRenewOnWindowFailure
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

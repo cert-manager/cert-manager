@@ -461,7 +461,7 @@ func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *fie
 		}
 		return el
 	default:
-		el = append(el, field.NotSupported(fldPath.Child("renewal", "policy"), fmt.Sprintf("unsupported field %s", crt.Renewal.Policy), []string{string(internalcmapi.Disabled), string(internalcmapi.RenewBefore)}))
+		el = append(el, field.NotSupported(fldPath.Child("renewal", "policy"), crt.Renewal.Policy, []string{string(internalcmapi.Disabled), string(internalcmapi.RenewBefore)}))
 	}
 
 	if crt.Renewal.Windows != nil {

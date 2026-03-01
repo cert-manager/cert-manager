@@ -17,6 +17,7 @@ limitations under the License.
 package readiness
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -99,6 +100,9 @@ func TestProcessItem(t *testing.T) {
 
 		// renewalTime will be the updated Certificate's status.renewalTime
 		renewalTime *metav1.Time
+
+		// renewalTimeError will be the error that should be returned from the renewal function
+		renewalTimeError error
 
 		wantsErr bool
 	}{
@@ -240,6 +244,22 @@ func TestProcessItem(t *testing.T) {
 			secretShouldExist: true,
 			certShouldUpdate:  false,
 		},
+		"update status as not ready (Ready=False) with invalid renewal time": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             policies.WindowError,
+				Message:            "Could not calculate renewal time: cannot find a time with the given windows",
+				LastTransitionTime: &metaNow,
+			},
+			cert:              gen.CertificateFrom(cert),
+			certShouldUpdate:  true,
+			secretShouldExist: true,
+			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
+			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
+			renewalTime:       func() *metav1.Time { return nil }(),
+			renewalTimeError:  fmt.Errorf("cannot find a time with the given windows"),
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -282,7 +302,7 @@ func TestProcessItem(t *testing.T) {
 			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
 
 			// Override controller's renewalTime func with a fake that returns test.renewalTime.
-			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime, nil)
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime, test.renewalTimeError)
 
 			// Override controller's event recorder with a fake recorder to capture some events.
 			w.controller.recorder = new(testpkg.FakeRecorder)

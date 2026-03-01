@@ -245,6 +245,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Duration of the initial certificate request backoff when a certificate request fails. "+
 		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
 
+	fs.BoolVar(&c.CertificateRenewOnWindowFailure, "certificate-renew-on-window-failure", c.CertificateRenewOnWindowFailure, ""+
+		"Whether to enable renewal for certificates if a renewal time is not found in accordance with the renewal windows configured."+
+		"If omitted, the default value would be true and the certificate would be renewed even if there is no renewal time within the window.")
+
 	logf.AddFlags(&c.Logging, fs)
 }
 

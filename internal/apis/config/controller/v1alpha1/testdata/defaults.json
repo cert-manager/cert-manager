@@ -73,5 +73,6 @@
 		"maxChainLength": 95000,
 		"maxBundleSize": 330000
 	},
-	"certificateRequestMinimumBackoffDuration": "1h0m0s"
+	"certificateRequestMinimumBackoffDuration": "1h0m0s",
+	"certificateRenewOnWindowFailure": true
 }

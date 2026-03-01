@@ -234,6 +234,10 @@ type CertificateOptions struct {
 	// when a certificate request fails. This duration is exponentially increased
 	// based on the number of consecutive failures.
 	CertificateRequestMinimumBackoffDuration time.Duration
+	// CertificateRenewOnWindowFailure configures if a certificate should be renewed if a
+	// renewal time is not found with the windows configured for renewal. This value has no
+	// impact if windows are not configured.
+	CertificateRenewOnWindowFailure bool
 }
 
 type SchedulerOptions struct {

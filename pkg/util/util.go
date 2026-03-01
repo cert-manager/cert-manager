@@ -24,13 +24,17 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cert-manager/cert-manager/internal/cron"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
-// CronSchedule here exposes the internal cron schedule interface so that we don't return an internal type.
-type CronSchedule = cron.Schedule
+// CronSchedule defines the minimal schedule behavior exposed by this package,
+// decoupling callers from the internal cron implementation.
+type CronSchedule interface {
+	Next(time.Time) time.Time
+}
 
 // genericEqualUnsorted reports whether two slices are identical up to reordering
 // using a comparison function.
