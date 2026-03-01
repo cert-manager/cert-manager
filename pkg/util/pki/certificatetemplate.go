@@ -146,6 +146,7 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 	cert := &x509.Certificate{
 		PublicKeyAlgorithm: csr.PublicKeyAlgorithm,
 		PublicKey:          csr.PublicKey,
+		SignatureAlgorithm: csr.SignatureAlgorithm,
 		Subject:            csr.Subject,
 		RawSubject:         csr.RawSubject,
 

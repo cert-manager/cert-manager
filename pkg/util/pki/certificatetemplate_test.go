@@ -143,6 +143,15 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should copy signature algorithm",
+			csr: &x509.CertificateRequest{
+				SignatureAlgorithm: x509.ECDSAWithSHA512,
+			},
+			expected: &x509.Certificate{
+				SignatureAlgorithm: x509.ECDSAWithSHA512,
+			},
+		},
 	}
 
 	for _, tc := range testCases {
