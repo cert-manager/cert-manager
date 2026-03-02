@@ -9,7 +9,7 @@
 <!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.infra.cert-manager.io/badge.svg?jobs=ci-cert-manager-master-make-test">
 </a>
-<a href="https://godoc.org/github.com/cert-manager/cert-manager"><img src="https://godoc.org/github.com/cert-manager/cert-manager?status.svg"></a>
+<a href="https://pkg.go.dev/github.com/cert-manager/cert-manager"><img src="https://pkg.go.dev/badge/github.com/cert-manager/cert-manager.svg" alt="Go Reference"></a>
 <a href="https://goreportcard.com/report/github.com/cert-manager/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/cert-manager/cert-manager" /></a>
 <br />
 <a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
