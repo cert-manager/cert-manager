@@ -89,7 +89,7 @@ type OrderSpec struct {
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// Duration is the duration for the not after date for the requested certificate.
-	// this is set on order creation as pe the ACME spec.
+	// This is set on order creation as per the ACME spec.
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 

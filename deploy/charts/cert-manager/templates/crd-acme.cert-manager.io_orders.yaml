@@ -79,7 +79,7 @@ spec:
                 duration:
                   description: |-
                     Duration is the duration for the not after date for the requested certificate.
-                    this is set on order creation as pe the ACME spec.
+                    This is set on order creation as per the ACME spec.
                   type: string
                 ipAddresses:
                   description: |-
