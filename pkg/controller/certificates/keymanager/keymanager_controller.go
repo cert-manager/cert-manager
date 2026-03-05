@@ -334,11 +334,26 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 }
 
 func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (*corev1.Secret, error) {
+	// Since crt.Status.NextPrivateKeySecretName is set based on the name of the
+	// secret this function returns there is a possibility that this function
+	// reconciles twice before the cache is updated with the latest changes.
+	//
+	// In that case since we would not see the NextPrivateKeySecretName we just
+	// set and we would generate a new secret with a different name, updating
+	// NextPrivateKeySecretName once again.
+	//
+	// Given this code path is only hit in limited circumstances, it is not
+	// unreasonable to get the latest object via a real api call.
+	latestCrt, err := c.client.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	// if the 'nextPrivateKeySecretName' field is already set, use this as the
 	// name of the Secret resource.
 	name := ""
-	if crt.Status.NextPrivateKeySecretName != nil {
-		name = *crt.Status.NextPrivateKeySecretName
+	if latestCrt.Status.NextPrivateKeySecretName != nil {
+		name = *latestCrt.Status.NextPrivateKeySecretName
 	}
 
 	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
@@ -364,10 +379,20 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 		// TODO: handle certificate resources that have especially long names
 		s.GenerateName = crt.Name + "-"
 	}
+
 	s, err = c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+
+	// We only get to this code path if both NextPrivateKeySecretName is set AND
+	// we counted zero secrets. If we get an IsAlreadyExists error it means our
+	// cache was outdated and there _is_ a secret.
+	if apierrors.IsAlreadyExists(err) && name != "" {
+		return c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return s, nil
 }
 
