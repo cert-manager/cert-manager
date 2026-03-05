@@ -197,9 +197,41 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
-		// TODO: if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
-		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
-		return c.deleteSecretResources(ctx, secrets)
+		// if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
+		if crt.Status.NextPrivateKeySecretName != nil {
+			var secretsToDelete []*corev1.Secret
+			var keepSecret *corev1.Secret
+
+			for _, secret := range secrets {
+				if secret.Name == *crt.Status.NextPrivateKeySecretName {
+					keepSecret = secret
+				} else {
+					secretsToDelete = append(secretsToDelete, secret)
+				}
+			}
+			// Continue processing with the kept secret if it exists
+			if keepSecret != nil {
+				// Continue with normal single secret processing below
+				secrets = []*corev1.Secret{keepSecret}
+				// Delete others that don't match nextPrivateKeySecretName
+				if len(secretsToDelete) > 0 {
+					log.V(logf.DebugLevel).Info("Cleaning up duplicate Secret resources while preserving nextPrivateKeySecretName",
+						"preserving", *crt.Status.NextPrivateKeySecretName,
+						"deleting_count", len(secretsToDelete))
+					if err := c.deleteSecretResources(ctx, secretsToDelete); err != nil {
+						return err
+					}
+				}
+			} else {
+				// If the expected secret wasn't found among duplicates, delete all and start fresh
+				log.V(logf.DebugLevel).Info("Expected nextPrivateKeySecretName not found among duplicates, cleaning up all Secret resources")
+				return c.deleteSecretResources(ctx, secrets)
+			}
+		} else {
+			// Original behavior: delete all if nextPrivateKeySecretName is not set
+			log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
+			return c.deleteSecretResources(ctx, secrets)
+		}
 	}
 
 	secret := secrets[0]

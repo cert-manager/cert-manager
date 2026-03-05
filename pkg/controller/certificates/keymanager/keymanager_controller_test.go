@@ -286,12 +286,42 @@ func TestProcessItem(t *testing.T) {
 				)),
 			},
 		},
-		// TODO: change this behaviour to not delete the named nextPrivateKeySecretName
-		"if multiple owned secrets exist, delete them all even if one is the named Secret": {
+		"if multiple owned secrets exist with one matching nextPrivateKeySecretName, preserve the matching one and delete others": {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: ptr.To("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateRSA(t, 2048)}),
+				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
+				ownedSecretWithName("testns", "fixed-name-3", "test", nil),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name-2",
+				)),
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name-3",
+				)),
+			},
+		},
+		"if multiple owned secrets exist but none match nextPrivateKeySecretName, delete all": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: ptr.To("expected-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,
