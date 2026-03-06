@@ -18,7 +18,10 @@
 generate-klone: | $(NEEDS_KLONE)
 	$(KLONE) sync
 
-shared_generate_targets += generate-klone
+# MANUAL CHANGE!
+# generate-klone is removed so we can manually update versions
+# and diverge from upstream klone
+# shared_generate_targets += generate-klone
 
 .PHONY: upgrade-klone
 ## Upgrade klone Makefile modules to latest version
