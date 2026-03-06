@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -194,43 +195,40 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			return nil
 		}
 	}
-
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
-		// if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
-		if crt.Status.NextPrivateKeySecretName != nil {
-			var secretsToDelete []*corev1.Secret
-			var keepSecret *corev1.Secret
+		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
+		log.V(logf.DebugLevel).Info("Cleaning up duplicate Secret resources", "total_secrets", len(secrets))
 
+		// Use ptr.Deref to get the value or empty string if nil
+		skipSecretName := ""
+		if crt.Status.NextPrivateKeySecretName != nil {
+			skipSecretName = *crt.Status.NextPrivateKeySecretName
+			log.V(logf.DebugLevel).Info("Preserving nextPrivateKeySecretName", "preserving", skipSecretName)
+		}
+
+		if err := c.deleteSecretResources(ctx, secrets, skipSecretName); err != nil {
+			return err
+		}
+
+		// Filter out the deleted secrets to continue with only the preserved one
+		if skipSecretName != "" {
+			var filteredSecrets []*corev1.Secret
 			for _, secret := range secrets {
-				if secret.Name == *crt.Status.NextPrivateKeySecretName {
-					keepSecret = secret
-				} else {
-					secretsToDelete = append(secretsToDelete, secret)
+				if secret.Name == skipSecretName {
+					filteredSecrets = append(filteredSecrets, secret)
 				}
 			}
-			// Continue processing with the kept secret if it exists
-			if keepSecret != nil {
-				// Continue with normal single secret processing below
-				secrets = []*corev1.Secret{keepSecret}
-				// Delete others that don't match nextPrivateKeySecretName
-				if len(secretsToDelete) > 0 {
-					log.V(logf.DebugLevel).Info("Cleaning up duplicate Secret resources while preserving nextPrivateKeySecretName",
-						"preserving", *crt.Status.NextPrivateKeySecretName,
-						"deleting_count", len(secretsToDelete))
-					if err := c.deleteSecretResources(ctx, secretsToDelete); err != nil {
-						return err
-					}
-				}
-			} else {
-				// If the expected secret wasn't found among duplicates, delete all and start fresh
-				log.V(logf.DebugLevel).Info("Expected nextPrivateKeySecretName not found among duplicates, cleaning up all Secret resources")
-				return c.deleteSecretResources(ctx, secrets)
+			secrets = filteredSecrets
+
+			// If the expected secret wasn't found among duplicates, return
+			if len(secrets) == 0 {
+				log.V(logf.DebugLevel).Info("Expected nextPrivateKeySecretName not found among duplicates")
+				return nil
 			}
 		} else {
-			// Original behavior: delete all if nextPrivateKeySecretName is not set
-			log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
-			return c.deleteSecretResources(ctx, secrets)
+			// All secrets were deleted
+			return nil
 		}
 	}
 
@@ -321,9 +319,13 @@ func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.
 }
 
 // deleteSecretResources will delete the given secret resources
-func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret) error {
+func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret, skip ...string) error {
 	log := logf.FromContext(ctx)
 	for _, s := range secrets {
+		// Skip deletion if the secret name is in the skip list
+		if slices.Contains(skip, s.Name) {
+			continue
+		}
 		if err := c.coreClient.CoreV1().Secrets(s.Namespace).Delete(ctx, s.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
