@@ -187,7 +187,10 @@ func TestRegistry_AddClient_UpdatesClientPKChecksum(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pkBytes := x509.MarshalPKCS1PrivateKey(pk)
+	pkBytes, err := x509.MarshalPKCS8PrivateKey(pk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pkChecksum := sha256.Sum256(pkBytes)
 	pkChecksumString := base64.StdEncoding.EncodeToString(pkChecksum[:])
 
