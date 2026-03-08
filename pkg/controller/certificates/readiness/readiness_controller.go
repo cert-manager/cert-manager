@@ -407,18 +407,18 @@ func (c *controller) scheduleRequeueAtExpiry(log logr.Logger, key types.Namespac
 		return
 	}
 
+	// Only schedule requeue if the certificate has not yet expired and is currently Ready
 	now := c.clock.Now()
 	expiryTime := crt.Status.NotAfter.Time
-	if !now.Before(expiryTime) {
-		// Already past expiry. The current ProcessItem invocation will have
-		// run the policy chain and set Ready=False via CurrentCertificateHasExpired,
-		// so no further requeue is needed.
-		return
+	if now.Before(expiryTime) {
+		// Check if the certificate is currently Ready
+		readyCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
+		if readyCondition != nil && readyCondition.Status == cmmeta.ConditionTrue {
+			requeueAfter := expiryTime.Sub(now) + time.Second // add 1s buffer to ensure we're past expiry
+			log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
+			c.scheduledWorkQueue.Add(key, requeueAfter)
+		}
 	}
-
-	requeueAfter := expiryTime.Sub(now) + time.Second // 1s buffer so we land past expiry
-	log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
-	c.scheduledWorkQueue.Add(key, requeueAfter)
 }
 
 // updateOrApplyStatus will update the controller status. If the

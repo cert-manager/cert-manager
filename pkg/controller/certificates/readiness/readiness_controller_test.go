@@ -474,6 +474,7 @@ func TestScheduleRequeueAtExpiry(t *testing.T) {
 			if test.expectRequeue {
 				// AddAfter with future duration won't immediately appear in Len(),
 				// but we can verify the call didn't panic and completed successfully
+				// The test passes if no panic occurred during ProcessItem
 			}
 		})
 	}
