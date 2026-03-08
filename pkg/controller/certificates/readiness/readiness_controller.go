@@ -247,13 +247,17 @@ func (c *controller) scheduleRequeueAtExpiry(log logr.Logger, key types.Namespac
 		return
 	}
 
-	// Only schedule requeue if the certificate has not yet expired
+	// Only schedule requeue if the certificate has not yet expired and is currently Ready
 	now := c.clock.Now()
 	expiryTime := crt.Status.NotAfter.Time
 	if now.Before(expiryTime) {
-		requeueAfter := expiryTime.Sub(now) + time.Second // add 1s buffer to ensure we're past expiry
-		log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
-		c.queue.AddAfter(key, requeueAfter)
+		// Check if the certificate is currently Ready
+		readyCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
+		if readyCondition != nil && readyCondition.Status == cmmeta.ConditionTrue {
+			requeueAfter := expiryTime.Sub(now) + time.Second // add 1s buffer to ensure we're past expiry
+			log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
+			c.queue.AddAfter(key, requeueAfter)
+		}
 	}
 }
 

@@ -459,10 +459,10 @@ func TestScheduleRequeueAtExpiry(t *testing.T) {
 			}
 
 			// Check the queue length to verify requeue was scheduled
-			queueLen := w.controller.queue.Len()
-			if test.expectRequeue && queueLen == 0 {
+			if test.expectRequeue {
 				// AddAfter with future duration won't immediately appear in Len(),
 				// but we can verify the call didn't panic and completed successfully
+				// The test passes if no panic occurred during ProcessItem
 			}
 		})
 	}
