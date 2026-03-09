@@ -202,34 +202,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		log.V(logf.DebugLevel).Info("Cleaning up duplicate Secret resources", "total_secrets", len(secrets))
 
 		// Use ptr.Deref to get the value or empty string if nil
-		skipSecretName := ptr.Deref(crt.Status.NextPrivateKeySecretName, "")
-
-		if err := c.deleteSecretResources(ctx, secrets, skipSecretName); err != nil {
-			return err
-		}
-
-		// Filter out the deleted secrets to continue with only the preserved one
-		if skipSecretName != "" {
-			log.V(logf.DebugLevel).Info("Preserving nextPrivateKeySecretName", "preserving", skipSecretName)
-
-			var filteredSecrets []*corev1.Secret
-			for _, secret := range secrets {
-				if secret.Name == skipSecretName {
-					filteredSecrets = append(filteredSecrets, secret)
-				}
-			}
-			secrets = filteredSecrets
-
-			// If the expected secret wasn't found among duplicates, return
-			if len(secrets) == 0 {
-				log.V(logf.DebugLevel).Info("Expected nextPrivateKeySecretName not found among duplicates")
-				return nil
-			}
-		} else {
-			// All secrets were deleted
-			log.V(logf.DebugLevel).Info("No nextPrivateKeySecretName to be preserved, all secrets deleted")
-			return nil
-		}
+		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
 	}
 
 	secret := secrets[0]
