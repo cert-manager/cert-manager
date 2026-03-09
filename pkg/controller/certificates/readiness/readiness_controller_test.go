@@ -458,12 +458,9 @@ func TestScheduleRequeueAtExpiry(t *testing.T) {
 				t.Error(err)
 			}
 
-			// Check the queue length to verify requeue was scheduled
-			if test.expectRequeue {
-				// AddAfter with future duration won't immediately appear in Len(),
-				// but we can verify the call didn't panic and completed successfully
-				// The test passes if no panic occurred during ProcessItem
-			}
+			// When test.expectRequeue is true, we verify that ProcessItem completed
+			// successfully without panic. AddAfter with future duration won't immediately
+			// appear in Len(), so the test passes if no panic occurred during ProcessItem.
 		})
 	}
 }
