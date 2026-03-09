@@ -31,9 +31,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/testr"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/cert-manager/cert-manager/internal/webhook"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -58,11 +61,21 @@ type ServerOptions struct {
 }
 
 func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
+	// We have to use a global stdout logger, because otherwise -count=2 tests will
+	// fail with "panic: Log in goroutine after Test... has completed: ..." since the
+	// first call to ctrl.SetLogger() will set the logger to the logger linked to the
+	// first test, controller-runtime will ignore the second call to ctrl.SetLogger()
+	// and the second test will end up using the logger linked to the first test, which
+	// will cause the panic.
+	globalLogger := klog.Background()
+	ctrl.SetLogger(globalLogger)
+
 	// Making sure the rootCtx is canceled when StopFunc is called
 	// even when t.Context() has not been canceled yet.
 	stoppableCtx, stopCtxFn := context.WithCancel(t.Context())
 
 	log := testr.New(t)
+	stoppableCtx = logr.NewContext(stoppableCtx, log)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	webhookFlags := options.NewWebhookFlags()
