@@ -1344,7 +1344,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 					},
 					"preferredChain": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PreferredChain is the chain to use if the ACME server outputs multiple. PreferredChain is no guarantee that this one gets delivered by the ACME endpoint. For example, for Let's Encrypt's DST cross-sign you would use: \"DST Root CA X3\" or \"ISRG Root X1\" for the newer Let's Encrypt root CA. This value picks the first certificate bundle in the combined set of ACME default and alternative chains that has a root-most certificate with this value as its issuer's commonname.",
+							Description: "PreferredChain is the chain to use if the ACME server outputs multiple. PreferredChain is no guarantee that this one gets delivered by the ACME endpoint. For example, for Let's Encrypt's DST cross-sign you would use: \"DST Root CA X3\" or \"ISRG Root X1\" for the newer Let's Encrypt root CA. This value picks the first certificate bundle in the combined set of ACME default and alternative chains that has a root-most certificate with this value as its issuer's common name.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
