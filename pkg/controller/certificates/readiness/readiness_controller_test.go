@@ -371,9 +371,9 @@ func TestScheduleRequeueAtExpiry(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		notAfter       time.Time
-		expectRequeue  bool
-		condition      cmapi.CertificateCondition
+		notAfter      time.Time
+		expectRequeue bool
+		condition     cmapi.CertificateCondition
 	}{
 		"should schedule requeue when certificate is Ready and NotAfter is in the future": {
 			notAfter:      now.Add(2 * time.Hour),
