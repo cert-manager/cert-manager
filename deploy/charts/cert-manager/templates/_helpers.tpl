@@ -265,3 +265,30 @@ set .installCRDs and disabled .crds.keep.
     {{- fail "ERROR: .crds.keep is not compatible with .installCRDs, please use .crds.enabled and .crds.keep instead" }}
   {{- end }}
 {{- end -}}
+
+{{/*
+Check if the service monitor CRDs are installed before rendering the custom resource so that the
+helm chart deployment fails gracefully. Disable the check by setting skipCRDsCheck to `true`. 
+ */}}
+{{- define "cert-manager.shouldRenderServiceMonitor" -}}
+  {{- if not .Values.prometheus.servicemonitor.skipCRDsCheck -}}
+    {{- if not (has "monitoring.coreos.com/v1/ServiceMonitor" .Capabilities.APIVersions) -}}
+      {{- fail "Service Monitor requires monitoring.coreos.com/v1 CRDs. Please refer to https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml or set .Values.prometheus.servicemonitor.skipCRDsCheck=true" -}}
+    {{- end -}}
+    true
+  {{- end -}}
+  true
+{{- end -}}
+
+{{/*
+Check if the pod monitor CRDs are installed before rendering the custom resource so that the
+helm chart deployment fails gracefully. Disable the check by setting skipCRDsCheck to `true`. 
+ */}}
+{{- define "cert-manager.shouldRenderPodMonitor" -}}
+  {{- if not .Values.prometheus.podmonitor.skipCRDsCheck -}}
+    {{- if not (has "monitoring.coreos.com/v1/PodMonitor" .Capabilities.APIVersions) -}}
+      {{- fail "Pod Monitor requires monitoring.coreos.com/v1 CRDs. Please refer to https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml or set .Values.prometheus.podmonitor.skipCRDsCheck=true" -}}
+    {{- end -}}
+    true
+  {{- end -}}
+{{- end -}}

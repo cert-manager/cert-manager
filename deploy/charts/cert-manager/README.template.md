@@ -842,6 +842,13 @@ Otherwise, 'prometheus.io' annotations are added to the cert-manager and cert-ma
 > ```
 
 Create a ServiceMonitor to add cert-manager to Prometheus.
+#### **prometheus.servicemonitor.skipCRDsCheck** ~ `bool`
+> Default value:
+> ```yaml
+> true
+> ```
+
+Set to `true` and helm will not check for monitoring.coreos.com/v1 CRDs before deploying. Default is set to `true` to not break existing behavior.
 #### **prometheus.servicemonitor.namespace** ~ `string`
 
 The namespace that the service monitor should live in, defaults to the cert-manager namespace.
@@ -931,6 +938,13 @@ endpointAdditionalProperties:
 > ```
 
 Create a PodMonitor to add cert-manager to Prometheus.
+#### **prometheus.podmonitor.skipCRDsCheck** ~ `bool`
+> Default value:
+> ```yaml
+> true
+> ```
+
+Set to `true` and helm will not check for monitoring.coreos.com/v1 CRDs before deploying. Default is set to `true` to not break existing behavior.
 #### **prometheus.podmonitor.namespace** ~ `string`
 
 The namespace that the pod monitor should live in, defaults to the cert-manager namespace.

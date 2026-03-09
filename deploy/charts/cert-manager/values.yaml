@@ -641,6 +641,10 @@ prometheus:
     # Create a ServiceMonitor to add cert-manager to Prometheus.
     enabled: false
 
+    # Set to `true` and helm will not check for monitoring.coreos.com/v1 CRDs before deploying.
+    # Default is set to `true` to not break existing behavior.
+    skipCRDsCheck: true
+
     # The namespace that the service monitor should live in, defaults
     # to the cert-manager namespace.
     # +docs:property
@@ -692,6 +696,10 @@ prometheus:
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false
+
+    # Set to `true` and helm will not check for monitoring.coreos.com/v1 CRDs before deploying.
+    # Default is set to `true` to not break existing behavior.
+    skipCRDsCheck: true
 
     # The namespace that the pod monitor should live in, defaults
     # to the cert-manager namespace.
