@@ -162,6 +162,11 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 					cmapi.SchemeGroupVersion.WithResource("certificates"),
 					"status",
@@ -209,6 +214,11 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -239,8 +249,14 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 			},
-			secrets: []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
+			secrets:        []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
+			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -254,8 +270,12 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
+				testpkg.NewAction(coretesting.NewGetAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name",
+				)),
 			},
-			err: `secrets "fixed-name" already exists`,
 		},
 		"if multiple owned secrets exist, delete them all": {
 			certificate: &cmapi.Certificate{
