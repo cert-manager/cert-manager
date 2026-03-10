@@ -140,7 +140,7 @@ func NewController(
 
 	secretsManager := internal.NewSecretsManager(
 		ctx.Client.CoreV1(), secretsInformer.Lister(),
-		ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
+		ctx.Recorder, ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
 	)
 
 	return &controller{
