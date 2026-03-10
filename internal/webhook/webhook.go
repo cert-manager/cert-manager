@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
 	cminstall "github.com/cert-manager/cert-manager/internal/apis/certmanager/install"
@@ -48,7 +47,6 @@ import (
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
 func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
-	crlog.SetLogger(log)
 	// nolint:staticcheck // For backwards compatibility.
 	restcfg, err := kube.BuildClientConfig(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
