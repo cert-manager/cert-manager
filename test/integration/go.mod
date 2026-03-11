@@ -15,7 +15,6 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/miekg/dns v1.1.72
 	github.com/munnerz/crd-schema-fuzz v1.1.0
-	github.com/segmentio/encoding v0.5.3
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sync v0.20.0
 	k8s.io/api v0.35.2
@@ -76,7 +75,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
