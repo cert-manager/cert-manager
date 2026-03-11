@@ -240,6 +240,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
+	m.registry.MustRegister(m.vaultClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
