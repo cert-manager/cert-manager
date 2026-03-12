@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -276,6 +277,12 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 
 	client := http.Client{
 		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:       10 * time.Second,
+				FallbackDelay: 150 * time.Millisecond,
+			}).DialContext,
+		},
 	}
 	// #nosec G704 -- the URI is prepared in our own code, and is controlled
 	resp, err := client.Do(req)
