@@ -8,7 +8,9 @@ cert-manager can obtain certificates from a [variety of certificate authorities]
 
 ## Prerequisites
 
-- Kubernetes 1.22+
+Make sure you are using a version of Kubernetes that is supported by
+cert-manager. For more information, see the [Supported Releases
+page](https://cert-manager.io/docs/releases/).
 
 ## Installing the Chart
 
