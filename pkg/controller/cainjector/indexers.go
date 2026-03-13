@@ -45,8 +45,13 @@ const (
 // Certificate that is configured as a CA source for an injectable via
 // inject-ca-from annotation, a reconcile loop will be triggered for this
 // injectable
-func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
+func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup, ignoreNamespaces map[string]struct{}) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []ctrl.Request {
+
+		if _, ok := ignoreNamespaces[obj.GetNamespace()]; ok {
+			return nil
+		}
+
 		secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 		certName := owningCertForSecret(obj.(*metav1.PartialObjectMetadata))
 		if certName == nil {
