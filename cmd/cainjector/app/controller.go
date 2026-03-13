@@ -230,6 +230,7 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 
 	setupOptions := cainjector.SetupOptions{
 		Namespace:                    opts.Namespace,
+		IgnoreNamespaces:             opts.IgnoreNamespaces,
 		EnableCertificatesDataSource: opts.EnableDataSourceConfig.Certificates,
 		EnabledReconcilersFor: map[string]bool{
 			cainjector.MutatingWebhookConfigurationName:   opts.EnableInjectableConfig.MutatingWebhookConfigurations,

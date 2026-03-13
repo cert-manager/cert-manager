@@ -58,6 +58,7 @@ type setup struct {
 
 type SetupOptions struct {
 	Namespace                    string
+	IgnoreNamespaces             []string
 	EnableCertificatesDataSource bool
 	EnabledReconcilersFor        map[string]bool
 }
