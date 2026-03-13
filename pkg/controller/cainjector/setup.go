@@ -190,9 +190,16 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
 				return err
 			}
+
+			// Convert ignoreNamespaces slice to a map for more efficient lookups in the mapFunc
+			ignoreNamespacesMap := make(map[string]struct{})
+			for _, ns := range opts.IgnoreNamespaces {
+				ignoreNamespacesMap[ns] = struct{}{}
+			}
+
 			b.Watches(
 				new(corev1.Secret),
-				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)),
+				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, ignoreNamespacesMap)),
 				// See "Why do we use builder.OnlyMetadata?" above.
 				builder.OnlyMetadata,
 			).Watches(
