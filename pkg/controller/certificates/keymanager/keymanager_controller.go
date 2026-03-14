@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"k8s.io/utils/ptr"
 	"slices"
 
 	"github.com/go-logr/logr"
@@ -34,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/ptr"
 
 	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
