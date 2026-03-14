@@ -199,7 +199,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
 		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
-		log.V(logf.DebugLevel).Info("Cleaning up duplicate Secret resources", "total_secrets", len(secrets))
+		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets))
 
 		// Use ptr.Deref to get the value or empty string if nil
 		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
