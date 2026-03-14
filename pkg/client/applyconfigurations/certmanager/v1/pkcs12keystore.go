@@ -39,6 +39,9 @@ type PKCS12KeystoreApplyConfiguration struct {
 	// password stored in `passwordSecretRef` containing the issuing Certificate
 	// Authority
 	Create *bool `json:"create,omitempty"`
+	// Alias specifies the alias of the key in the keystore, required by the PKCS12 format.
+	// If not provided, the default alias `certificate` will be used.
+	Alias *string `json:"alias,omitempty"`
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	//
@@ -71,6 +74,14 @@ func PKCS12Keystore() *PKCS12KeystoreApplyConfiguration {
 // If called multiple times, the Create field is set to the value of the last call.
 func (b *PKCS12KeystoreApplyConfiguration) WithCreate(value bool) *PKCS12KeystoreApplyConfiguration {
 	b.Create = &value
+	return b
+}
+
+// WithAlias sets the Alias field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Alias field is set to the value of the last call.
+func (b *PKCS12KeystoreApplyConfiguration) WithAlias(value string) *PKCS12KeystoreApplyConfiguration {
+	b.Alias = &value
 	return b
 }
 

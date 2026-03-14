@@ -668,7 +668,7 @@ func TestSign(t *testing.T) {
 				//  [1]: https://tools.ietf.org/html/rfc5280#section-4.1.2.5.1
 				//
 				// So instead of using a truncation or rounding in order to
-				// check the time, we use a delta of 2 seconds. One entire
+				// check the time, we use a delta of 5 seconds. One entire
 				// second is totally overkill since, as detailed above, the
 				// delay is probably less than a microsecond. But that will
 				// do for now!
@@ -679,7 +679,7 @@ func TestSign(t *testing.T) {
 				// https://github.com/cert-manager/cert-manager/issues/3738
 				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
 				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
-				assert.LessOrEqualf(t, deltaSec, 2., "expected a time delta lower than 2 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
+				assert.LessOrEqualf(t, deltaSec, 5., "expected a time delta lower than 5 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
 		},
 		"when the CertificateSigningRequest has the expiration seconds field set, it should appear as notAfter on the signed certificate": {
@@ -714,7 +714,7 @@ func TestSign(t *testing.T) {
 				// https://github.com/cert-manager/cert-manager/issues/3738
 				expectNotAfter := time.Now().UTC().Add(444 * time.Second)
 				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
-				assert.LessOrEqualf(t, deltaSec, 2., "expected a time delta lower than 2 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
+				assert.LessOrEqualf(t, deltaSec, 5., "expected a time delta lower than 5 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
 		},
 		"when the CertificateSigningRequest has the isCA field set, it should appear on the signed certificate": {

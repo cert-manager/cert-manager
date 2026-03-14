@@ -446,6 +446,10 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 		if crt.Keystores.PKCS12.Password != nil && len(*crt.Keystores.PKCS12.Password) == 0 {
 			el = append(el, field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")))
 		}
+
+		if crt.Keystores.PKCS12.Alias != nil && len(*crt.Keystores.PKCS12.Alias) == 0 {
+			el = append(el, field.Invalid(fldPath.Child("keystores", "pkcs12", "alias"), *crt.Keystores.PKCS12.Alias, "alias must not be empty if specified"))
+		}
 	}
 
 	return el

@@ -1659,6 +1659,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.PKCS12Keystore
   map:
     fields:
+    - name: alias
+      type:
+        scalar: string
     - name: create
       type:
         scalar: boolean
