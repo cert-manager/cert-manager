@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/ptr"
 
 	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -194,12 +196,13 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			return nil
 		}
 	}
-
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
-		// TODO: if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
-		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
-		return c.deleteSecretResources(ctx, secrets)
+		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
+		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets))
+
+		// Use ptr.Deref to get the value or empty string if nil
+		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
 	}
 
 	secret := secrets[0]
@@ -289,9 +292,13 @@ func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.
 }
 
 // deleteSecretResources will delete the given secret resources
-func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret) error {
+func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret, skip ...string) error {
 	log := logf.FromContext(ctx)
 	for _, s := range secrets {
+		// Skip deletion if the secret name is in the skip list
+		if slices.Contains(skip, s.Name) {
+			continue
+		}
 		if err := c.coreClient.CoreV1().Secrets(s.Namespace).Delete(ctx, s.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
