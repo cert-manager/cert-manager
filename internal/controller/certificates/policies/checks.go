@@ -270,10 +270,14 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notBefore := metav1.NewTime(x509Cert.NotBefore)
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
-		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 
+		reason := Renewing
+		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
+
+		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 		if err != nil {
-			return WindowError, fmt.Sprintf("Renewing certificate not possible due to window error %s", err.Error()), false
+			reason = WindowError
+			message = err.Error()
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())
@@ -282,7 +286,7 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			return "", "", false
 		}
 
-		return Renewing, fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime), true
+		return reason, message, true
 	}
 }
 

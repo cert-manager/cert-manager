@@ -144,7 +144,7 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 		return &metav1.Time{Time: *bestAfter}, nil
 	}
 
-	return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("cannot find a time with the given windows for: %s", desiredRenewalTime.String())
+	return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("cannot find a time with the given windows between %s and %s for: %s", notBefore, notAfter, desiredRenewalTime)
 }
 
 // bsFindEarliestWindowBeforeDesired performs a binary search over time to find

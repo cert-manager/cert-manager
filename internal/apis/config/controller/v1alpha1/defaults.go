@@ -104,11 +104,10 @@ var (
 	defaultExtraCertificateAnnotations = []string{}
 
 	// PEM size limits based on existing constants in internal/pem/decode.go
-	defaultMaxCertificateSize              int32 = 36500  // maxLeafCertificatePEMSize
-	defaultMaxPrivateKeySize               int32 = 13000  // maxPrivateKeyPEMSize
-	defaultMaxChainLength                  int32 = 95000  // maxCertificateChainSize
-	defaultMaxBundleSize                   int32 = 330000 // maxBundleSize
-	defaultCertificateRenewOnWindowFailure       = true
+	defaultMaxCertificateSize int32 = 36500  // maxLeafCertificatePEMSize
+	defaultMaxPrivateKeySize  int32 = 13000  // maxPrivateKeyPEMSize
+	defaultMaxChainLength     int32 = 95000  // maxCertificateChainSize
+	defaultMaxBundleSize      int32 = 330000 // maxBundleSize
 
 	AllControllers = []string{
 		issuerscontroller.ControllerName,
@@ -268,10 +267,6 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 
 	if obj.CertificateRequestMinimumBackoffDuration.IsZero() {
 		obj.CertificateRequestMinimumBackoffDuration = sharedv1alpha1.DurationFromTime(defaultCertificateRequestMinimumBackoffDuration)
-	}
-
-	if obj.CertificateRenewOnWindowFailure == nil {
-		obj.CertificateRenewOnWindowFailure = &defaultCertificateRenewOnWindowFailure
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)

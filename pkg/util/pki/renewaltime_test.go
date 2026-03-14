@@ -297,7 +297,7 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 		"single window, renewal time outside of windows": {
 			notAfter:            future.Add(24 * time.Hour),
 			targetRenewalTime:   future.Add(13*time.Hour + 30*time.Minute),
-			expectedRenewalTime: time.Time{},
+			expectedRenewalTime: future.Add(13*time.Hour + 30*time.Minute),
 			notBefore:           midnightUTC(now.AddDate(0, 0, -10)),
 			wantErr:             true,
 			renewalSpec: &apiv1.CertificateRenewal{
@@ -320,10 +320,9 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 
 		if te.wantErr {
 			assert.NotNil(t, err)
-			assert.ErrorContains(t, err, "cannot find a time with the given windows for")
+			assert.ErrorContains(t, err, fmt.Sprintf("cannot find a time with the given windows between %s and %s", te.notBefore, te.notAfter))
 
-			var nilTime *metav1.Time = nil
-			assert.Equal(t, nilTime, res, name)
+			assert.Equal(t, te.expectedRenewalTime, res.Time, name)
 			return
 		}
 
