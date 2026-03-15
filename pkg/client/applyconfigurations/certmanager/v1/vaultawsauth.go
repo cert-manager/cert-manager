@@ -41,7 +41,7 @@ type VaultAWSAuthApplyConfiguration struct {
 	// The ARN of the AWS IAM role to assume using the Kubernetes service account
 	// token. Required when using IRSA (serviceAccountRef is set).
 	// This role must have a trust policy that allows the OIDC provider to assume it.
-	IamRoleArn *string `json:"iamRoleArn,omitempty"`
+	IAMRoleARN *string `json:"iamRoleArn,omitempty"`
 	// The Vault header value to include in the STS signing request.
 	// This is used to prevent replay attacks.
 	VaultHeaderValue *string `json:"vaultHeaderValue,omitempty"`
@@ -85,11 +85,11 @@ func (b *VaultAWSAuthApplyConfiguration) WithServiceAccountRef(value *ServiceAcc
 	return b
 }
 
-// WithIamRoleArn sets the IamRoleArn field in the declarative configuration to the given value
+// WithIAMRoleARN sets the IAMRoleARN field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the IamRoleArn field is set to the value of the last call.
-func (b *VaultAWSAuthApplyConfiguration) WithIamRoleArn(value string) *VaultAWSAuthApplyConfiguration {
-	b.IamRoleArn = &value
+// If called multiple times, the IAMRoleARN field is set to the value of the last call.
+func (b *VaultAWSAuthApplyConfiguration) WithIAMRoleARN(value string) *VaultAWSAuthApplyConfiguration {
+	b.IAMRoleARN = &value
 	return b
 }
 

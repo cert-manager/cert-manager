@@ -749,7 +749,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.VaultAWSAuth, region string) (aws.Credentials, string, error) {
 	audiences := []string{"sts.amazonaws.com"}
 	if len(awsAuth.ServiceAccountRef.TokenAudiences) > 0 {
-		audiences = awsAuth.ServiceAccountRef.TokenAudiences
+		audiences = append(audiences, awsAuth.ServiceAccountRef.TokenAudiences...)
 	}
 
 	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
@@ -774,7 +774,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 
 	stsClient := sts.NewFromConfig(cfg)
 	assumeResult, err := stsClient.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
-		RoleArn:          &awsAuth.IamRoleArn,
+		RoleArn:          &awsAuth.IAMRoleARN,
 		RoleSessionName:  ptr.To("cert-manager"),
 		WebIdentityToken: &tokenrequest.Status.Token,
 	})
@@ -792,7 +792,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 }
 
 // getAWSCredentialsFromAmbient retrieves AWS credentials from the environment
-// (EC2 instance profile, ECS task role, etc.). Returns the credentials and the resolved region from config.
+// (EC2 instance profile, ECS task role, EKS Pod Identity, etc.). Returns the credentials and the resolved region from config.
 func getAWSCredentialsFromAmbient(ctx context.Context, region string) (aws.Credentials, string, error) {
 	var cfgOpts []func(*awsconfig.LoadOptions) error
 	if region != "" {

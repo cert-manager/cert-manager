@@ -39,7 +39,7 @@ const (
 	messageVaultInitializedAndUnsealedFailed = "Failed to verify Vault is initialized and unsealed"
 	messageVaultConfigRequired               = "Vault config cannot be empty"
 	messageServerAndPathRequired             = "Vault server and path are required fields"
-	messageAuthFieldsRequired                = "Vault tokenSecretRef, appRole, clientCertificate, kubernetes, aws, gcp, or azure is required"
+	messageAuthFieldsRequired                = "Vault tokenSecretRef, appRole, clientCertificate, kubernetes, or aws is required"
 	messageMultipleAuthFieldsSet             = "Multiple auth methods cannot be set on the same Vault issuer"
 
 	messageKubeAuthRoleRequired      = "Vault Kubernetes auth requires a role to be set"

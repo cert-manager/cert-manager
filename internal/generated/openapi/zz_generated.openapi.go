@@ -4356,7 +4356,7 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].",
+				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`].",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"tokenSecretRef": {
@@ -4385,7 +4385,7 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 					},
 					"aws": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AWS authenticates with Vault using AWS IAM authentication. This allows authentication using IAM roles for service accounts (IRSA) or EC2 instance profiles.",
+							Description: "AWS authenticates with Vault using AWS IAM authentication. This allows authentication using IAM roles for service accounts (IRSA), EKS Pod Identity (PIA), or ambient credentials (EC2 instance profiles, ECS task role).",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth"),
 						},
 					},

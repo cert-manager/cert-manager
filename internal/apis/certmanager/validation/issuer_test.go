@@ -349,7 +349,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 					ServiceAccountRef: &cmapi.ServiceAccountRef{
 						Name: "service-account",
 					},
-					IamRoleArn: "arn:aws:iam::123456789012:role/my-role",
+					IAMRoleARN: "arn:aws:iam::123456789012:role/my-role",
 				},
 			},
 		},
@@ -366,7 +366,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				AWS: &cmapi.VaultAWSAuth{
 					Role:              "my-role",
 					ServiceAccountRef: &cmapi.ServiceAccountRef{},
-					IamRoleArn:        "arn:aws:iam::123456789012:role/my-role",
+					IAMRoleARN:        "arn:aws:iam::123456789012:role/my-role",
 				},
 			},
 			errs: []*field.Error{

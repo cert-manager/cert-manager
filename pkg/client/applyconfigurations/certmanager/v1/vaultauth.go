@@ -26,7 +26,7 @@ import (
 // with apply.
 //
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`].
 type VaultAuthApplyConfiguration struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *metav1.SecretKeySelectorApplyConfiguration `json:"tokenSecretRef,omitempty"`
@@ -41,8 +41,8 @@ type VaultAuthApplyConfiguration struct {
 	// token stored in the named Secret resource to the Vault server.
 	Kubernetes *VaultKubernetesAuthApplyConfiguration `json:"kubernetes,omitempty"`
 	// AWS authenticates with Vault using AWS IAM authentication.
-	// This allows authentication using IAM roles for service accounts (IRSA)
-	// or EC2 instance profiles.
+	// This allows authentication using IAM roles for service accounts (IRSA),
+	// EKS Pod Identity (PIA), or ambient credentials (EC2 instance profiles, ECS task role).
 	AWS *VaultAWSAuthApplyConfiguration `json:"aws,omitempty"`
 }
 

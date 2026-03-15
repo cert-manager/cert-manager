@@ -253,7 +253,7 @@ type VaultIssuer struct {
 }
 
 // VaultAuth is configuration used to authenticate with a Vault server. The
-// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`, `gcp`, `azure`].
+// order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`].
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
 	// +optional
@@ -276,8 +276,8 @@ type VaultAuth struct {
 	Kubernetes *VaultKubernetesAuth `json:"kubernetes,omitempty"`
 
 	// AWS authenticates with Vault using AWS IAM authentication.
-	// This allows authentication using IAM roles for service accounts (IRSA)
-	// or EC2 instance profiles.
+	// This allows authentication using IAM roles for service accounts (IRSA),
+	// EKS Pod Identity (PIA), or ambient credentials (EC2 instance profiles, ECS task role).
 	// +optional
 	AWS *VaultAWSAuth `json:"aws,omitempty"`
 }
@@ -397,7 +397,7 @@ type VaultAWSAuth struct {
 	// token. Required when using IRSA (serviceAccountRef is set).
 	// This role must have a trust policy that allows the OIDC provider to assume it.
 	// +optional
-	IamRoleArn string `json:"iamRoleArn,omitempty"`
+	IAMRoleARN string `json:"iamRoleArn,omitempty"`
 
 	// The Vault header value to include in the STS signing request.
 	// This is used to prevent replay attacks.
