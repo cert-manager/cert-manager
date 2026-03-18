@@ -30,8 +30,12 @@ spec:
           cp -Lr /config/* /etc/bind/
           exec $(which named) -u bind -g -4
         ports:
-        - containerPort: 8053
+        - name: dns-udp
+          containerPort: 8053
           protocol: UDP
+        - name: dns-tcp
+          containerPort: 8053
+          protocol: TCP
         volumeMounts:
         - mountPath: /config
           name: config

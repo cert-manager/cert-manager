@@ -204,7 +204,7 @@ trace ginkgo \
   --report-dir="$artifacts" \
   --acme-dns-server="${SERVICE_IP_PREFIX}.16" \
   --acme-ingress-ip="${SERVICE_IP_PREFIX}.15" \
-  --acme-gateway-ip="${SERVICE_IP_PREFIX}.14" \
+  --gateway-class-name=envoygateway \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
   --feature-gates="$feature_gates" \

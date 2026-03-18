@@ -26,7 +26,6 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -390,17 +389,6 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: labels,
-								ParentRefs: []gwapi.ParentReference{
-									{
-										Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
-										Name:      "acmesolver",
-										Kind: func() *gwapi.Kind {
-											g := gwapi.Kind("Gateway")
-											return &g
-										}(),
-										SectionName: nil,
-									},
-								},
 							},
 						},
 					},

@@ -33,6 +33,7 @@ IMAGE_vault_amd64 := docker.io/hashicorp/vault:1.14.1@sha256:436d056e8e2a96c7356
 IMAGE_bind_amd64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:8c45ba363b2921950161451cf3ff58dff1816fa46b16fb8fa601d5500cdc2ffc
 IMAGE_sampleexternalissuer_amd64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:964b378fe0dda7fc38ce3f211c3b24c780e44cef13c39d3206de985bad67f294
 IMAGE_kgateway_amd64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:a6f78f238fb24afce121c4bb8abb8a54bb2d4d0522382601d4e3cc868e9fcce9
+IMAGE_envoygateway_amd64 := ghcr.io/maelvls/gateway-dev:v1.8.0-dev.0@sha256:8c575c00048a512e4cd62d6e1d90e28255ca43bcda9823f2f2f504d8f227d2ee
 
 IMAGE_ingressnginx_arm64 := registry.k8s.io/ingress-nginx/controller:v1.12.3@sha256:800048a4cdf4ad487a17f56d22ec6be7a34248fc18900d945bc869fee4ccb2f7
 IMAGE_kyverno_arm64 := reg.kyverno.io/kyverno/kyverno:v1.16.2@sha256:b6fa2b1483438ad1faf7a34632d4eee90b477ef58d0bbe7164acbec601d66266
@@ -41,6 +42,7 @@ IMAGE_vault_arm64 := docker.io/hashicorp/vault:1.14.1@sha256:27dd264f3813c71a667
 IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/bind9:9.18-22.04_beta@sha256:7fcfebdfacf52fa0dee2b1ae37ebe235fe169cbc404974c396937599ca69da6f
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
 IMAGE_kgateway_arm64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:acdaa7669ac9b1be6be0581d7c2c3d8b294c89ea03a32c1b6201e1f5d73e70af
+IMAGE_envoygateway_arm64 := ghcr.io/maelvls/gateway-dev:v1.8.0-dev.0@sha256:9e13368281a702cc98dfc2f3f824c155caaddf3473b1ef58a50da7092f24fe88
 
 # We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
@@ -98,8 +100,8 @@ kind-exists: $(bin_dir)/scratch/kind-exists
 #  Component                Used in                   IP                     A record in bind
 #  ---------                -------                   --                     ----------------
 #  e2e-setup-bind           DNS-01 tests              SERVICE_IP_PREFIX.16
-#  e2e-setup-ingressnginx   HTTP-01 Ingress tests     SERVICE_IP_PREFIX.15   *.ingress-nginx.db.http01.example.com
-#  e2e-setup-gwapi-provider HTTP-01 GatewayAPI tests  SERVICE_IP_PREFIX.14   *.gateway.db.http01.example.com
+#  e2e-setup-ingressnginx   HTTP-01 Ingress tests     SERVICE_IP_PREFIX.15   *.ingress-nginx.http01.example.com
+#  e2e-setup-gwapi-provider HTTP-01 GatewayAPI tests  any                    *.gateway.http01.example.com
 .PHONY: e2e-setup
 ## Installs cert-manager as well as components required for running the
 ## end-to-end tests. If the kind cluster does not already exist, it will be
@@ -166,7 +168,7 @@ preload-kind-image: $(call image-tar,kind) | $(NEEDS_CTR)
 	$(CTR) inspect $(IMAGE_kind_$(CRI_ARCH)) 2>/dev/null >&2 || $(CTR) load -i $<
 endif
 
-LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,bind) load-$(call image-tar,kgateway) load-$(call image-tar,sampleexternalissuer) load-$(call local-image-tar,vaultretagged) load-$(call local-image-tar,pebble) load-$(call local-image-tar,samplewebhook) load-$(bin_dir)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-startupapicheck-linux-$(CRI_ARCH).tar
+LOAD_TARGETS=load-$(call image-tar,ingressnginx) load-$(call image-tar,kyverno) load-$(call image-tar,kyvernopre) load-$(call image-tar,bind) load-$(call image-tar,kgateway) load-$(call image-tar,envoygateway) load-$(call image-tar,sampleexternalissuer) load-$(call local-image-tar,vaultretagged) load-$(call local-image-tar,pebble) load-$(call local-image-tar,samplewebhook) load-$(bin_dir)/containers/cert-manager-controller-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-acmesolver-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-cainjector-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-webhook-linux-$(CRI_ARCH).tar load-$(bin_dir)/containers/cert-manager-startupapicheck-linux-$(CRI_ARCH).tar
 .PHONY: $(LOAD_TARGETS)
 $(LOAD_TARGETS): load-%: % $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 	$(KIND) load image-archive --name=$(shell cat $(bin_dir)/scratch/kind-exists) $*
@@ -192,7 +194,7 @@ $(LOAD_TARGETS): load-%: % $(bin_dir)/scratch/kind-exists | $(NEEDS_KIND)
 #    tag. The rule will fail and the new digest will be printed out.
 # 3. It prevents us accidentally using the wrong digest when we pin the images
 #    in the variables above.
-$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,kgateway) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(bin_dir)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
+$(call image-tar,vault) $(call image-tar,kyverno) $(call image-tar,kyvernopre) $(call image-tar,bind) $(call image-tar,kgateway) $(call image-tar,envoygateway) $(call image-tar,sampleexternalissuer) $(call image-tar,ingressnginx): $(bin_dir)/downloaded/containers/$(CRI_ARCH)/%.tar: | $(NEEDS_CRANE)
 	@$(eval IMAGE=$(subst +,:,$*))
 	@$(eval IMAGE_WITHOUT_DIGEST=$(shell cut -d@ -f1 <<<"$(IMAGE)"))
 	@$(eval DIGEST=$(subst $(IMAGE_WITHOUT_DIGEST)@,,$(IMAGE)))
@@ -359,8 +361,8 @@ e2e-setup-bind: $(call image-tar,bind) load-$(call image-tar,bind) $(wildcard ma
 	sed -e "s|{SERVICE_IP_PREFIX}|$(SERVICE_IP_PREFIX)|g" -e "s|{IMAGE}|$(IMAGE)|g" make/config/bind/*.yaml | $(KUBECTL) apply -n bind -f - >/dev/null
 
 .PHONY: e2e-setup-gatewayapi
-e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
-	$(KUBECTL) apply --server-side -f $(bin_dir)/scratch/gateway-api-$(GATEWAY_API_VERSION).yaml > /dev/null
+e2e-setup-gatewayapi: $(bin_dir)/scratch/gateway-api-standard-$(GATEWAY_API_VERSION).yaml $(bin_dir)/scratch/kind-exists $(NEEDS_KUBECTL)
+	$(KUBECTL) apply --server-side -f $(bin_dir)/scratch/gateway-api-standard-$(GATEWAY_API_VERSION).yaml > /dev/null
 
 
 # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
@@ -480,7 +482,10 @@ e2e-setup-samplewebhook: load-$(call local-image-tar,samplewebhook) e2e-setup-ce
 		samplewebhook make/config/samplewebhook/chart >/dev/null
 
 .PHONY: e2e-setup-gwapi-provider
-e2e-setup-gwapi-provider: $(call image-tar,kgateway) load-$(call image-tar,kgateway) make/config/kgateway/gateway.yaml make/config/kgateway/gwconfig.yaml $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
+e2e-setup-gwapi-provider: e2e-setup-envoygateway
+
+.PHONY: e2e-setup-kgateway
+e2e-setup-kgateway: $(call image-tar,kgateway) load-$(call image-tar,kgateway) make/config/kgateway/gatewayclass.yaml make/config/kgateway/gwconfig.yaml $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
 	@$(eval KGATEWAY_TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
 	@$(eval KGATEWAY_HELM_VERSION=v2.1.2)
 	# Warning: When upgrading the version of this helm chart, bear in mind that the IMAGE_kgateway_* images above might need to be updated, too.
@@ -490,7 +495,7 @@ e2e-setup-gwapi-provider: $(call image-tar,kgateway) load-$(call image-tar,kgate
 		--namespace kgateway-system \
 		--version $(KGATEWAY_HELM_VERSION) \
 		kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds >/dev/null
-	
+
 	$(HELM) upgrade \
 		--install \
 		--namespace kgateway-system \
@@ -501,9 +506,34 @@ e2e-setup-gwapi-provider: $(call image-tar,kgateway) load-$(call image-tar,kgate
 		--set controller.image.pullPolicy=Never \
 		--set controller.extraEnv.KGW_ENABLE_GATEWAY_API_EXPERIMENTAL_FEATURES=true \
 		kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway >/dev/null
-	
-	sed -e 's|__SERVICE_IP__|$(SERVICE_IP_PREFIX).14|g' make/config/kgateway/gwconfig.yaml | $(KUBECTL) apply --server-side -f -
-	$(KUBECTL) apply --server-side -f make/config/kgateway/gateway.yaml
+
+	$(KUBECTL) apply --server-side -f make/config/kgateway/gatewayclass.yaml
+
+.PHONY: e2e-setup-envoygateway
+e2e-setup-envoygateway: $(call image-tar,envoygateway) load-$(call image-tar,envoygateway) make/config/envoygateway/gatewayclass.yaml $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM) $(NEEDS_KUBECTL)
+	@$(eval ENVOYGATEWAY_TAG=$(shell tar xfO $< manifest.json | jq '.[0].RepoTags[0]' -r | cut -d: -f2))
+	@$(eval ENVOYGATEWAY_HELM_VERSION=v1.8.0-dev.0)
+	# Warning: When upgrading the version of this helm chart, bear in mind that the IMAGE_envoygateway_* images above might need to be updated, too.
+	$(HELM) template \
+		--version $(ENVOYGATEWAY_HELM_VERSION) \
+		--set crds.envoyGateway.enabled=true \
+		--set crds.GatewayAPI.enabled=false \
+		envoy-gateway-crds oci://ghcr.io/maelvls/gateway-crds-helm | \
+		  $(KUBECTL) apply --server-side -f -
+
+	$(HELM) upgrade \
+		--install \
+		--create-namespace \
+		--namespace envoy-gateway-system \
+		--version $(ENVOYGATEWAY_HELM_VERSION) \
+		--set global.images.envoyGateway.image=ghcr.io/maelvls/gateway-dev:$(ENVOYGATEWAY_TAG) \
+		--set global.images.envoyGateway.pullPolicy=Never \
+		--set global.images.ratelimit.image=docker.io/envoyproxy/ratelimit:master \
+		--set global.images.ratelimit.pullPolicy=IfNotPresent \
+		--skip-crds \
+		envoy-gateway oci://ghcr.io/maelvls/gateway-helm >/dev/null
+
+	$(KUBECTL) apply --server-side -f make/config/envoygateway/gatewayclass.yaml
 
 .PHONY: e2e-setup-sampleexternalissuer
 e2e-setup-sampleexternalissuer: load-$(call image-tar,sampleexternalissuer) $(bin_dir)/scratch/kind-exists | $(NEEDS_KUBECTL)

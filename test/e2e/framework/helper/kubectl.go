@@ -18,6 +18,7 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -61,4 +62,27 @@ func (k *Kubectl) Run(ctx context.Context, args ...string) error {
 	cmd.Stdout = log.Writer
 	cmd.Stderr = log.Writer
 	return cmd.Run()
+}
+
+func (k *Kubectl) RunStdin(ctx context.Context, stdin string, args ...string) error {
+	// string buffer
+	buf := &strings.Builder{}
+	baseArgs := []string{"--kubeconfig", k.kubeconfig, "--context", k.kubecontext}
+	if k.namespace == "" {
+		baseArgs = append(baseArgs, "--all-namespaces")
+	} else {
+		baseArgs = []string{"--namespace", k.namespace}
+	}
+	args = append(baseArgs, args...)
+	cmd := exec.CommandContext(ctx, k.kubectl, args...)
+	cmd.Stdin = strings.NewReader(stdin)
+	cmd.Stdout = buf
+	cmd.Stderr = buf
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("'%s %s' exited with %d, stdout was:\n%s", k.kubectl, strings.Join(args, " "), cmd.ProcessState.ExitCode(), buf.String())
+	}
+
+	return nil
 }

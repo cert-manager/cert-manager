@@ -12,24 +12,16 @@ data:
     	listen-on port 8053 { any; };
     	max-cache-size 192m;
     };
-    
+
     controls { };
 
-    zone "http01.example.com" {
+    zone "example.com" {
       type master;
-      file "/etc/bind/db.http01.example.com";
-    };
-
-    zone "dns01.example.com" {
-      type master;
-      file "/etc/bind/db.dns01.example.com";
+      file "/etc/bind/example.com";
       allow-update { any; };
     };
 
-  db.http01.example.com: |
-    ;
-    ; Zone used for cert-manager HTTP01 tests
-    ;
+  example.com: |
     $TTL 30
     @	IN	SOA	localhost. root.localhost. (
     			      1		; Serial
@@ -38,21 +30,7 @@ data:
     			2419200		; Expire
     			 604800 )	; Negative Cache TTL
     @	IN	NS	localhost.
-    *.ingress-nginx	IN  A {SERVICE_IP_PREFIX}.15
-    ingress-nginx	IN	A {SERVICE_IP_PREFIX}.15
-    *.gateway IN  A {SERVICE_IP_PREFIX}.14
-    gateway IN  A {SERVICE_IP_PREFIX}.14
-
-  db.dns01.example.com: |
-    ;
-    ; Zone used for cert-manager DNS01 tests
-    ;
-    $TTL 30
-    @	IN	SOA	localhost. root.localhost. (
-    			      1		; Serial
-    			 604800		; Refresh
-    			  86400		; Retry
-    			2419200		; Expire
-    			 604800 )	; Negative Cache TTL
-    @	IN	NS	localhost.
-    dummy	IN	A	{SERVICE_IP_PREFIX}.15
+    *.ingress-nginx.http01	IN  A {SERVICE_IP_PREFIX}.15
+    ingress-nginx.http01	IN	A {SERVICE_IP_PREFIX}.15
+    *.gateway.http01 IN  A {SERVICE_IP_PREFIX}.14
+    gateway.http01 IN  A {SERVICE_IP_PREFIX}.14

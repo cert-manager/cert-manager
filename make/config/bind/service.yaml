@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bind
+  name: bind-udp
   labels:
     name: bind
 spec:
