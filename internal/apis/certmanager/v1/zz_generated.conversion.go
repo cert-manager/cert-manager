@@ -776,6 +776,13 @@ func autoConvert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -796,6 +803,13 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int32)
+		**out = int32(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanagerv1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -884,10 +898,18 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *certmanag
 		return err
 	}
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int)
+		**out = int(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.SignatureAlgorithm = certmanager.SignatureAlgorithm(in.SignatureAlgorithm)
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.EncodeBasicConstraintsInRequest = (*bool)(unsafe.Pointer(in.EncodeBasicConstraintsInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanager.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
 	out.NameConstraints = (*certmanager.NameConstraints)(unsafe.Pointer(in.NameConstraints))
@@ -926,10 +948,18 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 		return err
 	}
 	out.IsCA = in.IsCA
+	if in.MaxPathLen != nil {
+		in, out := &in.MaxPathLen, &out.MaxPathLen
+		*out = new(int32)
+		**out = int32(**in)
+	} else {
+		out.MaxPathLen = nil
+	}
 	out.Usages = *(*[]certmanagerv1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanagerv1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.SignatureAlgorithm = certmanagerv1.SignatureAlgorithm(in.SignatureAlgorithm)
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.EncodeBasicConstraintsInRequest = (*bool)(unsafe.Pointer(in.EncodeBasicConstraintsInRequest))
 	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	out.AdditionalOutputFormats = *(*[]certmanagerv1.CertificateAdditionalOutputFormat)(unsafe.Pointer(&in.AdditionalOutputFormats))
 	out.NameConstraints = (*certmanagerv1.NameConstraints)(unsafe.Pointer(in.NameConstraints))

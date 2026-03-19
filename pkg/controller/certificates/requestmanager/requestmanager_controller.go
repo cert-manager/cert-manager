@@ -362,7 +362,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	x509CSR, err := pki.GenerateCSR(
 		crt,
 		pki.WithUseLiteralSubject(utilfeature.DefaultMutableFeatureGate.Enabled(feature.LiteralCertificateSubject)),
-		pki.WithEncodeBasicConstraintsInRequest(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints)),
+		pki.WithEncodeBasicConstraintsInRequestByDefault(utilfeature.DefaultMutableFeatureGate.Enabled(feature.UseCertificateRequestBasicConstraints)),
 		pki.WithNameConstraints(utilfeature.DefaultMutableFeatureGate.Enabled(feature.NameConstraints)),
 		pki.WithOtherNames(utilfeature.DefaultMutableFeatureGate.Enabled(feature.OtherNames)),
 	)

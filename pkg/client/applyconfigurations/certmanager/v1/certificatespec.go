@@ -142,6 +142,18 @@ type CertificateSpecApplyConfiguration struct {
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
 	IsCA *bool `json:"isCA,omitempty"`
+	// Requested basic constraints maxPathLen value.
+	// The maxPathLen value is used to set the `maxPathLen` field on the created CertificateRequest
+	// resources. Note that the issuer may choose to ignore the requested maxPathLen value, just
+	// like any other requested attribute.
+	// If the `UseCertificateRequestBasicConstraints` feature gate is set and the
+	// `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will
+	// have a BasicConstraints extension with the provided maxPathLen value.
+	//
+	// If set, maxPathLen must be a value of `0` or greater.
+	// If unset (`nil`), there is no maximum.
+	// Default value is `nil`.
+	MaxPathLen *int32 `json:"maxPathLen,omitempty"`
 	// Requested key usages and extended key usages.
 	// These usages are used to set the `usages` field on the created CertificateRequest
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
@@ -162,6 +174,13 @@ type CertificateSpecApplyConfiguration struct {
 	// This option defaults to true, and should only be disabled if the target
 	// issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
 	EncodeUsagesInRequest *bool `json:"encodeUsagesInRequest,omitempty"`
+	// Whether the BasicConstraints extension should be set in the encoded CSR.
+	//
+	// IMPORTANT: This option is only available if `UseCertificateRequestBasicConstraints` feature
+	// gate is set. Otherwise, the CSR will not have the BasicConstraints extension.
+	// This option defaults to true, and should only be disabled if the target
+	// issuer does not support CSRs with a X509 BasicConstraints extension.
+	EncodeBasicConstraintsInRequest *bool `json:"encodeBasicConstraintsInRequest,omitempty"`
 	// The maximum number of CertificateRequest revisions that are maintained in
 	// the Certificate's history. Each revision represents a single `CertificateRequest`
 	// created by this Certificate, either when it was created, renewed, or Spec
@@ -330,6 +349,14 @@ func (b *CertificateSpecApplyConfiguration) WithIsCA(value bool) *CertificateSpe
 	return b
 }
 
+// WithMaxPathLen sets the MaxPathLen field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaxPathLen field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithMaxPathLen(value int32) *CertificateSpecApplyConfiguration {
+	b.MaxPathLen = &value
+	return b
+}
+
 // WithUsages adds the given value to the Usages field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Usages field.
@@ -361,6 +388,14 @@ func (b *CertificateSpecApplyConfiguration) WithSignatureAlgorithm(value certman
 // If called multiple times, the EncodeUsagesInRequest field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithEncodeUsagesInRequest(value bool) *CertificateSpecApplyConfiguration {
 	b.EncodeUsagesInRequest = &value
+	return b
+}
+
+// WithEncodeBasicConstraintsInRequest sets the EncodeBasicConstraintsInRequest field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the EncodeBasicConstraintsInRequest field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithEncodeBasicConstraintsInRequest(value bool) *CertificateSpecApplyConfiguration {
+	b.EncodeBasicConstraintsInRequest = &value
 	return b
 }
 
