@@ -243,13 +243,14 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		Status: cmmeta.ConditionTrue,
 	})
 
-	// If the Host components of the server URL and the account URL match,
-	// and the cached email matches the registered email, then
-	// we skip re-checking the account status to save excess calls to the
-	// ACME api.
+	// If the server URL matches the last registered server, the Host
+	// components of the server URL and the account URL match, and the
+	// cached email matches the registered email, then we skip re-checking
+	// the account status to save excess calls to the ACME api.
 	if hasReadyCondition &&
 		issuer.GetStatus().ACMEStatus().URI != "" &&
 		parsedAccountURL.Host == parsedServerURL.Host &&
+		rawServerURL == issuer.GetStatus().ACMEStatus().LastRegisteredServer &&
 		issuer.GetStatus().ACMEStatus().LastRegisteredEmail == issuer.GetSpec().ACME.Email &&
 		isPKChecksumSame {
 		log.V(logf.InfoLevel).Info("skipping re-verifying ACME account as cached registration " +
@@ -272,9 +273,11 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		}
 	}
 
-	if parsedAccountURL.Host != parsedServerURL.Host {
-		log.V(logf.InfoLevel).Info("ACME server URL host and ACME private key registration " +
-			"host differ. Re-checking ACME account registration")
+	if parsedAccountURL.Host != parsedServerURL.Host ||
+		(issuer.GetStatus().ACMEStatus().LastRegisteredServer != "" &&
+			rawServerURL != issuer.GetStatus().ACMEStatus().LastRegisteredServer) {
+		log.V(logf.InfoLevel).Info("ACME server URL and ACME private key registration " +
+			"server differ. Re-checking ACME account registration")
 		issuer.GetStatus().ACMEStatus().URI = ""
 	}
 
@@ -414,6 +417,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	issuer.GetStatus().ACMEStatus().URI = account.URI
 	issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	issuer.GetStatus().ACMEStatus().LastPrivateKeyHash = checksumString
+	issuer.GetStatus().ACMEStatus().LastRegisteredServer = rawServerURL
 	// ensure the cached client in the account registry is up to date
 	a.accountRegistry.AddClient(string(issuer.GetUID()), accounts.NewClientOptions{
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
