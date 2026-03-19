@@ -20,11 +20,15 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -44,6 +48,7 @@ import (
 	vaultfake "github.com/cert-manager/cert-manager/internal/vault/fake"
 	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	"github.com/cert-manager/cert-manager/test/unit/listers"
@@ -201,6 +206,64 @@ beE8ft41eEFS8AnSJd5hE9Ym
 `
 )
 
+// generateSelfSignedCertPEM creates a self-signed certificate using the given
+// key and returns it as PEM. This is used to simulate a Vault response whose
+// certificate was produced with the same key as the CSR.
+func generateSelfSignedCertPEM(t *testing.T, key crypto.Signer) string {
+	t.Helper()
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName:   "test",
+			Organization: []string{"CERTMANAGER"},
+			Country:      []string{"US"},
+			Province:     []string{"CA"},
+		},
+		NotBefore: time.Now().Add(-time.Hour),
+		NotAfter:  time.Now().Add(24 * time.Hour),
+		KeyUsage:  x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage: []x509.ExtKeyUsage{
+			x509.ExtKeyUsageServerAuth,
+		},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
+	if err != nil {
+		t.Fatalf("failed to create self-signed certificate: %v", err)
+	}
+
+	return string(pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certDER,
+	}))
+}
+
+// signedCertificateSecretWithCert is like signedCertificateSecret but uses the
+// provided certificate PEM instead of the hardcoded testLeafCertificate.
+func signedCertificateSecretWithCert(certPEM, issuingCaPEM string, caPEM ...string) *certutil.Secret {
+	secret := &certutil.Secret{
+		Data: map[string]any{
+			"certificate": certPEM,
+		},
+	}
+
+	secret.Data["issuing_ca"] = issuingCaPEM
+
+	if len(caPEM) > 0 {
+		chain := []string{issuingCaPEM}
+		chain = append(chain, caPEM...)
+		secret.Data["ca_chain"] = chain
+	}
+
+	return secret
+}
+
+func bundlePEMWithCert(certPEM, issuingCaPEM string, caPEM ...string) ([]byte, error) {
+	secret := signedCertificateSecretWithCert(certPEM, issuingCaPEM, caPEM...)
+	return jsonutil.EncodeJSON(&secret)
+}
+
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -262,15 +325,27 @@ func TestSign(t *testing.T) {
 	privatekey := generateRSAPrivateKey(t)
 	csrPEM := generateCSR(t, privatekey)
 
-	bundleData, err := bundlePEM(testIntermediateCa)
+	// Generate a self-signed certificate using the same key as the CSR so
+	// that the public-key-match check passes in successful test cases.
+	matchingCertPEM := generateSelfSignedCertPEM(t, privatekey)
+
+	bundleData, err := bundlePEMWithCert(matchingCertPEM, testIntermediateCa)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
 	}
 
-	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	rootBundleData, err := bundlePEMWithCert(matchingCertPEM, testIntermediateCa, testRootCa)
 	if err != nil {
 		t.Errorf("failed to encode root bundle for testing: %s", err)
+		t.FailNow()
+	}
+
+	// Bundle using the hardcoded testLeafCertificate whose key does NOT
+	// match the CSR's key, simulating Vault's "issue" endpoint behaviour.
+	mismatchBundleData, err := bundlePEM(testIntermediateCa)
+	if err != nil {
+		t.Errorf("failed to encode mismatch bundle for testing: %s", err)
 		t.FailNow()
 	}
 
@@ -303,7 +378,7 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
+			expectedCert: matchingCertPEM + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
 		},
 
@@ -317,7 +392,7 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(rootBundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
+			expectedCert: matchingCertPEM + testIntermediateCa,
 			expectedCA:   testRootCa,
 		},
 
@@ -331,50 +406,104 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
+			expectedCert: matchingCertPEM + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
+		},
+
+		"should return an InvalidData error when Vault returns a certificate with a different public key than the CSR": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: io.NopCloser(bytes.NewReader(mismatchBundleData))},
+			}, nil),
+			expectedErr: errors.New(
+				"the public key in the certificate returned by Vault does not match the public key in the CSR; " +
+					"this usually means the Vault path is configured to use the 'issue' endpoint " +
+					"instead of the 'sign' endpoint (e.g., use 'pki/sign/role-name' instead of " +
+					"'pki/issue/role-name')"),
+			expectedCert: "",
+			expectedCA:   "",
 		},
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        test.issuer,
-			client:        test.fakeClient,
-		}
-
-		cert, ca, err := v.Sign(test.csrPEM, time.Minute)
-		if ((test.expectedErr == nil) != (err == nil)) &&
-			test.expectedErr != nil &&
-			test.expectedErr.Error() != err.Error() {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if (test.expectedCert == "" || string(cert) == "") && test.expectedCert != string(cert) {
-			t.Errorf("unexpected certificate in response bundle, exp=%s got=%s",
-				test.expectedCert, cert)
-		} else if test.expectedCert != string(cert) {
-			parsedBundle, err := certutil.ParsePEMBundle(string(cert))
-			if err != nil {
-				t.Errorf("%s: failed to decode bundle: %s", name, err)
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        test.issuer,
+				client:        test.fakeClient,
 			}
-			bundle, err := parsedBundle.ToCertBundle()
-			if err != nil {
-				t.Errorf("%s: failed to convert bundle: %s", name, err)
-			}
-			if test.expectedCert != bundle.Certificate {
-				t.Errorf("%s: unexpected certificate in response bundle, exp=%s got=%s",
-					name, test.expectedCert, cert)
-			}
-		}
 
-		if test.expectedCA != string(ca) {
-			t.Errorf("unexpected ca in response bundle, exp=%s got=%s; %s",
-				test.expectedCA, ca, name)
-		}
+			cert, ca, err := v.Sign(test.csrPEM, time.Minute)
+			if test.expectedErr != nil {
+				if err == nil {
+					t.Errorf("expected error but got none, expected: %v", test.expectedErr)
+				} else if !strings.Contains(err.Error(), test.expectedErr.Error()) {
+					t.Errorf("unexpected error, exp=%v got=%v", test.expectedErr, err)
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if test.expectedCert == "" {
+				if len(cert) != 0 {
+					t.Errorf("expected no certificate but got: %s", cert)
+				}
+			} else if string(cert) != test.expectedCert {
+				// Try parsing and comparing the cert bundle as a fallback.
+				parsedBundle, err := certutil.ParsePEMBundle(string(cert))
+				if err != nil {
+					t.Errorf("failed to decode bundle: %s", err)
+				} else {
+					bundle, err := parsedBundle.ToCertBundle()
+					if err != nil {
+						t.Errorf("failed to convert bundle: %s", err)
+					} else if test.expectedCert != bundle.Certificate {
+						t.Errorf("unexpected certificate in response bundle, exp=%s got=%s", test.expectedCert, cert)
+					}
+				}
+			}
+
+			if test.expectedCA != string(ca) {
+				t.Errorf("unexpected ca in response bundle, exp=%q got=%q", test.expectedCA, ca)
+			}
+		})
 	}
+}
+
+func TestSignPublicKeyMismatchIsInvalidData(t *testing.T) {
+	// Verify that a public key mismatch returns an InvalidData error so that
+	// the controller does not retry and create an infinite loop of
+	// CertificateRequests (see #8234).
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	// Use the hardcoded testLeafCertificate which has a different key.
+	bundleData, err := bundlePEM(testIntermediateCa)
+	require.NoError(t, err)
+
+	v := &Vault{
+		namespace: "test-namespace",
+		issuer: gen.Issuer("vault-issuer",
+			gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
+		),
+		client: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+			Response: &http.Response{
+				Body: io.NopCloser(bytes.NewReader(bundleData)),
+			},
+		}, nil),
+	}
+
+	_, _, err = v.Sign(csrPEM, time.Minute)
+	require.Error(t, err)
+	assert.True(t, cmerrors.IsInvalidData(err),
+		"expected InvalidData error, got: %v", err)
+	assert.Contains(t, err.Error(), "issue")
+	assert.Contains(t, err.Error(), "sign")
 }
 
 type testExtractCertificatesFromVaultCertT struct {
