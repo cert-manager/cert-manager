@@ -151,7 +151,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 
 	return gwapi.HTTPRouteSpec{
 		CommonRouteSpec: gwapi.CommonRouteSpec{
-			ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
+			ParentRefs: deduplicateParentRefs(ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs),
 		},
 		Hostnames: hostnames,
 		Rules: []gwapi.HTTPRouteRule{
@@ -181,4 +181,86 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 			},
 		},
 	}
+}
+
+// deduplicateParentRefs removes duplicate parentRefs that target the same
+// parent Gateway (same group, kind, namespace, and name) when none of the
+// duplicates have sectionName set. Gateway API v1.5.0+ rejects HTTPRoutes
+// with multiple parentRefs to the same parent unless sectionName is specified
+// on each one. When duplicates targeting the same parent all lack sectionName,
+// only the first is kept. When sectionName is set on any of them, all are
+// preserved since they are valid per the Gateway API spec.
+func deduplicateParentRefs(refs []gwapi.ParentReference) []gwapi.ParentReference {
+	if len(refs) <= 1 {
+		return refs
+	}
+
+	type parentKey struct {
+		group     gwapi.Group
+		kind      gwapi.Kind
+		namespace gwapi.Namespace
+		name      gwapi.ObjectName
+	}
+
+	keyFor := func(ref gwapi.ParentReference) parentKey {
+		group := gwapi.Group("gateway.networking.k8s.io")
+		if ref.Group != nil {
+			group = *ref.Group
+		}
+		kind := gwapi.Kind("Gateway")
+		if ref.Kind != nil {
+			kind = *ref.Kind
+		}
+		ns := gwapi.Namespace("")
+		if ref.Namespace != nil {
+			ns = *ref.Namespace
+		}
+		return parentKey{
+			group:     group,
+			kind:      kind,
+			namespace: ns,
+			name:      ref.Name,
+		}
+	}
+
+	// First pass: group indices by parent key.
+	seen := make(map[parentKey][]int)
+	for i, ref := range refs {
+		key := keyFor(ref)
+		seen[key] = append(seen[key], i)
+	}
+
+	// Build a set of indices to skip.
+	skip := make(map[int]bool)
+	for _, indices := range seen {
+		if len(indices) <= 1 {
+			continue
+		}
+		// Check if any ref in this group has sectionName set.
+		anySectionName := false
+		for _, idx := range indices {
+			if refs[idx].SectionName != nil {
+				anySectionName = true
+				break
+			}
+		}
+		// If none have sectionName, keep only the first and skip the rest.
+		if !anySectionName {
+			for _, idx := range indices[1:] {
+				skip[idx] = true
+			}
+		}
+	}
+
+	if len(skip) == 0 {
+		return refs
+	}
+
+	deduped := make([]gwapi.ParentReference, 0, len(refs)-len(skip))
+	for i, ref := range refs {
+		if !skip[i] {
+			deduped = append(deduped, ref)
+		}
+	}
+	return deduped
 }

@@ -261,6 +261,98 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 	}
 }
 
+func TestDeduplicateParentRefs(t *testing.T) {
+	gatewayGroup := gwapi.Group("gateway.networking.k8s.io")
+	gatewayKind := gwapi.Kind("Gateway")
+	ns := gwapi.Namespace("default")
+	sectionHTTP := gwapi.SectionName("http")
+	sectionHTTPS := gwapi.SectionName("https")
+
+	tests := []struct {
+		name     string
+		input    []gwapi.ParentReference
+		expected []gwapi.ParentReference
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name: "single ref unchanged",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+		},
+		{
+			name: "duplicate refs without sectionName are deduplicated",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+		},
+		{
+			name: "duplicate refs with sectionName are preserved",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTP},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTPS},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTP},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTPS},
+			},
+		},
+		{
+			name: "different parents are not deduplicated",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "gw-1"},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "gw-2"},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "gw-1"},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "gw-2"},
+			},
+		},
+		{
+			name: "three duplicate refs without sectionName deduplicated to one",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+		},
+		{
+			name: "mixed: one ref with sectionName and one without for same parent are preserved",
+			input: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTP},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+			expected: []gwapi.ParentReference{
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw", SectionName: &sectionHTTP},
+				{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deduplicateParentRefs(tt.input)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("deduplicateParentRefs() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestGenerateHTTPRouteSpec(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -309,5 +401,37 @@ func TestGenerateHTTPRouteSpec(t *testing.T) {
 				t.Errorf("Expected hostnames %v, but got %v", tt.expectedHostnames, spec.Hostnames)
 			}
 		})
+	}
+}
+
+func TestGenerateHTTPRouteSpec_DeduplicatesParentRefs(t *testing.T) {
+	gatewayGroup := gwapi.Group("gateway.networking.k8s.io")
+	gatewayKind := gwapi.Kind("Gateway")
+	ns := gwapi.Namespace("default")
+
+	ch := &cmacme.Challenge{
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Token:   "test-token",
+			Solver: cmacme.ACMEChallengeSolver{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+						ParentRefs: []gwapi.ParentReference{
+							{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+							{Group: &gatewayGroup, Kind: &gatewayKind, Namespace: &ns, Name: "my-gw"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	spec := generateHTTPRouteSpec(ch, "fakeservice")
+
+	if len(spec.ParentRefs) != 1 {
+		t.Errorf("Expected 1 parentRef after deduplication, got %d", len(spec.ParentRefs))
+	}
+	if spec.ParentRefs[0].Name != "my-gw" {
+		t.Errorf("Expected parentRef name 'my-gw', got %q", spec.ParentRefs[0].Name)
 	}
 }

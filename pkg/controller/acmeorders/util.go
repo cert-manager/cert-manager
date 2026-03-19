@@ -231,7 +231,7 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 		}
 
 		parentRefNs := o.GetNamespace()
-		s.HTTP01.GatewayHTTPRoute.ParentRefs = append(s.HTTP01.GatewayHTTPRoute.ParentRefs, gwapi.ParentReference{
+		annotationRef := gwapi.ParentReference{
 			Kind: func() *gwapi.Kind {
 				g := gwapi.Kind(parentRefKind)
 				return &g
@@ -241,7 +241,18 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 				ns := gwapi.Namespace(parentRefNs)
 				return &ns
 			}(),
-		})
+		}
+
+		// Only append the annotation-based parentRef if the same parent
+		// (kind+name+namespace) is not already referenced. The issuer's
+		// solver config may already contain a parentRef for this Gateway
+		// (possibly with a sectionName set). Appending a second reference
+		// to the same parent without sectionName violates Gateway API
+		// v1.5.0+ which requires sectionName when multiple parentRefs
+		// target the same parent.
+		if !parentRefAlreadyExists(s.HTTP01.GatewayHTTPRoute.ParentRefs, annotationRef) {
+			s.HTTP01.GatewayHTTPRoute.ParentRefs = append(s.HTTP01.GatewayHTTPRoute.ParentRefs, annotationRef)
+		}
 	}
 
 	// If after processing annotations we don't find any parentRefs this means the HTTPRoute
@@ -252,6 +263,64 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 	}
 
 	return nil
+}
+
+// parentRefAlreadyExists returns true if the given parentRef matches any
+// existing ref by kind, name, and namespace (ignoring sectionName and port).
+// This is used to avoid adding duplicate parentRefs to the same parent, which
+// is rejected by Gateway API v1.5.0+ when sectionName is not specified.
+func parentRefAlreadyExists(existing []gwapi.ParentReference, candidate gwapi.ParentReference) bool {
+	for _, ref := range existing {
+		if parentRefSameTarget(ref, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+// parentRefSameTarget returns true if two ParentReferences refer to the same
+// parent resource (same group, kind, namespace, and name), regardless of
+// sectionName or port.
+func parentRefSameTarget(a, b gwapi.ParentReference) bool {
+	aGroup := gwapi.Group("gateway.networking.k8s.io")
+	if a.Group != nil {
+		aGroup = *a.Group
+	}
+	bGroup := gwapi.Group("gateway.networking.k8s.io")
+	if b.Group != nil {
+		bGroup = *b.Group
+	}
+	if aGroup != bGroup {
+		return false
+	}
+
+	aKind := gwapi.Kind("Gateway")
+	if a.Kind != nil {
+		aKind = *a.Kind
+	}
+	bKind := gwapi.Kind("Gateway")
+	if b.Kind != nil {
+		bKind = *b.Kind
+	}
+	if aKind != bKind {
+		return false
+	}
+
+	if a.Name != b.Name {
+		return false
+	}
+
+	// Compare namespaces. Nil namespace is treated as empty string for
+	// comparison since the annotation-based ref always sets namespace.
+	aNs := gwapi.Namespace("")
+	if a.Namespace != nil {
+		aNs = *a.Namespace
+	}
+	bNs := gwapi.Namespace("")
+	if b.Namespace != nil {
+		bNs = *b.Namespace
+	}
+	return aNs == bNs
 }
 
 func ensureKeysForChallenges(cl acmecl.Interface, challenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {

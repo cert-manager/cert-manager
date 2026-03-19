@@ -593,6 +593,40 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 			orderNS: "custom-namespace",
 			want:    parentRefs("Gateway", "test-gateway", "custom-namespace"),
 		},
+		{
+			name:   "skip duplicate when annotation ref matches existing parentRef",
+			issuer: gatewayIssuer(parentRefs("Gateway", "my-gateway", "test-namespace")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "my-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "test-namespace",
+			want:    parentRefs("Gateway", "my-gateway", "test-namespace"),
+		},
+		{
+			name: "skip duplicate when annotation ref matches existing parentRef with sectionName",
+			issuer: gatewayIssuer([]gwapi.ParentReference{
+				{
+					Kind:        ptr.To(gwapi.Kind("Gateway")),
+					Name:        gwapi.ObjectName("my-gateway"),
+					Namespace:   ptr.To(gwapi.Namespace("test-namespace")),
+					SectionName: ptr.To(gwapi.SectionName("http")),
+				},
+			}),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "my-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "test-namespace",
+			want: []gwapi.ParentReference{
+				{
+					Kind:        ptr.To(gwapi.Kind("Gateway")),
+					Name:        gwapi.ObjectName("my-gateway"),
+					Namespace:   ptr.To(gwapi.Namespace("test-namespace")),
+					SectionName: ptr.To(gwapi.SectionName("http")),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
