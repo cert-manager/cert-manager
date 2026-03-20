@@ -1231,3 +1231,115 @@ func (l *fakeLogSink) String() string {
 	}
 	return strings.Join(out, "\n")
 }
+
+func TestIsPermanent4xxError(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		want       bool
+	}{
+		{"400 Bad Request is permanent", 400, true},
+		{"401 Unauthorized is permanent", 401, true},
+		{"403 Forbidden is permanent", 403, true},
+		{"404 Not Found is permanent", 404, true},
+		{"429 Too Many Requests is NOT permanent", 429, false},
+		{"499 is permanent", 499, true},
+		{"500 is not a 4xx error", 500, false},
+		{"200 is not a 4xx error", 200, false},
+		{"399 is not a 4xx error", 399, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isPermanent4xxError(tt.statusCode); got != tt.want {
+				t.Errorf("isPermanent4xxError(%d) = %v, want %v", tt.statusCode, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "429 Too Many Requests is retryable",
+			err:  &acmeapi.Error{StatusCode: 429, ProblemType: "urn:ietf:params:acme:error:rateLimited"},
+			want: true,
+		},
+		{
+			name: "400 Bad Request is not retryable",
+			err:  &acmeapi.Error{StatusCode: 400, ProblemType: "urn:ietf:params:acme:error:badRequest"},
+			want: false,
+		},
+		{
+			name: "403 Forbidden is not retryable",
+			err:  &acmeapi.Error{StatusCode: 403},
+			want: false,
+		},
+		{
+			name: "500 Internal Server Error is retryable",
+			err:  &acmeapi.Error{StatusCode: 500},
+			want: true,
+		},
+		{
+			name: "non-ACME error is retryable",
+			err:  fmt.Errorf("some generic error"),
+			want: true,
+		},
+		{
+			name: "ErrCADoesNotSupportProfiles is not retryable",
+			err:  acmeapi.ErrCADoesNotSupportProfiles,
+			want: false,
+		},
+		{
+			name: "ErrProfileNotInSetOfSupportedProfiles is not retryable",
+			err:  acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRetryableError(tt.err); got != tt.want {
+				t.Errorf("isRetryableError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsRateLimitError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "429 ACME error is a rate limit error",
+			err:  &acmeapi.Error{StatusCode: 429, ProblemType: "urn:ietf:params:acme:error:rateLimited"},
+			want: true,
+		},
+		{
+			name: "400 ACME error is not a rate limit error",
+			err:  &acmeapi.Error{StatusCode: 400},
+			want: false,
+		},
+		{
+			name: "non-ACME error is not a rate limit error",
+			err:  fmt.Errorf("some other error"),
+			want: false,
+		},
+		{
+			name: "nil error is not a rate limit error",
+			err:  nil,
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRateLimitError(tt.err); got != tt.want {
+				t.Errorf("isRateLimitError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

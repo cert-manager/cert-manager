@@ -781,3 +781,89 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleError_RateLimitIsRetriable(t *testing.T) {
+	tests := []struct {
+		name          string
+		err           error
+		expectedState cmacme.State
+		expectErr     bool
+		expectReason  string
+	}{
+		{
+			name: "429 rate limit error should be retriable and not set Errored state",
+			err: &acmeapi.Error{
+				StatusCode:  429,
+				ProblemType: "urn:ietf:params:acme:error:rateLimited",
+				Detail:      "rate limit exceeded",
+			},
+			expectedState: "",
+			expectErr:     true,
+			expectReason:  "Rate limited by ACME server, will retry",
+		},
+		{
+			name: "403 error should be marked as Errored (permanent)",
+			err: &acmeapi.Error{
+				StatusCode: 403,
+				Detail:     "forbidden",
+			},
+			expectedState: cmacme.Errored,
+			expectErr:     false,
+		},
+		{
+			name: "400 error should be marked as Errored (permanent)",
+			err: &acmeapi.Error{
+				StatusCode: 400,
+				Detail:     "bad request",
+			},
+			expectedState: cmacme.Errored,
+			expectErr:     false,
+		},
+		{
+			name: "500 error should be retriable",
+			err: &acmeapi.Error{
+				StatusCode: 500,
+				Detail:     "internal server error",
+			},
+			expectedState: "",
+			expectErr:     true,
+		},
+		{
+			name: "malformed error should set Expired state",
+			err: &acmeapi.Error{
+				StatusCode:  400,
+				ProblemType: "urn:ietf:params:acme:error:malformed",
+				Detail:      "authorization expired",
+			},
+			expectedState: cmacme.Expired,
+			expectErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch := &cmacme.Challenge{}
+			ctx := context.Background()
+			err := handleError(ctx, ch, tt.err)
+
+			if tt.expectErr {
+				assert.Error(t, err, "expected an error to be returned for retriable errors")
+			} else {
+				assert.NoError(t, err, "expected no error for permanent failures")
+			}
+
+			if tt.expectedState != "" {
+				assert.Equal(t, tt.expectedState, ch.Status.State,
+					"challenge state should be %s", tt.expectedState)
+			} else if tt.expectErr {
+				// For retriable errors, state should NOT be set to Errored
+				assert.NotEqual(t, cmacme.Errored, ch.Status.State,
+					"challenge state should not be Errored for retriable errors")
+			}
+
+			if tt.expectReason != "" {
+				assert.Contains(t, ch.Status.Reason, tt.expectReason)
+			}
+		})
+	}
+}

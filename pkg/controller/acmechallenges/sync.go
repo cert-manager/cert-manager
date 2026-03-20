@@ -298,6 +298,16 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 		return nil
 	}
 
+	// Rate limit (429) errors are retriable and should not be treated as
+	// permanent failures. The ACME client will have already attempted retries
+	// with backoff, but if we still get here, we return the error so the
+	// controller's workqueue requeues the item with its own rate limiting.
+	if acmeErr.StatusCode == 429 {
+		ch.Status.Reason = fmt.Sprintf("Rate limited by ACME server, will retry: %v", err)
+		logf.FromContext(ctx).V(logf.InfoLevel).Info("ACME server rate limit hit, will retry", "statusCode", acmeErr.StatusCode)
+		return err
+	}
+
 	if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)

@@ -103,7 +103,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if isPermanent4xxError(acmeErr.StatusCode) {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -185,7 +185,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	acmeOrder, err := getACMEOrder(ctx, cl, o)
 	// Order probably has been deleted, we cannot recover here.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if isPermanent4xxError(acmeErr.StatusCode) {
 			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -209,7 +209,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if isPermanent4xxError(acmeErr.StatusCode) {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -244,7 +244,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if isPermanent4xxError(acmeErr.StatusCode) {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -270,11 +270,30 @@ func isRetryableError(err error) bool {
 	}
 	var acmeErr *acmeapi.Error
 	if errors.As(err, &acmeErr) {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		// isPermanent4xxError excludes 429 Too Many Requests, which is
+		// retriable - the ACME server is rate limiting us and we should
+		// back off and try again later.
+		if isPermanent4xxError(acmeErr.StatusCode) {
 			return false
 		}
 	}
 	return true
+}
+
+// isRateLimitError returns true if the error is an ACME rate limit (HTTP 429) error.
+func isRateLimitError(err error) bool {
+	var acmeErr *acmeapi.Error
+	if errors.As(err, &acmeErr) {
+		return acmeErr.StatusCode == http.StatusTooManyRequests
+	}
+	return false
+}
+
+// isPermanent4xxError checks whether an ACME error status code represents a
+// permanent client error. HTTP 429 (Too Many Requests) is excluded because it
+// is a retriable rate limit error, not a permanent failure.
+func isPermanent4xxError(statusCode int) bool {
+	return statusCode >= 400 && statusCode < 500 && statusCode != http.StatusTooManyRequests
 }
 
 func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
@@ -404,7 +423,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 
 		acmeAuthz, err := cl.GetAuthorization(ctx, authz.URL)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			if isPermanent4xxError(acmeErr.StatusCode) {
 				log.Error(err, "failed to fetch authorization metadata from acme server")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to fetch authorization: %v", err)
@@ -570,7 +589,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 		acmeOrder, getOrderErr := getACMEOrder(ctx, cl, o)
 		acmeGetOrderErr, ok := getOrderErr.(*acmeapi.Error)
-		if ok && acmeGetOrderErr.StatusCode >= 400 && acmeGetOrderErr.StatusCode < 500 {
+		if ok && isPermanent4xxError(acmeGetOrderErr.StatusCode) {
 			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -588,7 +607,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	// Any other ACME 4xx error means that the Order can be considered failed.
-	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+	if ok && isPermanent4xxError(acmeErr.StatusCode) {
 		log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
 		c.setOrderState(&o.Status, string(cmacme.Errored))
 		o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
@@ -603,7 +622,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// non-4xx error, ensure the order status is up-to-date.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if isPermanent4xxError(acmeErr.StatusCode) {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", errUpdate)
@@ -665,7 +684,7 @@ func (c *controller) syncCertificateData(ctx context.Context, cl acmecl.Interfac
 	log := logf.FromContext(ctx)
 	acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if isPermanent4xxError(acmeErr.StatusCode) {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
@@ -692,7 +711,7 @@ func (c *controller) syncCertificateDataWithOrder(ctx context.Context, cl acmecl
 
 	certs, err := cl.FetchCert(ctx, acmeOrder.CertURL, true)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		if isPermanent4xxError(acmeErr.StatusCode) {
 			log.Error(err, "failed to retrieve issued certificate from ACME server")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve signed certificate: %v", err)
