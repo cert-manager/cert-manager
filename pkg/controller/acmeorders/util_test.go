@@ -58,6 +58,25 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
 		},
 	}
+	parentRefsSelectorSolverHTTP01HTTPRoute := cmacme.ACMEChallengeSolver{
+		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+			GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+				ParentRefs: []gwapi.ParentReference{
+					{
+						Kind: func() *gwapi.Kind {
+							g := gwapi.Kind("Gateway")
+							return &g
+						}(),
+						Name: gwapi.ObjectName("sample-gateway"),
+						Namespace: func() *gwapi.Namespace {
+							ns := gwapi.Namespace("test-ns")
+							return &ns
+						}(),
+					},
+				},
+			},
+		},
+	}
 	emptySelectorSolverDNS01 := cmacme.ACMEChallengeSolver{
 		DNS01: &cmacme.ACMEChallengeSolverDNS01{
 			Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
@@ -384,6 +403,55 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 									}(),
 									Name:      gwapi.ObjectName("test-parent-ref-name"),
 									Namespace: (*gwapi.Namespace)(ptr.To("")),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"should remove duplicate parentRefs if issuer has same parentRef": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{parentRefsSelectorSolverHTTP01HTTPRoute},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01ParentRefName: "sample-gateway",
+						cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: []gwapi.ParentReference{
+								{
+									Kind: func() *gwapi.Kind {
+										ls := gwapi.Kind("Gateway")
+										return &ls
+									}(),
+									Name:      gwapi.ObjectName("sample-gateway"),
+									Namespace: (*gwapi.Namespace)(ptr.To("test-ns")),
 								},
 							},
 						},
