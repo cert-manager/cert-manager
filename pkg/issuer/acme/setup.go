@@ -585,7 +585,7 @@ func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) 
 	}
 
 	for _, s := range secrets {
-		res, err := a.secretsClient.Secrets(issuer.GetNamespace()).Get(ctx, s.Name, metav1.GetOptions{})
+		res, err := a.secretsClient.Secrets(a.resourceNamespace(issuer)).Get(ctx, s.Name, metav1.GetOptions{})
 		if err != nil {
 			warning = append(warning, fmt.Sprintf("failed to get secret %q: %v", s.Name, err))
 			continue
@@ -603,57 +603,63 @@ func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) 
 func extractSecrets(issuer v1.GenericIssuer) []*cmmeta.SecretKeySelector {
 	var secrets []*cmmeta.SecretKeySelector
 	spec := issuer.GetSpec()
-	if spec.ACME != nil {
-		solvers := spec.ACME.Solvers
+	if spec.ACME == nil {
+		return secrets
+	}
+	solvers := spec.ACME.Solvers
 
-		for _, s := range solvers {
-			if s.DNS01 == nil {
-				continue
-			}
-			dnsSolver := s.DNS01
-			if dnsSolver.AcmeDNS != nil {
-				// required
-				secrets = append(secrets, &dnsSolver.AcmeDNS.AccountSecret)
-			}
-			if dnsSolver.Akamai != nil {
-				// required
-				secrets = append(secrets, &dnsSolver.Akamai.ClientSecret)
-				secrets = append(secrets, &dnsSolver.Akamai.ClientToken)
-				secrets = append(secrets, &dnsSolver.Akamai.AccessToken)
-			}
-			if dnsSolver.AzureDNS != nil {
-				if dnsSolver.AzureDNS.ClientSecret != nil {
-					secrets = append(secrets, dnsSolver.AzureDNS.ClientSecret)
-				}
-			}
-			if dnsSolver.Cloudflare != nil {
-				if dnsSolver.Cloudflare.APIKey != nil {
-					secrets = append(secrets, dnsSolver.Cloudflare.APIKey)
-				}
-				if dnsSolver.Cloudflare.APIToken != nil {
-					secrets = append(secrets, dnsSolver.Cloudflare.APIToken)
-				}
-			}
-			if dnsSolver.DigitalOcean != nil {
-				// required
-				secrets = append(secrets, &dnsSolver.DigitalOcean.Token)
-			}
-			if dnsSolver.RFC2136 != nil {
-				if len(dnsSolver.RFC2136.TSIGSecret.Name) > 0 {
-					secrets = append(secrets, &dnsSolver.RFC2136.TSIGSecret)
-				}
-			}
-			if dnsSolver.Route53 != nil {
-				// because of the ambient credential both can be missing
-				if len(dnsSolver.Route53.SecretAccessKey.Name) > 0 {
-					secrets = append(secrets, &dnsSolver.Route53.SecretAccessKey)
-				}
-				if dnsSolver.Route53.SecretAccessKeyID != nil {
-					secrets = append(secrets, dnsSolver.Route53.SecretAccessKeyID)
-				}
-			}
-
+	for _, s := range solvers {
+		if s.DNS01 == nil {
+			continue
 		}
+		dnsSolver := s.DNS01
+		if dnsSolver.AcmeDNS != nil {
+			// required
+			secrets = append(secrets, &dnsSolver.AcmeDNS.AccountSecret)
+		}
+		if dnsSolver.Akamai != nil {
+			// required
+			secrets = append(secrets, &dnsSolver.Akamai.ClientSecret)
+			secrets = append(secrets, &dnsSolver.Akamai.ClientToken)
+			secrets = append(secrets, &dnsSolver.Akamai.AccessToken)
+		}
+		if dnsSolver.AzureDNS != nil {
+			if dnsSolver.AzureDNS.ClientSecret != nil {
+				secrets = append(secrets, dnsSolver.AzureDNS.ClientSecret)
+			}
+		}
+
+		if dnsSolver.CloudDNS != nil {
+			secrets = append(secrets, dnsSolver.CloudDNS.ServiceAccount)
+		}
+
+		if dnsSolver.Cloudflare != nil {
+			if dnsSolver.Cloudflare.APIKey != nil {
+				secrets = append(secrets, dnsSolver.Cloudflare.APIKey)
+			}
+			if dnsSolver.Cloudflare.APIToken != nil {
+				secrets = append(secrets, dnsSolver.Cloudflare.APIToken)
+			}
+		}
+		if dnsSolver.DigitalOcean != nil {
+			// required
+			secrets = append(secrets, &dnsSolver.DigitalOcean.Token)
+		}
+		if dnsSolver.RFC2136 != nil {
+			if len(dnsSolver.RFC2136.TSIGSecret.Name) > 0 {
+				secrets = append(secrets, &dnsSolver.RFC2136.TSIGSecret)
+			}
+		}
+		if dnsSolver.Route53 != nil {
+			// because of the ambient credential both can be missing
+			if len(dnsSolver.Route53.SecretAccessKey.Name) > 0 {
+				secrets = append(secrets, &dnsSolver.Route53.SecretAccessKey)
+			}
+			if dnsSolver.Route53.SecretAccessKeyID != nil {
+				secrets = append(secrets, dnsSolver.Route53.SecretAccessKeyID)
+			}
+		}
+
 	}
 
 	return secrets
