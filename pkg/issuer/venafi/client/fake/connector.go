@@ -29,7 +29,6 @@ type Connector struct {
 	ReadZoneConfigurationFunc func() (*endpoint.ZoneConfiguration, error)
 	RetrieveCertificateFunc   func(*certificate.Request) (*certificate.PEMCollection, error)
 	RequestCertificateFunc    func(*certificate.Request) (string, error)
-	RenewCertificateFunc      func(*certificate.RenewalRequest) (string, error)
 }
 
 func (f Connector) Default() *Connector {
@@ -65,11 +64,4 @@ func (f *Connector) RequestCertificate(req *certificate.Request) (requestID stri
 		return f.RequestCertificateFunc(req)
 	}
 	return f.Connector.RequestCertificate(req)
-}
-
-func (f *Connector) RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error) {
-	if f.RenewCertificateFunc != nil {
-		return f.RenewCertificateFunc(req)
-	}
-	return f.Connector.RenewCertificate(req)
 }

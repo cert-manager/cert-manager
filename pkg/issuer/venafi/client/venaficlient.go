@@ -86,8 +86,6 @@ type connector interface {
 	ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error)
 	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
-	// TODO: (irbekrm) this method is never used - can it be removed?
-	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
 // New constructs a Venafi client Interface. Errors may be network errors and
