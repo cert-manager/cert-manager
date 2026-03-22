@@ -24,7 +24,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -122,11 +121,13 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	// value matching the name of this Certificate..
 	// NOTE: "owner" is not the `ownerReference`, because cert-manager does not
 	// usually set the ownerReference of the Secret.
-	// TODO: The logged warning below is misleading because it contains the
-	// ownerReference, which is not the reason for ignoring the Secret.
 	owner := owningCertForSecret(&secret)
 	if owner == nil || *owner != certName {
-		log.V(logf.WarnLevel).Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
+		log.V(logf.WarnLevel).Info(
+			"refusing to target secret: cert-manager.io/certificate-name annotation does not match",
+			"annotation_value", owner,
+			"expected", certName,
+		)
 		return nil, nil
 	}
 
