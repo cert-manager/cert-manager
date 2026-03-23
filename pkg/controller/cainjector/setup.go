@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -191,15 +192,9 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				return err
 			}
 
-			// Convert ignoreNamespaces slice to a map for more efficient lookups in the mapFunc
-			ignoreNamespacesMap := make(map[string]struct{})
-			for _, ns := range opts.IgnoreNamespaces {
-				ignoreNamespacesMap[ns] = struct{}{}
-			}
-
 			b.Watches(
 				new(corev1.Secret),
-				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, ignoreNamespacesMap)),
+				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, sets.New(opts.IgnoreNamespaces...))),
 				// See "Why do we use builder.OnlyMetadata?" above.
 				builder.OnlyMetadata,
 			).Watches(
