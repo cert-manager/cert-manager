@@ -37,6 +37,10 @@ type CAInjectorConfiguration struct {
 	// configured namespace.
 	Namespace string `json:"namespace,omitempty"`
 
+	// Comma-separated list of namespaces to ignore secrets from.
+	// Should not be used with --namespace.
+	IgnoreNamespaces []string `json:"ignoreNamespaces,omitempty"`
+
 	// LeaderElectionConfig configures the behaviour of the leader election
 	LeaderElectionConfig sharedv1alpha1.LeaderElectionConfig `json:"leaderElectionConfig"`
 
