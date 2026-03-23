@@ -29,6 +29,11 @@ import (
 func (in *CAInjectorConfiguration) DeepCopyInto(out *CAInjectorConfiguration) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+	if in.IgnoreNamespaces != nil {
+		in, out := &in.IgnoreNamespaces, &out.IgnoreNamespaces
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	out.LeaderElectionConfig = in.LeaderElectionConfig
 	out.EnableDataSourceConfig = in.EnableDataSourceConfig
 	out.EnableInjectableConfig = in.EnableInjectableConfig
