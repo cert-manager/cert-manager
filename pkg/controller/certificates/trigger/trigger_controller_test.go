@@ -71,7 +71,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		// For example, "Normal Issuing Re-issuance forced by unit test case"
 		// where 'Normal' is the event severity, 'Issuing' is the reason and the
 		// remainder is the message.
-		wantEvent string
+		wantEvent []string
 
 		// wantConditions is the expected set of conditions on the Certificate
 		// resource if an Update is made.
@@ -159,7 +159,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				Status:             "True",
@@ -213,7 +213,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				Status:             "True",
@@ -238,7 +238,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				Status:             "True",
@@ -293,7 +293,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				Status:             "True",
@@ -338,7 +338,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				Status:             "True",
@@ -377,6 +377,39 @@ func Test_controller_ProcessItem(t *testing.T) {
 			},
 			wantDataForCertificateCalled: false,
 			wantShouldReissueCalled:      false,
+		},
+		"should set Issuing=True when renewal time is not found because it doesn't match the windows configured": {
+			existingCertificate: gen.Certificate("cert-1",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateGeneration(42),
+				gen.SetCertificateRenewalWindows([]cmapi.CertificateRenewalWindows{
+					{
+						Timezone:       time.UTC.String(),
+						WindowDuration: &metav1.Duration{Duration: time.Hour * 2},
+						Cron:           "0 10 * * *",
+					},
+				}),
+			),
+			wantShouldReissueCalled:      true,
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			mockShouldReissue: func(t *testing.T) policies.Func {
+				return func(gotInput policies.Input) (string, string, bool) {
+					return policies.WindowError, "cannot find renewal time in window", true
+				}
+			},
+			wantEvent: []string{
+				"Warning WindowError Renewing certificate without satisfying renewal windows due to cannot find renewal time in window",
+				"Normal Issuing Renewing certificate without satisfying renewal windows at: <nil>",
+			},
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				ObservedGeneration: 42,
+				Status:             "True",
+				Reason:             "Renewing",
+				Message:            "Renewing certificate without satisfying renewal windows at: <nil>",
+				LastTransitionTime: &fixedNow,
+			}},
 		},
 	}
 	for name, test := range tests {
@@ -441,8 +474,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 					)),
 				)
 			}
-			if test.wantEvent != "" {
-				builder.ExpectedEvents = []string{test.wantEvent}
+			if test.wantEvent != nil {
+				builder.ExpectedEvents = test.wantEvent
 			}
 
 			builder.Start()
@@ -477,7 +510,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 }
 
 func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
-	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.UTC))
+	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 0o5, 0o0, 0o000, time.UTC))
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
@@ -845,6 +878,5 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			assert.Equal(t, test.wantBackoff, gotBackoff)
 			assert.Equal(t, test.wantDelay, gotDelay)
 		})
-
 	}
 }

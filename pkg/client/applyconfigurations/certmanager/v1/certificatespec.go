@@ -101,6 +101,9 @@ type CertificateSpecApplyConfiguration struct {
 	// minutes.
 	// Cannot be set if the `renewBefore` field is set.
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
+	// `renewal` allows configuration of how your certificate is renewed. If the policy mentioned is
+	// `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.
+	Renewal *CertificateRenewalApplyConfiguration `json:"renewal,omitempty"`
 	// Requested DNS subject alternative names.
 	DNSNames []string `json:"dnsNames,omitempty"`
 	// Requested IP address subject alternative names.
@@ -234,6 +237,14 @@ func (b *CertificateSpecApplyConfiguration) WithRenewBefore(value metav1.Duratio
 // If called multiple times, the RenewBeforePercentage field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithRenewBeforePercentage(value int32) *CertificateSpecApplyConfiguration {
 	b.RenewBeforePercentage = &value
+	return b
+}
+
+// WithRenewal sets the Renewal field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Renewal field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithRenewal(value *CertificateRenewalApplyConfiguration) *CertificateSpecApplyConfiguration {
+	b.Renewal = value
 	return b
 }
 

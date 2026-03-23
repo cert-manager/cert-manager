@@ -81,6 +81,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores":                        schema_pkg_apis_certmanager_v1_CertificateKeystores(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateList":                             schema_pkg_apis_certmanager_v1_CertificateList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey":                       schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal":                          schema_pkg_apis_certmanager_v1_CertificateRenewal(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows":                   schema_pkg_apis_certmanager_v1_CertificateRenewalWindows(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequest":                          schema_pkg_apis_certmanager_v1_CertificateRequest(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestCondition":                 schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestList":                      schema_pkg_apis_certmanager_v1_CertificateRequestList(ref),
@@ -2854,6 +2856,82 @@ func schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref common.ReferenceCa
 	}
 }
 
+func schema_pkg_apis_certmanager_v1_CertificateRenewal(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"policy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`policy` must be one of `Disabled`, `RenewBefore`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"windows": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "`windows` mentions the behavior of when the renewal must happen.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows"},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_CertificateRenewalWindows(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CertificateRenewalWindows is the definition for renewal windows",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"timezone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`timezone` is IANA compliant timezone. For example America/Denver. If this field is not set, timezone is treated as UTC.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"windowDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`windowDuration` is how long the cron definition is active for. Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.",
+							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
+						},
+					},
+					"cron": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`cron` is a cron compliant string to allow when the renewal should be allowed. Format is as shown below: * * * * * | | | | | | | | | day of the week (0–6) (Sunday to Saturday; | | | month (1–12)             7 is also Sunday on some systems) | | day of the month (1–31) | hour (0–23) minute (0–59)",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"windowDuration", "cron"},
+			},
+		},
+		Dependencies: []string{
+			metav1.Duration{}.OpenAPIModelName()},
+	}
+}
+
 func schema_pkg_apis_certmanager_v1_CertificateRequest(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3275,6 +3353,12 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Format:      "int32",
 						},
 					},
+					"renewal": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`renewal` allows configuration of how your certificate is renewed. If the policy mentioned is `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal"),
+						},
+					},
 					"dnsNames": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -3485,7 +3569,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", metav1.Duration{}.OpenAPIModelName()},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", metav1.Duration{}.OpenAPIModelName()},
 	}
 }
 

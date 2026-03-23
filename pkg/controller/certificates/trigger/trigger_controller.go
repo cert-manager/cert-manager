@@ -223,8 +223,13 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	reason, message, reissue := c.shouldReissue(input)
+	if reason == policies.WindowError {
+		c.recorder.Event(crt, corev1.EventTypeWarning, reason, fmt.Sprintf("Renewing certificate without satisfying renewal windows due to %s", message))
+		message = fmt.Sprintf("Renewing certificate without satisfying renewal windows at: %s", crt.Status.RenewalTime)
+		reason = policies.Renewing
+	}
+
 	if !reissue {
-		// no re-issuance required, return early
 		return nil
 	}
 

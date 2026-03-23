@@ -252,6 +252,17 @@ func AddCertificateAnnotations(annotations map[string]string) CertificateModifie
 	}
 }
 
+func SetCertificateRenewalWindows(windows []v1.CertificateRenewalWindows) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		if crt.Spec.Renewal == nil {
+			crt.Spec.Renewal = new(v1.CertificateRenewal)
+		}
+
+		crt.Spec.Renewal.Policy = v1.CertificateRenewalPolicyRenewBefore
+		crt.Spec.Renewal.Windows = windows
+	}
+}
+
 func AddCertificateLabels(labels map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		if crt.Labels == nil {
