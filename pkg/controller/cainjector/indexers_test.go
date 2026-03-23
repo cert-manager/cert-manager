@@ -21,11 +21,12 @@ import (
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestCertFromSecretToInjectableMapFuncBuilder_IgnoresNamespaces(t *testing.T) {
-	ignoreNamespaces := map[string]struct{}{"ignored-ns": {}}
+	ignoreNamespaces := sets.New("ignored-ns")
 	cl := fake.NewClientBuilder().Build()
 	log := logr.Discard()
 	setup := setup{resourceName: "test"}
