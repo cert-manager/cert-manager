@@ -19,11 +19,14 @@ package approval
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	authnv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/client-go/discovery"
@@ -342,6 +345,79 @@ func (f fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) 
 		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised IsResourceRequest '%t'", a.IsResourceRequest()), nil
 	}
 	return f.decision, "", nil
+}
+
+func TestNegativeCacheHit(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return &metav1.APIGroupList{}, nil
+		})
+
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call should query discovery and cache the negative result.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on first call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Second call should hit the negative cache and skip discovery.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on second call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected discovery call count to remain 1, got %d", discoveryCallCount.Load())
+	}
+}
+
+func TestNegativeCacheExpiry(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return &metav1.APIGroupList{}, nil
+		})
+
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call populates the negative cache.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Simulate TTL expiry by backdating the negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// After expiry, discovery should be called again.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists after expiry, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 2 {
+		t.Fatalf("expected 2 discovery calls after expiry, got %d", discoveryCallCount.Load())
+	}
 }
 
 func compareErrors(t *testing.T, exp, act error) {
