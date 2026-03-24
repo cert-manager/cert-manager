@@ -78,12 +78,3 @@ func (ic instrumentedConnector) Ping() error {
 	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
 	return err
 }
-
-func (ic instrumentedConnector) RenewCertificate(req *certificate.RenewalRequest) (string, error) {
-	start := time.Now()
-	ic.logger.V(logf.TraceLevel).Info("calling RenewCertificate")
-	reqID, err := ic.conn.RenewCertificate(req)
-	labels := []string{"renew_certificate"}
-	ic.metrics.ObserveVenafiRequestDuration(time.Since(start), labels...)
-	return reqID, err
-}
