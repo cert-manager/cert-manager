@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	authnv1 "k8s.io/api/authentication/v1"
@@ -309,6 +311,112 @@ func TestValidate(t *testing.T) {
 			compareErrors(t, test.expErr, err)
 		})
 	}
+}
+
+func TestMissingKind(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// This copies the test in the TestValidate above, but delaying the set of ServerGroups until later,
+		// similar to a real cluster that installs the CRD later. We're copying this test:
+		// "if the CertificateRequest references a signer that the approver has permissions for the wildcard of, return nil"
+		authorizer := &fakeAuthorizer{
+			verb:        "approve",
+			allowedName: "issuers.example.io/*",
+			decision:    authorizer.DecisionAllow,
+			t:           t,
+		}
+		discoverClient := discoveryfake.NewDiscovery().
+			WithServerGroups(func() (*metav1.APIGroupList, error) {
+				return &metav1.APIGroupList{}, nil
+			})
+		// try to run function with crd that does not exist
+		a := NewPlugin(authorizer, discoverClient).(*certificateRequestApproval)
+
+		req := admissionv1.AdmissionRequest{
+			UserInfo: authnv1.UserInfo{
+				Username: "user-1",
+			},
+			Operation: admissionv1.Update,
+			RequestResource: &metav1.GroupVersionResource{
+				Group:    "cert-manager.io",
+				Resource: "certificaterequests",
+			},
+			RequestSubResource: "status",
+		}
+
+		baseCR := &certmanager.CertificateRequest{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
+			Spec: certmanager.CertificateRequestSpec{
+				IssuerRef: meta.IssuerReference{
+					Name:  "my-issuer",
+					Kind:  "Issuer",
+					Group: "example.io",
+				},
+			},
+		}
+
+		approvedCR := baseCR.DeepCopy()
+		approvedCR.Status = certmanager.CertificateRequestStatus{
+			Conditions: []certmanager.CertificateRequestCondition{
+				{
+					Type:    certmanager.CertificateRequestConditionApproved,
+					Status:  meta.ConditionTrue,
+					Reason:  "cert-manager.io",
+					Message: "",
+				},
+			},
+		}
+
+		_, validateErr1 := a.Validate(t.Context(), req, baseCR, approvedCR)
+
+		if validateErr1 == nil {
+			t.Errorf("Expected errors from validate from missing crd, but there were no errors")
+		}
+		// wait for five seconds
+		time.Sleep(5 * time.Second)
+		// install the CRD
+		a.discovery = discoveryfake.NewDiscovery().
+			WithServerGroups(func() (*metav1.APIGroupList, error) {
+				return &metav1.APIGroupList{
+					Groups: []metav1.APIGroup{
+						{
+							Name: "example.io",
+							Versions: []metav1.GroupVersionForDiscovery{
+								{GroupVersion: "example.io/a-version", Version: "a-version"},
+							},
+						},
+					},
+				}, nil
+			}).
+			WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+				return &metav1.APIResourceList{
+					APIResources: []metav1.APIResource{
+						{
+							Name:       "issuers",
+							Namespaced: true,
+							Kind:       "Issuer",
+						},
+					},
+				}, nil
+			})
+		// Try again
+		_, validateErr2 := a.Validate(t.Context(), req, baseCR, approvedCR)
+
+		// Fail, because the missing crd is still in cache
+		if validateErr2 == nil {
+			t.Errorf("Expected errors from validate from crd cached as missing, but there were none")
+		}
+		// wait through the full TTL
+		time.Sleep(missingAPITTL)
+
+		// try one more time
+		_, validateErr3 := a.Validate(t.Context(), req, baseCR, approvedCR)
+
+		// Succeed
+		if validateErr3 != nil {
+			t.Errorf("Did not expect errors from validate from missing crd, we should have found them at this point")
+		}
+
+	})
 }
 
 type fakeAuthorizer struct {

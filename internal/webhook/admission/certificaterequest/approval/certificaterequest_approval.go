@@ -28,6 +28,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +52,10 @@ type certificateRequestApproval struct {
 	// resourceInfo stores the associated resource info for a given GroupKind
 	// to prevent making multiple queries to the API server for every approval.
 	resourceInfo map[schema.GroupKind]resourceInfo
-	mutex        sync.RWMutex
+
+	// missingAPIs stores the last time a missing API was not found
+	missingAPIs map[schema.GroupKind]time.Time
+	mutex       sync.RWMutex
 }
 
 type resourceInfo struct {
@@ -65,6 +69,7 @@ func NewPlugin(authz authorizer.Authorizer, discoveryClient discovery.DiscoveryI
 	return &certificateRequestApproval{
 		Handler:      admission.NewHandler(admissionv1.Update),
 		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		missingAPIs:  map[schema.GroupKind]time.Time{},
 
 		authorizer: authz,
 		discovery:  discoveryClient,
@@ -134,10 +139,12 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 		return resource, nil
 	}
 
+	// do a quick check for whether we did not find the resource before
+	if c.checkAPIResourceNotFound(groupKind) {
+		return nil, errNoResourceExists
+	}
+
 	// otherwise, query the apiserver
-	// TODO: we should enhance caching here to avoid performing discovery queries
-	//       many times if many CertificateRequest resources exist that reference
-	//       a resource that doesn't exist
 	groups, err := c.discovery.ServerGroups()
 	if err != nil {
 		return nil, err
@@ -164,7 +171,24 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 		}
 	}
 
+	c.indexAPIResourceNotFound(groupKind)
+
 	return nil, errNoResourceExists
+}
+
+const missingAPITTL = time.Duration(30 * time.Second)
+
+func (c *certificateRequestApproval) checkAPIResourceNotFound(groupKind schema.GroupKind) bool {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	lastTimeNotFound, ok := c.missingAPIs[groupKind]
+	return ok && lastTimeNotFound.Add(missingAPITTL).After(time.Now())
+}
+
+func (c *certificateRequestApproval) indexAPIResourceNotFound(groupKind schema.GroupKind) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.missingAPIs[groupKind] = time.Now()
 }
 
 func (c *certificateRequestApproval) readAPIResourceFromCache(groupKind schema.GroupKind) *resourceInfo {
