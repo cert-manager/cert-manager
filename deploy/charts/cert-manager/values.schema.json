@@ -1492,6 +1492,9 @@
         "backoffLimit": {
           "$ref": "#/$defs/helm-values.startupapicheck.backoffLimit"
         },
+        "ttlSecondsAfterFinished": {
+          "$ref": "#/$defs/helm-values.startupapicheck.ttlSecondsAfterFinished"
+        },
         "containerSecurityContext": {
           "$ref": "#/$defs/helm-values.startupapicheck.containerSecurityContext"
         },
@@ -1561,6 +1564,11 @@
     "helm-values.startupapicheck.backoffLimit": {
       "default": 4,
       "description": "Job backoffLimit",
+      "type": "number"
+    },
+    "helm-values.startupapicheck.ttlSecondsAfterFinished": {
+      "default": 30,
+      "description": "Job ttlSecondsAfterFinished",
       "type": "number"
     },
     "helm-values.startupapicheck.containerSecurityContext": {

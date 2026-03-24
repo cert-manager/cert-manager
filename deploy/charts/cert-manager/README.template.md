@@ -2009,6 +2009,13 @@ Timeout for 'kubectl check api' command.
 > 4
 > ```
 
+Job 'ttlSecondsAfterFinished'
+#### **startupapicheck.ttlSecondsAfterFinished** ~ `number`
+> Default value:
+> ```yaml
+> 30
+> ```
+
 Job backoffLimit
 #### **startupapicheck.jobAnnotations** ~ `object`
 > Default value:

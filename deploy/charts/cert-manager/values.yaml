@@ -1529,6 +1529,9 @@ startupapicheck:
   # Job backoffLimit
   backoffLimit: 4
 
+  # Job ttlSecondsAfterFinished
+  ttlSecondsAfterFinished: 30
+
   # Optional additional annotations to add to the startupapicheck Job.
   # +docs:property
   jobAnnotations:
