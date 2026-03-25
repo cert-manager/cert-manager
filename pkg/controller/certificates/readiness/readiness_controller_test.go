@@ -429,7 +429,7 @@ func TestScheduleRequeueAtExpiry(t *testing.T) {
 			}
 
 			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
-			w.controller.renewalTimeCalculator = renewalTimeBuilder(&renewalTime)
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(&renewalTime, nil)
 
 			// Build expected updated cert
 			c := gen.CertificateFrom(cert,
