@@ -158,6 +158,7 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 			continue
 		}
 
+		// The group exists; search its versions for the requested kind.
 		for _, version := range apiGroup.Versions {
 			apiResources, err := c.discovery.ServerResourcesForGroupVersion(version.GroupVersion)
 			if err != nil {
@@ -172,9 +173,18 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 				return c.cacheAPIResource(groupKind, resource.Name, resource.Namespaced), nil
 			}
 		}
+
+		// The group is registered but does not contain the requested kind.
+		// Cache this negative result so repeated requests for the same
+		// non-existent kind do not hammer the API server.
+		c.cacheNegativeResult(groupKind)
+		return nil, errNoResourceExists
 	}
 
-	c.cacheNegativeResult(groupKind)
+	// The group itself was not found in discovery. This may be a transient
+	// propagation delay (e.g. a CRD was just created and the aggregated
+	// discovery endpoint has not yet been refreshed). Do not cache a
+	// negative result so the next request will perform a fresh lookup.
 	return nil, errNoResourceExists
 }
 
