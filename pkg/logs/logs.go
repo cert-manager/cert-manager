@@ -71,6 +71,10 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 	var allFlags flag.FlagSet
 	klog.InitFlags(&allFlags)
 
+	// Opt into fixed stderrthreshold behavior (kubernetes/klog#212).
+	_ = allFlags.Set("legacy_stderr_threshold_behavior", "false")
+	_ = allFlags.Set("stderrthreshold", "INFO")
+
 	allFlags.VisitAll(func(f *flag.Flag) {
 		switch f.Name {
 		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
