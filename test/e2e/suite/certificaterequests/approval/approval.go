@@ -473,6 +473,27 @@ func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, gro
 		},
 	}, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
+
+	// Wait for the CRD to be fully established so that the webhook's API
+	// discovery cache sees it before approval requests are made. Without
+	// this wait the webhook may populate its negative cache before the CRD
+	// is discoverable, causing subsequent approval requests to fail for the
+	// full negativeCacheTTL duration (30 s), which outlasts the test's
+	// retry window.
+	err = wait.PollUntilContextTimeout(testingCtx, 500*time.Millisecond, 60*time.Second, true, func(ctx context.Context) (bool, error) {
+		got, err := crdclient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, cond := range got.Status.Conditions {
+			if cond.Type == crdapi.Established && cond.Status == crdapi.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	Expect(err).ToNot(HaveOccurred(), "timed out waiting for CRD %q to become established", crd.Name)
+
 	return crd
 }
 
