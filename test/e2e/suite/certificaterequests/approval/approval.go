@@ -506,22 +506,21 @@ func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, dis
 
 		// Condition 2: kind is discoverable via the same ServerGroups /
 		// ServerResourcesForGroupVersion path the webhook uses.
-		groups, err := discoveryClient.ServerGroups()
-		if err != nil {
-			return false, nil // transient; keep polling
-		}
-		for _, apiGroup := range groups.Groups {
-			if apiGroup.Name != group {
-				continue
-			}
-			for _, version := range apiGroup.Versions {
-				resources, err := discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
-				if err != nil {
+		// Errors from discovery are treated as transient and cause a retry.
+		if groups, discErr := discoveryClient.ServerGroups(); discErr == nil {
+			for _, apiGroup := range groups.Groups {
+				if apiGroup.Name != group {
 					continue
 				}
-				for _, r := range resources.APIResources {
-					if r.Kind == kind {
-						return true, nil
+				for _, version := range apiGroup.Versions {
+					resources, resErr := discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
+					if resErr != nil {
+						continue
+					}
+					for _, r := range resources.APIResources {
+						if r.Kind == kind {
+							return true, nil
+						}
 					}
 				}
 			}
