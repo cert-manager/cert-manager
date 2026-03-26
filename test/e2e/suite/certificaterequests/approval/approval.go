@@ -35,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/util/retry"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -243,7 +244,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("attempting to approve a certificate request without the approve permission should error", func(testingCtx context.Context) {
-		createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		approvedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		err := retry.OnError(retry.DefaultBackoff, retryOnNotFound(approvedCR.Spec.IssuerRef), func() error {
@@ -254,7 +255,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("attempting to deny a certificate request without the approve permission should error", func(testingCtx context.Context) {
-		createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		deniedCR := request.DeepCopy()
 		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		err := retry.OnError(retry.DefaultBackoff, retryOnNotFound(deniedCR.Spec.IssuerRef), func() error {
@@ -296,7 +297,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -309,7 +310,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to deny requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -322,7 +323,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -335,7 +336,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped clusterissuers.example.io/test-issuer should be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "clusterissuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "clusterissuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("clusterissuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -348,7 +349,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -362,7 +363,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -375,7 +376,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to approve requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -391,7 +392,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	//
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to deny requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -404,7 +405,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to deny requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.ClusterScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.ClusterScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -418,7 +419,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to deny requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -431,7 +432,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 
 	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to denied requests", func(testingCtx context.Context) {
-		crd = createCRD(testingCtx, crdclient, group, "issuers", issuerKind, crdapi.NamespaceScoped)
+		crd = createCRD(testingCtx, crdclient, f.KubeClientSet.Discovery(), group, "issuers", issuerKind, crdapi.NamespaceScoped)
 		bindServiceAccountToApprove(testingCtx, f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -445,7 +446,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	})
 })
 
-func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, group, plural, kind string, scope crdapi.ResourceScope) *crdapi.CustomResourceDefinition {
+func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, discoveryClient discovery.DiscoveryInterface, group, plural, kind string, scope crdapi.ResourceScope) *crdapi.CustomResourceDefinition {
 	crd, err := crdclient.ApiextensionsV1().CustomResourceDefinitions().Create(testingCtx, &crdapi.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s.%s", plural, group),
@@ -474,25 +475,60 @@ func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, gro
 	}, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
-	// Wait for the CRD to be fully established so that the webhook's API
-	// discovery cache sees it before approval requests are made. Without
-	// this wait the webhook may populate its negative cache before the CRD
-	// is discoverable, causing subsequent approval requests to fail for the
-	// full negativeCacheTTL duration (30 s), which outlasts the test's
-	// retry window.
+	// Wait for the CRD to be fully visible in API discovery before returning.
+	// Two conditions must hold:
+	//   1. The CRD object itself is Established (apiextensions control plane accepted it).
+	//   2. The group appears in ServerGroups() and the kind appears in
+	//      ServerResourcesForGroupVersion, matching what the approval webhook
+	//      will query when it processes the first UpdateStatus request.
+	//
+	// Waiting only for Established is insufficient on Kubernetes 1.30+ where
+	// aggregated discovery has its own refresh cycle: the webhook may call
+	// ServerGroups() after the CRD is Established but before the discovery
+	// endpoint reflects it, populate the negative cache (TTL 30 s), and then
+	// reject every subsequent retry within the test's short retry window.
 	err = wait.PollUntilContextTimeout(testingCtx, 500*time.Millisecond, 60*time.Second, true, func(ctx context.Context) (bool, error) {
+		// Condition 1: CRD Established.
 		got, err := crdclient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
+		established := false
 		for _, cond := range got.Status.Conditions {
 			if cond.Type == crdapi.Established && cond.Status == crdapi.ConditionTrue {
-				return true, nil
+				established = true
+				break
+			}
+		}
+		if !established {
+			return false, nil
+		}
+
+		// Condition 2: kind is discoverable via the same ServerGroups /
+		// ServerResourcesForGroupVersion path the webhook uses.
+		groups, err := discoveryClient.ServerGroups()
+		if err != nil {
+			return false, nil // transient; keep polling
+		}
+		for _, apiGroup := range groups.Groups {
+			if apiGroup.Name != group {
+				continue
+			}
+			for _, version := range apiGroup.Versions {
+				resources, err := discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
+				if err != nil {
+					continue
+				}
+				for _, r := range resources.APIResources {
+					if r.Kind == kind {
+						return true, nil
+					}
+				}
 			}
 		}
 		return false, nil
 	})
-	Expect(err).ToNot(HaveOccurred(), "timed out waiting for CRD %q to become established", crd.Name)
+	Expect(err).ToNot(HaveOccurred(), "timed out waiting for CRD %q to become discoverable", crd.Name)
 
 	return crd
 }
