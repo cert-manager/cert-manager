@@ -189,11 +189,25 @@ func (c *certificateRequestApproval) readAPIResourceFromCache(groupKind schema.G
 
 func (c *certificateRequestApproval) isNegativelyCached(groupKind schema.GroupKind) bool {
 	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if t, ok := c.notFoundAt[groupKind]; ok {
-		if time.Since(t) < negativeCacheTTL {
-			return true
-		}
+	t, ok := c.notFoundAt[groupKind]
+	c.mutex.RUnlock()
+
+	if !ok {
+		return false
+	}
+
+	if time.Since(t) < negativeCacheTTL {
+		return true
+	}
+
+	// The entry has expired. Upgrade to a write lock to evict it so the
+	// map doesn't grow unboundedly with stale entries.
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	// Re-check under the write lock to guard against a concurrent eviction
+	// or a fresh negative-cache write that happened between lock upgrades.
+	if t2, ok2 := c.notFoundAt[groupKind]; ok2 && time.Since(t2) >= negativeCacheTTL {
+		delete(c.notFoundAt, groupKind)
 	}
 	return false
 }

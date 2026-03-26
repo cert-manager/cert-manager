@@ -420,6 +420,39 @@ func TestNegativeCacheExpiry(t *testing.T) {
 	}
 }
 
+func TestNegativeCacheEviction(t *testing.T) {
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			return &metav1.APIGroupList{}, nil
+		})
+
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// Seed an already-expired negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// Calling isNegativelyCached on an expired entry should return false
+	// and evict the entry from the map.
+	if a.isNegativelyCached(gk) {
+		t.Fatal("expected false for expired negative cache entry")
+	}
+
+	a.mutex.RLock()
+	_, still := a.notFoundAt[gk]
+	a.mutex.RUnlock()
+
+	if still {
+		t.Fatal("expected expired negative cache entry to be evicted, but it is still present")
+	}
+}
+
 func compareErrors(t *testing.T, exp, act error) {
 	if exp == nil && act == nil {
 		return
