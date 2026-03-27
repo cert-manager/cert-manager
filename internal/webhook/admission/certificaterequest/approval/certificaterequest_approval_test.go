@@ -19,11 +19,14 @@ package approval
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	authnv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/client-go/discovery"
@@ -342,6 +345,185 @@ func (f fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) 
 		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised IsResourceRequest '%t'", a.IsResourceRequest()), nil
 	}
 	return f.decision, "", nil
+}
+
+// groupWithoutKind returns an APIGroupList that contains the given group but
+// none of its resource kinds, simulating the case where a CRD's API group is
+// registered but the specific kind does not exist.
+func groupWithoutKind(group string) *metav1.APIGroupList {
+	return &metav1.APIGroupList{
+		Groups: []metav1.APIGroup{
+			{
+				Name: group,
+				Versions: []metav1.GroupVersionForDiscovery{
+					{GroupVersion: group + "/v1alpha1", Version: "v1alpha1"},
+				},
+			},
+		},
+	}
+}
+
+// TestNegativeCacheHit_GroupMissing verifies that when the API group itself is
+// absent from ServerGroups() (e.g. a CRD whose aggregated discovery entry has
+// not yet propagated), no negative-cache entry is written. Subsequent calls
+// must each perform a fresh discovery query so that a newly established CRD
+// is not blocked by a stale cache entry.
+func TestNegativeCacheHit_GroupMissing(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return &metav1.APIGroupList{}, nil // group not in discovery
+		})
+
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call: group not found, must NOT populate negative cache.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on first call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+	a.mutex.RLock()
+	_, cached := a.notFoundAt[gk]
+	a.mutex.RUnlock()
+	if cached {
+		t.Fatal("expected no negative cache entry when group is absent from ServerGroups()")
+	}
+
+	// Second call: no cache entry, so discovery must be called again.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on second call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 2 {
+		t.Fatalf("expected 2 discovery calls (no cache when group missing), got %d", discoveryCallCount.Load())
+	}
+}
+
+// TestNegativeCacheHit_KindMissing verifies that when the API group exists but
+// the requested kind is not registered within it, a negative-cache entry IS
+// written and subsequent calls skip discovery for the full TTL.
+func TestNegativeCacheHit_KindMissing(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil // no resources
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call: group found but kind missing → populate negative cache.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on first call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Second call: must hit the negative cache and skip discovery.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on second call (cache hit), got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected discovery call count to remain 1 after cache hit, got %d", discoveryCallCount.Load())
+	}
+}
+
+func TestNegativeCacheExpiry(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call populates the negative cache (group found, kind missing).
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Simulate TTL expiry by backdating the negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// After expiry, discovery should be called again.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists after expiry, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 2 {
+		t.Fatalf("expected 2 discovery calls after expiry, got %d", discoveryCallCount.Load())
+	}
+}
+
+func TestNegativeCacheEviction(t *testing.T) {
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// Seed an already-expired negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// Calling isNegativelyCached on an expired entry should return false
+	// and evict the entry from the map.
+	if a.isNegativelyCached(gk) {
+		t.Fatal("expected false for expired negative cache entry")
+	}
+
+	a.mutex.RLock()
+	_, still := a.notFoundAt[gk]
+	a.mutex.RUnlock()
+
+	if still {
+		t.Fatal("expected expired negative cache entry to be evicted, but it is still present")
+	}
 }
 
 func compareErrors(t *testing.T, exp, act error) {

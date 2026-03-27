@@ -28,6 +28,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,6 +43,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
+const negativeCacheTTL = 30 * time.Second
+
 type certificateRequestApproval struct {
 	*admission.Handler
 
@@ -51,7 +54,11 @@ type certificateRequestApproval struct {
 	// resourceInfo stores the associated resource info for a given GroupKind
 	// to prevent making multiple queries to the API server for every approval.
 	resourceInfo map[schema.GroupKind]resourceInfo
-	mutex        sync.RWMutex
+	// notFoundAt stores the time at which a GroupKind was determined to not
+	// exist, allowing negative results to be cached for a short period to
+	// avoid repeated discovery queries for non-existent resources.
+	notFoundAt map[schema.GroupKind]time.Time
+	mutex      sync.RWMutex
 }
 
 type resourceInfo struct {
@@ -65,6 +72,7 @@ func NewPlugin(authz authorizer.Authorizer, discoveryClient discovery.DiscoveryI
 	return &certificateRequestApproval{
 		Handler:      admission.NewHandler(admissionv1.Update),
 		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
 
 		authorizer: authz,
 		discovery:  discoveryClient,
@@ -134,10 +142,12 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 		return resource, nil
 	}
 
+	// fast path if we recently determined the resource does not exist
+	if c.isNegativelyCached(groupKind) {
+		return nil, errNoResourceExists
+	}
+
 	// otherwise, query the apiserver
-	// TODO: we should enhance caching here to avoid performing discovery queries
-	//       many times if many CertificateRequest resources exist that reference
-	//       a resource that doesn't exist
 	groups, err := c.discovery.ServerGroups()
 	if err != nil {
 		return nil, err
@@ -148,6 +158,7 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 			continue
 		}
 
+		// The group exists; search its versions for the requested kind.
 		for _, version := range apiGroup.Versions {
 			apiResources, err := c.discovery.ServerResourcesForGroupVersion(version.GroupVersion)
 			if err != nil {
@@ -162,8 +173,18 @@ func (c *certificateRequestApproval) apiResourceForGroupKind(groupKind schema.Gr
 				return c.cacheAPIResource(groupKind, resource.Name, resource.Namespaced), nil
 			}
 		}
+
+		// The group is registered but does not contain the requested kind.
+		// Cache this negative result so repeated requests for the same
+		// non-existent kind do not hammer the API server.
+		c.cacheNegativeResult(groupKind)
+		return nil, errNoResourceExists
 	}
 
+	// The group itself was not found in discovery. This may be a transient
+	// propagation delay (e.g. a CRD was just created and the aggregated
+	// discovery endpoint has not yet been refreshed). Do not cache a
+	// negative result so the next request will perform a fresh lookup.
 	return nil, errNoResourceExists
 }
 
@@ -174,6 +195,37 @@ func (c *certificateRequestApproval) readAPIResourceFromCache(groupKind schema.G
 		return &info
 	}
 	return nil
+}
+
+func (c *certificateRequestApproval) isNegativelyCached(groupKind schema.GroupKind) bool {
+	c.mutex.RLock()
+	t, ok := c.notFoundAt[groupKind]
+	c.mutex.RUnlock()
+
+	if !ok {
+		return false
+	}
+
+	if time.Since(t) < negativeCacheTTL {
+		return true
+	}
+
+	// The entry has expired. Upgrade to a write lock to evict it so the
+	// map doesn't grow unboundedly with stale entries.
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	// Re-check under the write lock to guard against a concurrent eviction
+	// or a fresh negative-cache write that happened between lock upgrades.
+	if t2, ok2 := c.notFoundAt[groupKind]; ok2 && time.Since(t2) >= negativeCacheTTL {
+		delete(c.notFoundAt, groupKind)
+	}
+	return false
+}
+
+func (c *certificateRequestApproval) cacheNegativeResult(groupKind schema.GroupKind) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.notFoundAt[groupKind] = time.Now()
 }
 
 func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind, resourceName string, namespaced bool) *resourceInfo {
@@ -189,6 +241,7 @@ func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind
 	}
 
 	c.resourceInfo[groupKind] = info
+	delete(c.notFoundAt, groupKind)
 
 	return &info
 }
