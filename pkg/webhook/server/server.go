@@ -348,6 +348,9 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) setVerifyPeerCertificate(cfg *tls.Config) {
+	// Disable session ticket resumption to ensure VerifyPeerCertificate is called for
+	// every connection, not just full TLS handshakes.
+	cfg.SessionTicketsDisabled = true
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		// avoid impersonation of apiserver client by verifying the CN name if provided
 		if len(verifiedChains) == 0 || len(verifiedChains[0]) == 0 {

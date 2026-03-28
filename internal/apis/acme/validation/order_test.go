@@ -65,7 +65,7 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 			return
 		}
 		for i, e := range errs {
-			expectedErr := expectedErrs[i]
+			expectedErr := expectedErrs[i] //nolint:gosec // G602: false positive, slice access is guarded by the length check above
 			if !reflect.DeepEqual(e, expectedErr) {
 				t.Errorf("Expected error %v but got %v", expectedErr, e)
 			}

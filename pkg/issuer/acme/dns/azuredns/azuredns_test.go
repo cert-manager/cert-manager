@@ -317,6 +317,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 				return
 			}
 
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // limit to 1 MiB
 			if err := r.ParseForm(); err != nil {
 				assert.FailNow(t, err.Error())
 			}
@@ -392,6 +393,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 				return
 			}
 
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // limit to 1 MiB
 			if err := r.ParseForm(); err != nil {
 				assert.FailNow(t, err.Error())
 			}
