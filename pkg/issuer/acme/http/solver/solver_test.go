@@ -124,7 +124,7 @@ func TestSolver(t *testing.T) {
 				Key:        tc.solverKey,
 			}
 
-			r := httptest.NewRequest(http.MethodGet, tc.requestTarget, nil)
+			r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, tc.requestTarget, nil)
 			w := httptest.NewRecorder()
 
 			solver.challengeHandler(logr.Discard()).ServeHTTP(w, r)
