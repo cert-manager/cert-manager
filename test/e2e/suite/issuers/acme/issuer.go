@@ -357,6 +357,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			gen.SetIssuerACMEEmail(f.Config.Addons.ACMEServer.TestingACMEEmail),
 			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
 			gen.SetIssuerACMEPrivKeyRef(f.Config.Addons.ACMEServer.TestingACMEPrivateKey),
+			gen.SetIssuerACMESkipTLSVerify(true),
 			gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -386,7 +387,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should mark as not ready if ACME issuer secret does nat have specified key", func(testingCtx context.Context) {
+	It("should mark as not ready if ACME issuer secret does nost have specified key", func(testingCtx context.Context) {
 		secretName := "test-secret"
 
 		keyBytes := []byte("")
@@ -403,6 +404,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			gen.SetIssuerACMEEmail(f.Config.Addons.ACMEServer.TestingACMEEmail),
 			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
 			gen.SetIssuerACMEPrivKeyRef(f.Config.Addons.ACMEServer.TestingACMEPrivateKey),
+			gen.SetIssuerACMESkipTLSVerify(true),
 			gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
