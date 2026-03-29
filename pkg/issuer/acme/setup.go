@@ -29,10 +29,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
+	"github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
+	"github.com/cert-manager/cert-manager/pkg/api"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -579,7 +584,12 @@ var acmev1ToV2Mappings = map[string]string{
 func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) []string {
 	var warning []string
 
-	secrets := extractSecrets(issuer)
+	secrets, err := extractSecrets(issuer)
+	if err != nil {
+		logf.FromContext(ctx).Error(err, "error extracting secrets")
+		warning = append(warning, "unable to verify dns solvers")
+		return warning
+	}
 	if len(secrets) == 0 {
 		return warning
 	}
@@ -600,67 +610,31 @@ func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) 
 	return warning
 }
 
-func extractSecrets(issuer v1.GenericIssuer) []*cmmeta.SecretKeySelector {
-	var secrets []*cmmeta.SecretKeySelector
+func extractSecrets(issuer v1.GenericIssuer) ([]*meta.SecretKeySelector, error) {
+	var secrets []*meta.SecretKeySelector
 	spec := issuer.GetSpec()
 	if spec.ACME == nil {
-		return secrets
+		return secrets, nil
 	}
-	solvers := spec.ACME.Solvers
 
-	for _, s := range solvers {
-		if s.DNS01 == nil {
+	solvers := spec.ACME.Solvers
+	for i := range solvers {
+		sol := solvers[i]
+		if sol.DNS01 == nil {
 			continue
 		}
-		dnsSolver := s.DNS01
-		if dnsSolver.AcmeDNS != nil {
-			// required
-			secrets = append(secrets, &dnsSolver.AcmeDNS.AccountSecret)
-		}
-		if dnsSolver.Akamai != nil {
-			// required
-			secrets = append(secrets, &dnsSolver.Akamai.ClientSecret)
-			secrets = append(secrets, &dnsSolver.Akamai.ClientToken)
-			secrets = append(secrets, &dnsSolver.Akamai.AccessToken)
-		}
-		if dnsSolver.AzureDNS != nil {
-			if dnsSolver.AzureDNS.ClientSecret != nil {
-				secrets = append(secrets, dnsSolver.AzureDNS.ClientSecret)
-			}
+
+		var out cmacme.ACMEChallengeSolver
+		if err := api.Scheme.Convert(&sol, &out, nil); err != nil {
+			return nil, fmt.Errorf("unable to convert ACME challenge solver to v2: %w", err)
 		}
 
-		if dnsSolver.CloudDNS != nil {
-			secrets = append(secrets, dnsSolver.CloudDNS.ServiceAccount)
+		_, requiredSecrets := validation.ValidateACMEChallengeSolverDNS01(out.DNS01, field.NewPath("spec"))
+		if len(requiredSecrets) == 0 {
+			continue
 		}
-
-		if dnsSolver.Cloudflare != nil {
-			if dnsSolver.Cloudflare.APIKey != nil {
-				secrets = append(secrets, dnsSolver.Cloudflare.APIKey)
-			}
-			if dnsSolver.Cloudflare.APIToken != nil {
-				secrets = append(secrets, dnsSolver.Cloudflare.APIToken)
-			}
-		}
-		if dnsSolver.DigitalOcean != nil {
-			// required
-			secrets = append(secrets, &dnsSolver.DigitalOcean.Token)
-		}
-		if dnsSolver.RFC2136 != nil {
-			if len(dnsSolver.RFC2136.TSIGSecret.Name) > 0 {
-				secrets = append(secrets, &dnsSolver.RFC2136.TSIGSecret)
-			}
-		}
-		if dnsSolver.Route53 != nil {
-			// because of the ambient credential both can be missing
-			if len(dnsSolver.Route53.SecretAccessKey.Name) > 0 {
-				secrets = append(secrets, &dnsSolver.Route53.SecretAccessKey)
-			}
-			if dnsSolver.Route53.SecretAccessKeyID != nil {
-				secrets = append(secrets, dnsSolver.Route53.SecretAccessKeyID)
-			}
-		}
-
+		secrets = append(secrets, requiredSecrets...)
 	}
 
-	return secrets
+	return secrets, nil
 }
