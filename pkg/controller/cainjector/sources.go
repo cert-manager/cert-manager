@@ -126,7 +126,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	if owner == nil || *owner != certName {
 		log.V(logf.WarnLevel).Info(
 			"refusing to target secret: cert-manager.io/certificate-name annotation does not match",
-			"annotation_value", owner,
+			"annotationValue", owner,
 			"expected", certName,
 		)
 		return nil, nil
