@@ -38,8 +38,8 @@ github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cq
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/Venafi/vcert/v5 v5.12.3 h1:HLdlEVnK1haRLNblz282UbrZ/AmKWhkzZ0qQF3p6dPw=
 github.com/Venafi/vcert/v5 v5.12.3/go.mod h1:9ahHk4P0YeWfuacnf0jxSPy9qujonwFlfh2aMtOfdwc=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.0.0 h1:1YZQwsBHpgzfsTCM/Hb9Kakc+4lAe060EidhUb8wW68=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.0.0/go.mod h1:lnGMNS5JOiZWnZT5nv+dG8fC92X5U98DiIIPNpwlQQY=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.1.0 h1:KvfpO2utLmpRq0fbC0UZRzdCERfLGLX1/dcYvG7pP7k=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.1.0/go.mod h1:AxGyKKxAxaCNeGadscLgo+gBYEAKhNG6tRR5O0HjV30=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e h1:4dAU9FXIyQktpoUAgOJK3OTFc/xug0PCXYCqU0FgDKI=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
@@ -101,8 +101,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/digitalocean/godo v1.180.0 h1:zhwAwwyvuZBP6QJ0bDPBZmWrwCofBBopkHqLQKnkwcU=
-github.com/digitalocean/godo v1.180.0/go.mod h1:xQsWpVCCbkDrWisHA72hPzPlnC+4W5w/McZY5ij9uvU=
+github.com/digitalocean/godo v1.181.0 h1:duRBDKjgnlsZUw2RoUsY4kaV2D+iLfd3P6ny1Wh9I9E=
+github.com/digitalocean/godo v1.181.0/go.mod h1:xQsWpVCCbkDrWisHA72hPzPlnC+4W5w/McZY5ij9uvU=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/emicklei/go-restful/v3 v3.13.0 h1:C4Bl2xDndpU6nJ4bc1jXd+uTmYPVUwkD6bFY/oTyCes=
