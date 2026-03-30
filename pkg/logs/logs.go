@@ -71,6 +71,13 @@ func AddFlags(opts *logsapi.LoggingConfiguration, fs *pflag.FlagSet) {
 	var allFlags flag.FlagSet
 	klog.InitFlags(&allFlags)
 
+	// Opt into the new klog behavior so that -stderrthreshold is honored even
+	// when -logtostderr=true (the default). Without this, all log levels are
+	// unconditionally sent to stderr and users cannot filter by severity.
+	// Requires klog v2.140.0+ (https://github.com/kubernetes/klog/issues/212).
+	_ = allFlags.Set("legacy_stderr_threshold_behavior", "false")
+	_ = allFlags.Set("stderrthreshold", "INFO")
+
 	allFlags.VisitAll(func(f *flag.Flag) {
 		switch f.Name {
 		case "add_dir_header", "alsologtostderr", "log_backtrace_at", "log_dir", "log_file", "log_file_max_size",
