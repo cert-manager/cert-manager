@@ -189,7 +189,7 @@ spec:
               mountPath: /var/cert-manager/config
             {{- end }}
             {{- with .Values.webhook.volumeMounts }}
-            {{- toYaml . | nindent 10 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
       {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
@@ -220,6 +220,6 @@ spec:
             name: {{ include "webhook.fullname" . }}
         {{- end }}
         {{- with .Values.webhook.volumes }}
-        {{- toYaml . | nindent 6 }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
