@@ -244,6 +244,13 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 		return nil, err
 	}
 
+	// Merge annotations and labels from the ingressTemplate into the existing
+	// Ingress, matching the behavior of createIngress for new Ingress resources.
+	if ch.Spec.Solver.HTTP01 != nil &&
+		ch.Spec.Solver.HTTP01.Ingress != nil {
+		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
+	}
+
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 	// check for an existing Rule for the given domain on the ingress resource
 	for _, rule := range ing.Spec.Rules {
