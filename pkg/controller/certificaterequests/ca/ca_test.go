@@ -624,6 +624,94 @@ func TestCA_Sign(t *testing.T) {
 	}
 }
 
+func TestCA_Sign_SecretNamespace(t *testing.T) {
+	rootPK, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	rootCert, _ := generateSelfSignedCACert(t, rootPK, "root")
+
+	testpk, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	testCSR := generateCSR(t, testpk)
+
+	caSecret := gen.SecretFrom(gen.Secret("ca-secret"),
+		gen.SetSecretNamespace("custom-ns"),
+		gen.SetSecretData(secretDataFor(t, rootPK, rootCert)),
+	)
+
+	cr := gen.CertificateRequest("cr-1",
+		gen.SetCertificateRequestCSR(testCSR),
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
+			Name:  "issuer-1",
+			Group: certmanager.GroupName,
+			Kind:  "Issuer",
+		}),
+	)
+
+	tests := map[string]struct {
+		issuer            cmapi.GenericIssuer
+		clusterResourceNS string
+		expectNamespace   string
+	}{
+		"when SecretNamespace is set, the secret is looked up in that namespace": {
+			issuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:      "ca-secret",
+				SecretNamespace: "custom-ns",
+			})),
+			expectNamespace: "custom-ns",
+		},
+		"when SecretNamespace is empty on an Issuer, the secret is looked up in the issuer namespace": {
+			issuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName: "ca-secret",
+			})),
+			expectNamespace: gen.DefaultTestNamespace,
+		},
+		"when SecretNamespace is empty on a ClusterIssuer, the secret is looked up in the cluster resource namespace": {
+			issuer: gen.ClusterIssuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName: "ca-secret",
+			})),
+			clusterResourceNS: "cert-manager",
+			expectNamespace:   "cert-manager",
+		},
+		"when SecretNamespace is set on a ClusterIssuer, it overrides the cluster resource namespace": {
+			issuer: gen.ClusterIssuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:      "ca-secret",
+				SecretNamespace: "custom-ns",
+			})),
+			clusterResourceNS: "cert-manager",
+			expectNamespace:   "custom-ns",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var queriedNamespace string
+
+			c := &CA{
+				issuerOptions: controller.IssuerOptions{
+					ClusterResourceNamespace: test.clusterResourceNS,
+				},
+				reporter: util.NewReporter(fixedClock, &testpkg.FakeRecorder{}),
+				secretsLister: &testlisters.FakeSecretLister{
+					SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
+						queriedNamespace = namespace
+						return &testlisters.FakeSecretNamespaceLister{
+							GetFn: func(name string) (*corev1.Secret, error) {
+								return caSecret, nil
+							},
+						}
+					},
+				},
+				templateGenerator: pki.CertificateTemplateFromCertificateRequest,
+				signingFn:         pki.SignCSRTemplate,
+			}
+
+			_, err := c.Sign(t.Context(), cr, test.issuer)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectNamespace, queriedNamespace)
+		})
+	}
+}
+
 // Returns a map that is meant to be used for creating a certificate Secret
 // that contains the fields "tls.crt" and "tls.key".
 func secretDataFor(t *testing.T, caKey *ecdsa.PrivateKey, caCrt *x509.Certificate) (secretData map[string][]byte) {
