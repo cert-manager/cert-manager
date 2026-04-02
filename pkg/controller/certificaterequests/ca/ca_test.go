@@ -394,6 +394,58 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
+		"a successful signing with SecretNamespace set should load the secret from that namespace": {
+			certificateRequest: baseCR.DeepCopy(),
+			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
+				_, err := pki.CertificateTemplateFromCertificateRequest(cr)
+				if err != nil {
+					return nil, err
+				}
+
+				return template, nil
+			},
+			signingFn: func(_ []*x509.Certificate, _ crypto.Signer, _ *x509.Certificate) (pki.PEMBundle, error) {
+				return pki.PEMBundle{CAPEM: certBundle.CAPEM, ChainPEM: certBundle.ChainPEM}, nil
+			},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "root-ca-secret",
+						Namespace: "other-ns",
+					},
+					Data: rsaCASecret.Data,
+				}},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.IssuerFrom(baseIssuer.DeepCopy(),
+						gen.SetIssuerCA(cmapi.CAIssuer{
+							SecretName:      "root-ca-secret",
+							SecretNamespace: "other-ns",
+						}),
+					),
+				},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certBundle.ChainPEM),
+							gen.SetCertificateRequestCA(rootCertPEM),
+						),
+					)),
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
