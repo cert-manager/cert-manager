@@ -17,11 +17,10 @@ limitations under the License.
 package cainjector
 
 import (
-	"encoding/json"
-
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/types"
+	applyapiext "k8s.io/apiextensions-apiserver/pkg/client/applyconfiguration/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	applyadmissionreg "k8s.io/client-go/applyconfigurations/admissionregistration/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
@@ -74,33 +73,13 @@ type InjectTarget interface {
 	// fields which are managed by the cainjector (CA Data) and immutable fields
 	// that must be present in Apply calls; intended for use for Apply Patch
 	// calls.
-	AsApplyObject() (client.Object, client.Patch)
+	AsApplyObject() runtime.ApplyConfiguration
 
 	// SetCA sets the CA of this target to the given certificate data (in the standard
 	// PEM format used across Kubernetes).  In cases where multiple CA fields exist per
 	// target (like admission webhook configs), all CAs are set to the given value.
 	SetCA(data []byte)
 }
-
-type ssaPatch struct {
-	patch []byte
-	err   error
-}
-
-func newSSAPatch(patch any) *ssaPatch {
-	jsonPatch, err := json.Marshal(patch)
-	return &ssaPatch{patch: jsonPatch, err: err}
-}
-
-func (p *ssaPatch) Type() types.PatchType {
-	return types.ApplyPatchType
-}
-
-func (p *ssaPatch) Data(obj client.Object) ([]byte, error) {
-	return p.patch, nil
-}
-
-var _ client.Patch = &ssaPatch{}
 
 // mutatingWebhookTarget knows how to set CA data for all the webhooks
 // in a mutatingWebhookConfiguration.
@@ -132,7 +111,7 @@ func (t *mutatingWebhookTarget) SetCA(data []byte) {
 	}
 }
 
-func (t *mutatingWebhookTarget) AsApplyObject() (client.Object, client.Patch) {
+func (t *mutatingWebhookTarget) AsApplyObject() runtime.ApplyConfiguration {
 	patch := applyadmissionreg.MutatingWebhookConfiguration(t.obj.Name)
 
 	for i := range t.obj.Webhooks {
@@ -148,7 +127,7 @@ func (t *mutatingWebhookTarget) AsApplyObject() (client.Object, client.Patch) {
 		)
 	}
 
-	return &t.obj, newSSAPatch(patch)
+	return patch
 }
 
 // validatingWebhookTarget knows how to set CA data for all the webhooks
@@ -181,7 +160,7 @@ func (t *validatingWebhookTarget) SetCA(data []byte) {
 	}
 }
 
-func (t *validatingWebhookTarget) AsApplyObject() (client.Object, client.Patch) {
+func (t *validatingWebhookTarget) AsApplyObject() runtime.ApplyConfiguration {
 	patch := applyadmissionreg.ValidatingWebhookConfiguration(t.obj.Name)
 
 	for i := range t.obj.Webhooks {
@@ -197,7 +176,7 @@ func (t *validatingWebhookTarget) AsApplyObject() (client.Object, client.Patch) 
 		)
 	}
 
-	return &t.obj, newSSAPatch(patch)
+	return patch
 }
 
 // apiServiceTarget knows how to set CA data for the CA bundle in
@@ -234,12 +213,14 @@ type apiServiceTargetPatch struct {
 	Spec                                      *apiServiceTargetSpecPatch `json:"spec,omitempty"`
 }
 
+func (b apiServiceTargetPatch) IsApplyConfiguration() {}
+
 type apiServiceTargetSpecPatch struct {
 	CABundle []byte `json:"caBundle,omitempty"`
 }
 
-func (t *apiServiceTarget) AsApplyObject() (client.Object, client.Patch) {
-	return &t.obj, newSSAPatch(&apiServiceTargetPatch{
+func (t *apiServiceTarget) AsApplyObject() runtime.ApplyConfiguration {
+	return &apiServiceTargetPatch{
 		TypeMetaApplyConfiguration: *applymetav1.
 			TypeMeta().
 			WithAPIVersion(apireg.SchemeGroupVersion.String()).
@@ -250,7 +231,7 @@ func (t *apiServiceTarget) AsApplyObject() (client.Object, client.Patch) {
 		Spec: &apiServiceTargetSpecPatch{
 			CABundle: t.obj.Spec.CABundle,
 		},
-	})
+	}
 }
 
 // crdConversionTarget knows how to set CA data for the conversion webhook in CRDs
@@ -290,49 +271,17 @@ func (t *crdConversionTarget) SetCA(data []byte) {
 	}
 }
 
-type customResourceDefinitionPatch struct {
-	applymetav1.TypeMetaApplyConfiguration    `json:",inline"`
-	*applymetav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                                      *customResourceDefinitionSpecPatch `json:"spec,omitempty"`
-}
+func (t *crdConversionTarget) AsApplyObject() runtime.ApplyConfiguration {
+	patch := applyapiext.CustomResourceDefinition(t.obj.Name)
 
-type customResourceDefinitionSpecPatch struct {
-	Conversion *customResourceConversionPatch `json:"conversion,omitempty"`
-}
-
-type customResourceConversionPatch struct {
-	Webhook *customResourceWebhookConversionPatch `json:"webhook,omitempty"`
-}
-
-type customResourceWebhookConversionPatch struct {
-	ClientConfig *customResourceWebhookClientConfigPatch `json:"clientConfig,omitempty"`
-}
-
-type customResourceWebhookClientConfigPatch struct {
-	CABundle []byte `json:"caBundle,omitempty"`
-}
-
-func (t *crdConversionTarget) AsApplyObject() (client.Object, client.Patch) {
-	if t.obj.Spec.Conversion == nil || t.obj.Spec.Conversion.Webhook == nil || t.obj.Spec.Conversion.Webhook.ClientConfig == nil {
-		return &t.obj, nil
+	if t.obj.Spec.Conversion != nil && t.obj.Spec.Conversion.Webhook != nil && t.obj.Spec.Conversion.Webhook.ClientConfig != nil {
+		patch = patch.WithSpec(applyapiext.
+			CustomResourceDefinitionSpec().WithConversion(applyapiext.
+			CustomResourceConversion().WithWebhook(applyapiext.
+			WebhookConversion().WithClientConfig(applyapiext.
+			WebhookClientConfig().
+			WithCABundle(t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle...)))))
 	}
 
-	return &t.obj, newSSAPatch(&customResourceDefinitionPatch{
-		TypeMetaApplyConfiguration: *applymetav1.
-			TypeMeta().
-			WithAPIVersion(apiext.SchemeGroupVersion.String()).
-			WithKind("CustomResourceDefinition"),
-		ObjectMetaApplyConfiguration: applymetav1.
-			ObjectMeta().
-			WithName(t.obj.Name),
-		Spec: &customResourceDefinitionSpecPatch{
-			Conversion: &customResourceConversionPatch{
-				Webhook: &customResourceWebhookConversionPatch{
-					ClientConfig: &customResourceWebhookClientConfigPatch{
-						CABundle: t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle,
-					},
-				},
-			},
-		},
-	})
+	return patch
 }
