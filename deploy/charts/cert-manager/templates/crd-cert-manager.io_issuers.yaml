@@ -3444,8 +3444,8 @@ spec:
                         aws:
                           description: |-
                             AWS authenticates with Vault using AWS IAM authentication.
-                            This allows authentication using IAM roles for service accounts (IRSA)
-                            or EC2 instance profiles.
+                            This allows authentication using IAM roles for service accounts (IRSA),
+                            EKS Pod Identity (PIA), or ambient credentials (EC2 instance profiles, ECS task role).
                           properties:
                             iamRoleArn:
                               description: |-
