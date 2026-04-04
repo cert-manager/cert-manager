@@ -347,6 +347,47 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 	}
 }
 
+// NewGatewayWithProtocol creates a new test Gateway identical to NewGateway
+// except that the Listener Protocol field is set to the supplied protocol
+// rather than the default gwapi.TLSProtocolType. This allows tests to verify
+// that gateway-shim correctly handles custom/extra protocol types.
+func NewGatewayWithProtocol(gatewayName, ns, secretName string, annotations map[string]string, protocol gwapi.ProtocolType, dnsNames ...string) *gwapi.Gateway {
+	return &gwapi.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        gatewayName,
+			Annotations: annotations,
+		},
+		Spec: gwapi.GatewaySpec{
+			GatewayClassName: "foo",
+			Listeners: []gwapi.Listener{{
+				AllowedRoutes: &gwapi.AllowedRoutes{
+					Namespaces: &gwapi.RouteNamespaces{
+						From: func() *gwapi.FromNamespaces { f := gwapi.NamespacesFromSame; return &f }(),
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gw": gatewayName,
+						}},
+					},
+					Kinds: nil,
+				},
+				Name:     "acme-solver",
+				Protocol: protocol,
+				Port:     gwapi.PortNumber(443),
+				Hostname: (*gwapi.Hostname)(&dnsNames[0]),
+				TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{
+						{
+							Kind:      func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+							Name:      gwapi.ObjectName(secretName),
+							Group:     func() *gwapi.Group { g := gwapi.Group(corev1.GroupName); return &g }(),
+							Namespace: (*gwapi.Namespace)(&ns),
+						},
+					},
+				},
+			}},
+		},
+	}
+}
+
 func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.ListenerSet {
 	return &gwapi.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{

@@ -207,5 +207,6 @@ trace ginkgo \
   --acme-gateway-ip="${SERVICE_IP_PREFIX}.14" \
   --ingress-controller-domain=ingress-nginx.http01.example.com \
   --gateway-domain=gateway.http01.example.com \
+  --gateway-shim-extra-protocols=DTLS \
   --feature-gates="$feature_gates" \
   "${ginkgo_args[@]}"

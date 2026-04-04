@@ -221,6 +221,7 @@ type IngressShimOptions struct {
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
 	ExtraCertificateAnnotations       []string
+	GatewayAPIExtraProtocols          []string
 }
 
 type CertificateOptions struct {

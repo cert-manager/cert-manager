@@ -145,6 +145,9 @@ type ControllerConfiguration struct {
 	// pemSizeLimitsConfig configures the maximum sizes for PEM-encoded data
 	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitzero"`
 
+	// gatewayAPI configures the behaviour of the Gateway API integration
+	GatewayAPIConfig GatewayAPIConfig `json:"gatewayAPI,omitzero"`
+
 	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
 	// when a certificate request fails. This duration is exponentially increased
 	// (up to a maximum of 32 hours) based on the number of consecutive failures.
@@ -238,6 +241,14 @@ type ACMEDNS01Config struct {
 	// token is served at the challenge URL. This should be a valid duration
 	// string, for example 180s or 1h
 	CheckRetryPeriod *sharedv1alpha1.Duration `json:"checkRetryPeriod,omitempty"`
+}
+
+type GatewayAPIConfig struct {
+	// ExtraProtocols is a list of additional Gateway Listener protocol types that
+	// the Gateway API shim should treat as TLS-capable. By default, only HTTPS
+	// and TLS protocol types are processed. Each entry must exactly match the
+	// protocol string as it appears on the Gateway Listener, e.g. "DTLS".
+	ExtraProtocols []string `json:"extraProtocols,omitempty"`
 }
 
 type PEMSizeLimitsConfig struct {
