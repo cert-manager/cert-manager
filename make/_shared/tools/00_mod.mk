@@ -67,6 +67,9 @@ tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
 tools += helm=v4.1.3
+# https://github.com/helm-unittest/helm-unittest/releases
+# renovate: datasource=github-releases packageName=helm-unittest/helm-unittest
+tools += helm-unittest=v1.0.3
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 tools += kubectl=v1.35.3
@@ -492,6 +495,26 @@ $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		tar xfO $(outfile).tar.gz $(HOST_OS)-$(HOST_ARCH)/helm > $(outfile); \
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
+
+helm-unittest_linux_amd64_SHA256SUM=9761f23d9509c98770c026e019e743b524b57010f4bc29175f78d2582ace0633
+helm-unittest_linux_arm64_SHA256SUM=1e645d96b36582cd8b9fbd53240110267f14d80aa01137341251c60438bbe6b0
+helm-unittest_darwin_amd64_SHA256SUM=46413a86ded6bfc70cd704ebac16f8d4a0f36712ae399a5d24e32bc44f96985f
+helm-unittest_darwin_arm64_SHA256SUM=6a6b67b3f638f015e09c093b67c7609a07101b971a1a6d6a83d1a7f75861a4b2
+
+# helm-unittest uses "macos" instead of "darwin" in release filenames
+helm_unittest_os := $(HOST_OS)
+ifeq ($(HOST_OS),darwin)
+helm_unittest_os := macos
+endif
+
+.PRECIOUS: $(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+$(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	@source $(lock_script) $@; \
+		$(CURL) https://github.com/helm-unittest/helm-unittest/releases/download/$(HELM-UNITTEST_VERSION)/helm-unittest-$(helm_unittest_os)-$(HOST_ARCH)-$(HELM-UNITTEST_VERSION:v%=%).tgz -o $(outfile).tgz; \
+		$(checkhash_script) $(outfile).tgz $(helm-unittest_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
+		tar xfO $(outfile).tgz untt > $(outfile); \
+		chmod +x $(outfile); \
+		rm -f $(outfile).tgz
 
 kubectl_linux_amd64_SHA256SUM=fd31c7d7129260e608f6faf92d5984c3267ad0b5ead3bced2fe125686e286ad6
 kubectl_linux_arm64_SHA256SUM=6f0cd088a82dde5d5807122056069e2fac4ed447cc518efc055547ae46525f14
