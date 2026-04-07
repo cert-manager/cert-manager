@@ -23,10 +23,8 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -74,7 +72,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log := r.log.WithValues("kind", r.resourceName, "name", req.Name)
 	log.V(logf.DebugLevel).Info("Parsing injectable")
 
-	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
+	obj := target.AsObject()
+	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
 		if dropNotFound(err) == nil {
 			// don't requeue on deletions, which yield a non-found object
 			log.V(logf.DebugLevel).Info("ignoring", "reason", "not found", "err", err)
@@ -84,26 +83,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, err
 	}
 
-	metaObj, err := meta.Accessor(target.AsObject())
-	if err != nil {
-		log.Error(err, "unable to get metadata for object")
-		return ctrl.Result{}, err
-	}
-
 	// ignore resources that are being deleted
-	if !metaObj.GetDeletionTimestamp().IsZero() {
+	if !obj.GetDeletionTimestamp().IsZero() {
 		log.V(logf.DebugLevel).Info("ignoring", "reason", "object has a non-zero deletion timestamp")
 		return ctrl.Result{}, nil
 	}
 
 	// ensure that it wants injection
-	dataSource, err := r.caDataSourceFor(log, metaObj)
+	dataSource, err := r.caDataSourceFor(log, obj)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to determine ca data source for injectable")
 		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
-	caData, err := dataSource.ReadCA(ctx, log, metaObj, r.namespace)
+	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace)
 	if apierrors.IsForbidden(err) {
 		log.V(logf.InfoLevel).Info("cainjector was forbidden to retrieve the ca data source")
 		return ctrl.Result{}, nil
@@ -123,14 +116,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// actually update with injected CA data
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		obj, patch := target.AsApplyObject()
-		if patch != nil {
-			err = r.Client.Patch(ctx, obj, patch, &client.PatchOptions{
-				Force: ptr.To(true), FieldManager: r.fieldManager,
-			})
-		}
+		err = r.Client.Apply(ctx, target.AsApplyObject(), client.ForceOwnership, client.FieldOwner(r.fieldManager))
 	} else {
-		err = r.Client.Update(ctx, target.AsObject())
+		err = r.Client.Update(ctx, obj)
 	}
 
 	if err != nil {
