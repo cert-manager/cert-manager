@@ -118,9 +118,7 @@ shared_verify_targets += verify-helm-values
 .PHONY: verify-helm-unittest
 ## Run Helm chart unit tests using helm-unittest.
 ## @category [shared] Generate/ Verify
-verify-helm-unittest: | $(NEEDS_HELM-UNITTEST) $(NEEDS_YQ)
-	$(YQ) '.annotations."artifacthub.io/prerelease" = "$(IS_PRERELEASE)"' --inplace $(helm_chart_source_dir)/Chart.yaml
-
+verify-helm-unittest: | $(NEEDS_HELM-UNITTEST)
 	$(HELM-UNITTEST) $(helm_chart_source_dir)
 
 shared_verify_targets += verify-helm-unittest
