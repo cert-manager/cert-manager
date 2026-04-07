@@ -43,8 +43,11 @@ const (
 
 	// Owner: @inteon
 	// Alpha: v1.12
+	// Flag deprecated: v1.21
 	//
-	// ServerSideApply enables the use of ServerSideApply in all API calls.
+	// ServerSideApply is deprecated and has no effect in cainjector.
+	// It is kept only for backward compatibility so existing configurations
+	// using this feature gate do not fail with an unrecognized feature gate error.
 	ServerSideApply featuregate.Feature = "ServerSideApply"
 
 	// Owner: @ThatsMrTalbot
@@ -69,6 +72,18 @@ func init() {
 //
 // Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var cainjectorFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ServerSideApply:   {Default: false, PreRelease: featuregate.Alpha},
 	CAInjectorMerging: {Default: true, PreRelease: featuregate.GA},
+
+	// NB: Deprecated + removed feature gates are kept here.
+	// `featuregate.Deprecated` exists, but will cause the featuregate library
+	// to emit its own warning when the gate is set:
+	// > W...] Setting deprecated feature gate ServerSideApply=false. It will be removed in a future release.
+	// So we have to set to Alpha to avoid that. `PreAlpha` also exists, but
+	// adds versioning logic we don't want to deal with.
+
+	// If we simply remove the gate from here, then anyone still setting it will
+	// see an error and the cainjector will enter CrashLoopBackOff:
+	// > E...] "error executing command" err="failed to set feature gates from initial flags-based config: unrecognized feature gate: ServerSideApply" logger="cert-manager"
+	// So we leave it here, set to alpha.
+	ServerSideApply: {Default: false, PreRelease: featuregate.Alpha},
 }
