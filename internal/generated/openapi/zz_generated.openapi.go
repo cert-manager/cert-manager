@@ -2346,7 +2346,7 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 					},
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.",
+							Description: "Duration is the duration for the not after date for the requested certificate. This is set on order creation as per the ACME spec.",
 							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
 						},
 					},

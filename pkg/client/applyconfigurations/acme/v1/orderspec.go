@@ -49,7 +49,7 @@ type OrderSpecApplyConfiguration struct {
 	// This field must match the corresponding field on the DER encoded CSR.
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 	// Duration is the duration for the not after date for the requested certificate.
-	// this is set on order creation as pe the ACME spec.
+	// This is set on order creation as per the ACME spec.
 	Duration *apismetav1.Duration `json:"duration,omitempty"`
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
