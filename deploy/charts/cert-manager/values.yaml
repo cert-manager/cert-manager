@@ -1529,6 +1529,15 @@ startupapicheck:
   # Job backoffLimit
   backoffLimit: 4
 
+  # TTL for cleaning up finished Jobs. If set, completed startupapicheck Jobs
+  # will be automatically deleted after the given number of seconds. Note that
+  # the default Helm hook-delete-policy (before-hook-creation,hook-succeeded)
+  # already removes successful Jobs on the next install/upgrade; this field is
+  # useful when you customise hook-delete-policy or want the kubelet to handle
+  # cleanup independently.
+  # +docs:property
+  # ttlSecondsAfterFinished: 600
+
   # Optional additional annotations to add to the startupapicheck Job.
   # +docs:property
   jobAnnotations:

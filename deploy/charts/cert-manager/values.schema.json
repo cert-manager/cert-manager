@@ -1537,6 +1537,9 @@
         "timeout": {
           "$ref": "#/$defs/helm-values.startupapicheck.timeout"
         },
+        "ttlSecondsAfterFinished": {
+          "$ref": "#/$defs/helm-values.startupapicheck.ttlSecondsAfterFinished"
+        },
         "tolerations": {
           "$ref": "#/$defs/helm-values.startupapicheck.tolerations"
         },
@@ -1761,6 +1764,11 @@
       "default": "1m",
       "description": "Timeout for 'kubectl check api' command.",
       "type": "string"
+    },
+    "helm-values.startupapicheck.ttlSecondsAfterFinished": {
+      "description": "TTL for cleaning up finished Jobs. If set, completed startupapicheck Jobs will be automatically deleted after the given number of seconds.",
+      "type": "integer",
+      "minimum": 0
     },
     "helm-values.startupapicheck.tolerations": {
       "default": [],
