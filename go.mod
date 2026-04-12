@@ -20,6 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.62.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10
 	github.com/aws/smithy-go v1.24.3
+	github.com/cert-manager/go-pkcs12 v0.0.0-20251112100125-37e5f6cd1a52
 	github.com/digitalocean/godo v1.184.0
 	github.com/go-ldap/ldap/v3 v3.4.13
 	github.com/go-logr/logr v1.4.3
@@ -53,7 +54,6 @@ require (
 	sigs.k8s.io/gateway-api v1.5.1
 	sigs.k8s.io/randfill v1.0.0
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2
-	software.sslmate.com/src/go-pkcs12 v0.7.0
 )
 
 require (

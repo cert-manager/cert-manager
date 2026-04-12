@@ -1466,6 +1466,45 @@ func Test_validateKeystores(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"PKCS12 alias is empty string": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							Password: &emptyString,
+							Alias:    &emptyString,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")),
+				field.Invalid(fldPath.Child("keystores", "pkcs12", "alias"), "", "alias must not be empty if specified"),
+			},
+			a: someAdmissionRequest,
+		},
+		"PKCS12 alias is valid": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Keystores: &internalcmapi.CertificateKeystores{
+						PKCS12: &internalcmapi.PKCS12Keystore{
+							Password: &emptyString,
+							Alias:    ptr.To("my-alias"),
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("keystores", "pkcs12", "password"), fmt.Sprintf(keystoresLiteralPasswordMustNotBeEmptyFmt, "PKCS#12")),
+			},
+			a: someAdmissionRequest,
+		},
 	}
 
 	for name, test := range tests {
