@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/utils/ptr"
@@ -87,7 +88,7 @@ func TestSync(t *testing.T) {
 		DefaultIssuerName        string
 		DefaultIssuerKind        string
 		DefaultIssuerGroup       string
-		GatewayAPIExtraProtocols []string
+		GatewayAPIExtraProtocols sets.Set[string]
 		Err                      bool
 		ExpectedCreate           []*cmapi.Certificate
 		ExpectedUpdate           []*cmapi.Certificate
@@ -3895,7 +3896,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			GatewayAPIExtraProtocols: []string{"CUSTOM-PROTOCOL"},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
 			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
 			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
@@ -3944,7 +3945,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			GatewayAPIExtraProtocols: []string{"CUSTOM-PROTOCOL"},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
 			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
 			ExpectedEvents:           []string{},
 			ExpectedCreate:           nil,
@@ -3985,7 +3986,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			GatewayAPIExtraProtocols: []string{"CUSTOM-PROTOCOL"},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
 			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
 			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
@@ -4052,7 +4053,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			GatewayAPIExtraProtocols: []string{},
+			GatewayAPIExtraProtocols: sets.New[string](),
 			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
 			ExpectedEvents:           []string{},
 			ExpectedCreate:           nil,
@@ -4090,7 +4091,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			GatewayAPIExtraProtocols: []string{"HTTPS"},
+			GatewayAPIExtraProtocols: sets.New[string]("HTTPS"),
 			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
 			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
@@ -4839,7 +4840,7 @@ func TestIsTLSProtocol(t *testing.T) {
 	tests := []struct {
 		name     string
 		protocol gwapi.ProtocolType
-		extra    []string
+		extra    sets.Set[string]
 		want     bool
 	}{
 		{
@@ -4855,39 +4856,27 @@ func TestIsTLSProtocol(t *testing.T) {
 			want:     true,
 		},
 		{
-			name:     "unknown protocol with empty extra list returns false",
+			name:     "unknown protocol with empty extra set returns false",
 			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
-			extra:    []string{},
+			extra:    sets.New[string](),
 			want:     false,
 		},
 		{
-			name:     "custom protocol present in extra list returns true",
+			name:     "custom protocol present in extra set returns true",
 			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
-			extra:    []string{"CUSTOM-PROTOCOL"},
+			extra:    sets.New[string]("CUSTOM-PROTOCOL"),
 			want:     true,
 		},
 		{
-			name:     "custom protocol absent from extra list returns false",
+			name:     "custom protocol absent from extra set returns false",
 			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
-			extra:    []string{"OTHER-PROTOCOL"},
+			extra:    sets.New[string]("OTHER-PROTOCOL"),
 			want:     false,
 		},
 		{
-			name:     "empty string in extra list is ignored and does not match",
-			protocol: gwapi.ProtocolType(""),
-			extra:    []string{""},
-			want:     false,
-		},
-		{
-			name:     "whitespace-only string in extra list is ignored and does not match",
-			protocol: gwapi.ProtocolType("   "),
-			extra:    []string{"   "},
-			want:     false,
-		},
-		{
-			name:     "duplicate built-in HTTPS in extra list returns true without error",
+			name:     "duplicate built-in HTTPS in extra set returns true without error",
 			protocol: gwapi.HTTPSProtocolType,
-			extra:    []string{"HTTPS"},
+			extra:    sets.New[string]("HTTPS"),
 			want:     true,
 		},
 	}

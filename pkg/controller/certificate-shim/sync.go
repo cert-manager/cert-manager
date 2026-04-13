@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
@@ -312,22 +313,12 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 
 // isGatewayAPITLSProtocol reports whether protocol is a TLS-capable Gateway
 // listener protocol. It returns true for the built-in types (HTTPS and TLS) and
-// for any value in extra after trimming whitespace. Empty or whitespace-only
-// extra entries are ignored. The comparison is case-sensitive.
-func isGatewayAPITLSProtocol(protocol gwapi.ProtocolType, extra []string) bool {
+// for any value in extra. The comparison is case-sensitive.
+func isGatewayAPITLSProtocol(protocol gwapi.ProtocolType, extra sets.Set[string]) bool {
 	if protocol == gwapi.HTTPSProtocolType || protocol == gwapi.TLSProtocolType {
 		return true
 	}
-	for _, e := range extra {
-		trimmed := strings.TrimSpace(e)
-		if trimmed == "" {
-			continue
-		}
-		if string(protocol) == trimmed {
-			return true
-		}
-	}
-	return false
+	return extra.Has(string(protocol))
 }
 
 func buildCertificates(

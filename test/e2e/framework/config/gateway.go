@@ -53,7 +53,7 @@ func (g *Gateway) AddFlags(fs *flag.FlagSet) {
 			"HTTPRoutes created by the Gateway API solver",
 	)
 	fs.Func(
-		"gateway-shim-extra-protocols",
+		"gateway-api-extra-protocols",
 		"A comma-separated list of additional Gateway listener protocol types "+
 			"that the gateway-shim should watch and create Certificates for.",
 		func(val string) error {

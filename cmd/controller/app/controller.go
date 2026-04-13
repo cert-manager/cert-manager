@@ -358,7 +358,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
 			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
-			GatewayAPIExtraProtocols:          opts.GatewayAPIConfig.ExtraProtocols,
+			GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
 		},
 
 		CertificateOptions: controller.CertificateOptions{

@@ -660,7 +660,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		s.it(f, "Creating a Gateway with a custom extra protocol generates a Certificate", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			if len(f.Config.Addons.Gateway.ExtraProtocols) == 0 {
-				Skip("skipping test as no extra protocols are configured (--gateway-shim-extra-protocols is empty)")
+				Skip("skipping test as no extra protocols are configured (--gateway-api-extra-protocols is empty)")
 				return
 			}
 			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
