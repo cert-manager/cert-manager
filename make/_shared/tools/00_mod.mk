@@ -66,7 +66,7 @@ NEEDS_CTR = __require-ctr
 tools :=
 # https://github.com/helm/helm/releases
 # renovate: datasource=github-releases packageName=helm/helm
-tools += helm=v4.1.3
+tools += helm=v4.1.4
 # https://github.com/helm-unittest/helm-unittest/releases
 # renovate: datasource=github-releases packageName=helm-unittest/helm-unittest
 tools += helm-unittest=v1.0.3
@@ -102,7 +102,7 @@ tools += trivy=v0.69.3
 tools += ytt=v0.53.2
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.73.3
+tools += rclone=v1.73.4
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.29.1
@@ -113,7 +113,7 @@ tools += istioctl=1.29.1
 tools += controller-gen=v0.20.1
 # https://pkg.go.dev/golang.org/x/tools/cmd/goimports?tab=versions
 # renovate: datasource=go packageName=golang.org/x/tools
-tools += goimports=v0.43.0
+tools += goimports=v0.44.0
 # https://pkg.go.dev/github.com/google/go-licenses/v2?tab=versions
 # renovate: datasource=go packageName=github.com/inteon/go-licenses/v2
 tools += go-licenses=v2.0.0-20250821024731-e4be79958780
@@ -128,7 +128,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.4
+tools += crane=v0.21.5
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
@@ -159,7 +159,7 @@ tools += klone=v0.2.0
 tools += goreleaser=v2.15.2
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.42.3
+tools += syft=v1.42.4
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -482,10 +482,10 @@ $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: 
 		$(CURL) https://go.dev/dl/go$(VENDORED_GO_VERSION).$(HOST_OS)-$(HOST_ARCH).tar.gz -o $(outfile); \
 		$(checkhash_script) $(outfile) $(go_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
-helm_linux_amd64_SHA256SUM=02ce9722d541238f81459938b84cf47df2fdf1187493b4bfb2346754d82a4700
-helm_linux_arm64_SHA256SUM=5db45e027cc8de4677ec869e5d803fc7631b0bab1c1eb62ac603a62d22359a43
-helm_darwin_amd64_SHA256SUM=742132e11cc08a81c97f70180cd714ae8376f8c896247a7b14ae1f51838b5a0b
-helm_darwin_arm64_SHA256SUM=21c02fe2f7e27d08e24a6bf93103f9d2b25aab6f13f91814b2cfabc99b108a5e
+helm_linux_amd64_SHA256SUM=70b2c30a19da4db264dfd68c8a3664e05093a361cefd89572ffb36f8abfa3d09
+helm_linux_arm64_SHA256SUM=13d03672be289045d2ff00e4e345d61de1c6f21c1257a45955a30e8ae036d8f1
+helm_darwin_amd64_SHA256SUM=abf09c8503ad1d8ef76d3737a058c3456a998aae5f5966fce4bb3031aeb1654e
+helm_darwin_arm64_SHA256SUM=7c2eca678e8001fa863cdf8cbf6ac1b3799f9404a89eb55c08260ef5732e658d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -683,10 +683,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=70278c22b98c7d02aed01828b70053904dbce4c8a1a15d7781d836c6fdb036ea
-rclone_linux_arm64_SHA256SUM=ed2a638b4cb15abe4f01d6d9c015f3a1cb41aa7a17c96db2725542c61f353b8e
-rclone_darwin_amd64_SHA256SUM=aaf209187baf40a4f6b732104121f81eedc0264aaa91186952ec3e78b82025b1
-rclone_darwin_arm64_SHA256SUM=ef046e9facd10d1fb39d0ef865d7fab9b5c6ca1597ac7c9167f3aa0c7747393f
+rclone_linux_amd64_SHA256SUM=abc0e6e0f275a469d94645f7ef92c7c7673eed20b6558acec5ff48b74641213c
+rclone_linux_arm64_SHA256SUM=00c9e230f0004ab5e3b45c00edf7238ba5bff5fc7ea80f5a86a7da5568de6d1c
+rclone_darwin_amd64_SHA256SUM=4ef15279d857372f3ff84b967ad68fc1c3b113d631effb9c09a18e40f8a78fa7
+rclone_darwin_arm64_SHA256SUM=8cfffacc3ce732b1960645a2f7d2ce97c2ac9ba4f2221c13af6378c199a078f9
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
