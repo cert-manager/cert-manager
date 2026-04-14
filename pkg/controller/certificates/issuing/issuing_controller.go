@@ -377,6 +377,19 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			})
 		}
 
+		// Check that the certificate is not already expired before storing it.
+		// This prevents infinite re-issuance loops when an issuer (e.g. Vault
+		// with leaf_not_after_behavior=truncate and an expired CA) returns
+		// already-expired certificates.
+		if c.clock.Now().After(x509Cert.NotAfter) {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Issuer returned an already expired certificate (notAfter: %s). This usually indicates an expired CA certificate in the issuer.", x509Cert.NotAfter.Format(time.RFC3339)),
+			})
+		}
+
 		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
 	}
 
