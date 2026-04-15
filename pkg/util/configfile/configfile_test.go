@@ -18,14 +18,17 @@ package configfile
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 )
 
 func TestFSLoader_Load(t *testing.T) {
-	const expectedFilename = "/path/to/config/file"
-	const kubeConfigPath = "path/to/kubeconfig/file"
+	// Use filepath.FromSlash so the test expectations match OS-native separators
+	// (forward slashes on Unix, backslashes on Windows).
+	expectedFilename := filepath.FromSlash("/path/to/config/file")
+	kubeConfigPath := filepath.FromSlash("path/to/kubeconfig/file")
 
 	webhookConfig := configfile.New()
 
@@ -46,8 +49,9 @@ kubeConfig: %s`, kubeConfigPath), nil
 		t.Fatal(err)
 	}
 
-	// the config loader will force paths to be 'absolute' if they are provided as relative.
-	absKubeConfigPath := "/path/to/config/path/to/kubeconfig/file"
+	// The config loader resolves relative paths via filepath.Dir and filepath.Join,
+	// so the expected result must be built the same way to be OS-portable.
+	absKubeConfigPath := filepath.Join(filepath.Dir(expectedFilename), kubeConfigPath)
 	if webhookConfig.Config.KubeConfig != absKubeConfigPath {
 		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, webhookConfig.Config.KubeConfig)
 	}
