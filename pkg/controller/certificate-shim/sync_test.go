@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/utils/ptr"
@@ -78,20 +79,21 @@ func TestSync(t *testing.T) {
 	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	type testT struct {
-		Name                string
-		IngressLike         metav1.Object
-		Issuer              cmapi.GenericIssuer
-		IssuerLister        []runtime.Object
-		ClusterIssuerLister []runtime.Object
-		CertificateLister   []runtime.Object
-		DefaultIssuerName   string
-		DefaultIssuerKind   string
-		DefaultIssuerGroup  string
-		Err                 bool
-		ExpectedCreate      []*cmapi.Certificate
-		ExpectedUpdate      []*cmapi.Certificate
-		ExpectedDelete      []*cmapi.Certificate
-		ExpectedEvents      []string
+		Name                     string
+		IngressLike              metav1.Object
+		Issuer                   cmapi.GenericIssuer
+		IssuerLister             []runtime.Object
+		ClusterIssuerLister      []runtime.Object
+		CertificateLister        []runtime.Object
+		DefaultIssuerName        string
+		DefaultIssuerKind        string
+		DefaultIssuerGroup       string
+		GatewayAPIExtraProtocols sets.Set[string]
+		Err                      bool
+		ExpectedCreate           []*cmapi.Certificate
+		ExpectedUpdate           []*cmapi.Certificate
+		ExpectedDelete           []*cmapi.Certificate
+		ExpectedEvents           []string
 	}
 	testIngressShim := []testT{
 		{
@@ -3861,6 +3863,257 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:   "Gateway: custom extra protocol with valid TLS block generates a Certificate",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
+			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "Gateway: custom extra protocol with TLS passthrough is skipped (no Certificate)",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModePassthrough),
+							},
+						},
+					},
+				},
+			},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
+			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:           []string{},
+			ExpectedCreate:           nil,
+		},
+		{
+			Name:   "ListenerSet: custom extra protocol with valid TLS block generates a Certificate",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.ListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "listenerset-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("listenerset-name"),
+				},
+				Spec: gwapi.ListenerSetSpec{
+					ParentRef: gwapi.ParentGatewayReference{
+						Name: "parent-gateway",
+					},
+					Listeners: []gwapi.ListenerEntry{
+						{
+							Name:     "custom-proto-listener",
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			GatewayAPIExtraProtocols: sets.New[string]("CUSTOM-PROTOCOL"),
+			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01ParentRefName: "listenerset-name",
+							cmacme.ACMECertificateHTTP01ParentRefKind: "ListenerSet",
+						},
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(&gwapi.ListenerSet{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "listenerset-name",
+									Namespace: gen.DefaultTestNamespace,
+									UID:       types.UID("listenerset-name"),
+								},
+							}, listenerSetGVK),
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "Gateway: empty GatewayAPIExtraProtocols leaves custom protocol Listener unprocessed",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			GatewayAPIExtraProtocols: sets.New[string](),
+			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:           []string{},
+			ExpectedCreate:           nil,
+		},
+		{
+			Name:   "Gateway: GatewayAPIExtraProtocols containing duplicate built-in HTTPS does not cause duplicate Certificate",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			GatewayAPIExtraProtocols: sets.New[string]("HTTPS"),
+			ClusterIssuerLister:      []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:           []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testFn := func(test testT) func(t *testing.T) {
@@ -3919,6 +4172,7 @@ func TestSync(t *testing.T) {
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,
 				DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
 				ExtraCertificateAnnotations:       []string{"venafi.cert-manager.io/custom-fields"},
+				GatewayAPIExtraProtocols:          test.GatewayAPIExtraProtocols,
 			}, testpkg.FieldManager)
 			b.Start()
 
@@ -4578,6 +4832,60 @@ func Test_setIssuerSpecificConfig(t *testing.T) {
 			setIssuerSpecificConfig(crt, test.ingress)
 
 			assert.Equal(t, test.expectedCertAnnots, crt.Annotations, "Certificate annotations do not match expected")
+		})
+	}
+}
+
+func TestIsTLSProtocol(t *testing.T) {
+	tests := []struct {
+		name     string
+		protocol gwapi.ProtocolType
+		extra    sets.Set[string]
+		want     bool
+	}{
+		{
+			name:     "built-in HTTPS returns true",
+			protocol: gwapi.HTTPSProtocolType,
+			extra:    nil,
+			want:     true,
+		},
+		{
+			name:     "built-in TLS returns true",
+			protocol: gwapi.TLSProtocolType,
+			extra:    nil,
+			want:     true,
+		},
+		{
+			name:     "unknown protocol with empty extra set returns false",
+			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+			extra:    sets.New[string](),
+			want:     false,
+		},
+		{
+			name:     "custom protocol present in extra set returns true",
+			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+			extra:    sets.New[string]("CUSTOM-PROTOCOL"),
+			want:     true,
+		},
+		{
+			name:     "custom protocol absent from extra set returns false",
+			protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
+			extra:    sets.New[string]("OTHER-PROTOCOL"),
+			want:     false,
+		},
+		{
+			name:     "duplicate built-in HTTPS in extra set returns true without error",
+			protocol: gwapi.HTTPSProtocolType,
+			extra:    sets.New[string]("HTTPS"),
+			want:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isGatewayAPITLSProtocol(tt.protocol, tt.extra)
+			if got != tt.want {
+				t.Errorf("isGatewayAPITLSProtocol(%q, %v) = %v, want %v", tt.protocol, tt.extra, got, tt.want)
+			}
 		})
 	}
 }

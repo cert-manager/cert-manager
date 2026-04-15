@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
@@ -137,7 +138,7 @@ func SyncFnFor(
 		}
 
 		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
-		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations)
+		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations, defaults)
 		if err != nil {
 			return err
 		}
@@ -310,6 +311,16 @@ func validateGatewayListenerBlock(path *field.Path, l gwapi.Listener, ingLike me
 	return errs
 }
 
+// isGatewayAPITLSProtocol reports whether protocol is a TLS-capable Gateway
+// listener protocol. It returns true for the built-in types (HTTPS and TLS) and
+// for any value in extra. The comparison is case-sensitive.
+func isGatewayAPITLSProtocol(protocol gwapi.ProtocolType, extra sets.Set[string]) bool {
+	if protocol == gwapi.HTTPSProtocolType || protocol == gwapi.TLSProtocolType {
+		return true
+	}
+	return extra.Has(string(protocol))
+}
+
 func buildCertificates(
 	rec record.EventRecorder,
 	log logr.Logger,
@@ -317,6 +328,7 @@ func buildCertificates(
 	ingLike metav1.Object,
 	issuerName, issuerKind, issuerGroup string,
 	annotations map[string]string,
+	defaults controller.IngressShimOptions,
 ) (newCrts, updateCrts []*cmapi.Certificate, _ error) {
 	tlsHosts := make(map[corev1.ObjectReference][]string)
 	switch ingLike := ingLike.(type) {
@@ -335,7 +347,7 @@ func buildCertificates(
 		}
 	case *gwapi.ListenerSet:
 		for i, l := range ingLike.Spec.Listeners {
-			if l.Protocol != gwapi.HTTPSProtocolType && l.Protocol != gwapi.TLSProtocolType {
+			if !isGatewayAPITLSProtocol(l.Protocol, defaults.GatewayAPIExtraProtocols) {
 				continue
 			}
 
@@ -365,7 +377,7 @@ func buildCertificates(
 	case *gwapi.Gateway:
 		for i, l := range ingLike.Spec.Listeners {
 			// TLS is only supported for a limited set of protocol types: https://gateway-api.sigs.k8s.io/guides/tls/#listeners-and-tls
-			if l.Protocol != gwapi.HTTPSProtocolType && l.Protocol != gwapi.TLSProtocolType {
+			if !isGatewayAPITLSProtocol(l.Protocol, defaults.GatewayAPIExtraProtocols) {
 				continue
 			}
 

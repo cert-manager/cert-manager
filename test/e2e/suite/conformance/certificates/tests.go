@@ -658,6 +658,38 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 		})
 
+		s.it(f, "Creating a Gateway with a custom extra protocol generates a Certificate", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			if len(f.Config.Addons.Gateway.ExtraProtocols) == 0 {
+				Skip("skipping test as no extra protocols are configured (--gateway-api-extra-protocols is empty)")
+				return
+			}
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
+			name := "testcert-gateway-extra-protocol"
+			secretName := "testcert-gateway-extra-protocol-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+
+			By("Creating a Gateway with a custom extra protocol")
+			gw := e2eutil.NewGatewayWithProtocol(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+			}, gwapi.ProtocolType(f.Config.Addons.Gateway.ExtraProtocols[0]), domain)
+
+			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.SecretName).To(Equal(secretName))
+		})
+
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
 			// TODO: @hjoshi123 No gwapi provider supports ListenerSet yet. Remove this once we upgrade to something that does support it.
 			if s.HTTP01TestType != "ListenerSet" {

@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -221,6 +222,7 @@ type IngressShimOptions struct {
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
 	ExtraCertificateAnnotations       []string
+	GatewayAPIExtraProtocols          sets.Set[string]
 }
 
 type CertificateOptions struct {
