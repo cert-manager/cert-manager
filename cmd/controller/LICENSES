@@ -166,6 +166,7 @@ go.etcd.io/etcd/client/pkg/v3,Apache-2.0
 go.etcd.io/etcd/client/v3,Apache-2.0
 go.opentelemetry.io/auto/sdk,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,BSD-3-Clause
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
