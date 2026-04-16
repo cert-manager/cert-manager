@@ -144,7 +144,7 @@ func (in *ACMEChallengeSolverDNS01) DeepCopyInto(out *ACMEChallengeSolverDNS01) 
 	if in.AcmeDNS != nil {
 		in, out := &in.AcmeDNS, &out.AcmeDNS
 		*out = new(ACMEIssuerDNS01ProviderAcmeDNS)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 	if in.RFC2136 != nil {
 		in, out := &in.RFC2136, &out.RFC2136
@@ -557,6 +557,11 @@ func (in *ACMEIssuer) DeepCopy() *ACMEIssuer {
 func (in *ACMEIssuerDNS01ProviderAcmeDNS) DeepCopyInto(out *ACMEIssuerDNS01ProviderAcmeDNS) {
 	*out = *in
 	out.AccountSecret = in.AccountSecret
+	if in.CABundle != nil {
+		in, out := &in.CABundle, &out.CABundle
+		*out = make([]byte, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
