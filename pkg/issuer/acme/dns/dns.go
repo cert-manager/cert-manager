@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/akamai"
@@ -63,7 +65,7 @@ type dnsProviderConstructors struct {
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
 	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...azuredns.ProviderOption) (*azuredns.DNSProvider, error)
-	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string, httpClient *http.Client) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
 }
 
@@ -73,6 +75,8 @@ type dnsProviderConstructors struct {
 type Solver struct {
 	*controller.Context
 	secretLister            internalinformers.SecretLister
+	issuerLister            cmlisters.IssuerLister
+	clusterIssuerLister     cmlisters.ClusterIssuerLister
 	dnsProviderConstructors dnsProviderConstructors
 	webhookSolvers          map[string]webhook.Solver
 }
@@ -425,10 +429,21 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			return nil, nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
 		}
 
+		caBundle, err := s.resolveCABundle(ch)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error resolving caBundle for acmedns: %w", err)
+		}
+
+		httpClient, err := buildHTTPClientFromCABundle(caBundle)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error building HTTP client from caBundle for acmedns: %w", err)
+		}
+
 		impl, err = s.dnsProviderConstructors.acmeDNS(
 			providerConfig.AcmeDNS.Host,
 			accountSecretBytes,
 			s.DNS01Nameservers,
+			httpClient,
 		)
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
@@ -533,9 +548,10 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		}
 	}
 
-	return &Solver{
+	slv := &Solver{
 		Context:      ctx,
 		secretLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		issuerLister: ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 		dnsProviderConstructors: dnsProviderConstructors{
 			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
@@ -545,7 +561,15 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			digitalocean.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
-	}, nil
+	}
+
+	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
+	// obtain a lister for clusterissuers.
+	if ctx.Namespace == "" {
+		slv.clusterIssuerLister = ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister()
+	}
+
+	return slv, nil
 }
 
 func (s *Solver) loadSecretData(selector *cmmeta.SecretKeySelector, ns string) ([]byte, error) {
