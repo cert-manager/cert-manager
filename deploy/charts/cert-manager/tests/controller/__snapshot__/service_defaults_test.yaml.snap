@@ -1,0 +1,23 @@
+should render a Service matching the default snapshot:
+  1: |
+    labels:
+      app: cert-manager
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: cert-manager
+      app.kubernetes.io/version: v0.0.0
+      helm.sh/chart: cert-manager-v0.0.0
+    name: cert-manager
+    namespace: cert-manager
+  2: |
+    ports:
+      - name: tcp-prometheus-servicemonitor
+        port: 9402
+        protocol: TCP
+        targetPort: http-metrics
+    selector:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/name: cert-manager
+    type: ClusterIP

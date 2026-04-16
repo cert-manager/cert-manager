@@ -1,0 +1,78 @@
+suite: Controller Service - Configuration
+templates:
+  - templates/service.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should not render a Service when prometheus is disabled
+    set:
+      prometheus:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render a Service when podmonitor is enabled
+    set:
+      prometheus:
+        enabled: true
+        podmonitor:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render a Service when servicemonitor is enabled and podmonitor is not
+    set:
+      prometheus:
+        enabled: true
+        servicemonitor:
+          enabled: true
+        podmonitor:
+          enabled: false
+    asserts:
+      - isKind:
+          of: Service
+
+  - it: should set service annotations and labels
+    set:
+      serviceAnnotations:
+        custom-annotation: custom-value
+      serviceLabels:
+        custom-label: custom-value
+    asserts:
+      - isSubset:
+          path: metadata.annotations
+          content:
+            custom-annotation: custom-value
+      - isSubset:
+          path: metadata.labels
+          content:
+            custom-label: custom-value
+
+  - it: should set ipFamilyPolicy and ipFamilies
+    set:
+      serviceIPFamilyPolicy: PreferDualStack
+      serviceIPFamilies:
+        - IPv4
+        - IPv6
+    asserts:
+      - isSubset:
+          path: spec
+          content:
+            ipFamilyPolicy: PreferDualStack
+            ipFamilies:
+              - IPv4
+              - IPv6
+
+  - it: should use custom targetPort from servicemonitor config
+    set:
+      prometheus:
+        servicemonitor:
+          targetPort: 8080
+    asserts:
+      - isSubset:
+          path: spec.ports[0]
+          content:
+            targetPort: 8080

@@ -1,0 +1,401 @@
+suite: Controller Deployment - Configuration
+templates:
+  - templates/deployment.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should set replicas, deployment annotations and strategy
+    set:
+      replicaCount: 3
+      deploymentAnnotations:
+        custom-annotation: custom-value
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 0
+          maxUnavailable: 1
+    asserts:
+      - isSubset:
+          path: spec
+          content:
+            replicas: 3
+      - isSubset:
+          path: metadata.annotations
+          content:
+            custom-annotation: custom-value
+      - isSubset:
+          path: spec.strategy
+          content:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 1
+
+  - it: should set revisionHistoryLimit when specified
+    set:
+      global:
+        revisionHistoryLimit: 5
+    asserts:
+      - isSubset:
+          path: spec
+          content:
+            revisionHistoryLimit: 5
+
+  - it: should set revisionHistoryLimit to 0
+    set:
+      global:
+        revisionHistoryLimit: 0
+    asserts:
+      - isSubset:
+          path: spec
+          content:
+            revisionHistoryLimit: 0
+
+  - it: should set pod labels and annotations
+    set:
+      podLabels:
+        custom-label: custom-value
+      podAnnotations:
+        custom-annotation: custom-value
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            custom-label: custom-value
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            custom-annotation: custom-value
+
+  - it: should not add prometheus annotations when prometheus is disabled
+    set:
+      prometheus:
+        enabled: false
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations
+
+  - it: should not add prometheus annotations when servicemonitor is enabled
+    set:
+      prometheus:
+        enabled: true
+        servicemonitor:
+          enabled: true
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["prometheus.io/scrape"]
+
+  - it: should configure image registry, repository, tag and pullPolicy
+    set:
+      image:
+        repository: custom-registry.io/cert-manager-controller
+        tag: custom-tag
+        pullPolicy: Always
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0]
+          content:
+            image: "custom-registry.io/cert-manager-controller:custom-tag"
+            imagePullPolicy: Always
+
+  - it: should use custom imageRegistry and imageNamespace
+    set:
+      imageRegistry: my-registry.io
+      imageNamespace: my-namespace
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ^my-registry\.io/my-namespace/cert-manager-controller
+
+  - it: should set custom leader election settings
+    set:
+      global:
+        leaderElection:
+          namespace: custom-ns
+          leaseDuration: 120s
+          renewDeadline: 80s
+          retryPeriod: 30s
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--leader-election-namespace=custom-ns"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--leader-election-lease-duration=120s"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--leader-election-renew-deadline=80s"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--leader-election-retry-period=30s"
+
+  - it: should set controller-related args
+    set:
+      clusterResourceNamespace: custom-namespace
+      featureGates: "ExperimentalFeature=true"
+      maxConcurrentChallenges: 120
+      enableCertificateOwnerRef: true
+      disableAutoApproval: true
+      extraArgs:
+        - --extra-flag=value
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--cluster-resource-namespace=custom-namespace"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--feature-gates=ExperimentalFeature=true"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--max-concurrent-challenges=120"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--enable-certificate-owner-ref=true"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--controllers=-certificaterequests-approver"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--extra-flag=value"
+
+  - it: should set DNS01 recursive nameservers
+    set:
+      dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
+      dns01RecursiveNameserversOnly: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--dns01-recursive-nameservers-only=true"
+
+  - it: should set ingress shim defaults
+    set:
+      ingressShim:
+        defaultIssuerName: letsencrypt-prod
+        defaultIssuerKind: ClusterIssuer
+        defaultIssuerGroup: cert-manager.io
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--default-issuer-name=letsencrypt-prod"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--default-issuer-kind=ClusterIssuer"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--default-issuer-group=cert-manager.io"
+
+  - it: should set resources, container and pod security contexts
+    set:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      containerSecurityContext:
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1001
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].resources
+          content:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      - isSubset:
+          path: spec.template.spec.containers[0].securityContext
+          content:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+      - isSubset:
+          path: spec.template.spec.securityContext
+          content:
+            runAsNonRoot: true
+            fsGroup: 1001
+
+  - it: should set extra and proxy env vars
+    set:
+      extraEnv:
+        - name: CUSTOM_ENV
+          value: custom-value
+      http_proxy: http://proxy:8080
+      https_proxy: https://proxy:8443
+      no_proxy: localhost,127.0.0.1
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: custom-value
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HTTP_PROXY
+            value: http://proxy:8080
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HTTPS_PROXY
+            value: https://proxy:8443
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NO_PROXY
+            value: localhost,127.0.0.1
+
+  - it: should merge global and component node selectors and set tolerations
+    set:
+      global:
+        nodeSelector:
+          global-key: global-value
+      nodeSelector:
+        component-key: component-value
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+    asserts:
+      - isSubset:
+          path: spec.template.spec.nodeSelector
+          content:
+            global-key: global-value
+            component-key: component-value
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: node-role.kubernetes.io/master
+            operator: Exists
+            effect: NoSchedule
+
+  - it: should set affinity, topology spread constraints and priorityClassName
+    set:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+      global:
+        priorityClassName: high-priority
+    asserts:
+      - exists:
+          path: spec.template.spec.affinity.nodeAffinity
+      - contains:
+          path: spec.template.spec.topologySpreadConstraints
+          content:
+            maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+      - isSubset:
+          path: spec.template.spec
+          content:
+            priorityClassName: high-priority
+
+  - it: should set automountServiceAccountToken when specified
+    set:
+      automountServiceAccountToken: false
+    asserts:
+      - isSubset:
+          path: spec.template.spec
+          content:
+            automountServiceAccountToken: false
+
+  - it: should mount config volume when config is set
+    set:
+      config:
+        apiVersion: controller.config.cert-manager.io/v1alpha1
+        kind: ControllerConfiguration
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--config=/var/cert-manager/config/config.yaml"
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config
+            configMap:
+              name: cert-manager
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config
+            mountPath: /var/cert-manager/config
+
+  - it: should set DNS policy and DNS config
+    set:
+      podDnsPolicy: ClusterFirstWithHostNet
+      podDnsConfig:
+        nameservers:
+          - 8.8.8.8
+    asserts:
+      - isSubset:
+          path: spec.template.spec
+          content:
+            dnsPolicy: ClusterFirstWithHostNet
+      - isSubset:
+          path: spec.template.spec.dnsConfig
+          content:
+            nameservers:
+              - 8.8.8.8
+
+  - it: should set extra containers
+    set:
+      extraContainers:
+        - name: sidecar
+          image: busybox
+    asserts:
+      - contains:
+          path: spec.template.spec.containers
+          content:
+            name: sidecar
+            image: busybox
+
+  - it: should override namespace, name and apply common labels
+    set:
+      namespace: custom-namespace
+      fullnameOverride: my-cert-manager
+      global:
+        commonLabels:
+          team: platform
+    asserts:
+      - isSubset:
+          path: metadata
+          content:
+            name: my-cert-manager
+            namespace: custom-namespace
+      - isSubset:
+          path: metadata.labels
+          content:
+            team: platform
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            team: platform
+
+  - it: should set hostUsers when specified
+    set:
+      global:
+        hostUsers: false
+    asserts:
+      - isSubset:
+          path: spec.template.spec
+          content:
+            hostUsers: false

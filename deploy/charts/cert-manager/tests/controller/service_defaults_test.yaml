@@ -1,0 +1,15 @@
+suite: Controller Service - Default Rendering
+templates:
+  - templates/service.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render a Service matching the default snapshot
+    asserts:
+      - isKind:
+          of: Service
+      - matchSnapshot:
+          path: metadata
+      - matchSnapshot:
+          path: spec
