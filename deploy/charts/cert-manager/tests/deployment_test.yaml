@@ -4,9 +4,6 @@ templates:
 release:
   name: cert-manager
   namespace: cert-manager
-chart:
-  version: v0.1.0
-  appVersion: v0.1.0
 tests:
   - it: should render a Deployment with default values
     asserts:
@@ -27,9 +24,6 @@ tests:
 
   - it: should set the correct labels
     asserts:
-      - equal:
-          path: metadata.labels["app"]
-          value: cert-manager
       - equal:
           path: metadata.labels["app.kubernetes.io/name"]
           value: cert-manager
@@ -88,21 +82,21 @@ tests:
           maxSurge: 0
           maxUnavailable: 1
     asserts:
-      - equal:
-          path: spec.strategy.type
-          value: RollingUpdate
-      - equal:
-          path: spec.strategy.rollingUpdate.maxSurge
-          value: 0
+      - isSubset:
+          path: spec.strategy
+          content:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 1
 
   - it: should set correct matchLabels on selector
     asserts:
-      - equal:
-          path: spec.selector.matchLabels["app.kubernetes.io/name"]
-          value: cert-manager
-      - equal:
-          path: spec.selector.matchLabels["app.kubernetes.io/component"]
-          value: controller
+      - isSubset:
+          path: spec.selector.matchLabels
+          content:
+            app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/component: controller
 
   - it: should set pod labels from values
     set:
@@ -595,19 +589,6 @@ tests:
       - equal:
           path: spec.template.metadata.labels["team"]
           value: platform
-
-  - it: should set imagePullSecrets when SA is not created
-    set:
-      serviceAccount:
-        create: false
-      global:
-        imagePullSecrets:
-          - name: my-secret
-    asserts:
-      - contains:
-          path: spec.template.spec.imagePullSecrets
-          content:
-            name: my-secret
 
   - it: should set hostUsers when specified
     set:

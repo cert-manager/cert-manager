@@ -4,9 +4,6 @@ templates:
 release:
   name: cert-manager
   namespace: cert-manager
-chart:
-  version: v0.1.0
-  appVersion: v0.1.0
 tests:
   - it: should render a Service when prometheus is enabled and podmonitor is not
     asserts:
@@ -51,15 +48,12 @@ tests:
 
   - it: should set the correct port
     asserts:
-      - equal:
-          path: spec.ports[0].port
-          value: 9402
-      - equal:
-          path: spec.ports[0].protocol
-          value: TCP
-      - equal:
-          path: spec.ports[0].name
-          value: tcp-prometheus-servicemonitor
+      - isSubset:
+          path: spec.ports[0]
+          content:
+            port: 9402
+            protocol: TCP
+            name: tcp-prometheus-servicemonitor
 
   - it: should set service annotations
     set:
@@ -81,15 +75,12 @@ tests:
 
   - it: should set correct selector labels
     asserts:
-      - equal:
-          path: spec.selector["app.kubernetes.io/name"]
-          value: cert-manager
-      - equal:
-          path: spec.selector["app.kubernetes.io/instance"]
-          value: cert-manager
-      - equal:
-          path: spec.selector["app.kubernetes.io/component"]
-          value: controller
+      - isSubset:
+          path: spec.selector
+          content:
+            app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: controller
 
   - it: should set ipFamilyPolicy when specified
     set:
