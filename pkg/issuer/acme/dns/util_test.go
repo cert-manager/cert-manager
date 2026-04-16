@@ -19,6 +19,7 @@ package dns
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -137,7 +138,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("azuredns", clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName, util.RecursiveNameservers, ambient, managedIdentity)
 			return nil, nil
 		},
-		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
+		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string, httpClient *http.Client) (*acmedns.DNSProvider, error) {
 			f.call("acmedns", host, accountJson, dns01Nameservers)
 			return nil, nil
 		},
