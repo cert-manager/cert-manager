@@ -20,12 +20,8 @@ functionality in cert-manager can be found in the [installation docs](https://ce
 To install the chart with the release name `cert-manager`:
 
 ```console
-# Add the Jetstack Helm repository
-helm repo add jetstack https://charts.jetstack.io --force-update
-
-# Install the cert-manager helm chart
 helm install \
-  cert-manager jetstack/cert-manager \
+  cert-manager oci://quay.io/jetstack/charts/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version {{RELEASE_VERSION}} \
