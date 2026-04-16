@@ -72,9 +72,15 @@ shared_verify_targets += verify-helm-values
 ## Run Helm chart unit tests using helm-unittest.
 ## @category [shared] Generate/ Verify
 verify-helm-unittest: | $(NEEDS_HELM-UNITTEST)
-	$(HELM-UNITTEST) deploy/charts/cert-manager
+	$(HELM-UNITTEST) -f 'tests/**/*.yaml' deploy/charts/cert-manager
 
 shared_verify_targets += verify-helm-unittest
+
+.PHONY: update-helm-unittest-snapshots
+## Update Helm chart unit test snapshots using helm-unittest.
+## @category [shared] Generate/ Verify
+update-helm-unittest-snapshots: | $(NEEDS_HELM-UNITTEST)
+	$(HELM-UNITTEST) -u -f 'tests/**/*.yaml' deploy/charts/cert-manager
 
 .PHONY: ci-presubmit
 ## Run all checks (but not Go tests) which should pass before any given pull
