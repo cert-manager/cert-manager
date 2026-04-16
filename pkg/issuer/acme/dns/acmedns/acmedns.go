@@ -60,7 +60,12 @@ func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) 
 		return nil, err
 	}
 
-	client, err := goacmedns.NewClient(opt.Host)
+	var clientOpts []goacmedns.Option
+	if opt.HTTPClient != nil {
+		clientOpts = append(clientOpts, goacmedns.WithHTTPClient(opt.HTTPClient))
+	}
+
+	client, err := goacmedns.NewClient(opt.Host, clientOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating acme-dns client: %s", err)
 	}
