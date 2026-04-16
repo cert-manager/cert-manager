@@ -251,6 +251,13 @@ spec:
                                   required:
                                   - name
                                   type: object
+                                caBundle:
+                                  description: |-
+                                    CABundle is a base64 encoded TLS certificate authority bundle to use when verifying
+                                    connections to the acme-dns server. If set, it overrides the spec.acme.caBundle
+                                    for TLS connections to the acme-dns server.
+                                  format: byte
+                                  type: string
                                 host:
                                   type: string
                               required:
