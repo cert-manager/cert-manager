@@ -12,7 +12,6 @@ keywords:
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/category: security
-  artifacthub.io/prerelease: "{{IS_PRERELEASE}}"
 maintainers:
   - name: cert-manager-maintainers
     email: cert-manager-maintainers@googlegroups.com
