@@ -690,6 +690,35 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(cert.Spec.SecretName).To(Equal(secretName))
 		})
 
+		s.it(f, "Creating a Gateway with ignore annotation should not affect existing listeners", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
+			name := "testcert-gateway-listener-ignore"
+			secretName := "testcert-gateway-listener-ignore-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+
+			By("Creating a Gateway with ignore annotations")
+			gw := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":               issuerRef.Name,
+				"cert-manager.io/issuer-kind":          issuerRef.Kind,
+				"cert-manager.io/issuer-group":         issuerRef.Group,
+				"cert-manager.io/ignore-tls-listeners": "custom-tls-listener",
+			}, domain)
+
+			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.SecretName).To(Equal(secretName))
+		})
+
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {
 			// TODO: @hjoshi123 No gwapi provider supports ListenerSet yet. Remove this once we upgrade to something that does support it.
 			if s.HTTP01TestType != "ListenerSet" {
