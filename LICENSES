@@ -75,6 +75,7 @@ github.com/blang/semver/v4,MIT
 github.com/cenkalti/backoff/v4,MIT
 github.com/cenkalti/backoff/v5,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
+github.com/cert-manager/cert-manager/internal/cron,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns,MIT
 github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare,MIT
@@ -171,7 +172,9 @@ go.etcd.io/etcd/client/pkg/v3,Apache-2.0
 go.etcd.io/etcd/client/v3,Apache-2.0
 go.opentelemetry.io/auto/sdk,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,BSD-3-Clause
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0

@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/ptr"
 
 	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager/v1"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -93,20 +95,26 @@ func NewController(
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to any 'owned' secret resources
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ResourceOwnerOf,
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to any 'owned' secret resources
+			certificates.EnqueueCertificatesForResourceUsingPredicates[*corev1.Secret](
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+			),
 		),
-	)); err != nil {
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to certificates named as spec.secretName
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ExtractResourceName(predicate.CertificateSecretName),
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to certificates named as spec.secretName
+			certificates.EnqueueCertificatesForResourceUsingPredicates(
+				log, queue, certificateInformer.Lister(),
+				predicate.ExtractResourceName[*corev1.Secret](predicate.CertificateSecretName),
+			),
 		),
-	)); err != nil {
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -162,7 +170,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy(crt))
+	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy[*corev1.Secret](crt))
 	if err != nil {
 		return err
 	}
@@ -194,12 +202,13 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			return nil
 		}
 	}
-
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
-		// TODO: if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
-		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
-		return c.deleteSecretResources(ctx, secrets)
+		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
+		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets))
+
+		// Use ptr.Deref to get the value or empty string if nil
+		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
 	}
 
 	secret := secrets[0]
@@ -289,9 +298,13 @@ func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.
 }
 
 // deleteSecretResources will delete the given secret resources
-func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret) error {
+func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret, skip ...string) error {
 	log := logf.FromContext(ctx)
 	for _, s := range secrets {
+		// Skip deletion if the secret name is in the skip list
+		if slices.Contains(skip, s.Name) {
+			continue
+		}
 		if err := c.coreClient.CoreV1().Secrets(s.Namespace).Delete(ctx, s.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
@@ -334,11 +347,26 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 }
 
 func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (*corev1.Secret, error) {
+	// Since crt.Status.NextPrivateKeySecretName is set based on the name of the
+	// secret this function returns there is a possibility that this function
+	// reconciles twice before the cache is updated with the latest changes.
+	//
+	// In that case since we would not see the NextPrivateKeySecretName we just
+	// set and we would generate a new secret with a different name, updating
+	// NextPrivateKeySecretName once again.
+	//
+	// Given this code path is only hit in limited circumstances, it is not
+	// unreasonable to get the latest object via a real api call.
+	latestCrt, err := c.client.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	// if the 'nextPrivateKeySecretName' field is already set, use this as the
 	// name of the Secret resource.
 	name := ""
-	if crt.Status.NextPrivateKeySecretName != nil {
-		name = *crt.Status.NextPrivateKeySecretName
+	if latestCrt.Status.NextPrivateKeySecretName != nil {
+		name = *latestCrt.Status.NextPrivateKeySecretName
 	}
 
 	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
@@ -364,10 +392,20 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 		// TODO: handle certificate resources that have especially long names
 		s.GenerateName = crt.Name + "-"
 	}
+
 	s, err = c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+
+	// We only get to this code path if both NextPrivateKeySecretName is set AND
+	// we counted zero secrets. If we get an IsAlreadyExists error it means our
+	// cache was outdated and there _is_ a secret.
+	if apierrors.IsAlreadyExists(err) && name != "" {
+		return c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return s, nil
 }
 

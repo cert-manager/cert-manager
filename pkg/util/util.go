@@ -24,9 +24,17 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/cert-manager/cert-manager/internal/cron"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
+
+// CronSchedule defines the minimal schedule behavior exposed by this package,
+// decoupling callers from the internal cron implementation.
+type CronSchedule interface {
+	Next(time.Time) time.Time
+}
 
 // genericEqualUnsorted reports whether two slices are identical up to reordering
 // using a comparison function.
@@ -135,4 +143,20 @@ func SplitWithEscapeCSV(in string) ([]string, error) {
 	}
 
 	return records[0], nil
+}
+
+// CronParse parses the given cron syntax to return a cron schedule interface. It also takes in an optional timezone which would parse the
+// cron schedule in that timezone. timeZone must be an IANA compliant time zone (e.g. America/Denver).
+func CronParse(origCronString, timeZone string) (CronSchedule, error) {
+	cronString := origCronString
+	if timeZone != "" {
+		cronString = fmt.Sprintf("CRON_TZ=%s %s", timeZone, origCronString)
+	}
+	s, err := cron.
+		NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor).
+		Parse(cronString)
+	if err == nil {
+		return s, nil
+	}
+	return nil, fmt.Errorf("failed to parse cron spec '%s': %w", origCronString, err)
 }

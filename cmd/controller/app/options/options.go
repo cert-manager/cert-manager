@@ -177,6 +177,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableGatewayAPIListenerSet, "enable-gateway-api-listenerset", c.EnableGatewayAPIListenerSet, ""+
 		"Whether ListenerSets support is enabled within cert-manager. The ListenerSet "+
 		"feature gate must also be enabled.")
+	fs.StringSliceVar(&c.GatewayAPIConfig.ExtraProtocols, "gateway-api-extra-protocols", c.GatewayAPIConfig.ExtraProtocols, ""+
+		"A comma-separated list of additional Gateway Listener protocol types that the Gateway API shim should treat as TLS-capable. "+
+		"By default, only HTTPS and TLS protocol types are processed. Each entry must exactly match the protocol string as it appears "+
+		"on the Gateway Listener, e.g. 'DTLS'.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+

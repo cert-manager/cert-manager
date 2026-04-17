@@ -28,6 +28,7 @@ import (
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -48,6 +49,7 @@ var (
 type SecretsManager struct {
 	secretClient coreclient.SecretsGetter
 	secretLister internalinformers.SecretLister
+	recorder     record.EventRecorder
 
 	// fieldManager is the manager name used for the Apply operations on Secrets.
 	fieldManager string
@@ -72,12 +74,14 @@ type SecretData struct {
 func NewSecretsManager(
 	secretClient coreclient.SecretsGetter,
 	secretLister internalinformers.SecretLister,
+	recorder record.EventRecorder,
 	fieldManager string,
 	enableSecretOwnerReferences bool,
 ) *SecretsManager {
 	return &SecretsManager{
 		secretClient:                secretClient,
 		secretLister:                secretLister,
+		recorder:                    recorder,
 		fieldManager:                fieldManager,
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
@@ -254,6 +258,11 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 		switch {
 		case ref.Name != "":
 			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+
+			if apierrors.IsNotFound(err) {
+				s.recorder.Eventf(crt, corev1.EventTypeWarning, "KeystorePasswordSecretNotFound", "PKCS12 keystore password Secret %q not found", ref.Name)
+			}
+
 			if err != nil {
 				return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
 			}
@@ -304,6 +313,11 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 		switch {
 		case ref.Name != "":
 			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+
+			if apierrors.IsNotFound(err) {
+				s.recorder.Eventf(crt, corev1.EventTypeWarning, "KeystorePasswordSecretNotFound", "JKS keystore password Secret %q not found", ref.Name)
+			}
+
 			if err != nil {
 				return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
 			}

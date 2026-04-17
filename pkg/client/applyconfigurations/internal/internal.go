@@ -1224,6 +1224,30 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: size
       type:
         scalar: numeric
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewal
+  map:
+    fields:
+    - name: policy
+      type:
+        scalar: string
+    - name: windows
+      type:
+        list:
+          elementType:
+            namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewalWindows
+          elementRelationship: atomic
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewalWindows
+  map:
+    fields:
+    - name: cron
+      type:
+        scalar: string
+    - name: timezone
+      type:
+        scalar: string
+    - name: windowDuration
+      type:
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRequest
   map:
     fields:
@@ -1407,6 +1431,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: renewBeforePercentage
       type:
         scalar: numeric
+    - name: renewal
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateRenewal
     - name: revisionHistoryLimit
       type:
         scalar: numeric
@@ -1668,6 +1695,28 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAWSAuth
+  map:
+    fields:
+    - name: iamRoleArn
+      type:
+        scalar: string
+    - name: mountPath
+      type:
+        scalar: string
+    - name: region
+      type:
+        scalar: string
+    - name: role
+      type:
+        scalar: string
+      default: ""
+    - name: serviceAccountRef
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ServiceAccountRef
+    - name: vaultHeaderValue
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAppRole
   map:
     fields:
@@ -1689,6 +1738,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: appRole
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAppRole
+    - name: aws
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultAWSAuth
     - name: clientCertificate
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VaultClientCertificateAuth

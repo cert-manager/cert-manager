@@ -8,7 +8,9 @@ cert-manager can obtain certificates from a [variety of certificate authorities]
 
 ## Prerequisites
 
-- Kubernetes 1.22+
+Make sure you are using a version of Kubernetes that is supported by
+cert-manager. For more information, see the [Supported Releases
+page](https://cert-manager.io/docs/releases/).
 
 ## Installing the Chart
 
@@ -18,12 +20,9 @@ functionality in cert-manager can be found in the [installation docs](https://ce
 To install the chart with the release name `cert-manager`:
 
 ```console
-# Add the cert-manager Helm OCI repository
-helm repo add jetstack oci://quay.io/jetstack/charts --force-update
-
 # Install the cert-manager helm chart
 helm install \
-  cert-manager jetstack/cert-manager \
+  cert-manager oci://quay.io/jetstack/charts/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version {{RELEASE_VERSION}} \
@@ -2008,6 +2007,11 @@ Timeout for 'kubectl check api' command.
 > ```
 
 Job backoffLimit
+#### **startupapicheck.ttlSecondsAfterFinished** ~ `integer`
+
+Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this field is set, once the Job finishes, it will be automatically cleaned up after ttlSecondsAfterFinished seconds. This is disabled by default (field is not set) to preserve backward compatibility and avoid issues with GitOps tools (e.g. Argo CD) that may attempt to reconcile or recreate Jobs after they are automatically deleted. For more information, see [Automatic Cleanup for Finished Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/).
+
+
 #### **startupapicheck.jobAnnotations** ~ `object`
 > Default value:
 > ```yaml

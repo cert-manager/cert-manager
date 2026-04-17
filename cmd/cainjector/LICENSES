@@ -41,6 +41,7 @@ github.com/beorn7/perks/quantile,MIT
 github.com/blang/semver/v4,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
 github.com/cert-manager/cert-manager/cainjector-binary,Apache-2.0
+github.com/cert-manager/cert-manager/internal/cron,MIT
 github.com/cespare/xxhash/v2,MIT
 github.com/davecgh/go-spew/spew,ISC
 github.com/emicklei/go-restful/v3,MIT
@@ -95,7 +96,7 @@ gopkg.in/evanphx/json-patch.v4,BSD-3-Clause
 gopkg.in/inf.v0,BSD-3-Clause
 gopkg.in/yaml.v3,MIT
 k8s.io/api,Apache-2.0
-k8s.io/apiextensions-apiserver/pkg/apis/apiextensions,Apache-2.0
+k8s.io/apiextensions-apiserver/pkg,Apache-2.0
 k8s.io/apimachinery/pkg,Apache-2.0
 k8s.io/apimachinery/third_party/forked/golang,BSD-3-Clause
 k8s.io/client-go,Apache-2.0

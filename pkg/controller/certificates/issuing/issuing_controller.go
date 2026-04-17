@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -109,24 +108,37 @@ func NewController(
 	if _, err := certificateInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(queue)); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	)); err != nil {
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			certificates.EnqueueCertificatesForResourceUsingPredicates[*cmapi.CertificateRequest](
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+			),
+		),
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ResourceOwnerOf,
-			predicate.ExtractResourceName(predicate.CertificateNextPrivateKeySecretName)),
-	)); err != nil {
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
+			certificates.EnqueueCertificatesForResourceUsingPredicates(
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+				predicate.ExtractResourceName[*corev1.Secret](predicate.CertificateNextPrivateKeySecretName),
+			),
+		),
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Issuer reconciles on changes to the Secret named `spec.secretName`
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	)); err != nil {
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Issuer reconciles on changes to the Secret named `spec.secretName`
+			certificates.EnqueueCertificatesForResourceUsingPredicates(
+				log, queue, certificateInformer.Lister(),
+				predicate.ExtractResourceName[*corev1.Secret](predicate.CertificateSecretName),
+			),
+		),
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -140,7 +152,7 @@ func NewController(
 
 	secretsManager := internal.NewSecretsManager(
 		ctx.Client.CoreV1(), secretsInformer.Lister(),
-		ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
+		ctx.Recorder, ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
 	)
 
 	return &controller{
@@ -232,10 +244,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		nextRevision = *crt.Status.Revision + 1
 	}
 
-	reqs, err := certificates.ListCertificateRequestsMatchingPredicates(c.certificateRequestLister.CertificateRequests(crt.Namespace),
-		labels.Everything(),
+	reqs, err := certificates.ListCertificateRequestsMatchingPredicates(
+		c.certificateRequestLister.CertificateRequests(crt.Namespace),
 		predicate.CertificateRequestRevision(nextRevision),
-		predicate.ResourceOwnedBy(crt),
+		predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 	)
 	if err != nil || len(reqs) != 1 {
 		// If error return.
@@ -362,6 +374,19 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 				Status:  cmmeta.ConditionFalse,
 				Reason:  "InvalidCertificate",
 				Message: "Issuer returned a certificate with a public key that does not match the CSR. This usually indicates a misconfigured issuer.",
+			})
+		}
+
+		// Check that the certificate is not already expired before storing it.
+		// This prevents infinite re-issuance loops when an issuer (e.g. Vault
+		// with leaf_not_after_behavior=truncate and an expired CA) returns
+		// already-expired certificates.
+		if c.clock.Now().After(x509Cert.NotAfter) {
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "InvalidCertificate",
+				Message: fmt.Sprintf("Issuer returned an already expired certificate (notAfter: %s). This usually indicates an expired CA certificate in the issuer.", x509Cert.NotAfter.Format(time.RFC3339)),
 			})
 		}
 

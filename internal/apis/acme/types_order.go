@@ -72,7 +72,7 @@ type OrderSpec struct {
 	IPAddresses []string
 
 	// Duration is the duration for the not after date for the requested certificate.
-	// this is set on order creation as pe the ACME spec.
+	// This is set on order creation as per the ACME spec.
 	Duration *metav1.Duration
 
 	// Profile allows requesting a certificate profile from the ACME server.

@@ -275,14 +275,11 @@ feature_gates_controller := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBe
 feature_gates_webhook := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% LiteralCertificateSubject=% NameConstraints=% OtherNames=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 feature_gates_cainjector := $(subst $(space),\$(comma),$(filter AllAlpha=% AllBeta=% ServerSideApply=% CAInjectorMerging=%, $(subst $(comma),$(space),$(FEATURE_GATES))))
 
-# When testing an published chart the repo can be configured using
-# E2E_CERT_MANAGER_REPO
-E2E_CERT_MANAGER_REPO ?= https://charts.jetstack.io
-# When testing an published chart the chart name can be configured using
+# When testing a published chart the chart name can be configured using
 # E2E_CERT_MANAGER_CHART. This can also be set to a local path to test a
 # downloaded chart
-E2E_CERT_MANAGER_CHART ?= cert-manager
-# When testing an published chart, default to the latest release
+E2E_CERT_MANAGER_CHART ?= oci://quay.io/jetstack/charts/cert-manager
+# When testing a published chart, default to the latest release
 E2E_CERT_MANAGER_VERSION ?=
 
 # Example running E2E tests against a downloaded chart:
@@ -311,11 +308,10 @@ e2e-setup-certmanager: e2e-setup-gatewayapi $(E2E_SETUP_OPTION_DEPENDENCIES) $(b
 		--create-namespace \
 		--wait \
 		--namespace cert-manager \
-		--repo $(E2E_CERT_MANAGER_REPO) \
 		$(addprefix --version=,$(E2E_CERT_MANAGER_VERSION)) \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-listenerset}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-listenerset,--gateway-api-extra-protocols=DTLS}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \
@@ -343,7 +339,7 @@ e2e-setup-certmanager: $(bin_dir)/cert-manager.tgz $(foreach binaryname,controll
 		--set startupapicheck.image.tag="$(TAG)" \
 		--set crds.enabled=true \
 		--set featureGates="$(feature_gates_controller)" \
-		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-listenerset}" \
+		--set "extraArgs={--kube-api-qps=9000,--kube-api-burst=9000,--concurrent-workers=200,--enable-gateway-api,--enable-gateway-api-listenerset,--gateway-api-extra-protocols=DTLS}" \
 		--set webhook.featureGates="$(feature_gates_webhook)" \
 		--set "cainjector.extraArgs={--feature-gates=$(feature_gates_cainjector)}" \
 		--set "dns01RecursiveNameservers=$(SERVICE_IP_PREFIX).16:53" \

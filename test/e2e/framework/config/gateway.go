@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+	"strings"
+)
 
 type Gateway struct {
 	// Domain is a domain name that is used during e2e tests to solve
@@ -28,6 +31,10 @@ type Gateway struct {
 	// Labels is a comma separated list of key=value labels set on the
 	// HTTPRoutes created by the Gateway API solver
 	Labels string
+
+	// ExtraProtocols is a list of additional Gateway listener protocol types
+	// that the gateway-shim should watch and create Certificates for.
+	ExtraProtocols []string
 }
 
 func (g *Gateway) AddFlags(fs *flag.FlagSet) {
@@ -44,6 +51,19 @@ func (g *Gateway) AddFlags(fs *flag.FlagSet) {
 		"acme=solver",
 		"Labels is a comma separated list of key=value labels set on the "+
 			"HTTPRoutes created by the Gateway API solver",
+	)
+	fs.Func(
+		"gateway-api-extra-protocols",
+		"A comma-separated list of additional Gateway listener protocol types "+
+			"that the gateway-shim should watch and create Certificates for.",
+		func(val string) error {
+			if val == "" {
+				g.ExtraProtocols = []string{}
+				return nil
+			}
+			g.ExtraProtocols = strings.Split(val, ",")
+			return nil
+		},
 	)
 }
 

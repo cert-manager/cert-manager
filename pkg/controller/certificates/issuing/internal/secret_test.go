@@ -30,6 +30,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	"k8s.io/client-go/tools/record"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 
@@ -817,6 +818,7 @@ func Test_SecretsManager(t *testing.T) {
 
 			testManager := NewSecretsManager(
 				secretClient, secretLister,
+				record.NewFakeRecorder(10),
 				testpkg.FieldManager,
 				test.certificateOptions.EnableOwnerRef,
 			)

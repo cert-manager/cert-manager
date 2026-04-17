@@ -114,6 +114,10 @@ func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 	// Listen on a random port number
 	webhookConfig.SecurePort = 0
 	webhookConfig.HealthzPort = 0
+	// Disable the metrics server, preventing "failed to start metrics server: failed
+	// to create listener: listen tcp 0.0.0.0:9402: bind: address already in use" issues
+	// when running multiple tests
+	webhookConfig.MetricsListenAddress = "0"
 
 	errCh := make(chan error)
 	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookConfig, argumentsForNewServerWithOptions...)

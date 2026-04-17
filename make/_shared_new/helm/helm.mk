@@ -115,6 +115,14 @@ verify-helm-values: | $(NEEDS_HELM-TOOL) $(NEEDS_GOJQ)
 
 shared_verify_targets += verify-helm-values
 
+.PHONY: verify-helm-unittest
+## Run Helm chart unit tests using helm-unittest.
+## @category [shared] Generate/ Verify
+verify-helm-unittest: | $(NEEDS_HELM-UNITTEST)
+	$(HELM-UNITTEST) $(helm_chart_source_dir)
+
+shared_verify_targets += verify-helm-unittest
+
 $(bin_dir)/scratch/kyverno:
 	@mkdir -p $@
 

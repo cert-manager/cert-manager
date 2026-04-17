@@ -25,9 +25,9 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -61,6 +61,7 @@ type controller struct {
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             internalinformers.SecretLister
 	client                   cmclient.Interface
+	recorder                 record.EventRecorder
 	gatherer                 *policies.Gatherer
 	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
 	policyEvaluator policyEvaluatorFunc
@@ -102,17 +103,26 @@ func NewController(
 	}
 
 	// When a CertificateRequest resource changes, enqueue the Certificate resource that owns it.
-	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
-	)); err != nil {
+	if _, err := certificateRequestInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			certificates.EnqueueCertificatesForResourceUsingPredicates[*cmapi.CertificateRequest](
+				log, queue, certificateInformer.Lister(),
+				predicate.ResourceOwnerOf,
+			),
+		),
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 	// When a Secret resource changes, enqueue any Certificate resources that name it as spec.secretName.
-	if _, err := secretsInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(
-		// Trigger reconciles on changes to the Secret named `spec.secretName`
-		certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
-			predicate.ExtractResourceName(predicate.CertificateSecretName)),
-	)); err != nil {
+	if _, err := secretsInformer.Informer().AddEventHandler(
+		controllerpkg.BlockingEventHandler(
+			// Trigger reconciles on changes to the Secret named `spec.secretName`
+			certificates.EnqueueCertificatesForResourceUsingPredicates(
+				log, queue, certificateInformer.Lister(),
+				predicate.ExtractResourceName[*corev1.Secret](predicate.CertificateSecretName),
+			),
+		),
+	); err != nil {
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
@@ -130,6 +140,7 @@ func NewController(
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
 		client:                   ctx.CMClient,
+		recorder:                 ctx.Recorder,
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -181,7 +192,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage)
+		renewalTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+
+		if err != nil {
+			reason := policies.WindowError
+			message := fmt.Sprintf("Could not calculate renewal time: %v", err)
+			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
+
+			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+		}
 
 		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore

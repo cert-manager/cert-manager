@@ -13,5 +13,5 @@ The release process is described in detail on the [cert-manager website](https:/
 The cert-manager project will produce the following artifacts each release. For documentation on how those artifacts are produced see the "Process" section.
 
 - *Container Images* - Container images for the cert-manager project are published for all cert-manager components.
-- *Helm chart* - An official Helm chart is maintained within this repo and published to an OCI registry on each cert-manager release. The chart is available at `quay.io/jetstack/cert-manager` as well as the legacy location `charts.jetstack.io`.
-- *Binaries* - The cmctl CLI has moved to its [own repository](https://github.com/cert-manager/cmctl). Binary builds are available for download from that location.
+- *Helm chart* - An official Helm chart is maintained within this repo and published to `quay.io/jetstack/charts/cert-manager` on each cert-manager release.
+- *Binaries* - Until version 1.15 the cmctl binary was maintained within this repo and published as part of the cert-manager release. For releases after 1.15 the CLI has moved to its [own repository](https://github.com/cert-manager/cmctl). Binary builds are still available for download from this new location.

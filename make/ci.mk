@@ -68,6 +68,14 @@ verify-helm-values: | $(NEEDS_HELM-TOOL) $(NEEDS_GOJQ)
 
 shared_verify_targets += verify-helm-values
 
+.PHONY: verify-helm-unittest
+## Run Helm chart unit tests using helm-unittest.
+## @category [shared] Generate/ Verify
+verify-helm-unittest: | $(NEEDS_HELM-UNITTEST)
+	$(HELM-UNITTEST) deploy/charts/cert-manager
+
+shared_verify_targets += verify-helm-unittest
+
 .PHONY: ci-presubmit
 ## Run all checks (but not Go tests) which should pass before any given pull
 ## request or change is merged.

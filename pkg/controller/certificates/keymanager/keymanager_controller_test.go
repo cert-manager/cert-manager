@@ -162,6 +162,11 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 					cmapi.SchemeGroupVersion.WithResource("certificates"),
 					"status",
@@ -209,6 +214,11 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -239,8 +249,14 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 			},
-			secrets: []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
+			secrets:        []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
+			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -254,8 +270,12 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
+				testpkg.NewAction(coretesting.NewGetAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name",
+				)),
 			},
-			err: `secrets "fixed-name" already exists`,
 		},
 		"if multiple owned secrets exist, delete them all": {
 			certificate: &cmapi.Certificate{
@@ -286,12 +306,42 @@ func TestProcessItem(t *testing.T) {
 				)),
 			},
 		},
-		// TODO: change this behaviour to not delete the named nextPrivateKeySecretName
-		"if multiple owned secrets exist, delete them all even if one is the named Secret": {
+		"if multiple owned secrets exist with one matching nextPrivateKeySecretName, preserve the matching one and delete others": {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: ptr.To("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateRSA(t, 2048)}),
+				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
+				ownedSecretWithName("testns", "fixed-name-3", "test", nil),
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name-2",
+				)),
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name-3",
+				)),
+			},
+		},
+		"if multiple owned secrets exist but none match nextPrivateKeySecretName, delete all": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: ptr.To("expected-name"),
 					Conditions: []cmapi.CertificateCondition{
 						{
 							Type:   cmapi.CertificateConditionIssuing,

@@ -58,5 +58,21 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
 		},
+		func(s *certmanager.VaultAuth, c randfill.Continue) {
+			// VaultAuth is a union type - only one auth method should be set.
+			// Pick one auth method randomly and only fuzz that one.
+			switch c.Int() % 5 {
+			case 0:
+				c.Fill(&s.TokenSecretRef)
+			case 1:
+				c.Fill(&s.AppRole)
+			case 2:
+				c.Fill(&s.ClientCertificate)
+			case 3:
+				c.Fill(&s.Kubernetes)
+			case 4:
+				c.Fill(&s.AWS)
+			}
+		},
 	}...)
 }

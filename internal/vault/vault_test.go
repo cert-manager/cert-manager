@@ -455,7 +455,7 @@ func TestSetToken(t *testing.T) {
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role must be set",
+				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, or AWS auth must be set",
 			),
 		},
 
@@ -1660,9 +1660,9 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 					},
 				})
 			require.NoError(t, err)
-			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vault.Client).Namespace(),
+			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vaultClientWrapper).Client.Namespace(),
 				"The vault client should have the namespace provided in the Issuer resource")
-			assert.Equal(t, "", c.(*Vault).clientSys.(*vault.Client).Namespace(),
+			assert.Equal(t, "", c.(*Vault).clientSys.(*vaultClientWrapper).Client.Namespace(),
 				"The vault sys client should never have a namespace")
 		})
 	}

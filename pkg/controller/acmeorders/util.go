@@ -226,22 +226,33 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 	}
 
 	if hasParentRefKind && hasParentRefName {
-		if s.HTTP01.GatewayHTTPRoute.ParentRefs == nil {
-			s.HTTP01.GatewayHTTPRoute.ParentRefs = []gwapi.ParentReference{}
+		ns := gwapi.Namespace(o.GetNamespace())
+		name := gwapi.ObjectName(parentRefName)
+		kind := gwapi.Kind(parentRefKind)
+
+		filtered := make([]gwapi.ParentReference, 0, len(s.HTTP01.GatewayHTTPRoute.ParentRefs))
+		for _, pr := range s.HTTP01.GatewayHTTPRoute.ParentRefs {
+			// Drop the issuer-configured parentRef if it matches the annotation override target.
+			// A nil Kind in issuer config is treated as matching any kind for this name/ns pair.
+			sameNamespace := pr.Namespace != nil && *pr.Namespace == ns
+			sameName := pr.Name == name
+			sameKind := pr.Kind == nil || *pr.Kind == kind
+
+			// TODO: we are ignoring section checks until we come up with an approach to support section name overrides.
+			if sameNamespace && sameName && sameKind {
+				continue
+			}
+
+			filtered = append(filtered, pr)
 		}
 
-		parentRefNs := o.GetNamespace()
-		s.HTTP01.GatewayHTTPRoute.ParentRefs = append(s.HTTP01.GatewayHTTPRoute.ParentRefs, gwapi.ParentReference{
-			Kind: func() *gwapi.Kind {
-				g := gwapi.Kind(parentRefKind)
-				return &g
-			}(),
-			Name: gwapi.ObjectName(parentRefName),
-			Namespace: func() *gwapi.Namespace {
-				ns := gwapi.Namespace(parentRefNs)
-				return &ns
-			}(),
+		filtered = append(filtered, gwapi.ParentReference{
+			Name:      name,
+			Namespace: &ns,
+			Kind:      &kind,
 		})
+
+		s.HTTP01.GatewayHTTPRoute.ParentRefs = filtered
 	}
 
 	// If after processing annotations we don't find any parentRefs this means the HTTPRoute

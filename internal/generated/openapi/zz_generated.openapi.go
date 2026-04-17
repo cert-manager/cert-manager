@@ -81,6 +81,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores":                        schema_pkg_apis_certmanager_v1_CertificateKeystores(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateList":                             schema_pkg_apis_certmanager_v1_CertificateList(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey":                       schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal":                          schema_pkg_apis_certmanager_v1_CertificateRenewal(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows":                   schema_pkg_apis_certmanager_v1_CertificateRenewalWindows(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequest":                          schema_pkg_apis_certmanager_v1_CertificateRequest(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestCondition":                 schema_pkg_apis_certmanager_v1_CertificateRequestCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRequestList":                      schema_pkg_apis_certmanager_v1_CertificateRequestList(ref),
@@ -104,6 +106,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.PKCS12Keystore":                              schema_pkg_apis_certmanager_v1_PKCS12Keystore(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.SelfSignedIssuer":                            schema_pkg_apis_certmanager_v1_SelfSignedIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef":                           schema_pkg_apis_certmanager_v1_ServiceAccountRef(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth":                                schema_pkg_apis_certmanager_v1_VaultAWSAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole":                                schema_pkg_apis_certmanager_v1_VaultAppRole(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAuth":                                   schema_pkg_apis_certmanager_v1_VaultAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth":                  schema_pkg_apis_certmanager_v1_VaultClientCertificateAuth(ref),
@@ -2343,7 +2346,7 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 					},
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.",
+							Description: "Duration is the duration for the not after date for the requested certificate. This is set on order creation as per the ACME spec.",
 							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
 						},
 					},
@@ -2854,6 +2857,82 @@ func schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref common.ReferenceCa
 	}
 }
 
+func schema_pkg_apis_certmanager_v1_CertificateRenewal(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"policy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`policy` must be one of `Disabled`, `RenewBefore`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"windows": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "`windows` mentions the behavior of when the renewal must happen.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewalWindows"},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_CertificateRenewalWindows(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CertificateRenewalWindows is the definition for renewal windows",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"timezone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`timezone` is IANA compliant timezone. For example America/Denver. If this field is not set, timezone is treated as UTC.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"windowDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`windowDuration` is how long the cron definition is active for. Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.",
+							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
+						},
+					},
+					"cron": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`cron` is a cron compliant string to allow when the renewal should be allowed. Format is as shown below: * * * * * | | | | | | | | | day of the week (0–6) (Sunday to Saturday; | | | month (1–12)             7 is also Sunday on some systems) | | day of the month (1–31) | hour (0–23) minute (0–59)",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"windowDuration", "cron"},
+			},
+		},
+		Dependencies: []string{
+			metav1.Duration{}.OpenAPIModelName()},
+	}
+}
+
 func schema_pkg_apis_certmanager_v1_CertificateRequest(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3275,6 +3354,12 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Format:      "int32",
 						},
 					},
+					"renewal": {
+						SchemaProps: spec.SchemaProps{
+							Description: "`renewal` allows configuration of how your certificate is renewed. If the policy mentioned is `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal"),
+						},
+					},
 					"dnsNames": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -3485,7 +3570,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", metav1.Duration{}.OpenAPIModelName()},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificatePrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateRenewal", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSecretTemplate", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.NameConstraints", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.OtherName", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference", metav1.Duration{}.OpenAPIModelName()},
 	}
 }
 
@@ -4278,6 +4363,64 @@ func schema_pkg_apis_certmanager_v1_ServiceAccountRef(ref common.ReferenceCallba
 	}
 }
 
+func schema_pkg_apis_certmanager_v1_VaultAWSAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VaultAWSAuth authenticates with Vault using AWS IAM authentication. See https://www.vaultproject.io/docs/auth/aws for more details.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"mountPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault mountPath here is the mount path to use when authenticating with Vault. For example, setting a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the default value \"/v1/auth/aws\" will be used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"role": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A required field containing the Vault Role to assume when authenticating.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"region": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The AWS region to use for authentication. If not specified, the region will be determined from AWS_REGION or AWS_DEFAULT_REGION environment variables, falling back to \"us-east-1\" if not set.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A reference to a service account that will be used to request a web identity token for IRSA (IAM Roles for Service Accounts) authentication.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"),
+						},
+					},
+					"iamRoleArn": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The ARN of the AWS IAM role to assume using the Kubernetes service account token. Required when using IRSA (serviceAccountRef is set). This role must have a trust policy that allows the OIDC provider to assume it.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"vaultHeaderValue": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The Vault header value to include in the STS signing request. This is used to prevent replay attacks.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"role"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ServiceAccountRef"},
+	}
+}
+
 func schema_pkg_apis_certmanager_v1_VaultAppRole(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4321,7 +4464,7 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate` or `kubernetes`].",
+				Description: "VaultAuth is configuration used to authenticate with a Vault server. The order of precedence is [`tokenSecretRef`, `appRole`, `clientCertificate`, `kubernetes`, `aws`].",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"tokenSecretRef": {
@@ -4348,11 +4491,17 @@ func schema_pkg_apis_certmanager_v1_VaultAuth(ref common.ReferenceCallback) comm
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth"),
 						},
 					},
+					"aws": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AWS authenticates with Vault using AWS IAM authentication. This allows authentication using IAM roles for service accounts (IRSA), EKS Pod Identity (PIA), or ambient credentials (EC2 instance profiles, ECS task role).",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAWSAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultAppRole", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultClientCertificateAuth", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
 	}
 }
 
@@ -4786,7 +4935,7 @@ func schema_pkg_apis_meta_v1_IssuerReference(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ObjectReference is a reference to an object with a given name, kind and group.\n\nDeprecated: Use IssuerReference instead.",
+				Description: "IssuerReference is a reference to a certificate issuer object with a given name, kind and group.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
