@@ -1731,7 +1731,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
+			errs, _ := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
