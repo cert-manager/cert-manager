@@ -36,8 +36,8 @@ github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cqUQ3I=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
-github.com/Venafi/vcert/v5 v5.13.0 h1:f5XGQ7aarJA39YJSd/uLVOtmSTofJCpOVM7jvodBQV8=
-github.com/Venafi/vcert/v5 v5.13.0/go.mod h1:cQ5PzOLqLR2nCIPWduqXSK9EVCrVdbCQlRXh/024iiw=
+github.com/Venafi/vcert/v5 v5.13.1 h1:4Ls9/NvSUPdWxWLoeYTaDbfopQ/IL2Avv+TwQTyMyms=
+github.com/Venafi/vcert/v5 v5.13.1/go.mod h1:cQ5PzOLqLR2nCIPWduqXSK9EVCrVdbCQlRXh/024iiw=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.1.0 h1:KvfpO2utLmpRq0fbC0UZRzdCERfLGLX1/dcYvG7pP7k=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.1.0/go.mod h1:AxGyKKxAxaCNeGadscLgo+gBYEAKhNG6tRR5O0HjV30=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e h1:4dAU9FXIyQktpoUAgOJK3OTFc/xug0PCXYCqU0FgDKI=
