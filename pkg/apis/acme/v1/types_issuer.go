@@ -50,7 +50,7 @@ type ACMEIssuer struct {
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	// This value picks the first certificate bundle in the combined set of
 	// ACME default and alternative chains that has a root-most certificate with
-	// this value as its issuer's commonname.
+	// this value as its issuer's common name.
 	// +optional
 	// +kubebuilder:validation:MaxLength=64
 	PreferredChain string `json:"preferredChain,omitempty"`
