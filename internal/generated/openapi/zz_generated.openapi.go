@@ -1847,6 +1847,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerStatus(ref common.ReferenceCallback) comm
 							Format:      "",
 						},
 					},
+					"lastRegisteredServer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastRegisteredServer is the ACME server URL that was used when the account was last registered. This is used to detect changes to the server URL, including path changes (e.g., different policy identifier), which should trigger account re-registration.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
