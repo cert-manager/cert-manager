@@ -55,8 +55,8 @@ github.com/aws/aws-sdk-go-v2/credentials,Apache-2.0
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/configsources,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2,Apache-2.0
-github.com/aws/aws-sdk-go-v2/internal/ini,Apache-2.0
 github.com/aws/aws-sdk-go-v2/internal/sync/singleflight,BSD-3-Clause
+github.com/aws/aws-sdk-go-v2/internal/v4a,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/route53,Apache-2.0
