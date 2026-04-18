@@ -262,7 +262,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
 	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.GatewayAPIConfig.Enabled {
 		ctx.GWShared.Start(rootCtx.Done())
 	}
 
@@ -272,7 +272,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 	log.V(logf.InfoLevel).Info("control loops exited")
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.GatewayAPIConfig.Enabled {
 		ctx.GWShared.Shutdown()
 	}
 
@@ -368,8 +368,8 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 		},
 
 		ConfigOptions: controller.ConfigOptions{
-			EnableGatewayAPI:            opts.EnableGatewayAPI,
-			EnableGatewayAPIListenerSet: opts.EnableGatewayAPIListenerSet,
+			EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
+			EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
 		},
 	})
 	if err != nil {
