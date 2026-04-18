@@ -3120,6 +3120,13 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 							Format:      "",
 						},
 					},
+					"maxPathLen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Requested basic constraints maxPathLen value. Note that the issuer may choose to ignore the requested maxPathLen value, just like any other requested attribute.\n\nNOTE: If the CSR in the `Request` field has a BasicConstraints extension, it must have the same maxPathLen value as specified here.\n\nIf set, maxPathLen must be a value of `0` or greater. If unset (`nil`), there is no maximum. Default value is `nil`.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"usages": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -3493,6 +3500,13 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"maxPathLen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Requested basic constraints maxPathLen value. The maxPathLen value is used to set the `maxPathLen` field on the created CertificateRequest resources. Note that the issuer may choose to ignore the requested maxPathLen value, just like any other requested attribute. If the `UseCertificateRequestBasicConstraints` feature gate is set and the `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will have a BasicConstraints extension with the provided maxPathLen value.\n\nIf set, maxPathLen must be a value of `0` or greater. If unset (`nil`), there is no maximum. Default value is `nil`.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"usages": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -3529,6 +3543,13 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"encodeUsagesInRequest": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.\n\nThis option defaults to true, and should only be disabled if the target issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"encodeBasicConstraintsInRequest": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether the BasicConstraints extension should be set in the encoded CSR.\n\nIMPORTANT: This option is only available if `UseCertificateRequestBasicConstraints` feature gate is set. Otherwise, the CSR will not have the BasicConstraints extension. This option defaults to true, and should only be disabled if the target issuer does not support CSRs with a X509 BasicConstraints extension.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
