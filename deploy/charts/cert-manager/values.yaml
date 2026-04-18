@@ -619,6 +619,11 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 8
 
+# readinessProbe settings for the controller container of the controller Pod.
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 90
+
 # enableServiceLinks indicates whether information about services should be
 # injected into the pod's environment variables, matching the syntax of Docker
 # links.
