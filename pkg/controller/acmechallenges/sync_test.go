@@ -31,6 +31,7 @@ import (
 	"github.com/digitalocean/godo"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
@@ -41,6 +42,8 @@ import (
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	controller2 "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -778,6 +781,227 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expectedMessage, stabilizeSolverErrorMessage(tt.err))
+		})
+	}
+}
+
+type DummySolver struct {
+	results []error
+	index   int
+}
+
+func (d *DummySolver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+	defer func() {
+		d.index++
+	}()
+	return d.results[d.index]
+}
+
+func (d *DummySolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+	defer func() {
+		d.index++
+	}()
+	return d.results[d.index]
+}
+
+func (d *DummySolver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
+	defer func() {
+		d.index++
+	}()
+	return d.results[d.index]
+}
+
+type fakeOrder struct {
+	orders []*cmacme.Order
+}
+
+func (f fakeOrder) List(selector labels.Selector) (ret []*cmacme.Order, err error) {
+	panic("implement me")
+}
+
+func (f fakeOrder) Orders(namespace string) cmacmelisters.OrderNamespaceLister {
+	return &fakeOrderNamespaceLister{f.orders}
+}
+
+type fakeOrderNamespaceLister struct {
+	orders []*cmacme.Order
+}
+
+func (f fakeOrderNamespaceLister) List(selector labels.Selector) (ret []*cmacme.Order, err error) {
+	panic("implement me")
+}
+
+func (f fakeOrderNamespaceLister) Get(name string) (*cmacme.Order, error) {
+	for _, order := range f.orders {
+		if order.Name == name {
+			return order, nil
+		}
+	}
+	return nil, fmt.Errorf("order %s not found", name)
+}
+
+type testScenario struct {
+	challenge       *cmacme.Challenge
+	solverResponses []error
+	builder         *testpkg.Builder
+	acmeClient      *acmecl.FakeACME
+}
+
+func TestSyncSolverPickerPath(t *testing.T) {
+	baseOrder := gen.Order("testorder")
+	baseChallenge := gen.Challenge("testchal",
+		gen.SetChallengeIssuer(cmmeta.ObjectReference{
+			Name: "testissuer",
+		}),
+		gen.SetChallengeSolver(cmacme.ACMEChallengeSolver{
+			DNS01: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					AccessKeyID: "oldkey",
+				},
+			},
+		}),
+		gen.SetChallengeOwner(baseOrder, cmacme.SchemeGroupVersion.WithKind("Order")),
+		gen.SetChallengeFinalizers([]string{cmacme.ACMEDomainQualifiedFinalizer}),
+	)
+
+	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
+		Solvers: []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+						AccessKeyID: "newkey",
+					},
+				},
+			},
+		},
+	}))
+
+	accessDeniedError := &smithy.GenericAPIError{
+		Code: "403",
+	}
+
+	scenarios := map[string]testScenario{
+		"challenge with expired credentials": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeDNSName("test.com"),
+				gen.SetChallengePresented(false),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+				gen.SetChallengeState(cmacme.Processing),
+			),
+			solverResponses: []error{
+				accessDeniedError, // Present
+				nil,
+				accessDeniedError, // Check
+				nil,
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeDNSName("test.com"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
+				},
+				ExpectedEvents: []string{
+					"Normal Presented" + " Presented challenge using DNS-01 challenge mechanism",
+					"Normal DomainVerified Domain \"test.com\" verified with \"DNS-01\" validation",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{URI: "testurl", Status: acmeapi.StatusReady}, nil
+				},
+				FakeWaitAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
+				},
+			},
+		},
+		"valid challenge with residual resources": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeDNSName("test.com"),
+				gen.SetChallengeState(cmacme.Valid),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+				gen.SetChallengePresented(true),
+				gen.SetChallengeReason("Successfully authorized domain"),
+			),
+			solverResponses: []error{
+				accessDeniedError,
+				nil,
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(false),
+							gen.SetChallengePresented(false),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeDNSName("test.com"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
+				},
+				ExpectedEvents: []string{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{URI: "testurl", Status: acmeapi.StatusReady}, nil
+				},
+				FakeWaitAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
+				},
+			},
+		}}
+
+	for name, test := range scenarios {
+		t.Run(name, func(t *testing.T) {
+			test.builder.T = t
+			test.builder.Init()
+			defer test.builder.Stop()
+
+			c := &controller{}
+			if _, _, err := c.Register(test.builder.Context); err != nil {
+				t.Fatal(err)
+			}
+			c.helper = issuer.NewHelper(
+				test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+				test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
+			)
+			c.accountRegistry = &accountstest.FakeRegistry{
+				GetClientFunc: func(_ string) (acmecl.Interface, error) {
+					return test.acmeClient, nil
+				},
+			}
+			dummySolver := DummySolver{results: test.solverResponses}
+			retrySolverIml := newRetrySolver(&dummySolver, fakeOrder{[]*cmacme.Order{baseOrder}}, c.helper, controller2.IssuerOptions{})
+			c.dnsSolver = retrySolverIml
+
+			test.builder.Start()
+
+			err := c.Sync(t.Context(), test.challenge)
+
+			test.builder.CheckAndFinish(err)
 		})
 	}
 }
