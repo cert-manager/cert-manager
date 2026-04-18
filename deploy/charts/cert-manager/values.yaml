@@ -346,6 +346,23 @@ approveSignerNames:
 - issuers.cert-manager.io/*
 - clusterissuers.cert-manager.io/*
 
+# Optional additional annotations to add to the controller verticalPodAutoscaler.
+verticalPodAutoscaler:
+  enabled: false
+  controlledValues: "RequestsAndLimits"
+  mode: "Auto"
+  updatePolicy:
+    updateMode: "Auto"
+  # minAllowed
+  # If not set, it will default to the current resource requests
+  #   cpu: 50m
+  #   memory: 64Mi
+  minAllowed: {}
+  # maxAllowed
+  # If not set, it allows unlimited scaling
+  #   cpu: 1
+  maxAllowed: {}
+
 # Additional command line flags to pass to cert-manager controller binary.
 # To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.
 #
@@ -1306,6 +1323,23 @@ cainjector:
   # Optional additional annotations to add to the cainjector metrics Service.
   # +docs:property
   # serviceAnnotations: {}
+
+  # Optional additional annotations to add to the cainjector verticalPodAutoscaler.
+  verticalPodAutoscaler:
+    enabled: false
+    controlledValues: "RequestsAndLimits"
+    mode: "Auto"
+    updatePolicy:
+      updateMode: "Auto"
+    # minAllowed
+    # If not set, it will default to the current resource requests
+    #   cpu: 50m
+    #   memory: 64Mi
+    minAllowed: {}
+    # maxAllowed
+    # If not set, it allows unlimited scaling
+    #   cpu: 1
+    maxAllowed: {}
 
   # Additional command line flags to pass to cert-manager cainjector binary.
   # To see all available flags run `docker run quay.io/jetstack/cert-manager-cainjector:<version> --help`.
