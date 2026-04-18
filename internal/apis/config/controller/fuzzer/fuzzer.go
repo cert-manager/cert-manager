@@ -114,6 +114,10 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 			if s.ACMEDNS01Config.CheckRetryPeriod == time.Duration(0) {
 				s.ACMEDNS01Config.CheckRetryPeriod = time.Second * 8875
 			}
+
+			if s.ACMEDNS01Config.Timeout == time.Duration(0) {
+				s.ACMEDNS01Config.Timeout = time.Second * 8875
+			}
 		},
 	}
 }

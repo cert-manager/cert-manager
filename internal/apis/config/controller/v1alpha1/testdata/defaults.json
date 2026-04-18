@@ -65,7 +65,8 @@
 	},
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
-		"checkRetryPeriod": "10s"
+		"checkRetryPeriod": "10s",
+		"timeout": "30s"
 	},
 	"pemSizeLimitsConfig": {
 		"maxCertificateSize": 36500,
