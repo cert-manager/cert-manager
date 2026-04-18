@@ -189,6 +189,19 @@ func SetIssuerACMEDisableAccountKeyGeneration(disabled bool) IssuerModifier {
 	}
 }
 
+func SetIssuerACMEAccountPrivateKeyAlgorithm(algorithm cmacme.AccountKeyAlgorithm) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		if spec.ACME.AccountPrivateKey == nil {
+			spec.ACME.AccountPrivateKey = &cmacme.AccountPrivateKey{}
+		}
+		spec.ACME.AccountPrivateKey.Algorithm = algorithm
+	}
+}
+
 func SetIssuerACMEEAB(keyID, secretName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
