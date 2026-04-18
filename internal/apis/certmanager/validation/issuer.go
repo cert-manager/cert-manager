@@ -594,6 +594,11 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		if len(p.AcmeDNS.Host) == 0 {
 			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
 		}
+		if len(p.AcmeDNS.CABundle) > 0 {
+			if err := validateCABundleNotEmpty(p.AcmeDNS.CABundle); err != nil {
+				el = append(el, field.Invalid(fldPath.Child("acmeDNS", "caBundle"), "", err.Error()))
+			}
+		}
 	}
 
 	if p.DigitalOcean != nil {

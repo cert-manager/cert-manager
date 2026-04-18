@@ -1138,6 +1138,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 
 func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 	fldPath := field.NewPath("test")
+
+	validCAPEM := unitcrypto.MustCreateCryptoBundle(t,
+		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
+		clock.RealClock{},
+	).CertBytes
+
 	scenarios := map[string]struct {
 		cfg  *cmacme.ACMEChallengeSolverDNS01
 		errs []*field.Error
@@ -1726,6 +1732,37 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
+			},
+		},
+		"acmedns with empty caBundle passes validation": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"acmedns with valid PEM caBundle passes validation": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+					CABundle:      validCAPEM,
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"acmedns with invalid PEM caBundle fails validation": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+					CABundle:      []byte("invalid-pem"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("acmeDNS", "caBundle"), "", "cert bundle didn't contain any valid certificates"),
 			},
 		},
 	}
