@@ -64,16 +64,9 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 
-HELM_URL="https://charts.jetstack.io"
-
-# cert-manager Helm chart location
-HELM_CHART="cmupgradetest/cert-manager"
+HELM_URL="oci://quay.io/jetstack/charts/cert-manager"
 
 echo "+++ Testing upgrading from ${INITIAL_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm"
-
-# This will target the host's helm repository cache
-$helm repo add cmupgradetest $HELM_URL
-$helm repo update
 
 # 1. INSTALL THE INITIAL RELEASE'S PUBLISHED HELM CHART
 
@@ -89,7 +82,7 @@ $helm upgrade \
     --create-namespace \
     --version "${INITIAL_RELEASE}" \
     "$RELEASE_NAME" \
-    "$HELM_CHART"
+    "$HELM_URL"
 
 # Wait for the cert-manager api to be available
 $cmctl check api --wait=2m -v=5
