@@ -20,13 +20,13 @@ import "time"
 
 const (
 	// minimum permitted certificate duration by cert-manager
-	MinimumCertificateDuration = time.Hour
+	MinimumCertificateDuration = 5 * time.Minute
 
 	// default certificate duration if Issuer.spec.duration is not set
-	DefaultCertificateDuration = time.Hour * 24 * 90
+	DefaultCertificateDuration = time.Hour * 24 * 30
 
 	// minimum certificate duration before certificate expiration
-	MinimumRenewBefore = time.Minute * 5
+	MinimumRenewBefore = time.Minute
 
 	// Deprecated: the default is now 2/3 of Certificate's duration
 	DefaultRenewBefore = time.Hour * 24 * 30
