@@ -106,9 +106,11 @@ func SyncFnFor(
 
 		// The flag --auto-certificate-annotations as well as the default
 		// "kubernetes.io/tls-acme" annotation are only enabled for the Ingress
-		// resource.
+		// and gateway resource.
 		var autoAnnotations []string
 		if _, ok := ingLike.(*networkingv1.Ingress); ok {
+			autoAnnotations = defaults.DefaultAutoCertificateAnnotations
+		} else if _, ok := ingLike.(*gwapi.Gateway); ok {
 			autoAnnotations = defaults.DefaultAutoCertificateAnnotations
 		}
 
