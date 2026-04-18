@@ -65,6 +65,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.CAInjectorConfiguration) {
 		"If set, this limits the scope of cainjector to a single namespace. "+
 		"If set, cainjector will not update resources with certificates outside of the "+
 		"configured namespace.")
+	fs.StringSliceVar(&c.IgnoreNamespaces, "ignore-namespaces", c.IgnoreNamespaces, ""+
+		"Comma-separated list of namespaces to ignore secrets from. "+
+		"Should not be used with --namespace.")
 	fs.BoolVar(&c.LeaderElectionConfig.Enabled, "leader-elect", c.LeaderElectionConfig.Enabled, ""+
 		"If true, cainjector will perform leader election between instances to ensure no more "+
 		"than one instance of cainjector operates at a time")
