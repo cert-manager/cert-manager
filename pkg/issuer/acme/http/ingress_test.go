@@ -761,3 +761,73 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 		})
 	}
 }
+
+// TestEnsureIngressEditInPlaceAppliesIngressTemplate is a regression test for
+// https://github.com/cert-manager/cert-manager/issues/8572: when
+// acme.cert-manager.io/http01-edit-in-place is set on an existing Ingress,
+// ingressTemplate annotations must be applied to that Ingress, not only to
+// newly created ones.
+func TestEnsureIngressEditInPlaceAppliesIngressTemplate(t *testing.T) {
+	const (
+		existingIngressName = "acme-ingress"
+		wantAnnotation      = "ingress.cilium.io/force-https"
+		wantAnnotationValue = "disabled"
+	)
+
+	ch := &cmacme.Challenge{
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Solver: cmacme.ACMEChallengeSolver{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+						Name: existingIngressName,
+						IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
+							ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
+								Annotations: map[string]string{
+									wantAnnotation: wantAnnotationValue,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	fixture := solverFixture{
+		Challenge: ch,
+		PreFn: func(t *testing.T, s *solverFixture) {
+			// Create the existing Ingress that will be edited in-place.
+			existing := &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      existingIngressName,
+					Namespace: s.Challenge.Namespace,
+				},
+				Spec: networkingv1.IngressSpec{
+					Rules: []networkingv1.IngressRule{
+						{
+							Host: ch.Spec.DNSName,
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{},
+							},
+						},
+					},
+				},
+			}
+			_, err := s.Builder.FakeKubeClient().NetworkingV1().Ingresses(s.Challenge.Namespace).Create(t.Context(), existing, metav1.CreateOptions{})
+			require.NoError(t, err)
+			s.Builder.Sync()
+		},
+		CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+			ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
+			require.NoError(t, err)
+			require.Len(t, ingresses, 1)
+			assert.Equal(t, wantAnnotationValue, ingresses[0].Annotations[wantAnnotation],
+				"ingressTemplate annotation should be applied to the edit-in-place ingress")
+		},
+	}
+
+	fixture.Setup(t)
+	resp, err := fixture.Solver.ensureIngress(t.Context(), fixture.Challenge, "fakeservice")
+	fixture.Finish(t, resp, err)
+}
