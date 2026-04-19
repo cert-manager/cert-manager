@@ -18,3 +18,4 @@ _bin/
 *.bak
 /go.work.sum
 **/go.work
+.claude

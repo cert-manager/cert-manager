@@ -114,6 +114,12 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 			if s.ACMEDNS01Config.CheckRetryPeriod == time.Duration(0) {
 				s.ACMEDNS01Config.CheckRetryPeriod = time.Second * 8875
 			}
+
+			// The deprecated top-level fields are always overwritten by the defaulter
+			// to mirror the canonical GatewayAPIConfig fields, so keep them in sync here
+			// to ensure the round-trip produces an identical object.
+			s.EnableGatewayAPI = s.GatewayAPIConfig.Enabled                      //nolint:staticcheck
+			s.EnableGatewayAPIListenerSet = s.GatewayAPIConfig.EnableListenerSet //nolint:staticcheck
 		},
 	}
 }

@@ -85,11 +85,15 @@ type ControllerConfiguration struct {
 	// Whether gateway API integration is enabled within cert-manager. The
 	// ExperimentalGatewayAPISupport feature gate must also be enabled (default
 	// as of 1.15).
+	//
+	// Deprecated: use GatewayAPIConfig.Enabled instead.
 	EnableGatewayAPI *bool `json:"enableGatewayAPI,omitempty"`
 
 	// Specifies whether the ListenerSet controller should be enabled with-in cert-manager.
 	// This along with ListenerSet feature gate enabled allows the user to consume ListenerSet
 	// for self-service TLS.
+	//
+	// Deprecated: use GatewayAPIConfig.EnableListenerSet instead.
 	EnableGatewayAPIListenerSet *bool `json:"enableGatewayAPIListenerSet,omitempty"`
 
 	// Specify which annotations should/shouldn't be copied from Certificate to
@@ -244,6 +248,15 @@ type ACMEDNS01Config struct {
 }
 
 type GatewayAPIConfig struct {
+	// Enabled specifies whether Gateway API integration is enabled within cert-manager.
+	// The ExperimentalGatewayAPISupport feature gate must also be enabled (default as of 1.15).
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// EnableListenerSet specifies whether the ListenerSet controller should be enabled
+	// within cert-manager. This along with the ListenerSet feature gate enabled allows
+	// the user to consume ListenerSet for self-service TLS.
+	EnableListenerSet *bool `json:"enableListenerSet,omitempty"`
+
 	// ExtraProtocols is a list of additional Gateway Listener protocol types that
 	// the Gateway API shim should treat as TLS-capable. By default, only HTTPS
 	// and TLS protocol types are processed. Each entry must exactly match the
