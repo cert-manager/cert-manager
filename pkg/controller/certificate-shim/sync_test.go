@@ -3950,6 +3950,7 @@ func TestSync(t *testing.T) {
 			ExpectedEvents:           []string{},
 			ExpectedCreate:           nil,
 		},
+		// TODO: @hjoshi123 add more tests for listenersets like the ignore listener annotations when we re-enable listenerset e2e tests
 		{
 			Name:   "ListenerSet: custom extra protocol with valid TLS block generates a Certificate",
 			Issuer: acmeClusterIssuer,
@@ -4105,6 +4106,134 @@ func TestSync(t *testing.T) {
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "GatewayAPI ListenerIgnoreAnnotation should ignore listeners",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CertificateIgnoreTLSListeners:         "custom-proto-listener",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Name:     "custom-proto-listener",
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{},
+			ExpectedCreate:      nil,
+		},
+		{
+			Name:   "GatewayAPI ListenerIgnoreAnnotation should ignore only listeners with matching name",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CertificateIgnoreTLSListeners:         "custom-proto-listener,ignore-listener",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Name:     "custom-proto-listener",
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Hostname: ptrHostname("ignore.example.com"),
+							Port:     443,
+							Name:     "ignore-listener",
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "ignore-example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Hostname: ptrHostname("new.example.com"),
+							Port:     443,
+							Name:     "custom-proto-listener-new",
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: ptrMode(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "new-example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "new-example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "new-example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"new.example.com"},
+						SecretName: "new-example-com-tls",
 						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
@@ -4569,14 +4698,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 	}{
 		{
 			name: "should not remove Certificate when not owned by the Ingress",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{Name: "ingress-2", Namespace: gen.DefaultTestNamespace, UID: "ingress-2"},
@@ -4586,14 +4717,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 		},
 		{
 			name: "should not remove Certificate when Ingress references the secretName of the Certificate",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{Name: "ingress-1", Namespace: gen.DefaultTestNamespace, UID: "ingress-1"},
@@ -4603,14 +4736,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 		},
 		{
 			name: "should remove Certificate when Ingress does not reference the secretName of the Certificate",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{Name: "ingress-1", Namespace: gen.DefaultTestNamespace, UID: "ingress-1"},
@@ -4619,14 +4754,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 		},
 		{
 			name: "should not remove Certificate when not owned by the Gateway",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-2", Namespace: gen.DefaultTestNamespace, UID: "gw-2"},
@@ -4642,14 +4779,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 		},
 		{
 			name: "should remove Certificate when Gateway does not reference the secretName of the Certificate in one of its listers",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1"},
@@ -4661,14 +4800,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 		},
 		{
 			name: "should not remove Certificate when the Gateway references the secretName of the Certificate in one of its listers",
-			givenCerts: []*cmapi.Certificate{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "cert-1",
-					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
-				}, Spec: cmapi.CertificateSpec{
-					SecretName: "secret-name",
-				}},
+			givenCerts: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-1",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					}, Spec: cmapi.CertificateSpec{
+						SecretName: "secret-name",
+					},
+				},
 			},
 			ingLike: &gwapi.Gateway{
 				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1"},
@@ -4885,6 +5026,72 @@ func TestIsTLSProtocol(t *testing.T) {
 			got := isGatewayAPITLSProtocol(tt.protocol, tt.extra)
 			if got != tt.want {
 				t.Errorf("isGatewayAPITLSProtocol(%q, %v) = %v, want %v", tt.protocol, tt.extra, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isGatewayAPIListenerIgnoredThroughAnnotation(t *testing.T) {
+	tests := []struct {
+		name         string
+		annotations  map[string]string
+		listenerName string
+		want         bool
+	}{
+		{
+			name:         "no annotations returns false",
+			annotations:  nil,
+			listenerName: "https",
+			want:         false,
+		},
+		{
+			name:         "annotation not present returns false",
+			annotations:  map[string]string{"other-annotation": "value"},
+			listenerName: "https",
+			want:         false,
+		},
+		{
+			name:         "single listener match returns true",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: "https"},
+			listenerName: "https",
+			want:         true,
+		},
+		{
+			name:         "single listener no match returns false",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: "other"},
+			listenerName: "https",
+			want:         false,
+		},
+		{
+			name:         "comma-separated list with match returns true",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: "foo,https,bar"},
+			listenerName: "https",
+			want:         true,
+		},
+		{
+			name:         "comma-separated list without match returns false",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: "foo,bar,baz"},
+			listenerName: "https",
+			want:         false,
+		},
+		{
+			name:         "empty annotation value returns false",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: ""},
+			listenerName: "https",
+			want:         false,
+		},
+		{
+			name:         "exact match is required",
+			annotations:  map[string]string{cmapi.CertificateIgnoreTLSListeners: "https-extra"},
+			listenerName: "https",
+			want:         false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isGatewayAPIListenerIgnoredThroughAnnotation(tt.annotations, tt.listenerName)
+			if got != tt.want {
+				t.Errorf("isGatewayAPIListenerIgnoredThroughAnnotation(%v, %q) = %v, want %v", tt.annotations, tt.listenerName, got, tt.want)
 			}
 		})
 	}

@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -53,10 +54,11 @@ import (
 )
 
 const (
-	reasonBadConfig         = "BadConfig"
-	reasonCreateCertificate = "CreateCertificate"
-	reasonUpdateCertificate = "UpdateCertificate"
-	reasonDeleteCertificate = "DeleteCertificate"
+	reasonBadConfig                 = "BadConfig"
+	reasonSkippedListenerAnnotation = "SkippedListenerAnnotation"
+	reasonCreateCertificate         = "CreateCertificate"
+	reasonUpdateCertificate         = "UpdateCertificate"
+	reasonDeleteCertificate         = "DeleteCertificate"
 )
 
 const applysetLabel = "applyset.kubernetes.io/part-of"
@@ -321,6 +323,21 @@ func isGatewayAPITLSProtocol(protocol gwapi.ProtocolType, extra sets.Set[string]
 	return extra.Has(string(protocol))
 }
 
+// isGatewayAPIListenerIgnoredThroughAnnotation reports whether a listener with the given name should be ignored for certificate creation. The value of the annotation should be a comma-separated list of listener names to ignore. The listener name(s) on the annotation should match EXACTLY with the listener name(s) defined in the Gateway/ListenerSet spec.
+func isGatewayAPIListenerIgnoredThroughAnnotation(objAnn map[string]string, listenerName string) bool {
+	ignoredListeners, ok := objAnn[cmapi.CertificateIgnoreTLSListeners]
+	if !ok {
+		return false
+	}
+
+	for ignoredListener := range strings.SplitSeq(ignoredListeners, ",") {
+		if strings.TrimSpace(ignoredListener) == listenerName {
+			return true
+		}
+	}
+	return false
+}
+
 func buildCertificates(
 	rec record.EventRecorder,
 	log logr.Logger,
@@ -331,6 +348,7 @@ func buildCertificates(
 	defaults controller.IngressShimOptions,
 ) (newCrts, updateCrts []*cmapi.Certificate, _ error) {
 	tlsHosts := make(map[corev1.ObjectReference][]string)
+
 	switch ingLike := ingLike.(type) {
 	case *networkingv1.Ingress:
 		for i, tls := range ingLike.Spec.TLS {
@@ -346,66 +364,9 @@ func buildCertificates(
 			}] = tls.Hosts
 		}
 	case *gwapi.ListenerSet:
-		for i, l := range ingLike.Spec.Listeners {
-			if !isGatewayAPITLSProtocol(l.Protocol, defaults.GatewayAPIExtraProtocols) {
-				continue
-			}
-
-			// We never issue certificates for TLS Passthrough mode
-			if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwapi.TLSModePassthrough {
-				continue
-			}
-
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), translateListenerToGWAPIV1Listener(l), ingLike).ToAggregate()
-			if err != nil {
-				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
-				continue
-			}
-
-			for _, certRef := range l.TLS.CertificateRefs {
-				secretRef := corev1.ObjectReference{
-					Name: string(certRef.Name),
-				}
-				if certRef.Namespace != nil {
-					secretRef.Namespace = string(*certRef.Namespace)
-				} else {
-					secretRef.Namespace = ingLike.GetNamespace()
-				}
-				tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
-			}
-		}
+		handleGatewayAPIListeners(ingLike.Spec.Listeners, ingLike, rec, tlsHosts, defaults)
 	case *gwapi.Gateway:
-		for i, l := range ingLike.Spec.Listeners {
-			// TLS is only supported for a limited set of protocol types: https://gateway-api.sigs.k8s.io/guides/tls/#listeners-and-tls
-			if !isGatewayAPITLSProtocol(l.Protocol, defaults.GatewayAPIExtraProtocols) {
-				continue
-			}
-
-			// We never issue certificates for TLS Passthrough mode
-			if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwapi.TLSModePassthrough {
-				continue
-			}
-
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
-			if err != nil {
-				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
-				continue
-			}
-
-			for _, certRef := range l.TLS.CertificateRefs {
-				secretRef := corev1.ObjectReference{
-					Name: string(certRef.Name),
-				}
-				if certRef.Namespace != nil {
-					secretRef.Namespace = string(*certRef.Namespace)
-				} else {
-					secretRef.Namespace = ingLike.GetNamespace()
-				}
-				// Gateway API hostname explicitly disallows IP addresses, so this
-				// should be OK.
-				tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
-			}
-		}
+		handleGatewayAPIListeners(ingLike.Spec.Listeners, ingLike, rec, tlsHosts, defaults)
 	default:
 		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway or xlistenerset, got %T", ingLike)
 	}
@@ -531,6 +492,47 @@ func buildCertificates(
 		}
 	}
 	return newCrts, updateCrts, nil
+}
+
+func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners []L, ingLike client.Object, rec record.EventRecorder, tlsHosts map[corev1.ObjectReference][]string, defaults controller.IngressShimOptions) {
+	for i, raw := range listeners {
+		l := gwapi.Listener(raw)
+		// TLS is only supported for a limited set of protocol types: https://gateway-api.sigs.k8s.io/guides/tls/#listeners-and-tls
+		if !isGatewayAPITLSProtocol(l.Protocol, defaults.GatewayAPIExtraProtocols) {
+			continue
+		}
+
+		// We never issue certificates for TLS Passthrough mode
+		if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwapi.TLSModePassthrough {
+			continue
+		}
+
+		if ann := ingLike.GetAnnotations(); ann != nil {
+			if isGatewayAPIListenerIgnoredThroughAnnotation(ann, string(l.Name)) {
+				continue
+			}
+		}
+
+		err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
+		if err != nil {
+			rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
+			continue
+		}
+
+		for _, certRef := range l.TLS.CertificateRefs {
+			secretRef := corev1.ObjectReference{
+				Name: string(certRef.Name),
+			}
+			if certRef.Namespace != nil {
+				secretRef.Namespace = string(*certRef.Namespace)
+			} else {
+				secretRef.Namespace = ingLike.GetNamespace()
+			}
+			// Gateway API hostname explicitly disallows IP addresses, so this
+			// should be OK.
+			tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
+		}
+	}
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
