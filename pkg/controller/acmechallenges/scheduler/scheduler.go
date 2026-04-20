@@ -186,13 +186,92 @@ func compareChallenges(l, r *cmacme.Challenge) int {
 		return 1
 	}
 
-	// TODO: check the http01.ingressClass attribute and allow two challenges
-	// with different ingress classes specified to be scheduled at once
+	// Allow two HTTP01 challenges with different ingress classes to run in
+	// parallel, since they use separate Ingress resources and do not conflict.
+	if l.Spec.Type == cmacme.ACMEChallengeTypeHTTP01 {
+		lClass := http01IngressClass(l.Spec.Solver.HTTP01)
+		rClass := http01IngressClass(r.Spec.Solver.HTTP01)
+		if lClass < rClass {
+			return -1
+		}
+		if lClass > rClass {
+			return 1
+		}
+	}
 
-	// TODO: check the dns01.provider attribute and allow two challenges with
-	// different providers to be scheduled at once
+	// Allow two DNS01 challenges with different providers to run in parallel,
+	// since they operate on independent DNS infrastructure.
+	if l.Spec.Type == cmacme.ACMEChallengeTypeDNS01 {
+		lProvider := dns01ProviderType(l.Spec.Solver.DNS01)
+		rProvider := dns01ProviderType(r.Spec.Solver.DNS01)
+		if lProvider < rProvider {
+			return -1
+		}
+		if lProvider > rProvider {
+			return 1
+		}
+	}
 
 	return 0
+}
+
+// http01IngressClass returns a string identifying the ingress class used by an
+// HTTP01 solver. Two challenges are considered equivalent (and therefore cannot
+// be scheduled concurrently) if they return the same value.
+//
+// IngressClassName (the modern field) takes precedence over Class (deprecated).
+// GatewayHTTPRoute challenges are assigned a sentinel value so they can run in
+// parallel with ingress-based challenges for the same domain.
+func http01IngressClass(solver *cmacme.ACMEChallengeSolverHTTP01) string {
+	if solver == nil {
+		return ""
+	}
+	if solver.GatewayHTTPRoute != nil {
+		// Gateway-based HTTP01 uses a completely separate mechanism from
+		// Ingress-based HTTP01; treat it as its own class so the two can
+		// run in parallel.
+		return "__gateway__"
+	}
+	if solver.Ingress != nil {
+		if solver.Ingress.IngressClassName != nil {
+			return *solver.Ingress.IngressClassName
+		}
+		if solver.Ingress.Class != nil {
+			return *solver.Ingress.Class
+		}
+	}
+	return ""
+}
+
+// dns01ProviderType returns a string identifying which DNS01 provider type is
+// configured. Two challenges using the same provider type are considered
+// equivalent; two challenges using different provider types can run in parallel.
+func dns01ProviderType(solver *cmacme.ACMEChallengeSolverDNS01) string {
+	if solver == nil {
+		return ""
+	}
+	switch {
+	case solver.Akamai != nil:
+		return "akamai"
+	case solver.CloudDNS != nil:
+		return "clouddns"
+	case solver.Cloudflare != nil:
+		return "cloudflare"
+	case solver.Route53 != nil:
+		return "route53"
+	case solver.AzureDNS != nil:
+		return "azuredns"
+	case solver.DigitalOcean != nil:
+		return "digitalocean"
+	case solver.AcmeDNS != nil:
+		return "acmedns"
+	case solver.RFC2136 != nil:
+		return "rfc2136"
+	case solver.Webhook != nil:
+		return "webhook"
+	default:
+		return ""
+	}
 }
 
 // sortChallenges will sort the provided list of challenges according to the

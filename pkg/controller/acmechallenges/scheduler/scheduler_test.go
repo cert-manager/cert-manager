@@ -34,6 +34,8 @@ import (
 
 const maxConcurrentChallenges = 60
 
+func ptrTo[T any](v T) *T { return &v }
+
 func randomChallenge(dnsNamelength int) *cmacme.Challenge {
 	if dnsNamelength == 0 {
 		dnsNamelength = 10
@@ -233,6 +235,286 @@ func TestScheduleN(t *testing.T) {
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01)),
+			},
+		},
+		// HTTP01 ingress class scheduling tests
+		{
+			name: "schedule HTTP01 challenges for the same domain in parallel if they have different ingress classes (Class field)",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					})),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("traefik"),
+						},
+					})),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					})),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("traefik"),
+						},
+					})),
+			},
+		},
+		{
+			name: "schedule HTTP01 challenges for the same domain in parallel if they have different IngressClassNames",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptrTo("nginx"),
+						},
+					})),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptrTo("traefik"),
+						},
+					})),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptrTo("nginx"),
+						},
+					})),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: ptrTo("traefik"),
+						},
+					})),
+			},
+		},
+		{
+			name: "do not schedule two HTTP01 challenges for the same domain and same ingress class in parallel",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					}),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					}),
+					withCreationTimestamp(2)),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					}),
+					withCreationTimestamp(1)),
+			},
+		},
+		{
+			name: "schedule HTTP01 challenge when a different ingress class is already in progress for the same domain",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test-processing",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					}),
+					gen.SetChallengeProcessing(true)),
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("traefik"),
+						},
+					})),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("traefik"),
+						},
+					})),
+			},
+		},
+		{
+			name: "do not schedule HTTP01 challenge when the same ingress class is already in progress for the same domain",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test-processing",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					}),
+					gen.SetChallengeProcessing(true)),
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeSolverHTTP01(cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: ptrTo("nginx"),
+						},
+					})),
+			},
+		},
+		// DNS01 provider type scheduling tests
+		{
+			name: "schedule DNS01 challenges for the same domain in parallel if they use different providers",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					})),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{},
+					})),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{},
+					})),
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					})),
+			},
+		},
+		{
+			name: "do not schedule two DNS01 challenges for the same domain and same provider type in parallel",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					}),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					}),
+					withCreationTimestamp(2)),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					}),
+					withCreationTimestamp(1)),
+			},
+		},
+		{
+			name: "schedule DNS01 challenge when a different provider is already in progress for the same domain",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test-processing",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					}),
+					gen.SetChallengeProcessing(true)),
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{},
+					})),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{},
+					})),
+			},
+		},
+		{
+			name: "do not schedule DNS01 challenge when the same provider is already in progress for the same domain",
+			n:    5,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test-processing",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					}),
+					gen.SetChallengeProcessing(true)),
+				gen.Challenge("test-pending",
+					gen.SetChallengeDNSName("example.com"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeSolverDNS01(cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
+					})),
 			},
 		},
 		// this test case replicates a failure seen in CI
