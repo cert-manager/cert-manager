@@ -122,6 +122,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 		log.Info("Registering a reconciler for injectable")
 		r := &reconciler{
 			namespace:           opts.Namespace,
+			ignoreNamespaces:    ignoreNamespacesSet,
 			resourceName:        setup.resourceName,
 			newInjectableTarget: setup.newInjectableTarget,
 			log:                 log,
