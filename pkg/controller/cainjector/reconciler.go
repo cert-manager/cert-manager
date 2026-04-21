@@ -100,7 +100,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
-	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace)
+	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace, r.ignoreNamespaces)
 	if apierrors.IsForbidden(err) {
 		log.V(logf.InfoLevel).Info("cainjector was forbidden to retrieve the ca data source")
 		return ctrl.Result{}, nil
