@@ -111,6 +111,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 		apiserverCABundle: caBundle,
 	}
 	injectorSetups := []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
+	ignoreNamespacesSet := sets.New(opts.IgnoreNamespaces...)
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
 	for _, setup := range injectorSetups {
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
@@ -194,7 +195,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 
 			b.Watches(
 				new(corev1.Secret),
-				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, sets.New(opts.IgnoreNamespaces...))),
+				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, ignoreNamespacesSet)),
 				// See "Why do we use builder.OnlyMetadata?" above.
 				builder.OnlyMetadata,
 			).Watches(
