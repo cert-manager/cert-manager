@@ -31,10 +31,28 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
+
+// fakeScheduledWorkQueue records Add calls for testing purposes.
+type fakeScheduledWorkQueue struct {
+	added []struct {
+		key      types.NamespacedName
+		duration time.Duration
+	}
+}
+
+func (f *fakeScheduledWorkQueue) Add(key types.NamespacedName, d time.Duration) {
+	f.added = append(f.added, struct {
+		key      types.NamespacedName
+		duration time.Duration
+	}{key, d})
+}
+
+func (f *fakeScheduledWorkQueue) Forget(_ types.NamespacedName) {}
 
 // policyEvaluatorBuilder returns a fake readyConditionFunc for ReadinessController.
 func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
@@ -557,6 +575,66 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			}
 			if test.violationFound != violationFound {
 				t.Errorf("unexpected 'violationFound' exp=%v, got=%v", test.violationFound, violationFound)
+			}
+		})
+	}
+}
+
+// TestScheduleRecheckAtExpiry verifies that scheduleRecheckAtExpiry enqueues
+// the certificate key at the correct time and is a no-op when already expired.
+func TestScheduleRecheckAtExpiry(t *testing.T) {
+	now := time.Now().UTC()
+	key := types.NamespacedName{Namespace: "ns", Name: "cert"}
+
+	tests := []struct {
+		name        string
+		notAfter    time.Time
+		wantQueued  bool
+		wantAtLeast time.Duration // approximate lower bound on scheduled duration
+	}{
+		{
+			name:        "schedules recheck when certificate is not yet expired",
+			notAfter:    now.Add(time.Hour),
+			wantQueued:  true,
+			wantAtLeast: 59 * time.Minute,
+		},
+		{
+			name:       "does not schedule recheck when certificate is already expired",
+			notAfter:   now.Add(-time.Second),
+			wantQueued: false,
+		},
+		{
+			name:       "does not schedule recheck when notAfter equals now",
+			notAfter:   now,
+			wantQueued: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fakeQueue := &fakeScheduledWorkQueue{}
+			clk := fakeclock.NewFakeClock(now)
+			c := &controller{
+				scheduledWorkQueue: fakeQueue,
+				clock:              clk,
+			}
+
+			c.scheduleRecheckAtExpiry(logf.Log, key, tc.notAfter)
+
+			if tc.wantQueued {
+				if len(fakeQueue.added) != 1 {
+					t.Fatalf("expected 1 item queued, got %d", len(fakeQueue.added))
+				}
+				if fakeQueue.added[0].key != key {
+					t.Errorf("queued wrong key: got %v, want %v", fakeQueue.added[0].key, key)
+				}
+				if fakeQueue.added[0].duration < tc.wantAtLeast {
+					t.Errorf("queued duration %v is less than expected minimum %v", fakeQueue.added[0].duration, tc.wantAtLeast)
+				}
+			} else {
+				if len(fakeQueue.added) != 0 {
+					t.Fatalf("expected nothing queued, got %d items", len(fakeQueue.added))
+				}
 			}
 		})
 	}

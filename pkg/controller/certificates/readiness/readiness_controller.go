@@ -19,6 +19,7 @@ package readiness
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -42,6 +44,7 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
@@ -67,6 +70,10 @@ type controller struct {
 	policyEvaluator policyEvaluatorFunc
 	// renewalTimeCalculator calculates renewal time of a certificate
 	renewalTimeCalculator pki.RenewalTimeFunc
+	// scheduledWorkQueue is used to schedule re-checks of certificates at their
+	// expiry time, so that the Ready condition is updated without a restart.
+	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+	clock              clock.Clock
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -147,6 +154,8 @@ func NewController(
 		},
 		policyEvaluator:       policyEvaluator,
 		renewalTimeCalculator: renewalTimeCalculator,
+		scheduledWorkQueue:    scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		clock:                 ctx.Clock,
 		fieldManager:          ctx.FieldManager,
 	}, queue, mustSync, nil
 }
@@ -207,6 +216,11 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Status.NotAfter = &notAfter
 		crt.Status.RenewalTime = renewalTime
 
+		// Schedule a re-check at the certificate's expiry time so that the
+		// Ready condition is updated immediately when the certificate expires,
+		// without requiring a controller restart.
+		c.scheduleRecheckAtExpiry(log, key, x509cert.NotAfter)
+
 	default:
 		// clear status fields if the secret does not have any data
 		crt.Status.NotAfter = nil
@@ -220,6 +234,21 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return c.updateOrApplyStatus(ctx, crt)
 	}
 	return nil
+}
+
+// scheduleRecheckAtExpiry schedules the Certificate to be re-queued just after
+// its notAfter time. This ensures that the Ready condition is evaluated at
+// expiry without requiring a controller restart, even if no other events occur.
+// If the certificate is already expired, no additional scheduling is needed
+// because the current reconcile will already produce the correct status.
+func (c *controller) scheduleRecheckAtExpiry(log logr.Logger, key types.NamespacedName, notAfter time.Time) {
+	durationUntilExpiry := notAfter.Sub(c.clock.Now())
+	if durationUntilExpiry <= 0 {
+		// Already expired; the current reconcile loop handles this.
+		return
+	}
+	log.V(logf.DebugLevel).Info("scheduling readiness recheck at expiry", "duration_until_expiry", durationUntilExpiry.String())
+	c.scheduledWorkQueue.Add(key, durationUntilExpiry)
 }
 
 // updateOrApplyStatus will update the controller status. If the
