@@ -97,8 +97,10 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	}
 
 	if ignoreNamespaces.Has(certName.Namespace) {
-		log.V(logf.InfoLevel).Info("ignoring CA data from Certificate, namespace is ignored", "namespace", certName.Namespace)
-		return nil, nil
+		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, namespace is ignored", certName.Namespace)
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	if namespace != "" && certName.Namespace != namespace {
@@ -180,8 +182,10 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	}
 
 	if ignoreNamespaces.Has(secretName.Namespace) {
-		log.V(logf.InfoLevel).Info("ignoring CA data from Secret, namespace is ignored", "namespace", secretName.Namespace)
-		return nil, nil
+		err := fmt.Errorf("cannot read CA data from Secret in namespace %s, namespace is ignored", secretName.Namespace)
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	if namespace != "" && secretName.Namespace != namespace {
