@@ -46,7 +46,7 @@ type caDataSource interface {
 
 	// ReadCA reads the CA that should be injected into the InjectTarget based
 	// on the configuration provided in the InjectTarget.
-	// ReadCA may return nil, nil if the CA data cannot or should not be read.
+	// ReadCA may return nil, nil if the CA data cannot be read.
 	// In this case, the caller should not retry the operation.
 	// It is up to the ReadCA implementation to inform the user why the CA
 	// failed to read.
