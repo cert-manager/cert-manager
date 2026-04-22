@@ -27,7 +27,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -300,12 +299,4 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	return nil
-}
-
-// translateListenerToGWAPIV1Listener adapts a ListenerEntry to a Listener by casting.
-// In gwapi v1, ListenerEntry and Listener currently share the same underlying structure,
-// so this cast is a no-op and is safe. This helper exists to allow code that expects a
-// gwapi.Listener (for example, shared validation logic) to also work with ListenerEntry.
-func translateListenerToGWAPIV1Listener(l gwapi.ListenerEntry) gwapi.Listener {
-	return gwapi.Listener(l)
 }
