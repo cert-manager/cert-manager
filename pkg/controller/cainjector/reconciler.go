@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -56,6 +57,9 @@ type reconciler struct {
 
 	// if set, the reconciler is namespace scoped
 	namespace string
+
+	// a set of namespaces the reconciler should ignore when reconciling.
+	ignoreNamespaces sets.Set[string]
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
@@ -96,7 +100,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
-	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace)
+	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace, r.ignoreNamespaces)
 	if apierrors.IsForbidden(err) {
 		log.V(logf.InfoLevel).Info("cainjector was forbidden to retrieve the ca data source")
 		return ctrl.Result{}, nil

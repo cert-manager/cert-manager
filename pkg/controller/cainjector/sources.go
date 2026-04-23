@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -49,7 +50,7 @@ type caDataSource interface {
 	// In this case, the caller should not retry the operation.
 	// It is up to the ReadCA implementation to inform the user why the CA
 	// failed to read.
-	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error)
+	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string, ignoreNamespaces sets.Set[string]) (ca []byte, err error)
 }
 
 // kubeconfigDataSource reads the ca bundle provided as part of the struct
@@ -63,7 +64,7 @@ func (c *kubeconfigDataSource) Configured(log logr.Logger, metaObj metav1.Object
 	return metaObj.GetAnnotations()[cmapi.WantInjectAPIServerCAAnnotation] == "true"
 }
 
-func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error) {
+func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string, ignoreNamespaces sets.Set[string]) (ca []byte, err error) {
 	return c.apiserverCABundle, nil
 }
 
@@ -83,7 +84,7 @@ func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Objec
 	return true
 }
 
-func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) (ca []byte, err error) {
+func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string, ignoreNamespaces sets.Set[string]) (ca []byte, err error) {
 	certNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectAnnotation]
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
@@ -94,6 +95,14 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
 	}
+
+	if ignoreNamespaces.Has(certName.Namespace) {
+		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, namespace is ignored", certName.Namespace)
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
+	}
+
 	if namespace != "" && certName.Namespace != namespace {
 		err := fmt.Errorf("cannot read CA data from Certificate in namespace %s, cainjector is scoped to namespace %s", certName.Namespace, namespace)
 		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), certName.Name, err)
@@ -160,7 +169,7 @@ func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bo
 	return true
 }
 
-func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string) ([]byte, error) {
+func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object, namespace string, ignoreNamespaces sets.Set[string]) ([]byte, error) {
 	secretNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectFromSecretAnnotation]
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
@@ -170,6 +179,13 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 		// TODO: should we return error here to prevent the caller from proceeding?
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
+	}
+
+	if ignoreNamespaces.Has(secretName.Namespace) {
+		err := fmt.Errorf("cannot read CA data from Secret in namespace %s, namespace is ignored", secretName.Namespace)
+		forbiddenErr := apierrors.NewForbidden(cmapi.Resource("certificates"), secretName.Name, err)
+		log.Error(forbiddenErr, "cannot read data source")
+		return nil, forbiddenErr
 	}
 
 	if namespace != "" && secretName.Namespace != namespace {

@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -58,6 +59,7 @@ type setup struct {
 
 type SetupOptions struct {
 	Namespace                    string
+	IgnoreNamespaces             []string
 	EnableCertificatesDataSource bool
 	EnabledReconcilersFor        map[string]bool
 }
@@ -109,6 +111,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 		apiserverCABundle: caBundle,
 	}
 	injectorSetups := []setup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
+	ignoreNamespacesSet := sets.New(opts.IgnoreNamespaces...)
 	// Registers a c/r controller for each of APIService, CustomResourceDefinition, Mutating/ValidatingWebhookConfiguration
 	for _, setup := range injectorSetups {
 		log := ctrl.Log.WithValues("kind", setup.resourceName)
@@ -119,6 +122,7 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 		log.Info("Registering a reconciler for injectable")
 		r := &reconciler{
 			namespace:           opts.Namespace,
+			ignoreNamespaces:    ignoreNamespacesSet,
 			resourceName:        setup.resourceName,
 			newInjectableTarget: setup.newInjectableTarget,
 			log:                 log,
@@ -189,9 +193,10 @@ func RegisterAllInjectors(ctx context.Context, mgr ctrl.Manager, opts SetupOptio
 				err := fmt.Errorf("error making injectable indexable by inject-ca-from path: %w", err)
 				return err
 			}
+
 			b.Watches(
 				new(corev1.Secret),
-				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup)),
+				handler.EnqueueRequestsFromMapFunc(certFromSecretToInjectableMapFuncBuilder(mgr.GetClient(), log, setup, ignoreNamespacesSet)),
 				// See "Why do we use builder.OnlyMetadata?" above.
 				builder.OnlyMetadata,
 			).Watches(
