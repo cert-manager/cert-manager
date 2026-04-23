@@ -68,11 +68,12 @@ var (
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
 
-	defaultTLSACMEIssuerName         = ""
-	defaultTLSACMEIssuerKind         = "Issuer"
-	defaultTLSACMEIssuerGroup        = cm.GroupName
-	defaultEnableCertificateOwnerRef = false
-	defaultEnableGatewayAPI          = false
+	defaultTLSACMEIssuerName           = ""
+	defaultTLSACMEIssuerKind           = "Issuer"
+	defaultTLSACMEIssuerGroup          = cm.GroupName
+	defaultEnableCertificateOwnerRef   = false
+	defaultEnableGatewayAPI            = false
+	defaultEnableGatewayAPIListenerSet = false
 
 	defaultDNS01RecursiveNameserversOnly = false
 	defaultDNS01RecursiveNameservers     = []string{}
@@ -233,9 +234,29 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		obj.EnableCertificateOwnerRef = &defaultEnableCertificateOwnerRef
 	}
 
-	if obj.EnableGatewayAPI == nil {
-		obj.EnableGatewayAPI = &defaultEnableGatewayAPI
+	// nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPI to GatewayAPIConfig.Enabled.
+	if obj.GatewayAPIConfig.Enabled == nil {
+		if obj.EnableGatewayAPI != nil {
+			obj.GatewayAPIConfig.Enabled = obj.EnableGatewayAPI
+		} else {
+			obj.GatewayAPIConfig.Enabled = &defaultEnableGatewayAPI
+		}
 	}
+
+	// nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
+	obj.EnableGatewayAPI = obj.GatewayAPIConfig.Enabled
+
+	// nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPIListenerSet to GatewayAPIConfig.EnableListenerSet.
+	if obj.GatewayAPIConfig.EnableListenerSet == nil {
+		if obj.EnableGatewayAPIListenerSet != nil {
+			obj.GatewayAPIConfig.EnableListenerSet = obj.EnableGatewayAPIListenerSet
+		} else {
+			obj.GatewayAPIConfig.EnableListenerSet = &defaultEnableGatewayAPIListenerSet
+		}
+	}
+
+	// nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
+	obj.EnableGatewayAPIListenerSet = obj.GatewayAPIConfig.EnableListenerSet
 
 	if len(obj.CopiedAnnotationPrefixes) == 0 {
 		obj.CopiedAnnotationPrefixes = defaultCopiedAnnotationPrefixes

@@ -329,6 +329,12 @@ func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfigurat
 }
 
 func autoConvert_v1alpha1_GatewayAPIConfig_To_controller_GatewayAPIConfig(in *controllerv1alpha1.GatewayAPIConfig, out *controller.GatewayAPIConfig, s conversion.Scope) error {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.Enabled, &out.Enabled, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_bool_To_bool(&in.EnableListenerSet, &out.EnableListenerSet, s); err != nil {
+		return err
+	}
 	out.ExtraProtocols = *(*[]string)(unsafe.Pointer(&in.ExtraProtocols))
 	return nil
 }
@@ -339,6 +345,12 @@ func Convert_v1alpha1_GatewayAPIConfig_To_controller_GatewayAPIConfig(in *contro
 }
 
 func autoConvert_controller_GatewayAPIConfig_To_v1alpha1_GatewayAPIConfig(in *controller.GatewayAPIConfig, out *controllerv1alpha1.GatewayAPIConfig, s conversion.Scope) error {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.Enabled, &out.Enabled, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_bool_To_Pointer_bool(&in.EnableListenerSet, &out.EnableListenerSet, s); err != nil {
+		return err
+	}
 	out.ExtraProtocols = *(*[]string)(unsafe.Pointer(&in.ExtraProtocols))
 	return nil
 }

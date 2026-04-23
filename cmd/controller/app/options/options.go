@@ -171,10 +171,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
-	fs.BoolVar(&c.EnableGatewayAPI, "enable-gateway-api", c.EnableGatewayAPI, ""+
+	fs.BoolVar(&c.GatewayAPIConfig.Enabled, "enable-gateway-api", c.GatewayAPIConfig.Enabled, ""+
 		"Whether gateway API integration is enabled within cert-manager. The ExperimentalGatewayAPISupport "+
 		"feature gate must also be enabled (default as of 1.15).")
-	fs.BoolVar(&c.EnableGatewayAPIListenerSet, "enable-gateway-api-listenerset", c.EnableGatewayAPIListenerSet, ""+
+	fs.BoolVar(&c.GatewayAPIConfig.EnableListenerSet, "enable-gateway-api-listenerset", c.GatewayAPIConfig.EnableListenerSet, ""+
 		"Whether ListenerSets support is enabled within cert-manager. The ListenerSet "+
 		"feature gate must also be enabled.")
 	fs.StringSliceVar(&c.GatewayAPIConfig.ExtraProtocols, "gateway-api-extra-protocols", c.GatewayAPIConfig.ExtraProtocols, ""+
@@ -277,12 +277,12 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(defaults.ExperimentalCertificateSigningRequestControllers...)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.GatewayAPIConfig.Enabled {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIListenerSet {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && o.GatewayAPIConfig.Enabled && o.GatewayAPIConfig.EnableListenerSet {
 		logf.Log.Info("enabling the sig-network Gateway API ListenerSet certificate-shim")
 		enabled = enabled.Insert(listenersetcontroller.ControllerName)
 	}
