@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/pkg/acme"
@@ -34,9 +33,7 @@ import (
 )
 
 var (
-	orderGvk         = cmacme.SchemeGroupVersion.WithKind("Order")
-	issuerGvk        = cmapi.SchemeGroupVersion.WithKind("Issuer")
-	clusterIssuerGvk = cmapi.SchemeGroupVersion.WithKind("ClusterIssuer")
+	orderGvk = cmacme.SchemeGroupVersion.WithKind("Order")
 )
 
 // buildPartialRequiredChallenges builds partial required ACME challenges by
@@ -77,17 +74,6 @@ func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *c
 	if err != nil {
 		return nil, err
 	}
-	issuerOwnerRef := metav1.OwnerReference{
-		APIVersion:         issuerGvk.GroupVersion().String(),
-		Kind:               issuerGvk.Kind,
-		Name:               issuer.GetName(),
-		UID:                issuer.GetUID(),
-		BlockOwnerDeletion: ptr.To(true),
-	}
-
-	if _, ok := issuer.(*cmapi.ClusterIssuer); ok {
-		issuerOwnerRef.Kind = clusterIssuerGvk.Kind
-	}
 
 	return &cmacme.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
@@ -95,7 +81,6 @@ func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *c
 			Namespace: o.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(o, orderGvk),
-				issuerOwnerRef,
 			},
 		},
 		Spec: *chSpec,
