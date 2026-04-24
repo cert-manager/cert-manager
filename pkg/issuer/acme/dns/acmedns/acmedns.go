@@ -28,6 +28,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/nrdcg/goacmedns"
@@ -45,14 +46,19 @@ type DNSProvider struct {
 func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	host := os.Getenv("ACME_DNS_HOST")
 	accountJSON := os.Getenv("ACME_DNS_ACCOUNT_JSON")
-	return NewDNSProviderHostBytes(host, []byte(accountJSON), dns01Nameservers)
+	return NewDNSProviderHostBytes(host, []byte(accountJSON), dns01Nameservers, nil)
 }
 
 // NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
 // acme-dns server host is given in a string
 // credentials are stored in json in the given string
-func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string) (*DNSProvider, error) {
-	client, err := goacmedns.NewClient(host)
+func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string, httpClient *http.Client) (*DNSProvider, error) {
+	var opts []goacmedns.Option
+	if httpClient != nil {
+		opts = append(opts, goacmedns.WithHTTPClient(httpClient))
+	}
+
+	client, err := goacmedns.NewClient(host, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating acme-dns client: %s", err)
 	}

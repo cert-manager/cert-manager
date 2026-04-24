@@ -593,6 +593,13 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
 		if len(p.AcmeDNS.Host) == 0 {
 			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
+		} else if !strings.HasPrefix(p.AcmeDNS.Host, "http://") && !strings.HasPrefix(p.AcmeDNS.Host, "https://") {
+			el = append(el, field.Invalid(fldPath.Child("acmeDNS", "host"), p.AcmeDNS.Host, "host must include a URL scheme (e.g. https://auth.example.com)"))
+		}
+		if len(p.AcmeDNS.CABundle) > 0 {
+			if err := validateCABundleNotEmpty(p.AcmeDNS.CABundle); err != nil {
+				el = append(el, field.Invalid(fldPath.Child("acmeDNS", "caBundle"), "", err.Error()))
+			}
 		}
 	}
 
