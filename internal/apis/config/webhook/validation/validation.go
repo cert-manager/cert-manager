@@ -37,5 +37,42 @@ func ValidateWebhookConfiguration(cfg *config.WebhookConfiguration, fldPath *fie
 		allErrors = append(allErrors, field.Invalid(fldPath.Child("securePort"), cfg.SecurePort, "must be a valid port number"))
 	}
 
+	// TODO(cert-manager): this duplicates the identical validator in
+	// internal/apis/config/controller/validation/validation.go — consider
+	// extracting to internal/apis/config/shared/validation in a follow-up.
+	allErrors = append(allErrors, validatePEMSizeLimitsConfig(&cfg.PEMSizeLimitsConfig, fldPath.Child("pemSizeLimitsConfig"))...)
+
+	return allErrors
+}
+
+func validatePEMSizeLimitsConfig(cfg *config.PEMSizeLimitsConfig, fldPath *field.Path) field.ErrorList {
+	var allErrors field.ErrorList
+
+	if cfg.MaxCertificateSize <= 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxCertificateSize"), cfg.MaxCertificateSize, "must be greater than 0"))
+	}
+
+	if cfg.MaxPrivateKeySize <= 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxPrivateKeySize"), cfg.MaxPrivateKeySize, "must be greater than 0"))
+	}
+
+	if cfg.MaxChainLength <= 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "must be greater than 0"))
+	}
+
+	if cfg.MaxBundleSize <= 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxBundleSize"), cfg.MaxBundleSize, "must be greater than 0"))
+	}
+
+	// Validate that MaxCertificateSize is not larger than MaxBundleSize
+	if cfg.MaxCertificateSize > cfg.MaxBundleSize {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxCertificateSize"), cfg.MaxCertificateSize, "must not be larger than maxBundleSize"))
+	}
+
+	// Validate that MaxChainLength is not larger than MaxBundleSize
+	if cfg.MaxChainLength > cfg.MaxBundleSize {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "must not exceed maxBundleSize"))
+	}
+
 	return allErrors
 }

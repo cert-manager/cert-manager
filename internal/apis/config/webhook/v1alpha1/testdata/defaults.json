@@ -28,5 +28,11 @@
 		"dynamic": {
 			"leafDuration": "168h0m0s"
 		}
+	},
+	"pemSizeLimitsConfig": {
+		"maxCertificateSize": 36500,
+		"maxPrivateKeySize": 13000,
+		"maxChainLength": 95000,
+		"maxBundleSize": 330000
 	}
 }

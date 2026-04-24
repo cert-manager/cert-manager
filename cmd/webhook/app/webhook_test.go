@@ -25,9 +25,12 @@ import (
 	"reflect"
 	"testing"
 
-	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
-	"github.com/cert-manager/cert-manager/pkg/webhook/options"
+	"github.com/go-logr/logr"
 	logsapi "k8s.io/component-base/logs/api/v1"
+
+	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/pem"
+	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 )
 
 func testCmdCommand(t *testing.T, tempDir string, yaml string, args func(string) []string) (*config.WebhookConfiguration, error) {
@@ -197,5 +200,121 @@ logging:
 				}
 			}
 		})
+	}
+}
+
+func TestConfigurePEMSizeLimits(t *testing.T) {
+	// Restore global size limits after the test so it doesn't leak into the
+	// rest of the test binary.
+	t.Cleanup(func() {
+		pem.SetGlobalSizeLimits(pem.DefaultSizeLimits())
+	})
+
+	log := logr.Discard()
+
+	tests := []struct {
+		name      string
+		config    *config.WebhookConfiguration
+		expectErr bool
+		errMsg    string
+	}{
+		{
+			name:      "nil configuration",
+			config:    nil,
+			expectErr: true,
+			errMsg:    "webhook configuration is nil",
+		},
+		{
+			name: "valid configuration",
+			config: &config.WebhookConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 6500,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "zero certificate size",
+			config: &config.WebhookConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 0,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: true,
+			errMsg:    "maxCertificateSize must be greater than 0, got 0",
+		},
+		{
+			name: "certificate size larger than bundle size",
+			config: &config.WebhookConfiguration{
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 400000,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     10,
+					MaxBundleSize:      330000,
+				},
+			},
+			expectErr: true,
+			errMsg:    "maxCertificateSize (400000) must not be larger than maxBundleSize (330000)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := configurePEMSizeLimits(tt.config, log)
+
+			if tt.expectErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errMsg)
+					return
+				}
+				if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("expected error %q, got %q", tt.errMsg, err.Error())
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+// TestConfigurePEMSizeLimits_AppliedGlobally confirms that a successful call
+// propagates the configured values to the global PEM decoder — this is the
+// behaviour that makes the admission path use the configured limits.
+func TestConfigurePEMSizeLimits_AppliedGlobally(t *testing.T) {
+	t.Cleanup(func() {
+		pem.SetGlobalSizeLimits(pem.DefaultSizeLimits())
+	})
+
+	cfg := &config.WebhookConfiguration{
+		PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+			MaxCertificateSize: 100000,
+			MaxPrivateKeySize:  20000,
+			MaxChainLength:     200000,
+			MaxBundleSize:      400000,
+		},
+	}
+
+	if err := configurePEMSizeLimits(cfg, logr.Discard()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := pem.GetGlobalSizeLimits()
+	if got.MaxCertificateSize != 100000 {
+		t.Errorf("expected MaxCertificateSize=100000, got %d", got.MaxCertificateSize)
+	}
+	if got.MaxPrivateKeySize != 20000 {
+		t.Errorf("expected MaxPrivateKeySize=20000, got %d", got.MaxPrivateKeySize)
+	}
+	if got.MaxChainLength != 200000 {
+		t.Errorf("expected MaxChainLength=200000, got %d", got.MaxChainLength)
+	}
+	if got.MaxBundleSize != 400000 {
+		t.Errorf("expected MaxBundleSize=400000, got %d", got.MaxBundleSize)
 	}
 }

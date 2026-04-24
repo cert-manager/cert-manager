@@ -26,6 +26,14 @@ import (
 
 const defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
+// PEM size limits based on existing constants in internal/pem/decode.go
+var (
+	defaultMaxCertificateSize int32 = 36500  // maxLeafCertificatePEMSize
+	defaultMaxPrivateKeySize  int32 = 13000  // maxPrivateKeyPEMSize
+	defaultMaxChainLength     int32 = 95000  // maxCertificateChainSize
+	defaultMaxBundleSize      int32 = 330000 // maxBundleSize
+)
+
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
@@ -46,4 +54,24 @@ func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
+}
+
+// SetDefaults_PEMSizeLimitsConfig sets default values for PEM size limits configuration.
+// These limits control the maximum sizes for PEM-encoded certificates and keys.
+func SetDefaults_PEMSizeLimitsConfig(obj *v1alpha1.PEMSizeLimitsConfig) {
+	if obj.MaxCertificateSize == nil {
+		obj.MaxCertificateSize = &defaultMaxCertificateSize
+	}
+
+	if obj.MaxPrivateKeySize == nil {
+		obj.MaxPrivateKeySize = &defaultMaxPrivateKeySize
+	}
+
+	if obj.MaxChainLength == nil {
+		obj.MaxChainLength = &defaultMaxChainLength
+	}
+
+	if obj.MaxBundleSize == nil {
+		obj.MaxBundleSize = &defaultMaxBundleSize
+	}
 }

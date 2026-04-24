@@ -27,6 +27,16 @@ import (
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
 
+// validPEMSizeLimitsConfig returns a valid PEMSizeLimitsConfig for testing
+func validPEMSizeLimitsConfig() config.PEMSizeLimitsConfig {
+	return config.PEMSizeLimitsConfig{
+		MaxCertificateSize: 36500,
+		MaxPrivateKeySize:  13000,
+		MaxChainLength:     95000,
+		MaxBundleSize:      330000,
+	}
+}
+
 func TestValidateWebhookConfiguration(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -39,6 +49,7 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			nil,
 		},
@@ -48,6 +59,7 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "unknown",
 				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(wc *config.WebhookConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -72,6 +84,7 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 						DNSNames:        []string{"example.com"},
 					},
 				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(wc *config.WebhookConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -85,7 +98,8 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
-				HealthzPort: 8080,
+				HealthzPort:         8080,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			nil,
 		},
@@ -95,7 +109,8 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
-				HealthzPort: 99999999,
+				HealthzPort:         99999999,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(wc *config.WebhookConfiguration) field.ErrorList {
 				return field.ErrorList{
@@ -109,7 +124,8 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
-				SecurePort: 8080,
+				SecurePort:          8080,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			nil,
 		},
@@ -119,11 +135,31 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				Logging: logsapi.LoggingConfiguration{
 					Format: "text",
 				},
-				SecurePort: 99999999,
+				SecurePort:          99999999,
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(wc *config.WebhookConfiguration) field.ErrorList {
 				return field.ErrorList{
 					field.Invalid(field.NewPath("securePort"), wc.SecurePort, "must be a valid port number"),
+				}
+			},
+		},
+		{
+			"with invalid PEM size limits",
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				PEMSizeLimitsConfig: config.PEMSizeLimitsConfig{
+					MaxCertificateSize: 400000,
+					MaxPrivateKeySize:  13000,
+					MaxChainLength:     95000,
+					MaxBundleSize:      330000,
+				},
+			},
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("pemSizeLimitsConfig.maxCertificateSize"), 400000, "must not be larger than maxBundleSize"),
 				}
 			},
 		},
@@ -137,6 +173,83 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 				expErrs = tt.errs(tt.config)
 			}
 			assert.ElementsMatch(t, expErrs, errList)
+		})
+	}
+}
+
+func TestValidatePEMSizeLimitsConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.PEMSizeLimitsConfig
+		errs   field.ErrorList
+	}{
+		{
+			"with valid PEM size limits config",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 36500,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     95000,
+				MaxBundleSize:      330000,
+			},
+			nil,
+		},
+		{
+			"with zero MaxCertificateSize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 0,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     95000,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 0, "must be greater than 0"),
+			},
+		},
+		{
+			"with MaxCertificateSize larger than MaxBundleSize",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 400000,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     95000,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 400000, "must not be larger than maxBundleSize"),
+			},
+		},
+		{
+			"with chain size exceeding bundle size",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 36500,
+				MaxPrivateKeySize:  13000,
+				MaxChainLength:     400000,
+				MaxBundleSize:      330000,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 400000, "must not exceed maxBundleSize"),
+			},
+		},
+		{
+			"with all zero values",
+			&config.PEMSizeLimitsConfig{
+				MaxCertificateSize: 0,
+				MaxPrivateKeySize:  0,
+				MaxChainLength:     0,
+				MaxBundleSize:      0,
+			},
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("maxCertificateSize"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxPrivateKeySize"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxChainLength"), 0, "must be greater than 0"),
+				field.Invalid(field.NewPath("").Child("maxBundleSize"), 0, "must be greater than 0"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validatePEMSizeLimitsConfig(test.config, field.NewPath(""))
+			assert.ElementsMatch(t, test.errs, errs)
 		})
 	}
 }

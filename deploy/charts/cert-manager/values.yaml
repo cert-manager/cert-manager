@@ -798,6 +798,15 @@ webhook:
   #      secretName: "cert-manager-metrics-ca"
   #      dnsNames:
   #      - cert-manager-metrics
+  #  # Configure PEM size limits for certificate request admission validation.
+  #  # The webhook enforces its own limits independently of the controller, so
+  #  # this block must be kept in sync with `.config.pemSizeLimitsConfig`.
+  #  # Useful for certificates with many DNS names (e.g., Istio gateways with 100+ DNS names).
+  #  pemSizeLimitsConfig:
+  #    maxCertificateSize: 36500     # Maximum size in bytes for individual certificates (default: 36500)
+  #    maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
+  #    maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
+  #    maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
   config: {}
 
   # The update strategy for the cert-manager webhook deployment.
