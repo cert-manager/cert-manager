@@ -198,7 +198,36 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
-	return extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	certPEM, caPEM, err := extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Verify that the public key in the returned certificate matches the
+	// public key in the CSR. If they differ, Vault likely generated a new
+	// key pair because the path points to the "issue" endpoint instead of
+	// the "sign" endpoint. Without this check, cert-manager would detect
+	// the mismatch later and create a new CertificateRequest in an infinite
+	// loop, overwhelming the API server (see #8234).
+	leafCert, err := pki.DecodeX509CertificateBytes(certPEM)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse certificate returned by vault: %s", err)
+	}
+
+	matches, err := pki.PublicKeysEqual(leafCert.PublicKey, csr.PublicKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to compare public keys: %s", err)
+	}
+
+	if !matches {
+		return nil, nil, cmerrors.NewInvalidData(
+			"the public key in the certificate returned by Vault does not match the public key in the CSR; " +
+				"this usually means the Vault path is configured to use the 'issue' endpoint " +
+				"instead of the 'sign' endpoint (e.g., use 'pki/sign/role-name' instead of " +
+				"'pki/issue/role-name')")
+	}
+
+	return certPEM, caPEM, nil
 }
 
 func (v *Vault) setToken(ctx context.Context, client Client) error {
