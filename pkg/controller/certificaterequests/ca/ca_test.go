@@ -394,6 +394,58 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
+		"a successful signing with SecretNamespace set should load the secret from that namespace": {
+			certificateRequest: baseCR.DeepCopy(),
+			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
+				_, err := pki.CertificateTemplateFromCertificateRequest(cr)
+				if err != nil {
+					return nil, err
+				}
+
+				return template, nil
+			},
+			signingFn: func(_ []*x509.Certificate, _ crypto.Signer, _ *x509.Certificate) (pki.PEMBundle, error) {
+				return pki.PEMBundle{CAPEM: certBundle.CAPEM, ChainPEM: certBundle.ChainPEM}, nil
+			},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "root-ca-secret",
+						Namespace: "other-ns",
+					},
+					Data: rsaCASecret.Data,
+				}},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.IssuerFrom(baseIssuer.DeepCopy(),
+						gen.SetIssuerCA(cmapi.CAIssuer{
+							SecretName:      "root-ca-secret",
+							SecretNamespace: "other-ns",
+						}),
+					),
+				},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certBundle.ChainPEM),
+							gen.SetCertificateRequestCA(rootCertPEM),
+						),
+					)),
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -620,6 +672,94 @@ func TestCA_Sign(t *testing.T) {
 
 				test.assertSignedCert(t, gotCert)
 			}
+		})
+	}
+}
+
+func TestCA_Sign_SecretNamespace(t *testing.T) {
+	rootPK, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	rootCert, _ := generateSelfSignedCACert(t, rootPK, "root")
+
+	testpk, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	testCSR := generateCSR(t, testpk)
+
+	caSecret := gen.SecretFrom(gen.Secret("ca-secret"),
+		gen.SetSecretNamespace("custom-ns"),
+		gen.SetSecretData(secretDataFor(t, rootPK, rootCert)),
+	)
+
+	cr := gen.CertificateRequest("cr-1",
+		gen.SetCertificateRequestCSR(testCSR),
+		gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
+			Name:  "issuer-1",
+			Group: certmanager.GroupName,
+			Kind:  "Issuer",
+		}),
+	)
+
+	tests := map[string]struct {
+		issuer            cmapi.GenericIssuer
+		clusterResourceNS string
+		expectNamespace   string
+	}{
+		"when SecretNamespace is set, the secret is looked up in that namespace": {
+			issuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:      "ca-secret",
+				SecretNamespace: "custom-ns",
+			})),
+			expectNamespace: "custom-ns",
+		},
+		"when SecretNamespace is empty on an Issuer, the secret is looked up in the issuer namespace": {
+			issuer: gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName: "ca-secret",
+			})),
+			expectNamespace: gen.DefaultTestNamespace,
+		},
+		"when SecretNamespace is empty on a ClusterIssuer, the secret is looked up in the cluster resource namespace": {
+			issuer: gen.ClusterIssuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName: "ca-secret",
+			})),
+			clusterResourceNS: "cert-manager",
+			expectNamespace:   "cert-manager",
+		},
+		"when SecretNamespace is set on a ClusterIssuer, it overrides the cluster resource namespace": {
+			issuer: gen.ClusterIssuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{
+				SecretName:      "ca-secret",
+				SecretNamespace: "custom-ns",
+			})),
+			clusterResourceNS: "cert-manager",
+			expectNamespace:   "custom-ns",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var queriedNamespace string
+
+			c := &CA{
+				issuerOptions: controller.IssuerOptions{
+					ClusterResourceNamespace: test.clusterResourceNS,
+				},
+				reporter: util.NewReporter(fixedClock, &testpkg.FakeRecorder{}),
+				secretsLister: &testlisters.FakeSecretLister{
+					SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
+						queriedNamespace = namespace
+						return &testlisters.FakeSecretNamespaceLister{
+							GetFn: func(name string) (*corev1.Secret, error) {
+								return caSecret, nil
+							},
+						}
+					},
+				},
+				templateGenerator: pki.CertificateTemplateFromCertificateRequest,
+				signingFn:         pki.SignCSRTemplate,
+			}
+
+			_, err := c.Sign(t.Context(), cr, test.issuer)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectNamespace, queriedNamespace)
 		})
 	}
 }
