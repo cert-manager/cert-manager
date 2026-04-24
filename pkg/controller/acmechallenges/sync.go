@@ -280,6 +280,14 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		// context.DeadlineExceeded means the ACME server was temporarily unreachable.
+		// Do not transition to the final Errored state so the controller retries with
+		// exponential backoff.
+		if errors.Is(err, context.DeadlineExceeded) {
+			ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
+			logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "unexpected non-ACME API error")
+			return err
+		}
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
 		logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "unexpected non-ACME API error")
