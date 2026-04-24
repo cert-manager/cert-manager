@@ -29,10 +29,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
+	"github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
+	"github.com/cert-manager/cert-manager/pkg/api"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -48,6 +53,7 @@ const (
 	errorAccountUpdateFailed       = "ErrUpdateACMEAccount"
 	errorInvalidConfig             = "InvalidConfig"
 	errorInvalidURL                = "InvalidURL"
+	errorInvalidSolver             = "InvalidSolver"
 
 	successAccountRegistered = "ACMEAccountRegistered"
 	successAccountVerified   = "ACMEAccountVerified"
@@ -180,6 +186,15 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			status:  cmmeta.ConditionFalse,
 			reason:  errorAccountVerificationFailed,
 			message: msg,
+		}
+	}
+
+	if warning := a.validateDNSSolvers(ctx, issuer); len(warning) > 0 {
+		return setupResult{
+			err:     nil,
+			status:  cmmeta.ConditionFalse,
+			reason:  errorInvalidSolver,
+			message: strings.Join(warning, "; "),
 		}
 	}
 
@@ -564,4 +579,62 @@ var acmev1ToV2Mappings = map[string]string{
 	// trailing slashes for v1 URLs
 	fmt.Sprintf("%s/", acmev1Prod):    acmev2Prod,
 	fmt.Sprintf("%s/", acmev1Staging): acmev2Staging,
+}
+
+func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) []string {
+	var warning []string
+
+	secrets, err := extractSecrets(issuer)
+	if err != nil {
+		logf.FromContext(ctx).Error(err, "error extracting secrets")
+		warning = append(warning, "unable to verify dns solvers")
+		return warning
+	}
+	if len(secrets) == 0 {
+		return warning
+	}
+
+	for _, s := range secrets {
+		res, err := a.secretsClient.Secrets(a.resourceNamespace(issuer)).Get(ctx, s.Name, metav1.GetOptions{})
+		if err != nil {
+			warning = append(warning, fmt.Sprintf("failed to get secret %q: %v", s.Name, err))
+			continue
+		}
+
+		if s.Key != "" {
+			if _, ok := res.Data[s.Key]; !ok {
+				warning = append(warning, fmt.Sprintf("the secret %q does not have key %q", s.Name, s.Key))
+			}
+		}
+	}
+	return warning
+}
+
+func extractSecrets(issuer v1.GenericIssuer) ([]*meta.SecretKeySelector, error) {
+	var secrets []*meta.SecretKeySelector
+	spec := issuer.GetSpec()
+	if spec.ACME == nil {
+		return secrets, nil
+	}
+
+	solvers := spec.ACME.Solvers
+	for i := range solvers {
+		sol := solvers[i]
+		if sol.DNS01 == nil {
+			continue
+		}
+
+		var out cmacme.ACMEChallengeSolver
+		if err := api.Scheme.Convert(&sol, &out, nil); err != nil {
+			return nil, fmt.Errorf("unable to convert ACME challenge solver to v2: %w", err)
+		}
+
+		_, requiredSecrets := validation.ValidateACMEChallengeSolverDNS01(out.DNS01, field.NewPath("spec"))
+		if len(requiredSecrets) == 0 {
+			continue
+		}
+		secrets = append(secrets, requiredSecrets...)
+	}
+
+	return secrets, nil
 }
