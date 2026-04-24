@@ -20,6 +20,7 @@ functionality in cert-manager can be found in the [installation docs](https://ce
 To install the chart with the release name `cert-manager`:
 
 ```console
+# Install the cert-manager helm chart
 helm install \
   cert-manager oci://quay.io/jetstack/charts/cert-manager \
   --namespace cert-manager \
@@ -507,7 +508,7 @@ ref: https://cert-manager.io/docs/concepts/certificaterequest/#approval
 > []
 > ```
 
-Additional command line flags to pass to cert-manager controller binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.  
+Additional command line flags to pass to cert-manager controller binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-controller:<version> --help`.
   
 Use this flag to enable or disable arbitrary controllers. For example, to disable the CertificateRequests approver.  
   
@@ -2032,7 +2033,7 @@ Optional additional annotations to add to the startupapicheck Pods.
 > - -v
 > ```
 
-Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-startupapicheck:<version> --help`.  
+Additional command line flags to pass to startupapicheck binary. To see all available flags run `docker run quay.io/jetstack/cert-manager-startupapicheck:<version> --help`.
   
 Verbose logging is enabled by default so that if startupapicheck fails, you can know what exactly caused the failure. Verbose logs include details of the webhook URL, IP address and TCP connect errors for example.
 
