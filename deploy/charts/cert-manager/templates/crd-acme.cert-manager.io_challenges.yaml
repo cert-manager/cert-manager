@@ -3191,7 +3191,7 @@ spec:
                           items:
                             type: string
                           type: array
-                          x-kubernetes-list-type: atomic
+                          x-kubernetes-list-type: set
                         dnsZones:
                           description: |-
                             List of DNSZones that this solver will be used to solve.
@@ -3206,7 +3206,7 @@ spec:
                           items:
                             type: string
                           type: array
-                          x-kubernetes-list-type: atomic
+                          x-kubernetes-list-type: set
                         matchLabels:
                           additionalProperties:
                             type: string
