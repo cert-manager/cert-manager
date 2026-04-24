@@ -213,12 +213,71 @@ func TestAcme_Setup(t *testing.T) {
 		},
 		"ACME account's key is not an RSA key": {
 			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAccountPrivateKeyAlgorithm(cmacme.ECDSAAccountKeyAlgorithm)),
+			kfsKey:                     ecdsaPrivKey,
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition),
+			},
+		},
+		"ACME account key algorithm mismatch: RSA expected but ECDSA key found, generation enabled": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAccountPrivateKeyAlgorithm(cmacme.RSAAccountKeyAlgorithm)),
+			kfsKey:      ecdsaPrivKey,
+			acmePrivKey: rsaPrivKey.(*rsa.PrivateKey),
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, cmacme.RSAAccountKeyAlgorithm, cmacme.ECDSAAccountKeyAlgorithm))),
+			},
+		},
+		"ACME account key algorithm mismatch: ECDSA expected but RSA key found, generation enabled": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAccountPrivateKeyAlgorithm(cmacme.ECDSAAccountKeyAlgorithm)),
+			kfsKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, cmacme.ECDSAAccountKeyAlgorithm, cmacme.RSAAccountKeyAlgorithm))),
+			},
+		},
+		"ACME account key algorithm mismatch: RSA expected but ECDSA key found, generation disabled": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAccountPrivateKeyAlgorithm(cmacme.RSAAccountKeyAlgorithm),
+				gen.SetIssuerACMEDisableAccountKeyGeneration(true)),
 			kfsKey: ecdsaPrivKey,
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyFalseCondition,
 					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateNotRSA, issuerSecretKeyName))),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, cmacme.RSAAccountKeyAlgorithm, "ECDSA"))),
+			},
+		},
+		"ACME account key algorithm mismatch: ECDSA expected but RSA key found, generation disabled": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName),
+				gen.SetIssuerACMEAccountPrivateKeyAlgorithm(cmacme.ECDSAAccountKeyAlgorithm),
+				gen.SetIssuerACMEDisableAccountKeyGeneration(true)),
+			kfsKey: rsaPrivKey,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf(messageTemplateAccountKeyAlgorithmMismatch, cmacme.ECDSAAccountKeyAlgorithm, "RSA"))),
+			},
+		},
+		"ACME account's key is an invalid key type": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEPrivKeyRef(issuerSecretKeyName)),
+			kfsErr: fmt.Errorf("invalid key type"),
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountVerificationFailed),
+					gen.SetIssuerConditionMessage(messageAccountVerificationFailed+fmt.Errorf("invalid key type").Error())),
 			},
 		},
 		"ACME server URL is an invalid URL": {
@@ -539,7 +598,7 @@ func TestAcme_Setup(t *testing.T) {
 				AddClientFunc: func(string, accounts.NewClientOptions) {
 					addClientWasCalled = true
 				},
-				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+				IsKeyCheckSumCachedFunc: func(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 					return true
 				},
 			}
