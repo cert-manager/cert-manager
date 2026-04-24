@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/labels"
@@ -172,27 +173,30 @@ func filterChallenges(chs []*cmacme.Challenge, fn func(ch *cmacme.Challenge) boo
 // If two resources are 'equal', they will not be scheduled at the same time
 // as they could cause a conflict.
 func compareChallenges(l, r *cmacme.Challenge) int {
-	if l.Spec.DNSName < r.Spec.DNSName {
-		return -1
-	}
-	if l.Spec.DNSName > r.Spec.DNSName {
-		return 1
+	// Compare DNS Name
+	if diff := strings.Compare(l.Spec.DNSName, r.Spec.DNSName); diff != 0 {
+		return diff
 	}
 
-	if l.Spec.Type < r.Spec.Type {
-		return -1
-	}
-	if l.Spec.Type > r.Spec.Type {
-		return 1
+	// Compare Type
+	if diff := strings.Compare(string(l.Spec.Type), string(r.Spec.Type)); diff != 0 {
+		return diff
 	}
 
-	// TODO: check the http01.ingressClass attribute and allow two challenges
+	// Check the http01.ingressClass attribute and allow two challenges
 	// with different ingress classes specified to be scheduled at once
+	if l.Spec.Solver.HTTP01 != nil && r.Spec.Solver.HTTP01 != nil {
+		return compareHTTP01Solvers(l.Spec.Solver.HTTP01, r.Spec.Solver.HTTP01)
+	}
 
-	// TODO: check the dns01.provider attribute and allow two challenges with
+	// Check the dns01.provider attribute and allow two challenges with
 	// different providers to be scheduled at once
+	if l.Spec.Solver.DNS01 != nil && r.Spec.Solver.DNS01 != nil {
+		return compareDNS01Solvers(l.Spec.Solver.DNS01, r.Spec.Solver.DNS01)
+	}
 
 	return 0
+
 }
 
 // sortChallenges will sort the provided list of challenges according to the
@@ -233,4 +237,50 @@ func dedupeChallenges(in []*cmacme.Challenge) []*cmacme.Challenge {
 		return in
 	}
 	return in[:j+1]
+}
+
+// compareHTTP01Solvers will compare the
+// Spec.Solver.HTTP01.Ingress.Class (or IngressClassName) for HTTP01 challenges
+func compareHTTP01Solvers(a, b *cmacme.ACMEChallengeSolverHTTP01) int {
+	classA := getIngressClass(a)
+	classB := getIngressClass(b)
+	return strings.Compare(classA, classB)
+}
+
+// compareDNS01Solvers will compare
+// the DNS01 provider name (from l.Spec.Solver.DNS01) for DNS01 challenges
+func compareDNS01Solvers(a, b *cmacme.ACMEChallengeSolverDNS01) int {
+	providerA := getDNSProvider(a)
+	providerB := getDNSProvider(b)
+	return strings.Compare(providerA, providerB)
+}
+
+// getIngressClass is a helper function to get ingress class
+// prioritizing solver.Ingress.IngressClassName than solver.Ingress.Class
+func getIngressClass(solver *cmacme.ACMEChallengeSolverHTTP01) string {
+	// FIXME: the following code will prioritize solver.Ingress.IngressClassName
+	// FIXME: than solver.Ingress.Class, but is it good ?
+	if solver.Ingress != nil {
+		if solver.Ingress.IngressClassName != nil {
+			return *solver.Ingress.IngressClassName
+		}
+		if solver.Ingress.Class != nil {
+			return *solver.Ingress.Class
+		}
+	}
+	return ""
+}
+
+// getDNSProvider is a helper function to get Dns Provider
+func getDNSProvider(solver *cmacme.ACMEChallengeSolverDNS01) string {
+	// FIXME: the following code is just an example,
+	// FIXME: the real question is if it is possible that there are more than one solver,
+	// FIXME: and what to do if there are more than one dns solver ?
+	if solver.CloudDNS != nil {
+		return "clouddns"
+	}
+	if solver.Route53 != nil {
+		return "route53"
+	}
+	return ""
 }
