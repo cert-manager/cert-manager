@@ -89,7 +89,9 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0

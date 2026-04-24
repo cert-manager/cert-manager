@@ -60,7 +60,6 @@ github.com/go-openapi/swag/jsonname,Apache-2.0
 github.com/google/btree,Apache-2.0
 github.com/google/gnostic-models,Apache-2.0
 github.com/google/uuid,BSD-3-Clause
-github.com/gregjones/httpcache,MIT
 github.com/josharian/intern,MIT
 github.com/json-iterator/go,MIT
 github.com/liggitt/tabwriter,BSD-3-Clause
@@ -109,6 +108,7 @@ k8s.io/apimachinery/third_party/forked/golang,BSD-3-Clause
 k8s.io/cli-runtime/pkg,Apache-2.0
 k8s.io/client-go,Apache-2.0
 k8s.io/client-go/third_party/forked/golang/template,BSD-3-Clause
+k8s.io/client-go/third_party/forked/httpcache,MIT
 k8s.io/component-base,Apache-2.0
 k8s.io/klog/v2,Apache-2.0
 k8s.io/kube-openapi/pkg,Apache-2.0
