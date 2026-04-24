@@ -18,13 +18,14 @@ package configfile
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 )
 
 func TestFSLoader_Load(t *testing.T) {
-	const expectedFilename = "/path/to/config/file"
+	expectedFilename := filepath.FromSlash("/path/to/config/file")
 	const kubeConfigPath = "path/to/kubeconfig/file"
 
 	cainjectorConfig := New()
@@ -47,7 +48,7 @@ kubeConfig: %s`, kubeConfigPath), nil
 	}
 
 	// the config loader will force paths to be 'absolute' if they are provided as relative.
-	absKubeConfigPath := "/path/to/config/path/to/kubeconfig/file"
+	absKubeConfigPath := filepath.Join(filepath.Dir(expectedFilename), kubeConfigPath)
 	if cainjectorConfig.Config.KubeConfig != absKubeConfigPath {
 		t.Errorf("expected kubeConfig to be set to %q but got %q", absKubeConfigPath, cainjectorConfig.Config.KubeConfig)
 	}
