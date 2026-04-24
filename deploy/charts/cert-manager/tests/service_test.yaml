@@ -1,0 +1,114 @@
+suite: Controller Service
+templates:
+  - templates/service.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render a Service when prometheus is enabled and podmonitor is not
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: cert-manager
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should not render a Service when prometheus is disabled
+    set:
+      prometheus:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render a Service when podmonitor is enabled
+    set:
+      prometheus:
+        enabled: true
+        podmonitor:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render a Service when servicemonitor is enabled and podmonitor is not
+    set:
+      prometheus:
+        enabled: true
+        servicemonitor:
+          enabled: true
+        podmonitor:
+          enabled: false
+    asserts:
+      - isKind:
+          of: Service
+
+  - it: should set the correct port
+    asserts:
+      - isSubset:
+          path: spec.ports[0]
+          content:
+            port: 9402
+            protocol: TCP
+            name: tcp-prometheus-servicemonitor
+
+  - it: should set service annotations
+    set:
+      serviceAnnotations:
+        custom-annotation: custom-value
+    asserts:
+      - equal:
+          path: metadata.annotations["custom-annotation"]
+          value: custom-value
+
+  - it: should set service labels
+    set:
+      serviceLabels:
+        custom-label: custom-value
+    asserts:
+      - equal:
+          path: metadata.labels["custom-label"]
+          value: custom-value
+
+  - it: should set correct selector labels
+    asserts:
+      - isSubset:
+          path: spec.selector
+          content:
+            app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: controller
+
+  - it: should set ipFamilyPolicy when specified
+    set:
+      serviceIPFamilyPolicy: PreferDualStack
+    asserts:
+      - equal:
+          path: spec.ipFamilyPolicy
+          value: PreferDualStack
+
+  - it: should set ipFamilies when specified
+    set:
+      serviceIPFamilies:
+        - IPv4
+        - IPv6
+    asserts:
+      - equal:
+          path: spec.ipFamilies[0]
+          value: IPv4
+      - equal:
+          path: spec.ipFamilies[1]
+          value: IPv6
+
+  - it: should use custom targetPort from servicemonitor config
+    set:
+      prometheus:
+        servicemonitor:
+          targetPort: 8080
+    asserts:
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 8080
