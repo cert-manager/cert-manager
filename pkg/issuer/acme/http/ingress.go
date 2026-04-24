@@ -243,6 +243,14 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 	if err != nil {
 		return nil, err
 	}
+	ing = ing.DeepCopy()
+
+	// Apply ingressTemplate annotations/labels to the existing ingress so that
+	// solver-specific metadata (e.g. ingress.cilium.io/force-https) is honoured
+	// for edit-in-place ingresses, not only for newly created ones.
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Ingress != nil {
+		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
+	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 	// check for an existing Rule for the given domain on the ingress resource
