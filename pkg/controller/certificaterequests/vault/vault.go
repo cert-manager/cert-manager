@@ -18,6 +18,7 @@ package vault
 
 import (
 	"context"
+	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -30,6 +31,7 @@ import (
 	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 )
 
@@ -45,6 +47,7 @@ type Vault struct {
 	createTokenFn func(ns string) vaultinternal.CreateToken
 	secretsLister internalinformers.SecretLister
 	reporter      *crutil.Reporter
+	metrics       *metrics.Metrics
 
 	vaultClientBuilder vaultinternal.ClientBuilder
 }
@@ -67,6 +70,7 @@ func NewVault(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		},
 		secretsLister:      ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		metrics:            ctx.Metrics,
 		vaultClientBuilder: vaultinternal.New,
 	}
 }
@@ -101,7 +105,9 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 	}
 
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+	callStart := time.Now()
 	certPem, caPem, err := client.Sign(cr.Spec.Request, certDuration)
+	v.metrics.ObserveVaultRequestDuration(time.Since(callStart), "sign_certificate")
 	if err != nil {
 		message := "Vault failed to sign certificate"
 
