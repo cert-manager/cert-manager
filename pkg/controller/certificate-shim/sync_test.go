@@ -2243,6 +2243,282 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:         "should update a Certificate when ingressClassName override annotation changes",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey:                      "issuer-name",
+						cmapi.IssuerKindAnnotationKey:                             "Issuer",
+						cmapi.IssuerGroupAnnotationKey:                            "cert-manager.io",
+						cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey: "bar",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassNameOverride: "foo",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassNameOverride: "bar",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:         "should remove Certificate ingressClassName override annotation when not present on ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerKindAnnotationKey:        "Issuer",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassNameOverride: "nginx",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:         "should update a Certificate when ingressClass override annotation changes",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey:               "issuer-name",
+						cmapi.IssuerKindAnnotationKey:                      "Issuer",
+						cmapi.IssuerGroupAnnotationKey:                     "cert-manager.io",
+						cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "bar",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassOverride: "foo",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassOverride: "bar",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:         "should remove Certificate ingressClass override annotation when not present on ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerKindAnnotationKey:        "Issuer",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01IngressClassOverride: "foo",
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testGatewayShim := []testT{

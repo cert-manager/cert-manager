@@ -465,7 +465,7 @@ func buildCertificates(
 				continue
 			}
 
-			if !certNeedsUpdate(existingCrt, crt) {
+			if !certNeedsUpdate(existingCrt, crt) && !issuerSpecificConfigNeedsUpdate(existingCrt, ingLike) {
 				log.V(logf.DebugLevel).Info("certificate resource is already up to date for object")
 				continue
 			}
@@ -484,7 +484,17 @@ func buildCertificates(
 				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), annotations))
 			}
 
-			setIssuerSpecificConfig(crt, ingLike)
+			// Only re-apply issuer-specific config for Ingress resources on the
+			// update path. setIssuerSpecificConfig also sets Gateway/ListenerSet
+			// parent-ref annotations, and calling it unconditionally here would
+			// inject those annotations onto existing Certificates that do not
+			// already have them, changing Gateway/ListenerSet update semantics in
+			// ways that are outside the scope of this fix.
+			// Note: on the creation path (above) it is correctly called for all
+			// ingress-like types.
+			if _, ok := ingLike.(*networkingv1.Ingress); ok {
+				setIssuerSpecificConfig(updateCrt, ingLike)
+			}
 
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
@@ -558,6 +568,55 @@ func mergeAnnotations(a, b map[string]string) map[string]string {
 	maps.Copy(merged, b)
 
 	return merged
+}
+
+func issuerSpecificConfigNeedsUpdate(existingCrt *cmapi.Certificate, ingLike metav1.Object) bool {
+	// This drift check is intentionally scoped to Ingress resources.
+	// Ingress annotations are mapped to Certificate annotations and can change
+	// independently from the Certificate spec. Gateway/ListenerSet semantics are
+	// currently kept unchanged to avoid update behavior regressions.
+	if _, ok := ingLike.(*networkingv1.Ingress); !ok {
+		return false
+	}
+
+	ingAnnotations := ingLike.GetAnnotations()
+	if ingAnnotations == nil {
+		ingAnnotations = map[string]string{}
+	}
+
+	if annotationNeedsUpdate(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassOverride) {
+		return true
+	}
+
+	if annotationNeedsUpdate(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassNameOverride) {
+		return true
+	}
+
+	return false
+}
+
+// annotationNeedsUpdate checks if a Certificate's annotation differs from a desired value
+// derived from an Ingress annotation. This enables drift detection when Ingress annotations
+// change independently (e.g., during ingress controller migrations).
+//
+// Parameters:
+//   - desiredAnnotations: source annotations (typically from an Ingress)
+//   - desiredKey: key to look up in desiredAnnotations
+//   - existingAnnotations: target annotations (on a Certificate)
+//   - existingKey: key to look up in existingAnnotations (may differ from desiredKey)
+//
+// Returns true if the annotations differ in presence or value.
+func annotationNeedsUpdate(desiredAnnotations map[string]string, desiredKey string, existingAnnotations map[string]string, existingKey string) bool {
+	desiredValue, desiredPresent := desiredAnnotations[desiredKey]
+	desiredHasValue := desiredPresent && desiredValue != ""
+
+	existingValue, existingPresent := existingAnnotations[existingKey]
+
+	if desiredHasValue != existingPresent {
+		return true
+	}
+
+	return desiredHasValue && desiredValue != existingValue
 }
 
 func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
@@ -764,17 +823,26 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 	ingressClassVal, hasIngressClassVal := ingAnnotations[cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey]
 	ingressClassNameVal, hasIngressClassNameVal := ingAnnotations[cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey]
 
+	// Apply or remove ingressClass override based on Ingress annotation presence/value.
+	// This enables drift detection when Ingress annotations change (e.g., during controller migration).
 	if hasIngressClassVal && ingressClassVal != "" {
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
+	} else {
+		// Remove override if no longer present or empty in Ingress.
+		delete(crt.Annotations, cmacme.ACMECertificateHTTP01IngressClassOverride)
 	}
+	// Apply or remove ingressClassName override based on Ingress annotation presence/value.
 	if hasIngressClassNameVal && ingressClassNameVal != "" {
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassNameOverride] = ingressClassNameVal
+	} else {
+		// Remove override if no longer present or empty in Ingress.
+		delete(crt.Annotations, cmacme.ACMECertificateHTTP01IngressClassNameOverride)
 	}
 
 	switch ingLike.(type) {
@@ -790,6 +858,12 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 		}
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "ListenerSet"
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = ingLike.GetName()
+	}
+
+	// Avoid creating an empty annotations map; use nil instead to keep
+	// the Certificate clean and match idiomatic Kubernetes conventions.
+	if len(crt.Annotations) == 0 {
+		crt.Annotations = nil
 	}
 
 	ingLike.SetAnnotations(ingAnnotations)
