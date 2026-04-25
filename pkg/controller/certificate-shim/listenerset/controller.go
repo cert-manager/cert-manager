@@ -155,7 +155,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	toSyncXLS := ls.DeepCopy()
 	inheritAnnotations(toSyncXLS, gw)
-	setHTTP01ParentRef(toSyncXLS, gw)
 
 	return c.sync(ctx, toSyncXLS)
 }
@@ -193,41 +192,6 @@ func inheritAnnotations(xls *gwapi.ListenerSet, gw *gwapi.Gateway) {
 	}
 
 	xls.SetAnnotations(lsAnn)
-}
-
-func setHTTP01ParentRef(ls *gwapi.ListenerSet, gw *gwapi.Gateway) {
-	ann := ls.GetAnnotations()
-	if ann == nil {
-		ann = map[string]string{}
-	}
-
-	if hasHTTPListenerEntry(ls.Spec.Listeners) {
-		ann[shimhelper.InternalHTTP01ParentRefKind] = "ListenerSet"
-		ann[shimhelper.InternalHTTP01ParentRefName] = ls.Name
-	} else if hasHTTPGatewayListener(gw.Spec.Listeners) {
-		ann[shimhelper.InternalHTTP01ParentRefKind] = "Gateway"
-		ann[shimhelper.InternalHTTP01ParentRefName] = gw.Name
-		ann[shimhelper.InternalHTTP01ParentRefNamespace] = gw.Namespace
-	}
-	ls.SetAnnotations(ann)
-}
-
-func hasHTTPListenerEntry(listeners []gwapi.ListenerEntry) bool {
-	for _, l := range listeners {
-		if l.Protocol == gwapi.HTTPProtocolType {
-			return true
-		}
-	}
-	return false
-}
-
-func hasHTTPGatewayListener(listeners []gwapi.Listener) bool {
-	for _, l := range listeners {
-		if l.Protocol == gwapi.HTTPProtocolType {
-			return true
-		}
-	}
-	return false
 }
 
 func listenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName]) func(crt *cmapi.Certificate) {

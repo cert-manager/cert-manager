@@ -59,14 +59,6 @@ const (
 	reasonCreateCertificate         = "CreateCertificate"
 	reasonUpdateCertificate         = "UpdateCertificate"
 	reasonDeleteCertificate         = "DeleteCertificate"
-
-	// InternalHTTP01ParentRefKind, InternalHTTP01ParentRefName, and
-	// InternalHTTP01ParentRefNamespace are internal annotations set by the
-	// ListenerSet controller to communicate the HTTP-01 solver parentRef target
-	// to setIssuerSpecificConfig. Not intended for end users.
-	InternalHTTP01ParentRefKind      = "cert-manager.io/internal-http01-parentref-kind"
-	InternalHTTP01ParentRefName      = "cert-manager.io/internal-http01-parentref-name"
-	InternalHTTP01ParentRefNamespace = "cert-manager.io/internal-http01-parentref-namespace"
 )
 
 const applysetLabel = "applyset.kubernetes.io/part-of"
@@ -785,7 +777,7 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassNameOverride] = ingressClassNameVal
 	}
 
-	switch ingLike.(type) {
+	switch ingLike := ingLike.(type) {
 	case *gwapi.Gateway:
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
@@ -796,18 +788,18 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
-		if kind, ok := ingAnnotations[InternalHTTP01ParentRefKind]; ok {
-			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = kind
+		if ingAnnotations[cmacme.ACMECertificateHTTP01ParentRefFallback] == "true" {
+			listenerSet := ingLike
+			parentNS := listenerSet.GetNamespace()
+			if listenerSet.Spec.ParentRef.Namespace != nil && string(*listenerSet.Spec.ParentRef.Namespace) != "" {
+				parentNS = string(*listenerSet.Spec.ParentRef.Namespace)
+			}
+			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "Gateway"
+			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = string(listenerSet.Spec.ParentRef.Name)
+			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefNamespace] = parentNS
 		} else {
 			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "ListenerSet"
-		}
-		if name, ok := ingAnnotations[InternalHTTP01ParentRefName]; ok {
-			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = name
-		} else {
 			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = ingLike.GetName()
-		}
-		if ns, ok := ingAnnotations[InternalHTTP01ParentRefNamespace]; ok {
-			crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefNamespace] = ns
 		}
 	}
 
