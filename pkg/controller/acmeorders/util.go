@@ -218,6 +218,7 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 
 	parentRefName, hasParentRefName := o.Annotations[cmacme.ACMECertificateHTTP01ParentRefName]
 	parentRefKind, hasParentRefKind := o.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind]
+
 	// We are ok if both of them don't exist as we fall back to the parentRef from solver config
 	// in the issuer.
 	if hasParentRefName != hasParentRefKind {

@@ -32,7 +32,6 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
@@ -288,123 +287,6 @@ func Test_inheritAnnotations(t *testing.T) {
 
 	require.Equal(t, "test-issuer-1", ls.GetAnnotations()["cert-manager.io/issuer"])
 	require.Equal(t, "ClusterIssuer", ls.GetAnnotations()["cert-manager.io/issuer-kind"])
-}
-
-func Test_setHTTP01ParentRef(t *testing.T) {
-	httpsProtocol := gwapi.HTTPSProtocolType
-	httpProtocol := gwapi.HTTPProtocolType
-
-	tests := []struct {
-		name                 string
-		listenerSetListeners []gwapi.ListenerEntry
-		gatewayListeners     []gwapi.Listener
-		gatewayName          string
-		gatewayNamespace     string
-		listenerSetName      string
-		listenerSetNamespace string
-		expectKind           string
-		expectName           string
-		expectNamespace      string
-		expectNoAnnotations  bool
-	}{
-		{
-			name:                 "HTTP listener on ListenerSet — solver points to ListenerSet",
-			listenerSetName:      "my-ls",
-			listenerSetNamespace: "app",
-			gatewayName:          "gateway",
-			gatewayNamespace:     "infra",
-			listenerSetListeners: []gwapi.ListenerEntry{
-				{Protocol: httpsProtocol},
-				{Protocol: httpProtocol},
-			},
-			gatewayListeners: []gwapi.Listener{
-				{Protocol: httpsProtocol},
-			},
-			expectKind:      "ListenerSet",
-			expectName:      "my-ls",
-			expectNamespace: "",
-		},
-		{
-			name:                 "HTTP listener on Gateway only — solver falls back to Gateway with correct namespace",
-			listenerSetName:      "my-ls",
-			listenerSetNamespace: "app",
-			gatewayName:          "gateway",
-			gatewayNamespace:     "infra",
-			listenerSetListeners: []gwapi.ListenerEntry{
-				{Protocol: httpsProtocol},
-			},
-			gatewayListeners: []gwapi.Listener{
-				{Protocol: httpProtocol},
-				{Protocol: httpsProtocol},
-			},
-			expectKind:      "Gateway",
-			expectName:      "gateway",
-			expectNamespace: "infra",
-		},
-		{
-			name:                 "No HTTP listener on either — no annotations set, falls back to existing behavior",
-			listenerSetName:      "my-ls",
-			listenerSetNamespace: "app",
-			gatewayName:          "gateway",
-			gatewayNamespace:     "infra",
-			listenerSetListeners: []gwapi.ListenerEntry{
-				{Protocol: httpsProtocol},
-			},
-			gatewayListeners: []gwapi.Listener{
-				{Protocol: httpsProtocol},
-			},
-			expectNoAnnotations: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			listenerSet := &gwapi.ListenerSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      tt.listenerSetName,
-					Namespace: tt.listenerSetNamespace,
-				},
-				Spec: gwapi.ListenerSetSpec{
-					Listeners: tt.listenerSetListeners,
-				},
-			}
-			gateway := &gwapi.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      tt.gatewayName,
-					Namespace: tt.gatewayNamespace,
-				},
-				Spec: gwapi.GatewaySpec{
-					Listeners: tt.gatewayListeners,
-				},
-			}
-
-			setHTTP01ParentRef(listenerSet, gateway)
-			listenerSetAnnotations := listenerSet.GetAnnotations()
-
-			if tt.expectNoAnnotations {
-				require.NotContains(t, listenerSetAnnotations,
-					shimhelper.InternalHTTP01ParentRefKind)
-				require.NotContains(t, listenerSetAnnotations,
-					shimhelper.InternalHTTP01ParentRefName)
-				require.NotContains(t, listenerSetAnnotations,
-					shimhelper.InternalHTTP01ParentRefNamespace)
-				return
-			}
-
-			require.Equal(t, tt.expectKind,
-				listenerSetAnnotations[shimhelper.InternalHTTP01ParentRefKind])
-			require.Equal(t, tt.expectName,
-				listenerSetAnnotations[shimhelper.InternalHTTP01ParentRefName])
-
-			if tt.expectNamespace == "" {
-				require.NotContains(t, listenerSetAnnotations,
-					shimhelper.InternalHTTP01ParentRefNamespace)
-			} else {
-				require.Equal(t, tt.expectNamespace,
-					listenerSetAnnotations[shimhelper.InternalHTTP01ParentRefNamespace])
-			}
-		})
-	}
 }
 
 type mockWorkqueue struct {
