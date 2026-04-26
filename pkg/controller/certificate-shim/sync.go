@@ -803,6 +803,8 @@ func setListenerSetParentRefAnnotations(crt *cmapi.Certificate, listenerSet *gwa
 	} else {
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "ListenerSet"
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = listenerSet.GetName()
+		// Clear any stale namespace annotation from a previous fallback configuration.
+		delete(crt.Annotations, cmacme.ACMECertificateHTTP01ParentRefNamespace)
 	}
 }
 
