@@ -660,6 +660,28 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 			orderNS: "custom-namespace",
 			want:    parentRefs("Gateway", "test-gateway", "custom-namespace"),
 		},
+		{
+			name:   "namespace annotation overrides Order namespace",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("Gateway", "eg", "envoy-gateway-system"),
+		},
+		{
+			name:   "namespace annotation deduplicates matching issuer parentRef",
+			issuer: gatewayIssuer(parentRefs("Gateway", "eg", "envoy-gateway-system")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("Gateway", "eg", "envoy-gateway-system"),
+		},
 	}
 
 	for _, tt := range tests {
