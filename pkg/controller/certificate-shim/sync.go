@@ -777,11 +777,11 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassNameOverride] = ingressClassNameVal
 	}
 
-	if crt.Annotations == nil {
-		crt.Annotations = make(map[string]string)
-	}
 	switch ingLike := ingLike.(type) {
 	case *gwapi.Gateway:
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefKind] = "Gateway"
 		crt.Annotations[cmacme.ACMECertificateHTTP01ParentRefName] = ingLike.GetName()
 	case *gwapi.ListenerSet:
@@ -792,6 +792,9 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ingLike metav1.Object) {
 }
 
 func setListenerSetParentRefAnnotations(crt *cmapi.Certificate, listenerSet *gwapi.ListenerSet, ingAnnotations map[string]string) {
+	if crt.Annotations == nil {
+		crt.Annotations = make(map[string]string)
+	}
 	if ingAnnotations[cmacme.ACMECertificateHTTP01ParentRefFallback] == "true" {
 		parentNS := listenerSet.GetNamespace()
 		if listenerSet.Spec.ParentRef.Namespace != nil && string(*listenerSet.Spec.ParentRef.Namespace) != "" {
