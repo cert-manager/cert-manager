@@ -213,7 +213,9 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 	if hasParentRefKind && hasParentRefName {
 		nsStr := o.GetNamespace()
 		if parentRefNamespace, ok := o.Annotations[cmacme.ACMECertificateHTTP01ParentRefNamespace]; ok {
-			nsStr = parentRefNamespace
+			if parentRefNamespace != "" {
+				nsStr = parentRefNamespace
+			}
 		}
 		ns := gwapi.Namespace(nsStr)
 		name := gwapi.ObjectName(parentRefName)
