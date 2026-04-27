@@ -795,7 +795,7 @@ func setListenerSetParentRefAnnotations(crt *cmapi.Certificate, listenerSet *gwa
 	if crt.Annotations == nil {
 		crt.Annotations = make(map[string]string)
 	}
-	if ingAnnotations[cmacme.ACMECertificateHTTP01ParentRefFallback] == "true" {
+	if enabled, _ := strconv.ParseBool(ingAnnotations[cmacme.ACMECertificateHTTP01ParentRefFallback]); enabled {
 		parentNS := listenerSet.GetNamespace()
 		if listenerSet.Spec.ParentRef.Namespace != nil && string(*listenerSet.Spec.ParentRef.Namespace) != "" {
 			parentNS = string(*listenerSet.Spec.ParentRef.Namespace)
