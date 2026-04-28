@@ -173,6 +173,7 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 // https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
+	maps.Copy(podLabels, s.ACMEOptions.HTTP01SolverExtraLabels)
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

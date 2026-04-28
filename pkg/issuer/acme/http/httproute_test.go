@@ -151,6 +151,40 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				}
 			},
 		},
+		"should include extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				httpRoute, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				// Verify extra labels are present on the created HTTPRoute
+				if httpRoute.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected HTTPRoute to have extra label 'custom-extra-label=custom-extra-value', but got %v", httpRoute.Labels)
+				}
+				s.testResources[createdHTTPRouteKey] = httpRoute
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
+				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
+				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
+					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
+				}
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {

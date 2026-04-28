@@ -831,7 +831,7 @@
     },
     "helm-values.global.commonLabels": {
       "default": {},
-      "description": "Labels to apply to all resources.\nPlease note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress. For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).\nFor example, secretTemplate in CertificateSpec\nFor more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).",
+      "description": "Labels to apply to all resources.\nThese labels are also applied to dynamically-created ACME HTTP01 solver resources\n(pods, services, ingresses, or Gateway API HTTPRoutes).\nFor per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.",
       "type": "object"
     },
     "helm-values.global.hostUsers": {

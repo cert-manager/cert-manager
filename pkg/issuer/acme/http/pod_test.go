@@ -283,6 +283,7 @@ func TestGetPodsForChallenge(t *testing.T) {
 		chal           *cmacme.Challenge
 		wantedPodMetas []*metav1.PartialObjectMetadata
 		wantsErr       bool
+		extraLabels    map[string]string
 	}
 	var (
 		testNamespace = "foo"
@@ -323,8 +324,16 @@ func TestGetPodsForChallenge(t *testing.T) {
 			},
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
+		podMetaWithExtraLabels = &metav1.PartialObjectMetadata{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
+		}
 	)
 	podMeta2.Labels[cmacme.DomainLabelKey] = "foo"
+	podMetaWithExtraLabels.Labels["custom-extra"] = "value"
 	tests := map[string]testT{
 		"should return one pod that matches": {
 			chal: chal,
@@ -339,6 +348,14 @@ func TestGetPodsForChallenge(t *testing.T) {
 				PartialMetadataObjects: []runtime.Object{&metav1.PartialObjectMetadata{}},
 			},
 		},
+		"should not be affected by extra labels on solver": {
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMetaWithExtraLabels},
+			},
+			wantedPodMetas: []*metav1.PartialObjectMetadata{podMetaWithExtraLabels},
+			extraLabels:    map[string]string{"custom-extra": "value"},
+		},
 	}
 	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -347,6 +364,9 @@ func TestGetPodsForChallenge(t *testing.T) {
 			s := &Solver{
 				Context:   scenario.builder.Context,
 				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
+			}
+			if scenario.extraLabels != nil {
+				s.Context.ACMEOptions.HTTP01SolverExtraLabels = scenario.extraLabels
 			}
 			defer scenario.builder.Stop()
 			scenario.builder.Start()
@@ -702,6 +722,93 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					corev1.ResourceMemory: resource.MustParse("192Mi"),
 				}
 				validateContainerResources(t, container, expectedRequests, expectedLimits)
+			},
+		},
+		"should include extra labels from HTTP01SolverExtraLabels without pod template": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				s.testResources[createdPodKey] = resultingPod
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				resultingPod.OwnerReferences = resp.OwnerReferences
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should allow pod template to override extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
+										Labels: map[string]string{
+											"custom-extra-label": "overridden-by-template",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+					"extra-only-label":   "extra-only-value",
+				}
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				expectedLabels := podLabels(s.Challenge)
+				expectedLabels["custom-extra-label"] = "overridden-by-template"
+				expectedLabels["extra-only-label"] = "extra-only-value"
+				resultingPod.Labels = expectedLabels
+				s.testResources[createdPodKey] = resultingPod
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				resultingPod.OwnerReferences = resp.OwnerReferences
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
 			},
 		},
 		"should handle partial resources in podTemplate by merging with ACMEOptions values": {

@@ -130,7 +130,7 @@ func ingressServiceName(ing *networkingv1.Ingress) string {
 // createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
 func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
-	ing, err := buildIngressResource(ch, svcName)
+	ing, err := s.buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	return s.Client.NetworkingV1().Ingresses(ch.Namespace).Create(ctx, ing, metav1.CreateOptions{})
 }
 
-func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
+func (s *Solver) buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
 	http01IngressCfg, err := http01IngressCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	if net.ParseIP(httpHost) != nil {
 		httpHost = ""
 	}
-	return &networkingv1.Ingress{
+	ing := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
@@ -201,7 +201,11 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 				},
 			},
 		},
-	}, nil
+	}
+
+	maps.Copy(ing.Labels, s.ACMEOptions.HTTP01SolverExtraLabels)
+
+	return ing, nil
 }
 
 // Merge object meta from the ingress template. Fall back to default values.

@@ -92,6 +92,7 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 
 func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge, svcName string) (*gwapi.HTTPRoute, error) {
 	labels := podLabels(ch)
+	maps.Copy(labels, s.ACMEOptions.HTTP01SolverExtraLabels)
 	maps.Copy(labels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -114,6 +115,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	expectedSpec := generateHTTPRouteSpec(ch, svcName)
 	actualSpec := httpRoute.Spec
 	expectedLabels := podLabels(ch)
+	maps.Copy(expectedLabels, s.ACMEOptions.HTTP01SolverExtraLabels)
 	maps.Copy(expectedLabels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	actualLabels := httpRoute.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {

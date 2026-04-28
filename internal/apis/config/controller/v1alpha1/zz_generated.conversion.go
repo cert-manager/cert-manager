@@ -154,6 +154,7 @@ func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *co
 		return err
 	}
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
+	out.SolverExtraLabels = *(*map[string]string)(unsafe.Pointer(&in.SolverExtraLabels))
 	return nil
 }
 
@@ -172,6 +173,7 @@ func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *co
 		return err
 	}
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
+	out.SolverExtraLabels = *(*map[string]string)(unsafe.Pointer(&in.SolverExtraLabels))
 	return nil
 }
 

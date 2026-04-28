@@ -132,6 +132,13 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 
+	fs.Var(cliflag.NewMapStringString(&c.ACMEHTTP01Config.SolverExtraLabels),
+		"acme-http01-solver-extra-labels",
+		"A set of key=value pairs for additional labels to apply to dynamically-created "+
+			"ACME HTTP01 solver resources (pods, services, ingresses, or Gateway API HTTPRoutes). "+
+			"These labels can be overridden by per-Issuer "+
+			"podTemplate/ingressTemplate/GatewayHTTPRoute.Labels.")
+
 	fs.BoolVar(&c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", c.ClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
