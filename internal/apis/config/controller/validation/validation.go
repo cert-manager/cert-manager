@@ -45,12 +45,12 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 		allErrors = append(allErrors, field.Required(fldPath.Child("ingressShimConfig").Child("defaultIssuerKind"), "must not be empty"))
 	}
 
-	if cfg.KubernetesAPIBurst <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be greater than 0"))
+	if cfg.KubernetesAPIBurst < -1 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be greater than or equal to -1"))
 	}
 
-	if cfg.KubernetesAPIQPS <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be greater than 0"))
+	if cfg.KubernetesAPIQPS < -1 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be greater than or equal to -1"))
 	}
 
 	if float32(cfg.KubernetesAPIBurst) < cfg.KubernetesAPIQPS {

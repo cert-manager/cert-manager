@@ -188,13 +188,13 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst:  -1, // Must be positive
+				KubernetesAPIBurst:  -2, // Must be positive
 				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be greater than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be greater than or equal to -1"),
 					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"),
 				}
 			},
@@ -228,12 +228,12 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst:  1,
-				KubernetesAPIQPS:    -1, // Must be positive
+				KubernetesAPIQPS:    -2, // Must be positive
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be greater than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be greater than or equal to -1"),
 				}
 			},
 		},
