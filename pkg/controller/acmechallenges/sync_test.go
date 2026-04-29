@@ -20,7 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -781,3 +783,119 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 		})
 	}
 }
+
+func Test_HandleError(t *testing.T) {
+	// timeoutNetErr is a net.Error whose Timeout() reports true; mirrors what
+	// http.Client returns on a connect/read timeout.
+	timeoutNetErr := &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapper{}}
+
+	wrappedNetErr := fmt.Errorf("wrapped: %w", &url.Error{
+		Op:  "Head",
+		URL: "https://acme-v02.api.letsencrypt.org/acme/new-nonce",
+		Err: timeoutNetErr,
+	})
+
+	tests := []struct {
+		name        string
+		err         error
+		wantState   cmacme.State
+		wantReason  string
+		wantErrBack bool
+	}{
+		{
+			name:        "nil error returns nil and leaves state untouched",
+			err:         nil,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: false,
+		},
+		{
+			name:        "context.Canceled is transient and does not set Errored",
+			err:         context.Canceled,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "context.DeadlineExceeded is transient and does not set Errored",
+			err:         context.DeadlineExceeded,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "wrapped context.DeadlineExceeded is transient (errors.Is)",
+			err:         fmt.Errorf("wrapper: %w", context.DeadlineExceeded),
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "net.OpError dial timeout is transient and does not set Errored",
+			err:         timeoutNetErr,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "url.Error wrapping a net.Error is transient (errors.As)",
+			err:         wrappedNetErr,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "plain non-ACME non-network error is treated as terminal Errored",
+			err:         errors.New("some unexpected non-network error"),
+			wantState:   cmacme.Errored,
+			wantReason:  "unexpected non-ACME API error: some unexpected non-network error",
+			wantErrBack: true,
+		},
+		{
+			name:        "ACME malformed protocol error marks the challenge Expired",
+			err:         &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:malformed"},
+			wantState:   cmacme.Expired,
+			wantReason:  "",
+			wantErrBack: false,
+		},
+		{
+			name:        "ACME 4xx response marks the challenge Errored",
+			err:         &acmeapi.Error{StatusCode: 404},
+			wantState:   cmacme.Errored,
+			wantReason:  "Failed to retrieve Order resource: 404 : ",
+			wantErrBack: false,
+		},
+		{
+			name:        "ACME 5xx response leaves state unchanged and returns the error for retry",
+			err:         &acmeapi.Error{StatusCode: 500},
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch := &cmacme.Challenge{}
+			gotErr := handleError(context.Background(), ch, tt.err)
+			if tt.wantErrBack {
+				assert.Error(t, gotErr)
+			} else {
+				assert.NoError(t, gotErr)
+			}
+			assert.Equal(t, tt.wantState, ch.Status.State, "Challenge.Status.State")
+			assert.Equal(t, tt.wantReason, ch.Status.Reason, "Challenge.Status.Reason")
+		})
+	}
+}
+
+// timeoutWrapper is a minimal net.Error that reports Timeout() == true; it
+// stands in for the kind of inner error net/http surfaces on TLS/connect
+// timeouts in a way that does not depend on internal stdlib types.
+type timeoutWrapper struct{}
+
+func (t *timeoutWrapper) Error() string   { return "i/o timeout" }
+func (t *timeoutWrapper) Timeout() bool   { return true }
+func (t *timeoutWrapper) Temporary() bool { return true }
+
+var _ net.Error = (*timeoutWrapper)(nil)
