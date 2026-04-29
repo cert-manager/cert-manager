@@ -33,6 +33,58 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
+func TestFilterACMEIdentityLabels(t *testing.T) {
+	tests := map[string]struct {
+		name     string
+		input    map[string]string
+		expected map[string]string
+	}{
+		"should filter out all ACME identity labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+			},
+			expected: map[string]string{},
+		},
+		"should preserve non-ACME labels": {
+			input: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+		},
+		"should filter ACME identity labels while preserving non-ACME labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+				"custom-label":                      "custom-value",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+			},
+		},
+		"should handle nil input without panicking": {
+			input:    nil,
+			expected: nil,
+		},
+		"should handle empty map": {
+			input:    map[string]string{},
+			expected: map[string]string{},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := filterACMEIdentityLabels(tt.input)
+			assert.Equal(t, tt.expected, got, "filterACMEIdentityLabels returned unexpected result")
+		})
+	}
+}
+
 func TestEnsurePod(t *testing.T) {
 	type testT struct {
 		builder     *testpkg.Builder

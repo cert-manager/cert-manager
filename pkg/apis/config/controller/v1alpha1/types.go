@@ -221,9 +221,12 @@ type ACMEHTTP01Config struct {
 	// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
 	SolverNameservers []string `json:"solverNameservers,omitempty"`
 
-	// Additional labels applied to all dynamically-created ACME HTTP01 solver
-	// resources (pods, services, ingresses, or gateway HTTPRoutes). Applied in
-	// addition to the standard ACME challenge identification labels.
+	// Extra labels applied to all dynamically-created ACME HTTP01 solver
+	// resources (pods, services, ingresses, or Gateway API HTTPRoutes). Applied
+	// in addition to the standard ACME challenge identification labels.
+	// The following ACME identity label keys are reserved and will be silently
+	// ignored: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token,
+	// acme.cert-manager.io/http01-solver.
 	SolverExtraLabels map[string]string `json:"solverExtraLabels,omitempty"`
 }
 
