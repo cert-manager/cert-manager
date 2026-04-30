@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -1126,7 +1125,7 @@ func TestSync(t *testing.T) {
 							Kind: "Issuer",
 						},
 						Usages:               cmapi.DefaultKeyUsages(),
-						RevisionHistoryLimit: ptr.To(int32(7)),
+						RevisionHistoryLimit: new(int32(7)),
 					},
 				},
 			},
@@ -1146,7 +1145,7 @@ func TestSync(t *testing.T) {
 							Kind: "Issuer",
 						},
 						Usages:               cmapi.DefaultKeyUsages(),
-						RevisionHistoryLimit: ptr.To(int32(1)),
+						RevisionHistoryLimit: new(int32(1)),
 					},
 				},
 			},
@@ -1612,7 +1611,7 @@ func TestSync(t *testing.T) {
 						Usages:               cmapi.DefaultKeyUsages(),
 						Duration:             &metav1.Duration{Duration: 7200 * time.Second},
 						RenewBefore:          &metav1.Duration{Duration: 3600 * time.Second},
-						RevisionHistoryLimit: ptr.To(int32(1)),
+						RevisionHistoryLimit: new(int32(1)),
 					},
 				},
 			},
@@ -2270,7 +2269,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2333,7 +2332,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.TLSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2395,7 +2394,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2460,7 +2459,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2521,7 +2520,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2575,7 +2574,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2630,7 +2629,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2689,7 +2688,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2742,7 +2741,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2799,7 +2798,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2836,7 +2835,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2850,7 +2849,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2906,7 +2905,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode:            ptrMode(gwapi.TLSModeTerminate),
+							Mode:            new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{},
 						},
 					}, {
@@ -2914,7 +2913,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2969,7 +2968,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -2983,7 +2982,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.TLSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode:            ptrMode(gwapi.TLSModePassthrough),
+							Mode:            new(gwapi.TLSModePassthrough),
 							CertificateRefs: []gwapi.SecretObjectReference{},
 						},
 					}},
@@ -3042,7 +3041,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3096,7 +3095,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3158,7 +3157,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3236,7 +3235,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3288,7 +3287,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3392,7 +3391,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3467,7 +3466,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3481,7 +3480,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3495,7 +3494,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3553,7 +3552,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3567,7 +3566,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3644,7 +3643,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3682,7 +3681,7 @@ func TestSync(t *testing.T) {
 						Port:     443,
 						Protocol: gwapi.HTTPSProtocolType,
 						TLS: &gwapi.ListenerTLSConfig{
-							Mode: ptrMode(gwapi.TLSModeTerminate),
+							Mode: new(gwapi.TLSModeTerminate),
 							CertificateRefs: []gwapi.SecretObjectReference{
 								{
 									Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3758,7 +3757,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3822,7 +3821,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3883,7 +3882,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -3939,7 +3938,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModePassthrough),
+								Mode: new(gwapi.TLSModePassthrough),
 							},
 						},
 					},
@@ -3974,7 +3973,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4041,7 +4040,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.ProtocolType("CUSTOM-PROTOCOL"),
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4079,7 +4078,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4137,7 +4136,7 @@ func TestSync(t *testing.T) {
 							Name:     "custom-proto-listener",
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4176,7 +4175,7 @@ func TestSync(t *testing.T) {
 							Name:     "custom-proto-listener",
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4192,7 +4191,7 @@ func TestSync(t *testing.T) {
 							Name:     "ignore-listener",
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4208,7 +4207,7 @@ func TestSync(t *testing.T) {
 							Name:     "custom-proto-listener-new",
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4509,10 +4508,6 @@ func ptrHostname(hostname string) *gwapi.Hostname {
 	return &h
 }
 
-func ptrMode(mode gwapi.TLSModeType) *gwapi.TLSModeType {
-	return &mode
-}
-
 func Test_validateGatewayListenerBlock(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -4548,7 +4543,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4573,7 +4568,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group: func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
@@ -4593,7 +4588,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group: func() *gwapi.Group { g := gwapi.Group("invalid"); return &g }(),
@@ -4612,7 +4607,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
@@ -4637,7 +4632,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
@@ -4663,7 +4658,7 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 				Port:     gwapi.PortNumber(443),
 				Protocol: gwapi.HTTPSProtocolType,
 				TLS: &gwapi.ListenerTLSConfig{
-					Mode: ptrMode(gwapi.TLSModeTerminate),
+					Mode: new(gwapi.TLSModeTerminate),
 					CertificateRefs: []gwapi.SecretObjectReference{
 						{
 							Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),

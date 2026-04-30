@@ -238,7 +238,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -271,7 +271,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -485,7 +485,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -556,7 +556,7 @@ func TestEnsureIngress(t *testing.T) {
 		"class field is passed to ingress as the annotation kubernetes.io/ingress.class": {
 			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class: strPtr("nginx"),
+					Class: new("nginx"),
 				}}}},
 			},
 			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
@@ -567,12 +567,12 @@ func TestEnsureIngress(t *testing.T) {
 		"ingressClassName field is passed to the ingress": {
 			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: strPtr("nginx"),
+					IngressClassName: new("nginx"),
 				}}}},
 			},
 			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
 				assert.Empty(t, ingress.Annotations["kubernetes.io/ingress.class"])
-				assert.Equal(t, strPtr("nginx"), ingress.Spec.IngressClassName)
+				assert.Equal(t, new("nginx"), ingress.Spec.IngressClassName)
 			}),
 		},
 	}
@@ -610,7 +610,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
 									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
 										Labels: map[string]string{
@@ -691,7 +691,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
 									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
 										Labels: map[string]string{

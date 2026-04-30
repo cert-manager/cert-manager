@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -542,7 +541,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -654,7 +653,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -707,7 +706,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -760,7 +759,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{

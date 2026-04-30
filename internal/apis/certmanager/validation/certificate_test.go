@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
 
 	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -593,7 +592,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: ptr.To(int32(1)),
+					RevisionHistoryLimit: new(int32(1)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -604,7 +603,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: ptr.To(int32(0)),
+					RevisionHistoryLimit: new(int32(0)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -1041,7 +1040,7 @@ func TestValidateDuration(t *testing.T) {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					RenewBefore:           usefulDurations["one month"],
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1056,7 +1055,7 @@ func TestValidateDuration(t *testing.T) {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					Duration:              usefulDurations["one year"],
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1066,7 +1065,7 @@ func TestValidateDuration(t *testing.T) {
 		"unset duration, valid renewBeforePercentage for default": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1076,7 +1075,7 @@ func TestValidateDuration(t *testing.T) {
 		"renewBeforePercentage is equal to duration": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(0)),
+					RenewBeforePercentage: new(int32(0)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1087,7 +1086,7 @@ func TestValidateDuration(t *testing.T) {
 		"renewBeforePercentage results in less than the minimum permitted value": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(100)),
+					RenewBeforePercentage: new(int32(100)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,

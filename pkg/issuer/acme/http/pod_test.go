@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
@@ -76,14 +75,14 @@ func TestEnsurePod(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
 			Spec: corev1.PodSpec{
-				AutomountServiceAccountToken: ptr.To(false),
-				EnableServiceLinks:           ptr.To(false),
+				AutomountServiceAccountToken: new(false),
+				EnableServiceLinks:           new(false),
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
 				RestartPolicy: corev1.RestartPolicyOnFailure,
 				SecurityContext: &corev1.PodSecurityContext{
-					RunAsNonRoot: ptr.To(true),
+					RunAsNonRoot: new(true),
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
@@ -115,8 +114,8 @@ func TestEnsurePod(t *testing.T) {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							ReadOnlyRootFilesystem:   ptr.To(true),
-							AllowPrivilegeEscalation: ptr.To(false),
+							ReadOnlyRootFilesystem:   new(true),
+							AllowPrivilegeEscalation: new(false),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
@@ -134,7 +133,7 @@ func TestEnsurePod(t *testing.T) {
 		}
 	)
 	scPod := pod.DeepCopy()
-	scPod.Spec.SecurityContext.RunAsUser = ptr.To(int64(1020))
+	scPod.Spec.SecurityContext.RunAsUser = new(int64(1020))
 	scPod.Spec.SecurityContext.RunAsNonRoot = nil
 	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 	scPod.Spec.Tolerations = []corev1.Toleration{}
@@ -189,7 +188,7 @@ func TestEnsurePod(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
-											RunAsUser: ptr.To(int64(1020)),
+											RunAsUser: new(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,
 											},
@@ -221,7 +220,7 @@ func TestEnsurePod(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
-											RunAsUser: ptr.To(int64(1020)),
+											RunAsUser: new(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,
 											},

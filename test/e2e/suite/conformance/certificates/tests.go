@@ -43,7 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -517,7 +516,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
-			revisionHistoryLimit := ptr.To(int32(7))
+			revisionHistoryLimit := new(int32(7))
 			privateKeyAlgorithm := cmapi.RSAKeyAlgorithm
 			privateKeyEncoding := cmapi.PKCS1
 			privateKeySize := 4096

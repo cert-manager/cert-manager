@@ -227,7 +227,7 @@ func (ps *PublicTXTRecordSet) SetTXTRecords(records [][]*string) {
 				TTL:        to.Ptr[int64](60),
 				TxtRecords: []*dns.TxtRecord{},
 			},
-			Etag: to.Ptr(""),
+			Etag: new(""),
 		}
 	}
 
@@ -272,7 +272,7 @@ func (ps *PrivateTXTRecordSet) SetTXTRecords(records [][]*string) {
 				TTL:        to.Ptr[int64](60),
 				TxtRecords: []*privatedns.TxtRecord{},
 			},
-			Etag: to.Ptr(""),
+			Etag: new(""),
 		}
 	}
 

@@ -93,7 +93,3 @@ func buildFakeSolver(b *test.Builder) (*Solver, error) {
 	b.Start()
 	return s, nil
 }
-
-func strPtr(s string) *string {
-	return &s
-}

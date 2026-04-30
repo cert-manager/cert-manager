@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/ptr"
 )
 
 // decoder knows how to decode the contents of an admission
@@ -41,7 +40,7 @@ func (d *internalDecoder) DecodeRaw(rawObj runtime.RawExtension, rawKind schema.
 		return nil, fmt.Errorf("there is no content to decode")
 	}
 
-	obj, gvk, err := d.codecs.UniversalDeserializer().Decode(rawObj.Raw, ptr.To(rawKind), nil)
+	obj, gvk, err := d.codecs.UniversalDeserializer().Decode(rawObj.Raw, new(rawKind), nil)
 	if err != nil {
 		return nil, err
 	}

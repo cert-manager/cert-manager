@@ -24,7 +24,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
@@ -561,11 +560,11 @@ func TestMockAzurePublicDNSCleanUp(t *testing.T) {
 				tt.fqdn: &PublicTXTRecordSet{
 					RS: &dns.RecordSet{
 						Name: &tt.fqdn,
-						Etag: to.Ptr("etag-123"),
+						Etag: new("etag-123"),
 						Properties: &dns.RecordSetProperties{
 							TxtRecords: []*dns.TxtRecord{
 								{
-									Value: []*string{to.Ptr("validation-token-123")},
+									Value: []*string{new("validation-token-123")},
 								},
 							},
 						},
@@ -617,11 +616,11 @@ func TestMockAzurePrivateDNSCleanUp(t *testing.T) {
 				tt.fqdn: &PrivateTXTRecordSet{
 					RS: &privatedns.RecordSet{
 						Name: &tt.fqdn,
-						Etag: to.Ptr("etag-123"),
+						Etag: new("etag-123"),
 						Properties: &privatedns.RecordSetProperties{
 							TxtRecords: []*privatedns.TxtRecord{
 								{
-									Value: []*string{to.Ptr("validation-token-123")},
+									Value: []*string{new("validation-token-123")},
 								},
 							},
 						},

@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -71,7 +70,7 @@ func TestRenewalTime(t *testing.T) {
 		"long lived cert, spec.renewBeforePercentage is set to renew 30% before expiry": {
 			notBefore:           now,
 			notAfter:            now.Add(time.Hour * 730), // 1 month
-			renewBeforePct:      ptr.To(int32(30)),
+			renewBeforePct:      new(int32(30)),
 			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 511)}, // 70% of 1 month
 		},
 		// This test case is here to show the scenario where users set
@@ -117,15 +116,15 @@ func TestRenewBefore(t *testing.T) {
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBeforePercentage is valid": {
-			renewBeforePct:      ptr.To(int32(25)),
+			renewBeforePct:      new(int32(25)),
 			expectedRenewBefore: 45 * time.Minute,
 		},
 		"spec.renewBeforePercentage is too large so default is used": {
-			renewBeforePct:      ptr.To(int32(100)),
+			renewBeforePct:      new(int32(100)),
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBeforePercentage is too small so default is used": {
-			renewBeforePct:      ptr.To(int32(0)),
+			renewBeforePct:      new(int32(0)),
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBefore is valid": {

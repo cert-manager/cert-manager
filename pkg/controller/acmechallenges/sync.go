@@ -320,7 +320,7 @@ func (c *controller) finalize(ctx context.Context, ch *cmacme.Challenge) (err er
 	err = solver.CleanUp(ctx, ch)
 	if err != nil {
 		err := fmt.Errorf("Error cleaning up challenge: %v", err)
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "%s", err.Error())
 		// stabilize the error message to avoid spurious updates which would
 		// cause repeated reconciles
 		ch.Status.Reason = stabilizeSolverErrorMessage(err)

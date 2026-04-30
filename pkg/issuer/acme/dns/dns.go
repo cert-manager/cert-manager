@@ -27,7 +27,6 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
@@ -566,7 +565,7 @@ func (s *Solver) createToken(ctx context.Context, ns, serviceAccount string, aud
 	tokenrequest, err := s.Client.CoreV1().ServiceAccounts(ns).CreateToken(ctx, serviceAccount, &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
 			Audiences:         audiences,
-			ExpirationSeconds: ptr.To(int64(600)),
+			ExpirationSeconds: new(int64(600)),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {

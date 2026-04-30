@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/pem"
@@ -583,7 +582,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -631,7 +630,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-234"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-234"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -690,7 +689,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -748,7 +747,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -805,7 +804,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -864,7 +863,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -922,7 +921,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -980,7 +979,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -1037,7 +1036,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
@@ -1096,7 +1095,7 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
 						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
