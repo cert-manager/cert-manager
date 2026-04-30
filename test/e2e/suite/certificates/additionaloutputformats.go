@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"bytes"
 	"context"
 	"encoding/pem"
 	"time"
@@ -366,7 +365,7 @@ var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", fun
 					continue
 				}
 				var fieldset fieldpath.Set
-				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw))).NotTo(HaveOccurred())
+				Expect(fieldset.FromJSON(managedField.FieldsV1.GetRawReader())).NotTo(HaveOccurred())
 				if fieldset.Has(fieldpath.Path{
 					{FieldName: new("data")},
 					{FieldName: new("tls-combined.pem")},
