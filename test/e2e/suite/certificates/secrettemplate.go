@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"bytes"
 	"context"
 	"slices"
 	"strings"
@@ -320,7 +319,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				}
 
 				var fieldset fieldpath.Set
-				if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 					Expect(err).NotTo(HaveOccurred())
 				}
 

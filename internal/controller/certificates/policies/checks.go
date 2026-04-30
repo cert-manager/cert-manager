@@ -392,7 +392,7 @@ func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager
 
 		// Decode the managed field.
 		var fieldset fieldpath.Set
-		if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+		if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 			return nil, nil, err
 		}
 
@@ -672,7 +672,7 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 			}
 
 			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 
@@ -718,7 +718,7 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 			}
 
 			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 			if fieldset.Has(fieldpath.Path{

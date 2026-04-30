@@ -36,6 +36,7 @@ You can retrieve the actual license text by following these steps:
 
 ---
 
+cel.dev/expr,Apache-2.0
 cloud.google.com/go/auth,Apache-2.0
 cloud.google.com/go/auth/oauth2adapt,Apache-2.0
 cloud.google.com/go/compute/metadata,Apache-2.0
@@ -49,6 +50,7 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps,MIT
 github.com/Khan/genqlient/graphql,MIT
 github.com/Venafi/vcert/v5,Apache-2.0
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg,Apache-2.0
+github.com/antlr4-go/antlr/v4,BSD-3-Clause
 github.com/aws/aws-sdk-go-v2,Apache-2.0
 github.com/aws/aws-sdk-go-v2/config,Apache-2.0
 github.com/aws/aws-sdk-go-v2/credentials,Apache-2.0
@@ -107,7 +109,8 @@ github.com/gogo/protobuf,BSD-3-Clause
 github.com/golang-jwt/jwt/v5,MIT
 github.com/golang/protobuf/proto,BSD-3-Clause
 github.com/golang/snappy,BSD-3-Clause
-github.com/google/btree,Apache-2.0
+github.com/google/cel-go,Apache-2.0
+github.com/google/cel-go,BSD-3-Clause
 github.com/google/certificate-transparency-go,Apache-2.0
 github.com/google/gnostic-models,Apache-2.0
 github.com/google/go-cmp/cmp,BSD-3-Clause
@@ -117,7 +120,8 @@ github.com/google/uuid,BSD-3-Clause
 github.com/googleapis/enterprise-certificate-proxy/client,Apache-2.0
 github.com/googleapis/gax-go/v2,BSD-3-Clause
 github.com/gorilla/websocket,BSD-2-Clause
-github.com/grpc-ecosystem/go-grpc-prometheus,Apache-2.0
+github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus,Apache-2.0
+github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors,Apache-2.0
 github.com/grpc-ecosystem/grpc-gateway/v2,BSD-3-Clause
 github.com/hashicorp/errwrap,MPL-2.0
 github.com/hashicorp/go-cleanhttp,MPL-2.0
@@ -156,6 +160,7 @@ github.com/ryanuber/go-glob,MIT
 github.com/sosodev/duration,MIT
 github.com/spf13/cobra,Apache-2.0
 github.com/spf13/pflag,BSD-3-Clause
+github.com/stoewer/go-strcase,MIT
 github.com/stretchr/objx,MIT
 github.com/stretchr/testify,MIT
 github.com/vektah/gqlparser/v2,MIT
@@ -172,7 +177,9 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0
@@ -186,6 +193,7 @@ go.uber.org/zap,MIT
 go.yaml.in/yaml/v2,Apache-2.0
 go.yaml.in/yaml/v3,MIT
 golang.org/x/crypto,BSD-3-Clause
+golang.org/x/exp/slices,BSD-3-Clause
 golang.org/x/net,BSD-3-Clause
 golang.org/x/oauth2,BSD-3-Clause
 golang.org/x/sync/errgroup,BSD-3-Clause
@@ -217,6 +225,7 @@ k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json,BSD-3-Claus
 k8s.io/kube-openapi/pkg/validation/spec,Apache-2.0
 k8s.io/utils,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang,BSD-3-Clause
+k8s.io/utils/third_party/forked/golang/btree,Apache-2.0
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,Apache-2.0
 sigs.k8s.io/controller-runtime/pkg,Apache-2.0
 sigs.k8s.io/gateway-api,Apache-2.0

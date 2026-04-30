@@ -61,7 +61,6 @@ github.com/go-openapi/jsonpointer,Apache-2.0
 github.com/go-openapi/jsonreference,Apache-2.0
 github.com/go-openapi/swag,Apache-2.0
 github.com/go-openapi/swag/jsonname,Apache-2.0
-github.com/google/btree,Apache-2.0
 github.com/google/cel-go,Apache-2.0
 github.com/google/cel-go,BSD-3-Clause
 github.com/google/gnostic-models,Apache-2.0
@@ -89,7 +88,9 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0
@@ -134,6 +135,7 @@ k8s.io/kube-openapi/pkg/validation/spec,Apache-2.0
 k8s.io/kube-openapi/pkg/validation/strfmt,Apache-2.0
 k8s.io/utils,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang,BSD-3-Clause
+k8s.io/utils/third_party/forked/golang/btree,Apache-2.0
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,Apache-2.0
 sigs.k8s.io/controller-runtime,Apache-2.0
 sigs.k8s.io/gateway-api/apis/v1,Apache-2.0
