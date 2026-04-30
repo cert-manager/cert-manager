@@ -110,7 +110,6 @@ github.com/gogo/protobuf,BSD-3-Clause
 github.com/golang-jwt/jwt/v5,MIT
 github.com/golang/protobuf/proto,BSD-3-Clause
 github.com/golang/snappy,BSD-3-Clause
-github.com/google/btree,Apache-2.0
 github.com/google/cel-go,Apache-2.0
 github.com/google/cel-go,BSD-3-Clause
 github.com/google/certificate-transparency-go,Apache-2.0
@@ -122,7 +121,8 @@ github.com/google/uuid,BSD-3-Clause
 github.com/googleapis/enterprise-certificate-proxy/client,Apache-2.0
 github.com/googleapis/gax-go/v2,BSD-3-Clause
 github.com/gorilla/websocket,BSD-2-Clause
-github.com/grpc-ecosystem/go-grpc-prometheus,Apache-2.0
+github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus,Apache-2.0
+github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors,Apache-2.0
 github.com/grpc-ecosystem/grpc-gateway/v2,BSD-3-Clause
 github.com/hashicorp/errwrap,MPL-2.0
 github.com/hashicorp/go-cleanhttp,MPL-2.0
@@ -178,7 +178,9 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,BSD-3-Clause
 go.opentelemetry.io/otel,Apache-2.0
 go.opentelemetry.io/otel,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
+go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0
@@ -229,8 +231,10 @@ k8s.io/kube-openapi/pkg/internal/third_party/govalidator,MIT
 k8s.io/kube-openapi/pkg/validation/errors,Apache-2.0
 k8s.io/kube-openapi/pkg/validation/spec,Apache-2.0
 k8s.io/kube-openapi/pkg/validation/strfmt,Apache-2.0
+k8s.io/streaming/pkg,Apache-2.0
 k8s.io/utils,Apache-2.0
 k8s.io/utils/internal/third_party/forked/golang,BSD-3-Clause
+k8s.io/utils/third_party/forked/golang/btree,Apache-2.0
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client,Apache-2.0
 sigs.k8s.io/controller-runtime,Apache-2.0
 sigs.k8s.io/gateway-api,Apache-2.0
