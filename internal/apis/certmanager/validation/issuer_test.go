@@ -614,7 +614,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -634,7 +634,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								ParentRefs: []gwapi.ParentReference{
 									{
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -665,7 +665,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -1013,12 +1013,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		},
 		"ingress class field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: ptr.To("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: new("abc")},
 			},
 		},
 		"ingressClassName field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: ptr.To("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: new("abc")},
 			},
 		},
 		"neither field specified": {
@@ -1035,8 +1035,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingress class and ingressClassName specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class:            ptr.To("abc"),
-					IngressClassName: ptr.To("abc"),
+					Class:            new("abc"),
+					IngressClassName: new("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -1046,7 +1046,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingress class and ingress name specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class: ptr.To("abc"),
+					Class: new("abc"),
 					Name:  "abc",
 				},
 			},
@@ -1057,7 +1057,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingressClassName and ingress name specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: ptr.To("abc"),
+					IngressClassName: new("abc"),
 					Name:             "abc",
 				},
 			},
@@ -1069,8 +1069,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					Name:             "abc",
-					Class:            ptr.To("abc"),
-					IngressClassName: ptr.To("abc"),
+					Class:            new("abc"),
+					IngressClassName: new("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -1080,7 +1080,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"ingressClassName is invalid": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: ptr.To("azure/application-gateway"),
+					IngressClassName: new("azure/application-gateway"),
 				},
 			},
 			errs: []*field.Error{

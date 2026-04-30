@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -300,7 +299,7 @@ func (s *Suite) Define() {
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
 				},
-				kubeCSRExpirationSeconds: ptr.To(int32(3333)),
+				kubeCSRExpirationSeconds: new(int32(3333)),
 				requiredFeatures:         []featureset.Feature{featureset.DurationFeature},
 			},
 			{

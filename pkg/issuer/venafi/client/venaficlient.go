@@ -196,7 +196,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				ClientId:    clientId,
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
-				UserAgent:               ptr.To(userAgent),
+				UserAgent:               new(userAgent),
 				CABundle:                caBundle,
 				TLSRenegotiationSupport: ptr.To(tls.RenegotiateOnceAsClient),
 			}),
@@ -224,7 +224,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				APIKey: apiKey,
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
-				UserAgent: ptr.To(userAgent),
+				UserAgent: new(userAgent),
 			}),
 		}, nil
 	}

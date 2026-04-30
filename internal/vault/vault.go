@@ -41,7 +41,6 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -601,7 +600,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 				// immediately discarded, let's use the minimal duration
 				// possible. 10 minutes is the minimum allowed by the Kubernetes
 				// API.
-				ExpirationSeconds: ptr.To(int64(600)),
+				ExpirationSeconds: new(int64(600)),
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -755,7 +754,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
 			Audiences:         audiences,
-			ExpirationSeconds: ptr.To(int64(600)),
+			ExpirationSeconds: new(int64(600)),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -775,7 +774,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 	stsClient := sts.NewFromConfig(cfg)
 	assumeResult, err := stsClient.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 		RoleArn:          &awsAuth.IAMRoleARN,
-		RoleSessionName:  ptr.To("cert-manager"),
+		RoleSessionName:  new("cert-manager"),
 		WebIdentityToken: &tokenrequest.Status.Token,
 	})
 	if err != nil {

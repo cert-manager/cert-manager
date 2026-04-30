@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -128,7 +127,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -223,7 +222,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":"","finalizers":["acme.cert-manager.io/finalizer"]}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -572,7 +571,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -642,7 +641,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},

@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	logsapi "k8s.io/component-base/logs/api/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/cainjector/v1alpha1"
 )
@@ -44,21 +43,21 @@ func SetDefaults_CAInjectorConfiguration(obj *v1alpha1.CAInjectorConfiguration) 
 
 func SetDefaults_EnableDataSourceConfig(obj *v1alpha1.EnableDataSourceConfig) {
 	if obj.Certificates == nil {
-		obj.Certificates = ptr.To(true)
+		obj.Certificates = new(true)
 	}
 }
 
 func SetDefaults_EnableInjectableConfig(obj *v1alpha1.EnableInjectableConfig) {
 	if obj.MutatingWebhookConfigurations == nil {
-		obj.MutatingWebhookConfigurations = ptr.To(true)
+		obj.MutatingWebhookConfigurations = new(true)
 	}
 	if obj.ValidatingWebhookConfigurations == nil {
-		obj.ValidatingWebhookConfigurations = ptr.To(true)
+		obj.ValidatingWebhookConfigurations = new(true)
 	}
 	if obj.CustomResourceDefinitions == nil {
-		obj.CustomResourceDefinitions = ptr.To(true)
+		obj.CustomResourceDefinitions = new(true)
 	}
 	if obj.APIServices == nil {
-		obj.APIServices = ptr.To(true)
+		obj.APIServices = new(true)
 	}
 }

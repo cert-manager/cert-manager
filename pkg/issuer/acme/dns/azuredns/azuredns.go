@@ -185,7 +185,7 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 
 		if !found {
 			txtRecords = append(txtRecords, []*string{
-				to.Ptr(value),
+				new(value),
 			})
 			set.SetTXTRecords(txtRecords)
 		}
@@ -259,7 +259,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 							TTL:        to.Ptr[int64](60),
 							TxtRecords: []*privatedns.TxtRecord{},
 						},
-						Etag: to.Ptr(""),
+						Etag: new(""),
 					},
 				}
 			} else {
@@ -269,7 +269,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 							TTL:        to.Ptr[int64](60),
 							TxtRecords: []*dns.TxtRecord{},
 						},
-						Etag: to.Ptr(""),
+						Etag: new(""),
 					},
 				}
 			}
@@ -300,7 +300,7 @@ func (c *DNSProvider) updateTXTRecord(ctx context.Context, fqdn string, updater 
 	if etag := set.GetETag(); etag != nil && *etag == "" {
 		// This is used to indicate that we want the API call to fail if a conflicting record was created concurrently
 		// Only relevant when this is a new record, for updates conflicts are solved with Etag
-		opts.IfNoneMatch = to.Ptr("*")
+		opts.IfNoneMatch = new("*")
 	} else {
 		opts.IfMatch = set.GetETag()
 	}

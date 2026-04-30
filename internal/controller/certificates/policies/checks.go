@@ -398,13 +398,13 @@ func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager
 
 		// Extract the labels and annotations of the managed fields.
 		metadata := fieldset.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("metadata"),
+			FieldName: new("metadata"),
 		})
 		labels := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("labels"),
+			FieldName: new("labels"),
 		})
 		annotations := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("annotations"),
+			FieldName: new("annotations"),
 		})
 
 		// Gather the annotations and labels on the managed fields. Remove the '.'
@@ -677,14 +677,14 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
+				{FieldName: new("data")},
 				{FieldName: ptr.To(cmapi.CertificateOutputFormatCombinedPEMKey)},
 			}) {
 				secretHasCombinedPEM = true
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
+				{FieldName: new("data")},
 				{FieldName: ptr.To(cmapi.CertificateOutputFormatDERKey)},
 			}) {
 				secretHasDER = true
@@ -722,8 +722,8 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("metadata")},
-				{FieldName: ptr.To("ownerReferences")},
+				{FieldName: new("metadata")},
+				{FieldName: new("ownerReferences")},
 				{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
 			}) {
 				hasOwnerRefManagedField = true

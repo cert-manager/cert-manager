@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -173,7 +172,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Solver: cmacme.ACMEChallengeSolver{
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							Class: ptr.To("test-class-to-override"),
+							Class: new("test-class-to-override"),
 						},
 					},
 				},
@@ -211,7 +210,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Solver: cmacme.ACMEChallengeSolver{
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-							IngressClassName: ptr.To("test-ingressclassname-to-override"),
+							IngressClassName: new("test-ingressclassname-to-override"),
 						},
 					},
 				},
@@ -402,7 +401,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 										return &ls
 									}(),
 									Name:      gwapi.ObjectName("test-parent-ref-name"),
-									Namespace: (*gwapi.Namespace)(ptr.To("")),
+									Namespace: (*gwapi.Namespace)(new("")),
 								},
 							},
 						},
@@ -451,7 +450,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 										return &ls
 									}(),
 									Name:      gwapi.ObjectName("sample-gateway"),
-									Namespace: (*gwapi.Namespace)(ptr.To("test-ns")),
+									Namespace: (*gwapi.Namespace)(new("test-ns")),
 								},
 							},
 						},
@@ -750,9 +749,9 @@ func acmeChallengeHTTP01() cmacme.ACMEChallenge {
 
 func ref(kind, name, namespace string) gwapi.ParentReference {
 	return gwapi.ParentReference{
-		Kind:      ptr.To(gwapi.Kind(kind)),
+		Kind:      new(gwapi.Kind(kind)),
 		Name:      gwapi.ObjectName(name),
-		Namespace: ptr.To(gwapi.Namespace(namespace)),
+		Namespace: new(gwapi.Namespace(namespace)),
 	}
 }
 

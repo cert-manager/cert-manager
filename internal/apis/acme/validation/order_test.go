@@ -23,7 +23,6 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 )
@@ -145,11 +144,11 @@ func TestValidateOrderUpdate(t *testing.T) {
 			}
 		case testValueOptionOne:
 			o.Status.Authorizations = []cmacme.ACMEAuthorization{
-				{Wildcard: ptr.To(false)},
+				{Wildcard: new(false)},
 			}
 		case testValueOptionTwo:
 			o.Status.Authorizations = []cmacme.ACMEAuthorization{
-				{Wildcard: ptr.To(true)},
+				{Wildcard: new(true)},
 			}
 		}
 	})

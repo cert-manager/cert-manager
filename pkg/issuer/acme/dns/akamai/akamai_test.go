@@ -35,7 +35,7 @@ func testRecordBodyData() *dns.RecordBody {
 		Name:       "_acme-challenge.test.example.com",
 		RecordType: "TXT",
 		Target:     []string{`"` + "dns01-key" + `"`},
-		TTL:        ptr.To(300),
+		TTL:        new(300),
 	}
 }
 
@@ -45,7 +45,7 @@ func testRecordBodyDataExist() *dns.RecordBody {
 		Name:       "_acme-challenge.test.example.com",
 		RecordType: "TXT",
 		Target:     []string{`"` + "dns01-key" + `"`, `"` + "dns01-key-stub" + `"`},
-		TTL:        ptr.To(300),
+		TTL:        new(300),
 	}
 }
 

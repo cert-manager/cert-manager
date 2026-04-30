@@ -135,7 +135,7 @@ func SyncFnFor(
 
 		err = validateIngressLike(ingLike).ToAggregate()
 		if err != nil {
-			rec.Eventf(ingLikeObj, corev1.EventTypeWarning, reasonBadConfig, err.Error())
+			rec.Eventf(ingLikeObj, corev1.EventTypeWarning, reasonBadConfig, "%s", err.Error())
 			return nil
 		}
 
@@ -355,7 +355,7 @@ func buildCertificates(
 			path := field.NewPath("spec", "tls").Index(i)
 			err := validateIngressTLSBlock(path, tls).ToAggregate()
 			if err != nil {
-				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: "+err.Error())
+				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: %s", err.Error())
 				continue
 			}
 			tlsHosts[corev1.ObjectReference{
@@ -515,7 +515,7 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 
 		err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l, ingLike).ToAggregate()
 		if err != nil {
-			rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
+			rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: %s", err.Error())
 			continue
 		}
 
