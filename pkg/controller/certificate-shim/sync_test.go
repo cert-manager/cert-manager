@@ -4021,6 +4021,78 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:   "ListenerSet: fallback annotation causes Certificate to use parent Gateway as parentRef",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.ListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "listenerset-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey:   "issuer-name",
+						cmacme.ACMECertificateHTTP01ParentRefFallback: "true",
+					},
+					UID: types.UID("listenerset-name"),
+				},
+				Spec: gwapi.ListenerSetSpec{
+					ParentRef: gwapi.ParentGatewayReference{
+						Name:      "parent-gateway",
+						Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("gateway-namespace"); return &n }(),
+					},
+					Listeners: []gwapi.ListenerEntry{
+						{
+							Name:     "https",
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01ParentRefKind:      "Gateway",
+							cmacme.ACMECertificateHTTP01ParentRefName:      "parent-gateway",
+							cmacme.ACMECertificateHTTP01ParentRefNamespace: "gateway-namespace",
+						},
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(&gwapi.ListenerSet{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "listenerset-name",
+									Namespace: gen.DefaultTestNamespace,
+									UID:       types.UID("listenerset-name"),
+								},
+							}, listenerSetGVK),
+						},
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "Gateway: empty GatewayAPIExtraProtocols leaves custom protocol Listener unprocessed",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &gwapi.Gateway{

@@ -600,7 +600,7 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
 			},
 			orderNS: "test-namespace",
-			want:    parentRefs("Gateway", "test-gateway", "test-namespace"),
+			want:    parentRefs("test-gateway", "test-namespace"),
 		},
 		{
 			name:   "only name annotation",
@@ -639,7 +639,7 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 		},
 		{
 			name:   "append to existing parentRefs",
-			issuer: gatewayIssuer(parentRefs("Gateway", "existing-gateway", "default")),
+			issuer: gatewayIssuer(parentRefs("existing-gateway", "default")),
 			orderAnnotations: map[string]string{
 				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
 				"acme.cert-manager.io/http01-parentrefkind": "ListenerSet",
@@ -658,7 +658,29 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
 			},
 			orderNS: "custom-namespace",
-			want:    parentRefs("Gateway", "test-gateway", "custom-namespace"),
+			want:    parentRefs("test-gateway", "custom-namespace"),
+		},
+		{
+			name:   "namespace annotation overrides Order namespace",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("eg", "envoy-gateway-system"),
+		},
+		{
+			name:   "namespace annotation deduplicates matching issuer parentRef",
+			issuer: gatewayIssuer(parentRefs("eg", "envoy-gateway-system")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("eg", "envoy-gateway-system"),
 		},
 	}
 
@@ -755,9 +777,9 @@ func ref(kind, name, namespace string) gwapi.ParentReference {
 	}
 }
 
-func parentRefs(kind, name, namespace string) []gwapi.ParentReference {
+func parentRefs(name, namespace string) []gwapi.ParentReference {
 	return []gwapi.ParentReference{
-		ref(kind, name, namespace),
+		ref("Gateway", name, namespace),
 	}
 }
 
