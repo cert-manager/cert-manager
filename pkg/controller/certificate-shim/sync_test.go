@@ -4045,7 +4045,7 @@ func TestSync(t *testing.T) {
 							Port:     443,
 							Protocol: gwapi.HTTPSProtocolType,
 							TLS: &gwapi.ListenerTLSConfig{
-								Mode: ptrMode(gwapi.TLSModeTerminate),
+								Mode: new(gwapi.TLSModeTerminate),
 								CertificateRefs: []gwapi.SecretObjectReference{
 									{
 										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
