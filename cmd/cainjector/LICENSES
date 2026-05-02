@@ -42,6 +42,7 @@ github.com/blang/semver/v4,MIT
 github.com/cert-manager/cert-manager,Apache-2.0
 github.com/cert-manager/cert-manager/cainjector-binary,Apache-2.0
 github.com/cert-manager/cert-manager/internal/cron,MIT
+github.com/cert-manager/cert-manager/third_party/forked/acme,BSD-3-Clause
 github.com/cespare/xxhash/v2,MIT
 github.com/davecgh/go-spew/spew,ISC
 github.com/emicklei/go-restful/v3,MIT

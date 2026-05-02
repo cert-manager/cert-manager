@@ -18,7 +18,12 @@ package readiness
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"math/big"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -29,11 +34,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -41,17 +48,24 @@ import (
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
 	// ControllerName is the name of the certificate readiness controller.
 	ControllerName = "certificates-readiness"
 	// ReadyReason is the 'Ready' reason of a Certificate.
-	ReadyReason = "Ready"
+	ReadyReason    = "Ready"
+	defaultARIPoll = 6 * time.Hour
+	minARIPoll     = 1 * time.Hour
+	maxARIPoll     = 7 * 24 * time.Hour
+	ariJitterPct   = 0.1
 )
 
 type controller struct {
@@ -62,6 +76,9 @@ type controller struct {
 	secretLister             internalinformers.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
+	issuerLister             cmlisters.IssuerLister
+	clusterIssuerLister      cmlisters.ClusterIssuerLister
+	accountRegistry          accounts.Getter
 	gatherer                 *policies.Gatherer
 	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
 	policyEvaluator policyEvaluatorFunc
@@ -71,7 +88,10 @@ type controller struct {
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
 	// Apply API calls.
-	fieldManager string
+	fieldManager       string
+	helper             issuer.Helper
+	clock              clock.Clock
+	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -126,12 +146,15 @@ func NewController(
 		return nil, nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
 
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
+
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
 		certificateRequestInformer.Informer().HasSynced,
 		secretsInformer.Informer().HasSynced,
 		certificateInformer.Informer().HasSynced,
+		issuerInformer.Informer().HasSynced,
 	}
 
 	return &controller{
@@ -141,6 +164,8 @@ func NewController(
 		secretLister:             secretsInformer.Lister(),
 		client:                   ctx.CMClient,
 		recorder:                 ctx.Recorder,
+		accountRegistry:          ctx.ACMEAccountRegistry,
+		issuerLister:             issuerInformer.Lister(),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -148,6 +173,8 @@ func NewController(
 		policyEvaluator:       policyEvaluator,
 		renewalTimeCalculator: renewalTimeCalculator,
 		fieldManager:          ctx.FieldManager,
+		clock:                 ctx.Clock,
+		scheduledWorkQueue:    scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
 	}, queue, mustSync, nil
 }
 
@@ -192,8 +219,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 
+		var renewalTime *metav1.Time
+		if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+			renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
+		}
+
+		// If there is no renewal time from ARI or if the featuregate is disabled.
+		if renewalTime == nil || renewalTime.IsZero() {
+			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		}
 		if err != nil {
 			reason := policies.WindowError
 			message := fmt.Sprintf("Could not calculate renewal time: %v", err)
@@ -222,6 +257,108 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	return nil
 }
 
+func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) time.Time {
+	d := retryAfter
+	if d <= 0 {
+		d = defaultARIPoll
+	}
+	if d < minARIPoll {
+		d = minARIPoll
+	}
+	if d > maxARIPoll {
+		d = maxARIPoll
+	}
+
+	randJit, _ := rand.Int(rand.Reader, big.NewInt(int64(2*ariJitterPct*float64(d))))
+	jit := time.Duration(randJit.Int64()) - time.Duration(ariJitterPct*float64(d))
+	return now.Add(d + jit)
+}
+
+func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, key types.NamespacedName) *metav1.Time {
+	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
+	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
+		return nil
+	}
+
+	if crt.Status.ACME == nil {
+		crt.Status.ACME = &cmapi.CertificateACMEStatus{}
+	}
+	if crt.Status.ACME.ARI == nil {
+		crt.Status.ACME.ARI = &cmapi.CertificateACMEARIStatus{}
+	}
+
+	ariStatus := crt.Status.ACME.ARI
+
+	now := c.clock.Now()
+
+	needFetch := ariStatus.NextCheck == nil || !now.Before(ariStatus.NextCheck.Time)
+
+	if !needFetch {
+		return nil
+	}
+	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
+	ariStatus.LastChecked = &metav1.Time{Time: now}
+	var renewalTime *metav1.Time
+
+	switch {
+	case errors.Is(err, acmeapi.ErrCADoesNotSupportARI):
+		crt.Status.ACME = nil
+	case err != nil:
+		ariStatus.LastError = err.Error()
+		reason := policies.ARIError
+		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
+
+		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+		// ariInfo may be nil when getARIInfo fails before issuing a request
+		// (e.g. no ACME client registered yet). Fall back to the default poll
+		// interval rather than dereferencing a nil response.
+		retryAfter := defaultARIPoll
+		if ariInfo != nil {
+			retryAfter = ariInfo.RetryAfter
+		}
+		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, retryAfter)}
+	default:
+		renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
+		if err != nil {
+			reason := policies.ARIError
+			message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
+			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+
+			ariStatus.LastError = err.Error()
+			ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
+
+			break
+		}
+
+		ariStatus.ExplanationURL = ariInfo.ExplanationURL
+		ariStatus.SuggestedWindow = &cmapi.ACMERenewalWindow{
+			Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
+			End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+		}
+		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, ariInfo.RetryAfter)}
+	}
+
+	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil && crt.Status.ACME.ARI.NextCheck != nil {
+		c.scheduledWorkQueue.Add(key, crt.Status.ACME.ARI.NextCheck.Time.Sub(now))
+	}
+
+	return renewalTime
+}
+
+func (c *controller) getARIInfo(ctx context.Context, genericIssuer cmapi.GenericIssuer, crt *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+	cl, err := c.accountRegistry.GetClient(string(genericIssuer.GetUID()))
+	if err != nil {
+		return nil, err
+	}
+
+	ri, err := cl.GetRenewalInfo(ctx, crt)
+	if err != nil {
+		return nil, err
+	}
+
+	return ri, nil
+}
+
 // updateOrApplyStatus will update the controller status. If the
 // ServerSideApply feature is enabled, the managed fields will instead get
 // applied using the relevant Patch API call.
@@ -237,6 +374,7 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 				NotAfter:    crt.Status.NotAfter,
 				NotBefore:   crt.Status.NotBefore,
 				RenewalTime: crt.Status.RenewalTime,
+				ACME:        crt.Status.ACME,
 				Conditions:  conditions,
 			},
 		})
@@ -282,6 +420,14 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Type
 		BuildReadyConditionFromChain,
 	)
 	c.controller = ctrl
+
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		c.clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
+	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	return queue, mustSync, err
 }

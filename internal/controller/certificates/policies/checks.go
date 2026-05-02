@@ -274,7 +274,12 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		reason := Renewing
 		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
 
-		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		var renewalTime *metav1.Time
+		if input.ARIRenewalInfo != nil {
+			renewalTime, err = pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(input.ARIRenewalInfo))
+		} else {
+			renewalTime, err = pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		}
 		if err != nil {
 			reason = WindowError
 			message = err.Error()

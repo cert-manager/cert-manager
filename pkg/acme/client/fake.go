@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 
 	"github.com/cert-manager/cert-manager/third_party/forked/acme"
@@ -44,6 +45,7 @@ type FakeACME struct {
 	FakeDNS01ChallengeRecord    func(token string) (string, error)
 	FakeDiscover                func(ctx context.Context) (acme.Directory, error)
 	FakeUpdateReg               func(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	FakeGetRenewalInfo          func(ctx context.Context, cert *x509.Certificate) (*acme.RenewalInfoResponse, error)
 }
 
 var _ Interface = &FakeACME{}
@@ -160,4 +162,11 @@ func (f *FakeACME) ListCertAlternates(ctx context.Context, url string) ([]string
 		return f.FakeListCertAlternates(ctx, url)
 	}
 	return nil, fmt.Errorf("ListCertAlternates not implemented")
+}
+
+func (f *FakeACME) GetRenewalInfo(ctx context.Context, cert *x509.Certificate) (*acme.RenewalInfoResponse, error) {
+	if f.FakeGetRenewalInfo != nil {
+		return f.FakeGetRenewalInfo(ctx, cert)
+	}
+	return nil, fmt.Errorf("GetRenewalInfo not implemented")
 }

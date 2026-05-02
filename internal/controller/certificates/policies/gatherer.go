@@ -213,12 +213,16 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // Gatherer is used to gather data about a Certificate in order to evaluate
@@ -226,6 +230,7 @@ import (
 type Gatherer struct {
 	CertificateRequestLister cmlisters.CertificateRequestLister
 	SecretLister             internalinformers.SecretLister
+	AccountRegistry          accounts.Getter
 }
 
 // DataForCertificate returns the secret as well as the "current" and "next"
@@ -311,10 +316,24 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		log.V(logf.DebugLevel).Info("Found no CertificateRequest resources owned by this Certificate for the next revision", "revision", nextCRRevision)
 	}
 
-	return Input{
+	i := Input{
 		Certificate:            crt,
 		Secret:                 secret,
 		CurrentRevisionRequest: curCR,
 		NextRevisionRequest:    nextCR,
-	}, nil
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+		if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil && crt.Status.ACME.ARI.SuggestedWindow != nil {
+			i.ARIRenewalInfo = &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: crt.Status.ACME.ARI.SuggestedWindow.Start.Time,
+					End:   crt.Status.ACME.ARI.SuggestedWindow.End.Time,
+				},
+				ExplanationURL: crt.Status.ACME.ARI.ExplanationURL,
+			}
+		}
+	}
+
+	return i, nil
 }
