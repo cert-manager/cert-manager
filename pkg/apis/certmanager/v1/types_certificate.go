@@ -708,6 +708,10 @@ type CertificateStatus struct {
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	// +optional
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
+
+	// ACME stores acme related information that is fetched from the ACME CA server.
+	// +optional
+	ACME *CertificateACMEStatus `json:"acme,omitempty"`
 }
 
 // CertificateCondition contains condition information for a Certificate.
@@ -825,4 +829,47 @@ type NameConstraintItem struct {
 	// +optional
 	// +listType=atomic
 	URIDomains []string `json:"uriDomains,omitempty"`
+}
+
+type CertificateACMEStatus struct {
+	// ARI stores the ACME Renewal Information that is fetched from the ACME server
+	// in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.
+	//
+	// +optional
+	ARI *CertificateACMEARIStatus `json:"ari,omitempty"`
+}
+
+type CertificateACMEARIStatus struct {
+	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+	//
+	// +required
+	SuggestedWindow *ACMERenewalWindow `json:"suggestedWindow,omitempty"`
+	// ExplanationURL is a human-readable URL that may explain why the suggested window
+	// has its current value.
+	//
+	// +optional
+	ExplanationURL string `json:"explanationURL,omitempty"`
+	// LastChecked is the time at which the ACME server was last checked for renewal information.
+	//
+	// +required
+	LastChecked *metav1.Time `json:"lastChecked,omitempty"`
+	// NextCheck is the time at which the ACME server will next be checked for renewal information.
+	//
+	// +required
+	NextCheck *metav1.Time `json:"nextCheck,omitempty"`
+	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
+	//
+	// +optional
+	LastError string `json:"lastError,omitempty"`
+}
+
+type ACMERenewalWindow struct {
+	// Start is the start of the suggested renewal window.
+	//
+	// +required
+	Start *metav1.Time `json:"start"`
+	// End is the end of the suggested renewal window.
+	//
+	// +required
+	End *metav1.Time `json:"end"`
 }

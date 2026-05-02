@@ -118,6 +118,15 @@ spec:
                   Profile allows requesting a certificate profile from the ACME server.
                   Supported profiles are listed by the server's ACME directory URL.
                 type: string
+              replaces:
+                description: |-
+                  Replaces is the ARI CertID (RFC 9773 §4.1) of the certificate that this
+                  Order is intended to replace. When set, cert-manager will include the
+                  "replaces" field on the newOrder request to the ACME server if and only
+                  if the server advertises ARI support in its directory. The CertID has
+                  the form "base64url(AKI).base64url(serial)" and is derived locally from
+                  the currently issued leaf certificate.
+                type: string
               request:
                 description: |-
                   Certificate signing request bytes in DER encoding.
