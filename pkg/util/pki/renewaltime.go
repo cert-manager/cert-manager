@@ -18,16 +18,30 @@ package pki
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
+type RenewalOptions struct {
+	ariInfo *acmeapi.RenewalInfoResponse
+}
+
+type RenewalTimeOptions func(*RenewalOptions)
+
+func WithARIInfo(ariInfo *acmeapi.RenewalInfoResponse) RenewalTimeOptions {
+	return func(o *RenewalOptions) {
+		o.ariInfo = ariInfo
+	}
+}
+
 // RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
-type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1.CertificateRenewal) (*metav1.Time, error)
+type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1.CertificateRenewal, ...RenewalTimeOptions) (*metav1.Time, error)
 
 // RenewalTime calculates renewal time for a certificate.
 // If renewBefore is non-nil and less than the certificate's lifetime, renewal
@@ -36,25 +50,35 @@ type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1
 // will be the computed period before expiry based on the renewBeforePercentage
 // value and certificate lifetime.
 // Default renewal time is 2/3 through certificate's lifetime.
-func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *apiv1.CertificateRenewal) (*metav1.Time, error) {
-	// 1. Start calculation of desired renewal time based on renewBefore and renewBeforePercentage.
-	// 1.1: Calculate how long before expiry a cert should be renewed
-	actualDuration := notAfter.Sub(notBefore)
+func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *apiv1.CertificateRenewal, opts ...RenewalTimeOptions) (*metav1.Time, error) {
+	o := &RenewalOptions{}
+	for _, opt := range opts {
+		opt(o)
+	}
 
-	actualRenewBefore := desiredRenewalTime(actualDuration, renewBefore, renewBeforePercentage)
+	var rt metav1.Time
+	if o.ariInfo != nil && !o.ariInfo.SuggestedWindow.Start.IsZero() && !o.ariInfo.SuggestedWindow.End.IsZero() {
+		rt = metav1.NewTime(selectRandTimeInARIWindow(o.ariInfo.SuggestedWindow.Start, o.ariInfo.SuggestedWindow.End))
+	} else {
+		// 1. Start calculation of desired renewal time based on renewBefore and renewBeforePercentage.
+		// 1.1: Calculate how long before expiry a cert should be renewed
+		actualDuration := notAfter.Sub(notBefore)
 
-	// 1.2: Calculate when a cert should be renewed
-	// Truncate the renewal time to nearest second. This is important
-	// because the renewal time also gets stored on Certificate's status
-	// where it is truncated to the nearest second. We use the renewal time
-	// from Certificate's status to determine when the Certificate will be
-	// added to the queue to be renewed, but then re-calculate whether it
-	// needs to be renewed _now_ using this function, so returning a
-	// non-truncated value here would potentially cause Certificates to be
-	// re-queued for renewal earlier than the calculated renewal time thus
-	// causing Certificates to not be automatically renewed. See
-	// https://github.com/cert-manager/cert-manager/pull/4399.
-	rt := metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second))
+		actualRenewBefore := desiredRenewalTime(actualDuration, renewBefore, renewBeforePercentage)
+
+		// 1.2: Calculate when a cert should be renewed
+		// Truncate the renewal time to nearest second. This is important
+		// because the renewal time also gets stored on Certificate's status
+		// where it is truncated to the nearest second. We use the renewal time
+		// from Certificate's status to determine when the Certificate will be
+		// added to the queue to be renewed, but then re-calculate whether it
+		// needs to be renewed _now_ using this function, so returning a
+		// non-truncated value here would potentially cause Certificates to be
+		// re-queued for renewal earlier than the calculated renewal time thus
+		// causing Certificates to not be automatically renewed. See
+		// https://github.com/cert-manager/cert-manager/pull/4399.
+		rt = metav1.NewTime(notAfter.Add(-1 * actualRenewBefore).Truncate(time.Second))
+	}
 
 	// 2. If there is no renewal spec then just return the desired renewal time calculated above.
 	if renewalSpec == nil {
@@ -69,6 +93,20 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	default:
 		return nil, fmt.Errorf("unsupported renewal policy: %s", renewalSpec.Policy)
 	}
+}
+
+func selectRandTimeInARIWindow(start, end time.Time) time.Time {
+	if !start.Before(end) {
+		return start
+	}
+
+	window := end.Sub(start)
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	randomOffset := rng.Int63n(int64(window))
+
+	return start.Add(time.Duration(randomOffset))
 }
 
 // desiredRenewalTime calculates how far before expiry a certificate should be renewed.

@@ -739,6 +739,51 @@ spec:
                 Read-only.
                 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
               properties:
+                acme:
+                  description: ACME stores acme related information that is fetched from the ACME CA server.
+                  properties:
+                    ari:
+                      description: |-
+                        ARI stores the ACME Renewal Information that is fetched from the ACME server
+                        in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.
+                      properties:
+                        explanationURL:
+                          description: |-
+                            ExplanationURL is a human-readable URL that may explain why the suggested window
+                            has its current value.
+                          type: string
+                        lastChecked:
+                          description: LastChecked is the time at which the ACME server was last checked for renewal information.
+                          format: date-time
+                          type: string
+                        lastError:
+                          description: LastError is the last error encountered when checking the ACME server for renewal information, if any.
+                          type: string
+                        nextCheck:
+                          description: NextCheck is the time at which the ACME server will next be checked for renewal information.
+                          format: date-time
+                          type: string
+                        suggestedWindow:
+                          description: SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+                          properties:
+                            end:
+                              description: End is the end of the suggested renewal window.
+                              format: date-time
+                              type: string
+                            start:
+                              description: Start is the start of the suggested renewal window.
+                              format: date-time
+                              type: string
+                          required:
+                            - end
+                            - start
+                          type: object
+                      required:
+                        - lastChecked
+                        - nextCheck
+                        - suggestedWindow
+                      type: object
+                  type: object
                 conditions:
                   description: |-
                     List of status conditions to indicate the status of certificates.

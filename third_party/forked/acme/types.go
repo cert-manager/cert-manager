@@ -7,6 +7,8 @@ package acme
 import (
 	"crypto"
 	"crypto/x509"
+	"encoding/asn1"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,6 +71,13 @@ var (
 	// ErrProfileNotInSetOfSupportedProfiles indicates that the profile
 	// specified with [WithOrderProfile} is not one supported by the CA
 	ErrProfileNotInSetOfSupportedProfiles = errors.New("acme: certificate authority does not advertise a profile with name")
+
+	// ErrCADoesNotSupportARI indicates the CA does not advertise the renewalInfo endpoint
+	// in its directory object (RFC 9773).
+	ErrCADoesNotSupportARI = errors.New("acme: certificate authority does not support ARI (renewalInfo)")
+
+	// ErrInvalidARICertID indicates an ARI CertID could not be constructed.
+	ErrInvalidARICertID = errors.New("acme: invalid ARI certificate identifier")
 )
 
 // A Subproblem describes an ACME subproblem as reported in an Error.
@@ -163,16 +172,13 @@ func (a *AuthorizationError) Error() string {
 
 // OrderError is returned from Client's order related methods.
 // It indicates the order is unusable and the clients should start over with
-// AuthorizeOrder. A Problem description may be provided with details on
-// what caused the order to become unusable.
+// AuthorizeOrder.
 //
 // The clients can still fetch the order object from CA using GetOrder
 // to inspect its state.
 type OrderError struct {
 	OrderURL string
 	Status   string
-	// Problem is the error that occurred while processing the order.
-	Problem *Error
 }
 
 func (oe *OrderError) Error() string {
@@ -324,6 +330,10 @@ type Directory struct {
 	// Profiles indicates that the CA supports specifying a profile for an
 	// order. See also [WithOrderNotAfter].
 	Profiles Profiles
+
+	// RenewalInfo indicates the renewal information that a CA would return for a given
+	// certificate. Renewal information follows RFC 9773.
+	RenewalInfo string
 }
 
 // Order represents a client's request for a certificate.
@@ -382,6 +392,13 @@ type Order struct {
 
 	// The error that occurred while processing the order as received from a CA, if any.
 	Error *Error
+
+	// RetryAfter specifies how long the client should wait before polling the order again,
+	// based on the Retry-After header provided by the server while the order is in the
+	// StatusProcessing state.
+	//
+	// See RFC 8555 Section 7.4.
+	RetryAfter time.Duration
 }
 
 // OrderOption allows customizing Client.AuthorizeOrder call.
@@ -408,6 +425,18 @@ func WithOrderProfile(name string) OrderOption {
 	return orderProfileOpt(name)
 }
 
+func WithOrderReplacesCertID(certID string) OrderOption {
+	return orderReplacesOpt(certID)
+}
+
+func WithOrderReplacesCertificate(cert *x509.Certificate) (OrderOption, error) {
+	certID, err := CertificateARIID(cert)
+	if err != nil {
+		return nil, err
+	}
+	return orderReplacesOpt(certID), nil
+}
+
 type orderNotBeforeOpt time.Time
 
 func (orderNotBeforeOpt) privateOrderOpt() {}
@@ -419,6 +448,10 @@ func (orderNotAfterOpt) privateOrderOpt() {}
 type orderProfileOpt string
 
 func (orderProfileOpt) privateOrderOpt() {}
+
+type orderReplacesOpt string
+
+func (orderReplacesOpt) privateOrderOpt() {}
 
 // Authorization encodes an authorization response.
 type Authorization struct {
@@ -455,6 +488,14 @@ type Authorization struct {
 	//
 	// This field is unused in RFC 8555.
 	Combinations [][]int
+
+	// RetryAfter specifies how long the client should wait before polling the
+	// authorization resource again, if indicated by the server.
+	// This corresponds to the optional Retry-After HTTP header included in a
+	// 200 (OK) response when the authorization is still StatusPending.
+	//
+	// See RFC 8555 Section 7.5.1.
+	RetryAfter time.Duration
 }
 
 // AuthzID is an identifier that an account is authorized to represent.
@@ -500,7 +541,7 @@ type wireAuthz struct {
 	Error        *wireError
 }
 
-func (z *wireAuthz) authorization(uri string) *Authorization {
+func (z *wireAuthz) authorization(uri string, retryAfter time.Duration) *Authorization {
 	a := &Authorization{
 		URI:          uri,
 		Status:       z.Status,
@@ -509,9 +550,10 @@ func (z *wireAuthz) authorization(uri string) *Authorization {
 		Wildcard:     z.Wildcard,
 		Challenges:   make([]*Challenge, len(z.Challenges)),
 		Combinations: z.Combinations, // shallow copy
+		RetryAfter:   retryAfter,
 	}
 	for i, v := range z.Challenges {
-		a.Challenges[i] = v.challenge()
+		a.Challenges[i] = v.challenge(0)
 	}
 	return a
 }
@@ -571,6 +613,13 @@ type Challenge struct {
 	// where the client must send additional data for the server to validate
 	// the challenge.
 	Payload json.RawMessage
+
+	// RetryAfter specifies how long the client should wait before polling the
+	// challenge again, based on the Retry-After header provided by the server
+	// while the challenge is in the StatusProcessing state.
+	//
+	// See RFC 8555 Section 8.2.
+	RetryAfter time.Duration
 }
 
 // wireChallenge is ACME JSON challenge representation.
@@ -584,12 +633,13 @@ type wireChallenge struct {
 	Error     *wireError
 }
 
-func (c *wireChallenge) challenge() *Challenge {
+func (c *wireChallenge) challenge(retryAfter time.Duration) *Challenge {
 	v := &Challenge{
-		URI:    c.URL,
-		Type:   c.Type,
-		Token:  c.Token,
-		Status: c.Status,
+		URI:        c.URL,
+		Type:       c.Type,
+		Token:      c.Token,
+		Status:     c.Status,
+		RetryAfter: retryAfter,
 	}
 	if v.URI == "" {
 		v.URI = c.URI // c.URL was empty; use legacy
@@ -670,4 +720,60 @@ func (ps Profiles) GetDescription(name string) string {
 func (ps Profiles) Has(name string) bool {
 	_, ok := ps[name]
 	return ok
+}
+
+type RenewalInfoResponse struct {
+	// SuggestedWindow is a window of time bound by start and end timestamps in which
+	// the CA recommends renewing the certificate.
+	SuggestedWindow RenewalInfoWindow `json:"suggestedWindow"`
+
+	// ExplanationURL is a human-readable URL that may explain why the suggested window
+	// has its current value. Clients are expected to provide this URL to their operators if
+	// present.
+	ExplanationURL string `json:"explanationURL"`
+
+	// RetryAfter header indicating the polling interval that the ACME server recommends.
+	// Conforming clients SHOULD query the renewalInfo URL again after the RetryAfter period has passed,
+	// as the server may provide a different suggestedWindow.
+	// https://www.rfc-editor.org/rfc/rfc9773.html#section-4.2
+	RetryAfter time.Duration
+}
+
+type RenewalInfoWindow struct {
+	// Start is the beginning of the recommended renewal window.
+	// See: https://www.rfc-editor.org/rfc/rfc9773.html#section-4.1
+	Start time.Time `json:"start"`
+	// End is the end of the recommended renewal window.
+	// See: https://www.rfc-editor.org/rfc/rfc9773.html#section-4.1
+	End time.Time `json:"end"`
+}
+
+func CertificateARIID(cert *x509.Certificate) (string, error) {
+	if cert == nil {
+		return "", fmt.Errorf("%w: nil certificate", ErrInvalidARICertID)
+	}
+
+	if len(cert.AuthorityKeyId) == 0 {
+		return "", fmt.Errorf("%w: missing AuthorityKeyId (AKI)", ErrInvalidARICertID)
+	}
+
+	// Marshal the Serial Number into DER.
+	der, err := asn1.Marshal(cert.SerialNumber)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if the DER encoded bytes are sufficient (at least 3 bytes: tag,
+	// length, and value).
+	if len(der) < 3 {
+		return "", errors.New("invalid DER encoding of serial number")
+	}
+
+	aki := base64.RawURLEncoding.EncodeToString(cert.AuthorityKeyId)
+	serial := base64.RawURLEncoding.EncodeToString(der[2:])
+	if aki == "" || serial == "" {
+		return "", fmt.Errorf("%w: empty encoded parts", ErrInvalidARICertID)
+	}
+
+	return aki + "." + serial, nil
 }

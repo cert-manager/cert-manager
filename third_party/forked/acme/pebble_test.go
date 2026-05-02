@@ -382,12 +382,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	// Wait for the order to become ready for finalization.
 	order, err = client.WaitOrder(ctx, order.URI)
 	if err != nil {
-		var orderErr *acme.OrderError
-		if errors.Is(err, orderErr) {
-			t.Fatalf("failed to wait for order %s: %s: %s", orderURL, err, orderErr.Problem)
-		} else {
-			t.Fatalf("failed to wait for order %s: %s", orderURL, err)
-		}
+		t.Fatalf("failed to wait for order %s: %s", orderURL, err)
 	}
 	if order.Status != acme.StatusReady {
 		t.Fatalf("expected order %s status to be ready, got %v",
@@ -697,14 +692,14 @@ func startPebbleEnvironment(t *testing.T, config *environmentConfig) environment
 func waitForServer(t *testing.T, addr string) {
 	t.Helper()
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 10; i++ {
 		if conn, err := net.Dial("tcp", addr); err == nil {
 			conn.Close()
 			return
 		}
 		time.Sleep(time.Duration(i*100) * time.Millisecond)
 	}
-	t.Fatalf("failed to connect to %q after 20 tries", addr)
+	t.Fatalf("failed to connect to %q after 10 tries", addr)
 }
 
 // fetchModule fetches the module at the given version and returns the directory
@@ -757,7 +752,7 @@ func prepareBinaries(t *testing.T, pebbleDir string) string {
 
 	// We don't want to build in the module cache dir, which might not be
 	// writable or to pollute the user's clone with binaries if pebbleLocalDir
-	// is used.
+	//is used.
 	binDir := t.TempDir()
 
 	build := func(cmd string) {
@@ -781,29 +776,14 @@ func prepareBinaries(t *testing.T, pebbleDir string) string {
 func spawnServerProcess(t *testing.T, dir string, cmd string, args ...string) {
 	t.Helper()
 
-	var stdout, stderr bytes.Buffer
-
 	cmdInstance := exec.Command("./"+cmd, args...)
 	cmdInstance.Dir = dir
-	cmdInstance.Stdout = &stdout
-	cmdInstance.Stderr = &stderr
-
+	cmdInstance.Stdout = os.Stdout
+	cmdInstance.Stderr = os.Stderr
 	if err := cmdInstance.Start(); err != nil {
 		t.Fatalf("failed to start %s: %v", cmd, err)
 	}
-
 	t.Cleanup(func() {
 		cmdInstance.Process.Kill()
-		cmdInstance.Wait()
-
-		if t.Failed() || testing.Verbose() {
-			t.Logf("=== %s output ===", cmd)
-			if stdout.Len() > 0 {
-				t.Logf("stdout:\n%s", strings.TrimSpace(stdout.String()))
-			}
-			if stderr.Len() > 0 {
-				t.Logf("stderr:\n%s", strings.TrimSpace(stderr.String()))
-			}
-		}
 	})
 }
