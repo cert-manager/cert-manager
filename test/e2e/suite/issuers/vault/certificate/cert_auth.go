@@ -39,20 +39,20 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (ClientCert, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret, featureset.SubjectKeyIdentifierFeature)
 	runVaultClientCertAuthTest(cmapi.IssuerKind, false, fs)
 })
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (ClientCert, CA with root)", func() {
-	fs := featureset.NewFeatureSet()
+	fs := featureset.NewFeatureSet(featureset.SubjectKeyIdentifierFeature)
 	runVaultClientCertAuthTest(cmapi.IssuerKind, true, fs)
 })
 
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (ClientCert, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret, featureset.SubjectKeyIdentifierFeature)
 	runVaultClientCertAuthTest(cmapi.ClusterIssuerKind, false, fs)
 })
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (ClientCert, CA with root)", func() {
-	fs := featureset.NewFeatureSet()
+	fs := featureset.NewFeatureSet(featureset.SubjectKeyIdentifierFeature)
 	runVaultClientCertAuthTest(cmapi.ClusterIssuerKind, true, fs)
 })
 
