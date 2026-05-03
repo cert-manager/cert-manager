@@ -1,0 +1,80 @@
+should render a Deployment matching the default snapshot:
+  1: |
+    labels:
+      app: cert-manager
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: cert-manager
+      app.kubernetes.io/version: v0.0.0
+      helm.sh/chart: cert-manager-v0.0.0
+    name: cert-manager
+    namespace: cert-manager
+  2: |
+    replicas: 1
+    selector:
+      matchLabels:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: cert-manager
+        app.kubernetes.io/name: cert-manager
+    template:
+      metadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9402"
+          prometheus.io/scrape: "true"
+        labels:
+          app: cert-manager
+          app.kubernetes.io/component: controller
+          app.kubernetes.io/instance: cert-manager
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/name: cert-manager
+          app.kubernetes.io/version: v0.0.0
+          helm.sh/chart: cert-manager-v0.0.0
+      spec:
+        containers:
+          - args:
+              - --v=2
+              - --cluster-resource-namespace=$(POD_NAMESPACE)
+              - --leader-election-namespace=kube-system
+              - --acme-http01-solver-image=quay.io/jetstack/cert-manager-acmesolver:v0.0.0
+              - --max-concurrent-challenges=60
+            env:
+              - name: POD_NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+            image: quay.io/jetstack/cert-manager-controller:v0.0.0
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              failureThreshold: 8
+              httpGet:
+                path: /livez
+                port: http-healthz
+                scheme: HTTP
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 15
+            name: cert-manager-controller
+            ports:
+              - containerPort: 9402
+                name: http-metrics
+                protocol: TCP
+              - containerPort: 9403
+                name: http-healthz
+                protocol: TCP
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+        enableServiceLinks: false
+        nodeSelector:
+          kubernetes.io/os: linux
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        serviceAccountName: cert-manager

@@ -1,0 +1,18 @@
+suite: Controller Deployment - Default Rendering
+templates:
+  - templates/deployment.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render a Deployment matching the default snapshot
+    asserts:
+      - isKind:
+          of: Deployment
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ^quay\.io/jetstack/cert-manager-controller
+      - matchSnapshot:
+          path: metadata
+      - matchSnapshot:
+          path: spec
