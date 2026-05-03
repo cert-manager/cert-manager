@@ -66,6 +66,16 @@ type CertificateRequestSpecApplyConfiguration struct {
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
 	IsCA *bool `json:"isCA,omitempty"`
+	// Requested basic constraints maxPathLen value. Note that the issuer may choose
+	// to ignore the requested maxPathLen value, just like any other requested attribute.
+	//
+	// NOTE: If the CSR in the `Request` field has a BasicConstraints extension,
+	// it must have the same maxPathLen value as specified here.
+	//
+	// If set, maxPathLen must be a value of `0` or greater.
+	// If unset (`nil`), there is no maximum.
+	// Default value is `nil`.
+	MaxPathLen *int32 `json:"maxPathLen,omitempty"`
 	// Requested key usages and extended key usages.
 	//
 	// NOTE: If the CSR in the `Request` field has uses the KeyUsage or
@@ -125,6 +135,14 @@ func (b *CertificateRequestSpecApplyConfiguration) WithRequest(values ...byte) *
 // If called multiple times, the IsCA field is set to the value of the last call.
 func (b *CertificateRequestSpecApplyConfiguration) WithIsCA(value bool) *CertificateRequestSpecApplyConfiguration {
 	b.IsCA = &value
+	return b
+}
+
+// WithMaxPathLen sets the MaxPathLen field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaxPathLen field is set to the value of the last call.
+func (b *CertificateRequestSpecApplyConfiguration) WithMaxPathLen(value int32) *CertificateRequestSpecApplyConfiguration {
+	b.MaxPathLen = &value
 	return b
 }
 
