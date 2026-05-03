@@ -162,7 +162,8 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 			el = append(el, field.Forbidden(fldPath, "may not specify more than one solver type in a single solver"))
 		} else {
 			numProviders++
-			el = append(el, ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))...)
+			solverErrs, _ := ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))
+			el = append(el, solverErrs...)
 		}
 	}
 	if numProviders == 0 {
@@ -461,8 +462,9 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA512",
 }
 
-func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) (field.ErrorList, []*cmmeta.SecretKeySelector) {
 	el := field.ErrorList{}
+	requiredSecrets := []*cmmeta.SecretKeySelector{}
 
 	// allow empty values for now, until we have a MutatingWebhook to apply
 	// default values to fields.
@@ -478,8 +480,14 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 	if p.Akamai != nil {
 		numProviders++
 		el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)
+		requiredSecrets = append(requiredSecrets, &p.Akamai.AccessToken)
+
 		el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientSecret, fldPath.Child("akamai", "clientSecret"))...)
+		requiredSecrets = append(requiredSecrets, &p.Akamai.ClientSecret)
+
 		el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientToken, fldPath.Child("akamai", "clientToken"))...)
+		requiredSecrets = append(requiredSecrets, &p.Akamai.ClientToken)
+
 		if len(p.Akamai.ServiceConsumerDomain) == 0 {
 			el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
 		}
@@ -499,6 +507,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 					el = append(el, field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""))
 				} else {
 					el = append(el, ValidateSecretKeySelector(p.AzureDNS.ClientSecret, fldPath.Child("azureDNS", "clientSecretSecretRef"))...)
+					requiredSecrets = append(requiredSecrets, p.AzureDNS.ClientSecret)
 				}
 				if len(p.AzureDNS.TenantID) == 0 {
 					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
@@ -543,6 +552,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			// selector
 			if p.CloudDNS.ServiceAccount != nil {
 				el = append(el, ValidateSecretKeySelector(p.CloudDNS.ServiceAccount, fldPath.Child("cloudDNS", "serviceAccountSecretRef"))...)
+				requiredSecrets = append(requiredSecrets, p.CloudDNS.ServiceAccount)
 			}
 			if len(p.CloudDNS.Project) == 0 {
 				el = append(el, field.Required(fldPath.Child("cloudDNS", "project"), ""))
@@ -556,9 +566,11 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			numProviders++
 			if p.Cloudflare.APIKey != nil {
 				el = append(el, ValidateSecretKeySelector(p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
+				requiredSecrets = append(requiredSecrets, p.Cloudflare.APIKey)
 			}
 			if p.Cloudflare.APIToken != nil {
 				el = append(el, ValidateSecretKeySelector(p.Cloudflare.APIToken, fldPath.Child("cloudflare", "apiTokenSecretRef"))...)
+				requiredSecrets = append(requiredSecrets, p.Cloudflare.APIToken)
 			}
 			if p.Cloudflare.APIKey != nil && p.Cloudflare.APIToken != nil {
 				el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "apiKeySecretRef and apiTokenSecretRef cannot both be specified"))
@@ -582,15 +594,20 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			if len(p.Route53.AccessKeyID) > 0 && p.Route53.SecretAccessKeyID != nil {
 				el = append(el, field.Required(fldPath.Child("route53"), "accessKeyID and accessKeyIDSecretRef cannot both be specified"))
 			}
+			if len(p.Route53.SecretAccessKey.Name) > 0 {
+				requiredSecrets = append(requiredSecrets, &p.Route53.SecretAccessKey)
+			}
 			// if an accessKeyIDSecretRef is given, validate that it resolves to an actual secret
 			if p.Route53.SecretAccessKeyID != nil {
 				el = append(el, ValidateSecretKeySelector(p.Route53.SecretAccessKeyID, fldPath.Child("route53", "accessKeyIDSecretRef"))...)
+				requiredSecrets = append(requiredSecrets, p.Route53.SecretAccessKeyID)
 			}
 		}
 	}
 	if p.AcmeDNS != nil {
 		numProviders++
 		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
+		requiredSecrets = append(requiredSecrets, &p.AcmeDNS.AccountSecret)
 		if len(p.AcmeDNS.Host) == 0 {
 			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
 		}
@@ -602,6 +619,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		} else {
 			numProviders++
 			el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
+			requiredSecrets = append(requiredSecrets, &p.DigitalOcean.Token)
 		}
 	}
 	if p.RFC2136 != nil {
@@ -628,6 +646,10 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 					el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms))
 				}
 			}
+			if len(p.RFC2136.TSIGSecret.Name) > 0 {
+				requiredSecrets = append(requiredSecrets, &p.RFC2136.TSIGSecret)
+			}
+
 			if len(p.RFC2136.TSIGKeyName) > 0 {
 				el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
 			}
@@ -636,7 +658,6 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				if len(p.RFC2136.TSIGKeyName) == 0 {
 					el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
 				}
-
 			}
 		}
 	}
@@ -654,7 +675,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		el = append(el, field.Required(fldPath, "no DNS01 provider configured"))
 	}
 
-	return el
+	return el, requiredSecrets
 }
 
 func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Path) field.ErrorList {
