@@ -630,7 +630,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -667,6 +667,101 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 
 				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
 					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
+				}
+			},
+		},
+		"should include extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error building ingress: %v", err)
+				}
+				s.testResources[createdIngressKey] = expectedIngress
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
+				resp, ok := args[0].(*networkingv1.Ingress)
+				if !ok {
+					t.Errorf("expected ingress to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
+				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
+				expectedIngress.Name = resp.Name
+				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
+					t.Errorf("unexpected ingress generated (-want +got):\n%s", diff)
+				}
+			},
+		},
+		"should allow ingress template to override extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
+									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
+										Labels: map[string]string{
+											"custom-extra-label": "overridden-by-template",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+					"extra-only-label":   "extra-only-value",
+				}
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error building ingress: %v", err)
+				}
+				// Apply ingress template (same as createIngress does)
+				expectedIngress = s.Solver.mergeIngressObjectMetaWithIngressResourceTemplate(expectedIngress, s.Challenge.Spec.Solver.HTTP01.Ingress.IngressTemplate)
+				s.testResources[createdIngressKey] = expectedIngress
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
+				resp, ok := args[0].(*networkingv1.Ingress)
+				if !ok {
+					t.Errorf("expected ingress to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
+				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
+				expectedIngress.Name = resp.Name
+				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
+					t.Errorf("unexpected ingress generated (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -711,7 +806,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}

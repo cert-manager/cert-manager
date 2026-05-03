@@ -243,3 +243,102 @@ func TestGetServicesForChallenge(t *testing.T) {
 
 	}
 }
+
+func TestBuildServiceExtraLabels(t *testing.T) {
+	const createdServiceKey = "createdService"
+	tests := map[string]solverFixture{
+		"should include extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				svc, err := s.Solver.buildService(s.Challenge)
+				if err != nil {
+					t.Errorf("error building service: %v", err)
+				}
+				s.testResources[createdServiceKey] = svc
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedSvc := s.testResources[createdServiceKey].(*corev1.Service)
+				resp, ok := args[0].(*corev1.Service)
+				if !ok {
+					t.Errorf("expected service to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedSvc.OwnerReferences = resp.OwnerReferences
+				expectedSvc.Name = resp.Name
+				expectedSvc.ManagedFields = resp.ManagedFields
+				if resp.String() != expectedSvc.String() {
+					t.Errorf("unexpected service built\nexp=%s\ngot=%s",
+						expectedSvc, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should not include extra labels in service selector": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				svc, err := s.Solver.buildService(s.Challenge)
+				if err != nil {
+					t.Errorf("error building service: %v", err)
+				}
+				// Selector should only contain ACME identity labels, NOT extra labels
+				expectedSelector := podLabels(s.Challenge)
+				if !assert.ObjectsAreEqual(expectedSelector, svc.Spec.Selector) {
+					t.Errorf("service selector should not include extra labels\nexp=%s\ngot=%s",
+						expectedSelector, svc.Spec.Selector)
+				}
+				s.testResources[createdServiceKey] = svc
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resp, ok := args[0].(*corev1.Service)
+				if !ok {
+					t.Errorf("expected service to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedSelector := podLabels(s.Challenge)
+				if !assert.ObjectsAreEqual(expectedSelector, resp.Spec.Selector) {
+					t.Errorf("service selector should not include extra labels\nexp=%s\ngot=%s",
+						expectedSelector, resp.Spec.Selector)
+				}
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.Setup(t)
+			resp, err := test.Solver.createService(t.Context(), test.Challenge)
+			test.Finish(t, resp, err)
+		})
+	}
+}

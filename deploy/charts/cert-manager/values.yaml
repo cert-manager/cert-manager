@@ -23,12 +23,14 @@ global:
   nodeSelector: {}
 
   # Labels to apply to all resources.
-  # Please note that this does not add labels to the resources created dynamically by the controllers.
-  # For these resources, you have to add the labels in the template in the cert-manager custom resource:
-  # For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress
-  # For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).
-  # For example, secretTemplate in CertificateSpec
-  # For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).
+  # These labels are also applied to dynamically-created ACME HTTP01 solver resources
+  # (pods, services, ingresses, or Gateway API HTTPRoutes).
+  # The following ACME identity label keys are reserved and will be
+  # silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain,
+  # acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver.
+  # For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and
+  # ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute
+  # solver labels field for Gateway API HTTPRoute resources.
   commonLabels: {}
 
   # The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).
