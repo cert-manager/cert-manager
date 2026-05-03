@@ -1452,6 +1452,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderAcmeDNS(ref common.Reference
 							Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"),
 						},
 					},
+					"caBundle": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CABundle is a base64 encoded TLS certificate authority bundle to use when verifying connections to the acme-dns server. If set, it overrides the spec.acme.caBundle for TLS connections to the acme-dns server.",
+							Type:        []string{"string"},
+							Format:      "byte",
+						},
+					},
 				},
 				Required: []string{"host", "accountSecretRef"},
 			},
