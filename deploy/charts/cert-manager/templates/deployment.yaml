@@ -209,6 +209,13 @@ spec:
             successThreshold: {{ .successThreshold }}
             failureThreshold: {{ .failureThreshold }}
           {{- end }}
+          startupProbe:
+            httpGet:
+              port: http-healthz
+              path: /livez
+              scheme: HTTP
+            failureThreshold: {{ .failureThreshold }}
+            periodSeconds: {{ .periodSeconds }}
           {{- end }}
       {{- if .Values.extraContainers }}
         {{- toYaml .Values.extraContainers | nindent 8 }}
