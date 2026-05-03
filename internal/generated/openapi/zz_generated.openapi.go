@@ -2544,6 +2544,13 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"secretNamespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretNamespace is the namespace of the secret used to sign Certificates issued by this Issuer. If empty, the secret is looked up in the same namespace as the Issuer itself, or the Cluster Resource Namespace for ClusterIssuers.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"crlDistributionPoints": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
