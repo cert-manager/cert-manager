@@ -17,7 +17,7 @@ limitations under the License.
 package accounts
 
 import (
-	"crypto/rsa"
+	"crypto"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
@@ -44,7 +44,7 @@ type Registry interface {
 
 	// IsKeyCheckSumCached checks if the private key checksum is cached with registered client.
 	// If not cached, the account is re-verified for the private key.
-	IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
+	IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey crypto.Signer) bool
 
 	Getter
 }
@@ -88,8 +88,6 @@ type stableOptions struct {
 	serverURL     string
 	skipVerifyTLS bool
 	issuerUID     string
-	publicKey     string
-	exponent      int
 	caBundle      string
 	keyChecksum   [sha256.Size]byte
 }
@@ -99,16 +97,13 @@ func (c stableOptions) equalTo(c2 stableOptions) bool {
 }
 
 func newStableOptions(uid string, options NewClientOptions) stableOptions {
-	// Encoding a big.Int cannot fail
-	publicNBytes, _ := options.PrivateKey.PublicKey.N.GobEncode()
-	checksum := sha256.Sum256(x509.MarshalPKCS1PrivateKey(options.PrivateKey))
+	keyBytes, _ := x509.MarshalPKCS8PrivateKey(options.PrivateKey)
+	checksum := sha256.Sum256(keyBytes)
 
 	return stableOptions{
 		serverURL:     options.Server,
 		skipVerifyTLS: options.SkipTLSVerify,
 		issuerUID:     uid,
-		publicKey:     string(publicNBytes),
-		exponent:      options.PrivateKey.PublicKey.E,
 		caBundle:      string(options.CABundle),
 		keyChecksum:   checksum,
 	}
@@ -197,12 +192,15 @@ func (r *registry) ListClients() map[string]acmecl.Interface {
 // IsKeyCheckSumCached returns true when there is no difference in private key checksum.
 // This can be used to identify if the private key has changed for the existing
 // registered client.
-func (r *registry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool {
+func (r *registry) IsKeyCheckSumCached(lastPrivateKeyHash string, privateKey crypto.Signer) bool {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
 	if privateKey != nil && lastPrivateKeyHash != "" {
-		privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+		privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+		if err != nil {
+			return false
+		}
 		checksum := sha256.Sum256(privateKeyBytes)
 		checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 
