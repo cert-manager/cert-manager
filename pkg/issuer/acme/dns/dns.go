@@ -97,7 +97,9 @@ func (s *Solver) Present(ctx context.Context, _ v1.GenericIssuer, ch *cmacme.Cha
 		return err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
+	nameservers, _ := s.nameserversForProviderConfig(providerConfig)
+
+	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), nameservers...)
 	if err != nil {
 		return err
 	}
@@ -111,15 +113,22 @@ func (s *Solver) Present(ctx context.Context, _ v1.GenericIssuer, ch *cmacme.Cha
 func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "Check"), ch).WithValues("domain", ch.Spec.DNSName)
 
-	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, false, s.DNS01Nameservers...)
+	providerConfig, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return err
 	}
 
-	log.V(logf.DebugLevel).Info("checking DNS propagation", "nameservers", s.Context.DNS01Nameservers)
+	nameservers, checkAuthoritative := s.nameserversForProviderConfig(providerConfig)
 
-	ok, err := s.DNSResolver.CheckTXTRecordPropagation(ctx, fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
-		util.UseAuthoritative(s.Context.DNS01CheckAuthoritative))
+	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, false, nameservers...)
+	if err != nil {
+		return err
+	}
+
+	log.V(logf.DebugLevel).Info("checking DNS propagation", "nameservers", nameservers)
+
+	ok, err := s.DNSResolver.CheckTXTRecordPropagation(ctx, fqdn, ch.Spec.Key, nameservers,
+		util.UseAuthoritative(checkAuthoritative))
 	if err != nil {
 		return err
 	}
@@ -155,7 +164,9 @@ func (s *Solver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
 		return err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
+	nameservers, _ := s.nameserversForProviderConfig(providerConfig)
+
+	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), nameservers...)
 	if err != nil {
 		return err
 	}
@@ -190,6 +201,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		return nil, nil, err
 	}
 
+	nameservers, _ := s.nameserversForProviderConfig(providerConfig)
+
 	var impl solver
 	switch {
 	case providerConfig.Akamai != nil:
@@ -214,7 +227,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			akamai.ClientToken(clientToken),
 			akamai.ClientSecret(clientSecret),
 			akamai.AccessToken(accessToken),
-			akamai.Nameservers(s.DNS01Nameservers),
+			akamai.Nameservers(nameservers),
 			akamai.Resolver(s.DNSResolver))
 
 		if err != nil {
@@ -244,7 +257,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		impl, err = s.dnsProviderConstructors.cloudDNS(ctx,
 			clouddns.Project(providerConfig.CloudDNS.Project),
 			clouddns.ServiceAccountBytes(keyData),
-			clouddns.Nameservers(s.DNS01Nameservers),
+			clouddns.Nameservers(nameservers),
 			clouddns.Ambient(s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)),
 			clouddns.HostedZoneName(providerConfig.CloudDNS.HostedZoneName),
 			clouddns.Resolver(s.DNSResolver))
@@ -304,7 +317,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 
 		impl, err = s.dnsProviderConstructors.digitalOcean(ctx,
 			digitalocean.Token(apiToken),
-			digitalocean.Nameservers(s.DNS01Nameservers),
+			digitalocean.Nameservers(nameservers),
 			digitalocean.UserAgent(s.RESTConfig.UserAgent),
 			digitalocean.Resolver(s.DNSResolver))
 
@@ -392,7 +405,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			route53.Role(providerConfig.Route53.Role),
 			route53.WebIdentityToken(webIdentityToken),
 			route53.Ambient(canUseAmbientCredentials),
-			route53.Nameservers(s.DNS01Nameservers),
+			route53.Nameservers(nameservers),
 			route53.UserAgent(s.RESTConfig.UserAgent),
 			route53.Resolver(s.DNSResolver))
 
@@ -425,7 +438,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			azuredns.TenantID(providerConfig.AzureDNS.TenantID),
 			azuredns.ResourceGroupName(providerConfig.AzureDNS.ResourceGroupName),
 			azuredns.ZoneName(providerConfig.AzureDNS.HostedZoneName),
-			azuredns.Nameservers(s.DNS01Nameservers),
+			azuredns.Nameservers(nameservers),
 			azuredns.Ambient(canUseAmbientCredentials),
 			azuredns.ManagedIdentity(providerConfig.AzureDNS.ManagedIdentity),
 			azuredns.ZoneType(providerConfig.AzureDNS.ZoneType),
@@ -471,12 +484,14 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 		return nil, nil, err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(dns01Config.CNAMEStrategy), s.DNS01Nameservers...)
+	nameservers, _ := s.nameserversForProviderConfig(dns01Config)
+
+	fqdn, err := util.DNS01LookupFQDN(ctx, ch.Spec.DNSName, followCNAME(dns01Config.CNAMEStrategy), nameservers...)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	zone, err := s.DNSResolver.FindZoneByFQDN(ctx, fqdn, s.DNS01Nameservers)
+	zone, err := s.DNSResolver.FindZoneByFQDN(ctx, fqdn, nameservers)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -594,4 +609,12 @@ func (s *Solver) createToken(ctx context.Context, ns, serviceAccount string, aud
 	}
 
 	return tokenrequest.Status.Token, nil
+}
+
+func (s *Solver) nameserversForProviderConfig(providerConfig *cmacme.ACMEChallengeSolverDNS01) (nameservers []string, checkAuthoritative bool) {
+	if len(providerConfig.Nameservers) == 0 {
+		return s.DNS01Nameservers, s.DNS01CheckAuthoritative
+	}
+
+	return providerConfig.Nameservers, false
 }
