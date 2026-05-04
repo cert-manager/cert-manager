@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -447,4 +448,21 @@ func WaitFor(timeout, interval time.Duration, f func() (bool, error)) error {
 
 		time.Sleep(interval)
 	}
+}
+
+func clearStaleCacheItems() {
+	fqdnToZoneLock.Lock()
+	defer fqdnToZoneLock.Unlock()
+
+	now := time.Now()
+
+	for k, v := range fqdnToZone {
+		if now.After(v.ExpiryTime) {
+			delete(fqdnToZone, k)
+		}
+	}
+}
+
+func init() {
+	go wait.Forever(clearStaleCacheItems, time.Minute)
 }
