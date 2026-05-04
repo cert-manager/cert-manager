@@ -18,7 +18,7 @@ package acme
 
 import (
 	"context"
-	"crypto/rsa"
+	"crypto"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
@@ -67,7 +67,6 @@ const (
 	messageInvalidPrivateKey             = "Account private key is invalid: "
 
 	messageTemplateUpdateToV2              = "Your ACME server URL is set to a v1 endpoint (%s). You should update the spec.acme.server field to %q"
-	messageTemplateNotRSA                  = "ACME private key in %q is not of type RSA"
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
 	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
@@ -176,19 +175,6 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			message: msg,
 		}
 	}
-	rsaPk, ok := pk.(*rsa.PrivateKey)
-	if !ok {
-		msg := fmt.Sprintf(messageTemplateNotRSA,
-			issuer.GetSpec().ACME.PrivateKey.Name)
-		return setupResult{
-			err: nil,
-
-			status:  cmmeta.ConditionFalse,
-			reason:  errorAccountVerificationFailed,
-			message: msg,
-		}
-	}
-
 	if warning := a.validateDNSSolvers(ctx, issuer); len(warning) > 0 {
 		return setupResult{
 			err:     nil,
@@ -198,7 +184,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		}
 	}
 
-	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, rsaPk)
+	isPKChecksumSame := a.accountRegistry.IsKeyCheckSumCached(issuer.GetStatus().ACMEStatus().LastPrivateKeyHash, pk)
 
 	// TODO: don't always clear the client cache.
 	//  In future we should intelligently manage items in the account cache
@@ -213,7 +199,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 		CABundle:      issuer.GetSpec().ACME.CABundle,
 		Server:        issuer.GetSpec().ACME.Server,
-		PrivateKey:    rsaPk,
+		PrivateKey:    pk,
 	})
 
 	// TODO: perform a complex check to determine whether we need to verify
@@ -275,7 +261,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 			CABundle:      issuer.GetSpec().ACME.CABundle,
 			Server:        issuer.GetSpec().ACME.Server,
-			PrivateKey:    rsaPk,
+			PrivateKey:    pk,
 		})
 
 		return setupResult{
@@ -423,7 +409,17 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	}
 
 	log.V(logf.InfoLevel).Info("verified existing registration with ACME server")
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(rsaPk)
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(pk)
+	if err != nil {
+		msg := fmt.Sprintf("failed to marshal account private key: %v", err)
+		return setupResult{
+			err: fmt.Errorf("%s", msg),
+
+			status:  cmmeta.ConditionFalse,
+			reason:  errorAccountVerificationFailed,
+			message: msg,
+		}
+	}
 	checksum := sha256.Sum256(privateKeyBytes)
 	checksumString := base64.StdEncoding.EncodeToString(checksum[:])
 	issuer.GetStatus().ACMEStatus().URI = account.URI
@@ -434,7 +430,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 		CABundle:      issuer.GetSpec().ACME.CABundle,
 		Server:        issuer.GetSpec().ACME.Server,
-		PrivateKey:    rsaPk,
+		PrivateKey:    pk,
 	})
 
 	return setupResult{
@@ -539,7 +535,7 @@ func (a *Acme) getEABKey(ctx context.Context, ns string, eab cmmeta.SecretKeySel
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
 // as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (crypto.Signer, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
