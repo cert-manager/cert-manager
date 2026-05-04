@@ -256,8 +256,13 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Maximum size in bytes for PEM-encoded certificate bundles.")
 
 	fs.DurationVar(&c.CertificateRequestMinimumBackoffDuration, "certificate-request-minimum-backoff-duration", c.CertificateRequestMinimumBackoffDuration, ""+
-		"Duration of the initial certificate request backoff when a certificate request fails. "+
-		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
+		"Minimum duration to back off when a certificate request fails (default 1h). "+
+		"The backoff delay starts at this value and is exponentially increased "+
+		"with each consecutive failure, up to the configured maximum backoff duration.")
+	fs.DurationVar(&c.CertificateRequestMaximumBackoffDuration, "certificate-request-maximum-backoff-duration", c.CertificateRequestMaximumBackoffDuration, ""+
+		"Maximum duration to back off when a certificate request fails. "+
+		"The backoff delay starts at the minimum backoff duration and is exponentially increased "+
+		"with each consecutive failure, but will never exceed this maximum (default 32h).")
 
 	logf.AddFlags(&c.Logging, fs)
 }

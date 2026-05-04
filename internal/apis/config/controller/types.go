@@ -149,11 +149,17 @@ type ControllerConfiguration struct {
 	// GatewayAPIConfig configures the behaviour of the Gateway API integration
 	GatewayAPIConfig GatewayAPIConfig
 
-	// CertificateRequestMinimumBackoffDuration configures the initial backoff duration
-	// when a certificate request fails. This duration is exponentially increased (up to
-	// a maximum of 32 hours) based on the number of consecutive failures and represents
-	// the minimum backoff applied.
+	// CertificateRequestMinimumBackoffDuration configures the minimum backoff duration
+	// when a certificate request fails (default 1h). The backoff delay starts at
+	// this value and is exponentially increased with each consecutive failure,
+	// up to the configured maximum backoff duration.
 	CertificateRequestMinimumBackoffDuration time.Duration
+
+	// CertificateRequestMaximumBackoffDuration configures the maximum backoff duration
+	// when a certificate request fails. The backoff delay starts at
+	// the minimum backoff duration and is exponentially increased with
+	// each consecutive failure, but will never exceed this maximum (default 32h).
+	CertificateRequestMaximumBackoffDuration time.Duration
 }
 
 type LeaderElectionConfig struct {

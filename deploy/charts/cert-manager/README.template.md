@@ -483,6 +483,9 @@ config:
     maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
     maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
     maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
+  # Configure certificate request backoff durations
+  certificateRequestMinimumBackoffDuration: 1h
+  certificateRequestMaximumBackoffDuration: 32h
 ```
 #### **dns01RecursiveNameservers** ~ `string`
 > Default value:

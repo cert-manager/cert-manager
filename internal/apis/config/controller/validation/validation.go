@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -95,6 +96,8 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 
 	allErrors = append(allErrors, validatePEMSizeLimitsConfig(&cfg.PEMSizeLimitsConfig, fldPath.Child("pemSizeLimitsConfig"))...)
 
+	allErrors = append(allErrors, validateCertificateRequestBackoffConfig(&cfg.CertificateRequestMinimumBackoffDuration, &cfg.CertificateRequestMaximumBackoffDuration, fldPath)...)
+
 	return allErrors
 }
 
@@ -125,6 +128,41 @@ func validatePEMSizeLimitsConfig(cfg *config.PEMSizeLimitsConfig, fldPath *field
 	// Validate that MaxChainLength is not larger than MaxBundleSize
 	if cfg.MaxChainLength > cfg.MaxBundleSize {
 		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "must not exceed maxBundleSize"))
+	}
+
+	return allErrors
+}
+
+func validateCertificateRequestBackoffConfig(minBackoff, maxBackoff *time.Duration, fldPath *field.Path) field.ErrorList {
+	var allErrors field.ErrorList
+
+	// Validate minimum backoff. Negative values are rejected; zero is
+	// handled by SetDefaults_ControllerConfiguration before validation runs.
+	if *minBackoff < 0 {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMinimumBackoffDuration"),
+			minBackoff.String(),
+			"must not be negative",
+		))
+	}
+
+	// Validate maximum backoff. Negative values are rejected; zero is
+	// handled by SetDefaults_ControllerConfiguration before validation runs.
+	if *maxBackoff < 0 {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMaximumBackoffDuration"),
+			maxBackoff.String(),
+			"must not be negative",
+		))
+	}
+
+	// Validate max >= min (only if both are individually valid)
+	if *minBackoff > 0 && *maxBackoff > 0 && *maxBackoff < *minBackoff {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMaximumBackoffDuration"),
+			maxBackoff.String(),
+			"must be greater than or equal to certificateRequestMinimumBackoffDuration",
+		))
 	}
 
 	return allErrors

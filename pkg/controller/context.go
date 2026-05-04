@@ -245,10 +245,16 @@ type CertificateOptions struct {
 	// CopiedAnnotationPrefixes defines which annotations should be copied
 	// Certificate -> CertificateRequest, CertificateRequest -> Order.
 	CopiedAnnotationPrefixes []string
-	// CertificateRequestMinimumBackoffDuration defines the initial backoff duration
-	// when a certificate request fails. This duration is exponentially increased
-	// based on the number of consecutive failures.
+	// CertificateRequestMinimumBackoffDuration defines the minimum backoff duration
+	// when a certificate request fails (default 1h). The backoff delay starts at
+	// this duration and is exponentially increased with each consecutive failure,
+	// up to the configured maximum backoff duration.
 	CertificateRequestMinimumBackoffDuration time.Duration
+	// CertificateRequestMaximumBackoffDuration defines the maximum backoff duration
+	// when a certificate request fails. The backoff delay starts at
+	// the minimum backoff duration and is exponentially increased with
+	// each consecutive failure, but will never exceed this maximum (default 32h).
+	CertificateRequestMaximumBackoffDuration time.Duration
 }
 
 type SchedulerOptions struct {

@@ -534,3 +534,56 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCertificateRequestBackoffConfig(t *testing.T) {
+	tests := []struct {
+		name       string
+		minBackoff time.Duration
+		maxBackoff time.Duration
+		errs       field.ErrorList
+	}{
+		{
+			"with valid backoff config (min < max)",
+			1 * time.Hour,
+			32 * time.Hour,
+			nil,
+		},
+		{
+			"with valid backoff config (min == max)",
+			1 * time.Hour,
+			1 * time.Hour,
+			nil,
+		},
+		{
+			"with negative minimum backoff",
+			-1 * time.Hour,
+			4 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMinimumBackoffDuration"), "-1h0m0s", "must not be negative"),
+			},
+		},
+		{
+			"with negative maximum backoff",
+			1 * time.Hour,
+			-1 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMaximumBackoffDuration"), "-1h0m0s", "must not be negative"),
+			},
+		},
+		{
+			"with maximum less than minimum",
+			4 * time.Hour,
+			1 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMaximumBackoffDuration"), "1h0m0s", "must be greater than or equal to certificateRequestMinimumBackoffDuration"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateCertificateRequestBackoffConfig(&test.minBackoff, &test.maxBackoff, field.NewPath(""))
+			assert.ElementsMatch(t, test.errs, errs)
+		})
+	}
+}

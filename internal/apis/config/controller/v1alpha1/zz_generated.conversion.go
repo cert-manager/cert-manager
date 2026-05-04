@@ -250,6 +250,9 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_controller_ControllerConfig
 	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CertificateRequestMinimumBackoffDuration, &out.CertificateRequestMinimumBackoffDuration, s); err != nil {
 		return err
 	}
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.CertificateRequestMaximumBackoffDuration, &out.CertificateRequestMaximumBackoffDuration, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -322,6 +325,9 @@ func autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfig
 		return err
 	}
 	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CertificateRequestMinimumBackoffDuration, &out.CertificateRequestMinimumBackoffDuration, s); err != nil {
+		return err
+	}
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.CertificateRequestMaximumBackoffDuration, &out.CertificateRequestMaximumBackoffDuration, s); err != nil {
 		return err
 	}
 	return nil
