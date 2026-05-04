@@ -502,6 +502,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: digitalocean
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuerDNS01ProviderDigitalOcean
+    - name: nameservers
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
     - name: rfc2136
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuerDNS01ProviderRFC2136
