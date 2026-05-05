@@ -122,6 +122,10 @@ type CertificateSpecApplyConfiguration struct {
 	// private key and certificate, signed by the denoted issuer. The Secret
 	// resource lives in the same namespace as the Certificate resource.
 	SecretName *string `json:"secretName,omitempty"`
+	// The CRL distribution points is an X.509 v3 certificate extension which identifies
+	// the location of the CRL from which the revocation of this certificate can be checked.
+	// If not set, certificates will be issued without distribution points set.
+	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 	// Defines annotations and labels to be copied to the Certificate's Secret.
 	// Labels and annotations on the Secret will be changed as they appear on the
 	// SecretTemplate when added or removed. SecretTemplate annotations are added
@@ -306,6 +310,16 @@ func (b *CertificateSpecApplyConfiguration) WithEmailAddresses(values ...string)
 // If called multiple times, the SecretName field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithSecretName(value string) *CertificateSpecApplyConfiguration {
 	b.SecretName = &value
+	return b
+}
+
+// WithCRLDistributionPoints adds the given value to the CRLDistributionPoints field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the CRLDistributionPoints field.
+func (b *CertificateSpecApplyConfiguration) WithCRLDistributionPoints(values ...string) *CertificateSpecApplyConfiguration {
+	for i := range values {
+		b.CRLDistributionPoints = append(b.CRLDistributionPoints, values[i])
+	}
 	return b
 }
 

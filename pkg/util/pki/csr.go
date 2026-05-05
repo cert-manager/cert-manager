@@ -279,6 +279,14 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		}
 	}
 
+	if len(crt.Spec.CRLDistributionPoints) > 0 {
+		crldp, err := MarshalCRLDistributionPoints(crt.Spec.CRLDistributionPoints)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal CRL Distribution Points: %w", err)
+		}
+		extraExtensions = append(extraExtensions, crldp)
+	}
+
 	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequest is a temporary solution and will
 	// be removed/ replaced in a future release.
 	if opts.EncodeBasicConstraintsInRequest {

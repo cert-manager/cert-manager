@@ -495,6 +495,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.CRLDistributionPoints != nil {
+		in, out := &in.CRLDistributionPoints, &out.CRLDistributionPoints
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.SecretTemplate != nil {
 		in, out := &in.SecretTemplate, &out.SecretTemplate
 		*out = new(CertificateSecretTemplate)

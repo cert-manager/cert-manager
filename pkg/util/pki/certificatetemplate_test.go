@@ -46,6 +46,26 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 		}
 	}
 
+	crlDistributionPointsGenerator := func(t *testing.T, uris []string) pkix.Extension {
+		var distributionPoints []distributionPoint
+
+		for _, uri := range uris {
+			dp := distributionPoint{
+				DistributionPoint: distributionPointName{
+					FullName: []asn1.RawValue{{Tag: asn1.TagOID, Class: asn1.ClassContextSpecific, Bytes: []byte(uri)}},
+				},
+			}
+			distributionPoints = append(distributionPoints, dp)
+		}
+		val, _ := asn1.Marshal(distributionPoints)
+
+		return pkix.Extension{
+			Id:       OIDExtensionCRLDistributionPoints,
+			Critical: false,
+			Value:    val,
+		}
+	}
+
 	testCases := []struct {
 		name     string
 		csr      *x509.CertificateRequest
@@ -140,6 +160,23 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 					sansGenerator(t, []asn1.RawValue{
 						{Tag: 2, Class: 2, Bytes: []byte("test.example.com")},
 					}, true),
+				},
+			},
+		},
+		{
+			name: "should copy CRL Distribution Points",
+			csr: &x509.CertificateRequest{
+				ExtraExtensions: []pkix.Extension{
+					crlDistributionPointsGenerator(t, []string{
+						"http://crl1.example.com/ca1.crl",
+						"http://crl2.example.com/ca1.crl",
+					}),
+				},
+			},
+			expected: &x509.Certificate{
+				CRLDistributionPoints: []string{
+					"http://crl1.example.com/ca1.crl",
+					"http://crl2.example.com/ca1.crl",
 				},
 			},
 		},

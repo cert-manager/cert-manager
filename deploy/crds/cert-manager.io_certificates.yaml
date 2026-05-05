@@ -105,6 +105,14 @@ spec:
                   Should have a length of 64 characters or fewer to avoid generating invalid CSRs.
                   Cannot be set if the `literalSubject` field is set.
                 type: string
+              crlDistributionPoints:
+                description: |-
+                  The CRL distribution points is an X.509 v3 certificate extension which identifies
+                  the location of the CRL from which the revocation of this certificate can be checked.
+                  If not set, certificates will be issued without distribution points set.
+                items:
+                  type: string
+                type: array
               dnsNames:
                 description: Requested DNS subject alternative names.
                 items:

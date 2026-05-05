@@ -308,3 +308,9 @@ func SetCertificateKeystore(keystores *v1.CertificateKeystores) CertificateModif
 		crt.Spec.Keystores = keystores
 	}
 }
+
+func SetCertificateCRLDistributionPoints(crlDistributionPoints []string) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.CRLDistributionPoints = crlDistributionPoints
+	}
+}

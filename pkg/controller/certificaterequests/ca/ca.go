@@ -113,7 +113,12 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		return nil, nil
 	}
 
-	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
+	// Prefer CRL distribution points requested on the Certificate/CSR.
+	// Fall back to issuer-level CRL distribution points for backwards compatibility. 
+	if len(template.CRLDistributionPoints) == 0 {
+		template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
+	}
+	
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 	template.IssuingCertificateURL = issuerObj.GetSpec().CA.IssuingCertificateURLs
 

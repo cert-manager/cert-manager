@@ -3471,6 +3471,21 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"crlDistributionPoints": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set, certificates will be issued without distribution points set.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 					"secretTemplate": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Defines annotations and labels to be copied to the Certificate's Secret. Labels and annotations on the Secret will be changed as they appear on the SecretTemplate when added or removed. SecretTemplate annotations are added in conjunction with, and cannot overwrite, the base set of annotations cert-manager sets on the Certificate's Secret.",

@@ -1,3 +1,4 @@
+API rule violation: list_type_missing,github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1,CertificateSpec,CRLDistributionPoints
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolver,DNS01
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolver,HTTP01
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/apis/acme/v1,ACMEChallengeSolverDNS01,DigitalOcean

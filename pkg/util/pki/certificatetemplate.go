@@ -212,6 +212,15 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 			template.UnknownExtKeyUsage = unknownUsages
 		}
 
+		if val.Id.Equal(OIDExtensionCRLDistributionPoints) {
+			crldp, err := UnmarshalCRLDistributionPoints(val.Value)
+			if err != nil {
+				return err
+			}
+
+			template.CRLDistributionPoints = crldp
+		}
+
 		// The SANs fields in the Certificate resource are not enough to
 		// represent the full set of SANs that can be encoded in a CSR.
 		// Therefore, we need to copy the SANs from the CSR into the

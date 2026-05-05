@@ -136,6 +136,48 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
 			},
 			{
+				name: "should issue a certificate with CRLDistributionPoints",
+				certModifiers: []gen.CertificateModifier{
+					gen.SetCertificateDNSNames("test.example.com"),
+					gen.SetCertificateCRLDistributionPoints(
+						[]string{
+							"http://example.com/crl/test.crl",
+							"http://example.org/crl/test.crl",
+						}),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+						crlDistributionPoints := []string {
+							"http://example.com/crl/test.crl",
+							"http://example.org/crl/test.crl",
+						}						
+						if !reflect.DeepEqual(certificate.Spec.CRLDistributionPoints, crlDistributionPoints) {
+							return fmt.Errorf(
+								"expected CRL distribution points in Сertificate: %v, got: %v",
+								crlDistributionPoints,
+								certificate.Spec.CRLDistributionPoints,
+							)
+						}
+						certBytes, ok := secret.Data[corev1.TLSCertKey]
+						if !ok {
+							return fmt.Errorf("no certificate data found for Certificate %q (secret %q)", certificate.Name, certificate.Spec.SecretName)
+						}
+						pemBlock, _ := pem.Decode(certBytes)
+						cert, err := x509.ParseCertificate(pemBlock.Bytes)
+						Expect(err).ToNot(HaveOccurred())
+						if !reflect.DeepEqual(cert.CRLDistributionPoints, crlDistributionPoints) {
+							return fmt.Errorf(
+								"expected CRL distribution points in Secret: %v, got: %v",
+								crlDistributionPoints,
+								cert.CRLDistributionPoints,
+							)
+						}
+						return nil
+					},
+				},				
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN},
+			},			
+			{
 				name: "should issue a certificate with a couple valid otherName SAN values set as well as an emailAddress",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateOtherNames(

@@ -200,6 +200,12 @@ type CertificateSpec struct {
 	// resource lives in the same namespace as the Certificate resource.
 	SecretName string
 
+	// The CRL distribution points is an X.509 v3 certificate extension which identifies
+	// the location of the CRL from which the revocation of this certificate can be checked.
+	// If not set, certificates will be issued without distribution points set.
+	// +optional
+	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
+
 	// Defines annotations and labels to be copied to the Certificate's Secret.
 	// Labels and annotations on the Secret will be changed as they appear on the
 	// SecretTemplate when added or removed. SecretTemplate annotations are added

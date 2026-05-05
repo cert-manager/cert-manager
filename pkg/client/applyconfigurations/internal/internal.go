@@ -1376,6 +1376,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: commonName
       type:
         scalar: string
+    - name: crlDistributionPoints
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
     - name: dnsNames
       type:
         list:

@@ -947,6 +947,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *certmanag
 	out.OtherNames = *(*[]certmanager.OtherName)(unsafe.Pointer(&in.OtherNames))
 	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
 	out.SecretName = in.SecretName
+	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.SecretTemplate = (*certmanager.CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {
 		in, out := &in.Keystores, &out.Keystores
@@ -990,6 +991,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.EmailAddresses = *(*[]string)(unsafe.Pointer(&in.EmailAddresses))
 	out.OtherNames = *(*[]certmanagerv1.OtherName)(unsafe.Pointer(&in.OtherNames))
 	out.SecretName = in.SecretName
+	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.SecretTemplate = (*certmanagerv1.CertificateSecretTemplate)(unsafe.Pointer(in.SecretTemplate))
 	if in.Keystores != nil {
 		in, out := &in.Keystores, &out.Keystores

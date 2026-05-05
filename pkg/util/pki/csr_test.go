@@ -420,6 +420,26 @@ func TestGenerateCSR(t *testing.T) {
 		return asn1Subject
 	}
 
+	crlDistributionPointsGenerator := func(t *testing.T, uris []string) pkix.Extension {
+		var distributionPoints []distributionPoint
+
+		for _, uri := range uris {
+			dp := distributionPoint{
+				DistributionPoint: distributionPointName{
+					FullName: []asn1.RawValue{{Tag: asn1.TagOID, Class: asn1.ClassContextSpecific, Bytes: []byte(uri)}},
+				},
+			}
+			distributionPoints = append(distributionPoints, dp)
+		}
+		val, _ := asn1.Marshal(distributionPoints)
+
+		return pkix.Extension{
+			Id:       OIDExtensionCRLDistributionPoints,
+			Critical: false,
+			Value:    val,
+		}
+	}
+
 	tests := []struct {
 		name                                    string
 		crt                                     *cmapi.Certificate
@@ -852,6 +872,37 @@ func TestGenerateCSR(t *testing.T) {
 				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
 			},
 			nameConstraintsFeatureEnabled: true,
+		},
+		{
+			name: "Generate CSR from certificate with isCA is false and set CRL Destination Point",
+			crt: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName:            "example.org",
+				IsCA:                  false,
+				CRLDistributionPoints: []string{"http://crl1.example.com/ca1.crl", "http://crl2.example.com/ca1.crl"},
+			}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1DefaultKeyUsage,
+						Critical: true,
+					},
+					crlDistributionPointsGenerator(t, []string{
+						"http://crl1.example.com/ca1.crl",
+						"http://crl2.example.com/ca1.crl",
+					}),
+					{
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsGenerator(t, false),
+						Critical: true,
+					},
+				},
+				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
+			},
+			basicConstraintsFeatureEnabled: true,
 		},
 	}
 
