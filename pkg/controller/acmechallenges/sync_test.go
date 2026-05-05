@@ -687,6 +687,80 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		// Transient ACME error paths: the challenge must remain in a non-final
+		// state so the workqueue retries with backoff rather than permanently
+		// marking it Errored (issues #8696 and #8747).
+		"transient net.Error from GetAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				// State is unchanged (still ""), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return nil, &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapperError{}}
+				},
+			},
+		},
+		"transient *net.DNSError from GetAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				// State is unchanged (still ""), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return nil, &net.DNSError{Name: "acme.example.com", IsTimeout: true}
+				},
+			},
+		},
+		"transient context.DeadlineExceeded from WaitAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+				), testIssuerHTTP01Enabled},
+				// State remains Pending (not Errored/Invalid), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, context.DeadlineExceeded
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -787,7 +861,7 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 func Test_HandleError(t *testing.T) {
 	// timeoutNetErr is a net.Error whose Timeout() reports true; mirrors what
 	// http.Client returns on a connect/read timeout.
-	timeoutNetErr := &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapper{}}
+	timeoutNetErr := &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapperError{}}
 
 	wrappedNetErr := fmt.Errorf("wrapped: %w", &url.Error{
 		Op:  "Head",
@@ -889,13 +963,13 @@ func Test_HandleError(t *testing.T) {
 	}
 }
 
-// timeoutWrapper is a minimal net.Error that reports Timeout() == true; it
-// stands in for the kind of inner error net/http surfaces on TLS/connect
+// timeoutWrapperError is a minimal net.Error that reports Timeout() == true;
+// it stands in for the kind of inner error net/http surfaces on TLS/connect
 // timeouts in a way that does not depend on internal stdlib types.
-type timeoutWrapper struct{}
+type timeoutWrapperError struct{}
 
-func (t *timeoutWrapper) Error() string   { return "i/o timeout" }
-func (t *timeoutWrapper) Timeout() bool   { return true }
-func (t *timeoutWrapper) Temporary() bool { return true }
+func (t *timeoutWrapperError) Error() string   { return "i/o timeout" }
+func (t *timeoutWrapperError) Timeout() bool   { return true }
+func (t *timeoutWrapperError) Temporary() bool { return true }
 
-var _ net.Error = (*timeoutWrapper)(nil)
+var _ net.Error = (*timeoutWrapperError)(nil)
