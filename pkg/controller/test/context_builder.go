@@ -26,6 +26,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -237,10 +238,19 @@ func (b *Builder) AllActionsExecuted() error {
 		found := false
 		var err error
 		for i, expA := range missingActions {
+			verbsMatch := expA.Action().GetVerb() == a.GetVerb()
+
+			// Special case: SSA patch is allowed if expecting update
+			if expA.Action().GetVerb() == "update" && a.GetVerb() == "patch" {
+				if patchAct, ok := a.(coretesting.PatchAction); ok && patchAct.GetPatchType() == types.ApplyPatchType {
+					verbsMatch = true
+				}
+			}
+
 			if expA.Action().GetNamespace() != a.GetNamespace() ||
 				expA.Action().GetResource() != a.GetResource() ||
 				expA.Action().GetSubresource() != a.GetSubresource() ||
-				expA.Action().GetVerb() != a.GetVerb() {
+				!verbsMatch {
 				continue
 			}
 
