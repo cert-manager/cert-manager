@@ -45,8 +45,8 @@ IMAGE_kgateway_arm64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:acdaa7669ac9
 # We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
 # - https://github.com/letsencrypt/pebble/pull/468
-# - https://github.com/inteon/pebble/tree/add_Ed25519_support
-PEBBLE_COMMIT = 8318667fcd32f96579c45ee64c747d52519f0cdc
+# - https://github.com/cert-manager/pebble/tree/add_Ed25519_support
+PEBBLE_COMMIT = b2a726c05272b9a89115fbd1b5f048da5b0124a8
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -423,9 +423,9 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 # We are using @inteon's fork of Pebble, which adds support for signing CSRs with
 # Ed25519 keys:
 # - https://github.com/letsencrypt/pebble/pull/468
-# - https://github.com/inteon/pebble/tree/add_Ed25519_support
+# - https://github.com/cert-manager/pebble/tree/add_Ed25519_support
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
-	$(CURL) https://github.com/inteon/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
+	$(CURL) https://github.com/cert-manager/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
 # We can't use GOBIN with "go install" because cross-compilation is not
 # possible with go install. That's a problem when cross-compiling for
