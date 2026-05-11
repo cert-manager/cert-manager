@@ -119,7 +119,7 @@ shared_verify_targets += verify-helm-values
 ## Run Helm chart unit tests using helm-unittest.
 ## @category [shared] Generate/ Verify
 verify-helm-unittest: | $(NEEDS_HELM-UNITTEST)
-	$(HELM-UNITTEST) $(helm_chart_source_dir)
+	$(HELM-UNITTEST) -f 'tests/**/*.yaml' $(helm_chart_source_dir)
 
 shared_verify_targets += verify-helm-unittest
 
