@@ -214,7 +214,7 @@ func (onlyUpdateWhenResourceChanged[T]) Update(e event.TypedUpdateEvent[T]) bool
 
 // copied from https://github.com/kubernetes-sigs/controller-runtime/blob/5de4c4f5997c4b9469c7cfe003eff06bfdbd7f87/pkg/handler/enqueue.go#L110-L120
 func isNil(arg any) bool {
-	if v := reflect.ValueOf(arg); !v.IsValid() || ((v.Kind() == reflect.Ptr ||
+	if v := reflect.ValueOf(arg); !v.IsValid() || ((v.Kind() == reflect.Pointer ||
 		v.Kind() == reflect.Interface ||
 		v.Kind() == reflect.Slice ||
 		v.Kind() == reflect.Map ||
