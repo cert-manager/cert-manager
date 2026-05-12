@@ -33,6 +33,57 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
 
+func TestFilterACMEIdentityLabels(t *testing.T) {
+	tests := map[string]struct {
+		input    map[string]string
+		expected map[string]string
+	}{
+		"should filter out all ACME identity labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+			},
+			expected: map[string]string{},
+		},
+		"should preserve non-ACME labels": {
+			input: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+		},
+		"should filter ACME identity labels while preserving non-ACME labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+				"custom-label":                      "custom-value",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+			},
+		},
+		"should handle nil input without panicking": {
+			input:    nil,
+			expected: nil,
+		},
+		"should handle empty map": {
+			input:    map[string]string{},
+			expected: map[string]string{},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := filterACMEIdentityLabels(tt.input)
+			assert.Equal(t, tt.expected, got, "filterACMEIdentityLabels returned unexpected result")
+		})
+	}
+}
+
 func TestEnsurePod(t *testing.T) {
 	type testT struct {
 		builder     *testpkg.Builder
@@ -283,7 +334,6 @@ func TestGetPodsForChallenge(t *testing.T) {
 		chal           *cmacme.Challenge
 		wantedPodMetas []*metav1.PartialObjectMetadata
 		wantsErr       bool
-		extraLabels    map[string]string
 	}
 	var (
 		testNamespace = "foo"
@@ -354,7 +404,6 @@ func TestGetPodsForChallenge(t *testing.T) {
 				PartialMetadataObjects: []runtime.Object{podMetaWithExtraLabels},
 			},
 			wantedPodMetas: []*metav1.PartialObjectMetadata{podMetaWithExtraLabels},
-			extraLabels:    map[string]string{"custom-extra": "value"},
 		},
 	}
 	for name, scenario := range tests {
@@ -364,9 +413,6 @@ func TestGetPodsForChallenge(t *testing.T) {
 			s := &Solver{
 				Context:   scenario.builder.Context,
 				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
-			}
-			if scenario.extraLabels != nil {
-				s.Context.ACMEOptions.HTTP01SolverExtraLabels = scenario.extraLabels
 			}
 			defer scenario.builder.Stop()
 			scenario.builder.Start()
@@ -724,7 +770,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				validateContainerResources(t, container, expectedRequests, expectedLimits)
 			},
 		},
-		"should include extra labels from HTTP01SolverExtraLabels without pod template": {
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
@@ -739,7 +785,8 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
-					"custom-extra-label": "custom-extra-value",
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
 				}
 				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
 				s.testResources[createdPodKey] = resultingPod
@@ -752,6 +799,16 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					t.Errorf("expected pod to be returned, but got %v", args[0])
 					t.Fail()
 					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
 				}
 				resultingPod.OwnerReferences = resp.OwnerReferences
 				if resp.String() != resultingPod.String() {

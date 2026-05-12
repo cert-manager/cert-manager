@@ -112,7 +112,7 @@ If a component-specific nodeSelector is also set, it will be merged and take pre
 Labels to apply to all resources.  
 These labels are also applied to dynamically-created ACME HTTP01 solver resources  
 (pods, services, ingresses, or Gateway API HTTPRoutes).  
-For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.
+The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.
 #### **global.revisionHistoryLimit** ~ `number`
 
 The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).

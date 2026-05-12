@@ -25,6 +25,9 @@ global:
   # Labels to apply to all resources.
   # These labels are also applied to dynamically-created ACME HTTP01 solver resources
   # (pods, services, ingresses, or Gateway API HTTPRoutes).
+  # The following ACME identity label keys are reserved and will be
+  # silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain,
+  # acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver.
   # For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and
   # ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute
   # solver labels field for Gateway API HTTPRoute resources.

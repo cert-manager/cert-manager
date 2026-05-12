@@ -136,7 +136,9 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"acme-http01-solver-extra-labels",
 		"A set of key=value pairs for additional labels to apply to dynamically-created "+
 			"ACME HTTP01 solver resources (pods, services, ingresses, or Gateway API HTTPRoutes). "+
-			"These labels can be overridden by per-Issuer "+
+			"The following ACME identity label keys are reserved and will be silently "+
+			"ignored: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, "+
+			"acme.cert-manager.io/http01-solver. These labels can be overridden by per-Issuer "+
 			"podTemplate/ingressTemplate/GatewayHTTPRoute.Labels.")
 
 	fs.BoolVar(&c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", c.ClusterIssuerAmbientCredentials, ""+

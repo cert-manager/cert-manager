@@ -247,7 +247,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 func TestBuildServiceExtraLabels(t *testing.T) {
 	const createdServiceKey = "createdService"
 	tests := map[string]solverFixture{
-		"should include extra labels from HTTP01SolverExtraLabels": {
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
@@ -262,7 +262,8 @@ func TestBuildServiceExtraLabels(t *testing.T) {
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
-					"custom-extra-label": "custom-extra-value",
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
 				}
 				svc, err := s.Solver.buildService(s.Challenge)
 				if err != nil {
@@ -278,6 +279,16 @@ func TestBuildServiceExtraLabels(t *testing.T) {
 					t.Errorf("expected service to be returned, but got %v", args[0])
 					t.Fail()
 					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
 				}
 				expectedSvc.OwnerReferences = resp.OwnerReferences
 				expectedSvc.Name = resp.Name

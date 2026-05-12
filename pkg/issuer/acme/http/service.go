@@ -113,7 +113,7 @@ func (s *Solver) buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	// Service labels get extra labels from ACME options; selector stays as pure podLabels
 	serviceLabels := make(map[string]string)
 	maps.Copy(serviceLabels, podLabels)
-	maps.Copy(serviceLabels, s.ACMEOptions.HTTP01SolverExtraLabels)
+	maps.Copy(serviceLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

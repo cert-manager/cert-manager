@@ -670,7 +670,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				}
 			},
 		},
-		"should include extra labels from HTTP01SolverExtraLabels": {
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
@@ -685,7 +685,8 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
-					"custom-extra-label": "custom-extra-value",
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
 				}
 				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
 				if err != nil {
@@ -701,6 +702,16 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					t.Errorf("expected ingress to be returned, but got %v", args[0])
 					t.Fail()
 					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
 				}
 				expectedIngress.APIVersion = resp.APIVersion
 				expectedIngress.Kind = resp.Kind

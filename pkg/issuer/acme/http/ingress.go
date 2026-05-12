@@ -203,7 +203,7 @@ func (s *Solver) buildIngressResource(ch *cmacme.Challenge, svcName string) (*ne
 		},
 	}
 
-	maps.Copy(ing.Labels, s.ACMEOptions.HTTP01SolverExtraLabels)
+	maps.Copy(ing.Labels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 
 	return ing, nil
 }

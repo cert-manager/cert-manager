@@ -48,6 +48,30 @@ func podLabels(ch *cmacme.Challenge) map[string]string {
 	}
 }
 
+// acmeIdentityLabelKeys defines the set of label keys reserved for ACME
+// challenge resource discovery. These cannot be overridden by global solver
+// extra labels.
+var acmeIdentityLabelKeys = map[string]bool{
+	cmacme.DomainLabelKey:               true,
+	cmacme.TokenLabelKey:                true,
+	cmacme.SolverIdentificationLabelKey: true,
+}
+
+// filterACMEIdentityLabels returns a copy of labels with ACME identity
+// labels removed. Does not mutate the input map.
+func filterACMEIdentityLabels(labels map[string]string) map[string]string {
+	if labels == nil {
+		return nil
+	}
+	result := make(map[string]string, len(labels))
+	for key, val := range labels {
+		if !acmeIdentityLabelKeys[key] {
+			result[key] = val
+		}
+	}
+	return result
+}
+
 func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
@@ -173,7 +197,7 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 // https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
-	maps.Copy(podLabels, s.ACMEOptions.HTTP01SolverExtraLabels)
+	maps.Copy(podLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
