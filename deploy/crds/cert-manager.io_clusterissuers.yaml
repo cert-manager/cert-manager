@@ -3986,6 +3986,45 @@ spec:
                     required:
                     - apiTokenSecretRef
                     type: object
+                  ngts:
+                    description: |-
+                      NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration
+                      using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.
+                    properties:
+                      credentialsRef:
+                        description: |-
+                          CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0
+                          Client ID and Client Secret. The secret must contain the keys 'client-id' and
+                          'client-secret'.
+                        properties:
+                          name:
+                            description: |-
+                              Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      tokenEndpoint:
+                        description: |-
+                          TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens.
+                          This field is required and has no compiled-in default.
+                        type: string
+                      tsgID:
+                        description: |-
+                          TSGID is the OAuth 2.0 scope used when requesting tokens, for example
+                          "tsg_id:1234567890". This field is required.
+                        type: string
+                      url:
+                        description: |-
+                          URL is the base URL for the NGTS API endpoint.
+                          Defaults to "https://api.sase.paloaltonetworks.com/ngts" if not set.
+                        type: string
+                    required:
+                    - credentialsRef
+                    - tokenEndpoint
+                    - tsgID
+                    type: object
                   tpp:
                     description: |-
                       TPP specifies CyberArk Certificate Manager Self-Hosted configuration settings.
@@ -4054,6 +4093,10 @@ spec:
                 required:
                 - zone
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of tpp, cloud, or ngts must be configured
+                  rule: '(has(self.tpp) ? 1 : 0) + (has(self.cloud) ? 1 : 0) + (has(self.ngts)
+                    ? 1 : 0) == 1'
             type: object
           status:
             description: Status of the ClusterIssuer. This is set and managed automatically.

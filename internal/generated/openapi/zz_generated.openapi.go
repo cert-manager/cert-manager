@@ -114,6 +114,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VaultKubernetesAuth":                         schema_pkg_apis_certmanager_v1_VaultKubernetesAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiCloud":                                 schema_pkg_apis_certmanager_v1_VenafiCloud(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer":                                schema_pkg_apis_certmanager_v1_VenafiIssuer(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiNGTS":                                  schema_pkg_apis_certmanager_v1_VenafiNGTS(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP":                                   schema_pkg_apis_certmanager_v1_VenafiTPP(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.X509Subject":                                 schema_pkg_apis_certmanager_v1_X509Subject(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.IssuerReference":                                    schema_pkg_apis_meta_v1_IssuerReference(ref),
@@ -4722,12 +4723,64 @@ func schema_pkg_apis_certmanager_v1_VenafiIssuer(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiCloud"),
 						},
 					},
+					"ngts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiNGTS"),
+						},
+					},
 				},
 				Required: []string{"zone"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiCloud", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP"},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiCloud", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiNGTS", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiTPP"},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_VenafiNGTS(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VenafiNGTS defines connection configuration for the Palo Alto Networks Next Generation Trust Services (NGTS) platform using OAuth 2.0 Client Credentials.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Description: "URL is the base URL for the NGTS API endpoint. Defaults to \"https://api.sase.paloaltonetworks.com/ngts\" if not set.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"tokenEndpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens. This field is required and has no compiled-in default.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"tsgID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TSGID is the OAuth 2.0 scope used when requesting tokens, for example \"tsg_id:1234567890\". This field is required.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"credentialsRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0 Client ID and Client Secret. The secret must contain the keys 'client-id' and 'client-secret'.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.LocalObjectReference"),
+						},
+					},
+				},
+				Required: []string{"tokenEndpoint", "tsgID", "credentialsRef"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/meta/v1.LocalObjectReference"},
 	}
 }
 
