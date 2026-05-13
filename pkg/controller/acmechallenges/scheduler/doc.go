@@ -27,6 +27,12 @@ limitations under the License.
 // therefore best thought of as a simple back-pressure and conflict-avoidance
 // mechanism rather than a complete rate-limit or fairness controller.
 //
+// For the same reason, this is not the right layer to enforce multi-tenant
+// isolation or ownership policy for DNS names. Deployments that need stronger
+// guarantees about who may request certificates for which names should rely on
+// admission, approval, policy, or deployment-level separation, rather than on
+// scheduler heuristics alone.
+//
 // The conflict key is intentionally conservative: challenges with the same DNS
 // name and ACME challenge type are treated as conflicting even if their solver
 // backends differ. This is because cert-manager's self-check and the ACME
