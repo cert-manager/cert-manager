@@ -82,6 +82,24 @@ func joinPEM(first []byte, rest ...[]byte) []byte {
 	return first
 }
 
+func mustCrossSign(t *testing.T, original *testBundle, newIssuer *testBundle) *testBundle {
+	template := &x509.Certificate{
+		BasicConstraintsValid: true,
+		PublicKeyAlgorithm:    x509.ECDSA,
+		PublicKey:             original.pk.(crypto.Signer).Public(),
+		IsCA:                  true,
+		Subject:               original.cert.Subject,
+		NotBefore:             original.cert.NotBefore,
+		NotAfter:              original.cert.NotAfter,
+		KeyUsage:              original.cert.KeyUsage,
+	}
+	pem, cert, err := SignCertificate(template, newIssuer.cert, original.pk.(crypto.Signer).Public(), newIssuer.pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &testBundle{pem: pem, cert: cert, pk: original.pk}
+}
+
 func TestParseSingleCertificateChainPEM(t *testing.T) {
 	root := mustCreateBundle(t, nil, "root")
 	intA1 := mustCreateBundle(t, root, "intA-1")
@@ -91,6 +109,10 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 	leaf := mustCreateBundle(t, intA2, "leaf")
 	leafInterCN := mustCreateBundle(t, intA2, intA2.cert.Subject.CommonName)
 	random := mustCreateBundle(t, nil, "random")
+	rootA := mustCreateBundle(t, nil, "rootA")
+	rootB := mustCreateBundle(t, nil, "rootB")
+	intSignedByA := mustCreateBundle(t, rootA, "cross-intermediate")
+	intSignedByB := mustCrossSign(t, intSignedByA, rootB)
 
 	var bigCertBundle PEMBundle
 	{
@@ -225,6 +247,12 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
 			expErrString: "provided PEM data was larger than the maximum 95000B",
+		},
+		"cross-signed intermediate currently fails": {
+			inputBundle:  joinPEM(intSignedByA.pem, intSignedByB.pem, rootA.pem, rootB.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
+			expErrString: "certificate chain is malformed or broken",
 		},
 	}
 
