@@ -99,6 +99,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	challengeInformer := ctx.SharedInformerFactory.Acme().V1().Challenges()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	secretInformer := ctx.KubeSharedInformerFactory.Secrets()
+	orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders()
 	// we register these informers here so the HTTP01 solver has a synced
 	// cache when managing pod/service/ingress resources
 	podInformer := ctx.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods"))
@@ -114,6 +115,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		ingressInformer.Informer().HasSynced,
+		orderInformer.Informer().HasSynced,
 	}
 
 	if ctx.GatewaySolverEnabled {
@@ -153,6 +155,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	if err != nil {
 		return nil, nil, err
 	}
+
+	c.dnsSolver = newRetrySolver(c.dnsSolver, orderInformer.Lister(), issuer.NewHelper(c.issuerLister, c.clusterIssuerLister), ctx.IssuerOptions)
 
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
