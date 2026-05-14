@@ -30,6 +30,10 @@ endif
 export DOWNLOAD_DIR ?= $(default_shared_dir)/downloaded
 export GOVENDOR_DIR ?= $(default_shared_dir)/go_vendor
 
+# https://go.dev/dl/
+# renovate: datasource=golang-version packageName=go
+VENDORED_GO_VERSION := 1.26.3
+
 $(bin_dir)/tools $(DOWNLOAD_DIR)/tools:
 	@mkdir -p $@
 
@@ -218,10 +222,6 @@ tools += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 # Additional tools can be defined to reuse the tooling in this file
 ADDITIONAL_TOOLS ?=
 tools += $(ADDITIONAL_TOOLS)
-
-# https://go.dev/dl/
-# renovate: datasource=golang-version packageName=go
-VENDORED_GO_VERSION := 1.26.2
 
 # Print the go version which can be used in GH actions
 .PHONY: print-go-version
@@ -468,10 +468,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282
-go_linux_arm64_SHA256SUM=c958a1fe1b361391db163a485e21f5f228142d6f8b584f6bef89b26f66dc5b23
-go_darwin_amd64_SHA256SUM=bc3f1500d9968c36d705442d90ba91addf9271665033748b82532682e90a7966
-go_darwin_arm64_SHA256SUM=32af1522bf3e3ff3975864780a429cc0b41d190ec7bf90faa661d6d64566e7af
+go_linux_amd64_SHA256SUM=2b2cfc7148493da5e73981bffbf3353af381d5f93e789c82c79aff64962eb556
+go_linux_arm64_SHA256SUM=9d89a3ea57d141c2b22d70083f2c8459ba3890f2d9e818e7e933b75614936565
+go_darwin_amd64_SHA256SUM=278d580b32e299fe4a9c990fcf2d02acfe538c7e551a6ee18f9c7164573d2c63
+go_darwin_arm64_SHA256SUM=875cf54a15311eee2c99b9dd67c68c4a49351d489ab622bf2cfd28c8f2078d3c
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
