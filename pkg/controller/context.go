@@ -201,6 +201,10 @@ type ACMEOptions struct {
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string
 
+	// HTTP01SolverExtraLabels are additional labels to apply to ACME HTTP01
+	// solver resources.
+	HTTP01SolverExtraLabels map[string]string
+
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
 	// for checking propagation of an RR. This is the ideal scenario
 	DNS01CheckAuthoritative bool

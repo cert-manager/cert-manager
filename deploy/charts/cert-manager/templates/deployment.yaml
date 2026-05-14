@@ -132,6 +132,11 @@ spec:
           {{- if .Values.featureGates }}
           - --feature-gates={{ .Values.featureGates }}
           {{- end }}
+          {{- if .Values.global.commonLabels }}
+          {{- range $key, $value := .Values.global.commonLabels }}
+          - --acme-http01-solver-extra-labels={{ $key }}={{ $value }}
+          {{- end }}
+          {{- end }}
           {{- if .Values.maxConcurrentChallenges }}
           - --max-concurrent-challenges={{ .Values.maxConcurrentChallenges }}
           {{- end }}

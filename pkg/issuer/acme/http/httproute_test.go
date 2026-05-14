@@ -151,6 +151,46 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				}
 			},
 		},
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
+				}
+				httpRoute, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				s.testResources[createdHTTPRouteKey] = httpRoute
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
+				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
+				// ACME identity label should not be overridden by extra labels
+				if gotHttpRoute.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, gotHttpRoute.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if gotHttpRoute.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected HTTPRoute to have extra label 'custom-extra-label=custom-extra-value', but got %v", gotHttpRoute.Labels)
+				}
+				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
+					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
+				}
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {

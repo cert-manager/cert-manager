@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,20 +100,26 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challen
 // createService will create the service required to solve this challenge
 // in the target API server.
 func (s *Solver) createService(ctx context.Context, ch *cmacme.Challenge) (*corev1.Service, error) {
-	svc, err := buildService(ch)
+	svc, err := s.buildService(ch)
 	if err != nil {
 		return nil, err
 	}
 	return s.Client.CoreV1().Services(ch.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 }
 
-func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
+func (s *Solver) buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
+
+	// Service labels get extra labels from ACME options; selector stays as pure podLabels
+	serviceLabels := make(map[string]string)
+	maps.Copy(serviceLabels, podLabels)
+	maps.Copy(serviceLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
+
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    ch.Namespace,
-			Labels:       podLabels,
+			Labels:       serviceLabels,
 			Annotations: map[string]string{
 				"auth.istio.io/8089": "NONE",
 			},

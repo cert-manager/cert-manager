@@ -111,6 +111,10 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 				s.ACMEHTTP01Config.SolverResourceLimitsMemory = "test-roundtrip"
 			}
 
+			if len(s.ACMEHTTP01Config.SolverExtraLabels) == 0 {
+				s.ACMEHTTP01Config.SolverExtraLabels = map[string]string{"test-roundtrip": "value"}
+			}
+
 			if s.ACMEDNS01Config.CheckRetryPeriod == time.Duration(0) {
 				s.ACMEDNS01Config.CheckRetryPeriod = time.Second * 8875
 			}

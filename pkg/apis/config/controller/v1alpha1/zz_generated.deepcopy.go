@@ -70,6 +70,13 @@ func (in *ACMEHTTP01Config) DeepCopyInto(out *ACMEHTTP01Config) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.SolverExtraLabels != nil {
+		in, out := &in.SolverExtraLabels, &out.SolverExtraLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
