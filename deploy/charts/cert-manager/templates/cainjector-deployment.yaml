@@ -151,6 +151,9 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.cainjector.runtimeClassName }}
+      runtimeClassName: {{ .Values.cainjector.runtimeClassName }}
+      {{- end }}
       {{- with .Values.cainjector.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
