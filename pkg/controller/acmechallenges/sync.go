@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -280,6 +281,18 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		// Transient network errors (TLS handshake timeouts, DNS failures,
+		// connection resets) and context cancellation/deadline errors are
+		// not protocol-level rejections from the ACME server. Returning them
+		// without setting Status.State leaves the challenge in its current
+		// state and lets the workqueue retry with backoff. Without this, a
+		// single transient network blip marks the challenge terminally
+		// Errored, after which IsFinalState() makes the controller stop
+		// reconciling it (see issues #8696 and #8747).
+		if isTransientACMEError(err) {
+			logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "transient non-ACME API error, will retry")
+			return err
+		}
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
 		logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "unexpected non-ACME API error")
@@ -305,6 +318,19 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	}
 
 	return err
+}
+
+// isTransientACMEError reports whether err is a transient network-layer
+// failure (timeout, DNS resolution failure, connection reset, TLS handshake
+// failure, etc.) or a context cancellation / deadline error. Such errors are
+// not ACME-protocol rejections and should be retried via the workqueue rather
+// than terminally failing the challenge.
+func isTransientACMEError(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
 }
 
 // finalize will attempt to 'finalize' the Challenge resource by calling CleanUp
