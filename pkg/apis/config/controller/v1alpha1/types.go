@@ -215,6 +215,10 @@ type ACMEHTTP01Config struct {
 	// issues
 	SolverRunAsNonRoot *bool `json:"solverRunAsNonRoot,omitempty"`
 
+	// Defines the runtime class used when spawning new ACME HTTP01 challenge
+	// solver pods.
+	SolverRuntimeClassName string `json:"solverRuntimeClassName,omitempty"`
+
 	// A list of comma separated dns server endpoints used for
 	// ACME HTTP01 check requests. This should be a list containing host and
 	// port, for example ["8.8.8.8:53","8.8.4.4:53"]

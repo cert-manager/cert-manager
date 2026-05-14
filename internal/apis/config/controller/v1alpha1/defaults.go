@@ -97,6 +97,7 @@ var (
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
 	defaultACMEHTTP01SolverRunAsNonRoot          = true
+	defaultACMEHTTP01SolverRuntimeclassName      = ""
 	defaultACMEHTTP01SolverNameservers           = []string{}
 
 	defaultCertificateRequestMinimumBackoffDuration = 1 * time.Hour
@@ -344,6 +345,10 @@ func SetDefaults_ACMEHTTP01Config(obj *v1alpha1.ACMEHTTP01Config) {
 
 	if obj.SolverRunAsNonRoot == nil {
 		obj.SolverRunAsNonRoot = &defaultACMEHTTP01SolverRunAsNonRoot
+	}
+
+	if obj.SolverRuntimeClassName == "" {
+		obj.SolverRuntimeClassName = defaultACMEHTTP01SolverRuntimeclassName
 	}
 
 	if len(obj.SolverNameservers) == 0 {
