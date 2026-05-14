@@ -763,6 +763,16 @@ affinity:
          values:
          - master
 ```
+#### **runtimeClassName** ~ `string`
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -1276,6 +1286,16 @@ affinity:
          values:
          - master
 ```
+#### **webhook.runtimeClassName** ~ `string`
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **webhook.tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -1775,6 +1795,16 @@ affinity:
          values:
          - master
 ```
+#### **cainjector.runtimeClassName** ~ `string`
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **cainjector.tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -2097,6 +2127,16 @@ affinity:
          values:
          - master
 ```
+#### **startupapicheck.runtimeClassName** ~ `string`
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **startupapicheck.tolerations** ~ `array`
 > Default value:
 > ```yaml
