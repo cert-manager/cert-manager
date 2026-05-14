@@ -261,6 +261,7 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 							Drop: []corev1.Capability{"ALL"},
 						},
 					},
+					RuntimeClassName: s.ACMEOptions.HTTP01SolverRuntimeClassName,
 				},
 			},
 		},
