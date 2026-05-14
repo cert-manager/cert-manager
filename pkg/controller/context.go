@@ -513,7 +513,7 @@ func isAPFEnabled(ctx context.Context, config *rest.Config) (bool, error) {
 		return false, fmt.Errorf("parsing API server host URL: %w", err)
 	}
 
-	u.Path = path.Join(u.Path, "/livez/ping")
+	u.Path = path.Join(u.Path, "livez/ping")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
 	if err != nil {
