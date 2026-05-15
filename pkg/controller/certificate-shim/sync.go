@@ -34,15 +34,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/csaupgrade"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -50,7 +51,6 @@ import (
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -155,27 +155,18 @@ func SyncFnFor(
 
 		for _, crt := range updateCrts {
 
-			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            crt.Name,
-						Namespace:       crt.Namespace,
-						Labels:          crt.Labels,
-						OwnerReferences: crt.OwnerReferences,
-						Annotations:     extraAnnotations,
-					},
-					Spec: cmapi.CertificateSpec{
-						DNSNames:    crt.Spec.DNSNames,
-						IPAddresses: crt.Spec.IPAddresses,
-						SecretName:  crt.Spec.SecretName,
-						IssuerRef:   crt.Spec.IssuerRef,
-						Usages:      crt.Spec.Usages,
-					},
-				})
-			} else {
-				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
-			}
+			// Upgrade managed fields from CSA to SSA if required
+			upgradePatch, err := csaupgrade.UpgradeManagedFieldsPatch(crt, sets.New(fieldManager), fieldManager)
 			if err != nil {
+				return fmt.Errorf("when creating managed fields patch: %w", err)
+			}
+			if len(upgradePatch) > 0 {
+				if _, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Patch(ctx, crt.Name, types.JSONPatchType, upgradePatch, metav1.PatchOptions{}); err != nil {
+					return fmt.Errorf("when patching managed fields: %w", err)
+				}
+			}
+
+			if err = internalcertificates.Apply(ctx, cmClient, fieldManager, crt); err != nil {
 				return err
 			}
 
@@ -484,7 +475,7 @@ func buildCertificates(
 				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), annotations))
 			}
 
-			setIssuerSpecificConfig(crt, ingLike)
+			setIssuerSpecificConfig(updateCrt, ingLike)
 
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
