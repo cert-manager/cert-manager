@@ -19,6 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -158,6 +159,11 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01
+
+	// AcceptChallengeAfter, if set, allows cert-manager to proceed after this
+	// delay has elapsed since presentation even if its self-check is still
+	// failing.
+	AcceptChallengeAfter *metav1.Duration
 }
 
 // CertificateDNSNameSelector selects certificates using a label selector, and

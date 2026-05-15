@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -100,6 +101,7 @@ func TestSyncHappyPath(t *testing.T) {
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
+	oldPresentedAt := metav1.NewTime(time.Now().Add(-time.Minute))
 
 	simulatedCleanupError := errors.New("simulated-cleanup-error")
 	tests := map[string]testT{
@@ -365,6 +367,65 @@ func TestSyncHappyPath(t *testing.T) {
 				ExpectedEvents: []string{
 					//nolint: dupword
 					"Normal Presented Presented challenge using HTTP-01 challenge mechanism",
+				},
+			},
+		},
+		"accept the challenge after acceptChallengeAfter elapses even if the self check is still failing": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeDNSName("test.com"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
+				gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return fmt.Errorf("some error")
+				},
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeDNSName("test.com"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
+					gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeDNSName("test.com"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(oldPresentedAt),
+							gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
+				},
+				ExpectedEvents: []string{
+					`Normal DomainVerified Domain "test.com" verified with "HTTP-01" validation`,
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
 				},
 			},
 		},

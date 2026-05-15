@@ -29,6 +29,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/digitalocean/godo"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -180,19 +181,25 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 
 		ch.Status.Presented = true
+		if ch.Spec.Solver.AcceptChallengeAfter != nil {
+			now := metav1.NewTime(c.clock.Now())
+			ch.Status.PresentedAt = &now
+		}
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	err = solver.Check(ctx, genericIssuer, ch)
+	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now())
+	result, err := readiness.evaluate(ctx, solver, genericIssuer, ch)
 	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
-
+		return err
+	}
+	if !result.ready {
+		log.V(logf.DebugLevel).Info("challenge not ready to accept yet", "retry_after", result.retryAfter)
+		ch.Status.Reason = result.reason
 		c.queue.AddAfter(types.NamespacedName{
 			Namespace: ch.Namespace,
 			Name:      ch.Name,
-		}, c.DNS01CheckRetryPeriod)
-
+		}, result.retryAfter)
 		return nil
 	}
 

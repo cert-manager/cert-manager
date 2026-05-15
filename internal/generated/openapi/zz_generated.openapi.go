@@ -672,11 +672,17 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolver(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01"),
 						},
 					},
+					"acceptChallengeAfter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AcceptChallengeAfter, if set, allows cert-manager to proceed after this delay has elapsed since presentation even if its self-check is still failing. A successful self-check will continue to short-circuit the delay and proceed immediately.\n\nThis is an advanced escape hatch for environments where cert-manager's self-check cannot reliably observe the same validation path as the ACME server, for example due to split-horizon DNS or NAT hairpinning.",
+							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector", metav1.Duration{}.OpenAPIModelName()},
 	}
 }
 
@@ -2147,6 +2153,12 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"presentedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PresentedAt records when cert-manager first marked the challenge as presented. This is used by the optional delay-based readiness logic.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
 					"reason": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Contains human readable information on why the Challenge is in the current state.",
@@ -2164,6 +2176,8 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 				},
 			},
 		},
+		Dependencies: []string{
+			metav1.Time{}.OpenAPIModelName()},
 	}
 }
 

@@ -136,6 +136,11 @@ type ChallengeStatus struct {
 	// +optional
 	Presented bool `json:"presented"`
 
+	// PresentedAt records when cert-manager first marked the challenge as
+	// presented. This is used by the optional delay-based readiness logic.
+	// +optional
+	PresentedAt *metav1.Time `json:"presentedAt,omitempty"`
+
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional

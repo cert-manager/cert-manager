@@ -121,6 +121,10 @@ type ChallengeStatus struct {
 	// configured).
 	Presented bool
 
+	// PresentedAt records when cert-manager first marked the challenge as
+	// presented.
+	PresentedAt *metav1.Time
+
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
 	Reason string

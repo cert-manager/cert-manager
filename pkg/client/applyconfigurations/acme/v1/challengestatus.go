@@ -20,6 +20,7 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ChallengeStatusApplyConfiguration represents a declarative configuration of the ChallengeStatus type for use
@@ -39,6 +40,9 @@ type ChallengeStatusApplyConfiguration struct {
 	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
 	// configured).
 	Presented *bool `json:"presented,omitempty"`
+	// PresentedAt records when cert-manager first marked the challenge as
+	// presented. This is used by the optional delay-based readiness logic.
+	PresentedAt *metav1.Time `json:"presentedAt,omitempty"`
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	Reason *string `json:"reason,omitempty"`
@@ -66,6 +70,14 @@ func (b *ChallengeStatusApplyConfiguration) WithProcessing(value bool) *Challeng
 // If called multiple times, the Presented field is set to the value of the last call.
 func (b *ChallengeStatusApplyConfiguration) WithPresented(value bool) *ChallengeStatusApplyConfiguration {
 	b.Presented = &value
+	return b
+}
+
+// WithPresentedAt sets the PresentedAt field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PresentedAt field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithPresentedAt(value metav1.Time) *ChallengeStatusApplyConfiguration {
+	b.PresentedAt = &value
 	return b
 }
 
