@@ -382,7 +382,7 @@ func TestConfigForIssuerT(t *testing.T) {
 
 func TestConfigForIssuerNGTS(t *testing.T) {
 	zone := "TestApp\\Default"
-	tsgID := "123456789"
+	tsgID := "tsg_id:123456789"
 	ngtsURL := "https://api.example.paloaltonetworks.com/ngts"
 	tokenEndpoint := "https://auth.example.com/oauth2/token"
 	clientID := "test-client-id"
@@ -424,7 +424,8 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 			}, nil),
 			CheckFn: func(t *testing.T, cnf *vcert.Config) {
 				if cnf == nil {
-					t.Fatalf("expected config but got nil")
+					t.Fatal("expected config but got nil")
+					return
 				}
 				if cnf.ConnectorType != endpoint.ConnectorTypeNGTS {
 					t.Errorf("expected ConnectorTypeNGTS, got %v", cnf.ConnectorType)
@@ -436,7 +437,8 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 					t.Errorf("expected zone %q, got %q", zone, cnf.Zone)
 				}
 				if cnf.Credentials == nil {
-					t.Fatalf("expected credentials but got nil")
+					t.Fatal("expected credentials but got nil")
+					return
 				}
 				if cnf.Credentials.ClientId != clientID {
 					t.Errorf("expected clientId %q, got %q", clientID, cnf.Credentials.ClientId)

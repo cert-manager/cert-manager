@@ -436,6 +436,8 @@ func ValidateVenafiNGTS(ngts *certmanager.VenafiNGTS, fldPath *field.Path) (el f
 	}
 	if ngts.TSGID == "" {
 		el = append(el, field.Required(fldPath.Child("tsgID"), ""))
+	} else if !strings.HasPrefix(ngts.TSGID, "tsg_id:") {
+		el = append(el, field.Invalid(fldPath.Child("tsgID"), ngts.TSGID, `must begin with "tsg_id:" (e.g. "tsg_id:1234567890")`))
 	}
 	if ngts.CredentialsRef.Name == "" {
 		el = append(el, field.Required(fldPath.Child("credentialsRef", "name"), ""))

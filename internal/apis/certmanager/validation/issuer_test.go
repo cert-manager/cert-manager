@@ -1863,7 +1863,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				NGTS: &cmapi.VenafiNGTS{
 					URL:           "https://api.example.paloaltonetworks.com/ngts",
 					TokenEndpoint: "https://auth.example.com/oauth2/token",
-					TSGID:         "123456789",
+					TSGID:         "tsg_id:123456789",
 					CredentialsRef: cmmeta.LocalObjectReference{
 						Name: "ngts-secret",
 					},
@@ -1879,7 +1879,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				NGTS: &cmapi.VenafiNGTS{
 					URL:           "https://api.example.paloaltonetworks.com/ngts",
 					TokenEndpoint: "https://auth.example.com/oauth2/token",
-					TSGID:         "123456789",
+					TSGID:         "tsg_id:123456789",
 					CredentialsRef: cmmeta.LocalObjectReference{
 						Name: "ngts-secret",
 					},
@@ -1896,7 +1896,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				NGTS: &cmapi.VenafiNGTS{
 					URL:           "https://api.example.paloaltonetworks.com/ngts",
 					TokenEndpoint: "https://auth.example.com/oauth2/token",
-					TSGID:         "123456789",
+					TSGID:         "tsg_id:123456789",
 					CredentialsRef: cmmeta.LocalObjectReference{
 						Name: "ngts-secret",
 					},
@@ -1988,7 +1988,7 @@ func TestValidateVenafiNGTS(t *testing.T) {
 			cfg: &cmapi.VenafiNGTS{
 				URL:           "https://api.example.paloaltonetworks.com/ngts",
 				TokenEndpoint: "https://auth.example.com/oauth2/token",
-				TSGID:         "123456789",
+				TSGID:         "tsg_id:123456789",
 				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: "ngts-secret",
 				},
@@ -1997,7 +1997,7 @@ func TestValidateVenafiNGTS(t *testing.T) {
 		"missing tokenEndpoint": {
 			cfg: &cmapi.VenafiNGTS{
 				URL:   "https://api.example.paloaltonetworks.com/ngts",
-				TSGID: "123456789",
+				TSGID: "tsg_id:123456789",
 				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: "ngts-secret",
 				},
@@ -2018,11 +2018,24 @@ func TestValidateVenafiNGTS(t *testing.T) {
 				field.Required(fldPath.Child("tsgID"), ""),
 			},
 		},
+		"tsgID missing tsg_id: prefix": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:           "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint: "https://auth.example.com/oauth2/token",
+				TSGID:         "1234567890",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("tsgID"), "1234567890", `must begin with "tsg_id:" (e.g. "tsg_id:1234567890")`),
+			},
+		},
 		"missing credentialsRef name": {
 			cfg: &cmapi.VenafiNGTS{
 				URL:            "https://api.example.paloaltonetworks.com/ngts",
 				TokenEndpoint:  "https://auth.example.com/oauth2/token",
-				TSGID:          "123456789",
+				TSGID:          "tsg_id:123456789",
 				CredentialsRef: cmmeta.LocalObjectReference{},
 			},
 			errs: []*field.Error{
