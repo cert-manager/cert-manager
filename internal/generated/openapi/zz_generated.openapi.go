@@ -2147,7 +2147,7 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 					},
 					"presented": {
 						SchemaProps: spec.SchemaProps{
-							Description: "presented will be set to true if the challenge values for this challenge are currently 'presented'. This *does not* imply the self check is passing. Only that the values have been 'submitted' for the appropriate challenge mechanism (i.e. the DNS01 TXT record has been presented, or the HTTP01 configuration has been configured).",
+							Description: "Presented is true once cert-manager has configured the solver resources needed to expose this challenge's validation material. For example, the DNS01 TXT record has been created, or the HTTP01 solver has been configured to serve the challenge token. This does not imply the self check is passing, that the ACME server has validated the challenge, or that cert-manager has already accepted the challenge with the ACME server.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -2155,7 +2155,7 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 					},
 					"presentedAt": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PresentedAt records when cert-manager first marked the challenge as presented. This is used by the optional delay-based readiness logic.",
+							Description: "PresentedAt records when cert-manager first configured the solver resources for this challenge. This is used by the optional delay-based readiness logic.",
 							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
 						},
 					},
