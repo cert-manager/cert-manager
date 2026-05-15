@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	acmev1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/acme/v1"
 )
 
@@ -29,6 +30,10 @@ import (
 // configuration required for the issuer.
 type IssuerSpecApplyConfiguration struct {
 	IssuerConfigApplyConfiguration `json:",inline"`
+	// CertificateApprovalPolicy configures the approval policy used for this
+	// issuer. By default all certificates are automatically approved unless
+	// the approval controller is disabled.
+	CertificateApprovalPolicy *certmanagerv1.IssuerCertificateApprovalPolicy `json:"certificateApprovalPolicy,omitempty"`
 }
 
 // IssuerSpecApplyConfiguration constructs a declarative configuration of the IssuerSpec type for use with
@@ -74,5 +79,13 @@ func (b *IssuerSpecApplyConfiguration) WithSelfSigned(value *SelfSignedIssuerApp
 // If called multiple times, the Venafi field is set to the value of the last call.
 func (b *IssuerSpecApplyConfiguration) WithVenafi(value *VenafiIssuerApplyConfiguration) *IssuerSpecApplyConfiguration {
 	b.IssuerConfigApplyConfiguration.Venafi = value
+	return b
+}
+
+// WithCertificateApprovalPolicy sets the CertificateApprovalPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertificateApprovalPolicy field is set to the value of the last call.
+func (b *IssuerSpecApplyConfiguration) WithCertificateApprovalPolicy(value certmanagerv1.IssuerCertificateApprovalPolicy) *IssuerSpecApplyConfiguration {
+	b.CertificateApprovalPolicy = &value
 	return b
 }

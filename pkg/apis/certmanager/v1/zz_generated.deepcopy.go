@@ -790,6 +790,11 @@ func (in *IssuerList) DeepCopyObject() runtime.Object {
 func (in *IssuerSpec) DeepCopyInto(out *IssuerSpec) {
 	*out = *in
 	in.IssuerConfig.DeepCopyInto(&out.IssuerConfig)
+	if in.CertificateApprovalPolicy != nil {
+		in, out := &in.CertificateApprovalPolicy, &out.CertificateApprovalPolicy
+		*out = new(IssuerCertificateApprovalPolicy)
+		**out = **in
+	}
 	return
 }
 

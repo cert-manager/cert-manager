@@ -1568,6 +1568,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: ca
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CAIssuer
+    - name: certificateApprovalPolicy
+      type:
+        scalar: string
     - name: selfSigned
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.SelfSignedIssuer

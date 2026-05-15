@@ -3624,6 +3624,15 @@ spec:
                 required:
                 - secretName
                 type: object
+              certificateApprovalPolicy:
+                description: |-
+                  CertificateApprovalPolicy configures the approval policy used for this
+                  issuer. By default all certificates are automatically approved unless
+                  the approval controller is disabled.
+                enum:
+                - Always
+                - External
+                type: string
               selfSigned:
                 description: |-
                   SelfSigned configures this issuer to 'self sign' certificates using the

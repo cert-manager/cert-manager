@@ -21,6 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
@@ -52,6 +53,18 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 		// If the CertificateRequest is "Issued" or "Failed", exit early.
 		apiutil.CertificateRequestReadyReason(cr) == cmapi.CertificateRequestReasonFailed,
 		apiutil.CertificateRequestReadyReason(cr) == cmapi.CertificateRequestReasonIssued:
+		return nil
+	}
+
+	// Get the Issuer/ClusterIssuer
+	issuer, err := c.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// Get the approval policy, defaulting to always approved
+	approvalPolicy := ptr.Deref(issuer.GetSpec().CertificateApprovalPolicy, cmapi.IssuerCertificateApprovalPolicyAlways)
+	if approvalPolicy != cmapi.IssuerCertificateApprovalPolicyAlways {
 		return nil
 	}
 
