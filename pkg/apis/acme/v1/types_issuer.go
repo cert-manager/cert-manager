@@ -197,7 +197,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// List of DNSZones that this solver will be used to solve.
@@ -210,7 +210,7 @@ type CertificateDNSNameSelector struct {
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	DNSZones []string `json:"dnsZones,omitempty"`
 }
 
