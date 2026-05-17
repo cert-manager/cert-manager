@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestRenewalTime(t *testing.T) {
@@ -34,6 +35,7 @@ func TestRenewalTime(t *testing.T) {
 		renewBefore         *metav1.Duration
 		renewBeforePct      *int32
 		expectedRenewalTime *metav1.Time
+		ariInfo             *acmeapi.RenewalInfoResponse
 	}
 	now := time.Now().Truncate(time.Second)
 	tests := map[string]scenario{
@@ -91,12 +93,28 @@ func TestRenewalTime(t *testing.T) {
 			notAfter:            now.Add(time.Hour * 24).Add(time.Second * -1),
 			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16).Add(time.Second * -1)},
 		},
+		"certificate passes in ariInfo, gets that as the desired renewal time": {
+			notBefore:   now,
+			notAfter:    now.Add(time.Hour * 24),
+			renewBefore: &metav1.Duration{Duration: time.Hour * 24},
+			ariInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: now.Add(time.Hour * 5),
+					End:   now.Add(time.Hour * 6),
+				},
+			},
+		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
-			renewalTime, err := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct, nil)
+			renewalTime, err := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct, nil, WithARIInfo(s.ariInfo))
 			assert.Nil(t, err)
-			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
+
+			if s.ariInfo != nil {
+				assert.WithinRangef(t, renewalTime.Time, s.ariInfo.SuggestedWindow.Start, s.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", s.ariInfo.SuggestedWindow.Start, s.ariInfo.SuggestedWindow.End, renewalTime))
+			} else {
+				assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
+			}
 		})
 	}
 }
@@ -178,6 +196,7 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 		expectedRenewalTime time.Time
 		wantErr             bool
 		renewalSpec         *apiv1.CertificateRenewal
+		ariInfo             *acmeapi.RenewalInfoResponse
 	}
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -310,12 +329,34 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 				},
 			},
 		},
+		"single window, renewal time within window and with ARI": {
+			notAfter:            future.Add(48 * time.Hour),
+			targetRenewalTime:   future.Add(10*time.Hour + 30*time.Minute),
+			notBefore:           midnightUTC(now.AddDate(0, 0, -10)),
+			expectedRenewalTime: future.Add(24 * time.Hour).Add(-(13*time.Hour + 30*time.Minute)),
+			renewalSpec: &apiv1.CertificateRenewal{
+				Policy: apiv1.CertificateRenewalPolicyRenewBefore,
+				Windows: []apiv1.CertificateRenewalWindows{
+					{
+						Timezone:       time.UTC.String(),
+						WindowDuration: &metav1.Duration{Duration: time.Hour * 2},
+						Cron:           "0 10 * * *",
+					},
+				},
+			},
+			ariInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: future.Add(10 * time.Hour),
+					End:   future.Add(11 * time.Hour),
+				},
+			},
+		},
 	}
 
 	for name, te := range tests {
 		renewBefore := te.notAfter.Sub(te.targetRenewalTime)
 
-		res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec)
+		res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec, WithARIInfo(te.ariInfo))
 
 		if te.wantErr {
 			assert.NotNil(t, err)
@@ -326,7 +367,12 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+
+		if te.ariInfo != nil {
+			assert.WithinRangef(t, res.Time, te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, res))
+		} else {
+			assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+		}
 	}
 }
 

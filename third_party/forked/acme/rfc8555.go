@@ -206,6 +206,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 		NotBefore   string        `json:"notBefore,omitempty"`
 		NotAfter    string        `json:"notAfter,omitempty"`
 		Profile     string        `json:"profile,omitempty"`
+		Replaces    string        `json:"replaces,omitempty"`
 	}{}
 	for _, v := range id {
 		req.Identifiers = append(req.Identifiers, wireAuthzID{
@@ -228,6 +229,13 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 				return nil, fmt.Errorf("%w %s", ErrProfileNotInSetOfSupportedProfiles, profileName)
 			}
 			req.Profile = profileName
+		case orderReplacesOpt:
+			// Per RFC 9773 clients SHOULD NOT include replaces unless the server
+			// advertises renewalInfo support in its directory object.
+			if dir.RenewalInfo == "" {
+				return nil, ErrCADoesNotSupportARI
+			}
+			req.Replaces = string(o)
 		default:
 			// Package's fault if we let this happen.
 			panic(fmt.Sprintf("unsupported order option type %T", o))
@@ -242,7 +250,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 	return responseOrder(res)
 }
 
-// GetOrder retrieves an order identified by the given URL.
+// GetOrder retrives an order identified by the given URL.
 // For orders created with AuthorizeOrder, the url value is Order.URI.
 //
 // If a caller needs to poll an order until its status is final,
@@ -282,7 +290,7 @@ func (c *Client) WaitOrder(ctx context.Context, url string) (*Order, error) {
 		case err != nil:
 			// Skip and retry.
 		case o.Status == StatusInvalid:
-			return nil, &OrderError{OrderURL: o.URI, Status: o.Status, Problem: o.Error}
+			return nil, &OrderError{OrderURL: o.URI, Status: o.Status}
 		case o.Status == StatusReady || o.Status == StatusValid:
 			return o, nil
 		}
@@ -328,6 +336,7 @@ func responseOrder(res *http.Response) (*Order, error) {
 		AuthzURLs:   v.Authorizations,
 		FinalizeURL: v.Finalize,
 		CertURL:     v.Certificate,
+		RetryAfter:  retryAfter(res.Header.Get("Retry-After")),
 	}
 	for _, id := range v.Identifiers {
 		o.Identifiers = append(o.Identifiers, AuthzID{Type: id.Type, Value: id.Value})
@@ -379,7 +388,7 @@ func (c *Client) CreateOrderCert(ctx context.Context, url string, csr []byte, bu
 	}
 	// The only acceptable status post finalize and WaitOrder is "valid".
 	if o.Status != StatusValid {
-		return nil, "", &OrderError{OrderURL: o.URI, Status: o.Status, Problem: o.Error}
+		return nil, "", &OrderError{OrderURL: o.URI, Status: o.Status}
 	}
 	crt, err := c.fetchCertRFC(ctx, o.CertURL, bundle)
 	return crt, o.CertURL, err

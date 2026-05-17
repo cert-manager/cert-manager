@@ -192,7 +192,7 @@ type CertificateSpec struct {
 	// `otherName` is "1.3.6.1.4.1.311.20.2.3".
 	// No validation is performed on the given UTF-8 string, so users must ensure that the value is correct before use
 	// +optional
-	OtherNames []OtherName `json:"otherNames,omitempty"`
+	OtherNames []OtherName
 
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
@@ -276,11 +276,11 @@ type OtherName struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
 	// example, "1.2.840.113556.1.4.221".
-	OID string `json:"oid,omitempty"`
+	OID string
 
 	// utf8Value is the string value of the otherName SAN. Any UTF-8 string can be used, but no
 	// validation is performed.
-	UTF8Value string `json:"utf8Value,omitempty"`
+	UTF8Value string
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -427,7 +427,7 @@ type JKSKeystore struct {
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
 	// +optional
-	Alias *string `json:"alias,omitempty"`
+	Alias *string
 
 	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
 	// containing the password used to encrypt the JKS keystore.
@@ -579,6 +579,10 @@ type CertificateStatus struct {
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	FailedIssuanceAttempts *int
+
+	// ACME stores acme related information that is fetched from the ACME CA server.
+	// +optional
+	ACME *CertificateACMEStatus
 }
 
 // CertificateCondition contains condition information for a Certificate.
@@ -688,4 +692,47 @@ type NameConstraintItem struct {
 	//
 	// +optional
 	URIDomains []string
+}
+
+type CertificateACMEStatus struct {
+	// ARI stores the ACME Renewal Information that is fetched from the ACME server
+	// in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.
+	//
+	// +optional
+	ARI *CertificateACMEARIStatus
+}
+
+type CertificateACMEARIStatus struct {
+	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+	//
+	// +required
+	SuggestedWindow *ACMERenewalWindow
+	// ExplanationURL is a human-readable URL that may explain why the suggested window
+	// has its current value.
+	//
+	// +optional
+	ExplanationURL string
+	// LastChecked is the time at which the ACME server was last checked for renewal information.
+	//
+	// +required
+	LastChecked *metav1.Time
+	// NextCheck is the time at which the ACME server will next be checked for renewal information.
+	//
+	// +required
+	NextCheck *metav1.Time
+	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
+	//
+	// +optional
+	LastError string
+}
+
+type ACMERenewalWindow struct {
+	// Start is the start of the suggested renewal window.
+	//
+	// +required
+	Start *metav1.Time
+	// End is the end of the suggested renewal window.
+	//
+	// +required
+	End *metav1.Time
 }

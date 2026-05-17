@@ -10,6 +10,6 @@ targets:
   forked:
     - folder_name: acme
       repo_url: https://github.com/cert-manager/crypto
-      repo_ref: acme-profiles
-      repo_hash: 6e8321683b5435259ff5dcb6b85c0cbe535d6e5b
+      repo_ref: master
+      repo_hash: d8a68f1347667f900b7daa5dc48280023d138663
       repo_path: acme

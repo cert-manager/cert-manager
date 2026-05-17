@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"crypto/x509"
 
 	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
 	"github.com/cert-manager/cert-manager/third_party/forked/acme"
@@ -56,6 +57,8 @@ type Interface interface { //nolint:interfacebloat
 	DNS01ChallengeRecord(token string) (string, error)
 	Discover(ctx context.Context) (acme.Directory, error)
 	UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	// GetRenewalInfo will be called
+	GetRenewalInfo(ctx context.Context, cert *x509.Certificate) (*acme.RenewalInfoResponse, error)
 }
 
 var _ Interface = &acme.Client{
