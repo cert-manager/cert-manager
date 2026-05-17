@@ -24,6 +24,7 @@ spec:
   - protocol: TCP
     port: 9402
     name: http-metrics
+    targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
   selector:
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
