@@ -476,6 +476,12 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", cmacme.NoneStrategy, cmacme.FollowStrategy)))
 		}
 	}
+	for i, ns := range p.Nameservers {
+		if err := util.ValidDNS01Nameserver(ns); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("nameservers").Index(i), ns, err.Error()))
+		}
+	}
+
 	numProviders := 0
 	if p.Akamai != nil {
 		numProviders++

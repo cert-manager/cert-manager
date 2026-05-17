@@ -18,13 +18,13 @@ package validation
 
 import (
 	"net"
-	"net/url"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
+	issuervalidationutil "github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
 	sharedvalidation "github.com/cert-manager/cert-manager/internal/apis/config/shared/validation"
@@ -66,18 +66,8 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 	}
 
 	for i, server := range cfg.ACMEDNS01Config.RecursiveNameservers {
-		// ensure all servers follow one of the following formats:
-		// - <ip address>:<port>
-		// - https://<DoH RFC 8484 server address>
-
-		if strings.HasPrefix(server, "https://") {
-			if u, err := url.ParseRequestURI(server); err != nil || u.Scheme != "https" || u.Host == "" {
-				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format https://<DoH RFC 8484 server address>"))
-			}
-		} else {
-			if _, _, err := net.SplitHostPort(server); err != nil {
-				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format <ip address>:<port>"))
-			}
+		if err := issuervalidationutil.ValidDNS01Nameserver(server); err != nil {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, err.Error()))
 		}
 	}
 
