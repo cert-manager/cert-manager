@@ -218,6 +218,9 @@ spec:
       {{- if .Values.extraContainers }}
         {{- toYaml .Values.extraContainers | nindent 8 }}
       {{- end }}
+      {{- if .Values.runtimeClassName }}
+      runtimeClassName: {{ .Values.runtimeClassName }}
+      {{- end }}
       {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
       {{- $nodeSelector = merge $nodeSelector (.Values.nodeSelector | default dict) }}
       {{- with $nodeSelector }}
