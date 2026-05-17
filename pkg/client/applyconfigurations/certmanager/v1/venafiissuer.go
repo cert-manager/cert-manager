@@ -35,6 +35,9 @@ type VenafiIssuerApplyConfiguration struct {
 	// Cloud specifies the CyberArk Certificate Manager SaaS configuration settings.
 	// Only one of CyberArk Certificate Manager may be specified.
 	Cloud *VenafiCloudApplyConfiguration `json:"cloud,omitempty"`
+	// NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration
+	// using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.
+	NGTS *VenafiNGTSApplyConfiguration `json:"ngts,omitempty"`
 }
 
 // VenafiIssuerApplyConfiguration constructs a declarative configuration of the VenafiIssuer type for use with
@@ -64,5 +67,13 @@ func (b *VenafiIssuerApplyConfiguration) WithTPP(value *VenafiTPPApplyConfigurat
 // If called multiple times, the Cloud field is set to the value of the last call.
 func (b *VenafiIssuerApplyConfiguration) WithCloud(value *VenafiCloudApplyConfiguration) *VenafiIssuerApplyConfiguration {
 	b.Cloud = value
+	return b
+}
+
+// WithNGTS sets the NGTS field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the NGTS field is set to the value of the last call.
+func (b *VenafiIssuerApplyConfiguration) WithNGTS(value *VenafiNGTSApplyConfiguration) *VenafiIssuerApplyConfiguration {
+	b.NGTS = value
 	return b
 }

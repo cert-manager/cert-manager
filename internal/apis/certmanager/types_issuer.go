@@ -124,6 +124,26 @@ type VenafiIssuer struct {
 	// Cloud specifies the CyberArk Certificate Manager SaaS configuration settings.
 	// Only one of CyberArk Certificate Manager may be specified.
 	Cloud *VenafiCloud
+
+	// NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration
+	// using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.
+	NGTS *VenafiNGTS
+}
+
+// VenafiNGTS defines connection configuration for the Palo Alto Networks
+// Next Generation Trust Services (NGTS) platform using OAuth 2.0 Client Credentials.
+type VenafiNGTS struct {
+	// URL is the base URL for the NGTS API endpoint. Optional; vcert defaults to api.sase.paloaltonetworks.com/ngts.
+	URL string
+
+	// TokenEndpoint is the OAuth 2.0 token endpoint URL.
+	TokenEndpoint string
+
+	// TSGID is the OAuth 2.0 scope, for example "tsg_id:1234567890".
+	TSGID string
+
+	// CredentialsRef is a reference to a Secret containing the OAuth 2.0 Client ID and Secret.
+	CredentialsRef cmmeta.LocalObjectReference
 }
 
 // VenafiTPP defines connection configuration details for a CyberArk Certificate Manager Self-Hosted instance

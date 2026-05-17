@@ -133,6 +133,7 @@ type IssuerConfig struct {
 
 // Configures an issuer to sign certificates using a CyberArk Certificate Manager Self-Hosted
 // or SaaS policy zone.
+// +kubebuilder:validation:XValidation:rule="(has(self.tpp) ? 1 : 0) + (has(self.cloud) ? 1 : 0) + (has(self.ngts) ? 1 : 0) == 1",message="exactly one of tpp, cloud, or ngts must be configured"
 type VenafiIssuer struct {
 	// Zone is the Certificate Manager Policy Zone to use for this issuer.
 	// All requests made to the Certificate Manager platform will be restricted by the named
@@ -149,6 +150,33 @@ type VenafiIssuer struct {
 	// Only one of CyberArk Certificate Manager may be specified.
 	// +optional
 	Cloud *VenafiCloud `json:"cloud,omitempty"`
+
+	// NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration
+	// using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.
+	// +optional
+	NGTS *VenafiNGTS `json:"ngts,omitempty"`
+}
+
+// VenafiNGTS defines connection configuration for the Palo Alto Networks
+// Next Generation Trust Services (NGTS) platform using OAuth 2.0 Client Credentials.
+type VenafiNGTS struct {
+	// URL is the base URL for the NGTS API endpoint.
+	// Defaults to "https://api.sase.paloaltonetworks.com/ngts" if not set.
+	// +optional
+	URL string `json:"url,omitempty"`
+
+	// TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens.
+	// This field is required and has no compiled-in default.
+	TokenEndpoint string `json:"tokenEndpoint"`
+
+	// TSGID is the OAuth 2.0 scope used when requesting tokens, for example
+	// "tsg_id:1234567890". This field is required.
+	TSGID string `json:"tsgID"`
+
+	// CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0
+	// Client ID and Client Secret. The secret must contain the keys 'client-id' and
+	// 'client-secret'.
+	CredentialsRef cmmeta.LocalObjectReference `json:"credentialsRef"`
 }
 
 // VenafiTPP defines connection configuration details for a CyberArk Certificate Manager Self-Hosted instance

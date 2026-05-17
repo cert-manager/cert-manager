@@ -28,6 +28,7 @@ import (
 	"github.com/Venafi/vcert/v5/pkg/certificate"
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	"github.com/Venafi/vcert/v5/pkg/venafi/cloud"
+	"github.com/Venafi/vcert/v5/pkg/venafi/ngts"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
 	"github.com/go-logr/logr"
 	"k8s.io/utils/ptr"
@@ -50,6 +51,9 @@ const (
 	tppScopes = "certificate:manage"
 
 	defaultAPIKeyKey = "api-key"
+
+	ngtsClientIDKey     = "client-id"
+	ngtsClientSecretKey = "client-secret"
 )
 
 type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
@@ -76,6 +80,7 @@ type Venafi struct {
 	vcertClient connector
 	tppClient   *tpp.Connector
 	cloudClient *cloud.Connector
+	ngtsClient  *ngts.Connector
 	config      *vcert.Config
 }
 
@@ -112,6 +117,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 
 	var tppc *tpp.Connector
 	var cc *cloud.Connector
+	var nc *ngts.Connector
 
 	switch vcertClient.GetType() {
 	case endpoint.ConnectorTypeTPP:
@@ -123,6 +129,11 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		c, ok := vcertClient.(*cloud.Connector)
 		if ok {
 			cc = c
+		}
+	case endpoint.ConnectorTypeNGTS:
+		c, ok := vcertClient.(*ngts.Connector)
+		if ok {
+			nc = c
 		}
 	default:
 		return nil, fmt.Errorf("unsupported vcert connector type: %v", vcertClient.GetType())
@@ -136,6 +147,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		vcertClient:   instrumentedVCertClient,
 		cloudClient:   cc,
 		tppClient:     tppc,
+		ngtsClient:    nc,
 		config:        cfg,
 	}
 
@@ -227,10 +239,35 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 				UserAgent: new(userAgent),
 			}),
 		}, nil
+	case venaCfg.NGTS != nil:
+		ngtsConfig := venaCfg.NGTS
+		ngtsSecret, err := secretsLister.Secrets(namespace).Get(ngtsConfig.CredentialsRef.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		clientID := string(ngtsSecret.Data[ngtsClientIDKey])
+		clientSecret := string(ngtsSecret.Data[ngtsClientSecretKey])
+
+		return &vcert.Config{
+			ConnectorType: endpoint.ConnectorTypeNGTS,
+			BaseUrl:       ngtsConfig.URL,
+			Zone:          venaCfg.Zone,
+			LogVerbose:    true,
+			Credentials: &endpoint.Authentication{
+				ClientId:     clientID,
+				ClientSecret: clientSecret,
+				Scope:        ngtsConfig.TSGID,
+				TokenURL:     ngtsConfig.TokenEndpoint,
+			},
+			Client: httpClientForVcert(&httpClientForVcertOptions{
+				UserAgent: new(userAgent),
+			}),
+		}, nil
 	}
 	// API validation in webhook and in the ClusterIssuer and Issuer controller
 	// Sync functions should make this unreachable in production.
-	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
+	return nil, fmt.Errorf("neither Venafi Cloud, TPP, or NGTS configuration found")
 }
 
 // httpClientForVcertOptions contains options for `httpClientForVcert`, to allow
@@ -402,6 +439,17 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 // VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud
 func (v *Venafi) VerifyCredentials() error {
 	switch {
+	case v.ngtsClient != nil:
+		err := v.ngtsClient.Authenticate(&endpoint.Authentication{
+			ClientId:     v.config.Credentials.ClientId,
+			ClientSecret: v.config.Credentials.ClientSecret,
+			Scope:        v.config.Credentials.Scope,
+			TokenURL:     v.config.Credentials.TokenURL,
+		})
+		if err != nil {
+			return fmt.Errorf("ngtsClient.Authenticate: %v", err)
+		}
+		return nil
 	case v.cloudClient != nil:
 		err := v.cloudClient.Authenticate(&endpoint.Authentication{
 			APIKey: v.config.Credentials.APIKey,

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2026 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package venafi
+// Package ngts implements tests for the Venafi NGTS issuer
+package ngts
 
 import (
-	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/cloud"
-	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/ngts"
-	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/tpp"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 )
+
+func NGTSDescribe(name string, body func()) bool {
+	return framework.CertManagerDescribe(name, body)
+}

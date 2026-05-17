@@ -184,6 +184,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationscertmanagerv1.VenafiCloudApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("VenafiIssuer"):
 		return &applyconfigurationscertmanagerv1.VenafiIssuerApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("VenafiNGTS"):
+		return &applyconfigurationscertmanagerv1.VenafiNGTSApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("VenafiTPP"):
 		return &applyconfigurationscertmanagerv1.VenafiTPPApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("X509Subject"):
