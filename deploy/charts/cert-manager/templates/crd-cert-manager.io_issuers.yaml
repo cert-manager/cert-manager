@@ -222,6 +222,17 @@ spec:
                           A selector may be provided to use different solving strategies for different DNS names.
                           Only one of HTTP01 or DNS01 must be provided.
                         properties:
+                          acceptChallengeAfter:
+                            description: |-
+                              AcceptChallengeAfter, if set, allows cert-manager to proceed after this
+                              delay has elapsed since presentation even if its self-check is still
+                              failing. A successful self-check will continue to short-circuit the delay
+                              and proceed immediately.
+
+                              This is an advanced escape hatch for environments where cert-manager's
+                              self-check cannot reliably observe the same validation path as the ACME
+                              server, for example due to split-horizon DNS or NAT hairpinning.
+                            type: string
                           dns01:
                             description: |-
                               Configures cert-manager to attempt to complete authorizations by

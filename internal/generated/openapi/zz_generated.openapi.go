@@ -672,11 +672,17 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolver(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01"),
 						},
 					},
+					"acceptChallengeAfter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AcceptChallengeAfter, if set, allows cert-manager to proceed after this delay has elapsed since presentation even if its self-check is still failing. A successful self-check will continue to short-circuit the delay and proceed immediately.\n\nThis is an advanced escape hatch for environments where cert-manager's self-check cannot reliably observe the same validation path as the ACME server, for example due to split-horizon DNS or NAT hairpinning.",
+							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverDNS01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolverHTTP01", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector", metav1.Duration{}.OpenAPIModelName()},
 	}
 }
 
@@ -2141,10 +2147,16 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 					},
 					"presented": {
 						SchemaProps: spec.SchemaProps{
-							Description: "presented will be set to true if the challenge values for this challenge are currently 'presented'. This *does not* imply the self check is passing. Only that the values have been 'submitted' for the appropriate challenge mechanism (i.e. the DNS01 TXT record has been presented, or the HTTP01 configuration has been configured).",
+							Description: "Presented is true once cert-manager has configured the solver resources needed to expose this challenge's validation material. For example, the DNS01 TXT record has been created, or the HTTP01 solver has been configured to serve the challenge token. This does not imply the self check is passing, that the ACME server has validated the challenge, or that cert-manager has already accepted the challenge with the ACME server.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
+						},
+					},
+					"presentedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PresentedAt records when cert-manager first configured the solver resources for this challenge. This is used by the optional delay-based readiness logic.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
 						},
 					},
 					"reason": {
@@ -2164,6 +2176,8 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 				},
 			},
 		},
+		Dependencies: []string{
+			metav1.Time{}.OpenAPIModelName()},
 	}
 }
 

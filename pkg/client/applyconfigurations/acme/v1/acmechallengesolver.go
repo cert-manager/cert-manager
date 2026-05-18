@@ -18,6 +18,10 @@ limitations under the License.
 
 package v1
 
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 // ACMEChallengeSolverApplyConfiguration represents a declarative configuration of the ACMEChallengeSolver type for use
 // with apply.
 //
@@ -39,6 +43,15 @@ type ACMEChallengeSolverApplyConfiguration struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01ApplyConfiguration `json:"dns01,omitempty"`
+	// AcceptChallengeAfter, if set, allows cert-manager to proceed after this
+	// delay has elapsed since presentation even if its self-check is still
+	// failing. A successful self-check will continue to short-circuit the delay
+	// and proceed immediately.
+	//
+	// This is an advanced escape hatch for environments where cert-manager's
+	// self-check cannot reliably observe the same validation path as the ACME
+	// server, for example due to split-horizon DNS or NAT hairpinning.
+	AcceptChallengeAfter *metav1.Duration `json:"acceptChallengeAfter,omitempty"`
 }
 
 // ACMEChallengeSolverApplyConfiguration constructs a declarative configuration of the ACMEChallengeSolver type for use with
@@ -68,5 +81,13 @@ func (b *ACMEChallengeSolverApplyConfiguration) WithHTTP01(value *ACMEChallengeS
 // If called multiple times, the DNS01 field is set to the value of the last call.
 func (b *ACMEChallengeSolverApplyConfiguration) WithDNS01(value *ACMEChallengeSolverDNS01ApplyConfiguration) *ACMEChallengeSolverApplyConfiguration {
 	b.DNS01 = value
+	return b
+}
+
+// WithAcceptChallengeAfter sets the AcceptChallengeAfter field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AcceptChallengeAfter field is set to the value of the last call.
+func (b *ACMEChallengeSolverApplyConfiguration) WithAcceptChallengeAfter(value metav1.Duration) *ACMEChallengeSolverApplyConfiguration {
+	b.AcceptChallengeAfter = &value
 	return b
 }
