@@ -142,18 +142,18 @@ type Client struct {
 //
 // When in pre-RFC mode or when c.getRegRFC responds with an error, accountKID
 // returns noKeyID.
-func (c *Client) accountKID(ctx context.Context) KeyID {
+func (c *Client) accountKID(ctx context.Context) (KeyID, error) {
 	c.cacheMu.Lock()
 	defer c.cacheMu.Unlock()
 	if c.KID != noKeyID {
-		return c.KID
+		return c.KID, nil
 	}
 	a, err := c.getRegRFC(ctx)
 	if err != nil {
-		return noKeyID
+		return noKeyID, err
 	}
 	c.KID = KeyID(a.URI)
-	return c.KID
+	return c.KID, nil
 }
 
 var errPreRFC = errors.New("acme: server does not support the RFC 8555 version of ACME")
@@ -370,7 +370,7 @@ func (c *Client) authorize(ctx context.Context, typ, val string) (*Authorization
 		Resource:   "new-authz",
 		Identifier: authzID{Type: typ, Value: val},
 	}
-	res, err := c.post(ctx, nil, c.dir.AuthzURL, req, wantStatus(http.StatusCreated))
+	res, err := c.post(ctx, nil, true, c.dir.AuthzURL, req, wantStatus(http.StatusCreated))
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func (c *Client) RevokeAuthorization(ctx context.Context, url string) error {
 		Status:   "deactivated",
 		Delete:   true,
 	}
-	res, err := c.post(ctx, nil, url, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, true, url, req, wantStatus(http.StatusOK))
 	if err != nil {
 		return err
 	}
@@ -523,7 +523,7 @@ func (c *Client) Accept(ctx context.Context, chal *Challenge) (*Challenge, error
 	if len(chal.Payload) != 0 {
 		payload = chal.Payload
 	}
-	res, err := c.post(ctx, nil, chal.URI, payload, wantStatus(
+	res, err := c.post(ctx, nil, true, chal.URI, payload, wantStatus(
 		http.StatusOK,       // according to the spec
 		http.StatusAccepted, // Let's Encrypt: see https://goo.gl/WsJ7VT (acme-divergences.md)
 	))

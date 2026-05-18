@@ -26,12 +26,15 @@ func (c *Client) DeactivateReg(ctx context.Context) error {
 	if _, err := c.Discover(ctx); err != nil { // required by c.accountKID
 		return err
 	}
-	url := string(c.accountKID(ctx))
+	url, err := c.accountKID(ctx)
+	if err != nil {
+		return err
+	}
 	if url == "" {
 		return ErrNoAccount
 	}
 	req := json.RawMessage(`{"status": "deactivated"}`)
-	res, err := c.post(ctx, nil, url, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, true, string(url), req, wantStatus(http.StatusOK))
 	if err != nil {
 		return err
 	}
@@ -65,7 +68,7 @@ func (c *Client) registerRFC(ctx context.Context, acct *Account, prompt func(tos
 		req.ExternalAccountBinding = eabJWS
 	}
 
-	res, err := c.post(ctx, c.Key, c.dir.RegURL, req, wantStatus(
+	res, err := c.post(ctx, c.Key, false, c.dir.RegURL, req, wantStatus(
 		http.StatusOK,      // account with this key already registered
 		http.StatusCreated, // new account created
 	))
@@ -100,7 +103,10 @@ func (c *Client) encodeExternalAccountBinding(eab *ExternalAccountBinding) (*jso
 // updateRegRFC is equivalent to c.UpdateReg but for CAs implementing RFC 8555.
 // It expects c.Discover to have already been called.
 func (c *Client) updateRegRFC(ctx context.Context, a *Account) (*Account, error) {
-	url := string(c.accountKID(ctx))
+	url, err := c.accountKID(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if url == "" {
 		return nil, ErrNoAccount
 	}
@@ -109,7 +115,7 @@ func (c *Client) updateRegRFC(ctx context.Context, a *Account) (*Account, error)
 	}{
 		Contact: a.Contact,
 	}
-	res, err := c.post(ctx, nil, url, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, false, string(url), req, wantStatus(http.StatusOK))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +127,7 @@ func (c *Client) updateRegRFC(ctx context.Context, a *Account) (*Account, error)
 // It expects c.Discover to have already been called.
 func (c *Client) getRegRFC(ctx context.Context) (*Account, error) {
 	req := json.RawMessage(`{"onlyReturnExisting": true}`)
-	res, err := c.post(ctx, c.Key, c.dir.RegURL, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, c.Key, false, c.dir.RegURL, req, wantStatus(http.StatusOK))
 	if e, ok := err.(*Error); ok && e.ProblemType == "urn:ietf:params:acme:error:accountDoesNotExist" {
 		return nil, ErrNoAccount
 	}
@@ -157,9 +163,9 @@ func (c *Client) accountKeyRollover(ctx context.Context, newKey crypto.Signer) e
 	if err != nil {
 		return err
 	}
-	kid := c.accountKID(ctx)
+	kid, err := c.accountKID(ctx)
 	if kid == noKeyID {
-		return ErrNoAccount
+		return err
 	}
 	oldKey, err := jwkEncode(c.Key.Public())
 	if err != nil {
@@ -177,7 +183,7 @@ func (c *Client) accountKeyRollover(ctx context.Context, newKey crypto.Signer) e
 		return err
 	}
 
-	res, err := c.post(ctx, nil, dir.KeyChangeURL, base64.RawURLEncoding.EncodeToString(inner), wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, true, dir.KeyChangeURL, base64.RawURLEncoding.EncodeToString(inner), wantStatus(http.StatusOK))
 	if err != nil {
 		return err
 	}
@@ -234,7 +240,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 		}
 	}
 
-	res, err := c.post(ctx, nil, dir.OrderURL, req, wantStatus(http.StatusCreated))
+	res, err := c.post(ctx, nil, true, dir.OrderURL, req, wantStatus(http.StatusCreated))
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +366,7 @@ func (c *Client) CreateOrderCert(ctx context.Context, url string, csr []byte, bu
 	}{
 		CSR: base64.RawURLEncoding.EncodeToString(csr),
 	}
-	res, err := c.post(ctx, nil, url, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, true, url, req, wantStatus(http.StatusOK))
 	if err != nil {
 		return nil, "", err
 	}
@@ -442,7 +448,8 @@ func (c *Client) revokeCertRFC(ctx context.Context, key crypto.Signer, cert []by
 		Cert:   base64.RawURLEncoding.EncodeToString(cert),
 		Reason: int(reason),
 	}
-	res, err := c.post(ctx, key, c.dir.RevokeURL, req, wantStatus(http.StatusOK))
+	// Notice: revoke cert is a special case in RFC 8555 where the KID or JWK form are both allowed
+	res, err := c.post(ctx, key, false, c.dir.RevokeURL, req, wantStatus(http.StatusOK))
 	if err != nil {
 		if isAlreadyRevoked(err) {
 			// Assume it is not an error to revoke an already revoked cert.
