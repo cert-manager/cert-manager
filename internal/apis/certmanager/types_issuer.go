@@ -360,6 +360,12 @@ type CAIssuer struct {
 	// by this Issuer.
 	SecretName string
 
+	// SecretNamespace is the namespace of the secret used
+	// to sign Certificates issued by this Issuer.
+	// If empty, the secret is looked up in the same namespace as the Issuer itself,
+	// or the Cluster Resource Namespace for ClusterIssuers.
+	SecretNamespace string
+
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
