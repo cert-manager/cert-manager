@@ -127,6 +127,15 @@ spec:
                   type: string
                 type: array
                 x-kubernetes-list-type: atomic
+              encodeBasicConstraintsInRequest:
+                description: |-
+                  Whether the BasicConstraints extension should be set in the encoded CSR.
+
+                  IMPORTANT: This option is only available if `UseCertificateRequestBasicConstraints` feature
+                  gate is set. Otherwise, the CSR will not have the BasicConstraints extension.
+                  This option defaults to true, and should only be disabled if the target
+                  issuer does not support CSRs with a X509 BasicConstraints extension.
+                type: boolean
               encodeUsagesInRequest:
                 description: |-
                   Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
@@ -308,6 +317,21 @@ spec:
 
                   Cannot be set if the `subject` or `commonName` field is set.
                 type: string
+              maxPathLen:
+                description: |-
+                  Requested basic constraints maxPathLen value.
+                  The maxPathLen value is used to set the `maxPathLen` field on the created CertificateRequest
+                  resources. Note that the issuer may choose to ignore the requested maxPathLen value, just
+                  like any other requested attribute.
+                  If the `UseCertificateRequestBasicConstraints` feature gate is set and the
+                  `encodeBasicConstraintsInRequest` field is not set to `false`, the encoded CSR will
+                  have a BasicConstraints extension with the provided maxPathLen value.
+
+                  If set, maxPathLen must be a value of `0` or greater.
+                  If unset (`nil`), there is no maximum.
+                  Default value is `nil`.
+                format: int32
+                type: integer
               nameConstraints:
                 description: |-
                   x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
