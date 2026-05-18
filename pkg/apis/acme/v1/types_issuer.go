@@ -795,6 +795,12 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host string `json:"host"`
 
 	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
+
+	// CABundle is a base64 encoded TLS certificate authority bundle to use when verifying
+	// connections to the acme-dns server. If set, it overrides the spec.acme.caBundle
+	// for TLS connections to the acme-dns server.
+	// +optional
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
