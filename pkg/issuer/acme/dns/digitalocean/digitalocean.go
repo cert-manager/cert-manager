@@ -20,7 +20,9 @@ package digitalocean
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -32,8 +34,7 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	dns01Nameservers []string
-	client           *godo.Client
+	domainsClient godo.DomainsService
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for digitalocean.
@@ -46,6 +47,8 @@ func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for digitalocean.
 func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
+	_ = dns01Nameservers
+
 	if token == "" {
 		return nil, fmt.Errorf("DigitalOcean token missing")
 	}
@@ -60,21 +63,19 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgen
 	}
 
 	return &DNSProvider{
-		dns01Nameservers: dns01Nameservers,
-		client:           client,
+		domainsClient: client.Domains,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error {
-	// if DigitalOcean does not have this zone then we will find out later
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
+	zoneName, err := c.getHostedZone(ctx, fqdn)
 	if err != nil {
 		return err
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error 
 		TTL:  60,
 	}
 
-	_, _, err = c.client.Domains.CreateRecord(
+	_, _, err = c.domainsClient.CreateRecord(
 		ctx,
 		util.UnFqdn(zoneName),
 		createRequest,
@@ -107,18 +108,18 @@ func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error 
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
+	zoneName, err := c.getHostedZone(ctx, fqdn)
 	if err != nil {
 		return err
 	}
 
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
-		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
+		_, err = c.domainsClient.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
 
 		if err != nil {
 			return err
@@ -128,13 +129,8 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.DomainRecord, error) {
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
-	if err != nil {
-		return nil, err
-	}
-
-	allRecords, _, err := c.client.Domains.RecordsByType(
+func (c *DNSProvider) findTxtRecord(ctx context.Context, zoneName, fqdn string) ([]godo.DomainRecord, error) {
+	allRecords, _, err := c.domainsClient.RecordsByType(
 		ctx,
 		util.UnFqdn(zoneName),
 		"TXT",
@@ -154,4 +150,38 @@ func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.Do
 	}
 
 	return records, err
+}
+
+// getHostedZone returns the most specific managed DigitalOcean domain for the
+// fqdn. This avoids split-horizon DNS selecting a private zone that is not
+// actually configured in DigitalOcean.
+func (c *DNSProvider) getHostedZone(ctx context.Context, fqdn string) (string, error) {
+	labels := strings.Split(util.UnFqdn(util.ToFqdn(fqdn)), ".")
+
+	for i := range labels {
+		remainingLabels := labels[i:]
+		if len(remainingLabels) < 2 {
+			break
+		}
+
+		zoneName := strings.Join(remainingLabels, ".")
+		_, _, err := c.domainsClient.Get(ctx, zoneName)
+		switch {
+		case err == nil:
+			return util.ToFqdn(zoneName), nil
+		case isDigitalOceanNotFound(err):
+			continue
+		default:
+			return "", err
+		}
+	}
+
+	return "", fmt.Errorf("zone for fqdn %q not found in DigitalOcean domains", fqdn)
+}
+
+func isDigitalOceanNotFound(err error) bool {
+	var target *godo.ErrorResponse
+	return errors.As(err, &target) &&
+		target.Response != nil &&
+		target.Response.StatusCode == http.StatusNotFound
 }
