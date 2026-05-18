@@ -113,6 +113,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 
 		ch.Status.Presented = false
+		ch.Status.PresentedAt = nil
 		ch.Status.Processing = false
 
 		return nil
@@ -181,10 +182,8 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 
 		ch.Status.Presented = true
-		if ch.Spec.Solver.AcceptChallengeAfter != nil {
-			now := metav1.NewTime(c.clock.Now())
-			ch.Status.PresentedAt = &now
-		}
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 

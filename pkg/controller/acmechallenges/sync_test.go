@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -102,6 +103,7 @@ func TestSyncHappyPath(t *testing.T) {
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
 	oldPresentedAt := metav1.NewTime(time.Now().Add(-time.Minute))
+	presentedNow := metav1.NewTime(time.Date(2026, 5, 15, 12, 0, 0, 0, time.UTC))
 
 	simulatedCleanupError := errors.New("simulated-cleanup-error")
 	tests := map[string]testT{
@@ -345,6 +347,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			builder: &testpkg.Builder{
+				Clock: fakeclock.NewFakeClock(presentedNow.Time),
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
@@ -360,6 +363,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(presentedNow),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
 						))),
