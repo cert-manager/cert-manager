@@ -82,6 +82,11 @@ type IssuerList struct {
 // configuration required for the issuer.
 type IssuerSpec struct {
 	IssuerConfig
+
+	// CertificateApprovalPolicy configures the approval policy used for this
+	// issuer. By default all certificates are automatically approved unless
+	// the approval controller is disabled.
+	CertificateApprovalPolicy *IssuerCertificateApprovalPolicy
 }
 
 // IssuerConfig is a generic wrapper around custom issuer types
@@ -378,6 +383,22 @@ type CAIssuer struct {
 	// +optional
 	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
 }
+
+// IssuerCertificateApprovalPolicy controls whether cert-manager automatically
+// approves CertificateRequests targeting this issuer, or delegates approval to
+// an external controller.
+type IssuerCertificateApprovalPolicy string
+
+const (
+	// IssuerCertificateApprovalPolicyAlways causes cert-manager to automatically
+	// approve every CertificateRequest that references this issuer.
+	IssuerCertificateApprovalPolicyAlways IssuerCertificateApprovalPolicy = "Always"
+
+	// IssuerCertificateApprovalPolicyExternal causes cert-manager to leave
+	// CertificateRequests in a pending state, requiring an external controller
+	// to approve or deny them.
+	IssuerCertificateApprovalPolicyExternal IssuerCertificateApprovalPolicy = "External"
+)
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {

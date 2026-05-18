@@ -1311,6 +1311,7 @@ func autoConvert_v1_IssuerSpec_To_certmanager_IssuerSpec(in *certmanagerv1.Issue
 	if err := Convert_v1_IssuerConfig_To_certmanager_IssuerConfig(&in.IssuerConfig, &out.IssuerConfig, s); err != nil {
 		return err
 	}
+	out.CertificateApprovalPolicy = (*certmanager.IssuerCertificateApprovalPolicy)(unsafe.Pointer(in.CertificateApprovalPolicy))
 	return nil
 }
 
@@ -1323,6 +1324,7 @@ func autoConvert_certmanager_IssuerSpec_To_v1_IssuerSpec(in *certmanager.IssuerS
 	if err := Convert_certmanager_IssuerConfig_To_v1_IssuerConfig(&in.IssuerConfig, &out.IssuerConfig, s); err != nil {
 		return err
 	}
+	out.CertificateApprovalPolicy = (*certmanagerv1.IssuerCertificateApprovalPolicy)(unsafe.Pointer(in.CertificateApprovalPolicy))
 	return nil
 }
 

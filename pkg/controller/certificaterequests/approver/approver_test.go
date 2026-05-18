@@ -21,9 +21,11 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -39,6 +41,10 @@ func TestProcessItem(t *testing.T) {
 		// if not set, the 'namespace/name' of the 'CertificateRequest' field will be used.
 		// if neither is set, the key will be ""
 		key types.NamespacedName
+
+		// issuer is the Issuer or ClusterIssuer the CertificateRequest's issuerRef
+		// points to. If set, it is added to the builder's CertManagerObjects.
+		issuer cmapi.GenericIssuer
 
 		// CertificateRequest to be synced for the test.
 		// if not set, the 'key' will be passed to ProcessItem instead.
@@ -124,8 +130,12 @@ func TestProcessItem(t *testing.T) {
 			},
 		},
 		"approve CertificateRequest if no condition": {
+			issuer: &cmapi.Issuer{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test-issuer"}},
 			request: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateRequestSpec{
+					IssuerRef: cmmeta.IssuerReference{Name: "test-issuer", Kind: "Issuer", Group: "cert-manager.io"},
+				},
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{},
 				},
@@ -142,8 +152,12 @@ func TestProcessItem(t *testing.T) {
 			expectedEvent: "Normal cert-manager.io Certificate request has been approved by cert-manager.io",
 		},
 		"approve CertificateRequest has 'Ready' Pending condition": {
+			issuer: &cmapi.Issuer{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test-issuer"}},
 			request: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateRequestSpec{
+					IssuerRef: cmmeta.IssuerReference{Name: "test-issuer", Kind: "Issuer", Group: "cert-manager.io"},
+				},
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
@@ -170,6 +184,50 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedEvent: "Normal cert-manager.io Certificate request has been approved by cert-manager.io",
 		},
+		"approve CertificateRequest when policy is explicitly Always": {
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test-issuer"},
+				Spec: cmapi.IssuerSpec{
+					CertificateApprovalPolicy: ptr.To(cmapi.IssuerCertificateApprovalPolicyAlways),
+				},
+			},
+			request: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateRequestSpec{
+					IssuerRef: cmmeta.IssuerReference{Name: "test-issuer", Kind: "Issuer", Group: "cert-manager.io"},
+				},
+				Status: cmapi.CertificateRequestStatus{
+					Conditions: []cmapi.CertificateRequestCondition{},
+				},
+			},
+			expectedConditions: []cmapi.CertificateRequestCondition{
+				{
+					Type:               cmapi.CertificateRequestConditionApproved,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "cert-manager.io",
+					Message:            ApprovedMessage,
+					LastTransitionTime: &metaNow,
+				},
+			},
+			expectedEvent: "Normal cert-manager.io Certificate request has been approved by cert-manager.io",
+		},
+		"do nothing when approval policy is External": {
+			issuer: &cmapi.Issuer{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test-issuer"},
+				Spec: cmapi.IssuerSpec{
+					CertificateApprovalPolicy: ptr.To(cmapi.IssuerCertificateApprovalPolicyExternal),
+				},
+			},
+			request: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateRequestSpec{
+					IssuerRef: cmmeta.IssuerReference{Name: "test-issuer", Kind: "Issuer", Group: "cert-manager.io"},
+				},
+				Status: cmapi.CertificateRequestStatus{
+					Conditions: []cmapi.CertificateRequestCondition{},
+				},
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -180,6 +238,9 @@ func TestProcessItem(t *testing.T) {
 			}
 			if test.request != nil {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.request)
+			}
+			if test.issuer != nil {
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.issuer.(runtime.Object))
 			}
 			builder.Init()
 

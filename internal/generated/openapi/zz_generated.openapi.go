@@ -3955,6 +3955,13 @@ func schema_pkg_apis_certmanager_v1_IssuerSpec(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.VenafiIssuer"),
 						},
 					},
+					"certificateApprovalPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CertificateApprovalPolicy configures the approval policy used for this issuer. By default all certificates are automatically approved unless the approval controller is disabled.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

@@ -30,6 +30,7 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
@@ -49,6 +50,10 @@ type Controller struct {
 	certificateRequestLister cmlisters.CertificateRequestLister
 	cmClient                 cmclient.Interface
 	fieldManager             string
+
+	issuerLister        cmlisters.IssuerLister
+	clusterIssuerLister cmlisters.ClusterIssuerLister
+	helper              issuer.Helper
 
 	recorder record.EventRecorder
 
@@ -76,7 +81,15 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	)
 
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
-	mustSync := []cache.InformerSynced{certificateRequestInformer.Informer().HasSynced}
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
+	clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
+
+	mustSync := []cache.InformerSynced{
+		certificateRequestInformer.Informer().HasSynced,
+		issuerInformer.Informer().HasSynced,
+		clusterIssuerInformer.Informer().HasSynced,
+	}
+
 	if _, err := certificateRequestInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
@@ -85,6 +98,10 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	c.cmClient = ctx.CMClient
 	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
+
+	c.issuerLister = issuerInformer.Lister()
+	c.clusterIssuerLister = clusterIssuerInformer.Lister()
+	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	c.log.V(logf.DebugLevel).Info("certificate request approver controller registered")
 
