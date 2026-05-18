@@ -55,6 +55,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
+		// Venafi computes its own Subject Key Identifier
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	provisioner := new(venafiProvisioner)

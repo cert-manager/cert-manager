@@ -38,20 +38,20 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret, featureset.SubjectKeyIdentifierFeature)
 	runVaultAppRoleTests(cmapi.IssuerKind, false, fs)
 })
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole, CA with root)", func() {
-	fs := featureset.NewFeatureSet()
+	fs := featureset.NewFeatureSet(featureset.SubjectKeyIdentifierFeature)
 	runVaultAppRoleTests(cmapi.IssuerKind, true, fs)
 })
 
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret, featureset.SubjectKeyIdentifierFeature)
 	runVaultAppRoleTests(cmapi.ClusterIssuerKind, false, fs)
 })
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole, CA with root)", func() {
-	fs := featureset.NewFeatureSet()
+	fs := featureset.NewFeatureSet(featureset.SubjectKeyIdentifierFeature)
 	runVaultAppRoleTests(cmapi.ClusterIssuerKind, true, fs)
 })
 
