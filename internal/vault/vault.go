@@ -185,11 +185,12 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	}
 
 	resp, err := v.client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
 	}
-
-	defer resp.Body.Close()
 
 	vaultResult := certutil.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
@@ -451,11 +452,12 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 	}
 
 	resp, err := client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
 	}
-
-	defer resp.Body.Close()
 
 	vaultResult := vault.Secret{}
 	if err := resp.DecodeJSON(&vaultResult); err != nil {
@@ -529,11 +531,13 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 	}
 
 	resp, err := client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
 	}
 
-	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
@@ -630,11 +634,13 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	}
 
 	resp, err := client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
 	}
 
-	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
