@@ -17,6 +17,7 @@ limitations under the License.
 package shimhelper
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -3118,8 +3119,12 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "existing-crt",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
+							cmacme.ACMECertificateHTTP01ParentRefName: "gateway-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -3199,6 +3204,10 @@ func TestSync(t *testing.T) {
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
+							cmacme.ACMECertificateHTTP01ParentRefName: "gateway-name",
 						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
@@ -3427,8 +3436,12 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Annotations: map[string]string{
+							cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
+							cmacme.ACMECertificateHTTP01ParentRefName: "gateway-name",
+						},
 						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
 					},
 					Spec: cmapi.CertificateSpec{
@@ -4337,13 +4350,13 @@ func TestSync(t *testing.T) {
 			}
 			for _, cr := range test.ExpectedUpdate {
 				expectedActions = append(expectedActions,
-					testpkg.NewAction(coretesting.NewUpdateActionWithOptions(
+					testpkg.NewAction(coretesting.NewPatchActionWithOptions(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
-						cr,
-						metav1.UpdateOptions{
-							// TODO: set field manager here too
-						},
+						cr.Name,
+						types.ApplyPatchType,
+						certificateToApplyBytes(cr),
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				)
 			}
@@ -5240,4 +5253,20 @@ func TestMergeAnnotations(t *testing.T) {
 			}
 		})
 	}
+}
+
+// certificateToApplyBytes serializes a Certificate for SSA apply, matching the
+// serialization logic in internal/controller/certificates/apply.go.
+func certificateToApplyBytes(crt *cmapi.Certificate) []byte {
+	crt = &cmapi.Certificate{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: *crt.ObjectMeta.DeepCopy(),
+		Spec:       *crt.Spec.DeepCopy(),
+		Status:     cmapi.CertificateStatus{},
+	}
+	bytes, err := json.Marshal(crt)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
 }
