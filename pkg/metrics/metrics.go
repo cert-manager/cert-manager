@@ -56,17 +56,19 @@ type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
 
-	clockTimeSeconds                   prometheus.CounterFunc
-	clockTimeSecondsGauge              prometheus.GaugeFunc
-	acmeClientRequestDurationSeconds   *prometheus.SummaryVec
-	acmeClientRequestCount             *prometheus.CounterVec
-	venafiClientRequestDurationSeconds *prometheus.SummaryVec
-	controllerSyncCallCount            *prometheus.CounterVec
-	controllerSyncErrorCount           *prometheus.CounterVec
-	challengeCollector                 prometheus.Collector
-	certificateCollector               prometheus.Collector
-	issuerCollector                    prometheus.Collector
-	clusterIssuerCollector             prometheus.Collector
+	clockTimeSeconds                    prometheus.CounterFunc
+	clockTimeSecondsGauge               prometheus.GaugeFunc
+	acmeClientRequestDurationSeconds    *prometheus.SummaryVec
+	acmeClientRequestCount              *prometheus.CounterVec
+	venafiClientRequestDurationSeconds  *prometheus.SummaryVec
+	venafiOAuthTokenRequestsTotal       *prometheus.CounterVec
+	venafiOAuthTokenRequestDurationSecs prometheus.Histogram
+	controllerSyncCallCount             *prometheus.CounterVec
+	controllerSyncErrorCount            *prometheus.CounterVec
+	challengeCollector                  prometheus.Collector
+	certificateCollector                prometheus.Collector
+	issuerCollector                     prometheus.Collector
+	clusterIssuerCollector              prometheus.Collector
 }
 
 // New creates a Metrics struct and populates it with prometheus metric types.
@@ -152,6 +154,27 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			[]string{"api_call"},
 		)
 
+		venafiOAuthTokenRequestsTotal = prometheus.NewCounterVec(
+			//nolint:promlinter
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "venafi_oauth_token_requests_total",
+				Help: "Total number of Venafi OAuth token requests made by cert-manager. " +
+					"Label: status (success/failure).",
+			},
+			[]string{"status"},
+		)
+
+		venafiOAuthTokenRequestDurationSecs = prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Name:      "venafi_oauth_token_request_duration_seconds",
+				Help: "Duration in seconds of Venafi OAuth token requests. " +
+					"Buckets cover typical token-exchange latencies from 10ms to 30s.",
+				Buckets: []float64{0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30},
+			},
+		)
+
 		controllerSyncCallCount = prometheus.NewCounterVec(
 			//nolint:promlinter
 			prometheus.CounterOpts{
@@ -184,13 +207,15 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: registry,
 
-		clockTimeSeconds:                   clockTimeSeconds,
-		clockTimeSecondsGauge:              clockTimeSecondsGauge,
-		acmeClientRequestCount:             acmeClientRequestCount,
-		acmeClientRequestDurationSeconds:   acmeClientRequestDurationSeconds,
-		venafiClientRequestDurationSeconds: venafiClientRequestDurationSeconds,
-		controllerSyncCallCount:            controllerSyncCallCount,
-		controllerSyncErrorCount:           controllerSyncErrorCount,
+		clockTimeSeconds:                    clockTimeSeconds,
+		clockTimeSecondsGauge:               clockTimeSecondsGauge,
+		acmeClientRequestCount:              acmeClientRequestCount,
+		acmeClientRequestDurationSeconds:    acmeClientRequestDurationSeconds,
+		venafiClientRequestDurationSeconds:  venafiClientRequestDurationSeconds,
+		venafiOAuthTokenRequestsTotal:       venafiOAuthTokenRequestsTotal,
+		venafiOAuthTokenRequestDurationSecs: venafiOAuthTokenRequestDurationSecs,
+		controllerSyncCallCount:             controllerSyncCallCount,
+		controllerSyncErrorCount:            controllerSyncErrorCount,
 	}
 
 	return m
@@ -222,6 +247,8 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
+	m.registry.MustRegister(m.venafiOAuthTokenRequestsTotal)
+	m.registry.MustRegister(m.venafiOAuthTokenRequestDurationSecs)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)

@@ -52,6 +52,23 @@ certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 # HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC). Gauge form of the deprecated clock_time_seconds counter. No labels.
 # TYPE certmanager_clock_time_seconds_gauge gauge
 certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
+
+	venafiOAuthHistogramMetric = `
+# HELP certmanager_venafi_oauth_token_request_duration_seconds Duration in seconds of Venafi OAuth token requests. Buckets cover typical token-exchange latencies from 10ms to 30s.
+# TYPE certmanager_venafi_oauth_token_request_duration_seconds histogram
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="0.01"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="0.05"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="0.1"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="0.25"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="0.5"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="1"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="2.5"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="5"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="10"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="30"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_bucket{le="+Inf"} 0
+certmanager_venafi_oauth_token_request_duration_seconds_sum 0
+certmanager_venafi_oauth_token_request_duration_seconds_count 0`
 )
 
 // TestMetricsController performs a basic test to ensure that Certificates
@@ -176,7 +193,7 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	// Should expose no additional metrics
-	waitForMetrics(clockCounterMetric + clockGaugeMetric)
+	waitForMetrics(clockCounterMetric + clockGaugeMetric + venafiOAuthHistogramMetric)
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
@@ -242,7 +259,7 @@ certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-grou
 ` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 1
+certmanager_controller_sync_call_count{controller="metrics_test"} 1` + venafiOAuthHistogramMetric + `
 `)
 
 	// Set Certificate Expiry and Ready status True
@@ -305,7 +322,7 @@ certmanager_certificate_renewal_timestamp_seconds{issuer_group="test-issuer-grou
 ` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 2
+certmanager_controller_sync_call_count{controller="metrics_test"} 2` + venafiOAuthHistogramMetric + `
 `)
 	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(t.Context(), crt.Name, metav1.DeleteOptions{})
 	if err != nil {
@@ -321,6 +338,6 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 	waitForMetrics(clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller. Label: controller (fixed small set of controller names).
 # TYPE certmanager_controller_sync_call_count counter
-certmanager_controller_sync_call_count{controller="metrics_test"} 3
+certmanager_controller_sync_call_count{controller="metrics_test"} 3` + venafiOAuthHistogramMetric + `
 `)
 }
