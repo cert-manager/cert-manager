@@ -88,7 +88,7 @@ tools += vault=v2.0.0
 tools += azwi=v1.5.1
 # https://github.com/kyverno/kyverno/releases
 # renovate: datasource=github-releases packageName=kyverno/kyverno
-tools += kyverno=v1.18.0
+tools += kyverno=v1.18.1
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
 tools += yq=v4.53.2
@@ -109,7 +109,7 @@ tools += ytt=v0.55.0
 tools += rclone=v1.74.1
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.29.2
+tools += istioctl=1.30.0
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -132,7 +132,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.5
+tools += crane=v0.21.6
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
@@ -588,10 +588,10 @@ $(DOWNLOAD_DIR)/tools/kube-apiserver@$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(
 	@source $(lock_script) $@; \
 		tar xfO $< controller-tools/envtest/kube-apiserver > $(outfile) && chmod 775 $(outfile)
 
-kyverno_linux_amd64_SHA256SUM=3aa7b7aa68732fd6bc5732f1030d0ed12e1b0ffe7dbac5f5aa21fd8695718904
-kyverno_linux_arm64_SHA256SUM=37697771e1cc92daf73bebde4eb304691af09e07a4278cc82062e829c8475cec
-kyverno_darwin_amd64_SHA256SUM=35f4884e98e32e87223f1591e4ca0f82f9136f1cc9e9ba6482c441fdb00611d5
-kyverno_darwin_arm64_SHA256SUM=9b3d02f999c2b12e315b70b8d5b2db569b08e16f70449a23991515ed390e9268
+kyverno_linux_amd64_SHA256SUM=5e6bba9ca85beec6c93e94ca7fb0972a66df3b2e67636a08bef090cd3fc6535c
+kyverno_linux_arm64_SHA256SUM=55eb60200925bf878b020e8af8771ce800d85d2186724a93155058c103ce6bf9
+kyverno_darwin_amd64_SHA256SUM=c0d343842a6f630c20f0581d4c5618a8cbef2f3a7bfc935866771af6080c59d7
+kyverno_darwin_arm64_SHA256SUM=40d957b4b05be802b4872858e5599ecf3f383949965166fded77c7acd8e9813e
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -700,10 +700,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=904bbf1b917dd0135aa55b99cbfa34edd0a188fdeeeef09bb995d8e8e3165112
-istioctl_linux_arm64_SHA256SUM=c4130d32359446fa5e4820c0543d06e2e424883c6890f0f8c59f3ac69dd4b44e
-istioctl_darwin_amd64_SHA256SUM=0bd51e88f8a2568892523752e12ce720793e4b9a9b25bdd4555d5932048e2bf1
-istioctl_darwin_arm64_SHA256SUM=dffa0ff011774cf65fbae5d53f84d54bd12b541a35cff68be60db1c6674f03b4
+istioctl_linux_amd64_SHA256SUM=33664a95900d8cfc99b476cbbd7b967adc163b1981ef622d9b213a5d8156719e
+istioctl_linux_arm64_SHA256SUM=8a810443c0d85bb219bbe3902fc5a4e339a8c57d3a356e890bd6f0ee9cbbf467
+istioctl_darwin_amd64_SHA256SUM=72e79be133fb99b55a2eb28b9c2e1bc95c6faac008ec52ef4d705eb69c349c0f
+istioctl_darwin_arm64_SHA256SUM=e4f315c077ebe98c1ef0d820575743ebf80d8c3c754d81b0cda62f75f7d8fa75
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
