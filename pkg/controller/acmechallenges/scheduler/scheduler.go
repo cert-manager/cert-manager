@@ -186,13 +186,83 @@ func compareChallenges(l, r *cmacme.Challenge) int {
 		return 1
 	}
 
-	// TODO: check the http01.ingressClass attribute and allow two challenges
-	// with different ingress classes specified to be scheduled at once
+	// For HTTP-01, allow parallel challenges with different ingress classes.
+	if l.Spec.Type == cmacme.ACMEChallengeTypeHTTP01 {
+		lIngressClass := getChallengeIngressClass(&l.Spec.Solver)
+		rIngressClass := getChallengeIngressClass(&r.Spec.Solver)
+		if lIngressClass < rIngressClass {
+			return -1
+		}
+		if lIngressClass > rIngressClass {
+			return 1
+		}
+	}
 
-	// TODO: check the dns01.provider attribute and allow two challenges with
-	// different providers to be scheduled at once
+	// For DNS-01, allow parallel challenges with different DNS providers.
+	if l.Spec.Type == cmacme.ACMEChallengeTypeDNS01 {
+		lDNSProvider := getChallengeDNSProvider(&l.Spec.Solver)
+		rDNSProvider := getChallengeDNSProvider(&r.Spec.Solver)
+		if lDNSProvider < rDNSProvider {
+			return -1
+		}
+		if lDNSProvider > rDNSProvider {
+			return 1
+		}
+	}
 
 	return 0
+}
+
+func getChallengeIngressClass(challengeSolver *cmacme.ACMEChallengeSolver) string {
+	if challengeSolver.HTTP01 == nil || challengeSolver.HTTP01.Ingress == nil {
+		return ""
+	}
+
+	if challengeSolver.HTTP01.Ingress.IngressClassName != nil {
+		return *challengeSolver.HTTP01.Ingress.IngressClassName
+	}
+
+	if challengeSolver.HTTP01.Ingress.Class != nil {
+		return *challengeSolver.HTTP01.Ingress.Class
+	}
+
+	return ""
+}
+
+func getChallengeDNSProvider(challengeSolver *cmacme.ACMEChallengeSolver) string {
+	if challengeSolver.DNS01 == nil {
+		return ""
+	}
+
+	if challengeSolver.DNS01.Akamai != nil {
+		return "akamai"
+	}
+	if challengeSolver.DNS01.CloudDNS != nil {
+		return "clouddns"
+	}
+	if challengeSolver.DNS01.Cloudflare != nil {
+		return "cloudflare"
+	}
+	if challengeSolver.DNS01.Route53 != nil {
+		return "route53"
+	}
+	if challengeSolver.DNS01.AzureDNS != nil {
+		return "azuredns"
+	}
+	if challengeSolver.DNS01.DigitalOcean != nil {
+		return "digitalocean"
+	}
+	if challengeSolver.DNS01.AcmeDNS != nil {
+		return "acmedns"
+	}
+	if challengeSolver.DNS01.RFC2136 != nil {
+		return "rfc2136"
+	}
+	if challengeSolver.DNS01.Webhook != nil {
+		return "webhook"
+	}
+
+	return ""
 }
 
 // sortChallenges will sort the provided list of challenges according to the

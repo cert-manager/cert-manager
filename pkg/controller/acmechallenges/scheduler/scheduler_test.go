@@ -72,6 +72,63 @@ func withCreationTimestamp(i int64) func(*cmacme.Challenge) {
 	}
 }
 
+func withHTTP01IngressClass(className string) gen.ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		// Set challenge type if not already specified by test case.
+		ch.Spec.Type = cmacme.ACMEChallengeTypeHTTP01
+		if ch.Spec.Solver.HTTP01 == nil {
+			ch.Spec.Solver.HTTP01 = &cmacme.ACMEChallengeSolverHTTP01{}
+		}
+		if ch.Spec.Solver.HTTP01.Ingress == nil {
+			ch.Spec.Solver.HTTP01.Ingress = &cmacme.ACMEChallengeSolverHTTP01Ingress{}
+		}
+		if className == "" {
+			ch.Spec.Solver.HTTP01.Ingress.IngressClassName = nil
+			ch.Spec.Solver.HTTP01.Ingress.Class = nil
+			return
+		}
+		ch.Spec.Solver.HTTP01.Ingress.IngressClassName = &className
+		ch.Spec.Solver.HTTP01.Ingress.Class = nil
+	}
+}
+
+func withDNS01Provider(provider string) gen.ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Type = cmacme.ACMEChallengeTypeDNS01
+		if ch.Spec.Solver.DNS01 == nil {
+			ch.Spec.Solver.DNS01 = &cmacme.ACMEChallengeSolverDNS01{}
+		}
+		ch.Spec.Solver.DNS01.Akamai = nil
+		ch.Spec.Solver.DNS01.CloudDNS = nil
+		ch.Spec.Solver.DNS01.Cloudflare = nil
+		ch.Spec.Solver.DNS01.Route53 = nil
+		ch.Spec.Solver.DNS01.AzureDNS = nil
+		ch.Spec.Solver.DNS01.DigitalOcean = nil
+		ch.Spec.Solver.DNS01.AcmeDNS = nil
+		ch.Spec.Solver.DNS01.RFC2136 = nil
+		ch.Spec.Solver.DNS01.Webhook = nil
+
+		switch provider {
+		case "acmeDNS":
+			ch.Spec.Solver.DNS01.AcmeDNS = &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{}
+		case "route53":
+			ch.Spec.Solver.DNS01.Route53 = &cmacme.ACMEIssuerDNS01ProviderRoute53{}
+		case "cloudflare":
+			ch.Spec.Solver.DNS01.Cloudflare = &cmacme.ACMEIssuerDNS01ProviderCloudflare{}
+		case "cloudDNS":
+			ch.Spec.Solver.DNS01.CloudDNS = &cmacme.ACMEIssuerDNS01ProviderCloudDNS{}
+		case "azureDNS":
+			ch.Spec.Solver.DNS01.AzureDNS = &cmacme.ACMEIssuerDNS01ProviderAzureDNS{}
+		case "digitalOcean":
+			ch.Spec.Solver.DNS01.DigitalOcean = &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{}
+		case "rfc2136":
+			ch.Spec.Solver.DNS01.RFC2136 = &cmacme.ACMEIssuerDNS01ProviderRFC2136{}
+		case "webhook":
+			ch.Spec.Solver.DNS01.Webhook = &cmacme.ACMEIssuerDNS01ProviderWebhook{}
+		}
+	}
+}
+
 func BenchmarkScheduleAscending(b *testing.B) {
 	counts := []int{10, 100, 1000, 10000, 100000, 1000000}
 	for _, c := range counts {
@@ -233,6 +290,88 @@ func TestScheduleN(t *testing.T) {
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01)),
+			},
+		},
+		{
+			name: "allow scheduling HTTP01 challenges for same domain with different ingress classes",
+			n:    2,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("nginx"),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("traefik"),
+					withCreationTimestamp(2)),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("nginx"),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("traefik"),
+					withCreationTimestamp(2)),
+			},
+		},
+		{
+			name: "block HTTP01 challenges for same domain and same ingress class",
+			n:    2,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("nginx")),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("nginx")),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withHTTP01IngressClass("nginx")),
+			},
+		},
+		{
+			name: "allow scheduling DNS01 challenges for same domain with different providers",
+			n:    2,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("route53"),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("cloudflare"),
+					withCreationTimestamp(2)),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("route53"),
+					withCreationTimestamp(1)),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("cloudflare"),
+					withCreationTimestamp(2)),
+			},
+		},
+		{
+			name: "block DNS01 challenges for same domain and same provider",
+			n:    2,
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("route53")),
+				gen.Challenge("test2",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("route53")),
+			},
+			expected: []*cmacme.Challenge{
+				gen.Challenge("test1",
+					gen.SetChallengeDNSName("example.com"),
+					withDNS01Provider("route53")),
 			},
 		},
 		// this test case replicates a failure seen in CI
