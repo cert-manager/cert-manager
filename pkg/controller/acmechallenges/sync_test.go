@@ -651,6 +651,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Valid),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
 			),
 			httpSolver: &fakeSolver{
 				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
@@ -665,6 +666,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Valid),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -721,6 +723,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Invalid),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
 			),
 			httpSolver: &fakeSolver{
 				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
@@ -735,6 +738,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Invalid),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
