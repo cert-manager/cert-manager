@@ -25,16 +25,22 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// readinessEvaluation captures the result of evaluating whether a challenge
+// should be accepted now or retried later.
 type readinessEvaluation struct {
 	ready      bool
 	retryAfter time.Duration
 	reason     string
 }
 
+// challengeReadinessEvaluator decides whether a presented challenge is ready
+// to be accepted with the ACME server.
 type challengeReadinessEvaluator interface {
 	evaluate(ctx context.Context, solver solver, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) (readinessEvaluation, error)
 }
 
+// selfCheckReadinessEvaluator preserves the existing behaviour of requiring a
+// successful solver self-check before acceptance.
 type selfCheckReadinessEvaluator struct {
 	defaultRetryPeriod time.Duration
 }
@@ -51,6 +57,8 @@ func (e selfCheckReadinessEvaluator) evaluate(ctx context.Context, solver solver
 	}, nil
 }
 
+// delayAfterPresentationReadinessEvaluator allows a challenge to become ready
+// once a configured delay has elapsed since it was first presented.
 type delayAfterPresentationReadinessEvaluator struct {
 	defaultRetryPeriod time.Duration
 	now                time.Time
@@ -80,6 +88,8 @@ func (e delayAfterPresentationReadinessEvaluator) evaluate(_ context.Context, _ 
 	}, nil
 }
 
+// firstReadyEvaluator returns ready as soon as any wrapped evaluator reports
+// success, otherwise it returns the shortest retry delay.
 type firstReadyEvaluator struct {
 	evaluators []challengeReadinessEvaluator
 }
@@ -103,6 +113,8 @@ func (e firstReadyEvaluator) evaluate(ctx context.Context, solver solver, issuer
 	return readinessEvaluation{ready: false, retryAfter: bestRetry, reason: bestReason}, nil
 }
 
+// buildChallengeReadinessEvaluator constructs the readiness policy for a
+// challenge from its solver configuration.
 func buildChallengeReadinessEvaluator(ch *cmacme.Challenge, defaultRetryPeriod time.Duration, now time.Time) challengeReadinessEvaluator {
 	if ch.Spec.Solver.AcceptChallengeAfter == nil {
 		return selfCheckReadinessEvaluator{defaultRetryPeriod: defaultRetryPeriod}

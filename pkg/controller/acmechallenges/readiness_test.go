@@ -46,6 +46,8 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 		wantRetry          time.Duration
 		wantReason         string
 	}{
+		// Without acceptChallengeAfter, readiness should behave exactly like the
+		// existing strict self-check path.
 		"no delay configured uses strict self-check": {
 			challenge:          base.DeepCopy(),
 			checkErr:           errors.New("some error"),
@@ -54,6 +56,8 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			wantRetry:          10 * time.Second,
 			wantReason:         "Waiting for HTTP-01 challenge propagation: some error",
 		},
+		// Even when delayed acceptance is configured, a passing self-check should
+		// still allow immediate acceptance.
 		"delay configured still short-circuits on successful self-check": {
 			challenge: gen.ChallengeFrom(base,
 				gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
@@ -62,6 +66,8 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			defaultRetryPeriod: 10 * time.Second,
 			wantReady:          true,
 		},
+		// While the self-check is still failing and the delay window has not yet
+		// elapsed, readiness should report the remaining wait time.
 		"delay configured returns remaining delay when self-check still failing": {
 			challenge: gen.ChallengeFrom(base,
 				gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
@@ -73,6 +79,8 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			wantRetry:          5 * time.Second,
 			wantReason:         "Waiting for HTTP-01 challenge propagation",
 		},
+		// Once the configured delay has elapsed, readiness should allow
+		// acceptance even if the self-check is still failing.
 		"delay configured proceeds after timeout even if self-check still failing": {
 			challenge: gen.ChallengeFrom(base,
 				gen.SetChallengeAcceptChallengeAfter(metav1.Duration{Duration: 30 * time.Second}),
@@ -108,6 +116,8 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 	}
 }
 
+// PresentedAt is recorded independently of delayed acceptance, but it should
+// not affect readiness unless acceptChallengeAfter is configured.
 func TestPresentedAtIsIgnoredWithoutDelayConfiguration(t *testing.T) {
 	challenge := gen.Challenge("challenge",
 		gen.SetChallengePresented(true),
