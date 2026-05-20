@@ -71,10 +71,7 @@ func (e delayAfterPresentationReadinessEvaluator) evaluate(_ context.Context, _ 
 		return readinessEvaluation{ready: true}, nil
 	}
 
-	remaining := deadline.Sub(e.now)
-	if remaining > e.defaultRetryPeriod {
-		remaining = e.defaultRetryPeriod
-	}
+	remaining := min(deadline.Sub(e.now), e.defaultRetryPeriod)
 
 	return readinessEvaluation{
 		ready:      false,
