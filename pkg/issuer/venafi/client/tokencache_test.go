@@ -26,32 +26,32 @@ import (
 func TestTokenCache_IsValid(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupFn   func(*TokenCache)
+		setupFn   func(*tokenCache)
 		wantValid bool
 	}{
 		{
 			name:      "empty cache is invalid",
-			setupFn:   func(*TokenCache) {},
+			setupFn:   func(*tokenCache) {},
 			wantValid: false,
 		},
 		{
 			name: "cache with future expiry is valid",
-			setupFn: func(tc *TokenCache) {
-				tc.Set("mytoken", time.Now().Add(time.Hour))
+			setupFn: func(tc *tokenCache) {
+				tc.set("mytoken", time.Now().Add(time.Hour))
 			},
 			wantValid: true,
 		},
 		{
 			name: "cache with past expiry is invalid",
-			setupFn: func(tc *TokenCache) {
-				tc.Set("mytoken", time.Now().Add(-time.Second))
+			setupFn: func(tc *tokenCache) {
+				tc.set("mytoken", time.Now().Add(-time.Second))
 			},
 			wantValid: false,
 		},
 		{
 			name: "empty token is always invalid even with future expiry",
-			setupFn: func(tc *TokenCache) {
-				tc.Set("", time.Now().Add(time.Hour))
+			setupFn: func(tc *tokenCache) {
+				tc.set("", time.Now().Add(time.Hour))
 			},
 			wantValid: false,
 		},
@@ -59,28 +59,28 @@ func TestTokenCache_IsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tc := &TokenCache{}
+			tc := &tokenCache{}
 			tt.setupFn(tc)
-			if got := tc.IsValid(); got != tt.wantValid {
-				t.Errorf("IsValid() = %v, want %v", got, tt.wantValid)
+			if got := tc.isValid(); got != tt.wantValid {
+				t.Errorf("isValid() = %v, want %v", got, tt.wantValid)
 			}
 		})
 	}
 }
 
 func TestTokenCache_GetSet(t *testing.T) {
-	tc := &TokenCache{}
+	tc := &tokenCache{}
 	token := "abc123"
 	expiry := time.Now().Add(time.Hour).Truncate(time.Second)
 
-	tc.Set(token, expiry)
-	gotToken, gotExpiry := tc.Get()
+	tc.set(token, expiry)
+	gotToken, gotExpiry := tc.get()
 
 	if gotToken != token {
-		t.Errorf("Get() token = %q, want %q", gotToken, token)
+		t.Errorf("get() token = %q, want %q", gotToken, token)
 	}
 	if !gotExpiry.Equal(expiry) {
-		t.Errorf("Get() expiry = %v, want %v", gotExpiry, expiry)
+		t.Errorf("get() expiry = %v, want %v", gotExpiry, expiry)
 	}
 }
 

@@ -86,7 +86,7 @@ type Venafi struct {
 	config      *vcert.Config
 	metrics     *metrics.Metrics
 	logger      logr.Logger
-	tokenCache  *TokenCache
+	tokenCache  *tokenCache
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -110,13 +110,14 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 // issuer (e.g. from a long-lived controller struct), so that a valid cached
 // token can be used to continue serving requests during a transient endpoint
 // outage.
-func NewCachingBuilder(cache *TokenCache) VenafiClientBuilder {
+func NewCachingBuilder() VenafiClientBuilder {
+	cache := &tokenCache{}
 	return func(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
 		return newWithCache(namespace, secretsLister, issuer, m, logger, userAgent, cache)
 	}
 }
 
-func newWithCache(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string, cache *TokenCache) (Interface, error) {
+func newWithCache(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string, cache *tokenCache) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace, userAgent)
 	if err != nil {
 		return nil, err
@@ -522,7 +523,7 @@ func (v *Venafi) verifyCredentialsOnce() error {
 			APIKey: v.config.Credentials.APIKey,
 		})
 		if err != nil {
-			if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.IsValid() {
+			if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
 				v.logger.Info("Cloud authenticate failed due to endpoint unavailability; continuing with cached credentials", "error", err)
 				return nil
 			}
@@ -540,14 +541,14 @@ func (v *Venafi) verifyCredentialsOnce() error {
 				AccessToken: v.config.Credentials.AccessToken,
 			})
 			if err != nil {
-				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.IsValid() {
+				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
 					v.logger.Info("TPP VerifyAccessToken failed due to endpoint unavailability; continuing with cached token", "error", err)
 					return nil
 				}
 				return AuthFailedError{Err: fmt.Errorf("tppClient.VerifyAccessToken: %v", err)}
 			}
 			if v.tokenCache != nil && resp.ValidFor > 0 {
-				v.tokenCache.Set(v.config.Credentials.AccessToken, time.Now().Add(time.Duration(resp.ValidFor)*time.Second))
+				v.tokenCache.set(v.config.Credentials.AccessToken, time.Now().Add(time.Duration(resp.ValidFor)*time.Second))
 			}
 			return nil
 		}
@@ -564,10 +565,10 @@ func (v *Venafi) verifyCredentialsOnce() error {
 				Scope:    tppScopes,
 			})
 			if err != nil {
-				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.IsValid() {
+				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
 					// Endpoint is unreachable but we have a valid cached token; inject it so
 					// subsequent API calls can proceed until the token expires.
-					cachedToken, _ := v.tokenCache.Get()
+					cachedToken, _ := v.tokenCache.get()
 					if authErr := v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: cachedToken}); authErr == nil {
 						v.logger.Info("TPP GetRefreshToken failed due to endpoint unavailability; using cached token", "error", err)
 						return nil
@@ -583,7 +584,7 @@ func (v *Venafi) verifyCredentialsOnce() error {
 
 			// Update the cache with the newly obtained token and its expiry.
 			if v.tokenCache != nil && resp.Expires > 0 {
-				v.tokenCache.Set(resp.Access_token, time.Unix(int64(resp.Expires), 0))
+				v.tokenCache.set(resp.Access_token, time.Unix(int64(resp.Expires), 0))
 			}
 			return nil
 		}

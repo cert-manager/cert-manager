@@ -21,32 +21,32 @@ import (
 	"time"
 )
 
-// TokenCache stores a single OAuth access token with its expiry time.
-// It is safe for concurrent use. A zero-value TokenCache is valid and contains
+// tokenCache stores a single OAuth access token with its expiry time.
+// It is safe for concurrent use. A zero-value tokenCache is valid and contains
 // no cached token.
-type TokenCache struct {
+type tokenCache struct {
 	mu          sync.Mutex
 	accessToken string
 	expiresAt   time.Time
 }
 
-// IsValid reports whether the cache holds a non-empty token that has not yet expired.
-func (tc *TokenCache) IsValid() bool {
+// isValid reports whether the cache holds a non-empty token that has not yet expired.
+func (tc *tokenCache) isValid() bool {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
 	return tc.accessToken != "" && time.Now().Before(tc.expiresAt)
 }
 
-// Get returns the cached access token and its expiry time.
-// Callers should check IsValid before relying on the returned values.
-func (tc *TokenCache) Get() (accessToken string, expiresAt time.Time) {
+// get returns the cached access token and its expiry time.
+// Callers should check isValid before relying on the returned values.
+func (tc *tokenCache) get() (accessToken string, expiresAt time.Time) {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
 	return tc.accessToken, tc.expiresAt
 }
 
-// Set stores a new access token and its expiry time in the cache.
-func (tc *TokenCache) Set(accessToken string, expiresAt time.Time) {
+// set stores a new access token and its expiry time in the cache.
+func (tc *tokenCache) set(accessToken string, expiresAt time.Time) {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
 	tc.accessToken = accessToken

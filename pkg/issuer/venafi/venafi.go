@@ -44,7 +44,7 @@ type Venafi struct {
 func NewVenafi(ctx *controller.Context) (issuer.Interface, error) {
 	return &Venafi{
 		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
-		clientBuilder: client.NewCachingBuilder(&client.TokenCache{}),
+		clientBuilder: client.NewCachingBuilder(),
 		Context:       ctx,
 		log:           logf.Log.WithName("venafi"),
 		userAgent:     ctx.RESTConfig.UserAgent,
