@@ -187,6 +187,10 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
+	// Backfill PresentedAt for already-presented challenges when delayed
+	// acceptance is configured. This covers upgrade or pre-existing-object
+	// cases where Presented was recorded before the controller started writing
+	// PresentedAt.
 	if ch.Status.Presented && ch.Status.PresentedAt == nil && ch.Spec.Solver.AcceptChallengeAfter != nil {
 		now := metav1.NewTime(c.clock.Now())
 		ch.Status.PresentedAt = &now

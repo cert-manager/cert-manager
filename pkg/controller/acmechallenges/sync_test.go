@@ -374,6 +374,9 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		// PresentedAt may be missing on challenges that were already in the
+		// presented state before the controller started recording it, for example
+		// during upgrade or version-skew scenarios.
 		"backfill presentedAt for an already presented challenge when delayed acceptance is configured": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
