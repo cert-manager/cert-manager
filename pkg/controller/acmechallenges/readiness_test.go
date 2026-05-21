@@ -26,7 +26,6 @@ import (
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -129,5 +128,4 @@ func TestPresentedAtIsIgnoredWithoutDelayConfiguration(t *testing.T) {
 	if challenge.Status.PresentedAt == nil {
 		t.Fatal("expected presentedAt to be set in status")
 	}
-	_ = cmmeta.ConditionTrue
 }

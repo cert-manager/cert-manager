@@ -187,6 +187,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
+	if ch.Status.Presented && ch.Status.PresentedAt == nil && ch.Spec.Solver.AcceptChallengeAfter != nil {
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
+	}
+
 	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now())
 	result, err := readiness.evaluate(ctx, solver, genericIssuer, ch)
 	if err != nil {
