@@ -249,6 +249,11 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 		clientID := string(ngtsSecret.Data[ngtsClientIDKey])
 		clientSecret := string(ngtsSecret.Data[ngtsClientSecretKey])
 
+		tokenEndpoint := ngtsConfig.TokenEndpoint
+		if tokenEndpoint == "" {
+			tokenEndpoint = "https://auth.apps.paloaltonetworks.com/oauth2/access_token"
+		}
+
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeNGTS,
 			BaseUrl:       ngtsConfig.URL,
@@ -257,8 +262,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			Credentials: &endpoint.Authentication{
 				ClientId:     clientID,
 				ClientSecret: clientSecret,
-				Scope:        ngtsConfig.TSGID,
-				TokenURL:     ngtsConfig.TokenEndpoint,
+				Scope:        "tsg_id:" + ngtsConfig.TSGID,
+				TokenURL:     tokenEndpoint,
 			},
 			Client: httpClientForVcert(&httpClientForVcertOptions{
 				UserAgent: new(userAgent),

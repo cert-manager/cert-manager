@@ -161,16 +161,19 @@ type VenafiIssuer struct {
 // Next Generation Trust Services (NGTS) platform using OAuth 2.0 Client Credentials.
 type VenafiNGTS struct {
 	// URL is the base URL for the NGTS API endpoint.
-	// Defaults to "https://api.sase.paloaltonetworks.com/ngts" if not set.
+	// Defaults to "https://api.strata.paloaltonetworks.com/ngts" if not set.
 	// +optional
 	URL string `json:"url,omitempty"`
 
-	// TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens.
-	// This field is required and has no compiled-in default.
-	TokenEndpoint string `json:"tokenEndpoint"`
+	// TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens,
+	// for example "https://auth.apps.paloaltonetworks.com/oauth2/access_token".
+	// Defaults to "https://auth.apps.paloaltonetworks.com/oauth2/access_token" if not set.
+	// +optional
+	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
 
-	// TSGID is the OAuth 2.0 scope used when requesting tokens, for example
-	// "tsg_id:1234567890". This field is required.
+	// TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token,
+	// for example "1234567890". The tsg_id: prefix is added automatically.
+	// This field is required.
 	TSGID string `json:"tsgID"`
 
 	// CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0

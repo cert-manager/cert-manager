@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The cert-manager Authors.
+Copyright 2026 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,9 +63,6 @@ func (v *VenafiNGTS) Setup(ctx context.Context, cfg *config.Config, _ ...interna
 		}
 	}
 
-	if v.config.Addons.Venafi.NGTS.TokenEndpoint == "" {
-		return nil, errors.NewSkip(fmt.Errorf("Venafi NGTS TokenEndpoint must be set"))
-	}
 	if v.config.Addons.Venafi.NGTS.TSGID == "" {
 		return nil, errors.NewSkip(fmt.Errorf("Venafi NGTS TSGID must be set"))
 	}

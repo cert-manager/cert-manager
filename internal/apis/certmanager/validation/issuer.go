@@ -431,9 +431,6 @@ func ValidateVenafiCloud(c *certmanager.VenafiCloud, fldPath *field.Path) (el fi
 }
 
 func ValidateVenafiNGTS(ngts *certmanager.VenafiNGTS, fldPath *field.Path) (el field.ErrorList) {
-	if ngts.TokenEndpoint == "" {
-		el = append(el, field.Required(fldPath.Child("tokenEndpoint"), ""))
-	}
 	if ngts.TSGID == "" {
 		el = append(el, field.Required(fldPath.Child("tsgID"), ""))
 	}

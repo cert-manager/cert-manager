@@ -4747,22 +4747,21 @@ func schema_pkg_apis_certmanager_v1_VenafiNGTS(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Description: "URL is the base URL for the NGTS API endpoint. Defaults to \"https://api.sase.paloaltonetworks.com/ngts\" if not set.",
+							Description: "URL is the base URL for the NGTS API endpoint. Defaults to \"https://api.strata.paloaltonetworks.com/ngts\" if not set.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"tokenEndpoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens. This field is required and has no compiled-in default.",
-							Default:     "",
+							Description: "TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens, for example \"https://auth.apps.paloaltonetworks.com/oauth2/access_token\". Defaults to \"https://auth.apps.paloaltonetworks.com/oauth2/access_token\" if not set.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"tsgID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TSGID is the OAuth 2.0 scope used when requesting tokens, for example \"tsg_id:1234567890\". This field is required.",
+							Description: "TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token, for example \"1234567890\". The tsg_id: prefix is added automatically. This field is required.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4776,7 +4775,7 @@ func schema_pkg_apis_certmanager_v1_VenafiNGTS(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"tokenEndpoint", "tsgID", "credentialsRef"},
+				Required: []string{"tsgID", "credentialsRef"},
 			},
 		},
 		Dependencies: []string{

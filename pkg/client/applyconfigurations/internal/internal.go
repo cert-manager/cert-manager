@@ -1848,7 +1848,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tokenEndpoint
       type:
         scalar: string
-      default: ""
     - name: tsgID
       type:
         scalar: string

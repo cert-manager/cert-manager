@@ -82,8 +82,8 @@ func (v *VenafiCloudConfiguration) Validate() []error {
 
 func (v *VenafiNGTSConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.Zone, "global.venafi-ngts-zone", os.Getenv("VENAFI_NGTS_ZONE"), "Zone (certificate policy template) to use during Venafi NGTS end-to-end tests")
-	fs.StringVar(&v.TokenEndpoint, "global.venafi-ngts-token-endpoint", os.Getenv("VENAFI_NGTS_TOKEN_ENDPOINT"), "OAuth 2.0 token endpoint URL for Venafi NGTS")
-	fs.StringVar(&v.TSGID, "global.venafi-ngts-tsg-id", os.Getenv("VENAFI_NGTS_TSG_ID"), "OAuth 2.0 scope (TSG ID) for Venafi NGTS, e.g. tsg_id:1234567890")
+	fs.StringVar(&v.TokenEndpoint, "global.venafi-ngts-token-endpoint", os.Getenv("VENAFI_NGTS_TOKEN_ENDPOINT"), "OAuth 2.0 token endpoint URL for Venafi NGTS (optional, defaults to https://auth.apps.paloaltonetworks.com/oauth2/access_token)")
+	fs.StringVar(&v.TSGID, "global.venafi-ngts-tsg-id", os.Getenv("VENAFI_NGTS_TSG_ID"), "Tenant Service Group ID for Venafi NGTS, e.g. 1234567890")
 	fs.StringVar(&v.ClientID, "global.venafi-ngts-client-id", os.Getenv("VENAFI_NGTS_CLIENT_ID"), "OAuth 2.0 Client ID for Venafi NGTS")
 	fs.StringVar(&v.ClientSecret, "global.venafi-ngts-client-secret", os.Getenv("VENAFI_NGTS_CLIENT_SECRET"), "OAuth 2.0 Client Secret for Venafi NGTS")
 }

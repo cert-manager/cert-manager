@@ -133,13 +133,16 @@ type VenafiIssuer struct {
 // VenafiNGTS defines connection configuration for the Palo Alto Networks
 // Next Generation Trust Services (NGTS) platform using OAuth 2.0 Client Credentials.
 type VenafiNGTS struct {
-	// URL is the base URL for the NGTS API endpoint. Optional; vcert defaults to api.sase.paloaltonetworks.com/ngts.
+	// URL is the base URL for the NGTS API endpoint.
+	// Defaults to "https://api.strata.paloaltonetworks.com/ngts" if not set.
 	URL string
 
-	// TokenEndpoint is the OAuth 2.0 token endpoint URL.
+	// TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens.
+	// Defaults to "https://auth.apps.paloaltonetworks.com/oauth2/access_token" if not set.
 	TokenEndpoint string
 
-	// TSGID is the OAuth 2.0 scope, for example "tsg_id:1234567890".
+	// TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token,
+	// for example "1234567890". The tsg_id: prefix is added automatically.
 	TSGID string
 
 	// CredentialsRef is a reference to a Secret containing the OAuth 2.0 Client ID and Secret.

@@ -1994,16 +1994,12 @@ func TestValidateVenafiNGTS(t *testing.T) {
 				},
 			},
 		},
-		"missing tokenEndpoint": {
+		"valid NGTS config without optional fields": {
 			cfg: &cmapi.VenafiNGTS{
-				URL:   "https://api.example.paloaltonetworks.com/ngts",
 				TSGID: "123456789",
 				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: "ngts-secret",
 				},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("tokenEndpoint"), ""),
 			},
 		},
 		"missing tsgID": {
@@ -2032,7 +2028,6 @@ func TestValidateVenafiNGTS(t *testing.T) {
 		"missing all required fields": {
 			cfg: &cmapi.VenafiNGTS{},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("tokenEndpoint"), ""),
 				field.Required(fldPath.Child("tsgID"), ""),
 				field.Required(fldPath.Child("credentialsRef", "name"), ""),
 			},

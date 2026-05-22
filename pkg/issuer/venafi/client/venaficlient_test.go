@@ -424,7 +424,8 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 			}, nil),
 			CheckFn: func(t *testing.T, cnf *vcert.Config) {
 				if cnf == nil {
-					t.Fatalf("expected config but got nil")
+					t.Fatal("expected config but got nil")
+					return
 				}
 				if cnf.ConnectorType != endpoint.ConnectorTypeNGTS {
 					t.Errorf("expected ConnectorTypeNGTS, got %v", cnf.ConnectorType)
@@ -436,7 +437,8 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 					t.Errorf("expected zone %q, got %q", zone, cnf.Zone)
 				}
 				if cnf.Credentials == nil {
-					t.Fatalf("expected credentials but got nil")
+					t.Fatal("expected credentials but got nil")
+					return
 				}
 				if cnf.Credentials.ClientId != clientID {
 					t.Errorf("expected clientId %q, got %q", clientID, cnf.Credentials.ClientId)
@@ -444,8 +446,8 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 				if cnf.Credentials.ClientSecret != clientSecret {
 					t.Errorf("expected clientSecret %q, got %q", clientSecret, cnf.Credentials.ClientSecret)
 				}
-				if cnf.Credentials.Scope != tsgID {
-					t.Errorf("expected scope %q, got %q", tsgID, cnf.Credentials.Scope)
+				if cnf.Credentials.Scope != "tsg_id:"+tsgID {
+					t.Errorf("expected scope %q, got %q", "tsg_id:"+tsgID, cnf.Credentials.Scope)
 				}
 				if cnf.Credentials.TokenURL != tokenEndpoint {
 					t.Errorf("expected TokenURL %q, got %q", tokenEndpoint, cnf.Credentials.TokenURL)
