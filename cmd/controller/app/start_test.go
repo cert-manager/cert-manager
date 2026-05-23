@@ -287,3 +287,201 @@ func TestConfigurePEMSizeLimits(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAndValidateMetricLabels(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      map[string]string
+		wantResult map[string]map[string]string
+		wantErrors bool
+	}{
+		{
+			name: "nil input returns nil",
+		},
+		{
+			name:       "empty input returns empty map",
+			input:      map[string]string{},
+			wantResult: map[string]map[string]string{},
+		},
+		{
+			name: "valid single metric label",
+			input: map[string]string{
+				"metric1:environment": "production",
+			},
+			wantResult: map[string]map[string]string{
+				"metric1": {"environment": "production"},
+			},
+		},
+		{
+			name: "valid multiple labels for same metric",
+			input: map[string]string{
+				"metric1:env":    "prod",
+				"metric1:region": "useast",
+			},
+			wantResult: map[string]map[string]string{
+				"metric1": {"env": "prod", "region": "useast"},
+			},
+		},
+		{
+			name: "valid labels for different metrics",
+			input: map[string]string{
+				"metric1:env": "prod",
+				"metric2:env": "staging",
+			},
+			wantResult: map[string]map[string]string{
+				"metric1": {"env": "prod"},
+				"metric2": {"env": "staging"},
+			},
+		},
+		{
+			name: "label key with underscores is allowed",
+			input: map[string]string{
+				"metric1:my_key": "value",
+			},
+			wantResult: map[string]map[string]string{
+				"metric1": {"my_key": "value"},
+			},
+		},
+		{
+			name: "must match metric:label=value format - missing colon",
+			input: map[string]string{
+				"metric_only": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "must match metric:label=value format - multiple colons",
+			input: map[string]string{
+				"metric:label:extra": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "label value must not be empty",
+			input: map[string]string{
+				"metric1:label": "",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "metric name with underscores is allowed",
+			input: map[string]string{
+				"certmanager_certificate_ready_status:label": "value",
+			},
+			wantResult: map[string]map[string]string{
+				"certmanager_certificate_ready_status": {"label": "value"},
+			},
+		},
+		{
+			name: "metric name must be alphanumeric - contains special char",
+			input: map[string]string{
+				"my-metric:label": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "label value must be alphanumeric",
+			input: map[string]string{
+				"metric1:label": "value-with-dashes",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "label key must not start with a number",
+			input: map[string]string{
+				"metric1:1label": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "forbidden label key - name",
+			input: map[string]string{
+				"metric1:name": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "forbidden label key - namespace",
+			input: map[string]string{
+				"metric1:namespace": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "forbidden label key - issuer_name",
+			input: map[string]string{
+				"metric1:issuer_name": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "forbidden label key - issuer_kind",
+			input: map[string]string{
+				"metric1:issuer_kind": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "forbidden label key - issuer_group",
+			input: map[string]string{
+				"metric1:issuer_group": "value",
+			},
+			wantErrors: true,
+		},
+		{
+			name: "maximum 10 labels per metric",
+			input: func() map[string]string {
+				m := make(map[string]string)
+				for i := range 11 {
+					m[fmt.Sprintf("metric1:label%d", i)] = fmt.Sprintf("value%d", i)
+				}
+				return m
+			}(),
+			wantErrors: true,
+		},
+		{
+			name: "exactly 10 labels per metric is allowed",
+			input: func() map[string]string {
+				m := make(map[string]string)
+				for i := range 10 {
+					m[fmt.Sprintf("metric1:label%d", i)] = fmt.Sprintf("value%d", i)
+				}
+				return m
+			}(),
+			wantResult: func() map[string]map[string]string {
+				r := map[string]map[string]string{"metric1": {}}
+				for i := range 10 {
+					r["metric1"][fmt.Sprintf("label%d", i)] = fmt.Sprintf("value%d", i)
+				}
+				return r
+			}(),
+		},
+		{
+			name: "duplicate label keys silently overwrite",
+			input: func() map[string]string {
+				m := map[string]string{"metric1:env": "prod"}
+				m["metric1:env"] = "staging"
+				return m
+			}(),
+			wantResult: map[string]map[string]string{
+				"metric1": {"env": "staging"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, errs := parseAndValidateMetricLabels(tt.input, nil)
+
+			if tt.wantErrors && len(errs) == 0 {
+				t.Errorf("expected errors, got none")
+			}
+			if !tt.wantErrors && len(errs) > 0 {
+				t.Errorf("unexpected errors: %v", errs)
+			}
+			if tt.wantResult != nil && !reflect.DeepEqual(got, tt.wantResult) {
+				t.Errorf("expected result %v, got %v", tt.wantResult, got)
+			}
+		})
+	}
+}

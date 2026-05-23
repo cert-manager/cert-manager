@@ -73,7 +73,7 @@ func TestMetricsController(t *testing.T) {
 	challengesInformer := cmFactory.Acme().V1().Challenges()
 	certsInformer := cmFactory.Certmanager().V1().Certificates()
 	metricsHandler.SetupACMECollector(challengesInformer.Lister())
-	metricsHandler.SetupCertificateCollector(certsInformer.Lister())
+	metricsHandler.SetupCertificateCollector(certsInformer.Lister(), nil)
 
 	server := metricsHandler.NewServer(ln)
 

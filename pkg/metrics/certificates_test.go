@@ -257,7 +257,7 @@ func TestCertificateMetrics(t *testing.T) {
 			err := certsInformer.Informer().GetIndexer().Add(test.crt)
 			assert.NoError(t, err)
 
-			m.SetupCertificateCollector(certsInformer.Lister())
+			m.SetupCertificateCollector(certsInformer.Lister(), nil)
 
 			if err := testutil.CollectAndCompare(m.certificateCollector,
 				strings.NewReader(notAfterMetadata+test.expectedNotAfter),
@@ -378,7 +378,7 @@ func TestCertificateCache(t *testing.T) {
 	err = certsInformer.Informer().GetIndexer().Add(crt3)
 	assert.NoError(t, err)
 
-	m.SetupCertificateCollector(certsInformer.Lister())
+	m.SetupCertificateCollector(certsInformer.Lister(), nil)
 
 	// Check all three metrics exist
 	if err := testutil.CollectAndCompare(m.certificateCollector,
