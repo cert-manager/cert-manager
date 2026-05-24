@@ -174,6 +174,13 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 		*out = new(sharedv1alpha1.Duration)
 		**out = **in
 	}
+	if in.MetricStaticLabels != nil {
+		in, out := &in.MetricStaticLabels, &out.MetricStaticLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
