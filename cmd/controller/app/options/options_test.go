@@ -27,6 +27,7 @@ import (
 func TestEnabledControllers(t *testing.T) {
 	tests := map[string]struct {
 		controllers []string
+		namespace   string
 		expEnabled  sets.Set[string]
 	}{
 		"if no controllers enabled, return empty": {
@@ -45,7 +46,7 @@ func TestEnabledControllers(t *testing.T) {
 			controllers: []string{"*"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...),
 		},
-		"if all controllers enabled, some disabled, return all controllers with disabled": {
+		"if all controllers enabled, some disabled, return all controllers without disabled": {
 			controllers: []string{"*", "-clusterissuers", "-issuers"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},
@@ -53,9 +54,20 @@ func TestEnabledControllers(t *testing.T) {
 			controllers: []string{"-clusterissuers", "-issuers"},
 			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete("clusterissuers", "issuers"),
 		},
-		"if both enabled and disabled controllers are specified, return specified controllers": {
-			controllers: []string{"foo", "-bar"},
-			expEnabled:  sets.New("foo"),
+		"if namespace set, remove cluster-scoped controllers": {
+			controllers: []string{"*"},
+			namespace:   "test-ns",
+			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete(defaults.ClusterScopedControllers...),
+		},
+		"if namespace set with explicit controllers, preserve non-cluster-scoped and remove cluster-scoped": {
+			controllers: []string{"issuers", "clusterissuers"},
+			namespace:   "test-ns",
+			expEnabled:  sets.New("issuers"),
+		},
+		"if namespace set with wildcard and disabled controllers, remove cluster-scoped and disabled": {
+			controllers: []string{"*", "-issuers"},
+			namespace:   "test-ns",
+			expEnabled:  sets.New(defaults.DefaultEnabledControllers...).Delete(defaults.ClusterScopedControllers...).Delete("issuers"),
 		},
 	}
 
@@ -63,12 +75,13 @@ func TestEnabledControllers(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := config.ControllerConfiguration{
 				Controllers: test.controllers,
+				Namespace:   test.namespace,
 			}
 
 			got := EnabledControllers(&o)
 			if !got.Equal(test.expEnabled) {
-				t.Errorf("got unexpected enabled, exp=%s got=%s",
-					test.expEnabled, got)
+				t.Errorf("got unexpected enabled controllers, exp=%v got=%v",
+					sets.List(test.expEnabled), sets.List(got))
 			}
 		})
 	}
