@@ -27,6 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/cobra"
@@ -193,6 +194,7 @@ func loadConfigFromFile(
 }
 
 // - Must match `metric_name:label_key=label_value` format
+// - Metric name must be a supported certificate metric
 // - Maximum of 10 labels per metric
 // - Label key must contain only alphanumeric characters and underscores
 // - Label value must not be empty
@@ -215,21 +217,33 @@ func parseAndValidateMetricLabels(metricStaticLabels map[string]string, fldPath 
 		}
 		metric, label := metricAndLabel[0], metricAndLabel[1]
 		if len(metric) == 0 || !isAlphaNumericOrUnderscore(metric) {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel"), metric, "must be alphanumeric"))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), metric, "must be alphanumeric"))
 			continue
 		}
+
+		if !sets.NewString(metrics.MetricsSupportingStaticLabels...).Has(metric) {
+			allErrors = append(allErrors, field.NotSupported(fldPath.Child("MetricStaticLabels").Child(key), metric, metrics.MetricsSupportingStaticLabels))
+			continue
+		}
+
 		if len(label) == 0 || !isAlphaNumericOrUnderscore(label) {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel"), label, "must be alphanumeric"))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), label, "must be alphanumeric"))
 			continue
 		}
 
 		if !doesNotStartWithNumber(label) {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel"), label, "cannot start with a number"))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), label, "cannot start with a number"))
 			continue
 		}
 
 		if forbiddenLabelKeys.Has(label) {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel").Child(key), key, "cannot be used as a label key"))
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels").Key(key), label, "cannot be used as a label key"))
+			continue
+		}
+
+		labelValue := metricStaticLabels[key]
+		if len(labelValue) == 0 || !isAlphaNumericOrUnderscore(labelValue) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels").Key(key), key, "must be alphanumeric"))
 			continue
 		}
 
@@ -237,18 +251,12 @@ func parseAndValidateMetricLabels(metricStaticLabels map[string]string, fldPath 
 			result[metric] = map[string]string{}
 		}
 
-		labelValue := metricStaticLabels[key]
-		if len(labelValue) == 0 || !isAlphaNumericOrUnderscore(labelValue) {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel").Child(key), key, "must be alphanumeric"))
+		if len(result[metric]) >= MAX_LABELS_PER_METRIC {
+			allErrors = append(allErrors, field.Forbidden(fldPath.Child("MetricStaticLabels").Key(key), fmt.Sprintf("cannot have more than %d labels per metric", MAX_LABELS_PER_METRIC)))
 			continue
 		}
 
 		result[metric][label] = labelValue
-		if len(result[metric]) > MAX_LABELS_PER_METRIC {
-			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabel").Child(key), key, fmt.Sprintf("cannot have more than %d labels", MAX_LABELS_PER_METRIC)))
-			continue
-		}
-
 	}
 
 	return result, allErrors

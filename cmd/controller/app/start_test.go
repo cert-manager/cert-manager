@@ -306,40 +306,40 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 		{
 			name: "valid single metric label",
 			input: map[string]string{
-				"metric1:environment": "production",
+				"certmanager_certificate_ready_status:environment": "production",
 			},
 			wantResult: map[string]map[string]string{
-				"metric1": {"environment": "production"},
+				"certmanager_certificate_ready_status": {"environment": "production"},
 			},
 		},
 		{
 			name: "valid multiple labels for same metric",
 			input: map[string]string{
-				"metric1:env":    "prod",
-				"metric1:region": "useast",
+				"certmanager_certificate_ready_status:env":    "prod",
+				"certmanager_certificate_ready_status:region": "useast",
 			},
 			wantResult: map[string]map[string]string{
-				"metric1": {"env": "prod", "region": "useast"},
+				"certmanager_certificate_ready_status": {"env": "prod", "region": "useast"},
 			},
 		},
 		{
 			name: "valid labels for different metrics",
 			input: map[string]string{
-				"metric1:env": "prod",
-				"metric2:env": "staging",
+				"certmanager_certificate_ready_status:env":                 "prod",
+				"certmanager_certificate_expiration_timestamp_seconds:env": "staging",
 			},
 			wantResult: map[string]map[string]string{
-				"metric1": {"env": "prod"},
-				"metric2": {"env": "staging"},
+				"certmanager_certificate_ready_status":                 {"env": "prod"},
+				"certmanager_certificate_expiration_timestamp_seconds": {"env": "staging"},
 			},
 		},
 		{
 			name: "label key with underscores is allowed",
 			input: map[string]string{
-				"metric1:my_key": "value",
+				"certmanager_certificate_ready_status:my_key": "value",
 			},
 			wantResult: map[string]map[string]string{
-				"metric1": {"my_key": "value"},
+				"certmanager_certificate_ready_status": {"my_key": "value"},
 			},
 		},
 		{
@@ -359,7 +359,7 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 		{
 			name: "label value must not be empty",
 			input: map[string]string{
-				"metric1:label": "",
+				"certmanager_certificate_ready_status:label": "",
 			},
 			wantErrors: true,
 		},
@@ -373,6 +373,13 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 			},
 		},
 		{
+			name: "unknown metric name is rejected",
+			input: map[string]string{
+				"unknown_metric:label": "value",
+			},
+			wantErrors: true,
+		},
+		{
 			name: "metric name must be alphanumeric - contains special char",
 			input: map[string]string{
 				"my-metric:label": "value",
@@ -382,49 +389,49 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 		{
 			name: "label value must be alphanumeric",
 			input: map[string]string{
-				"metric1:label": "value-with-dashes",
+				"certmanager_certificate_ready_status:label": "value-with-dashes",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "label key must not start with a number",
 			input: map[string]string{
-				"metric1:1label": "value",
+				"certmanager_certificate_ready_status:1label": "value",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "forbidden label key - name",
 			input: map[string]string{
-				"metric1:name": "value",
+				"certmanager_certificate_ready_status:name": "value",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "forbidden label key - namespace",
 			input: map[string]string{
-				"metric1:namespace": "value",
+				"certmanager_certificate_ready_status:namespace": "value",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "forbidden label key - issuer_name",
 			input: map[string]string{
-				"metric1:issuer_name": "value",
+				"certmanager_certificate_ready_status:issuer_name": "value",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "forbidden label key - issuer_kind",
 			input: map[string]string{
-				"metric1:issuer_kind": "value",
+				"certmanager_certificate_ready_status:issuer_kind": "value",
 			},
 			wantErrors: true,
 		},
 		{
 			name: "forbidden label key - issuer_group",
 			input: map[string]string{
-				"metric1:issuer_group": "value",
+				"certmanager_certificate_ready_status:issuer_group": "value",
 			},
 			wantErrors: true,
 		},
@@ -433,7 +440,7 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 			input: func() map[string]string {
 				m := make(map[string]string)
 				for i := range 11 {
-					m[fmt.Sprintf("metric1:label%d", i)] = fmt.Sprintf("value%d", i)
+					m[fmt.Sprintf("certmanager_certificate_ready_status:label%d", i)] = fmt.Sprintf("value%d", i)
 				}
 				return m
 			}(),
@@ -444,14 +451,14 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 			input: func() map[string]string {
 				m := make(map[string]string)
 				for i := range 10 {
-					m[fmt.Sprintf("metric1:label%d", i)] = fmt.Sprintf("value%d", i)
+					m[fmt.Sprintf("certmanager_certificate_ready_status:label%d", i)] = fmt.Sprintf("value%d", i)
 				}
 				return m
 			}(),
 			wantResult: func() map[string]map[string]string {
-				r := map[string]map[string]string{"metric1": {}}
+				r := map[string]map[string]string{"certmanager_certificate_ready_status": {}}
 				for i := range 10 {
-					r["metric1"][fmt.Sprintf("label%d", i)] = fmt.Sprintf("value%d", i)
+					r["certmanager_certificate_ready_status"][fmt.Sprintf("label%d", i)] = fmt.Sprintf("value%d", i)
 				}
 				return r
 			}(),
@@ -459,12 +466,12 @@ func TestParseAndValidateMetricLabels(t *testing.T) {
 		{
 			name: "duplicate label keys silently overwrite",
 			input: func() map[string]string {
-				m := map[string]string{"metric1:env": "prod"}
-				m["metric1:env"] = "staging"
+				m := map[string]string{"certmanager_certificate_ready_status:env": "prod"}
+				m["certmanager_certificate_ready_status:env"] = "staging"
 				return m
 			}(),
 			wantResult: map[string]map[string]string{
-				"metric1": {"env": "staging"},
+				"certmanager_certificate_ready_status": {"env": "staging"},
 			},
 		},
 	}

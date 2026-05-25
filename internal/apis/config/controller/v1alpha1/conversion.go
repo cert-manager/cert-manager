@@ -24,8 +24,8 @@ import (
 )
 
 // Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration is
-// manually defined because MetricStaticLabels and ParsedMetricStaticLabels are
-// internal-only fields that do not exist in the v1alpha1 API type.
+// manually defined because ParsedMetricStaticLabels is an internal-only field
+// that does not exist in the v1alpha1 API type.
 func Convert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *controller.ControllerConfiguration, out *controllerv1alpha1.ControllerConfiguration, s conversion.Scope) error {
 	return autoConvert_controller_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in, out, s)
 }
