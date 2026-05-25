@@ -197,9 +197,10 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 	maps.Copy(podLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
-	var runtimeClassName *string = nil
+	var runtimeClassName *string
 	if s.ACMEOptions.HTTP01SolverRuntimeClassName != "" {
-		runtimeClassName = &s.ACMEOptions.HTTP01SolverRuntimeClassName
+ 		runtimeClassNameValue := s.ACMEOptions.HTTP01SolverRuntimeClassName
+ 		runtimeClassName = &runtimeClassNameValue
 	}
 
 	return &corev1.Pod{
