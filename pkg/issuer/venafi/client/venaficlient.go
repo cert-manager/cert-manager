@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -104,15 +105,22 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 	return newWithCache(namespace, secretsLister, issuer, metrics, logger, userAgent, nil)
 }
 
-// NewCachingBuilder returns a VenafiClientBuilder that maintains a token cache
-// across calls. The returned builder is safe for concurrent use.
-// Use this instead of New when the builder is called repeatedly for the same
-// issuer (e.g. from a long-lived controller struct), so that a valid cached
-// token can be used to continue serving requests during a transient endpoint
-// outage.
+// NewCachingBuilder returns a VenafiClientBuilder that maintains a per-issuer
+// token cache across calls. Tokens are keyed by issuer UID so that issuers
+// with different credentials never share a cached token.
+// The returned builder is safe for concurrent use.
 func NewCachingBuilder() VenafiClientBuilder {
-	cache := &tokenCache{}
+	var mu sync.Mutex
+	caches := make(map[string]*tokenCache)
 	return func(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
+		uid := string(issuer.GetUID())
+		mu.Lock()
+		cache := caches[uid]
+		if cache == nil {
+			cache = &tokenCache{}
+			caches[uid] = cache
+		}
+		mu.Unlock()
 		return newWithCache(namespace, secretsLister, issuer, m, logger, userAgent, cache)
 	}
 }
