@@ -53,6 +53,9 @@ func (c *Client) registerRFC(ctx context.Context, acct *Account, prompt func(tos
 		Contact: acct.Contact,
 	}
 	if c.dir.Terms != "" {
+		if prompt == nil {
+			return nil, errors.New("acme: missing Manager.Prompt to accept server's terms of service")
+		}
 		req.TermsAgreed = prompt(c.dir.Terms)
 	}
 
@@ -206,6 +209,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 		NotBefore   string        `json:"notBefore,omitempty"`
 		NotAfter    string        `json:"notAfter,omitempty"`
 		Profile     string        `json:"profile,omitempty"`
+		Replaces    string        `json:"replaces,omitempty"`
 	}{}
 	for _, v := range id {
 		req.Identifiers = append(req.Identifiers, wireAuthzID{
@@ -228,6 +232,13 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 				return nil, fmt.Errorf("%w %s", ErrProfileNotInSetOfSupportedProfiles, profileName)
 			}
 			req.Profile = profileName
+		case orderReplacesOpt:
+			// Per RFC 9773 clients SHOULD NOT include replaces unless the server
+			// advertises renewalInfo support in its directory object.
+			if dir.RenewalInfo == "" {
+				return nil, ErrCADoesNotSupportARI
+			}
+			req.Replaces = string(o)
 		default:
 			// Package's fault if we let this happen.
 			panic(fmt.Sprintf("unsupported order option type %T", o))
@@ -328,6 +339,7 @@ func responseOrder(res *http.Response) (*Order, error) {
 		AuthzURLs:   v.Authorizations,
 		FinalizeURL: v.Finalize,
 		CertURL:     v.Certificate,
+		RetryAfter:  retryAfter(res.Header.Get("Retry-After")),
 	}
 	for _, id := range v.Identifiers {
 		o.Identifiers = append(o.Identifiers, AuthzID{Type: id.Type, Value: id.Value})
