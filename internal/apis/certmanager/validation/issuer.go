@@ -430,6 +430,16 @@ func ValidateVenafiCloud(c *certmanager.VenafiCloud, fldPath *field.Path) (el fi
 	return el
 }
 
+func ValidateVenafiNGTS(ngts *certmanager.VenafiNGTS, fldPath *field.Path) (el field.ErrorList) {
+	if ngts.TSGID == "" {
+		el = append(el, field.Required(fldPath.Child("tsgID"), ""))
+	}
+	if ngts.CredentialsRef.Name == "" {
+		el = append(el, field.Required(fldPath.Child("credentialsRef", "name"), ""))
+	}
+	return el
+}
+
 func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Path) (el field.ErrorList) {
 	if iss.Zone == "" {
 		el = append(el, field.Required(fldPath.Child("zone"), ""))
@@ -443,12 +453,16 @@ func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Pa
 		unionCount++
 		el = append(el, ValidateVenafiCloud(iss.Cloud, fldPath.Child("cloud"))...)
 	}
+	if iss.NGTS != nil {
+		unionCount++
+		el = append(el, ValidateVenafiNGTS(iss.NGTS, fldPath.Child("ngts"))...)
+	}
 
 	if unionCount == 0 {
-		el = append(el, field.Required(fldPath, "please supply one of: tpp, cloud"))
+		el = append(el, field.Required(fldPath, "please supply one of: tpp, cloud, ngts"))
 	}
 	if unionCount > 1 {
-		el = append(el, field.Forbidden(fldPath, "please supply one of: tpp, cloud"))
+		el = append(el, field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"))
 	}
 
 	return el

@@ -1842,7 +1842,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				Zone: "a\\b\\c",
 			},
 			errs: []*field.Error{
-				field.Required(fldPath, "please supply one of: tpp, cloud"),
+				field.Required(fldPath, "please supply one of: tpp, cloud, ngts"),
 			},
 		},
 		"multiple configuration": {
@@ -1854,7 +1854,56 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				Cloud: &cmapi.VenafiCloud{},
 			},
 			errs: []*field.Error{
-				field.Forbidden(fldPath, "please supply one of: tpp, cloud"),
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
+			},
+		},
+		"valid NGTS configuration": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "TestApp\\Default",
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+		},
+		"NGTS and TPP both set": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "TestApp\\Default",
+				TPP: &cmapi.VenafiTPP{
+					URL: "https://tpp.example.com/vedsdk",
+				},
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
+			},
+		},
+		"NGTS and Cloud both set": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone:  "TestApp\\Default",
+				Cloud: &cmapi.VenafiCloud{},
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
 			},
 		},
 	}
@@ -1916,6 +1965,78 @@ func TestValidateVenafiTPP(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiTPP(s.cfg, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Fatalf("Expected %v but got %v", s.errs, errs)
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateVenafiNGTS(t *testing.T) {
+	fldPath := field.NewPath("test")
+	scenarios := map[string]struct {
+		cfg  *cmapi.VenafiNGTS
+		errs []*field.Error
+	}{
+		"valid NGTS config": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:           "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint: "https://auth.example.com/oauth2/token",
+				TSGID:         "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+		},
+		"valid NGTS config without optional fields": {
+			cfg: &cmapi.VenafiNGTS{
+				TSGID: "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+		},
+		"missing tsgID": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:           "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint: "https://auth.example.com/oauth2/token",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("tsgID"), ""),
+			},
+		},
+		"missing credentialsRef name": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:            "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint:  "https://auth.example.com/oauth2/token",
+				TSGID:          "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("credentialsRef", "name"), ""),
+			},
+		},
+		"missing all required fields": {
+			cfg: &cmapi.VenafiNGTS{},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("tsgID"), ""),
+				field.Required(fldPath.Child("credentialsRef", "name"), ""),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateVenafiNGTS(s.cfg, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Fatalf("Expected %v but got %v", s.errs, errs)
 			}

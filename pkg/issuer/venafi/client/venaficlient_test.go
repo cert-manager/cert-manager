@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	vcert "github.com/Venafi/vcert/v5"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
@@ -367,6 +368,90 @@ func TestConfigForIssuerT(t *testing.T) {
 					t.Errorf("got unexpected password: %s", pass)
 				}
 				checkZone(t, zone, cnf)
+			},
+			expectedErr: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.runTest(t)
+		})
+	}
+}
+
+func TestConfigForIssuerNGTS(t *testing.T) {
+	zone := "TestApp\\Default"
+	tsgID := "123456789"
+	ngtsURL := "https://api.example.paloaltonetworks.com/ngts"
+	tokenEndpoint := "https://auth.example.com/oauth2/token"
+	clientID := "test-client-id"
+	clientSecret := "test-client-secret"
+	ngtsSecretName := "ngts-secret"
+
+	baseIssuer := gen.Issuer("venafi-ngts-issuer",
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
+	)
+
+	ngtsIssuer := gen.IssuerFrom(baseIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			Zone: zone,
+			NGTS: &cmapi.VenafiNGTS{
+				URL:           ngtsURL,
+				TokenEndpoint: tokenEndpoint,
+				TSGID:         tsgID,
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: ngtsSecretName,
+				},
+			},
+		}),
+	)
+
+	tests := map[string]testConfigForIssuerT{
+		"if NGTS but getting secret fails, should error": {
+			iss:           ngtsIssuer,
+			secretsLister: generateSecretLister(nil, errors.New("secret not found")),
+			CheckFn:       checkNoConfigReturned,
+			expectedErr:   true,
+		},
+		"if NGTS and secret returns client credentials, should return NGTS config": {
+			iss: ngtsIssuer,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					ngtsClientIDKey:     []byte(clientID),
+					ngtsClientSecretKey: []byte(clientSecret),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if cnf == nil {
+					t.Fatal("expected config but got nil")
+					return
+				}
+				if cnf.ConnectorType != endpoint.ConnectorTypeNGTS {
+					t.Errorf("expected ConnectorTypeNGTS, got %v", cnf.ConnectorType)
+				}
+				if cnf.BaseUrl != ngtsURL {
+					t.Errorf("expected BaseUrl %q, got %q", ngtsURL, cnf.BaseUrl)
+				}
+				if cnf.Zone != zone {
+					t.Errorf("expected zone %q, got %q", zone, cnf.Zone)
+				}
+				if cnf.Credentials == nil {
+					t.Fatal("expected credentials but got nil")
+					return
+				}
+				if cnf.Credentials.ClientId != clientID {
+					t.Errorf("expected clientId %q, got %q", clientID, cnf.Credentials.ClientId)
+				}
+				if cnf.Credentials.ClientSecret != clientSecret {
+					t.Errorf("expected clientSecret %q, got %q", clientSecret, cnf.Credentials.ClientSecret)
+				}
+				if cnf.Credentials.Scope != "tsg_id:"+tsgID {
+					t.Errorf("expected scope %q, got %q", "tsg_id:"+tsgID, cnf.Credentials.Scope)
+				}
+				if cnf.Credentials.TokenURL != tokenEndpoint {
+					t.Errorf("expected TokenURL %q, got %q", tokenEndpoint, cnf.Credentials.TokenURL)
+				}
 			},
 			expectedErr: false,
 		},

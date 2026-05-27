@@ -1828,6 +1828,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: cloud
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiCloud
+    - name: ngts
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiNGTS
     - name: tpp
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiTPP
@@ -1835,6 +1838,23 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiNGTS
+  map:
+    fields:
+    - name: credentialsRef
+      type:
+        namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.LocalObjectReference
+      default: {}
+    - name: tokenEndpoint
+      type:
+        scalar: string
+    - name: tsgID
+      type:
+        scalar: string
+      default: ""
+    - name: url
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiTPP
   map:
     fields:
