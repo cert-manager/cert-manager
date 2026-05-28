@@ -30,6 +30,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/controller"
+	clusterissuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -121,7 +122,9 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.Metrics.SetupACMECollector(ctx.SharedInformerFactory.Acme().V1().Challenges().Lister())
 	ctx.Metrics.SetupCertificateCollector(ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister())
 	ctx.Metrics.SetupIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister())
-	ctx.Metrics.SetupClusterIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister())
+	if enabledControllers.Has(clusterissuerscontroller.ControllerName) {
+		ctx.Metrics.SetupClusterIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister())
+	}
 	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {
