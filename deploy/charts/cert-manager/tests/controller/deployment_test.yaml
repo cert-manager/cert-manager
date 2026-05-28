@@ -424,3 +424,11 @@ tests:
       - equal:
           path: spec.template.spec.hostUsers
           value: false
+
+  - it: should set runtimeClassName when specified
+    set:
+      runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
