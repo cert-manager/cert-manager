@@ -71,7 +71,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		clientBuilder: venaficlient.NewCachingBuilder(),
+		clientBuilder: venaficlient.New,
 		metrics:       ctx.Metrics,
 		cmClient:      ctx.CMClient,
 		userAgent:     ctx.RESTConfig.UserAgent,

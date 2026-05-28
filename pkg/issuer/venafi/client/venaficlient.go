@@ -19,12 +19,9 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
-	"sync"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -59,6 +56,22 @@ const (
 	ngtsClientSecretKey = "client-secret"
 )
 
+// AuthFailedError is returned by VerifyCredentials when the Venafi endpoint
+// rejected the supplied credentials (e.g. HTTP 401/403). It is distinct from
+// a transient network error, which does not wrap this type.
+type AuthFailedError struct {
+	// Err is the underlying error returned by the Venafi SDK.
+	Err error
+}
+
+func (e AuthFailedError) Error() string {
+	return "OAuth token request failed: " + e.Err.Error()
+}
+
+func (e AuthFailedError) Unwrap() error {
+	return e.Err
+}
+
 type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
 	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error)
 
@@ -87,7 +100,6 @@ type Venafi struct {
 	config      *vcert.Config
 	metrics     *metrics.Metrics
 	logger      logr.Logger
-	tokenCache  *tokenCache
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -101,31 +113,7 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
-	return newWithCache(namespace, secretsLister, issuer, metrics, logger, userAgent, nil)
-}
-
-// NewCachingBuilder returns a VenafiClientBuilder that maintains a per-issuer
-// token cache across calls. Tokens are keyed by issuer UID so that issuers
-// with different credentials never share a cached token.
-// The returned builder is safe for concurrent use.
-func NewCachingBuilder() VenafiClientBuilder {
-	var mu sync.Mutex
-	caches := make(map[string]*tokenCache)
-	return func(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
-		uid := string(issuer.GetUID())
-		mu.Lock()
-		cache := caches[uid]
-		if cache == nil {
-			cache = &tokenCache{}
-			caches[uid] = cache
-		}
-		mu.Unlock()
-		return newWithCache(namespace, secretsLister, issuer, m, logger, userAgent, cache)
-	}
-}
-
-func newWithCache(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string, cache *tokenCache) (Interface, error) {
+func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace, userAgent)
 	if err != nil {
 		return nil, err
@@ -181,7 +169,6 @@ func newWithCache(namespace string, secretsLister internalinformers.SecretLister
 		config:        cfg,
 		metrics:       m,
 		logger:        logger,
-		tokenCache:    cache,
 	}
 
 	// Since we did not authenticate when creating the client, authenticate
@@ -474,14 +461,6 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
-// isNetworkError returns true when err originates from a transport-level
-// failure (DNS, TCP, TLS) rather than an HTTP-level auth response.
-func isNetworkError(err error) bool {
-	var netErr *net.OpError
-	var urlErr *url.Error
-	return err != nil && (errors.As(err, &netErr) || errors.As(err, &urlErr))
-}
-
 // VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud.
 // It records Prometheus metrics and logs the outcome at the appropriate level.
 // On authentication failure (invalid credentials) it returns AuthFailedError so callers can
@@ -531,10 +510,6 @@ func (v *Venafi) verifyCredentialsOnce() error {
 			APIKey: v.config.Credentials.APIKey,
 		})
 		if err != nil {
-			if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
-				v.logger.Info("Cloud authenticate failed due to endpoint unavailability; continuing with cached credentials", "error", err)
-				return nil
-			}
 			return AuthFailedError{Err: fmt.Errorf("cloudClient.Authenticate: %v", err)}
 		}
 		return nil
@@ -545,18 +520,11 @@ func (v *Venafi) verifyCredentialsOnce() error {
 		}
 
 		if v.config.Credentials.AccessToken != "" {
-			resp, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
+			_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
 				AccessToken: v.config.Credentials.AccessToken,
 			})
 			if err != nil {
-				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
-					v.logger.Info("TPP VerifyAccessToken failed due to endpoint unavailability; continuing with cached token", "error", err)
-					return nil
-				}
 				return AuthFailedError{Err: fmt.Errorf("tppClient.VerifyAccessToken: %v", err)}
-			}
-			if v.tokenCache != nil && resp.ValidFor > 0 {
-				v.tokenCache.set(v.config.Credentials.AccessToken, time.Now().Add(time.Duration(resp.ValidFor)*time.Second))
 			}
 			return nil
 		}
@@ -573,26 +541,12 @@ func (v *Venafi) verifyCredentialsOnce() error {
 				Scope:    tppScopes,
 			})
 			if err != nil {
-				if isNetworkError(err) && v.tokenCache != nil && v.tokenCache.isValid() {
-					// Endpoint is unreachable but we have a valid cached token; inject it so
-					// subsequent API calls can proceed until the token expires.
-					cachedToken, _ := v.tokenCache.get()
-					if authErr := v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: cachedToken}); authErr == nil {
-						v.logger.Info("TPP GetRefreshToken failed due to endpoint unavailability; using cached token", "error", err)
-						return nil
-					}
-				}
 				return AuthFailedError{Err: fmt.Errorf("tppClient.GetRefreshToken: %v", err)}
 			}
 
 			// Ensure that the access_token is stored on the tppClient object.
 			if authErr := v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: resp.Access_token}); authErr != nil {
 				return AuthFailedError{Err: fmt.Errorf("tppClient.Authenticate: %v", authErr)}
-			}
-
-			// Update the cache with the newly obtained token and its expiry.
-			if v.tokenCache != nil && resp.Expires > 0 {
-				v.tokenCache.set(resp.Access_token, time.Unix(int64(resp.Expires), 0))
 			}
 			return nil
 		}

@@ -18,6 +18,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -559,6 +560,24 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.runTppCaTest(t)
 		})
+	}
+}
+
+func TestAuthFailedError_ErrorAndUnwrap(t *testing.T) {
+	underlying := fmt.Errorf("401 Unauthorized")
+	err := AuthFailedError{Err: underlying}
+
+	if err.Error() != "OAuth token request failed: 401 Unauthorized" {
+		t.Errorf("Error() = %q", err.Error())
+	}
+	if !errors.Is(err, underlying) {
+		t.Error("errors.Is should find underlying error through Unwrap chain")
+	}
+
+	var authErr AuthFailedError
+	wrapped := fmt.Errorf("client.VerifyCredentials: %w", err)
+	if !errors.As(wrapped, &authErr) {
+		t.Error("errors.As should find AuthFailedError through wrapping chain")
 	}
 }
 
