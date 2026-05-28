@@ -2056,7 +2056,7 @@ extraEnv:
 > {}
 > ```
 
-Resources to provide to the cert-manager controller pod.  
+Resources to provide to the cert-manager startupapicheck pod.  
   
 For example:
 
