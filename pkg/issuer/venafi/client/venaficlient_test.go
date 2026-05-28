@@ -19,6 +19,8 @@ package client
 import (
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"testing"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -559,6 +561,53 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.runTppCaTest(t)
+		})
+	}
+}
+
+func TestIsNetworkError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil is not a network error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "plain error is not a network error",
+			err:  fmt.Errorf("401 Unauthorized"),
+			want: false,
+		},
+		{
+			name: "AuthFailedError is not a network error",
+			err:  AuthFailedError{Err: fmt.Errorf("bad creds")},
+			want: false,
+		},
+		{
+			name: "net.OpError is a network error",
+			err:  &net.OpError{Op: "dial", Err: fmt.Errorf("connection refused")},
+			want: true,
+		},
+		{
+			name: "url.Error is a network error",
+			err:  &url.Error{Op: "Get", URL: "https://tpp.example.com", Err: fmt.Errorf("no such host")},
+			want: true,
+		},
+		{
+			name: "wrapped net.OpError is a network error",
+			err:  fmt.Errorf("outer: %w", &net.OpError{Op: "dial", Err: fmt.Errorf("timeout")}),
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isNetworkError(tt.err); got != tt.want {
+				t.Errorf("isNetworkError() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

@@ -19,9 +19,11 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -171,12 +173,6 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		logger:        logger,
 	}
 
-	// Since we did not authenticate when creating the client, authenticate
-	// now to verify the credentials passed. Ensure that upon leaving this
-	// function that credentials have been verified.
-	if err := v.VerifyCredentials(); err != nil {
-		return nil, err
-	}
 	return v, nil
 }
 
@@ -461,6 +457,14 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
+// isNetworkError returns true when err originates from a transport-level
+// failure (DNS, TCP, TLS) rather than an HTTP-level auth response.
+func isNetworkError(err error) bool {
+	var netErr *net.OpError
+	var urlErr *url.Error
+	return err != nil && (errors.As(err, &netErr) || errors.As(err, &urlErr))
+}
+
 // VerifyCredentials remotely verifies the credentials for the client, for both TPP and Cloud.
 // It records Prometheus metrics and logs the outcome at the appropriate level.
 // On authentication failure (invalid credentials) it returns AuthFailedError so callers can
@@ -468,7 +472,81 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 func (v *Venafi) VerifyCredentials() error {
 	start := time.Now()
 
-	err := v.verifyCredentialsOnce()
+	var err error
+	switch {
+	case v.ngtsClient != nil:
+		authErr := v.ngtsClient.Authenticate(&endpoint.Authentication{
+			ClientId:     v.config.Credentials.ClientId,
+			ClientSecret: v.config.Credentials.ClientSecret,
+			Scope:        v.config.Credentials.Scope,
+			TokenURL:     v.config.Credentials.TokenURL,
+		})
+		if authErr != nil {
+			if isNetworkError(authErr) {
+				err = fmt.Errorf("ngtsClient.Authenticate: %v", authErr)
+			} else {
+				err = AuthFailedError{Err: fmt.Errorf("ngtsClient.Authenticate: %v", authErr)}
+			}
+		}
+	case v.cloudClient != nil:
+		authErr := v.cloudClient.Authenticate(&endpoint.Authentication{
+			APIKey: v.config.Credentials.APIKey,
+		})
+		if authErr != nil {
+			if isNetworkError(authErr) {
+				err = fmt.Errorf("cloudClient.Authenticate: %v", authErr)
+			} else {
+				err = AuthFailedError{Err: fmt.Errorf("cloudClient.Authenticate: %v", authErr)}
+			}
+		}
+	case v.tppClient != nil:
+		switch {
+		case v.config.Credentials == nil:
+			err = AuthFailedError{Err: fmt.Errorf("credentials not configured")}
+		case v.config.Credentials.AccessToken != "":
+			_, authErr := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
+				AccessToken: v.config.Credentials.AccessToken,
+			})
+			if authErr != nil {
+				if isNetworkError(authErr) {
+					err = fmt.Errorf("tppClient.VerifyAccessToken: %v", authErr)
+				} else {
+					err = AuthFailedError{Err: fmt.Errorf("tppClient.VerifyAccessToken: %v", authErr)}
+				}
+			}
+		case v.config.Credentials.User != "" && v.config.Credentials.Password != "":
+			// Use vcert library GetRefreshToken which brings back a token pair.
+			// This includes the access_token which we set against the tppClient.
+			// Replaces usage of v.tppClient.Authenticate function which would
+			// have called the APIKey endpoint resulting in error.
+			resp, authErr := v.tppClient.GetRefreshToken(&endpoint.Authentication{
+				User:     v.config.Credentials.User,
+				Password: v.config.Credentials.Password,
+				ClientId: v.config.Credentials.ClientId,
+				Scope:    tppScopes,
+			})
+			if authErr != nil {
+				if isNetworkError(authErr) {
+					err = fmt.Errorf("tppClient.GetRefreshToken: %v", authErr)
+				} else {
+					err = AuthFailedError{Err: fmt.Errorf("tppClient.GetRefreshToken: %v", authErr)}
+				}
+			} else {
+				// Ensure that the access_token is stored on the tppClient object.
+				if authErr = v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: resp.Access_token}); authErr != nil {
+					if isNetworkError(authErr) {
+						err = fmt.Errorf("tppClient.Authenticate: %v", authErr)
+					} else {
+						err = AuthFailedError{Err: fmt.Errorf("tppClient.Authenticate: %v", authErr)}
+					}
+				}
+			}
+		default:
+			err = AuthFailedError{Err: fmt.Errorf("no TPP credentials configured")}
+		}
+	default:
+		err = fmt.Errorf("neither tppClient or cloudClient have been set")
+	}
 
 	duration := time.Since(start)
 	if v.metrics != nil {
@@ -482,72 +560,7 @@ func (v *Venafi) VerifyCredentials() error {
 
 	if err != nil {
 		v.logger.Error(err, "Venafi OAuth token request failed")
-	} else {
-		v.logger.Info("Venafi OAuth token request succeeded")
 	}
 
 	return err
-}
-
-func (v *Venafi) verifyCredentialsOnce() error {
-	switch {
-	case v.ngtsClient != nil:
-		err := v.ngtsClient.Authenticate(&endpoint.Authentication{
-			ClientId:     v.config.Credentials.ClientId,
-			ClientSecret: v.config.Credentials.ClientSecret,
-			Scope:        v.config.Credentials.Scope,
-			TokenURL:     v.config.Credentials.TokenURL,
-		})
-		if err != nil {
-			return fmt.Errorf("ngtsClient.Authenticate: %v", err)
-		}
-		return nil
-	case v.cloudClient != nil:
-		err := v.cloudClient.Authenticate(&endpoint.Authentication{
-			APIKey: v.config.Credentials.APIKey,
-		})
-		if err != nil {
-			return AuthFailedError{Err: fmt.Errorf("cloudClient.Authenticate: %v", err)}
-		}
-		return nil
-
-	case v.tppClient != nil:
-		if v.config.Credentials == nil {
-			return AuthFailedError{Err: fmt.Errorf("credentials not configured")}
-		}
-
-		if v.config.Credentials.AccessToken != "" {
-			_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
-				AccessToken: v.config.Credentials.AccessToken,
-			})
-			if err != nil {
-				return AuthFailedError{Err: fmt.Errorf("tppClient.VerifyAccessToken: %v", err)}
-			}
-			return nil
-		}
-
-		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
-			// Use vcert library GetRefreshToken which brings back a token pair.
-			// This includes the access_token which we set against the tppClient.
-			// Replaces usage of v.tppClient.Authenticate function which would
-			// have called the APIKey endpoint resulting in error.
-			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
-				User:     v.config.Credentials.User,
-				Password: v.config.Credentials.Password,
-				ClientId: v.config.Credentials.ClientId,
-				Scope:    tppScopes,
-			})
-			if err != nil {
-				return AuthFailedError{Err: fmt.Errorf("tppClient.GetRefreshToken: %v", err)}
-			}
-
-			// Ensure that the access_token is stored on the tppClient object.
-			if authErr := v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: resp.Access_token}); authErr != nil {
-				return AuthFailedError{Err: fmt.Errorf("tppClient.Authenticate: %v", authErr)}
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("neither tppClient or cloudClient have been set")
 }

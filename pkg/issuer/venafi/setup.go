@@ -58,6 +58,10 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 		return fmt.Errorf("error pinging Certificate Manager: %v", err)
 	}
 
+	if err = client.VerifyCredentials(); err != nil {
+		return fmt.Errorf("client.VerifyCredentials: %w", err)
+	}
+
 	// If it does not already have a 'ready' condition, we'll also log an event
 	// to make it really clear to users that this Issuer is ready.
 	if !apiutil.IssuerHasCondition(issuer, cmapi.IssuerCondition{
