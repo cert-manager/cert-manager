@@ -97,7 +97,7 @@ tools += yq=v4.53.2
 tools += ko=0.18.1
 # https://github.com/protocolbuffers/protobuf/releases
 # renovate: datasource=github-releases packageName=protocolbuffers/protobuf
-tools += protoc=v34.1
+tools += protoc=v35.0
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
 tools += trivy=v0.70.0
@@ -132,7 +132,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.6
+tools += crane=v0.21.5
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
@@ -635,10 +635,10 @@ $(DOWNLOAD_DIR)/tools/ko@$(KO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-protoc_linux_amd64_SHA256SUM=af27ea66cd26938fe48587804ca7d4817457a08350021a1c6e23a27ccc8c6904
-protoc_linux_arm64_SHA256SUM=31c5e9e3c7bf013cf41fb97765ee255c140024a6b175b6cc9b64beddd7c23ba7
-protoc_darwin_amd64_SHA256SUM=ab124429c1f49951f03b6c0c0e911fec04e2c7c20de5c935e0cde7353bbd016c
-protoc_darwin_arm64_SHA256SUM=2c7e92b8b578916937df132b3032e2e8e6c170862ecf7a8333094a6f3d03650c
+protoc_linux_amd64_SHA256SUM=a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc
+protoc_linux_arm64_SHA256SUM=36b518ac14d90351cc6598228ed2bbe5afe4e357b1af470b07e0ec1609875de2
+protoc_darwin_amd64_SHA256SUM=3580c2d115fccb5b0239960c8f70f8da14787b1973a46b2f39c315ad71c11e01
+protoc_darwin_arm64_SHA256SUM=45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
