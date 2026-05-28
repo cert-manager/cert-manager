@@ -461,13 +461,10 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
-// VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud.
+// VerifyCredentials remotely verifies the credentials for the client, for both TPP and Cloud.
 // It records Prometheus metrics and logs the outcome at the appropriate level.
 // On authentication failure (invalid credentials) it returns AuthFailedError so callers can
-// distinguish that from a transient network/outage error.
-// When a TokenCache is configured and a valid cached token exists, a transient network error
-// causes VerifyCredentials to fall back to the cached token so that certificate signing can
-// continue during an endpoint outage.
+// distinguish that from a transient network or endpoint outage error.
 func (v *Venafi) VerifyCredentials() error {
 	start := time.Now()
 
