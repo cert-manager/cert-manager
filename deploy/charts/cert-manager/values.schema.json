@@ -1699,7 +1699,7 @@
     },
     "helm-values.startupapicheck.resources": {
       "default": {},
-      "description": "Resources to provide to the cert-manager controller pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
+      "description": "Resources to provide to the cert-manager startupapicheck pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
     },
     "helm-values.startupapicheck.securityContext": {
