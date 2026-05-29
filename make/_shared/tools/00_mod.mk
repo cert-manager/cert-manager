@@ -106,7 +106,7 @@ tools += trivy=v0.70.0
 tools += ytt=v0.55.0
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.74.1
+tools += rclone=v1.74.2
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.30.0
@@ -160,7 +160,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.2.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.15.4
+tools += goreleaser=v2.16.0
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.44.0
@@ -187,10 +187,10 @@ tools += govulncheck=v1.3.0
 tools += operator-sdk=v1.42.2
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.92.0
+tools += gh=v2.93.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
-tools += preflight=1.18.0
+tools += preflight=1.19.0
 # https://github.com/daixiang0/gci/releases
 # renovate: datasource=github-releases packageName=daixiang0/gci
 tools += gci=v0.14.0
@@ -214,7 +214,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20260512234627-ef417d054102
+tools += openapi-gen=v0.0.0-20260520065146-aa012df4f4af
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -683,10 +683,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=67df3059a6233b6e32e604bcd637654bb294ff86291b65ede77123e94818d911
-rclone_linux_arm64_SHA256SUM=c816ed0e568de4dd1bba1a4d0cd47523d3dd54337dd5fde73f1b068857ecf877
-rclone_darwin_amd64_SHA256SUM=4f10d7845422d8568e187a0f6813f124bca9b657ac7becd8bdf8508fa968a336
-rclone_darwin_arm64_SHA256SUM=98c04f5f678fe87d435d6f4b1fe204103c5906b151357e631ba0111410691213
+rclone_linux_amd64_SHA256SUM=72a806370072015ccbe4d81bcd348cc5eaf3beca6c65ba693fd43fb31fcca5b1
+rclone_linux_arm64_SHA256SUM=bc2b2eb8269b743ed7bcea869f3782cfb4931e41efa53fc8befc6dc8308b7a50
+rclone_darwin_amd64_SHA256SUM=fc24831eefa3918c278c4a10be4de78288422426e2f7e64509205167f845874d
+rclone_darwin_arm64_SHA256SUM=e170fc4f225cbe3685695c4761259fe5883115a2b022a2f39b7298f946b8d898
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -717,10 +717,10 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=35546e6cb8ed886388896ff8d394c2ab8ee9f09aa94203a200265241550240a4
-preflight_linux_arm64_SHA256SUM=130643d0cb6f914ae6711b45ba35e797e6eacfd0e3ec4bd7dc0599b637286717
-preflight_darwin_amd64_SHA256SUM=0a2cd839d5335ae44344c22486b64eb4ae2b44318d5b9b9b772153babf82a75a
-preflight_darwin_arm64_SHA256SUM=1831b2c040a71d0d3c6b8ec970159f06e6e07137c1a90c2dabe46eea62c6486e
+preflight_linux_amd64_SHA256SUM=1d7a845c4528f9476c8ef9a551b4da5c06d62de558e56a37054c6fa737d583e5
+preflight_linux_arm64_SHA256SUM=09e59f31c1d13e30381260ddf64d9f46120131e490e94bd0e7a958ba1af0d6cb
+preflight_darwin_amd64_SHA256SUM=ec8c8be7a6fd48e2acf8c4630f75b6a8eae4fed0b5e76cf295f2bf6216a61440
+preflight_darwin_arm64_SHA256SUM=ec4ff1ec8b2369b6955121dada4c3d5389a6d1b5f9462758b94bbb04b79a530d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
