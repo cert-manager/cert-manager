@@ -545,7 +545,7 @@ func (v *Venafi) VerifyCredentials() error {
 			err = AuthFailedError{Err: fmt.Errorf("no TPP credentials configured")}
 		}
 	default:
-		err = fmt.Errorf("neither tppClient or cloudClient have been set")
+		err = fmt.Errorf("neither ngtsClient, tppClient or cloudClient have been set")
 	}
 
 	duration := time.Since(start)
