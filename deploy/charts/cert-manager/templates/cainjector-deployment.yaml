@@ -152,7 +152,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if .Values.cainjector.runtimeClassName }}
-      runtimeClassName: {{ .Values.cainjector.runtimeClassName }}
+      runtimeClassName: {{ .Values.cainjector.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
       {{- with .Values.cainjector.tolerations }}
       tolerations:

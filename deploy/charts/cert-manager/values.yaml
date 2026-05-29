@@ -92,6 +92,13 @@ global:
     # +docs:property
     # retryPeriod: 15s
 
+  # A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+  #
+  # For example:
+  #   runtimeClassName: gvisor
+  # +docs:property
+  runtimeClassName: ""
+
 # This option is equivalent to setting crds.enabled=true and crds.keep=true.
 # Deprecated: use crds.enabled and crds.keep instead.
 installCRDs: false
@@ -588,7 +595,7 @@ affinity: {}
 # For example:
 #   runtimeClassName: gvisor
 # +docs:property
-# runtimeClassName: ""
+runtimeClassName: ""
 
 # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
 #
@@ -989,7 +996,7 @@ webhook:
   # For example:
   #   runtimeClassName: gvisor
   # +docs:property
-  # runtimeClassName: ""
+  runtimeClassName: ""
 
   # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
   #
@@ -1381,7 +1388,7 @@ cainjector:
   # For example:
   #   runtimeClassName: gvisor
   # +docs:property
-  # runtimeClassName: ""
+  runtimeClassName: ""
 
   # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
   #
@@ -1631,7 +1638,7 @@ startupapicheck:
   # For example:
   #   runtimeClassName: gvisor
   # +docs:property
-  # runtimeClassName: ""
+  runtimeClassName: ""
 
   # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
   #

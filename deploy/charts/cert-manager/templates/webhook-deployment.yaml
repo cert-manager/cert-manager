@@ -205,7 +205,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if .Values.webhook.runtimeClassName }}
-      runtimeClassName: {{ .Values.webhook.runtimeClassName }}
+      runtimeClassName: {{ .Values.webhook.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
       {{- with .Values.webhook.tolerations }}
       tolerations:

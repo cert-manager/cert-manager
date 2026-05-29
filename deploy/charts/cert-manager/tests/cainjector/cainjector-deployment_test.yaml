@@ -12,3 +12,18 @@ tests:
     - equal:
         path: spec.template.spec.runtimeClassName
         value: something
+  - it: should favor cainjector over global for runtimeClassName
+    set:
+      cainjector.runtimeClassName: something
+      global.runtimeClassName: ignored
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
+  - it: should fall back to global for runtimeClassName
+    set:
+      global.runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something

@@ -220,6 +220,8 @@ spec:
       {{- end }}
       {{- if .Values.runtimeClassName }}
       runtimeClassName: {{ .Values.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
       {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
       {{- $nodeSelector = merge $nodeSelector (.Values.nodeSelector | default dict) }}

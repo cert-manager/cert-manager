@@ -592,6 +592,7 @@
       "type": "object"
     },
     "helm-values.cainjector.runtimeClassName": {
+      "default": "",
       "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
@@ -835,6 +836,9 @@
         },
         "revisionHistoryLimit": {
           "$ref": "#/$defs/helm-values.global.revisionHistoryLimit"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.global.runtimeClassName"
         }
       },
       "type": "object"
@@ -948,6 +952,11 @@
     "helm-values.global.revisionHistoryLimit": {
       "description": "The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).",
       "type": "number"
+    },
+    "helm-values.global.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
     },
     "helm-values.hostAliases": {
       "default": [],
@@ -1421,6 +1430,7 @@
       "type": "object"
     },
     "helm-values.runtimeClassName": {
+      "default": "",
       "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
@@ -1720,6 +1730,7 @@
       "type": "object"
     },
     "helm-values.startupapicheck.runtimeClassName": {
+      "default": "",
       "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
@@ -2276,6 +2287,7 @@
       "type": "object"
     },
     "helm-values.webhook.runtimeClassName": {
+      "default": "",
       "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
