@@ -18,6 +18,7 @@ package venafi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,16 +26,24 @@ import (
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err error) {
 	defer func() {
 		if err != nil {
-			errorMessage := "Failed to setup Certificate Manager issuer"
-			v.log.Error(err, errorMessage)
-			apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
-			err = fmt.Errorf("%s: %v", errorMessage, err)
+			var authErr venaficlient.AuthFailedError
+			if errors.As(err, &authErr) {
+				msg := fmt.Sprintf("OAuth token request failed: %v", authErr.Err)
+				apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "AuthFailed", msg)
+				err = errors.New(msg)
+			} else {
+				errorMessage := "Failed to setup Certificate Manager issuer"
+				v.log.Error(err, errorMessage)
+				apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
+				err = fmt.Errorf("%s: %v", errorMessage, err)
+			}
 		}
 	}()
 
@@ -42,16 +51,15 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 
 	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuer, v.Metrics, v.log, v.userAgent)
 	if err != nil {
-		return fmt.Errorf("error building client: %v", err)
+		return fmt.Errorf("error building client: %w", err)
 	}
-	err = client.Ping()
-	if err != nil {
+
+	if err = client.Ping(); err != nil {
 		return fmt.Errorf("error pinging Certificate Manager: %v", err)
 	}
 
-	err = client.VerifyCredentials()
-	if err != nil {
-		return fmt.Errorf("client.VerifyCredentials: %v", err)
+	if err = client.VerifyCredentials(); err != nil {
+		return fmt.Errorf("client.VerifyCredentials: %w", err)
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event

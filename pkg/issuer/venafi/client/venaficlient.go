@@ -19,9 +19,11 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	vcert "github.com/Venafi/vcert/v5"
@@ -56,6 +58,22 @@ const (
 	ngtsClientSecretKey = "client-secret"
 )
 
+// AuthFailedError is returned by VerifyCredentials when the Venafi endpoint
+// rejected the supplied credentials (e.g. HTTP 401/403). It is distinct from
+// a transient network error, which does not wrap this type.
+type AuthFailedError struct {
+	// Err is the underlying error returned by the Venafi SDK.
+	Err error
+}
+
+func (e AuthFailedError) Error() string {
+	return "OAuth token request failed: " + e.Err.Error()
+}
+
+func (e AuthFailedError) Unwrap() error {
+	return e.Err
+}
+
 type VenafiClientBuilder func(namespace string, secretsLister internalinformers.SecretLister,
 	issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error)
 
@@ -82,6 +100,8 @@ type Venafi struct {
 	cloudClient *cloud.Connector
 	ngtsClient  *ngts.Connector
 	config      *vcert.Config
+	metrics     *metrics.Metrics
+	logger      logr.Logger
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -95,7 +115,7 @@ type connector interface {
 
 // New constructs a Venafi client Interface. Errors may be network errors and
 // should be considered for retrying.
-func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, metrics *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
+func New(namespace string, secretsLister internalinformers.SecretLister, issuer cmapi.GenericIssuer, m *metrics.Metrics, logger logr.Logger, userAgent string) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace, userAgent)
 	if err != nil {
 		return nil, err
@@ -139,7 +159,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		return nil, fmt.Errorf("unsupported vcert connector type: %v", vcertClient.GetType())
 	}
 
-	instrumentedVCertClient := newInstrumentedConnector(vcertClient, metrics, logger)
+	instrumentedVCertClient := newInstrumentedConnector(vcertClient, m, logger)
 
 	v := &Venafi{
 		namespace:     namespace,
@@ -149,14 +169,10 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		tppClient:     tppc,
 		ngtsClient:    nc,
 		config:        cfg,
+		metrics:       m,
+		logger:        logger,
 	}
 
-	// Since we did not authenticate when creating the client, authenticate
-	// now to verify the credentials passed. Ensure that upon leaving this
-	// function that credentials have been verified.
-	if err := v.VerifyCredentials(); err != nil {
-		return nil, err
-	}
 	return v, nil
 }
 
@@ -441,75 +457,110 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
 }
 
-// VerifyCredentials will remotely verify the credentials for the client, both for TPP and Cloud
+// isNetworkError returns true when err originates from a transport-level
+// failure (DNS, TCP, TLS) rather than an HTTP-level auth response.
+func isNetworkError(err error) bool {
+	var netErr *net.OpError
+	var urlErr *url.Error
+	return err != nil && (errors.As(err, &netErr) || errors.As(err, &urlErr))
+}
+
+// VerifyCredentials remotely verifies the credentials for the client, for both TPP and Cloud.
+// It records Prometheus metrics and logs the outcome at the appropriate level.
+// On authentication failure (invalid credentials) it returns AuthFailedError so callers can
+// distinguish that from a transient network or endpoint outage error.
 func (v *Venafi) VerifyCredentials() error {
+	start := time.Now()
+
+	var err error
 	switch {
 	case v.ngtsClient != nil:
-		err := v.ngtsClient.Authenticate(&endpoint.Authentication{
+		authErr := v.ngtsClient.Authenticate(&endpoint.Authentication{
 			ClientId:     v.config.Credentials.ClientId,
 			ClientSecret: v.config.Credentials.ClientSecret,
 			Scope:        v.config.Credentials.Scope,
 			TokenURL:     v.config.Credentials.TokenURL,
 		})
-		if err != nil {
-			return fmt.Errorf("ngtsClient.Authenticate: %v", err)
+		if authErr != nil {
+			if isNetworkError(authErr) {
+				err = fmt.Errorf("ngtsClient.Authenticate: %v", authErr)
+			} else {
+				err = AuthFailedError{Err: fmt.Errorf("ngtsClient.Authenticate: %v", authErr)}
+			}
 		}
-		return nil
 	case v.cloudClient != nil:
-		err := v.cloudClient.Authenticate(&endpoint.Authentication{
+		authErr := v.cloudClient.Authenticate(&endpoint.Authentication{
 			APIKey: v.config.Credentials.APIKey,
 		})
-
-		if err != nil {
-			return fmt.Errorf("cloudClient.Authenticate: %v", err)
+		if authErr != nil {
+			if isNetworkError(authErr) {
+				err = fmt.Errorf("cloudClient.Authenticate: %v", authErr)
+			} else {
+				err = AuthFailedError{Err: fmt.Errorf("cloudClient.Authenticate: %v", authErr)}
+			}
 		}
-
-		return nil
 	case v.tppClient != nil:
-		if v.config.Credentials == nil {
-			return fmt.Errorf("credentials not configured")
-		}
-
-		if v.config.Credentials.AccessToken != "" {
-			_, err := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
+		switch {
+		case v.config.Credentials == nil:
+			err = AuthFailedError{Err: fmt.Errorf("credentials not configured")}
+		case v.config.Credentials.AccessToken != "":
+			_, authErr := v.tppClient.VerifyAccessToken(&endpoint.Authentication{
 				AccessToken: v.config.Credentials.AccessToken,
 			})
-
-			if err != nil {
-				return fmt.Errorf("tppClient.VerifyAccessToken: %v", err)
+			if authErr != nil {
+				if isNetworkError(authErr) {
+					err = fmt.Errorf("tppClient.VerifyAccessToken: %v", authErr)
+				} else {
+					err = AuthFailedError{Err: fmt.Errorf("tppClient.VerifyAccessToken: %v", authErr)}
+				}
 			}
-
-			return nil
-		}
-
-		if v.config.Credentials.User != "" && v.config.Credentials.Password != "" {
+		case v.config.Credentials.User != "" && v.config.Credentials.Password != "":
 			// Use vcert library GetRefreshToken which brings back a token pair.
 			// This includes the access_token which we set against the tppClient.
 			// Replaces usage of v.tppClient.Authenticate function which would
 			// have called the APIKey endpoint resulting in error.
-			resp, err := v.tppClient.GetRefreshToken(&endpoint.Authentication{
+			resp, authErr := v.tppClient.GetRefreshToken(&endpoint.Authentication{
 				User:     v.config.Credentials.User,
 				Password: v.config.Credentials.Password,
 				ClientId: v.config.Credentials.ClientId,
 				Scope:    tppScopes,
 			})
-
-			if err != nil {
-				return fmt.Errorf("tppClient.GetRefreshToken: %v", err)
+			if authErr != nil {
+				if isNetworkError(authErr) {
+					err = fmt.Errorf("tppClient.GetRefreshToken: %v", authErr)
+				} else {
+					err = AuthFailedError{Err: fmt.Errorf("tppClient.GetRefreshToken: %v", authErr)}
+				}
+			} else {
+				// Ensure that the access_token is stored on the tppClient object.
+				if authErr = v.tppClient.Authenticate(&endpoint.Authentication{AccessToken: resp.Access_token}); authErr != nil {
+					if isNetworkError(authErr) {
+						err = fmt.Errorf("tppClient.Authenticate: %v", authErr)
+					} else {
+						err = AuthFailedError{Err: fmt.Errorf("tppClient.Authenticate: %v", authErr)}
+					}
+				}
 			}
+		default:
+			err = AuthFailedError{Err: fmt.Errorf("no TPP credentials configured")}
+		}
+	default:
+		err = fmt.Errorf("neither ngtsClient, tppClient or cloudClient have been set")
+	}
 
-			// Ensure that the access_token is stored on the tppClient object.
-			err = v.tppClient.Authenticate(&endpoint.Authentication{
-				AccessToken: resp.Access_token,
-			})
-
-			if err != nil {
-				return fmt.Errorf("tppClient.Authenticate: %v", err)
-			}
-
-			return nil
+	duration := time.Since(start)
+	if v.metrics != nil {
+		v.metrics.ObserveVenafiOAuthTokenRequestDuration(duration)
+		if err != nil {
+			v.metrics.IncrementVenafiOAuthTokenRequestsTotal("failure")
+		} else {
+			v.metrics.IncrementVenafiOAuthTokenRequestsTotal("success")
 		}
 	}
 
-	return fmt.Errorf("neither tppClient or cloudClient have been set")
+	if err != nil {
+		v.logger.Error(err, "Venafi OAuth token request failed")
+	}
+
+	return err
 }
