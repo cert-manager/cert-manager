@@ -424,3 +424,26 @@ tests:
       - equal:
           path: spec.template.spec.hostUsers
           value: false
+
+  - it: should set runtimeClassName when specified
+    set:
+      runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
+  - it: should favor controller over global for runtimeClassName
+    set:
+      runtimeClassName: something
+      global.runtimeClassName: ignored
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
+  - it: should fall back to global for runtimeClassName
+    set:
+      global.runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something

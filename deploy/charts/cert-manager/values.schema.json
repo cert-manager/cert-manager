@@ -144,6 +144,9 @@
         "resources": {
           "$ref": "#/$defs/helm-values.resources"
         },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.runtimeClassName"
+        },
         "securityContext": {
           "$ref": "#/$defs/helm-values.securityContext"
         },
@@ -320,6 +323,9 @@
         },
         "resources": {
           "$ref": "#/$defs/helm-values.cainjector.resources"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.cainjector.runtimeClassName"
         },
         "securityContext": {
           "$ref": "#/$defs/helm-values.cainjector.securityContext"
@@ -585,6 +591,11 @@
       "description": "Resources to provide to the cert-manager cainjector pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
     },
+    "helm-values.cainjector.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
+    },
     "helm-values.cainjector.securityContext": {
       "default": {
         "runAsNonRoot": true,
@@ -825,6 +836,9 @@
         },
         "revisionHistoryLimit": {
           "$ref": "#/$defs/helm-values.global.revisionHistoryLimit"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.global.runtimeClassName"
         }
       },
       "type": "object"
@@ -938,6 +952,11 @@
     "helm-values.global.revisionHistoryLimit": {
       "description": "The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).",
       "type": "number"
+    },
+    "helm-values.global.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
     },
     "helm-values.hostAliases": {
       "default": [],
@@ -1410,6 +1429,11 @@
       "description": "Resources to provide to the cert-manager controller pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
     },
+    "helm-values.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
+    },
     "helm-values.securityContext": {
       "default": {
         "runAsNonRoot": true,
@@ -1527,6 +1551,9 @@
         },
         "resources": {
           "$ref": "#/$defs/helm-values.startupapicheck.resources"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.startupapicheck.runtimeClassName"
         },
         "securityContext": {
           "$ref": "#/$defs/helm-values.startupapicheck.securityContext"
@@ -1701,6 +1728,11 @@
       "default": {},
       "description": "Resources to provide to the cert-manager startupapicheck pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
+    },
+    "helm-values.startupapicheck.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
     },
     "helm-values.startupapicheck.securityContext": {
       "default": {
@@ -1895,6 +1927,9 @@
         },
         "resources": {
           "$ref": "#/$defs/helm-values.webhook.resources"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.webhook.runtimeClassName"
         },
         "securePort": {
           "$ref": "#/$defs/helm-values.webhook.securePort"
@@ -2250,6 +2285,11 @@
       "default": {},
       "description": "Resources to provide to the cert-manager webhook pod.\n\nFor example:\nrequests:\n  cpu: 10m\n  memory: 32Mi\nFor more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).",
       "type": "object"
+    },
+    "helm-values.webhook.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "type": "string"
     },
     "helm-values.webhook.securePort": {
       "default": 10250,

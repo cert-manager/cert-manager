@@ -213,6 +213,9 @@ type ACMEHTTP01Config struct {
 	// issues
 	SolverRunAsNonRoot bool
 
+	// Defines the runtime class for the http01 solver
+	SolverRuntimeClassName string
+
 	// A list of comma separated dns server endpoints used for
 	// ACME HTTP01 check requests. This should be a list containing host and
 	// port, for example ["8.8.8.8:53","8.8.4.4:53"]

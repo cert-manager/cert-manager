@@ -203,6 +203,9 @@ type ACMEOptions struct {
 	// ACMEHTTP01SolverRunAsNonRoot sets the ACME pod's ability to run as root
 	ACMEHTTP01SolverRunAsNonRoot bool
 
+	// HTTP01SolverRuntimeClassName defines the ACME pod's runtimeClassName
+	HTTP01SolverRuntimeClassName string
+
 	// HTTP01SolverNameservers is a list of nameservers to use when performing self-checks
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string

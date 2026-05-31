@@ -197,6 +197,10 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 	maps.Copy(podLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
+	var runtimeClassName *string
+	if s.ACMEOptions.HTTP01SolverRuntimeClassName != "" {
+		runtimeClassName = new(s.ACMEOptions.HTTP01SolverRuntimeClassName)
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -220,6 +224,7 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			},
 			RestartPolicy:      corev1.RestartPolicyOnFailure,
 			EnableServiceLinks: new(false),
+			RuntimeClassName:   runtimeClassName,
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: new(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
 				SeccompProfile: &corev1.SeccompProfile{

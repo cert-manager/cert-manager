@@ -1,0 +1,29 @@
+suite: cainjector Deployment - Configuration
+templates:
+  - templates/cainjector-deployment.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should set runtimeClassName when specified
+    set:
+      cainjector.runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
+  - it: should favor cainjector over global for runtimeClassName
+    set:
+      cainjector.runtimeClassName: something
+      global.runtimeClassName: ignored
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something
+  - it: should fall back to global for runtimeClassName
+    set:
+      global.runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something

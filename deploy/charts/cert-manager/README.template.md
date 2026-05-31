@@ -192,6 +192,20 @@ The interval between attempts by the acting master to renew a leadership slot be
 
 The duration the clients should wait between attempting acquisition and renewal of a leadership.
 
+#### **global.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **installCRDs** ~ `bool`
 > Default value:
 > ```yaml
@@ -763,6 +777,20 @@ affinity:
          values:
          - master
 ```
+#### **runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -1276,6 +1304,20 @@ affinity:
          values:
          - master
 ```
+#### **webhook.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **webhook.tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -1775,6 +1817,20 @@ affinity:
          values:
          - master
 ```
+#### **cainjector.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **cainjector.tolerations** ~ `array`
 > Default value:
 > ```yaml
@@ -2097,6 +2153,20 @@ affinity:
          values:
          - master
 ```
+#### **startupapicheck.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **startupapicheck.tolerations** ~ `array`
 > Default value:
 > ```yaml
