@@ -37,7 +37,7 @@ set -eu -o pipefail
 
 # kind version is maintained by Renovate using a custom regex manager
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
-kind_version=v0.31.0
+kind_version=v0.32.0
 
 cp ./hack/boilerplate-sh.txt ./make/kind_images.sh.tmp
 
@@ -48,12 +48,18 @@ cat << EOF >> ./make/kind_images.sh.tmp
 EOF
 
 curl -fsSL "https://api.github.com/repos/kubernetes-sigs/kind/releases/tags/${kind_version}" \
-    |  jq -r '
-[ .body  | capture("- v?1\\.(?<minor>[0-9]+)(.(?<patch>[0-9]+))?: `kindest/node:v(?<version>[^@]+)@sha256:(?<sha256>[^`]+)`\r"; "g") ]
-  | sort_by(.minor)
-  | .[]
-  | "KIND_IMAGE_K8S_1\(.minor)=docker.io/kindest/node@sha256:\(.sha256)"
-' >> ./make/kind_images.sh.tmp
+  | jq -r '
+      [
+        .body
+        | capture(
+            "v1\\.(?<minor>[0-9]+)(\\.(?<patch>[0-9]+))?: `kindest/node:v(?<version>[^@]+)@sha256:(?<sha256>[^`]+)`";
+            "g"
+          )
+      ]
+      | sort_by(.minor | tonumber)
+      | .[]
+      | "KIND_IMAGE_K8S_1\(.minor)=docker.io/kindest/node@sha256:\(.sha256)"
+    ' >> ./make/kind_images.sh.tmp
 
 chmod +x ./make/kind_images.sh.tmp
 mv ./make/kind_images.sh{.tmp,}
