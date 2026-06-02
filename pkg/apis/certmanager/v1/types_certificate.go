@@ -557,6 +557,11 @@ type PKCS12Keystore struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	// `Modern2026`: Encodes PKCS#12 files using algorithms that are considered modern as of 2026.
+	// Private keys and certificates are encrypted using PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC.
+	// The MAC algorithm is PBMAC1 with PBKDF2-HMAC-SHA-256 and HMAC-SHA256.
+	// Files produced with this profile can be read by OpenSSL 3.4.0 and higher, Java 26 and higher,
+	// or with Java using compatible versions of Bouncy Castle. Meets FIPS 140-3 requirements.
 	// +optional
 	Profile PKCS12Profile `json:"profile,omitempty"`
 
@@ -574,7 +579,7 @@ type PKCS12Keystore struct {
 	Password *string `json:"password,omitempty"` // #nosec G117 -- field is part of API spec and may contain a secret; not hardcoded
 }
 
-// +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023
+// +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023;Modern2026
 type PKCS12Profile string
 
 const (
@@ -586,6 +591,9 @@ const (
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2026
+	Modern2026PKCS12Profile PKCS12Profile = "Modern2026"
 )
 
 type CertificateRenewal struct {

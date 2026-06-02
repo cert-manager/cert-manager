@@ -286,10 +286,14 @@ spec:
                           `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
                           (e.g., because of company policy). Please note that the security of the algorithm is not that important
                           in reality, because the unencrypted certificate and private key are also stored in the Secret.
+                          `Modern2026`: FIPS 140-3 compliant. Uses PBES2 with AES-256-CBC for encryption and PBMAC1 (RFC 9579)
+                          for integrity. Compatible with OpenSSL 3.4.0+ and Java 26+. Use this option when the PKCS12 keystore
+                          must be consumable by a FIPS-validated runtime (e.g., Bouncy Castle FIPS).
                         enum:
                         - LegacyRC2
                         - LegacyDES
                         - Modern2023
+                        - Modern2026
                         type: string
                     required:
                     - create
