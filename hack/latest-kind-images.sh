@@ -37,7 +37,7 @@ set -eu -o pipefail
 
 # kind version is maintained by Renovate using a custom regex manager
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
-kind_version=v0.31.0
+kind_version=v0.32.0
 
 cp ./hack/boilerplate-sh.txt ./make/kind_images.sh.tmp
 
