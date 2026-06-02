@@ -1242,7 +1242,7 @@ func Test_validateLiteralSubject(t *testing.T) {
 			featureEnabled: true,
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					LiteralSubject: "CN=James \\\"Jim\\\" Smith\\, III,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins",
+					LiteralSubject: "CN=James \\\"Jim\\\" Smith\\, III,GN=James,SN=Smith,DC=dc,DC=net,UID=jamessmith,STREET=La Rambla,L=Barcelona,C=Spain,O=Acme,OU=IT,OU=Admins",
 					SecretName:     "abc",
 					IssuerRef:      validIssuerRef,
 				},
