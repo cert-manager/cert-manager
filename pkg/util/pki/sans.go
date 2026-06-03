@@ -108,6 +108,14 @@ func (gns GeneralNames) Empty() bool {
 func UnmarshalSANs(value []byte) (GeneralNames, error) {
 	var gns GeneralNames
 	err := forEachSAN(value, func(v asn1.RawValue) error {
+		// GeneralNames are always context-specific tagged (RFC 5280, 4.2.1.6).
+		// crypto/x509 only matches context-specific tags; without this check the
+		// switch below keys off the bare tag number, so an element encoded with a
+		// different class (e.g. a UNIVERSAL tag 2) is misread as a dNSName.
+		if v.Class != asn1.ClassContextSpecific {
+			return asn1.StructuralError{Msg: "SAN GeneralName has invalid class"}
+		}
+
 		switch v.Tag {
 		case nameTypeOtherName:
 			var otherName OtherName
