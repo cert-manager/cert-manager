@@ -468,11 +468,16 @@ $(call local-image-tar,samplewebhook): $(call local-image-tar,samplewebhook).dir
 
 .PHONY: e2e-setup-samplewebhook
 e2e-setup-samplewebhook: load-$(call local-image-tar,samplewebhook) e2e-setup-certmanager $(bin_dir)/scratch/kind-exists | $(NEEDS_HELM)
+	@repo_tag="$$(tar xfO $(call local-image-tar,samplewebhook) manifest.json | jq '.[0].RepoTags[0]' -r)"; \
+	repo="$${repo_tag%:*}"; \
+	tag="$${repo_tag##*:}"; \
 	$(HELM) upgrade \
 		--install \
 		--wait \
 		--namespace samplewebhook \
 		--create-namespace \
+		--set image.repository="$$repo" \
+		--set image.tag="$$tag" \
 		samplewebhook make/config/samplewebhook/chart >/dev/null
 
 .PHONY: e2e-setup-gwapi-provider
