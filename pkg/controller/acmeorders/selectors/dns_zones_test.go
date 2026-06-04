@@ -50,11 +50,47 @@ func TestDNSZones(t *testing.T) {
 			score:   2,
 		},
 		{
+			name: "matching a domain in a zone with a trailing dot",
+			selector: cmacme.CertificateDNSNameSelector{
+				DNSZones: []string{"example.com."},
+			},
+			dnsName: "www.example.com",
+			matches: true,
+			score:   2,
+		},
+		{
+			name: "matching an exact domain in a zone with a trailing dot",
+			selector: cmacme.CertificateDNSNameSelector{
+				DNSZones: []string{"example.com."},
+			},
+			dnsName: "example.com",
+			matches: true,
+			score:   2,
+		},
+		{
 			name: "matching a wildcard domain in a zone",
 			selector: cmacme.CertificateDNSNameSelector{
 				DNSZones: []string{"example.com"},
 			},
 			dnsName: "*.example.com",
+			matches: true,
+			score:   2,
+		},
+		{
+			name: "matching a wildcard domain in a zone with a trailing dot",
+			selector: cmacme.CertificateDNSNameSelector{
+				DNSZones: []string{"example.com."},
+			},
+			dnsName: "*.example.com",
+			matches: true,
+			score:   2,
+		},
+		{
+			name: "matching a domain with a trailing dot in a zone without a trailing dot",
+			selector: cmacme.CertificateDNSNameSelector{
+				DNSZones: []string{"example.com"},
+			},
+			dnsName: "www.example.com.",
 			matches: true,
 			score:   2,
 		},
