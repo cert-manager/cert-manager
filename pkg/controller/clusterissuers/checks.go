@@ -73,6 +73,12 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 					continue
 				}
 			}
+			if iss.Spec.Venafi.NGTS != nil {
+				if iss.Spec.Venafi.NGTS.CredentialsRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
 		case iss.Spec.Vault != nil:
 			if iss.Spec.Vault.Auth.TokenSecretRef != nil {
 				if iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name {

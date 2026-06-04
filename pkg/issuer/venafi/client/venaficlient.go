@@ -173,6 +173,13 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 		logger:        logger,
 	}
 
+	// Authenticate the connector so that subsequent operations (Ping,
+	// RequestCertificate, etc.) have valid credentials. The vcert client
+	// was created with authenticate=false above, so credentials must be
+	// verified explicitly.
+	if err := v.VerifyCredentials(); err != nil {
+		return nil, err
+	}
 	return v, nil
 }
 

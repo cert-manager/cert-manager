@@ -54,12 +54,12 @@ func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err err
 		return fmt.Errorf("error building client: %w", err)
 	}
 
-	if err = client.Ping(); err != nil {
-		return fmt.Errorf("error pinging Certificate Manager: %v", err)
-	}
-
 	if err = client.VerifyCredentials(); err != nil {
 		return fmt.Errorf("client.VerifyCredentials: %w", err)
+	}
+
+	if err = client.Ping(); err != nil {
+		return fmt.Errorf("error pinging Certificate Manager: %v", err)
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event
