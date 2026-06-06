@@ -82,7 +82,7 @@ tools += kubectl=v1.36.1
 tools += kind=v0.32.0
 # https://www.vaultproject.io/downloads
 # renovate: datasource=github-releases packageName=hashicorp/vault
-tools += vault=v2.0.0
+tools += vault=v2.0.2
 # https://github.com/Azure/azure-workload-identity/releases
 # renovate: datasource=github-releases packageName=Azure/azure-workload-identity
 tools += azwi=v1.5.1
@@ -106,10 +106,10 @@ tools += trivy=v0.71.0
 tools += ytt=v0.55.1
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.74.2
+tools += rclone=v1.74.3
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.30.0
+tools += istioctl=1.30.1
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -163,7 +163,7 @@ tools += klone=v0.2.0
 tools += goreleaser=v2.16.0
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.45.0
+tools += syft=v1.45.1
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.5.3
@@ -199,7 +199,7 @@ tools += gci=v0.14.0
 tools += yamlfmt=v0.21.0
 # https://github.com/yannh/kubeconform/releases
 # renovate: datasource=github-releases packageName=yannh/kubeconform
-tools += kubeconform=v0.7.0
+tools += kubeconform=v0.8.0
 
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
@@ -540,10 +540,10 @@ $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		$(checkhash_script) $(outfile) $(kind_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-vault_linux_amd64_SHA256SUM=0367bdd46dd1fff1ff19fc44e60df48866515bb519c80527236b3808ea879ac2
-vault_linux_arm64_SHA256SUM=5f04207fd0fbabbb8c6cca494fdee96f81bb0a82e1176670649e1aeeaadf0281
-vault_darwin_amd64_SHA256SUM=4fe88b981fcf14917a5f1b1c1ffaf4f9231c3f646ab778ba44e71dfb80e5b234
-vault_darwin_arm64_SHA256SUM=3b8ad2cc6de8b6cc13e030465e83729aec1070ef91327a55be0a28af81a530bf
+vault_linux_amd64_SHA256SUM=71e87827fdf6e4cef291b1a1578ce8310d054210750dcfb9f495d51d7da0a9a4
+vault_linux_arm64_SHA256SUM=9e496af2f9b8142c0be80e486a46b8c86c87b96ec43e5cbd55d163255d560fd5
+vault_darwin_amd64_SHA256SUM=347c589302107d5debc1403761163fa01e1db558532acb5f8f55e5e8cb18f170
+vault_darwin_arm64_SHA256SUM=69eb2a89f5c9715105f80d834c5252b9ea2fc2d41297e8c7be595ff028f6efe7
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -683,10 +683,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=72a806370072015ccbe4d81bcd348cc5eaf3beca6c65ba693fd43fb31fcca5b1
-rclone_linux_arm64_SHA256SUM=bc2b2eb8269b743ed7bcea869f3782cfb4931e41efa53fc8befc6dc8308b7a50
-rclone_darwin_amd64_SHA256SUM=fc24831eefa3918c278c4a10be4de78288422426e2f7e64509205167f845874d
-rclone_darwin_arm64_SHA256SUM=e170fc4f225cbe3685695c4761259fe5883115a2b022a2f39b7298f946b8d898
+rclone_linux_amd64_SHA256SUM=dbee7ccd7a5d617e4ed4cd4555c16669b511abfe8d31164f61be35ac9e999bd2
+rclone_linux_arm64_SHA256SUM=8f8d47446e061f80c3256659fe8e21f56d72d96aaefe1275d088ea5eb6b42aa7
+rclone_darwin_amd64_SHA256SUM=417cabd402d57806d597bd0ba8fb33a434ca8c2a1a5aa98de5a0bd4b52b39202
+rclone_darwin_arm64_SHA256SUM=33a435ab17023b686918ce9a3975aceb75fe1796c694f38f1993024be1f063f5
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -700,10 +700,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=33664a95900d8cfc99b476cbbd7b967adc163b1981ef622d9b213a5d8156719e
-istioctl_linux_arm64_SHA256SUM=8a810443c0d85bb219bbe3902fc5a4e339a8c57d3a356e890bd6f0ee9cbbf467
-istioctl_darwin_amd64_SHA256SUM=72e79be133fb99b55a2eb28b9c2e1bc95c6faac008ec52ef4d705eb69c349c0f
-istioctl_darwin_arm64_SHA256SUM=e4f315c077ebe98c1ef0d820575743ebf80d8c3c754d81b0cda62f75f7d8fa75
+istioctl_linux_amd64_SHA256SUM=02e747b51f1bd2f1c74e650fad4f7390053034357a55e9b0c659e83bcd735cb5
+istioctl_linux_arm64_SHA256SUM=322ffe873a612d04a7806db2e4bf881b87d15508b7675238c613da53996672ce
+istioctl_darwin_amd64_SHA256SUM=eef8b30f4d7e0dedd9bf956942875ea39691687006f4b2f72d58b709146ae71c
+istioctl_darwin_arm64_SHA256SUM=f7c42303a14c4b27069af210478d988ebafe6b2ddb6d1c3219f28780d0b95e7d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
