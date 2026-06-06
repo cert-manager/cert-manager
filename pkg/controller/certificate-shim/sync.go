@@ -465,7 +465,7 @@ func buildCertificates(
 				continue
 			}
 
-			if !certNeedsUpdate(existingCrt, crt) && !issuerSpecificConfigNeedsUpdate(existingCrt, ingLike) {
+			if !certNeedsUpdate(existingCrt, crt) && !shimAnnotationsNeedsUpdate(existingCrt, ingLike) {
 				log.V(logf.DebugLevel).Info("certificate resource is already up to date for object")
 				continue
 			}
@@ -570,7 +570,7 @@ func mergeAnnotations(a, b map[string]string) map[string]string {
 	return merged
 }
 
-func issuerSpecificConfigNeedsUpdate(existingCrt *cmapi.Certificate, ingLike metav1.Object) bool {
+func shimAnnotationsNeedsUpdate(existingCrt *cmapi.Certificate, ingLike metav1.Object) bool {
 	// This drift check is intentionally scoped to Ingress resources.
 	// Ingress annotations are mapped to Certificate annotations and can change
 	// independently from the Certificate spec. Gateway/ListenerSet semantics are
@@ -584,39 +584,28 @@ func issuerSpecificConfigNeedsUpdate(existingCrt *cmapi.Certificate, ingLike met
 		ingAnnotations = map[string]string{}
 	}
 
-	if annotationNeedsUpdate(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassOverride) {
+	annotationDrifted := func(desiredAnnotations map[string]string, desiredKey string, existingAnnotations map[string]string, existingKey string) bool {
+		desiredValue, desiredPresent := desiredAnnotations[desiredKey]
+		desiredHasValue := desiredPresent && desiredValue != ""
+
+		existingValue, existingPresent := existingAnnotations[existingKey]
+
+		if desiredHasValue != existingPresent {
+			return true
+		}
+
+		return desiredHasValue && desiredValue != existingValue
+	}
+
+	if annotationDrifted(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassOverride) {
 		return true
 	}
 
-	if annotationNeedsUpdate(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassNameOverride) {
+	if annotationDrifted(ingAnnotations, cmapi.IngressACMEIssuerHTTP01IngressClassNameAnnotationKey, existingCrt.Annotations, cmacme.ACMECertificateHTTP01IngressClassNameOverride) {
 		return true
 	}
 
 	return false
-}
-
-// annotationNeedsUpdate checks if a Certificate's annotation differs from a desired value
-// derived from an Ingress annotation. This enables drift detection when Ingress annotations
-// change independently (e.g., during ingress controller migrations).
-//
-// Parameters:
-//   - desiredAnnotations: source annotations (typically from an Ingress)
-//   - desiredKey: key to look up in desiredAnnotations
-//   - existingAnnotations: target annotations (on a Certificate)
-//   - existingKey: key to look up in existingAnnotations (may differ from desiredKey)
-//
-// Returns true if the annotations differ in presence or value.
-func annotationNeedsUpdate(desiredAnnotations map[string]string, desiredKey string, existingAnnotations map[string]string, existingKey string) bool {
-	desiredValue, desiredPresent := desiredAnnotations[desiredKey]
-	desiredHasValue := desiredPresent && desiredValue != ""
-
-	existingValue, existingPresent := existingAnnotations[existingKey]
-
-	if desiredHasValue != existingPresent {
-		return true
-	}
-
-	return desiredHasValue && desiredValue != existingValue
 }
 
 func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
