@@ -91,7 +91,7 @@ tools += azwi=v1.5.1
 tools += kyverno=v1.18.1
 # https://github.com/mikefarah/yq/releases
 # renovate: datasource=github-releases packageName=mikefarah/yq
-tools += yq=v4.53.2
+tools += yq=v4.53.3
 # https://github.com/ko-build/ko/releases
 # renovate: datasource=github-releases packageName=ko-build/ko
 tools += ko=0.18.1
@@ -605,10 +605,10 @@ $(DOWNLOAD_DIR)/tools/kyverno@$(KYVERNO_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DO
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-yq_linux_amd64_SHA256SUM=d56bf5c6819e8e696340c312bd70f849dc1678a7cda9c2ad63eebd906371d56b
-yq_linux_arm64_SHA256SUM=03061b2a50c7a498de2bbb92d7cb078ce433011f085a4994117c2726be4106ea
-yq_darwin_amd64_SHA256SUM=616b0a0f6a5b79d746f05a169c2b9bb40dee00c605ef165b9a1c1681bba738ac
-yq_darwin_arm64_SHA256SUM=541ba2287560df70f561955e2d7f7e1cd00cf2a15a884f6b5c87a4bfa887bc07
+yq_linux_amd64_SHA256SUM=fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4
+yq_linux_arm64_SHA256SUM=578648e463a11c1b6db6010cbf41eafed6bee79466fcffa1bb446672cf7945ea
+yq_darwin_amd64_SHA256SUM=b4ba1ecce3c47f00803f4f964de38394326c7a32eb6540616e04fb2935a0f08d
+yq_darwin_arm64_SHA256SUM=877de31753a4dd2401aa048937aa9a7fc4d5f6ce858cf31508c5802954297213
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/yq@$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
