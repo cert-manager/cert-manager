@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
@@ -74,6 +75,7 @@ type controller struct {
 	// logger to be used by this controller
 	log logr.Logger
 
+	clock            clock.Clock
 	dns01Nameservers []string
 
 	DNS01CheckRetryPeriod time.Duration
@@ -143,6 +145,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.accountRegistry = ctx.ACMEAccountRegistry
+	c.clock = ctx.Clock
 
 	var err error
 	c.httpSolver, err = http.NewSolver(ctx)

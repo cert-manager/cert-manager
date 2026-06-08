@@ -19,6 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -158,6 +159,18 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01
+
+	// WaitInsteadOfSelfCheck, if set, skips cert-manager's self-check and
+	// instead waits this long after presentation before asking the ACME server
+	// to validate the challenge.
+	//
+	// A value of 0 skips the self-check and asks the ACME server to validate
+	// immediately after presentation, relying on the ACME server's own
+	// validation retries (RFC 8555 section 8.2) to succeed once the challenge
+	// has propagated. A negative duration is rejected.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+	// for example `30s` or `2m`.
+	WaitInsteadOfSelfCheck *metav1.Duration
 }
 
 // CertificateDNSNameSelector selects certificates using a label selector, and

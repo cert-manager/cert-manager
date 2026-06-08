@@ -29,6 +29,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/digitalocean/godo"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -113,6 +114,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 
 		ch.Status.Presented = false
 		ch.Status.Processing = false
+		// PresentedAt is intentionally left untouched. It records when the
+		// solver resources were first presented, which remains accurate for a
+		// finished challenge, and clearing it here would diverge between the
+		// legacy UpdateStatus path (which would set it to nil) and the SSA path
+		// (which omits nil fields and so would leave it set on the server).
 
 		return nil
 	}
@@ -180,19 +186,32 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 
 		ch.Status.Presented = true
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	err = solver.Check(ctx, genericIssuer, ch)
-	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+	// Backfill PresentedAt for already-presented challenges when
+	// WaitInsteadOfSelfCheck is configured. This covers upgrade or
+	// pre-existing-object cases where Presented was recorded before the
+	// controller started writing PresentedAt.
+	if ch.Status.Presented && ch.Status.PresentedAt == nil && ch.Spec.Solver.WaitInsteadOfSelfCheck != nil {
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
+	}
 
+	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now())
+	result, err := readiness.evaluate(ctx, solver, genericIssuer, ch)
+	if err != nil {
+		return err
+	}
+	if !result.ready {
+		log.V(logf.DebugLevel).Info("challenge not ready to accept yet", "retry_after", result.retryAfter)
+		ch.Status.Reason = result.reason
 		c.queue.AddAfter(types.NamespacedName{
 			Namespace: ch.Namespace,
 			Name:      ch.Name,
-		}, c.DNS01CheckRetryPeriod)
-
+		}, result.retryAfter)
 		return nil
 	}
 
