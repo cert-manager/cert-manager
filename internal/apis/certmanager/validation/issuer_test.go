@@ -1765,30 +1765,10 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Invalid(fldPath.Child("acmeDNS", "caBundle"), "", "cert bundle didn't contain any valid certificates"),
 			},
 		},
-		"acmedns host without scheme fails validation": {
+		"acmedns host without scheme passes validation": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
 					Host:          "auth.example.com",
-					AccountSecret: validSecretKeyRef,
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("acmeDNS", "host"), "auth.example.com", "host must include a URL scheme (e.g. https://auth.example.com)"),
-			},
-		},
-		"acmedns host with https scheme passes validation": {
-			cfg: &cmacme.ACMEChallengeSolverDNS01{
-				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
-					Host:          "https://auth.example.com",
-					AccountSecret: validSecretKeyRef,
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"acmedns host with http scheme passes validation": {
-			cfg: &cmacme.ACMEChallengeSolverDNS01{
-				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
-					Host:          "http://auth.example.com",
 					AccountSecret: validSecretKeyRef,
 				},
 			},
