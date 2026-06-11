@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -32,15 +33,22 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	unsupportedFeatures := featureset.NewFeatureSet(
+		// SelfSigned issuer is not an ACME issuer.
+		featureset.ACMEUseARI,
+	)
+
 	(&certificates.Suite{
-		Name:             "SelfSigned Issuer",
-		CreateIssuerFunc: createSelfSignedIssuer,
+		Name:                "SelfSigned Issuer",
+		CreateIssuerFunc:    createSelfSignedIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:             "SelfSigned ClusterIssuer",
-		CreateIssuerFunc: createSelfSignedClusterIssuer,
-		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
+		Name:                "SelfSigned ClusterIssuer",
+		CreateIssuerFunc:    createSelfSignedClusterIssuer,
+		DeleteIssuerFunc:    deleteSelfSignedClusterIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

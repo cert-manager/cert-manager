@@ -138,3 +138,9 @@ func SetOrderProfile(profile string) OrderModifier {
 		order.Spec.Profile = profile
 	}
 }
+
+func SetOrderReplacesID(id string) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Spec.Replaces = id
+	}
+}

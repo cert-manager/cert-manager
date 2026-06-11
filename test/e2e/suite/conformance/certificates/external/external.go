@@ -48,6 +48,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
+		featureset.ACMEUseARI,
 	)
 
 	issuerBuilder := newIssuerBuilder("Issuer")

@@ -318,16 +318,24 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		}
 		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, retryAfter)}
 	default:
-		renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
-		if err != nil {
-			reason := policies.ARIError
-			message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
-			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+		existing := crt.Status.RenewalTime
+		if existing != nil &&
+			existing.Time.After(x509cert.NotBefore) &&
+			!existing.Time.Before(ariInfo.SuggestedWindow.Start) &&
+			!existing.Time.After(ariInfo.SuggestedWindow.End) {
+			renewalTime = existing
+		} else {
+			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
+			if err != nil {
+				reason := policies.ARIError
+				message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
+				c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
 
-			ariStatus.LastError = err.Error()
-			ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
+				ariStatus.LastError = err.Error()
+				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
-			break
+				break
+			}
 		}
 
 		ariStatus.ExplanationURL = ariInfo.ExplanationURL
