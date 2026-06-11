@@ -25,6 +25,7 @@ import (
 
 	vcert "github.com/Venafi/vcert/v5"
 	"github.com/Venafi/vcert/v5/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/verror"
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
@@ -599,6 +600,24 @@ func TestIsNetworkError(t *testing.T) {
 		{
 			name: "wrapped net.OpError is a network error",
 			err:  fmt.Errorf("outer: %w", &net.OpError{Op: "dial", Err: fmt.Errorf("timeout")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError with underlying net.OpError (simulates vcert bug with %v formatting)",
+			// This simulates current vcert behavior where ServerUnavailableError is used but
+			// the underlying transport error isn't preserved for errors.As (see https://github.com/Venafi/vcert/issues/664).
+			err:  fmt.Errorf("%w: %v", verror.ServerUnavailableError, &net.OpError{Op: "dial", Err: fmt.Errorf("connection refused")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError with underlying url.Error (DNS failure case)",
+			// This simulates a DNS lookup failure wrapped by vcert's ServerUnavailableError
+			err:  fmt.Errorf("%w: %v", verror.ServerUnavailableError, &url.Error{Op: "Post", URL: "https://auth.apps.paloaltonetworks.com/oauth2/access_token", Err: fmt.Errorf("lookup auth.apps.paloaltonetworks.com: server misbehaving")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError alone (no underlying network error)",
+			err:  verror.ServerUnavailableError,
 			want: true,
 		},
 	}

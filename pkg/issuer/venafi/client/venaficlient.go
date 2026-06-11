@@ -32,6 +32,7 @@ import (
 	"github.com/Venafi/vcert/v5/pkg/venafi/cloud"
 	"github.com/Venafi/vcert/v5/pkg/venafi/ngts"
 	"github.com/Venafi/vcert/v5/pkg/venafi/tpp"
+	"github.com/Venafi/vcert/v5/pkg/verror"
 	"github.com/go-logr/logr"
 	"k8s.io/utils/ptr"
 
@@ -466,10 +467,13 @@ func (v *Venafi) SetClient(client endpoint.Connector) {
 
 // isNetworkError returns true when err originates from a transport-level
 // failure (DNS, TCP, TLS) rather than an HTTP-level auth response.
+// It also treats verror.ServerUnavailableError as a network error because
+// vcert may wrap transport errors using this sentinel without preserving the
+// underlying error for errors.As (see https://github.com/Venafi/vcert/issues/664).
 func isNetworkError(err error) bool {
 	var netErr *net.OpError
 	var urlErr *url.Error
-	return err != nil && (errors.As(err, &netErr) || errors.As(err, &urlErr))
+	return err != nil && (errors.As(err, &netErr) || errors.As(err, &urlErr) || errors.Is(err, verror.ServerUnavailableError))
 }
 
 // VerifyCredentials remotely verifies the credentials for the client, for both TPP and Cloud.
