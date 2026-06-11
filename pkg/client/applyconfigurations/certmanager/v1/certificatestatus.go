@@ -74,7 +74,7 @@ type CertificateStatusApplyConfiguration struct {
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
-	// ACME stores acme related information that is fetched from the ACME CA server.
+	// ACME stores information that is fetched from the ACME CA server.
 	ACME *CertificateACMEStatusApplyConfiguration `json:"acme,omitempty"`
 }
 

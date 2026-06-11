@@ -214,6 +214,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			crt.Status.NotAfter = nil
 			crt.Status.NotBefore = nil
 			crt.Status.RenewalTime = nil
+			crt.Status.ACME = nil
 			break
 		}
 
@@ -269,6 +270,8 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 		d = maxARIPoll
 	}
 
+	// NB: https://pkg.go.dev/crypto/rand#Read never returns an error hence rand.Int will also
+	// never return an error when using crypto/rand.Reader as the source of randomness.
 	randJit, _ := rand.Int(rand.Reader, big.NewInt(int64(2*ariJitterPct*float64(d))))
 	jit := time.Duration(randJit.Int64()) - time.Duration(ariJitterPct*float64(d))
 	return now.Add(d + jit)
@@ -280,30 +283,39 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		return nil
 	}
 
+	now := c.clock.Now()
+
+	var (
+		nextCheck   *metav1.Time
+		lastChecked *metav1.Time
+	)
+	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+		nextCheck = crt.Status.ACME.ARI.NextCheck
+		lastChecked = crt.Status.ACME.ARI.LastChecked
+	}
+
+	staleForCurrentCert := lastChecked != nil && lastChecked.Time.Before(x509cert.NotBefore)
+	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
+	if !needFetch {
+		return nil
+	}
+
 	if crt.Status.ACME == nil {
 		crt.Status.ACME = &cmapi.CertificateACMEStatus{}
 	}
 	if crt.Status.ACME.ARI == nil {
 		crt.Status.ACME.ARI = &cmapi.CertificateACMEARIStatus{}
 	}
-
 	ariStatus := crt.Status.ACME.ARI
 
-	now := c.clock.Now()
-
-	needFetch := ariStatus.NextCheck == nil || !now.Before(ariStatus.NextCheck.Time)
-
-	if !needFetch {
-		return nil
-	}
 	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
-	ariStatus.LastChecked = &metav1.Time{Time: now}
 	var renewalTime *metav1.Time
 
 	switch {
 	case errors.Is(err, acmeapi.ErrCADoesNotSupportARI):
 		crt.Status.ACME = nil
 	case err != nil:
+		ariStatus.LastChecked = &metav1.Time{Time: now}
 		ariStatus.LastError = err.Error()
 		reason := policies.ARIError
 		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
@@ -318,23 +330,33 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		}
 		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, retryAfter)}
 	default:
-		renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
-		if err != nil {
-			reason := policies.ARIError
-			message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
-			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-
-			ariStatus.LastError = err.Error()
-			ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
-
-			break
-		}
-
+		ariStatus.LastChecked = &metav1.Time{Time: now}
+		existing := crt.Status.RenewalTime
 		ariStatus.ExplanationURL = ariInfo.ExplanationURL
 		ariStatus.SuggestedWindow = &cmapi.ACMERenewalWindow{
 			Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
 			End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
 		}
+		if existing != nil &&
+			existing.Time.After(x509cert.NotBefore) &&
+			!existing.Time.Before(ariInfo.SuggestedWindow.Start) &&
+			!existing.Time.After(ariInfo.SuggestedWindow.End) {
+			renewalTime = existing
+		} else {
+			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
+			if err != nil {
+				reason := policies.ARIError
+				message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
+				c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+
+				ariStatus.LastError = err.Error()
+				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
+
+				break
+			}
+		}
+
+		ariStatus.LastError = ""
 		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, ariInfo.RetryAfter)}
 	}
 

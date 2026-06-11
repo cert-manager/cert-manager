@@ -709,7 +709,7 @@ type CertificateStatus struct {
 	// +optional
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
 
-	// ACME stores acme related information that is fetched from the ACME CA server.
+	// ACME stores information that is fetched from the ACME CA server.
 	// +optional
 	ACME *CertificateACMEStatus `json:"acme,omitempty"`
 }
@@ -833,7 +833,7 @@ type NameConstraintItem struct {
 
 type CertificateACMEStatus struct {
 	// ARI stores the ACME Renewal Information that is fetched from the ACME server
-	// in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.
+	// in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
 	//
 	// +optional
 	ARI *CertificateACMEARIStatus `json:"ari,omitempty"`
@@ -842,7 +842,7 @@ type CertificateACMEStatus struct {
 type CertificateACMEARIStatus struct {
 	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
 	//
-	// +required
+	// +optional
 	SuggestedWindow *ACMERenewalWindow `json:"suggestedWindow,omitempty"`
 	// ExplanationURL is a human-readable URL that may explain why the suggested window
 	// has its current value.
@@ -851,11 +851,11 @@ type CertificateACMEARIStatus struct {
 	ExplanationURL string `json:"explanationURL,omitempty"`
 	// LastChecked is the time at which the ACME server was last checked for renewal information.
 	//
-	// +required
+	// +optional
 	LastChecked *metav1.Time `json:"lastChecked,omitempty"`
 	// NextCheck is the time at which the ACME server will next be checked for renewal information.
 	//
-	// +required
+	// +optional
 	NextCheck *metav1.Time `json:"nextCheck,omitempty"`
 	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
 	//

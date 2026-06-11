@@ -215,7 +215,6 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
-	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
@@ -230,7 +229,6 @@ import (
 type Gatherer struct {
 	CertificateRequestLister cmlisters.CertificateRequestLister
 	SecretLister             internalinformers.SecretLister
-	AccountRegistry          accounts.Getter
 }
 
 // DataForCertificate returns the secret as well as the "current" and "next"

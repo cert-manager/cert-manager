@@ -354,25 +354,27 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 	}
 
 	for name, te := range tests {
-		renewBefore := te.notAfter.Sub(te.targetRenewalTime)
+		t.Run(name, func(t *testing.T) {
+			renewBefore := te.notAfter.Sub(te.targetRenewalTime)
 
-		res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec, WithARIInfo(te.ariInfo))
+			res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec, WithARIInfo(te.ariInfo))
 
-		if te.wantErr {
-			assert.NotNil(t, err)
-			assert.ErrorContains(t, err, fmt.Sprintf("cannot find a time with the given windows between %s and %s", te.notBefore, te.notAfter))
+			if te.wantErr {
+				assert.NotNil(t, err)
+				assert.ErrorContains(t, err, fmt.Sprintf("cannot find a time with the given windows between %s and %s", te.notBefore, te.notAfter))
 
-			assert.Equal(t, te.expectedRenewalTime, res.Time, name)
-			return
-		}
+				assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+				return
+			}
 
-		assert.Nil(t, err)
+			assert.Nil(t, err)
 
-		if te.ariInfo != nil {
-			assert.WithinRangef(t, res.Time, te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, res))
-		} else {
-			assert.Equal(t, te.expectedRenewalTime, res.Time, name)
-		}
+			if te.ariInfo != nil {
+				assert.WithinRangef(t, res.Time, te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, res))
+			} else {
+				assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+			}
+		})
 	}
 }
 

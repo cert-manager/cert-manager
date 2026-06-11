@@ -55,6 +55,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// The Venafi Cloud server that we use for these tests has not yet been
 		// configured to allow OtherName fields.
 		featureset.OtherNamesFeature,
+		featureset.ACMEUseARI,
 	)
 
 	provisioner := new(venafiProvisioner)

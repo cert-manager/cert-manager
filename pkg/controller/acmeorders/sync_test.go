@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -30,8 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/component-base/featuregate"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -41,6 +45,7 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
@@ -111,6 +116,9 @@ func TestSync(t *testing.T) {
 			Name: testIssuerHTTP01.Name,
 		}),
 		gen.SetOrderIPAddresses(ipv6AddressTwo))
+
+	testOrderReplacesID := gen.OrderFrom(testOrder,
+		gen.SetOrderReplacesID("testorder-old"))
 
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
@@ -310,7 +318,6 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 		},
 	}
 	testAuthorizationChallenge, err := buildPartialChallenge(t.Context(), testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
-
 	if err != nil {
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
 	}
@@ -849,7 +856,6 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 						return nil, errors.New("Cert URL is incorrect")
 					}
 					return []string{"http://alturl"}, nil
-
 				},
 				FakeFetchCert: func(_ context.Context, url string, bundle bool) ([][]byte, error) {
 					if url != "http://alturl" {
@@ -1010,10 +1016,62 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
+		"create order with replaces id of the certificate that is being renewed": {
+			order: testOrderReplacesID,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReplacesID},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderReplacesID, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			featureGates: map[featuregate.Feature]bool{feature.ACMEUseARI: true},
+			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{RenewalInfo: "http://testurl.com/renewalInfo"}, nil
+				},
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					foundReplaces := false
+					for _, o := range opt {
+						v := reflect.ValueOf(o)
+						if v.Kind() == reflect.String && v.String() == "testorder-old" {
+							foundReplaces = true
+						}
+					}
+					if !foundReplaces {
+						return nil, errors.New("expected replaces option to be set on AuthorizeOrder call")
+					}
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			for gate, value := range test.featureGates {
+				featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, gate, value)
+			}
 			// reset the fixedClock at the start of each test
 			fixedClock.SetTime(nowTime)
 			// always use the fixedClock unless otherwise specified
@@ -1031,6 +1089,7 @@ type testT struct {
 	acmeClient     acmecl.Interface
 	shouldSchedule bool
 	expectErr      bool
+	featureGates   map[featuregate.Feature]bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -1075,7 +1134,6 @@ func runTest(t *testing.T, test testT) {
 }
 
 func TestFinalizeOrder(t *testing.T) {
-
 	tests := map[string]struct {
 		cl               acmecl.Interface
 		o                *cmacme.Order
@@ -1189,7 +1247,6 @@ func TestFinalizeOrder(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 type fakeLogSink struct {

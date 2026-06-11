@@ -2727,7 +2727,6 @@ func schema_pkg_apis_certmanager_v1_CertificateACMEARIStatus(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"suggestedWindow", "lastChecked", "nextCheck"},
 			},
 		},
 		Dependencies: []string{
@@ -2743,7 +2742,7 @@ func schema_pkg_apis_certmanager_v1_CertificateACMEStatus(ref common.ReferenceCa
 				Properties: map[string]spec.Schema{
 					"ari": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ARI stores the ACME Renewal Information that is fetched from the ACME server in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.",
+							Description: "ARI stores the ACME Renewal Information that is fetched from the ACME server in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEARIStatus"),
 						},
 					},
@@ -3731,7 +3730,7 @@ func schema_pkg_apis_certmanager_v1_CertificateStatus(ref common.ReferenceCallba
 					},
 					"acme": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ACME stores acme related information that is fetched from the ACME CA server.",
+							Description: "ACME stores information that is fetched from the ACME CA server.",
 							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEStatus"),
 						},
 					},

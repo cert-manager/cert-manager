@@ -274,12 +274,35 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		reason := Renewing
 		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
 
-		var renewalTime *metav1.Time
-		if input.ARIRenewalInfo != nil {
-			renewalTime, err = pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(input.ARIRenewalInfo))
-		} else {
-			renewalTime, err = pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		// When ARI information is available, let the renewal purely on whether
+		// the current time has entered the ACME-server-suggested renewal
+		// window. Do NOT call pki.RenewalTime here: that function picks a
+		// random time within the ARI window on every invocation, so calling
+		// it from the trigger controller would return a different result each
+		// reconcile and could cause us to skip renewal forever once we are
+		// inside the window. The random selection still happens in the
+		// readiness controller when setting Status.RenewalTime, which jitters
+		// the scheduled wake-up; the gate just compares against the window
+		// start so we reliably renew as soon as the window opens.
+		//
+		// We also ignore the ARI window when it appears to describe a prior
+		// revision of this certificate — i.e. SuggestedWindow.Start is at or
+		// before the current cert's NotBefore. In that case the ACME server's
+		// window cannot meaningfully apply to the certificate currently in
+		// the Secret (we've just renewed and are looking at fresh bytes), so
+		// depending on it would trigger an immediate re-renewal loop. Fall back
+		// to the deterministic renewBefore calculation in that case; the
+		// readiness controller will refresh ARI on its next reconcile.
+		if input.ARIRenewalInfo != nil &&
+			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() &&
+			input.ARIRenewalInfo.SuggestedWindow.Start.After(x509Cert.NotBefore) {
+			if c.Now().Before(input.ARIRenewalInfo.SuggestedWindow.Start) {
+				return "", "", false
+			}
+			return reason, message, true
 		}
+
+		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 		if err != nil {
 			reason = WindowError
 			message = err.Error()

@@ -757,13 +757,13 @@ spec:
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               acme:
-                description: ACME stores acme related information that is fetched
-                  from the ACME CA server.
+                description: ACME stores information that is fetched from the ACME
+                  CA server.
                 properties:
                   ari:
                     description: |-
                       ARI stores the ACME Renewal Information that is fetched from the ACME server
-                      in accordance with RFC 9773. This is only populated if the ARI feature gates is enabled.
+                      in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
                     properties:
                       explanationURL:
                         description: |-
@@ -801,10 +801,6 @@ spec:
                         - end
                         - start
                         type: object
-                    required:
-                    - lastChecked
-                    - nextCheck
-                    - suggestedWindow
                     type: object
                 type: object
               conditions:

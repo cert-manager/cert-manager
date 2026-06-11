@@ -51,6 +51,8 @@ type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1
 // will be the computed period before expiry based on the renewBeforePercentage
 // value and certificate lifetime.
 // Default renewal time is 2/3 through certificate's lifetime.
+//
+// NB: If ARI is provided and the feature gate is enabled, the renewal time will be calculated based on the ARI suggested window instead of the renewBefore and renewBeforePercentage values. Cron windows will be applied on top of the ARI suggested window if provided.
 func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *apiv1.CertificateRenewal, opts ...RenewalTimeOptions) (*metav1.Time, error) {
 	o := &RenewalOptions{}
 	for _, opt := range opts {
@@ -103,6 +105,8 @@ func selectRandTimeInARIWindow(start, end time.Time) time.Time {
 
 	window := end.Sub(start)
 
+	// NB: https://pkg.go.dev/crypto/rand#Read never returns an error hence rand.Int will also
+	// never return an error when using crypto/rand.Reader as the source of randomness.
 	randomOffset, _ := rand.Int(rand.Reader, big.NewInt(int64(window)))
 
 	return start.Add(time.Duration(randomOffset.Int64()))

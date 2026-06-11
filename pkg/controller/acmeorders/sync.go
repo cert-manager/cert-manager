@@ -314,10 +314,8 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	optsBeforeReplaces := len(options)
 	replacesAppended := false
 	if ariEnabled && o.Spec.Replaces != "" {
-		if dir, derr := cl.Discover(ctx); derr == nil && dir.RenewalInfo != "" {
-			options = append(options, acmeapi.WithOrderReplacesCertID(o.Spec.Replaces))
-			replacesAppended = true
-		}
+		options = append(options, acmeapi.WithOrderReplacesCertID(o.Spec.Replaces))
+		replacesAppended = true
 	}
 
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
