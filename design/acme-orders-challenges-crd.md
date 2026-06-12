@@ -343,7 +343,7 @@ Just before retrying the Order, the old Order resource will be deleted to
 ensure we don't accumulate too many Order & Challenge resources when an issuance
 keeps failing.
 
-#### Order controller
+#### Order controller
 
 When an order is created, all of the spec fields must be defined, including CSR.
 The Order controller will be responsible for handling the entirety of an ACME
