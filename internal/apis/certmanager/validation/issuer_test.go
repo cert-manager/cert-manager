@@ -1728,6 +1728,45 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
 			},
 		},
+		"valid nameservers with ip:port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"8.8.8.8:53", "1.1.1.1:53"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"valid nameservers with hostname:port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"ns.example.com:53"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"valid nameservers with doh url": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"https://cloudflare-dns.com/dns-query"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid nameserver missing port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"8.8.8.8"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("nameservers").Index(0), "8.8.8.8", "must be in the format <ip address>:<port>"),
+			},
+		},
+		"invalid nameserver doh url missing host": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"https://"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("nameservers").Index(0), "https://", "must be in the format https://<DoH RFC 8484 server address>"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

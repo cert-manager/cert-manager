@@ -352,6 +352,15 @@ type ACMEChallengeSolverDNS01 struct {
 	// records when found in DNS zones.
 	CNAMEStrategy CNAMEStrategy
 
+	// Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+	// checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+	// where host may be an IP address or hostname, or
+	// `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+	// the controller's configured global DNS01 recursive nameservers are used.
+	// When specified, this overrides the global nameservers for this solver
+	// only, and disables the authoritative nameserver check.
+	Nameservers []string
+
 	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
 	Akamai *ACMEIssuerDNS01ProviderAkamai
 
