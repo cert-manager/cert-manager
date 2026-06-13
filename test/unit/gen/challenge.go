@@ -142,3 +142,9 @@ func SetChallengeSolverDNS01(solver cmacme.ACMEChallengeSolverDNS01) ChallengeMo
 		ch.Spec.Solver.DNS01 = &solver
 	}
 }
+
+func SetChallengeSolverHTTP01(solver cmacme.ACMEChallengeSolverHTTP01) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver.HTTP01 = &solver
+	}
+}
