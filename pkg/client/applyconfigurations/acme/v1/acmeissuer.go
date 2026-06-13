@@ -91,6 +91,9 @@ type ACMEIssuerApplyConfiguration struct {
 	// for the Issuer.
 	// Defaults to false.
 	DisableAccountKeyGeneration *bool `json:"disableAccountKeyGeneration,omitempty"`
+	// AccountPrivateKey contains the configuration for the ACME account private key.
+	// If not specified, defaults to RSA with 2048 bit key size.
+	AccountPrivateKey *AccountPrivateKeyApplyConfiguration `json:"accountPrivateKey,omitempty"`
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
@@ -184,6 +187,14 @@ func (b *ACMEIssuerApplyConfiguration) WithSolvers(values ...*ACMEChallengeSolve
 // If called multiple times, the DisableAccountKeyGeneration field is set to the value of the last call.
 func (b *ACMEIssuerApplyConfiguration) WithDisableAccountKeyGeneration(value bool) *ACMEIssuerApplyConfiguration {
 	b.DisableAccountKeyGeneration = &value
+	return b
+}
+
+// WithAccountPrivateKey sets the AccountPrivateKey field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AccountPrivateKey field is set to the value of the last call.
+func (b *ACMEIssuerApplyConfiguration) WithAccountPrivateKey(value *AccountPrivateKeyApplyConfiguration) *ACMEIssuerApplyConfiguration {
+	b.AccountPrivateKey = value
 	return b
 }
 
