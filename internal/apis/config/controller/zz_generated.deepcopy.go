@@ -103,6 +103,30 @@ func (in *ControllerConfiguration) DeepCopyInto(out *ControllerConfiguration) {
 	in.ACMEDNS01Config.DeepCopyInto(&out.ACMEDNS01Config)
 	out.PEMSizeLimitsConfig = in.PEMSizeLimitsConfig
 	in.GatewayAPIConfig.DeepCopyInto(&out.GatewayAPIConfig)
+	if in.MetricStaticLabels != nil {
+		in, out := &in.MetricStaticLabels, &out.MetricStaticLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
+	if in.ParsedMetricStaticLabels != nil {
+		in, out := &in.ParsedMetricStaticLabels, &out.ParsedMetricStaticLabels
+		*out = make(map[string]map[string]string, len(*in))
+		for key, val := range *in {
+			var outVal map[string]string
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = make(map[string]string, len(*in))
+				for key, val := range *in {
+					(*out)[key] = val
+				}
+			}
+			(*out)[key] = outVal
+		}
+	}
 	return
 }
 

@@ -154,8 +154,11 @@ type ControllerConfiguration struct {
 	// a maximum of 32 hours) based on the number of consecutive failures and represents
 	// the minimum backoff applied.
 	CertificateRequestMinimumBackoffDuration time.Duration
-}
 
+	MetricStaticLabels map[string]string
+
+	ParsedMetricStaticLabels map[string]map[string]string
+}
 type LeaderElectionConfig struct {
 	shared.LeaderElectionConfig
 

@@ -50,6 +50,14 @@ const (
 	prometheusMetricsServerMaxHeaderBytes = 1 << 20 // 1 MiB
 )
 
+var MetricsSupportingStaticLabels = []string{
+	"certmanager_certificate_ready_status",
+	"certmanager_certificate_not_after_timestamp_seconds",
+	"certmanager_certificate_not_before_timestamp_seconds",
+	"certmanager_certificate_expiration_timestamp_seconds",
+	"certmanager_certificate_renewal_timestamp_seconds",
+}
+
 // Metrics is designed to be a shared object for updating the metrics exposed
 // by cert-manager
 type Metrics struct {
@@ -225,8 +233,8 @@ func (m *Metrics) SetupACMECollector(acmeInformers cmacmelisters.ChallengeLister
 	m.challengeCollector = cmcollectors.NewACMECollector(acmeInformers)
 }
 
-func (m *Metrics) SetupCertificateCollector(certLister cmlisters.CertificateLister) {
-	m.certificateCollector = cmcollectors.NewCertificateCollector(certLister)
+func (m *Metrics) SetupCertificateCollector(certLister cmlisters.CertificateLister, staticLabels map[string]map[string]string) {
+	m.certificateCollector = cmcollectors.NewCertificateCollector(certLister, staticLabels)
 }
 
 func (m *Metrics) SetupIssuerCollector(issuerLister cmlisters.IssuerLister) {

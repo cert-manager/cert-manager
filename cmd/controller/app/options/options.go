@@ -28,6 +28,7 @@ import (
 	shimgatewaycontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/gateways"
 	listenersetcontroller "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim/listenerset"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/pflag"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -258,6 +259,8 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.DurationVar(&c.CertificateRequestMinimumBackoffDuration, "certificate-request-minimum-backoff-duration", c.CertificateRequestMinimumBackoffDuration, ""+
 		"Duration of the initial certificate request backoff when a certificate request fails. "+
 		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
+
+	fs.Var(cliflag.NewMapStringString(&c.MetricStaticLabels), "metric-static-labels", "Additional static labels to attach to certificate metrics, in the form <metric_name>:<label_key>=<label_value>. Supported metrics:"+strings.Join(metrics.MetricsSupportingStaticLabels, ", "))
 
 	logf.AddFlags(&c.Logging, fs)
 }
