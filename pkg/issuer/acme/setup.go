@@ -275,6 +275,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 			CABundle:      issuer.GetSpec().ACME.CABundle,
 			Server:        issuer.GetSpec().ACME.Server,
+			AccountUri:    issuer.GetStatus().ACMEStatus().URI,
 			PrivateKey:    rsaPk,
 		})
 
@@ -434,6 +435,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		SkipTLSVerify: issuer.GetSpec().ACME.SkipTLSVerify,
 		CABundle:      issuer.GetSpec().ACME.CABundle,
 		Server:        issuer.GetSpec().ACME.Server,
+		AccountUri:    account.URI,
 		PrivateKey:    rsaPk,
 	})
 

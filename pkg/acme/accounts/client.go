@@ -43,6 +43,7 @@ type NewClientOptions struct {
 	CABundle      []byte
 	Server        string
 	PrivateKey    *rsa.PrivateKey
+	AccountUri    string
 }
 
 // NewClientFunc is a function type for building a new ACME client.
@@ -66,6 +67,7 @@ func newClientFromHTTPClient(httpClient *http.Client, userAgent string, options 
 		DirectoryURL: options.Server,
 		UserAgent:    userAgent,
 		RetryBackoff: acmeutil.RetryBackoff,
+		KID:          acmeapi.KeyID(options.AccountUri),
 	})
 }
 
