@@ -112,10 +112,16 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &acmev1.ServiceAccountRefApplyConfiguration{}
 
 		// Group=cert-manager.io, Version=v1
+	case certmanagerv1.SchemeGroupVersion.WithKind("ACMERenewalWindow"):
+		return &applyconfigurationscertmanagerv1.ACMERenewalWindowApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CAIssuer"):
 		return &applyconfigurationscertmanagerv1.CAIssuerApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("Certificate"):
 		return &applyconfigurationscertmanagerv1.CertificateApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateACMEARIStatus"):
+		return &applyconfigurationscertmanagerv1.CertificateACMEARIStatusApplyConfiguration{}
+	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateACMEStatus"):
+		return &applyconfigurationscertmanagerv1.CertificateACMEStatusApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateAdditionalOutputFormat"):
 		return &applyconfigurationscertmanagerv1.CertificateAdditionalOutputFormatApplyConfiguration{}
 	case certmanagerv1.SchemeGroupVersion.WithKind("CertificateCondition"):

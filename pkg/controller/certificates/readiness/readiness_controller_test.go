@@ -17,23 +17,35 @@ limitations under the License.
 package readiness
 
 import (
+	"context"
+	"crypto/x509"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
+	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // policyEvaluatorBuilder returns a fake readyConditionFunc for ReadinessController.
@@ -45,7 +57,7 @@ func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 
 // renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
 func renewalTimeBuilder(rt *metav1.Time, err error) pki.RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal) (*metav1.Time, error) {
+	return func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal, opts ...pki.RenewalTimeOptions) (*metav1.Time, error) {
 		return rt, err
 	}
 }
@@ -557,6 +569,245 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			}
 			if test.violationFound != violationFound {
 				t.Errorf("unexpected 'violationFound' exp=%v, got=%v", test.violationFound, violationFound)
+			}
+		})
+	}
+}
+
+func TestReadinessForARI(t *testing.T) {
+	now := time.Now().UTC()
+	metaNow := metav1.NewTime(now)
+	// private key to be used to generate X509 certificate
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+			IssuerRef: cmmeta.IssuerReference{
+				Name:  "test-issuer",
+				Kind:  cmapi.IssuerKind,
+				Group: "cert-manager.io",
+			},
+		},
+	}
+	// Issuer referenced by the Certificate. Required so the readiness
+	// controller's issuer helper can resolve the issuer when the
+	// ACMEUseARI feature gate is enabled.
+	issuer := gen.Issuer("test-issuer",
+		gen.SetIssuerNamespace("testns"),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+	)
+	// base Secret to be used in tests
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "testns",
+			Name:      "test-secret",
+		},
+	}
+
+	tests := map[string]struct {
+		// key that should be passed to ProcessItem.
+		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
+		// if neither is set, the key will be "".
+		key types.NamespacedName
+
+		// cert to be loaded to fake clientset
+		cert *cmapi.Certificate
+
+		// whether we expect an update action against the Certificate
+		certShouldUpdate bool
+
+		// Certificate's Ready condition to be applied with the update
+		condition cmapi.CertificateCondition
+
+		// whether secret should be loaded into the fake clientset
+		// if notAfter, notBefore and renewalTime are set, an X509 cert will also be built and
+		// added as tls.crt value to the secret data
+		secretShouldExist bool
+
+		// notAfter will be used to build the X509 cert and
+		// as the updated Certificate's status.notAfter
+		notAfter *metav1.Time
+
+		// notBefore will be used to build the X509 cert and
+		// as the updated Certificate's status.notBefore
+		notBefore *metav1.Time
+
+		// renewalTime will be the updated Certificate's status.renewalTime
+		renewalTime *metav1.Time
+
+		// renewalTimeError will be the error that should be returned from the renewal function
+		renewalTimeError error
+
+		wantsErr bool
+
+		acmeClient acmecl.Interface
+	}{
+		"update status for a Certificate that is evaluated as Ready with ARI and whose spec.secretName secret contains a valid X509 cert": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaNow,
+			},
+			cert:              gen.CertificateFrom(cert),
+			certShouldUpdate:  true,
+			secretShouldExist: true,
+			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
+			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
+			acmeClient: &acmecl.FakeACME{
+				FakeGetRenewalInfo: func(ctx context.Context, cert *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+					return &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: now.Add(24 * time.Hour),
+							End:   now.Add(48 * time.Hour),
+						},
+						ExplanationURL: "example.com/explanation",
+					}, nil
+				},
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Enable the ACMEUseARI feature gate so the readiness
+			// controller exercises the ARI code path under test.
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.ACMEUseARI, true)
+
+			builder := &testpkg.Builder{
+				T: t,
+				// Fix the clock to be able to set lastTransitionTime on Certificate's Ready condition.
+				Clock: fakeclock.NewFakeClock(now),
+			}
+			if test.cert != nil {
+				// Ensures cert is loaded into the builder's fake clientset.
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.cert)
+			}
+			// Load the Issuer referenced by the Certificate so the
+			// readiness controller's issuer helper can resolve it.
+			builder.CertManagerObjects = append(builder.CertManagerObjects, issuer)
+
+			if test.secretShouldExist {
+				mods := make([]gen.SecretModifier, 0)
+				// If the test scenario needs a secret with a valid X509 cert.
+				if test.notBefore != nil && test.notAfter != nil {
+					x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
+					mods = append(mods,
+						gen.SetSecretData(map[string][]byte{
+							"tls.crt": x509Bytes,
+						}))
+				}
+				// Ensure secret is loaded into the builder's fake clientset.
+				builder.KubeObjects = append(builder.KubeObjects,
+					gen.SecretFrom(secret, mods...))
+			}
+
+			builder.Init()
+
+			// Register informers used by the controller using the registration wrapper.
+			w := &controllerWrapper{}
+			_, _, err := w.Register(builder.Context)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Override controller's readyCondition func with a fake that returns test.condition.
+			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
+
+			// Override controller's event recorder with a fake recorder to capture some events.
+			w.controller.recorder = new(testpkg.FakeRecorder)
+
+			w.controller.accountRegistry = &accountstest.FakeRegistry{
+				GetClientFunc: func(uid string) (acmecl.Interface, error) {
+					return test.acmeClient, nil
+				},
+			}
+
+			ariInfo, _ := test.acmeClient.GetRenewalInfo(t.Context(), nil)
+
+			// Pre-compute renewal time once. pki.RenewalTime selects a random
+			// instant within the ARI SuggestedWindow, so we must compute the
+			// expected value here and have the override return the same
+			// deterministic value when invoked by the controller.
+			expectedRenewalTime, err := pki.RenewalTime(test.notBefore.Time, test.notAfter.Time, nil, nil, nil, pki.WithARIInfo(ariInfo))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if expectedRenewalTime.Time.Before(ariInfo.SuggestedWindow.Start) || expectedRenewalTime.After(ariInfo.SuggestedWindow.End) {
+				t.Fatalf("expected renewal time %v to be within the ARI suggested window (%v - %v)", expectedRenewalTime, ariInfo.SuggestedWindow.Start, ariInfo.SuggestedWindow.End)
+			}
+
+			w.controller.renewalTimeCalculator = func(t1, t2 time.Time, d *metav1.Duration, i *int32, cr *cmapi.CertificateRenewal, rto ...pki.RenewalTimeOptions) (*metav1.Time, error) {
+				return expectedRenewalTime, nil
+			}
+
+			if test.certShouldUpdate {
+				c := gen.CertificateFrom(test.cert,
+					gen.SetCertificateStatusCondition(test.condition))
+
+				// gen package functions don't accept pointers - we need to test setting these values to nil in some scenarios.
+				c.Status.NotAfter = test.notAfter
+				c.Status.NotBefore = test.notBefore
+				c.Status.RenewalTime = expectedRenewalTime
+				// Expected ACME ARI status populated by the controller
+				// when ACMEUseARI is enabled. LastChecked is set to the
+				// fake clock's "now" by the controller. NextCheck is
+				// computed with random jitter so it is ignored in the
+				// match below.
+				c.Status.ACME = &cmapi.CertificateACMEStatus{
+					ARI: &cmapi.CertificateACMEARIStatus{
+						ExplanationURL: ariInfo.ExplanationURL,
+						SuggestedWindow: &cmapi.ACMERenewalWindow{
+							Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
+							End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+						},
+						LastChecked: &metaNow,
+					},
+				}
+
+				builder.ExpectedActions = append(builder.ExpectedActions,
+					testpkg.NewCustomMatch(
+						coretesting.NewUpdateSubresourceAction(
+							cmapi.SchemeGroupVersion.WithResource("certificates"),
+							"status",
+							c.Namespace,
+							c),
+						func(expected, actual coretesting.Action) error {
+							return testutil.Diff(expected, actual,
+								cmp.FilterPath(func(p cmp.Path) bool {
+									return p.Last().String() == ".ManagedFields"
+								}, cmp.Ignore()),
+								// NextCheck includes random jitter so cannot be deterministic.
+								cmpopts.IgnoreFields(cmapi.CertificateACMEARIStatus{}, "NextCheck"),
+							)
+						},
+					))
+			}
+
+			// Start the informers and begin processing updates.
+			builder.Start()
+			defer builder.Stop()
+
+			key := test.key
+			if key == (types.NamespacedName{}) && cert != nil {
+				key = types.NamespacedName{
+					Name:      cert.Name,
+					Namespace: cert.Namespace,
+				}
+			}
+
+			// Call ProcessItem
+			err = w.controller.ProcessItem(t.Context(), key)
+			if test.wantsErr != (err != nil) {
+				t.Errorf("expected error: %v, got : %v", test.wantsErr, err)
+			}
+
+			if err := builder.AllActionsExecuted(); err != nil {
+				builder.T.Error(err)
 			}
 		})
 	}
