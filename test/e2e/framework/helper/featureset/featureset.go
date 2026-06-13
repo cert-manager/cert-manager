@@ -114,4 +114,9 @@ const (
 	// a certificate containing otherName SAN values in the CSR, without
 	// imposing requirements on form or structure.
 	OtherNamesFeature Feature = "OtherNames"
+
+	// SubjectKeyIdentifierFeature denotes whether the target issuer computes
+	// the Subject Key Identifier (SKI) using cert-manager's algorithm.
+	// External issuers (Vault, ACME, Venafi) compute their own SKI values.
+	SubjectKeyIdentifierFeature Feature = "SubjectKeyIdentifier"
 )
