@@ -39,17 +39,19 @@ spec:
         {{- with .Values.webhook.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- with .Values.webhook.podAnnotations }}
       annotations:
+        {{- if .Values.webhook.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/webhook-config.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.webhook.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
-      {{- if not .Values.webhook.podAnnotations }}
-      annotations:
-      {{- end }}
+        {{- end }}
+        {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
+        {{- if not .Values.webhook.podAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
         prometheus.io/port: '9402'
+        {{- end }}
       {{- end }}
     spec:
       {{- if not .Values.webhook.serviceAccount.create }}
