@@ -1904,7 +1904,7 @@ func schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref common.ReferenceCall
 					"dnsNames": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -1923,7 +1923,7 @@ func schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref common.ReferenceCall
 					"dnsZones": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -2526,7 +2526,7 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 					"crlDistributionPoints": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -2545,7 +2545,7 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 					"ocspServers": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -2564,7 +2564,7 @@ func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) commo
 					"issuingCertificateURLs": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3100,7 +3100,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 					"usages": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3334,7 +3334,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"dnsNames": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3353,7 +3353,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"ipAddresses": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3372,7 +3372,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"uris": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3391,7 +3391,11 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"otherNames": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-map-keys": []interface{}{
+									"oid",
+									"utf8Value",
+								},
+								"x-kubernetes-list-type": "map",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3409,7 +3413,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"emailAddresses": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3462,7 +3466,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"usages": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -3508,7 +3512,10 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					"additionalOutputFormats": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-map-keys": []interface{}{
+									"type",
+								},
+								"x-kubernetes-list-type": "map",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -4182,6 +4189,7 @@ func schema_pkg_apis_certmanager_v1_OtherName(ref common.ReferenceCallback) comm
 					"oid": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, \"1.2.840.113556.1.4.221\".",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4189,11 +4197,13 @@ func schema_pkg_apis_certmanager_v1_OtherName(ref common.ReferenceCallback) comm
 					"utf8Value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "utf8Value is the string value of the otherName SAN. The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
+				Required: []string{"oid", "utf8Value"},
 			},
 		},
 	}
@@ -4254,7 +4264,7 @@ func schema_pkg_apis_certmanager_v1_SelfSignedIssuer(ref common.ReferenceCallbac
 					"crlDistributionPoints": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-type": "set",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
