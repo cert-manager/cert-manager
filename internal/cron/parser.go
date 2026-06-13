@@ -104,6 +104,9 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		var err error
 		i := strings.Index(spec, " ")
 		eq := strings.Index(spec, "=")
+		if i == -1 {
+			return nil, fmt.Errorf("expected timezone prefix to be followed by a cron spec: %s", spec)
+		}
 		if loc, err = time.LoadLocation(spec[eq+1 : i]); err != nil {
 			return nil, fmt.Errorf("provided bad location %s: %v", spec[eq+1:i], err)
 		}
