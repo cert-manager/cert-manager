@@ -19,10 +19,12 @@ package validation
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
@@ -513,6 +515,57 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+		"acme solver with a valid waitInsteadOfSelfCheck duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 30 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a zero waitInsteadOfSelfCheck duration": {
+			// A zero duration is a valid "skip the self-check and accept
+			// immediately" configuration that relies on the ACME server's own
+			// validation retries; only negative durations are rejected.
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 0},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a negative waitInsteadOfSelfCheck duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: -5 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("solvers").Index(0).Child("waitInsteadOfSelfCheck"), -5*time.Second, "waitInsteadOfSelfCheck must not be negative"),
 			},
 		},
 		"acme solver with external account binding missing required fields": {

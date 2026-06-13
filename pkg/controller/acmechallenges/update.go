@@ -124,6 +124,9 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 	challengeStatus := cmacmeac.ChallengeStatus().
 		WithProcessing(challenge.Status.Processing).
 		WithPresented(challenge.Status.Presented)
+	if challenge.Status.PresentedAt != nil {
+		challengeStatus = challengeStatus.WithPresentedAt(*challenge.Status.PresentedAt)
+	}
 	if challenge.Status.Reason != "" {
 		challengeStatus = challengeStatus.WithReason(challenge.Status.Reason)
 	}
