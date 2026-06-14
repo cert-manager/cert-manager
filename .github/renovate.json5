@@ -61,19 +61,11 @@
       matchBaseBranches: [
         '/^release-.*/',
       ],
-      enabled: false,
-    },
-    {
-      matchBaseBranches: [
-        '/^release-.*/',
-      ],
       matchUpdateTypes: [
-        'patch',
-        'pin',
-        'pinDigest',
-        'digest',
+        'major',
+        'minor',
       ],
-      enabled: true,
+      enabled: false,
     },
   ],
 }
