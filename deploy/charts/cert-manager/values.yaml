@@ -532,7 +532,9 @@ networkPolicy:
   # outbound traffic to ports 80 and 443, as well as DNS ports.
   #
   # If using HTTP01 challenges, you must also allow egress to the dynamically
-  # created solver pods. The solver pods are labelled with
+  # created solver pods. For more detailed examples, see the best practice docs:
+  # https://cert-manager.io/docs/installation/best-practice/#networkpolicy-examples-for-http01-challenges
+  # The solver pods are labelled with
   # `acme.cert-manager.io/http01-solver: "true"` and run in the same namespace
   # as the Issuer or the namespace of the Ingress challenge. For example:
   # +docs:example
