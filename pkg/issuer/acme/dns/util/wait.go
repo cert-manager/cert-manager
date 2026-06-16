@@ -24,6 +24,12 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+// maxDNSResponseSize is the max size of a received DNS-over-HTTPS response
+// body. DNS over TCP responses are limited to 65535 bytes by RFC 1035; this
+// is set to a generous 128KB to allow for overhead while still preventing a
+// malicious DoH server from sending an arbitrarily large response.
+const maxDNSResponseSize = 128 * 1024
+
 type preCheckDNSFunc func(ctx context.Context, fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
@@ -257,7 +263,7 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 		return nil, 0, fmt.Errorf("dns: unexpected Content-Type %q; expected %q", ct, dohMimeType)
 	}
 
-	p, err = io.ReadAll(resp.Body)
+	p, err = io.ReadAll(io.LimitReader(resp.Body, maxDNSResponseSize))
 	if err != nil {
 		return nil, 0, err
 	}
