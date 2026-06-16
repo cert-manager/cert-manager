@@ -20,6 +20,7 @@ package v1
 
 import (
 	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ChallengeStatusApplyConfiguration represents a declarative configuration of the ChallengeStatus type for use
@@ -32,13 +33,18 @@ type ChallengeStatusApplyConfiguration struct {
 	// If this field is set to false, the challenge controller will not take
 	// any more action.
 	Processing *bool `json:"processing,omitempty"`
-	// presented will be set to true if the challenge values for this challenge
-	// are currently 'presented'.
-	// This *does not* imply the self check is passing. Only that the values
-	// have been 'submitted' for the appropriate challenge mechanism (i.e. the
-	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
-	// configured).
+	// Presented is true once cert-manager has configured the solver resources
+	// needed to expose this challenge's validation material.
+	// For example, the DNS01 TXT record has been created, or the HTTP01 solver
+	// has been configured to serve the challenge token.
+	// This does not imply the self check is passing, that the ACME server has
+	// validated the challenge, or that cert-manager has already accepted the
+	// challenge with the ACME server.
 	Presented *bool `json:"presented,omitempty"`
+	// PresentedAt records when cert-manager first configured the solver
+	// resources for this challenge. This is used by the optional delay-based
+	// readiness logic.
+	PresentedAt *metav1.Time `json:"presentedAt,omitempty"`
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	Reason *string `json:"reason,omitempty"`
@@ -66,6 +72,14 @@ func (b *ChallengeStatusApplyConfiguration) WithProcessing(value bool) *Challeng
 // If called multiple times, the Presented field is set to the value of the last call.
 func (b *ChallengeStatusApplyConfiguration) WithPresented(value bool) *ChallengeStatusApplyConfiguration {
 	b.Presented = &value
+	return b
+}
+
+// WithPresentedAt sets the PresentedAt field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PresentedAt field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithPresentedAt(value metav1.Time) *ChallengeStatusApplyConfiguration {
+	b.PresentedAt = &value
 	return b
 }
 

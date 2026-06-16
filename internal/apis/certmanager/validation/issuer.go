@@ -170,6 +170,10 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Required(fldPath, "no solver type configured"))
 	}
 
+	if sol.WaitInsteadOfSelfCheck != nil && sol.WaitInsteadOfSelfCheck.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
+	}
+
 	return el
 }
 
