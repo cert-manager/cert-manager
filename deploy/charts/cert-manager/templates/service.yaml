@@ -1,0 +1,37 @@
+{{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "cert-manager.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+{{- with .Values.serviceAnnotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+    {{- with .Values.serviceLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  {{- if .Values.serviceIPFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.serviceIPFamilyPolicy }}
+  {{- end }}
+  {{- if .Values.serviceIPFamilies }}
+  ipFamilies: {{ .Values.serviceIPFamilies | toYaml | nindent 2 }}
+  {{- end }}
+  ports:
+  - protocol: TCP
+    port: 9402
+    name: tcp-prometheus-servicemonitor
+    targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+  selector:
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+{{- end }}

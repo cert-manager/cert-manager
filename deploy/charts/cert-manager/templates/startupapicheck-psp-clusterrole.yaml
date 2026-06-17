@@ -1,0 +1,24 @@
+{{- if .Values.startupapicheck.enabled }}
+{{- if .Values.global.podSecurityPolicy.enabled }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "startupapicheck.fullname" . }}-psp
+  labels:
+    app: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "startupapicheck"
+    {{- include "labels" . | nindent 4 }}
+  {{- with .Values.startupapicheck.rbac.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - {{ template "startupapicheck.fullname" . }}
+{{- end }}
+{{- end }}

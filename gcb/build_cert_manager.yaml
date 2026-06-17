@@ -1,0 +1,43 @@
+# This cloudbuild config file is intended to be triggered when a tag is pushed to the cert-manager repo
+# and will build a cert-manager release and push to Google Cloud Storage (GCS).
+
+# The release won't be published automatically; this file just defines the build steps.
+
+# The full release and publish process is documented here:
+# https://cert-manager.io/docs/contributing/release-process/
+
+timeout: 2700s # 45m
+
+steps:
+# cert-manager relies on the git checkout to determine release version, among other things
+# By default, gcb only does a shallow clone, so we need to "unshallow" to get more details
+- name: gcr.io/cloud-builders/git
+  args: ['fetch', '--unshallow']
+
+## Build release artifacts and push to a bucket
+- name: 'europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-manager-infra-images/make-dind:20240422-6b43e85-bookworm'
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    set -eu -o pipefail
+    make vendor-go
+    make CMREL_KEY="${_KMS_KEY}" RELEASE_TARGET_BUCKET="${_RELEASE_TARGET_BUCKET}" -j8 upload-release
+    echo "Wrote to ${_RELEASE_TARGET_BUCKET}"
+
+tags:
+- "cert-manager-tag-push"
+- "ref-${REF_NAME}-${COMMIT_SHA}"
+
+substitutions:
+  _KMS_KEY: "projects/cert-manager-release/locations/europe-west1/keyRings/cert-manager-release/cryptoKeys/cert-manager-release-signing-key/cryptoKeyVersions/1"
+  _RELEASE_TARGET_BUCKET: "cert-manager-release"
+
+options:
+  # https://cloud.google.com/build/docs/optimize-builds/increase-vcpu-for-builds
+  # https://cloud.google.com/build/pricing
+  machineType: E2_HIGHCPU_32
+  logging: GCS_ONLY
+
+serviceAccount: projects/cert-manager-release/serviceAccounts/cert-manager-release-gcb@cert-manager-release.iam.gserviceaccount.com
+logsBucket: gs://cert-manager-release-logs

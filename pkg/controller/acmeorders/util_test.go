@@ -1,0 +1,786 @@
+/*
+Copyright 2020 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package acmeorders
+
+import (
+	"fmt"
+	"reflect"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
+)
+
+func TestChallengeSpecForAuthorization(t *testing.T) {
+	// a reusable and very simple ACME client that only implements the HTTP01
+	// and DNS01 challenge response/record methods
+	basicACMEClient := &acmecl.FakeACME{
+		FakeHTTP01ChallengeResponse: func(string) (string, error) {
+			return "http01", nil
+		},
+		FakeDNS01ChallengeRecord: func(string) (string, error) {
+			return "dns01", nil
+		},
+	}
+	// define some reusable solvers that are used in multiple unit tests
+	emptySelectorSolverHTTP01 := cmacme.ACMEChallengeSolver{
+		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+			Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+				Name: "empty-selector-solver",
+			},
+		},
+	}
+	emptySelectorSolverHTTP01HTTPRoute := cmacme.ACMEChallengeSolver{
+		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+			GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+		},
+	}
+	parentRefsSelectorSolverHTTP01HTTPRoute := cmacme.ACMEChallengeSolver{
+		HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+			GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+				ParentRefs: []gwapi.ParentReference{
+					{
+						Kind: func() *gwapi.Kind {
+							g := gwapi.Kind("Gateway")
+							return &g
+						}(),
+						Name: gwapi.ObjectName("sample-gateway"),
+						Namespace: func() *gwapi.Namespace {
+							ns := gwapi.Namespace("test-ns")
+							return &ns
+						}(),
+					},
+				},
+			},
+		},
+	}
+	emptySelectorSolverDNS01 := cmacme.ACMEChallengeSolver{
+		DNS01: &cmacme.ACMEChallengeSolverDNS01{
+			Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+				Email: "test-cloudflare-email",
+			},
+		},
+	}
+	// define ACME challenges that are used during tests
+	acmeChallengeHTTP01 := &cmacme.ACMEChallenge{
+		Type:  "http-01",
+		Token: "http-01-token",
+	}
+	acmeChallengeDNS01 := &cmacme.ACMEChallenge{
+		Type:  "dns-01",
+		Token: "dns-01-token",
+	}
+
+	tests := map[string]struct {
+		acmeClient acmecl.Interface
+		issuer     cmapi.GenericIssuer
+		order      *cmacme.Order
+		authz      *cmacme.ACMEAuthorization
+
+		expectedChallengeSpec *cmacme.ChallengeSpec
+		expectedError         bool
+	}{
+		"should override the ingress name to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Name: "test-name-to-override",
+						},
+					},
+				},
+			},
+		},
+		"should override the ingress class to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Class: new("test-class-to-override"),
+						},
+					},
+				},
+			},
+		},
+		"should override the ingressClassName to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							IngressClassName: new("test-ingressclassname-to-override"),
+						},
+					},
+				},
+			},
+		},
+		"should return an error if both ingress name and ingress class override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if both ingress name and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should return an error if all ingress name, ingress class and ingressClassName override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should ignore HTTP01 override annotations if DNS01 solver is chosen": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverDNS01},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeDNS01,
+				DNSName: "example.com",
+				Token:   acmeChallengeDNS01.Token,
+				Solver:  emptySelectorSolverDNS01,
+			},
+		},
+		"should set parentRef on Challenge based on annotations": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{emptySelectorSolverHTTP01HTTPRoute},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01ParentRefName: "test-parent-ref-name",
+						cmacme.ACMECertificateHTTP01ParentRefKind: "ListenerSet",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: []gwapi.ParentReference{
+								{
+									Kind: func() *gwapi.Kind {
+										ls := gwapi.Kind("ListenerSet")
+										return &ls
+									}(),
+									Name:      gwapi.ObjectName("test-parent-ref-name"),
+									Namespace: (*gwapi.Namespace)(new("")),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"should remove duplicate parentRefs if issuer has same parentRef": {
+			acmeClient: basicACMEClient,
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{parentRefsSelectorSolverHTTP01HTTPRoute},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Annotations: map[string]string{
+						cmacme.ACMECertificateHTTP01ParentRefName: "sample-gateway",
+						cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
+					},
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &cmacme.ChallengeSpec{
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Solver: cmacme.ACMEChallengeSolver{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: []gwapi.ParentReference{
+								{
+									Kind: func() *gwapi.Kind {
+										ls := gwapi.Kind("Gateway")
+										return &ls
+									}(),
+									Name:      gwapi.ObjectName("sample-gateway"),
+									Namespace: (*gwapi.Namespace)(new("test-ns")),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"should return an error if none match": {
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									Selector: &cmacme.CertificateDNSNameSelector{
+										MatchLabels: map[string]string{
+											"label":    "does-not-exist",
+											"does-not": "match",
+										},
+									},
+									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+											Name: "non-matching-selector-solver",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			order: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			cs, err := partialChallengeSpecForAuthorization(t.Context(), test.issuer, test.order, *test.authz)
+			if err != nil && !test.expectedError {
+				t.Errorf("expected to not get an error, but got: %v", err)
+				t.Fail()
+			}
+			if err == nil && test.expectedError {
+				t.Errorf("expected to get an error, but got none")
+			}
+			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
+				t.Errorf("returned challenge spec was not as expected (-want +got):\n%s", cmp.Diff(test.expectedChallengeSpec, cs))
+			}
+		})
+	}
+}
+
+func Test_ensureKeysForChallenges(t *testing.T) {
+	basicACMEClient := &acmecl.FakeACME{
+		FakeHTTP01ChallengeResponse: func(token string) (string, error) {
+			switch token {
+			case "fooToken":
+				return "fooKeyHTTP01", nil
+			case "barToken":
+				return "barKeyHTTP01", nil
+			}
+			return "", fmt.Errorf("internal error: unexpected token value %s", token)
+		},
+		FakeDNS01ChallengeRecord: func(token string) (string, error) {
+			switch token {
+			case "fooToken":
+				return "fooKeyDNS01", nil
+			case "barToken":
+				return "barKeyDNS01", nil
+			}
+			return "", fmt.Errorf("internal error: unexpected token value %s", token)
+		},
+	}
+	fooChallenge := gen.Challenge("foo", gen.SetChallengeToken("fooToken"))
+	barChallenge := gen.Challenge("bar", gen.SetChallengeToken("barToken"))
+	tests := map[string]struct {
+		acmeClient        acmecl.Interface
+		partialChallenges []*cmacme.Challenge
+		want              []*cmacme.Challenge
+		wantErr           bool
+	}{
+		"happy path with some http-01 challenges": {
+			acmeClient: basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01)),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01))},
+			want: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeKey("fooKeyHTTP01")),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengeKey("barKeyHTTP01"))},
+		},
+		"happy path with some dns-01 challenges": {
+			acmeClient: basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01)),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01))},
+			want: []*cmacme.Challenge{
+				gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeKey("fooKeyDNS01")),
+				gen.ChallengeFrom(barChallenge, gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
+					gen.SetChallengeKey("barKeyDNS01"))},
+		},
+		"unhappy path with an unknown challenge type": {
+			acmeClient:        basicACMEClient,
+			partialChallenges: []*cmacme.Challenge{gen.ChallengeFrom(fooChallenge, gen.SetChallengeType(cmacme.ACMEChallengeType("foo")))},
+			wantErr:           true,
+		},
+	}
+	for name, scenario := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := ensureKeysForChallenges(scenario.acmeClient, scenario.partialChallenges)
+			if (err != nil) != scenario.wantErr {
+				t.Errorf("ensureKeysForChallenges() error = %v, wantErr %v", err, scenario.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, scenario.want) {
+				t.Errorf("ensureKeysForChallenges() = %v, want %v", got, scenario.want)
+			}
+		})
+	}
+}
+
+func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
+	tests := []struct {
+		name               string
+		issuer             *cmapi.Issuer
+		orderAnnotations   map[string]string
+		existingParentRefs []gwapi.ParentReference
+		orderNS            string
+		want               []gwapi.ParentReference
+		wantErr            string
+	}{
+		{
+			name:   "both annotations present",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "test-namespace",
+			want:    parentRefs("test-gateway", "test-namespace"),
+		},
+		{
+			name:   "only name annotation",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+			},
+			wantErr: "cannot specify only one of parentRefName, parentRefKind override annotations",
+		},
+		{
+			name:   "only kind annotation",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			wantErr: "cannot specify only one of parentRefName, parentRefKind override annotations",
+		},
+		{
+			// Let's imagine a Certificate was created directly (user isn't
+			// using certificate-shim), and they haven't provided any parentref
+			// annotation. This is impossible: HTTPRoute always needs a
+			// parentref.
+			name:             "no annotations and no parentRefs on issuer",
+			issuer:           gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{},
+			wantErr:          "must specify parentRefs either through annotations or solver config",
+		},
+		{
+			name:   "annotations on non-gateway solver",
+			issuer: ingressIssuer(),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			want: noParentRef,
+		},
+		{
+			name:   "append to existing parentRefs",
+			issuer: gatewayIssuer(parentRefs("existing-gateway", "default")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "ListenerSet",
+			},
+			orderNS: "test-namespace",
+			want: []gwapi.ParentReference{
+				ref("Gateway", "existing-gateway", "default"),
+				ref("ListenerSet", "test-gateway", "test-namespace"),
+			},
+		},
+		{
+			name:   "namespace inherited from Order",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname": "test-gateway",
+				"acme.cert-manager.io/http01-parentrefkind": "Gateway",
+			},
+			orderNS: "custom-namespace",
+			want:    parentRefs("test-gateway", "custom-namespace"),
+		},
+		{
+			name:   "namespace annotation overrides Order namespace",
+			issuer: gatewayIssuer(noParentRef),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("eg", "envoy-gateway-system"),
+		},
+		{
+			name:   "namespace annotation deduplicates matching issuer parentRef",
+			issuer: gatewayIssuer(parentRefs("eg", "envoy-gateway-system")),
+			orderAnnotations: map[string]string{
+				"acme.cert-manager.io/http01-parentrefname":      "eg",
+				"acme.cert-manager.io/http01-parentrefkind":      "Gateway",
+				"acme.cert-manager.io/http01-parentrefnamespace": "envoy-gateway-system",
+			},
+			orderNS: "api",
+			want:    parentRefs("eg", "envoy-gateway-system"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order := &cmacme.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tt.orderNS,
+					Annotations: tt.orderAnnotations,
+				},
+				Spec: cmacme.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			}
+			authz := cmacme.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []cmacme.ACMEChallenge{acmeChallengeHTTP01()},
+			}
+
+			got, err := partialChallengeSpecForAuthorization(t.Context(), tt.issuer, order, authz)
+
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			require.NotNil(t, got)
+			if containsGatewayParentRefs(tt.issuer) {
+				assert.Equal(t, tt.want, got.Solver.HTTP01.GatewayHTTPRoute.ParentRefs)
+			}
+		})
+	}
+}
+
+func gatewayIssuer(parentRefs []gwapi.ParentReference) *cmapi.Issuer {
+	return gen.Issuer("test-gw-issuer",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Name: "ingress-solver",
+						},
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							ParentRefs: parentRefs,
+						},
+					},
+				},
+			},
+		}),
+	)
+}
+
+func containsGatewayParentRefs(issuer cmapi.GenericIssuer) bool {
+	if issuer.GetSpec().ACME == nil {
+		return false
+	}
+	for _, solver := range issuer.GetSpec().ACME.Solvers {
+		if solver.HTTP01 != nil && solver.HTTP01.GatewayHTTPRoute != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func ingressIssuer() *cmapi.Issuer {
+	return gen.Issuer("test-issuer",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+							Name: "ingress-solver",
+						},
+					},
+				},
+			},
+		}),
+	)
+}
+
+func acmeChallengeHTTP01() cmacme.ACMEChallenge {
+	return cmacme.ACMEChallenge{
+		Type:  "http-01",
+		Token: "http-01-token",
+	}
+}
+
+func ref(kind, name, namespace string) gwapi.ParentReference {
+	return gwapi.ParentReference{
+		Kind:      new(gwapi.Kind(kind)),
+		Name:      gwapi.ObjectName(name),
+		Namespace: new(gwapi.Namespace(namespace)),
+	}
+}
+
+func parentRefs(name, namespace string) []gwapi.ParentReference {
+	return []gwapi.ParentReference{
+		ref("Gateway", name, namespace),
+	}
+}
+
+var noParentRef []gwapi.ParentReference = nil

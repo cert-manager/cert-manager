@@ -1,0 +1,54 @@
+{{- if .Values.global.podSecurityPolicy.enabled }}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ template "webhook.fullname" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
+    {{- if .Values.global.podSecurityPolicy.useAppArmor }}
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+    {{- end }}
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  allowedCapabilities: []  # default set of capabilities are implicitly allowed
+  volumes:
+  - 'configMap'
+  - 'emptyDir'
+  - 'projected'
+  - 'secret'
+  - 'downwardAPI'
+  hostNetwork: {{ .Values.webhook.hostNetwork }}
+  {{- if .Values.webhook.hostNetwork }}
+  hostPorts:
+  - max: {{ .Values.webhook.securePort }}
+    min: {{ .Values.webhook.securePort }}
+  {{- end }}
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+{{- end }}

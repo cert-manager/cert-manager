@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind
+  labels:
+    name: bind
+spec:
+  selector:
+    matchLabels:
+      app: bind
+  template:
+    metadata:
+      labels:
+        app: bind
+    spec:
+      securityContext:
+        # 101 is the user id of the bind user
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+      - name: bind
+        image: "{IMAGE}"
+        imagePullPolicy: Never
+        command:
+        - /bin/bash
+        - -c
+        - |
+          cp -Lr /config/* /etc/bind/
+          exec $(which named) -u bind -g -4
+        ports:
+        - containerPort: 8053
+          protocol: UDP
+        volumeMounts:
+        - mountPath: /config
+          name: config
+          readOnly: true
+        - name: tmpfs-volume
+          mountPath: /etc/bind/
+        resources:
+          requests:
+            cpu: 10m
+            memory: 256Mi
+          limits:
+            memory: 256Mi
+      volumes:
+      - name: config
+        configMap:
+          name: bind
+      - name: tmpfs-volume
+        emptyDir: {}
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"

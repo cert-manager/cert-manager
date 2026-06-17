@@ -1,0 +1,32 @@
+{{- if .Values.webhook.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "webhook.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "webhook"
+
+  {{- if not (or (hasKey .Values.webhook.podDisruptionBudget "minAvailable") (hasKey .Values.webhook.podDisruptionBudget "maxUnavailable")) }}
+  minAvailable: 1 # Default value because minAvailable and maxUnavailable are not set
+  {{- end }}
+  {{- if hasKey .Values.webhook.podDisruptionBudget "minAvailable" }}
+  minAvailable: {{ .Values.webhook.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if hasKey .Values.webhook.podDisruptionBudget "maxUnavailable" }}
+  maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  {{- with .Values.webhook.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
+  {{- end }}
+{{- end }}

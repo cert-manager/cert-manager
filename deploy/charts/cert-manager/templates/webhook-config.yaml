@@ -1,0 +1,19 @@
+{{- if .Values.webhook.config -}}
+{{- $config := .Values.webhook.config -}}
+{{- $_ := set $config "apiVersion" (default "webhook.config.cert-manager.io/v1alpha1" $config.apiVersion) -}}
+{{- $_ := set $config "kind" (default "WebhookConfiguration" $config.kind) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webhook.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- $config | toYaml | nindent 4 }}
+{{- end -}}

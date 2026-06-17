@@ -1,0 +1,77 @@
+/*
+Copyright 2020 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package venafi
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+)
+
+func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err error) {
+	defer func() {
+		if err != nil {
+			var authErr venaficlient.AuthFailedError
+			if errors.As(err, &authErr) {
+				msg := fmt.Sprintf("OAuth token request failed: %v", authErr.Err)
+				apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "AuthFailed", msg)
+				err = errors.New(msg)
+			} else {
+				errorMessage := "Failed to setup Certificate Manager issuer"
+				v.log.Error(err, errorMessage)
+				apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
+				err = fmt.Errorf("%s: %v", errorMessage, err)
+			}
+		}
+	}()
+
+	resourceNamespace := v.ResourceNamespace(issuer)
+
+	client, err := v.clientBuilder(resourceNamespace, v.secretsLister, issuer, v.Metrics, v.log, v.userAgent)
+	if err != nil {
+		return fmt.Errorf("error building client: %w", err)
+	}
+
+	if err = client.VerifyCredentials(); err != nil {
+		return fmt.Errorf("client.VerifyCredentials: %w", err)
+	}
+
+	if err = client.Ping(); err != nil {
+		return fmt.Errorf("error pinging Certificate Manager: %v", err)
+	}
+
+	// If it does not already have a 'ready' condition, we'll also log an event
+	// to make it really clear to users that this Issuer is ready.
+	if !apiutil.IssuerHasCondition(issuer, cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) {
+		v.Recorder.Eventf(issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Certificate Manager server")
+	}
+	v.log.V(logf.DebugLevel).Info("Certificate Manager issuer started")
+	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "Certificate Manager issuer started", "Certificate Manager issuer started")
+
+	return nil
+}

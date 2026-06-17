@@ -1,0 +1,156 @@
+{{- if .Values.cainjector.enabled }}
+{{- if .Values.global.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "cainjector.fullname" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "create", "update", "patch"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["apiregistration.k8s.io"]
+    resources: ["apiservices"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cainjector.fullname" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cainjector.fullname" . }}
+subjects:
+  - name: {{ template "cainjector.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+    kind: ServiceAccount
+
+---
+# leader election rules
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "cainjector.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  # Used for leader election by the controller
+  # cert-manager-cainjector-leader-election is used by the CertificateBased injector controller
+  #   see cmd/cainjector/start.go#L113
+  # cert-manager-cainjector-leader-election-core is used by the SecretBased injector controller
+  #   see cmd/cainjector/start.go#L137
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+
+---
+
+# grant cert-manager permission to manage the leaderelection configmap in the
+# leader election namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cainjector.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "cainjector.fullname" . }}:leaderelection
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "cainjector.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}
+{{- end }}
+{{- $certmanagerNamespace := include "cert-manager.namespace" . }}
+{{- if (.Values.cainjector.config.metricsTLSConfig).dynamic }}
+{{- if $certmanagerNamespace | eq .Values.cainjector.config.metricsTLSConfig.dynamic.secretNamespace }}
+
+---
+
+# Metrics server dynamic TLS serving certificate rules
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "cainjector.fullname" . }}:dynamic-serving
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames:
+    # Allow cainjector to read and update the metrics CA Secret when dynamic TLS is
+    # enabled for the metrics server and if the Secret is configured to be in the
+    # same namespace as cert-manager.
+    - {{ .Values.cainjector.config.metricsTLSConfig.dynamic.secretName | quote }}
+    verbs: ["get", "list", "watch", "update"]
+  # It's not possible to grant CREATE permission on a single resourceName.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cainjector.fullname" . }}:dynamic-serving
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "cainjector.fullname" . }}:dynamic-serving
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "cainjector.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}
+{{- end }}

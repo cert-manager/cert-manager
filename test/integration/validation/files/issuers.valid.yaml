@@ -1,0 +1,20 @@
+# The AWS Route53 solver uses AWS SDK for Go V2, which can get
+# credentials and region information from environment variables. So
+# configuration is not **required**.
+# This integration test demonstrates that the OpenAPI validation
+# **and** webhook validation permit such an empty Route53 stanza.
+# YAML and unstructured are used, instead of cert-manager API types to
+# avoid confusion around zero values for strings such as region.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: test
+  namespace: default
+spec:
+  acme:
+    server: https://acme.example.com
+    privateKeySecretRef:
+      name: testing-acme-private-key
+    solvers:
+    - dns01:
+        route53: {}

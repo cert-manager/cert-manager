@@ -1,0 +1,20 @@
+{{- if .Values.global.podSecurityPolicy.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "webhook.fullname" . }}-psp
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "webhook.fullname" . }}-psp
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "webhook.serviceAccountName" . }}
+    namespace: {{ include "cert-manager.namespace" . }}
+{{- end }}

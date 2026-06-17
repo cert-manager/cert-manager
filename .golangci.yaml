@@ -1,0 +1,95 @@
+version: "2"
+linters:
+  default: none
+  settings:
+    dogsled:
+      # Checks assignments with too many blank identifiers.
+      # Default: 2
+      max-blank-identifiers: 4
+    exhaustive:
+      default-signifies-exhaustive: true
+    gosec:
+      excludes:
+        - G101 # Look for hardcoded credentials
+        - G204 # Audit use of command execution
+        - G306 # Poor file permissions used when writing to a file
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1001", "-ST1003", "-ST1005", "-ST1012", "-ST1016", "-ST1020", "-ST1021", "-ST1022", "-QF1001", "-QF1003", "-QF1008"]
+  exclusions:
+    generated: lax
+    presets: [comments, common-false-positives, legacy, std-error-handling]
+    paths: [third_party, builtin$, examples$]
+    warn-unused: true
+  disable:
+    - nilnil
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - contextcheck
+    - copyloopvar
+    - decorder
+    - dogsled
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - exhaustive
+    - exptostd
+    - forbidigo
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - goheader
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - govet
+    - grouper
+    - importas
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - modernize
+    - musttag
+    - nakedret
+    - nilerr
+    - nilnil
+    - noctx
+    - nosprintfhostport
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - sloglint
+    - staticcheck
+    - tagalign
+    - testableexamples
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+formatters:
+  enable: [gci, gofmt]
+  settings:
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - localmodule # Local module section: contains all local packages. This section is not present unless explicitly enabled.
+        - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+        - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths: [third_party, builtin$, examples$]

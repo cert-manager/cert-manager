@@ -1,0 +1,230 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webhook.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+  {{- with .Values.webhook.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.webhook.replicaCount }}
+  {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
+  {{- if not (has (quote .Values.global.revisionHistoryLimit) (list "" (quote ""))) }}
+  revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "webhook"
+  {{- with .Values.webhook.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "webhook.name" . }}
+        app.kubernetes.io/name: {{ include "webhook.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: "webhook"
+        {{- include "labels" . | nindent 8 }}
+        {{- with .Values.webhook.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.webhook.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
+      {{- if not .Values.webhook.podAnnotations }}
+      annotations:
+      {{- end }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
+      {{- end }}
+    spec:
+      {{- if not .Values.webhook.serviceAccount.create }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      serviceAccountName: {{ template "webhook.serviceAccountName" . }}
+      {{- if hasKey .Values.webhook "automountServiceAccountToken" }}
+      automountServiceAccountToken: {{ .Values.webhook.automountServiceAccountToken }}
+      {{- end }}
+      enableServiceLinks: {{ .Values.webhook.enableServiceLinks }}
+      {{- with .Values.global.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      {{- if (hasKey .Values.global "hostUsers") }}
+      hostUsers: {{ .Values.global.hostUsers }}       
+      {{- end }}
+      {{- with .Values.webhook.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webhook.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
+      {{- if .Values.webhook.hostNetwork }}
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-webhook
+          image: "{{ template "cert-manager.image" (tuple .Values.webhook.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
+          imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
+          args:
+          {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
+          {{- if not (has (quote .Values.global.logLevel) (list "" (quote ""))) }}
+          - --v={{ .Values.global.logLevel }}
+          {{- end }}
+          {{- if .Values.webhook.config }}
+          - --config=/var/cert-manager/config/config.yaml
+          {{- end }}
+          {{- $config := default .Values.webhook.config "" }}
+          {{ if not $config.securePort -}}
+          - --secure-port={{ .Values.webhook.securePort }}
+          {{- end }}
+          {{- if .Values.webhook.featureGates }}
+          - --feature-gates={{ .Values.webhook.featureGates }}
+          {{- end }}
+          {{- if .Values.webhook.enableClientVerification }}
+          - --enable-client-verification={{ .Values.webhook.enableClientVerification }}
+          {{- end }}
+          {{- if .Values.webhook.clientCAFile }}
+          - --client-ca-path={{ .Values.webhook.clientCAFile }}
+          {{- end }}
+          {{- if .Values.webhook.apiserverClientCertSubjects }}
+          - --client-subject-names={{ .Values.webhook.apiserverClientCertSubjects }}
+          {{- end }}
+          {{- $tlsConfig := default $config.tlsConfig "" }}
+          {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
+          - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
+          - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE)
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }}.$(POD_NAMESPACE).svc
+          {{- if .Values.webhook.url.host }}
+          - --dynamic-serving-dns-names={{ .Values.webhook.url.host }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.webhook.extraArgs }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          {{- if not .Values.prometheus.enabled }}
+          - --metrics-listen-address=0
+          {{- end }}
+          ports:
+          - name: https
+            protocol: TCP
+            {{- if $config.securePort }}
+            containerPort: {{ $config.securePort }}
+            {{- else if .Values.webhook.securePort }}
+            containerPort: {{ .Values.webhook.securePort }}
+            {{- else }}
+            containerPort: 6443
+            {{- end }}
+          - name: healthcheck
+            protocol: TCP
+            {{- if $config.healthzPort }}
+            containerPort: {{ $config.healthzPort }}
+            {{- else }}
+            containerPort: 6080
+            {{- end }}
+          {{- if .Values.prometheus.enabled }}
+          - containerPort: 9402
+            name: http-metrics
+            protocol: TCP
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: healthcheck
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: healthcheck
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.readinessProbe.failureThreshold }}
+          {{- with .Values.webhook.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          {{- with .Values.webhook.extraEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          {{- with .Values.webhook.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.webhook.config .Values.webhook.volumeMounts }}
+          volumeMounts:
+            {{- if .Values.webhook.config }}
+            - name: config
+              mountPath: /var/cert-manager/config
+            {{- end }}
+            {{- with .Values.webhook.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+      {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
+      {{- $nodeSelector = merge $nodeSelector (.Values.webhook.nodeSelector | default dict) }}
+      {{- with $nodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := . }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.webhook.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webhook.runtimeClassName }}
+      runtimeClassName: {{ .Values.webhook.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
+      {{- end }}
+      {{- with .Values.webhook.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with  .Values.webhook.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.webhook.config .Values.webhook.volumes }}
+      volumes:
+        {{- if .Values.webhook.config }}
+        - name: config
+          configMap:
+            name: {{ include "webhook.fullname" . }}
+        {{- end }}
+        {{- with .Values.webhook.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}

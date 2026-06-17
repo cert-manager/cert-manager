@@ -1,0 +1,51 @@
+{{- if .Values.startupapicheck.enabled }}
+{{- if .Values.global.podSecurityPolicy.enabled }}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ template "startupapicheck.fullname" . }}
+  labels:
+    app: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "startupapicheck"
+    {{- include "labels" . | nindent 4 }}
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
+    {{- if .Values.global.podSecurityPolicy.useAppArmor }}
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+    {{- end }}
+    {{- with .Values.startupapicheck.rbac.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  allowedCapabilities: []  # default set of capabilities are implicitly allowed
+  volumes:
+  - 'projected'
+  - 'secret'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+{{- end }}
+{{- end }}

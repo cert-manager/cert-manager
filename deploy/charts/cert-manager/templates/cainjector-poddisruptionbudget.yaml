@@ -1,0 +1,32 @@
+{{- if .Values.cainjector.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "cainjector.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cainjector.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "cainjector"
+
+  {{- if not (or (hasKey .Values.cainjector.podDisruptionBudget "minAvailable") (hasKey .Values.cainjector.podDisruptionBudget "maxUnavailable")) }}
+  minAvailable: 1 # Default value because minAvailable and maxUnavailable are not set
+  {{- end }}
+  {{- if hasKey .Values.cainjector.podDisruptionBudget "minAvailable" }}
+  minAvailable: {{ .Values.cainjector.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if hasKey .Values.cainjector.podDisruptionBudget "maxUnavailable" }}
+  maxUnavailable: {{ .Values.cainjector.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  {{- with .Values.cainjector.podDisruptionBudget.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
+  {{- end }}
+{{- end }}

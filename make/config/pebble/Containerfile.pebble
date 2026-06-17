@@ -1,0 +1,13 @@
+# +skip_license_check
+
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
+
+USER 1000
+
+COPY pebble /app/pebble
+
+ENTRYPOINT ["/app/pebble"]
+
+# vim: syntax=dockerfile

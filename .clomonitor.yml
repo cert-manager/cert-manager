@@ -1,0 +1,9 @@
+# License scanning information
+licenseScanning:
+  # URL with the repository's license scanning results
+  #
+  # CLOMonitor can extract license scanning results from FOSSA and Snyk badges
+  # in the repository README.md file automatically. If your repository uses a
+  # different scanning solution, this url can be set to pass the corresponding
+  # check.
+  url: https://github.com/cert-manager/cert-manager/blob/master/LICENSES

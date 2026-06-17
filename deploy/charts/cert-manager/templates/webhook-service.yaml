@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "webhook.fullname" . }}
+  namespace: {{ include "cert-manager.namespace" . }}
+{{- with .Values.webhook.serviceAnnotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"
+    {{- include "labels" . | nindent 4 }}
+    {{- with .Values.webhook.serviceLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.webhook.serviceType }}
+  {{- if .Values.webhook.serviceIPFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.webhook.serviceIPFamilyPolicy }}
+  {{- end }}
+  {{- if .Values.webhook.serviceIPFamilies }}
+  ipFamilies: {{ .Values.webhook.serviceIPFamilies | toYaml | nindent 2 }}
+  {{- end }}
+  {{- with .Values.webhook.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
+  {{- end }}
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: "https"
+{{- if and .Values.prometheus.enabled (not .Values.prometheus.podmonitor.enabled) }}
+  - name: metrics
+    port: 9402
+    protocol: TCP
+    targetPort: "http-metrics"
+{{- end }}
+  selector:
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "webhook"

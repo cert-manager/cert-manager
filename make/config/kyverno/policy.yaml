@@ -1,0 +1,1105 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Adding capabilities beyond those listed in the
+      policy must be disallowed.
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow Capabilities
+  name: disallow-capabilities
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: adding-capabilities
+    preconditions:
+      all:
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
+        operator: NotEquals
+        value: DELETE
+    validate:
+      deny:
+        conditions:
+          all:
+          - key: '{{ request.object.spec.[ephemeralContainers, initContainers, containers][].securityContext.capabilities.add[]
+              }}'
+            operator: AnyNotIn
+            value:
+            - AUDIT_WRITE
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - FSETID
+            - KILL
+            - MKNOD
+            - NET_BIND_SERVICE
+            - SETFCAP
+            - SETGID
+            - SETPCAP
+            - SETUID
+            - SYS_CHROOT
+      message: Any capabilities added beyond the allowed list (AUDIT_WRITE, CHOWN,
+        DAC_OVERRIDE, FOWNER, FSETID, KILL, MKNOD, NET_BIND_SERVICE, SETFCAP, SETGID,
+        SETPCAP, SETUID, SYS_CHROOT) are disallowed.
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Adding capabilities other than `NET_BIND_SERVICE`
+      is disallowed. In addition, all containers must explicitly drop `ALL` capabilities.
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow Capabilities (Strict)
+  name: disallow-capabilities-strict
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: require-drop-all
+    preconditions:
+      all:
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
+        operator: NotEquals
+        value: DELETE
+    validate:
+      foreach:
+      - deny:
+          conditions:
+            all:
+            - key: ALL
+              operator: AnyNotIn
+              value: '{{ element.securityContext.capabilities.drop[] || `[]` }}'
+        list: request.object.spec.[ephemeralContainers, initContainers, containers][]
+      message: Containers must drop `ALL` capabilities.
+  - match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: adding-capabilities-strict
+    preconditions:
+      all:
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
+        operator: NotEquals
+        value: DELETE
+    validate:
+      foreach:
+      - deny:
+          conditions:
+            all:
+            - key: '{{ element.securityContext.capabilities.add[] || `[]` }}'
+              operator: AnyNotIn
+              value:
+              - NET_BIND_SERVICE
+              - ""
+        list: request.object.spec.[ephemeralContainers, initContainers, containers][]
+      message: Any capabilities added other than NET_BIND_SERVICE are disallowed.
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Host namespaces (Process ID namespace, Inter-Process
+      Communication namespace, and network namespace) allow access to shared information
+      and can be used to elevate privileges. Pods should not be allowed access to
+      host namespaces. This policy ensures fields which make use of these host namespaces
+      are unset or set to `false`.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow Host Namespaces
+  name: disallow-host-namespaces
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: host-namespaces
+    validate:
+      message: Sharing the host namespaces is disallowed. The fields spec.hostNetwork,
+        spec.hostIPC, and spec.hostPID must be unset or set to `false`.
+      pattern:
+        spec:
+          =(hostIPC): "false"
+          =(hostNetwork): "false"
+          =(hostPID): "false"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: HostPath volumes let Pods use host directories
+      and volumes in containers. Using host resources can be used to access shared
+      data or escalate privileges and should not be allowed. This policy ensures no
+      hostPath volumes are in use.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod,Volume
+    policies.kyverno.io/title: Disallow hostPath
+  name: disallow-host-path
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: host-path
+    validate:
+      message: HostPath volumes are forbidden. The field spec.volumes[*].hostPath
+        must be unset.
+      pattern:
+        spec:
+          =(volumes):
+          - X(hostPath): "null"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: 'Access to host ports allows potential snooping
+      of network traffic and should not be allowed, or at minimum restricted to a
+      known list. This policy ensures the `hostPort` field is unset or set to `0`. '
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow hostPorts
+  name: disallow-host-ports
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: host-ports-none
+    validate:
+      message: Use of host ports is disallowed. The fields spec.containers[*].ports[*].hostPort
+        , spec.initContainers[*].ports[*].hostPort, and spec.ephemeralContainers[*].ports[*].hostPort
+        must either be unset or set to `0`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(ports):
+            - =(hostPort): 0
+          =(initContainers):
+          - =(ports):
+            - =(hostPort): 0
+          containers:
+          - =(ports):
+            - =(hostPort): 0
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Windows pods offer the ability to run HostProcess
+      containers which enables privileged access to the Windows node. Privileged access
+      to the host is disallowed in the baseline policy. HostProcess pods are an alpha
+      feature as of Kubernetes v1.22. This policy ensures the `hostProcess` field,
+      if present, is set to `false`.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow hostProcess
+  name: disallow-host-process
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: host-process-containers
+    validate:
+      message: HostProcess containers are disallowed. The fields spec.securityContext.windowsOptions.hostProcess,
+        spec.containers[*].securityContext.windowsOptions.hostProcess, spec.initContainers[*].securityContext.windowsOptions.hostProcess,
+        and spec.ephemeralContainers[*].securityContext.windowsOptions.hostProcess
+        must either be undefined or set to `false`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(windowsOptions):
+                =(hostProcess): "false"
+          =(initContainers):
+          - =(securityContext):
+              =(windowsOptions):
+                =(hostProcess): "false"
+          containers:
+          - =(securityContext):
+              =(windowsOptions):
+                =(hostProcess): "false"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Privilege escalation, such as via set-user-ID
+      or set-group-ID file mode, should not be allowed. This policy ensures the `allowPrivilegeEscalation`
+      field is set to `false`.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow Privilege Escalation
+  name: disallow-privilege-escalation
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: privilege-escalation
+    validate:
+      message: Privilege escalation is disallowed. The fields spec.containers[*].securityContext.allowPrivilegeEscalation,
+        spec.initContainers[*].securityContext.allowPrivilegeEscalation, and spec.ephemeralContainers[*].securityContext.allowPrivilegeEscalation
+        must be set to `false`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - securityContext:
+              allowPrivilegeEscalation: "false"
+          =(initContainers):
+          - securityContext:
+              allowPrivilegeEscalation: "false"
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: "false"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Privileged mode disables most security mechanisms
+      and must not be allowed. This policy ensures Pods do not call for privileged
+      mode.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow Privileged Containers
+  name: disallow-privileged-containers
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: privileged-containers
+    validate:
+      message: Privileged mode is disallowed. The fields spec.containers[*].securityContext.privileged
+        and spec.initContainers[*].securityContext.privileged must be unset or set
+        to `false`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(privileged): "false"
+          =(initContainers):
+          - =(securityContext):
+              =(privileged): "false"
+          containers:
+          - =(securityContext):
+              =(privileged): "false"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: The default /proc masks are set up to reduce
+      attack surface and should be required. This policy ensures nothing but the default
+      procMount can be specified. Note that in order for users to deviate from the
+      `Default` procMount requires setting a feature gate at the API server.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow procMount
+  name: disallow-proc-mount
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: check-proc-mount
+    validate:
+      message: Changing the proc mount from the default is not allowed. The fields
+        spec.containers[*].securityContext.procMount, spec.initContainers[*].securityContext.procMount,
+        and spec.ephemeralContainers[*].securityContext.procMount must be unset or
+        set to `Default`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(procMount): Default
+          =(initContainers):
+          - =(securityContext):
+              =(procMount): Default
+          containers:
+          - =(securityContext):
+              =(procMount): Default
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: SELinux options can be used to escalate privileges
+      and should not be allowed. This policy ensures that the `seLinuxOptions` field
+      is undefined.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Disallow SELinux
+  name: disallow-selinux
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: selinux-type
+    validate:
+      message: Setting the SELinux type is restricted. The fields spec.securityContext.seLinuxOptions.type,
+        spec.containers[*].securityContext.seLinuxOptions.type, , spec.initContainers[*].securityContext.seLinuxOptions,
+        and spec.ephemeralContainers[*].securityContext.seLinuxOptions.type must either
+        be unset or set to one of the allowed values (container_t, container_init_t,
+        or container_kvm_t).
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(seLinuxOptions):
+                =(type): container_t | container_init_t | container_kvm_t
+          =(initContainers):
+          - =(securityContext):
+              =(seLinuxOptions):
+                =(type): container_t | container_init_t | container_kvm_t
+          =(securityContext):
+            =(seLinuxOptions):
+              =(type): container_t | container_init_t | container_kvm_t
+          containers:
+          - =(securityContext):
+              =(seLinuxOptions):
+                =(type): container_t | container_init_t | container_kvm_t
+  - match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: selinux-user-role
+    validate:
+      message: Setting the SELinux user or role is forbidden. The fields spec.securityContext.seLinuxOptions.user,
+        spec.securityContext.seLinuxOptions.role, spec.containers[*].securityContext.seLinuxOptions.user,
+        spec.containers[*].securityContext.seLinuxOptions.role, spec.initContainers[*].securityContext.seLinuxOptions.user,
+        spec.initContainers[*].securityContext.seLinuxOptions.role, spec.ephemeralContainers[*].securityContext.seLinuxOptions.user,
+        and spec.ephemeralContainers[*].securityContext.seLinuxOptions.role must be
+        unset.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(seLinuxOptions):
+                X(role): "null"
+                X(user): "null"
+          =(initContainers):
+          - =(securityContext):
+              =(seLinuxOptions):
+                X(role): "null"
+                X(user): "null"
+          =(securityContext):
+            =(seLinuxOptions):
+              X(role): "null"
+              X(user): "null"
+          containers:
+          - =(securityContext):
+              =(seLinuxOptions):
+                X(role): "null"
+                X(user): "null"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Best Practices, EKS Best Practices, PSP Migration
+    policies.kyverno.io/description: 'A read-only root file system helps to enforce
+      an immutable infrastructure strategy; the container only needs to write on the
+      mounted volume that persists the state. An immutable root filesystem can also
+      prevent malicious binaries from writing to the host system. This policy validates
+      that containers define a securityContext with `readOnlyRootFilesystem: true`.'
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Require Read-Only Root Filesystem
+  name: require-ro-rootfs
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: validate-readOnlyRootFilesystem
+    validate:
+      message: Root filesystem must be read-only.
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Containers must be required to run as non-root
+      users. This policy ensures `runAsUser` is either unset or set to a number greater
+      than zero.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Require Run As Non-Root User
+  name: require-run-as-non-root-user
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: run-as-non-root-user
+    validate:
+      message: Running as root is not allowed. The fields spec.securityContext.runAsUser,
+        spec.containers[*].securityContext.runAsUser, spec.initContainers[*].securityContext.runAsUser,
+        and spec.ephemeralContainers[*].securityContext.runAsUser must be unset or
+        set to a number greater than zero.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(runAsUser): '>0'
+          =(initContainers):
+          - =(securityContext):
+              =(runAsUser): '>0'
+          =(securityContext):
+            =(runAsUser): '>0'
+          containers:
+          - =(securityContext):
+              =(runAsUser): '>0'
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: Containers must be required to run as non-root
+      users. This policy ensures `runAsNonRoot` is set to `true`. A known issue prevents
+      a policy such as this using `anyPattern` from being persisted properly in Kubernetes
+      1.23.0-1.23.2.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Require runAsNonRoot
+  name: require-run-as-nonroot
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: run-as-non-root
+    validate:
+      anyPattern:
+      - spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(runAsNonRoot): "true"
+          =(initContainers):
+          - =(securityContext):
+              =(runAsNonRoot): "true"
+          containers:
+          - =(securityContext):
+              =(runAsNonRoot): "true"
+          securityContext:
+            runAsNonRoot: "true"
+      - spec:
+          =(ephemeralContainers):
+          - securityContext:
+              runAsNonRoot: "true"
+          =(initContainers):
+          - securityContext:
+              runAsNonRoot: "true"
+          containers:
+          - securityContext:
+              runAsNonRoot: "true"
+      message: Running as root is not allowed. Either the field spec.securityContext.runAsNonRoot
+        must be set to `true`, or the fields spec.containers[*].securityContext.runAsNonRoot,
+        spec.initContainers[*].securityContext.runAsNonRoot, and spec.ephemeralContainers[*].securityContext.runAsNonRoot
+        must be set to `true`.
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: On supported hosts, the 'runtime/default' AppArmor
+      profile is applied by default. The default policy should prevent overriding
+      or disabling the policy, or restrict overrides to an allowed set of profiles.
+      This policy ensures Pods do not specify any other AppArmor profiles than `runtime/default`
+      or `localhost/*`.
+    policies.kyverno.io/minversion: 1.3.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod, Annotation
+    policies.kyverno.io/title: Restrict AppArmor
+  name: restrict-apparmor-profiles
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: app-armor
+    validate:
+      message: Specifying other AppArmor profiles is disallowed. The annotation `container.apparmor.security.beta.kubernetes.io`
+        if defined must not be set to anything other than `runtime/default` or `localhost/*`.
+      pattern:
+        =(metadata):
+          =(annotations):
+            =(container.apparmor.security.beta.kubernetes.io/*): runtime/default |
+              localhost/*
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    policies.kyverno.io/category: Sample, EKS Best Practices
+    policies.kyverno.io/description: Kubernetes automatically mounts ServiceAccount
+      credentials in each Pod. The ServiceAccount may be assigned roles allowing Pods
+      to access API resources. Blocking this ability is an extension of the least
+      privilege best practice and should be followed if Pods do not need to speak
+      to the API server to function. This policy ensures that mounting of these ServiceAccount
+      tokens is blocked.
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod,ServiceAccount
+    policies.kyverno.io/title: Restrict Auto-Mount of Service Account Tokens
+  name: restrict-automount-sa-token
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: validate-automountServiceAccountToken
+    preconditions:
+      all:
+      - key: '{{ request."object".metadata.labels."app.kubernetes.io/part-of" || ''''
+          }}'
+        operator: NotEquals
+        value: policy-reporter
+    validate:
+      message: Auto-mounting of Service Account tokens is not allowed.
+      pattern:
+        spec:
+          automountServiceAccountToken: "false"
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: The seccomp profile must not be explicitly set
+      to Unconfined. This policy,  requiring Kubernetes v1.19 or later, ensures that
+      seccomp is unset or  set to `RuntimeDefault` or `Localhost`.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Restrict Seccomp
+  name: restrict-seccomp
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: check-seccomp
+    validate:
+      message: Use of custom Seccomp profiles is disallowed. The fields spec.securityContext.seccompProfile.type,
+        spec.containers[*].securityContext.seccompProfile.type, spec.initContainers[*].securityContext.seccompProfile.type,
+        and spec.ephemeralContainers[*].securityContext.seccompProfile.type must be
+        unset or set to `RuntimeDefault` or `Localhost`.
+      pattern:
+        spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+          =(initContainers):
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+          =(securityContext):
+            =(seccompProfile):
+              =(type): RuntimeDefault | Localhost
+          containers:
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: The seccomp profile in the Restricted group must
+      not be explicitly set to Unconfined but additionally must also not allow an
+      unset value. This policy,  requiring Kubernetes v1.19 or later, ensures that
+      seccomp is  set to `RuntimeDefault` or `Localhost`. A known issue prevents a
+      policy such as this using `anyPattern` from being persisted properly in Kubernetes
+      1.23.0-1.23.2.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Restrict Seccomp (Strict)
+  name: restrict-seccomp-strict
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: check-seccomp-strict
+    validate:
+      anyPattern:
+      - spec:
+          =(ephemeralContainers):
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+          =(initContainers):
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+          containers:
+          - =(securityContext):
+              =(seccompProfile):
+                =(type): RuntimeDefault | Localhost
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault | Localhost
+      - spec:
+          =(ephemeralContainers):
+          - securityContext:
+              seccompProfile:
+                type: RuntimeDefault | Localhost
+          =(initContainers):
+          - securityContext:
+              seccompProfile:
+                type: RuntimeDefault | Localhost
+          containers:
+          - securityContext:
+              seccompProfile:
+                type: RuntimeDefault | Localhost
+      message: Use of custom Seccomp profiles is disallowed. The fields spec.securityContext.seccompProfile.type,
+        spec.containers[*].securityContext.seccompProfile.type, spec.initContainers[*].securityContext.seccompProfile.type,
+        and spec.ephemeralContainers[*].securityContext.seccompProfile.type must be
+        set to `RuntimeDefault` or `Localhost`.
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/description: Sysctls can disable security mechanisms or affect
+      all containers on a host, and should be disallowed except for an allowed "safe"
+      subset. A sysctl is considered safe if it is namespaced in the container or
+      the Pod, and it is isolated from other Pods or processes on the same Node. This
+      policy ensures that only those "safe" subsets can be specified in a Pod.
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/title: Restrict sysctls
+  name: restrict-sysctls
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: check-sysctls
+    validate:
+      message: Setting additional sysctls above the allowed type is disallowed. The
+        field spec.securityContext.sysctls must be unset or not use any other names
+        than kernel.shm_rmid_forced, net.ipv4.ip_local_port_range, net.ipv4.ip_unprivileged_port_start,
+        net.ipv4.tcp_syncookies and net.ipv4.ping_group_range.
+      pattern:
+        spec:
+          =(securityContext):
+            =(sysctls):
+            - =(name): kernel.shm_rmid_forced | net.ipv4.ip_local_port_range | net.ipv4.ip_unprivileged_port_start
+                | net.ipv4.tcp_syncookies | net.ipv4.ping_group_range
+  validationFailureAction: Enforce
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  annotations:
+    kyverno.io/kubernetes-version: 1.22-1.23
+    kyverno.io/kyverno-version: 1.6.0
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/description: In addition to restricting HostPath volumes,
+      the restricted pod security profile limits usage of non-core volume types to
+      those defined through PersistentVolumes. This policy blocks any other type of
+      volume other than those in the allow list.
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod,Volume
+    policies.kyverno.io/title: Restrict Volume Types
+  name: restrict-volume-types
+spec:
+  background: true
+  rules:
+  - exclude:
+      resources:
+        namespaces:
+        - bind
+        - e2e-vault
+        - e2e-vault-mtls
+        - gateway-system
+        - ingress-nginx
+        - pebble
+        - projectcontour
+        - sample-external-issuer-system
+        - samplewebhook
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    name: restricted-volumes
+    preconditions:
+      all:
+      - key: '{{ request.operation || ''BACKGROUND'' }}'
+        operator: NotEquals
+        value: DELETE
+    validate:
+      deny:
+        conditions:
+          all:
+          - key: '{{ request.object.spec.volumes[].keys(@)[] || '''' }}'
+            operator: AnyNotIn
+            value:
+            - name
+            - configMap
+            - csi
+            - downwardAPI
+            - emptyDir
+            - ephemeral
+            - persistentVolumeClaim
+            - projected
+            - secret
+            - ""
+      message: 'Only the following types of volumes may be used: configMap, csi, downwardAPI,
+        emptyDir, ephemeral, persistentVolumeClaim, projected, and secret.'
+  validationFailureAction: Enforce

@@ -1,0 +1,538 @@
+/*
+Copyright 2021 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package approval
+
+import (
+	"context"
+	"fmt"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	admissionv1 "k8s.io/api/admission/v1"
+	authnv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/client-go/discovery"
+
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/apis/meta"
+	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
+)
+
+var (
+	expNoDiscovery = discovery.DiscoveryInterface(nil)
+)
+
+func TestValidate(t *testing.T) {
+	baseCR := &certmanager.CertificateRequest{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
+		Spec: certmanager.CertificateRequestSpec{
+			IssuerRef: meta.IssuerReference{
+				Name:  "my-issuer",
+				Kind:  "Issuer",
+				Group: "example.io",
+			},
+		},
+	}
+
+	approvedCR := baseCR.DeepCopy()
+	approvedCR.Status = certmanager.CertificateRequestStatus{
+		Conditions: []certmanager.CertificateRequestCondition{
+			{
+				Type:    certmanager.CertificateRequestConditionApproved,
+				Status:  meta.ConditionTrue,
+				Reason:  "cert-manager.io",
+				Message: "",
+			},
+		},
+	}
+
+	var alwaysPanicAuthorizer *fakeAuthorizer
+	tests := map[string]struct {
+		req          *admissionv1.AdmissionRequest
+		oldCR, newCR *certmanager.CertificateRequest
+
+		authorizer     *fakeAuthorizer
+		discoverclient discovery.DiscoveryInterface
+
+		expErr error
+	}{
+		"if the request is not for CertificateRequest, exit nil": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "issuers",
+				},
+				RequestSubResource: "status",
+			},
+			authorizer:     alwaysPanicAuthorizer,
+			discoverclient: expNoDiscovery,
+			expErr:         nil,
+		},
+		"if the request is not for cert-manager.io, exit nil": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "foo.cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			authorizer: alwaysPanicAuthorizer,
+			expErr:     nil,
+		},
+		"if the CertificateRequest references a signer that doesn't exist, error": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			oldCR:      baseCR,
+			newCR:      approvedCR,
+			authorizer: alwaysPanicAuthorizer,
+			discoverclient: discoveryfake.NewDiscovery().
+				WithServerGroups(func() (*metav1.APIGroupList, error) {
+					return &metav1.APIGroupList{}, nil
+				}),
+			expErr: field.Forbidden(field.NewPath("spec.issuerRef"),
+				"referenced signer resource does not exist: {my-issuer Issuer example.io}"),
+		},
+		"if the CertificateRequest references a signer that the approver doesn't have permissions for, error": {
+			req: &admissionv1.AdmissionRequest{
+				UserInfo: authnv1.UserInfo{
+					Username: "user-1",
+				},
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			oldCR: baseCR,
+			newCR: approvedCR,
+			discoverclient: discoveryfake.NewDiscovery().
+				WithServerGroups(func() (*metav1.APIGroupList, error) {
+					return &metav1.APIGroupList{
+						Groups: []metav1.APIGroup{
+							{
+								Name: "example.io",
+								Versions: []metav1.GroupVersionForDiscovery{
+									{GroupVersion: "example.io/a-version", Version: "a-version"},
+								},
+							},
+						},
+					}, nil
+				}).
+				WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+					return &metav1.APIResourceList{
+						APIResources: []metav1.APIResource{
+							{
+								Name:       "issuers",
+								Namespaced: true,
+								Kind:       "Issuer",
+							},
+						},
+					}, nil
+				}),
+			authorizer: &fakeAuthorizer{
+				verb:        "approve",
+				allowedName: "issuers.example.io/testns.my-issuer",
+				decision:    authorizer.DecisionNoOpinion,
+			},
+			expErr: field.Forbidden(field.NewPath("status.conditions"),
+				`user "user-1" does not have permissions to set approved/denied conditions for issuer {my-issuer Issuer example.io}`),
+		},
+		"if the CertificateRequest references a signer that the approver has permissions for, return nil": {
+			req: &admissionv1.AdmissionRequest{
+				UserInfo: authnv1.UserInfo{
+					Username: "user-1",
+				},
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			oldCR: baseCR,
+			newCR: approvedCR,
+			discoverclient: discoveryfake.NewDiscovery().
+				WithServerGroups(func() (*metav1.APIGroupList, error) {
+					return &metav1.APIGroupList{
+						Groups: []metav1.APIGroup{
+							{
+								Name: "example.io",
+								Versions: []metav1.GroupVersionForDiscovery{
+									{GroupVersion: "example.io/a-version", Version: "a-version"},
+								},
+							},
+						},
+					}, nil
+				}).
+				WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+					return &metav1.APIResourceList{
+						APIResources: []metav1.APIResource{
+							{
+								Name:       "issuers",
+								Namespaced: true,
+								Kind:       "Issuer",
+							},
+						},
+					}, nil
+				}),
+			authorizer: &fakeAuthorizer{
+				verb:        "approve",
+				allowedName: "issuers.example.io/testns.my-issuer",
+				decision:    authorizer.DecisionAllow,
+			},
+		},
+		"if the CertificateRequest references a signer that the approver has permissions for the wildcard of, return nil": {
+			req: &admissionv1.AdmissionRequest{
+				UserInfo: authnv1.UserInfo{
+					Username: "user-1",
+				},
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			oldCR: baseCR,
+			newCR: approvedCR,
+			discoverclient: discoveryfake.NewDiscovery().
+				WithServerGroups(func() (*metav1.APIGroupList, error) {
+					return &metav1.APIGroupList{
+						Groups: []metav1.APIGroup{
+							{
+								Name: "example.io",
+								Versions: []metav1.GroupVersionForDiscovery{
+									{GroupVersion: "example.io/a-version", Version: "a-version"},
+								},
+							},
+						},
+					}, nil
+				}).
+				WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+					return &metav1.APIResourceList{
+						APIResources: []metav1.APIResource{
+							{
+								Name:       "issuers",
+								Namespaced: true,
+								Kind:       "Issuer",
+							},
+						},
+					}, nil
+				}),
+			authorizer: &fakeAuthorizer{
+				verb:        "approve",
+				allowedName: "issuers.example.io/*",
+				decision:    authorizer.DecisionAllow,
+			},
+		},
+		"should error if the authorizer returns an error": {
+			req: &admissionv1.AdmissionRequest{
+				UserInfo: authnv1.UserInfo{
+					Username: "user-1",
+				},
+				Operation: admissionv1.Update,
+				RequestResource: &metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Resource: "certificaterequests",
+				},
+				RequestSubResource: "status",
+			},
+			oldCR: baseCR,
+			newCR: approvedCR,
+			discoverclient: discoveryfake.NewDiscovery().
+				WithServerGroups(func() (*metav1.APIGroupList, error) {
+					return &metav1.APIGroupList{
+						Groups: []metav1.APIGroup{
+							{
+								Name: "example.io",
+								Versions: []metav1.GroupVersionForDiscovery{
+									{GroupVersion: "example.io/a-version", Version: "a-version"},
+								},
+							},
+						},
+					}, nil
+				}).
+				WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+					return &metav1.APIResourceList{
+						APIResources: []metav1.APIResource{
+							{
+								Name:       "issuers",
+								Namespaced: true,
+								Kind:       "Issuer",
+							},
+						},
+					}, nil
+				}),
+			authorizer: &fakeAuthorizer{
+				err: fmt.Errorf("authorizer error"),
+			},
+			expErr: field.Forbidden(field.NewPath("status.conditions"),
+				`user "user-1" does not have permissions to set approved/denied conditions for issuer {my-issuer Issuer example.io}`),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			a := NewPlugin(test.authorizer, test.discoverclient).(*certificateRequestApproval)
+			if test.authorizer != nil {
+				test.authorizer.t = t
+			}
+
+			warnings, err := a.Validate(t.Context(), *test.req, test.oldCR, test.newCR)
+			if len(warnings) > 0 {
+				t.Errorf("expected no warnings but got: %v", warnings)
+			}
+			compareErrors(t, test.expErr, err)
+		})
+	}
+}
+
+type fakeAuthorizer struct {
+	t           *testing.T
+	verb        string
+	allowedName string
+	decision    authorizer.Decision
+	err         error
+}
+
+func (f fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (authorizer.Decision, string, error) {
+	if f.err != nil {
+		return f.decision, "forced error", f.err
+	}
+	if a.GetVerb() != f.verb {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised verb '%s'", a.GetVerb()), nil
+	}
+	if a.GetAPIGroup() != "cert-manager.io" {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised groupName '%s'", a.GetAPIGroup()), nil
+	}
+	if a.GetAPIVersion() != "*" {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised apiVersion '%s'", a.GetAPIVersion()), nil
+	}
+	if a.GetResource() != "signers" {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised resource '%s'", a.GetResource()), nil
+	}
+	if a.GetName() != f.allowedName {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised resource name '%s'", a.GetName()), nil
+	}
+	if !a.IsResourceRequest() {
+		return authorizer.DecisionDeny, fmt.Sprintf("unrecognised IsResourceRequest '%t'", a.IsResourceRequest()), nil
+	}
+	return f.decision, "", nil
+}
+
+// groupWithoutKind returns an APIGroupList that contains the given group but
+// none of its resource kinds, simulating the case where a CRD's API group is
+// registered but the specific kind does not exist.
+func groupWithoutKind(group string) *metav1.APIGroupList {
+	return &metav1.APIGroupList{
+		Groups: []metav1.APIGroup{
+			{
+				Name: group,
+				Versions: []metav1.GroupVersionForDiscovery{
+					{GroupVersion: group + "/v1alpha1", Version: "v1alpha1"},
+				},
+			},
+		},
+	}
+}
+
+// TestNegativeCacheHit_GroupMissing verifies that when the API group itself is
+// absent from ServerGroups() (e.g. a CRD whose aggregated discovery entry has
+// not yet propagated), no negative-cache entry is written. Subsequent calls
+// must each perform a fresh discovery query so that a newly established CRD
+// is not blocked by a stale cache entry.
+func TestNegativeCacheHit_GroupMissing(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return &metav1.APIGroupList{}, nil // group not in discovery
+		})
+
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call: group not found, must NOT populate negative cache.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on first call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+	a.mutex.RLock()
+	_, cached := a.notFoundAt[gk]
+	a.mutex.RUnlock()
+	if cached {
+		t.Fatal("expected no negative cache entry when group is absent from ServerGroups()")
+	}
+
+	// Second call: no cache entry, so discovery must be called again.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on second call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 2 {
+		t.Fatalf("expected 2 discovery calls (no cache when group missing), got %d", discoveryCallCount.Load())
+	}
+}
+
+// TestNegativeCacheHit_KindMissing verifies that when the API group exists but
+// the requested kind is not registered within it, a negative-cache entry IS
+// written and subsequent calls skip discovery for the full TTL.
+func TestNegativeCacheHit_KindMissing(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil // no resources
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call: group found but kind missing → populate negative cache.
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on first call, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Second call: must hit the negative cache and skip discovery.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists on second call (cache hit), got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected discovery call count to remain 1 after cache hit, got %d", discoveryCallCount.Load())
+	}
+}
+
+func TestNegativeCacheExpiry(t *testing.T) {
+	var discoveryCallCount atomic.Int32
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			discoveryCallCount.Add(1)
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// First call populates the negative cache (group found, kind missing).
+	_, err := a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 1 {
+		t.Fatalf("expected 1 discovery call, got %d", discoveryCallCount.Load())
+	}
+
+	// Simulate TTL expiry by backdating the negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// After expiry, discovery should be called again.
+	_, err = a.apiResourceForGroupKind(gk)
+	if err != errNoResourceExists {
+		t.Fatalf("expected errNoResourceExists after expiry, got: %v", err)
+	}
+	if discoveryCallCount.Load() != 2 {
+		t.Fatalf("expected 2 discovery calls after expiry, got %d", discoveryCallCount.Load())
+	}
+}
+
+func TestNegativeCacheEviction(t *testing.T) {
+	gk := schema.GroupKind{Group: "example.io", Kind: "Issuer"}
+	disc := discoveryfake.NewDiscovery().
+		WithServerGroups(func() (*metav1.APIGroupList, error) {
+			return groupWithoutKind(gk.Group), nil
+		}).
+		WithServerResourcesForGroupVersion(func(_ string) (*metav1.APIResourceList, error) {
+			return &metav1.APIResourceList{}, nil
+		})
+
+	a := &certificateRequestApproval{
+		resourceInfo: map[schema.GroupKind]resourceInfo{},
+		notFoundAt:   map[schema.GroupKind]time.Time{},
+		discovery:    disc,
+	}
+
+	// Seed an already-expired negative cache entry.
+	a.mutex.Lock()
+	a.notFoundAt[gk] = time.Now().Add(-negativeCacheTTL - time.Second)
+	a.mutex.Unlock()
+
+	// Calling isNegativelyCached on an expired entry should return false
+	// and evict the entry from the map.
+	if a.isNegativelyCached(gk) {
+		t.Fatal("expected false for expired negative cache entry")
+	}
+
+	a.mutex.RLock()
+	_, still := a.notFoundAt[gk]
+	a.mutex.RUnlock()
+
+	if still {
+		t.Fatal("expected expired negative cache entry to be evicted, but it is still present")
+	}
+}
+
+func compareErrors(t *testing.T, exp, act error) {
+	if exp == nil && act == nil {
+		return
+	}
+	if exp == nil && act != nil ||
+		exp != nil && act == nil ||
+		exp.Error() != act.Error() {
+		t.Errorf("error not as expected. exp=%v, act=%v", exp, act)
+	}
+}
