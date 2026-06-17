@@ -1,0 +1,35 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-automount-sa-token
+  annotations:
+    policies.kyverno.io/title: Restrict Auto-Mount of Service Account Tokens (Pod)
+    policies.kyverno.io/category: Sample, EKS Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: 1.14.0
+    policies.kyverno.io/description: >-
+      Kubernetes automatically mounts ServiceAccount credentials in each Pod.
+      The ServiceAccount may be assigned roles allowing Pods to access API
+      resources. Blocking this ability is an extension of the least privilege
+      best practice and should be followed if Pods do not need to speak to the
+      API server to function. This policy ensures that mounting of these
+      ServiceAccount tokens is blocked at the Pod level.
+spec:
+  validationActions:
+    - Audit
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  matchConditions:
+    - name: exclude-policy-reporter
+      expression: "object.metadata.?labels[?'app.kubernetes.io/part-of'].orValue('') != 'policy-reporter'"
+  validations:
+    - expression: "object.spec.?automountServiceAccountToken.orValue(true) == false"
+      message: "Auto-mounting of Service Account tokens is not allowed."

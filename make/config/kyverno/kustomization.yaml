@@ -1,41 +1,40 @@
-# This Kustomization is used to adapt the Kyverno policies downloaded from
-# https://kyverno.io/policies/, for use in the cert-manager
-# namespace and in the E2E test namespaces.
+# This Kustomization adapts the Kyverno ValidatingPolicy resources downloaded
+# from https://github.com/kyverno/policies/ (CEL-based, Kyverno >= 1.14) for
+# use in the cert-manager namespace and in the E2E test namespaces.
 #
-# * Changes the failure action of all ClusterPolicy resources from Audit to Enforce.
-# * Adds exclude` fields to all ClusterPolicy resources to allow the
-#   installation of non-compliant E2E test components such as ingress-nginx and
-#   pebble.
-#   The method used is a bit of a hack, because it is difficult to get Kustomize
-#   to patch **all** the rules in the Kyverno ClusterPolicy custom resource.
-#   See https://github.com/kyverno/kyverno/issues/2408#issuecomment-1125926525
+# Migration notes:
+# * The legacy ClusterPolicy (kyverno.io/v1) resources have been replaced with
+#   ValidatingPolicy (policies.kyverno.io/v1alpha1) resources written in CEL.
+#   See https://kyverno.io/docs/policy-types/validating-policy/ and
+#   https://kyverno.io/docs/guides/migration-to-cel/.
+# * `validationFailureAction: Enforce` is now `validationActions: [Deny]`.
+# * Namespace exclusion that used to be done via `spec.rules[*].exclude` is
+#   now done via top-level `matchConditions` using the CEL `namespaceObject`
+#   variable, which works uniformly for all rules.
+# * `restrict-apparmor-profiles` from the legacy `pod-security/baseline` bundle
+#   has no equivalent in `pod-security-vpol/baseline` yet and is omitted.
+# * `restrict-automount-sa-token` is provided locally and targets Pods (to
+#   match the previous behaviour) instead of ServiceAccounts.
 #
 # Use as follows:
 #  kustomize build . > policy.yaml
 #
 resources:
-  - https://github.com/kyverno/policies/pod-security/enforce
-  - https://github.com/kyverno/policies/raw/main/other/restrict-automount-sa-token/restrict-automount-sa-token.yaml
-  - https://github.com/kyverno/policies/raw/main/best-practices/require-ro-rootfs/require-ro-rootfs.yaml
+  - https://github.com/kyverno/policies/pod-security-vpol/baseline
+  - https://github.com/kyverno/policies/pod-security-vpol/restricted
+  - https://github.com/kyverno/policies/raw/main/best-practices-vpol/require-ro-rootfs/require-ro-rootfs.yaml
+  - restrict-automount-sa-token.yaml
 
 patches:
   - target:
-      kind: ClusterPolicy
+      kind: ValidatingPolicy
     patch: |-
       - op: replace
-        path: /spec/validationFailureAction
-        value: Enforce
-      - op: add
-        path: /spec/rules/0/exclude
+        path: /spec/validationActions
         value:
-          resources:
-            namespaces:
-              - bind
-              - e2e-vault
-              - e2e-vault-mtls
-              - gateway-system
-              - ingress-nginx
-              - pebble
-              - kgateway-system
-              - sample-external-issuer-system
-              - samplewebhook
+          - Deny
+      - op: add
+        path: /spec/matchConditions
+        value:
+          - name: exclude-e2e-namespaces
+            expression: "!(object.metadata.?namespace.orValue('') in ['bind','e2e-vault','e2e-vault-mtls','gateway-system','ingress-nginx','pebble','kgateway-system','sample-external-issuer-system','samplewebhook'])"
