@@ -93,7 +93,6 @@ github.com/evanphx/json-patch/v5,BSD-3-Clause
 github.com/felixge/httpsnoop,MIT
 github.com/fxamacker/cbor/v2,MIT
 github.com/go-asn1-ber/asn1-ber,MIT
-github.com/go-http-utils/headers,MIT
 github.com/go-jose/go-jose/v4,Apache-2.0
 github.com/go-jose/go-jose/v4/json,BSD-3-Clause
 github.com/go-ldap/ldap/v3,MIT
