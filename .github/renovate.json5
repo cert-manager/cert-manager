@@ -42,6 +42,9 @@
       matchManagers: [
         'custom.regex',
       ],
+      matchFileNames: [
+        'make/base_images.mk',
+      ],
     },
     {
       groupName: null,
