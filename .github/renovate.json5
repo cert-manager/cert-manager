@@ -58,6 +58,14 @@
       },
     },
     {
+      description: 'Disable makefile-modules upgrades on release branches',
+      matchBaseBranches: [
+        '/^release-.*/'
+      ],
+      matchFileNames: ['klone.yaml'],
+      enabled: false
+    },
+    {
       matchBaseBranches: [
         '/^release-.*/',
       ],
