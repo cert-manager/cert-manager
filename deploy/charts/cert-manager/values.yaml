@@ -658,6 +658,13 @@ prometheus:
     # Create a ServiceMonitor to add cert-manager to Prometheus.
     enabled: false
 
+    # Rendering behavior for the ServiceMonitor resource, when the ServiceMonitor CRD
+    # is not found by Helm (.Capabilities.APIVersions check):
+    # * skipIfMissing: don't render, don't fail
+    # * failIfMissing: fail
+    # * alwaysRender: render anyways
+    renderMode: skipIfMissing
+
     # The namespace that the service monitor should live in, defaults
     # to the cert-manager namespace.
     # +docs:property
@@ -709,6 +716,13 @@ prometheus:
   podmonitor:
     # Create a PodMonitor to add cert-manager to Prometheus.
     enabled: false
+
+    # Rendering behavior for the PodMonitor resource, when the PodMonitor CRD
+    # is not found by Helm (.Capabilities.APIVersions check):
+    # * skipIfMissing: don't render, don't fail
+    # * failIfMissing: fail
+    # * alwaysRender: render anyways
+    renderMode: skipIfMissing
 
     # The namespace that the pod monitor should live in, defaults
     # to the cert-manager namespace.
