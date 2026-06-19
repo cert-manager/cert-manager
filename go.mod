@@ -21,9 +21,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.7
 	github.com/aws/smithy-go v1.24.1
 	github.com/digitalocean/godo v1.176.0
-	github.com/go-ldap/ldap/v3 v3.4.12
+	github.com/go-ldap/ldap/v3 v3.4.13
 	github.com/go-logr/logr v1.4.3
-	github.com/go-openapi/jsonreference v0.21.4
+	github.com/go-openapi/jsonreference v0.21.6
 	github.com/google/gnostic-models v0.7.1
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/vault/api v1.22.0
@@ -53,7 +53,7 @@ require (
 	sigs.k8s.io/gateway-api v1.5.0
 	sigs.k8s.io/randfill v1.0.0
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2
-	software.sslmate.com/src/go-pkcs12 v0.7.0
+	software.sslmate.com/src/go-pkcs12 v0.7.2
 )
 
 require (
@@ -97,9 +97,9 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
-	github.com/go-openapi/jsonpointer v0.22.4 // indirect
+	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
+	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
