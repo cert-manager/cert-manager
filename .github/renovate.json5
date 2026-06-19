@@ -38,11 +38,11 @@
   ],
   packageRules: [
     {
+      description: 'Ungroup all updates on release branches',
       matchBaseBranches: [
         '/^release-.*/',
       ],
-      groupName: null, // Ungroup all updates on release branches
-      prTitle: '[{{{baseBranch}}}] {{{currentTitle}}}', // Standard release branch PR format
+      groupName: null,
     },
     {
       groupName: 'Base Images',
