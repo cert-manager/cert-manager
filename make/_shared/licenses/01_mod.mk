@@ -68,6 +68,7 @@ oci-license-layer-$1: | $(bin_dir)/scratch $(NEEDS_GO-LICENSES)
 	cp $$(go_$1_mod_dir)/LICENSES $$(license_layer_path_$1)/licenses/LICENSES
 
 oci-build-$1: oci-license-layer-$1
+oci-build-$1__local: oci-license-layer-$1
 oci_$1_additional_layers += $$(license_layer_path_$1)
 endef
 

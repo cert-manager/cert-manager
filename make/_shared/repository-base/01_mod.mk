@@ -24,13 +24,11 @@ repository_base_dir := $(_repository_base_module_dir)base/
 ## @category [shared] Generate/ Verify
 generate-base:
 	cp -r $(repository_base_dir)/. ./
-	cd $(repository_base_dir) && \
-		find . -type f | while read file; do \
-			sed "s|{{REPLACE:GH-REPOSITORY}}|$(repo_name:github.com/%=%)|g" "$$file" > "$(CURDIR)/$$file"; \
-		done
 	if [ ! -e ./.github/renovate.json5 ]; then \
 		mkdir -p ./.github; \
 		cp $(_repository_base_module_dir)/renovate-bootstrap-config.json5 ./.github/renovate.json5; \
 	fi
+	# TODO: Remove when all downstream repos are updated
+	rm -f ./.github/chainguard/make-self-upgrade.sts.yaml ./.github/workflows/make-self-upgrade.yaml
 
 shared_generate_targets += generate-base

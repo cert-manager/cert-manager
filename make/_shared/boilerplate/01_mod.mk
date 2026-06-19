@@ -28,4 +28,4 @@ shared_verify_targets += verify-boilerplate
 generate-license:
 	cp -r $(license_base_dir)/. ./
 
-shared_generate_targets += generate-base
+shared_generate_targets += generate-license
