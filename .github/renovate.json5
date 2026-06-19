@@ -38,6 +38,13 @@
   ],
   packageRules: [
     {
+      description: 'Ungroup all updates on release branches',
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      groupName: null,
+    },
+    {
       groupName: 'Base Images',
       matchManagers: [
         'custom.regex',
@@ -61,14 +68,18 @@
       },
     },
     {
-      description: 'Disable makefile-modules upgrades on release branches',
+      description: 'Ignore misc files on release branches',
       matchBaseBranches: [
         '/^release-.*/'
       ],
-      matchFileNames: ['klone.yaml'],
+      matchFileNames: [
+        '.github/workflows/*', // No workflow updates
+        'klone.yaml', // No makefile-modules updates
+      ],
       enabled: false
     },
     {
+      description: 'Ignore major and minor updates on release branches',
       matchBaseBranches: [
         '/^release-.*/',
       ],
