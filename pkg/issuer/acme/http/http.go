@@ -266,7 +266,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 			// > When redirected to an HTTPS URL, it does not validate certificates (since
 			// > this challenge is intended to bootstrap valid certificates, it may encounter
 			// > self-signed or expired certificates along the way).
-			InsecureSkipVerify: true, // #nosec G402 -- false positive
+			InsecureSkipVerify: true, // #nosec G402 -- ACME HTTP-01 self-check follows redirects to HTTPS where certs may be invalid (see comment above)
 		},
 	}
 
@@ -297,7 +297,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		Timeout:   time.Second * 10,
 	}
 
-	response, err := client.Do(req) // #nosec G704 -- TODO(erikgb): This is probably not a false positive. Investigate!
+	response, err := client.Do(req) // #nosec G704 -- intentional ACME HTTP-01 self-check request; URL is provided by caller (typically Challenge DNSName + token via buildChallengeUrl)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to perform self check GET request", "error", err)
 		return fmt.Errorf("failed to perform self check GET request '%s': %v", url, err)
