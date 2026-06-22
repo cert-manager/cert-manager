@@ -47,7 +47,7 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 
 			return nil
 		},
-		// nolint:contextcheck // False positive
+		//nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runCtx := cmd.Context()
 			log := logf.FromContext(runCtx)
@@ -61,7 +61,7 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
 
-				// nolint: contextcheck
+				//nolint: contextcheck
 				if err := s.Shutdown(shutdownCtx); err != nil {
 					log.Error(err, "error shutting down acmesolver server")
 				}

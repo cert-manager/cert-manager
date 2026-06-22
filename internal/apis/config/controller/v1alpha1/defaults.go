@@ -194,7 +194,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 }
 
 func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) {
-	// nolint:staticcheck // For backwards compatibility.
+	//nolint:staticcheck // For backwards compatibility.
 	if obj.APIServerHost == "" {
 		obj.APIServerHost = defaultAPIServerHost
 	}
@@ -235,7 +235,7 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		obj.EnableCertificateOwnerRef = &defaultEnableCertificateOwnerRef
 	}
 
-	// nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPI to GatewayAPIConfig.Enabled.
+	//nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPI to GatewayAPIConfig.Enabled.
 	if obj.GatewayAPIConfig.Enabled == nil {
 		if obj.EnableGatewayAPI != nil {
 			obj.GatewayAPIConfig.Enabled = obj.EnableGatewayAPI
@@ -244,10 +244,10 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		}
 	}
 
-	// nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
+	//nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
 	obj.EnableGatewayAPI = obj.GatewayAPIConfig.Enabled
 
-	// nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPIListenerSet to GatewayAPIConfig.EnableListenerSet.
+	//nolint:staticcheck // For backwards compatibility: migrate deprecated EnableGatewayAPIListenerSet to GatewayAPIConfig.EnableListenerSet.
 	if obj.GatewayAPIConfig.EnableListenerSet == nil {
 		if obj.EnableGatewayAPIListenerSet != nil {
 			obj.GatewayAPIConfig.EnableListenerSet = obj.EnableGatewayAPIListenerSet
@@ -256,7 +256,7 @@ func SetDefaults_ControllerConfiguration(obj *v1alpha1.ControllerConfiguration) 
 		}
 	}
 
-	// nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
+	//nolint:staticcheck // For backwards compatibility: keep deprecated field in sync.
 	obj.EnableGatewayAPIListenerSet = obj.GatewayAPIConfig.EnableListenerSet
 
 	if len(obj.CopiedAnnotationPrefixes) == 0 {

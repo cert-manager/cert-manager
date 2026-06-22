@@ -133,7 +133,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// nolint: contextcheck
+		//nolint: contextcheck
 		return metricsServer.Shutdown(shutdownCtx)
 	})
 	g.Go(func() error {
@@ -165,7 +165,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			// nolint: contextcheck
+			//nolint: contextcheck
 			return profilerServer.Shutdown(shutdownCtx)
 		})
 		g.Go(func() error {

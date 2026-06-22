@@ -111,7 +111,7 @@ functionality for cert-manager.`,
 
 			return nil
 		},
-		// nolint:contextcheck // False positive
+		//nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), webhookConfig)
 		},

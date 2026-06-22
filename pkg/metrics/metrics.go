@@ -155,7 +155,6 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		)
 
 		venafiOAuthTokenRequestsTotal = prometheus.NewCounterVec(
-			//nolint:promlinter
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "venafi_oauth_token_requests_total",

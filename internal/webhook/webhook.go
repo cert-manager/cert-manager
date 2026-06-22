@@ -46,7 +46,7 @@ import (
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
 func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
-	// nolint:staticcheck // For backwards compatibility.
+	//nolint:staticcheck // For backwards compatibility.
 	restcfg, err := kube.BuildClientConfig(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
