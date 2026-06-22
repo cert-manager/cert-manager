@@ -49,7 +49,7 @@ var (
 		Key: "validkey",
 	}
 	// TODO (JS): Missing test for validCloudflareProvider
-	// nolint: unused
+	//nolint: unused
 	validCloudflareProvider = cmacme.ACMEIssuerDNS01ProviderCloudflare{
 		APIKey: &validSecretKeyRef,
 		Email:  "valid",

@@ -243,7 +243,7 @@ func currentSecretValidForSpec(input Input) (string, string, bool) {
 	if err != nil {
 		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
 	}
-	// nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
+	//nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
 	violations := pki.FuzzyX509AltNamesMatchSpec(x509Cert, input.Certificate.Spec)
 	if len(violations) > 0 {
 		return SecretMismatch, fmt.Sprintf("Issuing certificate as Existing issued Secret is not up to date for spec: %v", violations), true

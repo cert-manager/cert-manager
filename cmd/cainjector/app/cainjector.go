@@ -108,7 +108,7 @@ servers and webhook servers.`,
 
 			return nil
 		},
-		// nolint:contextcheck // False positive
+		//nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 				log := logf.FromContext(cmd.Context())
