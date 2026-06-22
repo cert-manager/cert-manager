@@ -200,6 +200,9 @@ tools += yamlfmt=v0.21.0
 # https://github.com/yannh/kubeconform/releases
 # renovate: datasource=github-releases packageName=yannh/kubeconform
 tools += kubeconform=v0.8.0
+# https://github.com/suzuki-shunsuke/pinact/releases
+# renovate: datasource=github-releases packageName=suzuki-shunsuke/pinact
+tools += pinact=v4.1.0
 
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
@@ -431,6 +434,7 @@ go_dependencies += gh=github.com/cli/cli/v2/cmd/gh
 go_dependencies += gci=github.com/daixiang0/gci
 go_dependencies += yamlfmt=github.com/google/yamlfmt/cmd/yamlfmt
 go_dependencies += kubeconform=github.com/yannh/kubeconform/cmd/kubeconform
+go_dependencies += pinact=github.com/suzuki-shunsuke/pinact/v4/cmd/pinact
 
 #################
 # go build tags #
