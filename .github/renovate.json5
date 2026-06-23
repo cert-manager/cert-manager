@@ -52,6 +52,9 @@
       matchFileNames: [
         'make/base_images.mk',
       ],
+      addLabels: [
+        'skip-review', // Adding label to allow PRs to automerge
+      ],
     },
     {
       groupName: null,
@@ -68,26 +71,21 @@
       },
     },
     {
-      description: 'Ignore misc files on release branches',
-      matchBaseBranches: [
-        '/^release-.*/'
-      ],
-      matchFileNames: [
-        '.github/workflows/*', // No workflow updates
-        'klone.yaml', // No makefile-modules updates
-      ],
-      enabled: false
-    },
-    {
-      description: 'Ignore major and minor updates on release branches',
+      description: 'Ignore updates in general on release branches',
       matchBaseBranches: [
         '/^release-.*/',
       ],
-      matchUpdateTypes: [
-        'major',
-        'minor',
-      ],
       enabled: false,
+    },
+    {
+      description: 'Enable base image updates on release branches',
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      matchFileNames: [
+        'make/base_images.mk',
+      ],
+      enabled: true,
     },
   ],
 }
