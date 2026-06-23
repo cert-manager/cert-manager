@@ -160,3 +160,12 @@ func CronParse(origCronString, timeZone string) (CronSchedule, error) {
 	}
 	return nil, fmt.Errorf("failed to parse cron spec '%s': %w", origCronString, err)
 }
+
+// SplitOrNil returns the result of splitting the input string at hte separator. In contrast to the stdlib it
+// returns an empty slice if the input string is empty/Zero
+func SplitOrNil(s, sep string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, sep)
+}

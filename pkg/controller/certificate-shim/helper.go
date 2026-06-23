@@ -71,10 +71,13 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if altNames, found := ingLikeAnnotations[cmapi.AltNamesAnnotationKey]; found {
-		if altNames != "" {
-			addDnsNames := strings.Split(altNames, ",")
-			crt.Spec.DNSNames = append(crt.Spec.DNSNames, addDnsNames...)
-		}
+		addDnsNames := util.SplitOrNil(altNames, ",")
+		crt.Spec.DNSNames = append(crt.Spec.DNSNames, addDnsNames...)
+	}
+
+	if ipSANs, found := ingLikeAnnotations[cmapi.IPSANAnnotationKey]; found {
+		ipAddresses := util.SplitOrNil(ipSANs, ",")
+		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, ipAddresses...)
 	}
 
 	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
