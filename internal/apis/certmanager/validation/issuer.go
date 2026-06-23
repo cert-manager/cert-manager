@@ -19,6 +19,7 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"slices"
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -294,6 +295,8 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 
 	if len(iss.Path) == 0 {
 		el = append(el, field.Required(fldPath.Child("path"), ""))
+	} else if containsDotDotSegment(iss.Path) {
+		el = append(el, field.Invalid(fldPath.Child("path"), iss.Path, "must not contain '..' path segments"))
 	}
 
 	if len(iss.CABundle) > 0 {
@@ -336,10 +339,17 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 		if auth.AppRole.SecretRef.Name == "" {
 			el = append(el, field.Required(fldPath.Child("appRole", "secretRef", "name"), ""))
 		}
+
+		if containsDotDotSegment(auth.AppRole.Path) {
+			el = append(el, field.Invalid(fldPath.Child("appRole", "path"), auth.AppRole.Path, "must not contain '..' path segments"))
+		}
 		unionCount++
 	}
 
 	if auth.ClientCertificate != nil {
+		if containsDotDotSegment(auth.ClientCertificate.Path) {
+			el = append(el, field.Invalid(fldPath.Child("clientCertificate", "path"), auth.ClientCertificate.Path, "must not contain '..' path segments"))
+		}
 		unionCount++
 	}
 
@@ -348,6 +358,10 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 
 		if auth.Kubernetes.Role == "" {
 			el = append(el, field.Required(fldPath.Child("kubernetes", "role"), ""))
+		}
+
+		if containsDotDotSegment(auth.Kubernetes.Path) {
+			el = append(el, field.Invalid(fldPath.Child("kubernetes", "path"), auth.Kubernetes.Path, "must not contain '..' path segments"))
 		}
 
 		kubeCount := 0
@@ -377,6 +391,10 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 			el = append(el, field.Required(fldPath.Child("aws", "role"), ""))
 		}
 
+		if containsDotDotSegment(auth.AWS.MountPath) {
+			el = append(el, field.Invalid(fldPath.Child("aws", "mountPath"), auth.AWS.MountPath, "must not contain '..' path segments"))
+		}
+
 		if auth.AWS.ServiceAccountRef != nil {
 			if len(auth.AWS.ServiceAccountRef.Name) == 0 {
 				el = append(el, field.Required(fldPath.Child("aws", "serviceAccountRef", "name"), ""))
@@ -399,6 +417,14 @@ func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) f
 	// that it is the first field that is set gets used.
 
 	return el
+}
+
+// containsDotDotSegment checks for literal ".." path segments only.
+// We considered using path.Clean(p) != p instead, which also catches
+// double slashes and trailing slashes, but that risks rejecting
+// existing working Issuers on update with cosmetically non-canonical paths.
+func containsDotDotSegment(p string) bool {
+	return slices.Contains(strings.Split(p, "/"), "..")
 }
 
 func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el field.ErrorList) {

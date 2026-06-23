@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -523,7 +522,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
 	}
 
-	url := filepath.Join(mountPath, "login")
+	url := path.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err := request.SetJSONBody(parameters)
 	if err != nil {
@@ -626,7 +625,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
 
-	url := filepath.Join(mountPath, "login")
+	url := path.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err := request.SetJSONBody(parameters)
 	if err != nil {
