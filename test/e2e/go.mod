@@ -12,7 +12,7 @@ require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go/v6 v6.10.0
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/onsi/ginkgo/v2 v2.31.0
+	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.0
 	github.com/spf13/pflag v1.0.10
 	k8s.io/api v0.36.2
