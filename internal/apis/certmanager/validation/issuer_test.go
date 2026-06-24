@@ -171,6 +171,18 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("clientCertSecretRef"), "<snip>", "clientCertSecretRef must be provided when defining the clientKeySecretRef"),
 			},
 		},
+		"invalid vault issuer: path contains '..' segments": {
+			spec: &cmapi.VaultIssuer{
+				Server: "https://vault.example.com",
+				Path:   "pki/../sys/seal",
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("path"), "pki/../sys/seal", "must not contain '..' path segments"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -386,6 +398,56 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"),
+			},
+		},
+		"invalid auth.appRole: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "../../sys/seal",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("appRole", "path"), "../../sys/seal", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.clientCertificate: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				ClientCertificate: &cmapi.VaultClientCertificateAuth{
+					Path: "../other",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("clientCertificate", "path"), "../other", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.kubernetes: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "../other",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("kubernetes", "path"), "../other", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.aws: mountPath contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role:      "my-role",
+					MountPath: "../other",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("aws", "mountPath"), "../other", "must not contain '..' path segments"),
 			},
 		},
 		"valid auth: all five auth types can be set simultaneously": {
