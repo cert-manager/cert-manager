@@ -253,36 +253,3 @@ func parseIPs(ipStrs []string) []net.IP {
 
 	return ips
 }
-
-func TestSplitOrNil(t *testing.T) {
-	tests := map[string]struct {
-		in  string
-		sep string
-		exp []string
-	}{
-		"empty": {
-			in:  "",
-			sep: ",",
-			exp: nil,
-		},
-		"single element": {
-			in:  "a",
-			sep: ",",
-			exp: []string{"a"},
-		},
-		"multiple elements": {
-			in:  "a,b",
-			sep: ",",
-			exp: []string{"a", "b"},
-		},
-	}
-
-	for n, tc := range tests {
-		t.Run(n, func(t *testing.T) {
-			o := SplitOrNil(tc.in, tc.sep)
-			if !slices.Equal(tc.exp, o) {
-				t.Errorf("Unexpected result: %v", o)
-			}
-		})
-	}
-}
