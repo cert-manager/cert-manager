@@ -30,6 +30,8 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	restclient "k8s.io/client-go/rest"
 	basecompatibility "k8s.io/component-base/compatibility"
+	"k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/util"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
@@ -41,6 +43,8 @@ var (
 	Scheme = runtime.NewScheme()
 	Codecs = serializer.NewCodecFactory(Scheme)
 )
+
+var verbs = util.NewTrie([]string{"get", "log", "read", "replace", "patch", "delete", "deletecollection", "watch", "connect", "proxy", "list", "create", "patch"})
 
 func init() {
 	utilruntime.Must(whapi.AddToScheme(Scheme))
@@ -96,6 +100,8 @@ func (c *Config) Complete() CompletedConfig {
 	c.GenericConfig.EffectiveVersion = basecompatibility.NewEffectiveVersionFromString("1.1", "", "")
 	c.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
 	c.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+	c.GenericConfig.OpenAPIConfig.GetOperationIDAndTagsFromRoute = GetOperationIDAndTagsFromRoute
+	c.GenericConfig.OpenAPIV3Config.GetOperationIDAndTagsFromRoute = GetOperationIDAndTagsFromRoute
 
 	return CompletedConfig{&completedConfig{
 		c.GenericConfig.Complete(),
@@ -202,4 +208,35 @@ func solversByName(solvers ...webhook.Solver) map[string]webhook.Solver {
 	}
 
 	return ret
+}
+
+func GetOperationIDAndTagsFromRoute(r common.Route) (string, []string, error) {
+	var operationID string
+	var tags []string
+	op := r.OperationName()
+	prefix, exists := verbs.GetPrefix(op)
+	if !exists {
+		return op, tags, fmt.Errorf("operation names should start with a verb. Cannot determine operation verb from %v", op)
+	}
+	op = op[len(prefix):]
+	tags = make([]string, 1)
+	operationID += openapi.ToValidOperationID(prefix, false)
+
+	path := r.Path()
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) >= 1 && parts[0] == "api" {
+		parts = append([]string{"apis", "core"}, parts[1:]...)
+	}
+	for i, p := range parts {
+		if i == 0 && p == "apis" {
+			continue
+		}
+		operationID += openapi.ToValidOperationID(p, true)
+		tags[0] += "_" + openapi.ToValidOperationID(p, false)
+	}
+
+	tags[0] = strings.TrimLeft(tags[0], "_")
+	operationID += openapi.ToValidOperationID(op, true)
+
+	return operationID, tags, nil
 }
