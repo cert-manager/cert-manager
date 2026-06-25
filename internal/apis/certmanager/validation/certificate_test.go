@@ -1130,6 +1130,31 @@ func TestValidateDuration(t *testing.T) {
 			},
 			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapi.MinimumCertificateDuration))},
 		},
+		// Regression tests for int64 overflow: duration * (100 - pct) overflows int64 for large
+		// durations with a small renewBeforePercentage (large multiplier). The overflow produced a
+		// negative renewBefore, which falsely triggered the MinimumRenewBefore validation error.
+		"renewBeforePercentage=1 with 10-year duration does not overflow int64": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              usefulDurations["ten years"],
+					RenewBeforePercentage: new(int32(1)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		"renewBeforePercentage=1 with 3-year duration does not overflow int64": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              &metav1.Duration{Duration: time.Hour * 24 * 365 * 3},
+					RenewBeforePercentage: new(int32(1)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
