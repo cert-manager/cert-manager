@@ -514,9 +514,23 @@ rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates/status"]
     verbs: ["update"]
+  {{- /*
+    Challenge and Order resources are not intended to be created or
+    modified directly by users.
+
+    Challenges: "create" is excluded. "patch" and "update" are retained
+    because spec is immutable after creation (ValidateChallengeUpdate)
+    and because users need them to remove stuck finalizers
+    (see cert-manager/cert-manager#3851, cert-manager/cert-manager#3870).
+
+    Orders: "create", "patch", and "update" are excluded.
+  */}}
   - apiGroups: ["acme.cert-manager.io"]
-    resources: ["challenges", "orders"]
-    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+    resources: ["challenges"]
+    verbs: ["delete", "deletecollection", "patch", "update"]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources: ["orders"]
+    verbs: ["delete", "deletecollection"]
 
 ---
 
