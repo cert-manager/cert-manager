@@ -306,7 +306,7 @@ Outer:
 }
 
 func OtherNameSANRawVal(expectedOID asn1.ObjectIdentifier) (asn1.RawValue, error) {
-	var otherNameParam = fmt.Sprintf("tag:%d", nameTypeOtherName)
+	otherNameParam := fmt.Sprintf("tag:%d", nameTypeOtherName)
 
 	value, err := MarshalUniversalValue(UniversalValue{
 		UTF8String: "user@example.org",
@@ -324,7 +324,6 @@ func OtherNameSANRawVal(expectedOID asn1.ObjectIdentifier) (asn1.RawValue, error
 			Bytes:      value,
 		},
 	}, otherNameParam)
-
 	if err != nil {
 		return asn1.NullRawValue, err
 	}
@@ -623,7 +622,8 @@ func TestGenerateCSR(t *testing.T) {
 						OID:       "1.2.840.113556.1.4.221",
 						UTF8Value: "user@example.org",
 					},
-				}}},
+				},
+			}},
 			want: &x509.CertificateRequest{
 				Version:            0,
 				SignatureAlgorithm: x509.SHA256WithRSA,
@@ -1210,6 +1210,293 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 			if cert.SignatureAlgorithm != spec.ExpectedSignatureAlgorithm {
 				t.Errorf("wanted sigalg=%v but got %v", spec.ExpectedSignatureAlgorithm, cert.SignatureAlgorithm)
 				return
+			}
+		})
+	}
+}
+
+func Test_SubjectKeyIdentifier(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     crypto.Signer
+		wantLen int
+	}{
+		{
+			name:    "RSA key",
+			key:     rsaKey(t, 2048),
+			wantLen: 20, // SHA-1 hash is 20 bytes
+		},
+		{
+			name:    "ECDSA P-256 key",
+			key:     ecdsaKey(t, elliptic.P256()),
+			wantLen: 20,
+		},
+		{
+			name:    "Ed25519 key",
+			key:     ed25519Key(t),
+			wantLen: 20,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ski, err := SubjectKeyIdentifier(tt.key.Public())
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+			}
+			if len(ski) != tt.wantLen {
+				t.Errorf("SubjectKeyIdentifier() returned %d bytes, want %d", len(ski), tt.wantLen)
+			}
+
+			// Verify that calling it again with the same key returns the same value
+			ski2, err := SubjectKeyIdentifier(tt.key.Public())
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() second call error = %v", err)
+			}
+			if !bytes.Equal(ski, ski2) {
+				t.Errorf("SubjectKeyIdentifier() returned different values for same key")
+			}
+		})
+	}
+}
+
+func Test_SignCertificate_SubjectKeyIdentifier(t *testing.T) {
+	signerKey := ecdsaKey(t, elliptic.P256())
+
+	t.Run("self-signed certificate should have SKI", func(t *testing.T) {
+		tmpl := &x509.Certificate{
+			PublicKey: signerKey.Public(),
+			Subject:   pkix.Name{CommonName: "test-selfsigned"},
+			DNSNames:  []string{"example.com"},
+		}
+
+		// For self-signed, template and issuerCert are the same
+		_, cert, err := SignCertificate(tmpl, tmpl, signerKey.Public(), signerKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() error = %v", err)
+		}
+
+		// Verify SKI is set
+		if len(cert.SubjectKeyId) == 0 {
+			t.Error("SignCertificate() did not set SubjectKeyId")
+		}
+
+		// Note: Go's x509.CreateCertificate does not set AKI for self-signed certificates
+		// (when template == issuerCert), which is valid per RFC 5280 - AKI is optional for root CAs.
+
+		// Verify SKI matches the expected value for the public key
+		expectedSKI, err := SubjectKeyIdentifier(signerKey.Public())
+		if err != nil {
+			t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+		}
+		if !bytes.Equal(cert.SubjectKeyId, expectedSKI) {
+			t.Errorf("SubjectKeyId (%x) doesn't match expected value (%x)",
+				cert.SubjectKeyId, expectedSKI)
+		}
+	})
+
+	t.Run("CA-signed certificate should have SKI", func(t *testing.T) {
+		// Create a CA certificate first
+		caKey := ecdsaKey(t, elliptic.P256())
+		caTmpl := &x509.Certificate{
+			PublicKey:             caKey.Public(),
+			Subject:               pkix.Name{CommonName: "test-ca"},
+			BasicConstraintsValid: true,
+			IsCA:                  true,
+		}
+
+		_, caCert, err := SignCertificate(caTmpl, caTmpl, caKey.Public(), caKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() for CA error = %v", err)
+		}
+
+		// Now sign a leaf certificate with the CA
+		leafKey := ecdsaKey(t, elliptic.P256())
+		leafTmpl := &x509.Certificate{
+			PublicKey: leafKey.Public(),
+			Subject:   pkix.Name{CommonName: "test-leaf"},
+			DNSNames:  []string{"example.com"},
+		}
+
+		_, leafCert, err := SignCertificate(leafTmpl, caCert, leafKey.Public(), caKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() for leaf error = %v", err)
+		}
+
+		// Verify leaf has SKI
+		if len(leafCert.SubjectKeyId) == 0 {
+			t.Error("Leaf certificate does not have SubjectKeyId")
+		}
+
+		// Verify leaf SKI matches expected value for leaf public key
+		expectedLeafSKI, err := SubjectKeyIdentifier(leafKey.Public())
+		if err != nil {
+			t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+		}
+		if !bytes.Equal(leafCert.SubjectKeyId, expectedLeafSKI) {
+			t.Errorf("Leaf SubjectKeyId (%x) doesn't match expected value (%x)",
+				leafCert.SubjectKeyId, expectedLeafSKI)
+		}
+
+		// Verify leaf AKI matches CA's SKI
+		if !bytes.Equal(leafCert.AuthorityKeyId, caCert.SubjectKeyId) {
+			t.Errorf("Leaf AuthorityKeyId (%x) doesn't match CA SubjectKeyId (%x)",
+				leafCert.AuthorityKeyId, caCert.SubjectKeyId)
+		}
+	})
+
+	t.Run("should not override existing SubjectKeyId", func(t *testing.T) {
+		customSKI := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+
+		tmpl := &x509.Certificate{
+			PublicKey:    signerKey.Public(),
+			Subject:      pkix.Name{CommonName: "test-custom-ski"},
+			DNSNames:     []string{"example.com"},
+			SubjectKeyId: customSKI,
+		}
+
+		_, cert, err := SignCertificate(tmpl, tmpl, signerKey.Public(), signerKey)
+		if err != nil {
+			t.Fatalf("SignCertificate() error = %v", err)
+		}
+
+		// Verify the custom SKI was preserved
+		if !bytes.Equal(cert.SubjectKeyId, customSKI) {
+			t.Errorf("SignCertificate() should preserve existing SubjectKeyId, got %x, want %x",
+				cert.SubjectKeyId, customSKI)
+		}
+	})
+}
+
+func Test_SubjectKeyIdentifier_MatchesRealCertificate(t *testing.T) {
+	// This test uses Let's Encrypt root and intermediate certificates to verify:
+	// 1. Determinism: our SKI computation always returns the same value for the same public key
+	// 2. Compatibility: we match the SKI method used by modern CAs (RFC 7093)
+	//
+	// We use RFC 7093 method 1: SHA-256 hash truncated to 160 bits. This aligns with
+	// modern practices (e.g., Let's Encrypt's newer intermediates) while maintaining
+	// the same 20-byte SKI format as the legacy SHA-1 method.
+	//
+	// Note: Older certificates may use SHA-1 (RFC 5280 method 1), which will not match.
+
+	tests := []struct {
+		name        string
+		certPEM     string
+		expectMatch bool // whether we expect our SKI to match the cert's SKI
+	}{
+		{
+			// Let's Encrypt E7 intermediate (ECDSA P-384)
+			// Uses SHA-256 truncated to 160 bits (RFC 7093), same as our implementation.
+			name: "Let's Encrypt E7 intermediate",
+			certPEM: `-----BEGIN CERTIFICATE-----
+MIIEVzCCAj+gAwIBAgIRAKp18eYrjwoiCWbTi7/UuqEwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw
+WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
+RW5jcnlwdDELMAkGA1UEAxMCRTcwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARB6AST
+CFh/vjcwDMCgQer+VtqEkz7JANurZxLP+U9TCeioL6sp5Z8VRvRbYk4P1INBmbef
+QHJFHCxcSjKmwtvGBWpl/9ra8HW0QDsUaJW2qOJqceJ0ZVFT3hbUHifBM/2jgfgw
+gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSuSJ7chx1EoG/aouVgdAR4
+wpwAgDAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB
+AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g
+BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu
+Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAjx66fDdLk5ywFn3CzA1w1qfylHUD
+aEf0QZpXcJseddJGSfbUUOvbNR9N/QQ16K1lXl4VFyhmGXDT5Kdfcr0RvIIVrNxF
+h4lqHtRRCP6RBRstqbZ2zURgqakn/Xip0iaQL0IdfHBZr396FgknniRYFckKORPG
+yM3QKnd66gtMst8I5nkRQlAg/Jb+Gc3egIvuGKWboE1G89NTsN9LTDD3PLj0dUMr
+OIuqVjLB8pEC6yk9enrlrqjXQgkLEYhXzq7dLafv5Vkig6Gl0nuuqjqfp0Q1bi1o
+yVNAlXe6aUXw92CcghC9bNsKEO1+M52YY5+ofIXlS/SEQbvVYYBLZ5yeiglV6t3S
+M6H+vTG0aP9YHzLn/KVOHzGQfXDP7qM5tkf+7diZe7o2fw6O7IvN6fsQXEQQj8TJ
+UXJxv2/uJhcuy/tSDgXwHM8Uk34WNbRT7zGTGkQRX0gsbjAea/jYAoWv0ZvQRwpq
+Pe79D/i7Cep8qWnA+7AE/3B3S/3dEEYmc0lpe1366A/6GEgk3ktr9PEoQrLChs6I
+tu3wnNLB2euC8IKGLQFpGtOO/2/hiAKjyajaBP25w1jF0Wl8Bbqne3uZ2q1GyPFJ
+YRmT7/OXpmOH/FVLtwS+8ng1cAmpCujPwteJZNcDG0sF2n/sc0+SQf49fdyUK0ty
++VUwFj9tmWxyR/M=
+-----END CERTIFICATE-----`,
+			expectMatch: true, // Let's Encrypt uses RFC 7093 (SHA-256 truncated), same as us
+		},
+		{
+			// ISRG Root X1 (RSA 4096) - Let's Encrypt's root CA from 2015.
+			// Uses SHA-1 (RFC 5280 method 1), which differs from our RFC 7093 implementation.
+			name: "ISRG Root X1",
+			certPEM: `-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----`,
+			expectMatch: false, // Uses SHA-1 (RFC 5280), we use SHA-256 (RFC 7093)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cert, err := DecodeX509CertificateBytes([]byte(tt.certPEM))
+			if err != nil {
+				t.Fatalf("Failed to parse certificate: %v", err)
+			}
+
+			// Compute SKI using our implementation
+			computedSKI, err := SubjectKeyIdentifier(cert.PublicKey)
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() error = %v", err)
+			}
+
+			// Verify length is correct (SHA-1 = 20 bytes)
+			if len(computedSKI) != 20 {
+				t.Errorf("SubjectKeyIdentifier() returned %d bytes, want 20", len(computedSKI))
+			}
+
+			// The certificate's actual SKI (from the X.509 extension)
+			actualSKI := cert.SubjectKeyId
+
+			// Log whether our SKI matches the certificate's SKI
+			// This is informational - different CAs use different methods
+			if bytes.Equal(computedSKI, actualSKI) {
+				t.Logf("SKI matches certificate (both use RFC 5280 method 1): %x", computedSKI)
+			} else {
+				t.Logf("SKI differs from certificate (CA used different method):")
+				t.Logf("  Our computed SKI: %x", computedSKI)
+				t.Logf("  Certificate SKI:  %x", actualSKI)
+
+				if tt.expectMatch {
+					t.Errorf("Expected SKI to match but it didn't")
+				}
+			}
+
+			// Verify determinism - calling again should return the same value
+			computedSKI2, err := SubjectKeyIdentifier(cert.PublicKey)
+			if err != nil {
+				t.Fatalf("SubjectKeyIdentifier() second call error = %v", err)
+			}
+			if !bytes.Equal(computedSKI, computedSKI2) {
+				t.Errorf("SubjectKeyIdentifier() is not deterministic - returned different values for same key")
 			}
 		})
 	}
