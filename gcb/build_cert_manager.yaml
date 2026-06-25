@@ -37,5 +37,7 @@ options:
   # https://cloud.google.com/build/docs/optimize-builds/increase-vcpu-for-builds
   # https://cloud.google.com/build/pricing
   machineType: E2_HIGHCPU_32
-  logging: CLOUD_LOGGING_ONLY
+  logging: GCS_ONLY
 
+serviceAccount: projects/cert-manager-release/serviceAccounts/cert-manager-release-gcb@cert-manager-release.iam.gserviceaccount.com
+logsBucket: gs://cert-manager-release-logs
