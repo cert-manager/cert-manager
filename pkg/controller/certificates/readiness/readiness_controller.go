@@ -92,6 +92,10 @@ type controller struct {
 	helper             issuer.Helper
 	clock              clock.Clock
 	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+	// queue is held on the controller so scheduleRequeueAtExpiry can re-arm
+	// a delayed requeue at certificate expiry without sharing the per-key
+	// timer slot used by ARI's scheduledWorkQueue.
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -175,6 +179,7 @@ func NewController(
 		fieldManager:          ctx.FieldManager,
 		clock:                 ctx.Clock,
 		scheduledWorkQueue:    scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		queue:                 queue,
 	}, queue, mustSync, nil
 }
 
@@ -394,31 +399,36 @@ func (c *controller) getARIInfo(ctx context.Context, genericIssuer cmapi.Generic
 // NotAfter time so the readiness condition is re-evaluated upon expiry.
 //
 // The requeue is scheduled on every reconcile regardless of the current Ready
-// status. The scheduled work queue lives in memory, so its pending entries are
-// lost on controller restart, and any reconcile that happens to skip scheduling
-// would leave the cert with no path back to a re-evaluation. Re-arming the delay
-// on every pass means any unrelated event (Secret change, CertificateRequest
-// change, informer resync) restores the schedule. The policy chain's
-// CurrentCertificateHasExpired check, evaluated on every ProcessItem, is what
-// actually flips Ready=False once we land past NotAfter, so this is just the
-// trigger that gets us there.
+// status. The workqueue's delaying queue lives in memory, so its pending
+// AddAfter entries are lost on controller restart, and any reconcile that
+// happens to skip scheduling would leave the cert with no path back to a
+// re-evaluation. Re-arming the delay on every pass means any unrelated event
+// (Secret change, CertificateRequest change, informer resync) restores the
+// schedule. The policy chain's CurrentCertificateHasExpired check, evaluated
+// on every ProcessItem, is what actually flips Ready=False once we land past
+// NotAfter, so this is just the trigger that gets us there.
+//
+// We use the workqueue's AddAfter rather than scheduledWorkQueue so the
+// expiry timer doesn't share a per-key timer slot with ARI's poll schedule
+// (scheduledWorkQueue cancels any prior timer for the same key, which would
+// stomp ARI's much-shorter poll interval).
 func (c *controller) scheduleRequeueAtExpiry(log logr.Logger, key types.NamespacedName, crt *cmapi.Certificate) {
 	if crt.Status.NotAfter == nil {
 		return
 	}
 
-	// Only schedule requeue if the certificate has not yet expired and is currently Ready
 	now := c.clock.Now()
 	expiryTime := crt.Status.NotAfter.Time
-	if now.Before(expiryTime) {
-		// Check if the certificate is currently Ready
-		readyCondition := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
-		if readyCondition != nil && readyCondition.Status == cmmeta.ConditionTrue {
-			requeueAfter := expiryTime.Sub(now) + time.Second // add 1s buffer to ensure we're past expiry
-			log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
-			c.scheduledWorkQueue.Add(key, requeueAfter)
-		}
+	if !now.Before(expiryTime) {
+		// Already past expiry. The current ProcessItem invocation will have
+		// run the policy chain and set Ready=False via CurrentCertificateHasExpired,
+		// so no further requeue is needed.
+		return
 	}
+
+	requeueAfter := expiryTime.Sub(now) + time.Second // 1s buffer so we land past expiry
+	log.V(logf.DebugLevel).Info("scheduling re-queue at certificate expiry time", "expiry", expiryTime, "requeueAfter", requeueAfter)
+	c.queue.AddAfter(key, requeueAfter)
 }
 
 // updateOrApplyStatus will update the controller status. If the
