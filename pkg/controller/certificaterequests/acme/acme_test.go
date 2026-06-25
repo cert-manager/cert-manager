@@ -186,12 +186,12 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 	ipBaseCR := gen.CertificateRequestFrom(baseCR, gen.SetCertificateRequestCSR(ipCSRPEM))
-	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR, baseIssuer.GetSpec().ACME.EnableDurationFeature, "")
+	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR, baseIssuer.GetSpec().ACME.EnableDurationFeature, "", "")
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
 
-	baseOrder, err := buildOrder(baseCR, csr, baseIssuer.GetSpec().ACME.EnableDurationFeature, "")
+	baseOrder, err := buildOrder(baseCR, csr, baseIssuer.GetSpec().ACME.EnableDurationFeature, "", "")
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
@@ -729,7 +729,7 @@ func Test_buildOrder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, tt.args.profile)
+			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, tt.args.profile, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -744,7 +744,7 @@ func Test_buildOrder(t *testing.T) {
 		"test-comparison-that-is-at-the-fifty-two-character-l",
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
 		gen.SetCertificateRequestCSR(csrPEM))
-	orderOne, err := buildOrder(longCrOne, csr, false, "")
+	orderOne, err := buildOrder(longCrOne, csr, false, "", "")
 	if err != nil {
 		t.Errorf("buildOrder() received error %v", err)
 		return
@@ -756,7 +756,7 @@ func Test_buildOrder(t *testing.T) {
 			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
 			gen.SetCertificateRequestCSR(csrPEM))
 
-		orderTwo, err := buildOrder(longCrTwo, csr, false, "")
+		orderTwo, err := buildOrder(longCrTwo, csr, false, "", "")
 		if err != nil {
 			t.Errorf("buildOrder() received error %v", err)
 			return
@@ -771,13 +771,13 @@ func Test_buildOrder(t *testing.T) {
 	})
 
 	t.Run("Builds two orders from the same long CRs to guarantee same name", func(t *testing.T) {
-		orderOne, err := buildOrder(longCrOne, csr, false, "")
+		orderOne, err := buildOrder(longCrOne, csr, false, "", "")
 		if err != nil {
 			t.Errorf("buildOrder() received error %v", err)
 			return
 		}
 
-		orderTwo, err := buildOrder(longCrOne, csr, false, "")
+		orderTwo, err := buildOrder(longCrOne, csr, false, "", "")
 		if err != nil {
 			t.Errorf("buildOrder() received error %v", err)
 			return

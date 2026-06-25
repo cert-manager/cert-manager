@@ -74,8 +74,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Route53Auth":                                        schema_pkg_apis_acme_v1_Route53Auth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Route53KubernetesAuth":                              schema_pkg_apis_acme_v1_Route53KubernetesAuth(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ServiceAccountRef":                                  schema_pkg_apis_acme_v1_ServiceAccountRef(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ACMERenewalWindow":                           schema_pkg_apis_certmanager_v1_ACMERenewalWindow(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CAIssuer":                                    schema_pkg_apis_certmanager_v1_CAIssuer(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.Certificate":                                 schema_pkg_apis_certmanager_v1_Certificate(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEARIStatus":                    schema_pkg_apis_certmanager_v1_CertificateACMEARIStatus(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEStatus":                       schema_pkg_apis_certmanager_v1_CertificateACMEStatus(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateAdditionalOutputFormat":           schema_pkg_apis_certmanager_v1_CertificateAdditionalOutputFormat(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition":                        schema_pkg_apis_certmanager_v1_CertificateCondition(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateKeystores":                        schema_pkg_apis_certmanager_v1_CertificateKeystores(ref),
@@ -2356,6 +2359,13 @@ func schema_pkg_apis_acme_v1_OrderSpec(ref common.ReferenceCallback) common.Open
 							Format:      "",
 						},
 					},
+					"replaces": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Replaces is the ARI CertID (RFC 9773 §4.1) of the certificate that this Order is intended to replace. When set, cert-manager will include the \"replaces\" field on the newOrder request to the ACME server if and only if the server advertises ARI support in its directory. The CertID has the form \"base64url(AKI).base64url(serial)\" and is derived locally from the currently issued leaf certificate.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"request", "issuerRef"},
 			},
@@ -2523,6 +2533,33 @@ func schema_pkg_apis_acme_v1_ServiceAccountRef(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_pkg_apis_certmanager_v1_ACMERenewalWindow(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"start": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Start is the start of the suggested renewal window.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
+					"end": {
+						SchemaProps: spec.SchemaProps{
+							Description: "End is the end of the suggested renewal window.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
+				},
+				Required: []string{"start", "end"},
+			},
+		},
+		Dependencies: []string{
+			metav1.Time{}.OpenAPIModelName()},
+	}
+}
+
 func schema_pkg_apis_certmanager_v1_CAIssuer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2648,6 +2685,72 @@ func schema_pkg_apis_certmanager_v1_Certificate(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateSpec", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateStatus", metav1.ObjectMeta{}.OpenAPIModelName()},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_CertificateACMEARIStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"suggestedWindow": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ACMERenewalWindow"),
+						},
+					},
+					"explanationURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExplanationURL is a human-readable URL that may explain why the suggested window has its current value.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastChecked": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastChecked is the time at which the ACME server was last checked for renewal information.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
+					"nextCheck": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NextCheck is the time at which the ACME server will next be checked for renewal information.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
+					"lastError": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastError is the last error encountered when checking the ACME server for renewal information, if any.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.ACMERenewalWindow", metav1.Time{}.OpenAPIModelName()},
+	}
+}
+
+func schema_pkg_apis_certmanager_v1_CertificateACMEStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"ari": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ARI stores the ACME Renewal Information that is fetched from the ACME server in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEARIStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEARIStatus"},
 	}
 }
 
@@ -3625,11 +3728,17 @@ func schema_pkg_apis_certmanager_v1_CertificateStatus(ref common.ReferenceCallba
 							Format:      "int32",
 						},
 					},
+					"acme": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ACME stores information that is fetched from the ACME CA server.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEStatus"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition", metav1.Time{}.OpenAPIModelName()},
+			"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateACMEStatus", "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.CertificateCondition", metav1.Time{}.OpenAPIModelName()},
 	}
 }
 

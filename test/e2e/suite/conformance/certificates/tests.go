@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -449,6 +450,66 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 		for _, test := range tests {
 			defineTest(test)
 		}
+
+		s.it(f, "should issue a certificate and populate ACME Renewal Information (ARI) in the Certificate status", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ACMEUseARI)
+
+			randomTestID := rand.String(10)
+			certificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "e2e-conformance-ari-" + randomTestID,
+					Namespace: f.Namespace.Name,
+					Annotations: map[string]string{
+						"conformance.cert-manager.io/test-name": s.Name + " ARI",
+					},
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "e2e-conformance-ari-tls-" + randomTestID,
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+				},
+			}
+
+			By("Creating a Certificate")
+			Expect(f.CRClient.Create(ctx, certificate)).To(Succeed())
+
+			By("Waiting for the Certificate to be issued...")
+			certificate, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for ACME Renewal Information (ARI) to be populated on the Certificate status")
+			crtClient := f.CertManagerClientSet.CertmanagerV1().Certificates(certificate.Namespace)
+			pollErr := wait.PollUntilContextTimeout(ctx, 2*time.Second, time.Minute*5, true, func(ctx context.Context) (bool, error) {
+				got, err := crtClient.Get(ctx, certificate.Name, metav1.GetOptions{})
+				if err != nil {
+					return false, err
+				}
+				certificate = got
+				if got.Status.ACME == nil || got.Status.ACME.ARI == nil {
+					return false, nil
+				}
+				ari := got.Status.ACME.ARI
+				return ari.SuggestedWindow != nil &&
+					ari.SuggestedWindow.Start != nil &&
+					ari.SuggestedWindow.End != nil &&
+					ari.LastChecked != nil &&
+					ari.NextCheck != nil, nil
+			})
+			Expect(pollErr).NotTo(HaveOccurred(), "timed out waiting for ARI to populate on Certificate status")
+
+			By("Validating the populated ARI status fields")
+			ari := certificate.Status.ACME.ARI
+			Expect(ari.SuggestedWindow).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.Start).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.End).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.End.Time.After(ari.SuggestedWindow.Start.Time)).To(BeTrue(),
+				"ARI suggested window End (%s) must be after Start (%s)", ari.SuggestedWindow.End, ari.SuggestedWindow.Start)
+			Expect(ari.LastChecked).NotTo(BeNil())
+			Expect(ari.NextCheck).NotTo(BeNil())
+			Expect(ari.NextCheck.Time.After(ari.LastChecked.Time)).To(BeTrue(),
+				"ARI NextCheck (%s) must be after LastChecked (%s)", ari.NextCheck, ari.LastChecked)
+			Expect(ari.LastError).To(BeEmpty(), "expected no ARI fetch error, got: %s", ari.LastError)
+		}, featureset.OnlySAN, featureset.ACMEUseARI)
 
 		/////////////////////////////////////
 		////// Gateway/ Ingress Tests ///////

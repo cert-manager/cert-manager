@@ -23,6 +23,7 @@ import (
 	"slices"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,18 +31,23 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmacmeclientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
 	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 const (
@@ -57,8 +63,10 @@ type ACME struct {
 	recorder      record.EventRecorder
 	issuerOptions controllerpkg.IssuerOptions
 
-	orderLister cmacmelisters.OrderLister
-	acmeClientV cmacmeclientset.AcmeV1Interface
+	orderLister       cmacmelisters.OrderLister
+	certificateLister cmlisters.CertificateLister
+	secretsLister     internalinformers.SecretLister
+	acmeClientV       cmacmeclientset.AcmeV1Interface
 
 	reporter *crutil.Reporter
 
@@ -100,12 +108,14 @@ func init() {
 // NewACME returns a configured controller.
 func NewACME(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &ACME{
-		recorder:      ctx.Recorder,
-		issuerOptions: ctx.IssuerOptions,
-		orderLister:   ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
-		acmeClientV:   ctx.CMClient.AcmeV1(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		fieldManager:  ctx.FieldManager,
+		recorder:          ctx.Recorder,
+		issuerOptions:     ctx.IssuerOptions,
+		orderLister:       ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
+		certificateLister: ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister(),
+		secretsLister:     ctx.KubeSharedInformerFactory.Secrets().Lister(),
+		acmeClientV:       ctx.CMClient.AcmeV1(),
+		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		fieldManager:      ctx.FieldManager,
 	}
 }
 
@@ -141,8 +151,17 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 		return nil, nil
 	}
 
+	// Resolve the ARI CertID of the certificate currently stored in the target
+	// Secret (if any). This is set as the `replaces` field on newOrder so the
+	// ACME server can correlate this renewal with the cert being replaced
+	// (RFC 9773).
+	var replaces string
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+		replaces = a.resolveReplacesCertID(ctx, cr)
+	}
+
 	// If we fail to build the order we have to hard fail.
-	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature, issuer.GetSpec().ACME.Profile)
+	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature, issuer.GetSpec().ACME.Profile, replaces)
 	if err != nil {
 		message := "Failed to build order"
 
@@ -243,7 +262,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool, profile string) (*cmacme.Order, error) {
+func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool, profile string, replaces string) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -261,6 +280,7 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 		Profile:     profile,
+		Replaces:    replaces,
 	}
 
 	if enableDurationFeature {
@@ -306,4 +326,52 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 		},
 		Spec: spec,
 	}, nil
+}
+
+// resolveReplacesCertID returns the ARI CertID derived from the leaf certificate
+// currently stored in the target Secret of the CertificateRequest's parent
+// Certificate, or "" if it cannot be determined.
+//
+// Any failure (missing annotation, parent Certificate not found, no Secret,
+// invalid PEM, missing AKI, etc.) is non-fatal and logged at debug level –
+// the order is still placed without a replaces hint.
+func (a *ACME) resolveReplacesCertID(ctx context.Context, cr *cmapi.CertificateRequest) string {
+	log := logf.FromContext(ctx, "resolve-replaces")
+
+	certName, ok := cr.Annotations[cmapi.CertificateNameKey]
+	if !ok || certName == "" {
+		return ""
+	}
+
+	crt, err := a.certificateLister.Certificates(cr.Namespace).Get(certName)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not resolve parent Certificate for ARI replaces", "error", err)
+		return ""
+	}
+	if crt.Spec.SecretName == "" {
+		return ""
+	}
+
+	secret, err := a.secretsLister.Secrets(cr.Namespace).Get(crt.Spec.SecretName)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not resolve Secret for ARI replaces", "error", err)
+		return ""
+	}
+	pemBytes, ok := secret.Data[corev1.TLSCertKey]
+	if !ok || len(pemBytes) == 0 {
+		return ""
+	}
+
+	leaf, err := pki.DecodeX509CertificateBytes(pemBytes)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not decode current leaf for ARI replaces", "error", err)
+		return ""
+	}
+
+	certID, err := acmeapi.CertificateARIID(leaf)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not derive ARI CertID for replaces", "error", err)
+		return ""
+	}
+	return certID
 }

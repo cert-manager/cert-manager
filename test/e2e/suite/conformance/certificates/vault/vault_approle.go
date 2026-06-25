@@ -42,6 +42,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.Ed25519FeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
+		featureset.ACMEUseARI,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)

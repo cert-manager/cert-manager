@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
 	"github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,17 +34,24 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	unsupportedFeatures := featureset.NewFeatureSet(
+		// CA issuer is not an ACME issuer.
+		featureset.ACMEUseARI,
+	)
+
 	caIssuer := new(ca)
 	(&certificates.Suite{
-		Name:             "CA Issuer",
-		CreateIssuerFunc: caIssuer.createCAIssuer,
+		Name:                "CA Issuer",
+		CreateIssuerFunc:    caIssuer.createCAIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	caClusterIssuer := new(ca)
 	(&certificates.Suite{
-		Name:             "CA ClusterIssuer",
-		CreateIssuerFunc: caClusterIssuer.createCAClusterIssuer,
-		DeleteIssuerFunc: caClusterIssuer.deleteCAClusterIssuer,
+		Name:                "CA ClusterIssuer",
+		CreateIssuerFunc:    caClusterIssuer.createCAClusterIssuer,
+		DeleteIssuerFunc:    caClusterIssuer.deleteCAClusterIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

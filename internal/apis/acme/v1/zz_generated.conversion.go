@@ -1709,6 +1709,7 @@ func autoConvert_v1_OrderSpec_To_acme_OrderSpec(in *acmev1.OrderSpec, out *acme.
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.Profile = in.Profile
+	out.Replaces = in.Replaces
 	return nil
 }
 
@@ -1727,6 +1728,7 @@ func autoConvert_acme_OrderSpec_To_v1_OrderSpec(in *acme.OrderSpec, out *acmev1.
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
 	out.Profile = in.Profile
+	out.Replaces = in.Replaces
 	return nil
 }
 
