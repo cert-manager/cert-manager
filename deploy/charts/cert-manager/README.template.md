@@ -880,21 +880,6 @@ The namespace that the service monitor should live in, defaults to the cert-mana
 > ```
 
 Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.
-#### **prometheus.servicemonitor.targetPort** ~ `string,integer`
-> Default value:
-> ```yaml
-> http-metrics
-> ```
-
-The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.
-
-#### **prometheus.servicemonitor.path** ~ `string`
-> Default value:
-> ```yaml
-> /metrics
-> ```
-
-The path to scrape for metrics.
 #### **prometheus.servicemonitor.interval** ~ `string`
 > Default value:
 > ```yaml
@@ -969,13 +954,6 @@ The namespace that the pod monitor should live in, defaults to the cert-manager 
 > ```
 
 Specifies the `prometheus` label on the created PodMonitor. This is used when different Prometheus instances have label selectors matching different PodMonitors.
-#### **prometheus.podmonitor.path** ~ `string`
-> Default value:
-> ```yaml
-> /metrics
-> ```
-
-The path to scrape for metrics.
 #### **prometheus.podmonitor.interval** ~ `string`
 > Default value:
 > ```yaml

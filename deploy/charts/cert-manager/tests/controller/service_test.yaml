@@ -69,13 +69,3 @@ tests:
             ipFamilies:
               - IPv4
               - IPv6
-
-  - it: should use custom targetPort from servicemonitor config
-    set:
-      prometheus:
-        servicemonitor:
-          targetPort: 8080
-    asserts:
-      - equal:
-          path: spec.ports[0].targetPort
-          value: 8080
