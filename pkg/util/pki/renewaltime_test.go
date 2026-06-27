@@ -120,9 +120,10 @@ func TestRenewalTime(t *testing.T) {
 }
 
 func TestRenewBefore(t *testing.T) {
-	const duration = time.Hour * 3
+	const defaultDuration = time.Hour * 3
 
 	type scenario struct {
+		duration            time.Duration // defaults to defaultDuration if zero
 		renewBefore         *metav1.Duration
 		renewBeforePct      *int32
 		expectedRenewBefore time.Duration
@@ -153,10 +154,27 @@ func TestRenewBefore(t *testing.T) {
 			renewBefore:         &metav1.Duration{Duration: time.Hour * 4},
 			expectedRenewBefore: time.Hour,
 		},
+		// Regression tests: duration * pct overflows int64 for large durations with a high
+		// renewBeforePercentage (large multiplier). The overflow produced a negative result,
+		// causing desiredRenewalTime to silently return a garbage value.
+		"spec.renewBeforePercentage=99 with 10-year duration does not overflow int64": {
+			duration:            time.Hour * 24 * 365 * 10,
+			renewBeforePct:      new(int32(99)),
+			expectedRenewBefore: time.Duration(float64(time.Hour*24*365*10) * 0.99),
+		},
+		"spec.renewBeforePercentage=99 with 3-year duration does not overflow int64": {
+			duration:            time.Hour * 24 * 365 * 3,
+			renewBeforePct:      new(int32(99)),
+			expectedRenewBefore: time.Duration(float64(time.Hour*24*365*3) * 0.99),
+		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
-			renewBefore := desiredRenewalTime(duration, s.renewBefore, s.renewBeforePct)
+			d := s.duration
+			if d == 0 {
+				d = defaultDuration
+			}
+			renewBefore := desiredRenewalTime(d, s.renewBefore, s.renewBeforePct)
 			assert.Equal(t, s.expectedRenewBefore, renewBefore, fmt.Sprintf("Expected renewBefore time: %v got: %v", s.expectedRenewBefore, renewBefore))
 		})
 	}
