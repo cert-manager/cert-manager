@@ -109,7 +109,7 @@ tools += ytt=v0.55.1
 tools += rclone=v1.74.3
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.30.1
+tools += istioctl=1.30.2
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -217,7 +217,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20260623045532-0b43c5e46c6b
+tools += openapi-gen=v0.0.0-20260624041617-8f3fa4921821
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -704,10 +704,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=02e747b51f1bd2f1c74e650fad4f7390053034357a55e9b0c659e83bcd735cb5
-istioctl_linux_arm64_SHA256SUM=322ffe873a612d04a7806db2e4bf881b87d15508b7675238c613da53996672ce
-istioctl_darwin_amd64_SHA256SUM=eef8b30f4d7e0dedd9bf956942875ea39691687006f4b2f72d58b709146ae71c
-istioctl_darwin_arm64_SHA256SUM=f7c42303a14c4b27069af210478d988ebafe6b2ddb6d1c3219f28780d0b95e7d
+istioctl_linux_amd64_SHA256SUM=ba8ee0ee408a97fe64dbcd408f7374864c1edccf5bf88bb6ad2131bfb0af6adf
+istioctl_linux_arm64_SHA256SUM=7cd62e298d6e982d463dc18bd32f47f44e0b0a857ad99a7820318dca694d0cc0
+istioctl_darwin_amd64_SHA256SUM=10d8ac9ae5156c6801395e70e91169c9094521b0ffea8a2eac8b72cb96490be1
+istioctl_darwin_arm64_SHA256SUM=56deb84b26fefbf425eadc6b71cc9a32da5d8d1a62560c74968d27af80ba18d7
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
