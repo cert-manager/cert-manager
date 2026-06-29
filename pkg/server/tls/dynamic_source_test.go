@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -302,6 +303,75 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 			})
 
 			tc.testFn(t, source, mockAuth)
+		})
+	}
+}
+
+// TestStartRenewalWatcher uses synctest to control fake time, making the tests
+// deterministic and fast. Each case sets renewalAt and renewalAfter as offsets
+// from time.Now() inside the synctest bubble, advances the fake clock by
+// advanceBy, and then checks whether the watcher signalled the expected reason.
+func TestStartRenewalWatcher(t *testing.T) {
+	source := &DynamicSource{}
+
+	testCases := map[string]struct {
+		renewalAt      time.Duration // offset from time.Now(); 0 means zero time
+		renewalAfter   time.Duration // offset from time.Now(); 0 means derive from renewalAt
+		advanceBy      time.Duration // how far to advance the fake clock before checking
+		expectedResult renewalReason // empty means no signal expected
+	}{
+		"certificate about to expire": {
+			renewalAt:      5 * time.Second,
+			renewalAfter:   10 * time.Second,
+			advanceBy:      6 * time.Second,
+			expectedResult: certificateAboutToExpire,
+		},
+		"certificate renewal moment missed while paused": {
+			renewalAt:      100 * time.Second,
+			renewalAfter:   2 * time.Second,
+			advanceBy:      3 * time.Second,
+			expectedResult: certificateRenewalMomentMissed,
+		},
+		"zero renewal moment does not signal": {
+			advanceBy: 10 * time.Second,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				var renewalAt time.Time
+				if tc.renewalAt > 0 {
+					renewalAt = time.Now().Add(tc.renewalAt)
+				}
+
+				var renewalAfter time.Time
+				if tc.renewalAfter > 0 {
+					renewalAfter = time.Now().Add(tc.renewalAfter)
+				} else {
+					renewalAfter = renewalAt.Add(renewalStaleAfter)
+				}
+
+				resultCh := source.startRenewalWatcher(t.Context(), renewalAt, renewalAfter, 1*time.Second)
+
+				time.Sleep(tc.advanceBy)
+				synctest.Wait()
+
+				if tc.expectedResult == "" {
+					select {
+					case reason := <-resultCh:
+						assert.Failf(t, "unexpected signal", "expected no signal when renewMoment is zero, got %q", reason)
+					default:
+					}
+				} else {
+					select {
+					case reason := <-resultCh:
+						assert.Equal(t, tc.expectedResult, reason)
+					default:
+						assert.Fail(t, "expected signal but channel was empty")
+					}
+				}
+			})
 		})
 	}
 }
