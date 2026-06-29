@@ -209,7 +209,8 @@ spec:
       {{- else if .Values.global.runtimeClassName }}
       runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
-      {{- with .Values.webhook.tolerations }}
+      {{- $tolerations := concat (.Values.global.tolerations | default (list)) (.Values.webhook.tolerations | default (list)) }}
+      {{- with $tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

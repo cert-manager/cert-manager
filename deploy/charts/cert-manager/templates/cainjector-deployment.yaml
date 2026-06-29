@@ -156,7 +156,8 @@ spec:
       {{- else if .Values.global.runtimeClassName }}
       runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
-      {{- with .Values.cainjector.tolerations }}
+      {{- $tolerations := concat (.Values.global.tolerations | default (list)) (.Values.cainjector.tolerations | default (list)) }}
+      {{- with $tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
