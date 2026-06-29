@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.63.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3
 	github.com/aws/smithy-go v1.27.2
-	github.com/digitalocean/godo v1.196.0
+	github.com/digitalocean/godo v1.197.0
 	github.com/go-ldap/ldap/v3 v3.4.13
 	github.com/go-logr/logr v1.4.3
 	github.com/go-openapi/jsonreference v0.21.5
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.53.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.21.0
-	google.golang.org/api v0.285.0
+	google.golang.org/api v0.286.0
 	k8s.io/api v0.36.2
 	k8s.io/apiextensions-apiserver v0.36.2
 	k8s.io/apimachinery v0.36.2
