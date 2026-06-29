@@ -98,10 +98,9 @@ should render a Service matching the default snapshot:
       namespace: cert-manager
     spec:
       ports:
-        - name: tcp-prometheus-servicemonitor
+        - name: http-metrics
           port: 9402
           protocol: TCP
-          targetPort: http-metrics
       selector:
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: cert-manager

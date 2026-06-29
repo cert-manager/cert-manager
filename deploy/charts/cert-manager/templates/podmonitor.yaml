@@ -53,7 +53,7 @@ spec:
 {{- end }}
   podMetricsEndpoints:
     - port: http-metrics
-      path: {{ .Values.prometheus.podmonitor.path }}
+      path: /metrics
       interval: {{ .Values.prometheus.podmonitor.interval }}
       scrapeTimeout: {{ .Values.prometheus.podmonitor.scrapeTimeout }}
       honorLabels: {{ .Values.prometheus.podmonitor.honorLabels }}

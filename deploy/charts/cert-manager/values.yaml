@@ -668,14 +668,6 @@ prometheus:
     # different ServiceMonitors.
     prometheusInstance: default
 
-    # The target port to set on the ServiceMonitor. This must match the port that the
-    # cert-manager controller is listening on for metrics.
-    # +docs:type=string,integer
-    targetPort: http-metrics
-
-    # The path to scrape for metrics.
-    path: /metrics
-
     # The interval to scrape metrics.
     interval: 60s
 
@@ -719,9 +711,6 @@ prometheus:
     # used when different Prometheus instances have label selectors matching
     # different PodMonitors.
     prometheusInstance: default
-
-    # The path to scrape for metrics.
-    path: /metrics
 
     # The interval to scrape metrics.
     interval: 60s

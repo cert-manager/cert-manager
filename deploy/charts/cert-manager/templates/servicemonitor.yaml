@@ -54,8 +54,8 @@ spec:
       - {{ include "cert-manager.namespace" . }}
 {{- end }}
   endpoints:
-  - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
-    path: {{ .Values.prometheus.servicemonitor.path }}
+  - targetPort: http-metrics
+    path: /metrics
     {{- if .Values.prometheus.servicemonitor.interval }}
     interval: {{ .Values.prometheus.servicemonitor.interval }}
     {{- end }}
