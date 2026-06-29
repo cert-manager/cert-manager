@@ -235,16 +235,7 @@ func applyGatewayAPIAnnotationParentRefOverride(o *cmacme.Order, s *cmacme.ACMEC
 			filtered = append(filtered, pr)
 		}
 
-		// Set Group explicitly to match the CRD OpenAPI default
-		// ("gateway.networking.k8s.io"). The API server applies this default
-		// when storing Challenges, but there is no programmatic mechanism to
-		// apply CRD OpenAPI defaults in a controller. Without this,
-		// challengeMatchesExpectedForOrder would see a nil-vs-populated
-		// mismatch on Group when comparing the in-memory expected spec
-		// against the stored spec.
-		group := gwapi.Group(gwapi.GroupVersion.Group)
 		filtered = append(filtered, gwapi.ParentReference{
-			Group:     &group,
 			Name:      name,
 			Namespace: &ns,
 			Kind:      &kind,

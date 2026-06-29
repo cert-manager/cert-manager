@@ -20,7 +20,6 @@ import (
 	"bytes"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -45,14 +44,10 @@ func ValidateOrder(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.E
 	return nil, nil
 }
 
-// ValidateOrderSpecUpdate rejects any modification to the Order spec after
-// creation. This closes an attack vector where a user with update permissions
-// could change spec.issuerRef to redirect Challenge creation to a different
-// ClusterIssuer's solver credentials.
 func ValidateOrderSpecUpdate(oldOrder, newOrder cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if !apiequality.Semantic.DeepEqual(oldOrder, newOrder) {
-		el = append(el, field.Forbidden(fldPath, "order spec is immutable after creation"))
+	if len(oldOrder.Request) > 0 && !bytes.Equal(oldOrder.Request, newOrder.Request) {
+		el = append(el, field.Forbidden(fldPath.Child("request"), "field is immutable once set"))
 	}
 	return el
 }

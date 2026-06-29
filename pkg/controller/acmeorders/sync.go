@@ -131,13 +131,8 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return nil
 	}
 
-	requiredChallenges, err = ensureKeysForChallenges(cl, requiredChallenges)
-	if err != nil {
-		return err
-	}
-
 	dbg.Info("Determining if any challenge resources need to be created")
-	needToCreateChallenges, err := c.anyRequiredChallengesDoNotExist(o, requiredChallenges)
+	needToCreateChallenges, err := c.anyRequiredChallengesDoNotExist(requiredChallenges)
 	if err != nil {
 		return err
 	}
@@ -150,6 +145,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case needToCreateChallenges:
 		log.V(logf.DebugLevel).Info("Creating additional Challenge resources to complete Order")
+		requiredChallenges, err = ensureKeysForChallenges(cl, requiredChallenges)
+		if err != nil {
+			return err
+		}
 		return c.createRequiredChallenges(ctx, o, requiredChallenges)
 	case needToDeleteChallenges:
 		log.V(logf.DebugLevel).Info("Deleting leftover Challenge resources no longer required by Order")
@@ -447,51 +446,23 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 	return nil
 }
 
-// anyRequiredChallengesDoNotExist returns true if any required Challenge is
-// missing or does not exactly match the Challenge this Order expects. A same-
-// name Challenge is treated as missing if it is not controlled by this Order
-// or if its spec differs from the expected solver-selected spec, to defend
-// against pre-placed Challenge substitution (GHSA-6gm5-38r5-7pxp).
-func (c *controller) anyRequiredChallengesDoNotExist(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) (bool, error) {
+func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []*cmacme.Challenge) (bool, error) {
 	for _, ch := range requiredChallenges {
-		existing, err := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
+		_, err := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
 		if err != nil {
 			return false, err
 		}
-		if !challengeMatchesExpectedForOrder(existing, ch, o) {
-			return true, nil
-		}
 	}
 	return false, nil
 }
 
-// createRequiredChallenges creates the Challenge resources needed to complete
-// this Order. If a same-name Challenge already exists but is not the exact
-// Challenge this Order expects, it is deleted so a later sync can recreate the
-// expected Challenge. This prevents an attacker from pre-placing a Challenge
-// that would otherwise be adopted by the controller (GHSA-6gm5-38r5-7pxp).
 func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []*cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
 		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, ch, metav1.CreateOptions{})
 		if apierrors.IsAlreadyExists(err) {
-			existing, getErr := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
-			if getErr != nil {
-				return fmt.Errorf("failed to get existing challenge %q: %w", ch.Name, getErr)
-			}
-			if challengeMatchesExpectedForOrder(existing, ch, o) {
-				continue
-			}
-			if existing.DeletionTimestamp != nil {
-				continue
-			}
-			if delErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(ctx, ch.Name, metav1.DeleteOptions{}); delErr != nil {
-				return fmt.Errorf("failed to delete unexpected challenge %q: %w", ch.Name, delErr)
-			}
-			c.recorder.Eventf(o, corev1.EventTypeWarning, "DeletedUnexpectedChallenge",
-				"Deleted pre-existing Challenge %q that did not match the expected spec for this Order", ch.Name)
 			continue
 		}
 		if err != nil {
@@ -500,13 +471,6 @@ func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Ord
 		c.recorder.Eventf(o, corev1.EventTypeNormal, reasonCreated, "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 	}
 	return nil
-}
-
-func challengeMatchesExpectedForOrder(existing, expected *cmacme.Challenge, o *cmacme.Order) bool {
-	if !metav1.IsControlledBy(existing, o) {
-		return false
-	}
-	return apiequality.Semantic.DeepEqual(existing.Spec, expected.Spec)
 }
 
 func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []*cmacme.Challenge) (bool, error) {

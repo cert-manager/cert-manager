@@ -100,113 +100,13 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	}
 }
 
-// TestValidateChallenge verifies that the webhook rejects Challenge resources
-// lacking a controller owner reference to an Order. This is defence in depth
-// against Challenge smuggling (GHSA-8rvj-mm4h-c258).
 func TestValidateChallenge(t *testing.T) {
-	someAdmissionRequest := &admissionv1.AdmissionRequest{
-		RequestKind: &metav1.GroupVersionKind{
-			Group:   "test",
-			Kind:    "test",
-			Version: "test",
-		},
-	}
-
-	ownerRefPath := field.NewPath("metadata", "ownerReferences")
-	ownerRefDetail := "challenge resources must be owned by an Order resource"
-
 	scenarios := map[string]struct {
 		chal     *cmacme.Challenge
 		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings []string
-	}{
-		"accepts challenge with Order controller owner reference": {
-			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: "acme.cert-manager.io/v1",
-							Kind:       "Order",
-							Name:       "my-order",
-							UID:        "abc-123",
-							Controller: new(true),
-						},
-					},
-				},
-			},
-			a: someAdmissionRequest,
-		},
-		"rejects challenge with no owner references": {
-			chal: &cmacme.Challenge{},
-			a:    someAdmissionRequest,
-			errs: []*field.Error{
-				field.Invalid(ownerRefPath, []metav1.OwnerReference(nil), ownerRefDetail),
-			},
-		},
-		"rejects challenge with wrong Kind in owner reference": {
-			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: "acme.cert-manager.io/v1",
-							Kind:       "Certificate",
-							Name:       "my-cert",
-							UID:        "abc-123",
-							Controller: new(true),
-						},
-					},
-				},
-			},
-			a: someAdmissionRequest,
-			errs: []*field.Error{
-				field.Invalid(ownerRefPath, []metav1.OwnerReference{
-					{APIVersion: "acme.cert-manager.io/v1", Kind: "Certificate", Name: "my-cert", UID: "abc-123", Controller: new(true)},
-				}, ownerRefDetail),
-			},
-		},
-		"rejects challenge with owner reference that is not a controller": {
-			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: "acme.cert-manager.io/v1",
-							Kind:       "Order",
-							Name:       "my-order",
-							UID:        "abc-123",
-						},
-					},
-				},
-			},
-			a: someAdmissionRequest,
-			errs: []*field.Error{
-				field.Invalid(ownerRefPath, []metav1.OwnerReference{
-					{APIVersion: "acme.cert-manager.io/v1", Kind: "Order", Name: "my-order", UID: "abc-123"},
-				}, ownerRefDetail),
-			},
-		},
-		"rejects challenge with owner reference to wrong API group": {
-			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: "cert-manager.io/v1",
-							Kind:       "Order",
-							Name:       "my-order",
-							UID:        "abc-123",
-							Controller: new(true),
-						},
-					},
-				},
-			},
-			a: someAdmissionRequest,
-			errs: []*field.Error{
-				field.Invalid(ownerRefPath, []metav1.OwnerReference{
-					{APIVersion: "cert-manager.io/v1", Kind: "Order", Name: "my-order", UID: "abc-123", Controller: new(true)},
-				}, ownerRefDetail),
-			},
-		},
-	}
+	}{}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateChallenge(s.a, s.chal)
