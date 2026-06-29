@@ -204,17 +204,35 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateUID("uid-1"),
 	)
 
-	challenge := gen.Challenge("test-challenge-status",
-		gen.SetChallengeDNSName("example.com"),
-		gen.SetChallengeProcessing(false),
-		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
-		gen.SetChallengeNamespace(namespace),
+	order := gen.Order("test-order",
+		gen.SetOrderNamespace(namespace),
+		gen.SetOrderDNSNames("example.com"),
+		gen.SetOrderCsr([]byte("dummy")),
 	)
 
 	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	order, err = cmClient.AcmeV1().Orders(namespace).Create(t.Context(), order, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	challenge := gen.Challenge("test-challenge-status",
+		gen.SetChallengeDNSName("example.com"),
+		gen.SetChallengeProcessing(false),
+		gen.SetChallengeType(acmemeta.ACMEChallengeTypeDNS01),
+		gen.SetChallengeNamespace(namespace),
+	)
+	challenge.OwnerReferences = []metav1.OwnerReference{{
+		APIVersion: "acme.cert-manager.io/v1",
+		Kind:       "Order",
+		Name:       order.Name,
+		UID:        order.UID,
+		Controller: new(true),
+	}}
 
 	challenge, err = cmClient.AcmeV1().Challenges(namespace).Create(t.Context(), challenge, metav1.CreateOptions{})
 	if err != nil {

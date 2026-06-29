@@ -966,6 +966,91 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			acmeClient: &acmecl.FakeACME{},
 		},
+		// Verifies that the controller deletes a pre-placed Challenge not owned
+		// by this Order, preventing Challenge substitution (GHSA-6gm5-38r5-7pxp).
+		"delete pre-existing unowned challenge with the same name": {
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerHTTP01TestCom,
+					testOrderPending,
+					func() runtime.Object {
+						unowned := testAuthorizationChallenge.DeepCopy()
+						unowned.OwnerReferences = nil
+						return unowned
+					}(),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
+					testpkg.NewAction(coretesting.NewDeleteAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge.Name)),
+				},
+				ExpectedEvents: []string{
+					fmt.Sprintf("Warning DeletedUnexpectedChallenge Deleted pre-existing Challenge %q that did not match the expected spec for this Order", testAuthorizationChallenge.Name),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+		},
+		// Verifies that ownership metadata alone is not enough: a pre-placed
+		// same-name Challenge with a forged owner reference but attacker-chosen
+		// spec must still be deleted.
+		"delete pre-existing owned challenge with a mismatched spec": {
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerHTTP01TestCom,
+					testOrderPending,
+					func() runtime.Object {
+						forged := testAuthorizationChallenge.DeepCopy()
+						forged.Spec.Token = "attacker-token"
+						forged.Spec.Key = "attacker-key"
+						return forged
+					}(),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
+					testpkg.NewAction(coretesting.NewDeleteAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge.Name)),
+				},
+				ExpectedEvents: []string{
+					fmt.Sprintf("Warning DeletedUnexpectedChallenge Deleted pre-existing Challenge %q that did not match the expected spec for this Order", testAuthorizationChallenge.Name),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+		},
+		// Verifies that an unexpected Challenge already pending deletion is left
+		// alone until a later sync, which avoids immediate recreate churn while a
+		// finalizer is still being processed.
+		"wait for unexpected challenge deletion before recreating": {
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerHTTP01TestCom,
+					testOrderPending,
+					func() runtime.Object {
+						deleting := testAuthorizationChallenge.DeepCopy()
+						deleting.OwnerReferences = nil
+						deleting.DeletionTimestamp = &nowMetaTime
+						deleting.Finalizers = []string{"example.com/test-finalizer"}
+						return deleting
+					}(),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+		},
 		"acme-profiles:profiles-not-implemented": {
 			// Simulate an attempt to create an order with a profile on an ACME
 			// server which does not support profiles.
