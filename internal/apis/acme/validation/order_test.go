@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 )
 
 type testValue string
@@ -93,11 +94,59 @@ func TestValidateOrderUpdate(t *testing.T) {
 	authorizationsFldPath := field.NewPath("status", "authorizations")
 	challengesFldPath := authorizationsFldPath.Index(0).Child("challenges")
 
-	testImmutableOrderField(t, field.NewPath("spec", "request"), func(o *cmacme.Order, s testValue) {
-		if s == testValueNone {
-			o.Spec.Request = nil
+	// Verifies that Order spec immutability prevents an attacker from changing
+	// spec.issuerRef to redirect Challenge creation to a different ClusterIssuer.
+	t.Run("should reject updates to spec", func(t *testing.T) {
+		expectedErrs := []*field.Error{
+			field.Forbidden(field.NewPath("spec"), "order spec is immutable after creation"),
 		}
-		o.Spec.Request = []byte(s)
+		oldOrder := &cmacme.Order{
+			Spec: cmacme.OrderSpec{
+				Request: []byte("old-csr"),
+				IssuerRef: cmmeta.IssuerReference{
+					Name: "my-issuer",
+					Kind: "ClusterIssuer",
+				},
+			},
+		}
+		newOrder := oldOrder.DeepCopy()
+		newOrder.Spec.IssuerRef.Name = "attacker-issuer"
+		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
+		if len(errs) != len(expectedErrs) {
+			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
+			return
+		}
+		for i, e := range errs {
+			expectedErr := expectedErrs[i] //nolint:gosec // bounds checked by len comparison above
+			if !reflect.DeepEqual(e, expectedErr) {
+				t.Errorf("Expected error %v but got %v", expectedErr, e)
+			}
+		}
+		if !reflect.DeepEqual(warnings, []string(nil)) {
+			t.Errorf("Expected no warnings but got %v", warnings)
+		}
+	})
+	// Ensures the Orders controller (which only mutates status fields) is not
+	// blocked by the spec immutability check.
+	t.Run("should allow updates that do not change spec", func(t *testing.T) {
+		oldOrder := &cmacme.Order{
+			Spec: cmacme.OrderSpec{
+				Request: []byte("csr-bytes"),
+				IssuerRef: cmmeta.IssuerReference{
+					Name: "my-issuer",
+					Kind: "ClusterIssuer",
+				},
+			},
+		}
+		newOrder := oldOrder.DeepCopy()
+		newOrder.Status.URL = "https://acme.example.com/order/1"
+		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
+		if len(errs) != 0 {
+			t.Errorf("Expected no errors but got %v", errs)
+		}
+		if !reflect.DeepEqual(warnings, []string(nil)) {
+			t.Errorf("Expected no warnings but got %v", warnings)
+		}
 	})
 	testImmutableOrderField(t, field.NewPath("status", "url"), func(o *cmacme.Order, s testValue) {
 		o.Status.URL = string(s)

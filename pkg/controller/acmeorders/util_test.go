@@ -396,6 +396,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 							ParentRefs: []gwapi.ParentReference{
 								{
+									Group: func() *gwapi.Group {
+										group := gwapi.Group(gwapi.GroupVersion.Group)
+										return &group
+									}(),
 									Kind: func() *gwapi.Kind {
 										ls := gwapi.Kind("ListenerSet")
 										return &ls
@@ -445,6 +449,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 							ParentRefs: []gwapi.ParentReference{
 								{
+									Group: func() *gwapi.Group {
+										group := gwapi.Group(gwapi.GroupVersion.Group)
+										return &group
+									}(),
 									Kind: func() *gwapi.Kind {
 										ls := gwapi.Kind("Gateway")
 										return &ls
@@ -770,7 +778,9 @@ func acmeChallengeHTTP01() cmacme.ACMEChallenge {
 }
 
 func ref(kind, name, namespace string) gwapi.ParentReference {
+	group := gwapi.Group(gwapi.GroupVersion.Group)
 	return gwapi.ParentReference{
+		Group:     &group,
 		Kind:      new(gwapi.Kind(kind)),
 		Name:      gwapi.ObjectName(name),
 		Namespace: new(gwapi.Namespace(namespace)),
