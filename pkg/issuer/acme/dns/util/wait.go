@@ -15,11 +15,13 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/miekg/dns"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -39,6 +41,13 @@ type cachedEntry struct {
 	ExpiryTime time.Time
 }
 
+type fqdnCacheKey struct {
+	fqdn string
+	// nameservers is a sorted, pipe separated list of nameservers used as a
+	// string to allow use as a comparable map key.
+	nameservers string
+}
+
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
 	// the DNS challenge is ready.
@@ -48,7 +57,7 @@ var (
 	dnsQuery dnsQueryFunc = DNSQuery
 
 	fqdnToZoneLock sync.RWMutex
-	fqdnToZone     = map[string]cachedEntry{}
+	fqdnToZone     = map[fqdnCacheKey]cachedEntry{}
 )
 
 const defaultResolvConf = "/etc/resolv.conf"
@@ -309,9 +318,14 @@ func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) (
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
 // domain labels until the nameserver returns a SOA record in the answer section.
 func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (string, error) {
+	// Create cache key
+	sortedNS := append([]string(nil), nameservers...)
+	sort.Strings(sortedNS)
+	cacheKey := fqdnCacheKey{fqdn: fqdn, nameservers: strings.Join(sortedNS, "|")}
+
 	// Do we have it cached?
 	fqdnToZoneLock.RLock()
-	cachedEntryItem, existsInCache := fqdnToZone[fqdn]
+	cachedEntryItem, existsInCache := fqdnToZone[cacheKey]
 	fqdnToZoneLock.RUnlock()
 
 	if existsInCache {
@@ -330,7 +344,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 
 		// Remove expired entry
 		fqdnToZoneLock.Lock()
-		delete(fqdnToZone, fqdn)
+		delete(fqdnToZone, cacheKey)
 		fqdnToZoneLock.Unlock()
 	}
 
@@ -381,7 +395,7 @@ func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (str
 				fqdnToZoneLock.Lock()
 				defer fqdnToZoneLock.Unlock()
 
-				fqdnToZone[fqdn] = cachedEntry{
+				fqdnToZone[cacheKey] = cachedEntry{
 					Response:   in,
 					ExpiryTime: time.Now().Add(time.Duration(soa.Hdr.Ttl) * time.Second),
 				}
@@ -440,4 +454,21 @@ func WaitFor(timeout, interval time.Duration, f func() (bool, error)) error {
 
 		time.Sleep(interval)
 	}
+}
+
+func clearStaleCacheItems() {
+	fqdnToZoneLock.Lock()
+	defer fqdnToZoneLock.Unlock()
+
+	now := time.Now()
+
+	for k, v := range fqdnToZone {
+		if now.After(v.ExpiryTime) {
+			delete(fqdnToZone, k)
+		}
+	}
+}
+
+func init() {
+	go wait.Forever(clearStaleCacheItems, time.Minute)
 }

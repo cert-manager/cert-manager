@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns"
@@ -67,6 +68,12 @@ func (s *solverFixture) Setup(t *testing.T) {
 	}
 	if s.Builder.T == nil {
 		s.Builder.T = t
+	}
+	if s.Builder.Context == nil {
+		s.Builder.Context = &controller.Context{}
+	}
+	if len(s.Builder.Context.DNS01Nameservers) == 0 {
+		s.Builder.Context.DNS01Nameservers = util.RecursiveNameservers
 	}
 	if s.dnsProviders == nil {
 		s.dnsProviders = newFakeDNSProviders()
@@ -119,22 +126,22 @@ func newFakeDNSProviders() *fakeDNSProviders {
 	}
 	f.constructors = dnsProviderConstructors{
 		cloudDNS: func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient, hostedZoneName)
+			f.call("clouddns", project, serviceAccount, dns01Nameservers, ambient, hostedZoneName)
 			return nil, nil
 		},
 		cloudFlare: func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error) {
-			f.call("cloudflare", email, apikey, apiToken, util.RecursiveNameservers)
+			f.call("cloudflare", email, apikey, apiToken, dns01Nameservers)
 			if email == "" || (apikey == "" && apiToken == "") {
 				return nil, errors.New("invalid email or apikey or apitoken")
 			}
 			return nil, nil
 		},
 		route53: func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region, role, webIdentityToken, ambient, util.RecursiveNameservers)
+			f.call("route53", accessKey, secretKey, hostedZoneID, region, role, webIdentityToken, ambient, dns01Nameservers)
 			return nil, nil
 		},
 		azureDNS: func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...azuredns.ProviderOption) (*azuredns.DNSProvider, error) {
-			f.call("azuredns", clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName, util.RecursiveNameservers, ambient, managedIdentity)
+			f.call("azuredns", clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName, dns01Nameservers, ambient, managedIdentity)
 			return nil, nil
 		},
 		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
@@ -142,7 +149,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			return nil, nil
 		},
 		digitalOcean: func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error) {
-			f.call("digitalocean", token, util.RecursiveNameservers)
+			f.call("digitalocean", token, dns01Nameservers)
 			return nil, nil
 		},
 	}

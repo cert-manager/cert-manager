@@ -704,6 +704,26 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverDNS01(ref common.ReferenceCallba
 							Format:      "",
 						},
 					},
+					"nameservers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Nameservers defines a list of DNS nameservers to use for DNS01 propagation checks. Each entry must be in the format `<host>:<port>` for plain DNS, where host may be an IP address or hostname, or `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set, the controller's configured global DNS01 recursive nameservers are used. When specified, this overrides the global nameservers for this solver only, and disables the authoritative nameserver check.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 					"akamai": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Use the Akamai DNS zone management API to manage DNS01 challenge records.",
