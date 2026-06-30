@@ -35,6 +35,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -53,6 +54,7 @@ type Vault struct {
 
 	certClient    certificatesclient.CertificateSigningRequestInterface
 	clientBuilder internalvault.ClientBuilder
+	metrics       *metrics.Metrics
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
@@ -74,6 +76,7 @@ func NewVault(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		recorder:      ctx.Recorder,
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		clientBuilder: internalvault.New,
+		metrics:       ctx.Metrics,
 		fieldManager:  ctx.FieldManager,
 	}
 }
@@ -89,7 +92,7 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
 	createTokenFn := func(ns string) internalvault.CreateToken { return v.kclient.CoreV1().ServiceAccounts(ns).CreateToken }
-	client, err := v.clientBuilder(ctx, resourceNamespace, createTokenFn, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(ctx, resourceNamespace, createTokenFn, v.secretsLister, issuerObj, v.metrics)
 	if apierrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 		log.Error(err, message)

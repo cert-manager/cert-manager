@@ -35,6 +35,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -173,7 +174,7 @@ func FuzzVaultCRController(f *testing.F) {
 
 			fakeVault := fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil)
 			vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
-				iss cmapi.GenericIssuer) (internalvault.Interface, error) {
+				iss cmapi.GenericIssuer, _ *metrics.Metrics) (internalvault.Interface, error) {
 				return fakeVault.New(ns, sl, iss)
 			}
 		}
