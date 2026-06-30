@@ -103,7 +103,8 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.startupapicheck.tolerations }}
+      {{- $tolerations := concat (.Values.global.tolerations | default (list)) (.Values.startupapicheck.tolerations | default (list)) }}
+      {{- with $tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

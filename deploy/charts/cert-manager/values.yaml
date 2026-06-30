@@ -22,6 +22,14 @@ global:
   # +docs:property
   nodeSelector: {}
 
+  # Global tolerations
+  #
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+  #
+  # If a component-specific tolerations list is also set, it will be appended to the global list.
+  # +docs:property
+  tolerations: []
+
   # Labels to apply to all resources.
   # These labels are also applied to dynamically-created ACME HTTP01 solver resources
   # (pods, services, ingresses, or Gateway API HTTPRoutes).

@@ -235,7 +235,8 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- $tolerations := concat (.Values.global.tolerations | default (list)) (.Values.tolerations | default (list)) }}
+      {{- with $tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
