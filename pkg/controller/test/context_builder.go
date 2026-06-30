@@ -131,8 +131,10 @@ func (b *Builder) Init() {
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
 	b.Client = kubefake.NewClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
-	// FIXME: gwfake.NewClientset currently misbehaves in tests (resource guessing gateways vs. gatewaies) and is not usable as of Feb 2026.
-	//nolint:staticcheck // SA1019: gwfake.NewSimpleClientset is deprecated in favor of NewClientset, but we intentionally use it here because NewClientset does not work correctly in our tests.
+	// FIXME: gwfake.NewClientset lacks CRD support (kubernetes/kubernetes#126850), causing incorrect
+	// resource-name guessing ("gatewaies" instead of "gateways") that breaks these tests. Use
+	// NewSimpleClientset until that is fixed; it was intentionally un-deprecated in
+	// kubernetes/kubernetes#136455 for exactly this reason.
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
 	b.Recorder = new(FakeRecorder)
