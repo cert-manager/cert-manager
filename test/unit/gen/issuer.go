@@ -258,6 +258,16 @@ func SetIssuerACMELastPrivateKeyHash(privateKeyHash string) IssuerModifier {
 	}
 }
 
+func SetIssuerACMELastRegisteredServer(server string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		status := iss.GetStatus()
+		if status.ACME == nil {
+			status.ACME = &cmacme.ACMEIssuerStatus{}
+		}
+		status.ACME.LastRegisteredServer = server
+	}
+}
+
 func SetIssuerCA(a v1.CAIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().CA = &a
