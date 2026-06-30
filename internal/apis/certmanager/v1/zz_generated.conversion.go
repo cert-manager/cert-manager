@@ -531,6 +531,7 @@ func Convert_certmanager_ACMERenewalWindow_To_v1_ACMERenewalWindow(in *certmanag
 
 func autoConvert_v1_CAIssuer_To_certmanager_CAIssuer(in *certmanagerv1.CAIssuer, out *certmanager.CAIssuer, s conversion.Scope) error {
 	out.SecretName = in.SecretName
+	out.SecretNamespace = in.SecretNamespace
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
 	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
@@ -544,6 +545,7 @@ func Convert_v1_CAIssuer_To_certmanager_CAIssuer(in *certmanagerv1.CAIssuer, out
 
 func autoConvert_certmanager_CAIssuer_To_v1_CAIssuer(in *certmanager.CAIssuer, out *certmanagerv1.CAIssuer, s conversion.Scope) error {
 	out.SecretName = in.SecretName
+	out.SecretNamespace = in.SecretNamespace
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
 	out.IssuingCertificateURLs = *(*[]string)(unsafe.Pointer(&in.IssuingCertificateURLs))
