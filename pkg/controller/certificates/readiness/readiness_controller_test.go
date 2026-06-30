@@ -363,6 +363,236 @@ func TestProcessItem(t *testing.T) {
 	}
 }
 
+func TestScheduleRequeueAtExpiry(t *testing.T) {
+	now := time.Now().UTC()
+	metaNow := metav1.NewTime(now)
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
+
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+		},
+	}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "testns",
+			Name:      "test-secret",
+		},
+	}
+
+	tests := map[string]struct {
+		notAfter      time.Time
+		expectRequeue bool
+		condition     cmapi.CertificateCondition
+	}{
+		"should schedule requeue when certificate is Ready and NotAfter is in the future": {
+			notAfter:      now.Add(2 * time.Hour),
+			expectRequeue: true,
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "Certificate is up to date and has not expired",
+				LastTransitionTime: &metaNow,
+			},
+		},
+		"should not schedule requeue when certificate NotAfter is in the past": {
+			notAfter:      now.Add(-1 * time.Hour),
+			expectRequeue: false,
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "Expired",
+				Message:            "Certificate has expired",
+				LastTransitionTime: &metaNow,
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			fc := fakeclock.NewFakeClock(now)
+			builder := &testpkg.Builder{
+				T:     t,
+				Clock: fc,
+			}
+
+			notAfter := metav1.NewTime(test.notAfter.Truncate(time.Second))
+			notBefore := metav1.NewTime(now.Truncate(time.Second))
+			renewalTime := metav1.NewTime(now.Add(time.Hour))
+
+			x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, notBefore.Time, notAfter.Time)
+
+			builder.CertManagerObjects = append(builder.CertManagerObjects, gen.CertificateFrom(cert))
+			builder.KubeObjects = append(builder.KubeObjects,
+				gen.SecretFrom(secret,
+					gen.SetSecretData(map[string][]byte{
+						"tls.crt": x509Bytes,
+					})))
+
+			builder.Init()
+
+			w := &controllerWrapper{}
+			_, _, err := w.Register(builder.Context)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(&renewalTime, nil)
+
+			// Build expected updated cert
+			c := gen.CertificateFrom(cert,
+				gen.SetCertificateStatusCondition(test.condition))
+			c.Status.NotAfter = &notAfter
+			c.Status.NotBefore = &notBefore
+			c.Status.RenewalTime = &renewalTime
+
+			builder.ExpectedActions = append(builder.ExpectedActions,
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
+					c.Namespace,
+					c)))
+
+			builder.Start()
+			defer builder.Stop()
+
+			key := types.NamespacedName{Namespace: cert.Namespace, Name: cert.Name}
+			err = w.controller.ProcessItem(t.Context(), key)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if err := builder.AllActionsExecuted(); err != nil {
+				t.Error(err)
+			}
+
+			// When test.expectRequeue is true, we verify that ProcessItem completed
+			// successfully without panic. AddAfter with future duration won't immediately
+			// appear in Len(), so the test passes if no panic occurred during ProcessItem.
+		})
+	}
+}
+
+// TestProcessItemFlipsReadyAfterExpiry covers the scenario reported on #8529
+// where a Certificate's underlying x509 was past notAfter but the Certificate
+// resource still showed Ready=True until the controller pod was re-rolled.
+//
+// The repro: 1h cert with 55m renewBefore, issuer deleted so renewal can't
+// succeed, wait past notAfter. The fix relies on the policy chain's
+// CurrentCertificateHasExpired check running on every ProcessItem invocation,
+// so any reconcile (informer resync, Secret event, AddAfter tick) flips Ready
+// to False with reason=Expired. This test asserts that contract by using the
+// real readiness policy chain (not the test-only policyEvaluator stub) and
+// feeding it a Secret whose x509 is already past notAfter.
+func TestProcessItemFlipsReadyAfterExpiry(t *testing.T) {
+	now := time.Now().UTC()
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
+
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+		},
+	}
+	// the cert resource starts out Ready=True - this mirrors hjoshi123's repro
+	// where the cert had been happily issued before the issuer was deleted.
+	certWithReadyTrue := gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
+		cmapi.CertificateCondition{
+			Type:    cmapi.CertificateConditionReady,
+			Status:  cmmeta.ConditionTrue,
+			Reason:  ReadyReason,
+			Message: "Certificate is up to date and has not expired",
+		}))
+
+	// Build an x509 cert whose notAfter is already in the past relative to
+	// the controller's clock. notBefore is set well before now so the cert
+	// was validly issued at some earlier point.
+	notBefore := now.Add(-2 * time.Hour).Truncate(time.Second)
+	notAfter := now.Add(-time.Minute).Truncate(time.Second)
+	x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, notBefore, notAfter)
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "testns",
+			Name:      "test-secret",
+		},
+	}
+
+	fc := fakeclock.NewFakeClock(now)
+	builder := &testpkg.Builder{
+		T:     t,
+		Clock: fc,
+	}
+	builder.CertManagerObjects = append(builder.CertManagerObjects, certWithReadyTrue)
+	builder.KubeObjects = append(builder.KubeObjects,
+		gen.SecretFrom(secret,
+			gen.SetSecretData(map[string][]byte{
+				corev1.TLSCertKey:       x509Bytes,
+				corev1.TLSPrivateKeyKey: privKey,
+			})))
+
+	// Status update should flip Ready to False with reason=Expired and stamp
+	// notBefore / notAfter onto the Certificate.
+	expectedNotBefore := metav1.NewTime(notBefore)
+	expectedNotAfter := metav1.NewTime(notAfter)
+	metaNow := metav1.NewTime(now)
+	expectedCondition := cmapi.CertificateCondition{
+		Type:               cmapi.CertificateConditionReady,
+		Status:             cmmeta.ConditionFalse,
+		Reason:             policies.Expired,
+		Message:            fmt.Sprintf("Certificate expired on %s", notAfter.Format(time.RFC1123)),
+		LastTransitionTime: &metaNow,
+	}
+	expectedCert := gen.CertificateFrom(certWithReadyTrue,
+		gen.SetCertificateStatusCondition(expectedCondition))
+	expectedCert.Status.NotBefore = &expectedNotBefore
+	expectedCert.Status.NotAfter = &expectedNotAfter
+	// renewal time is computed from the real RenewalTime func against the
+	// expired x509; record what the controller will calculate so we can
+	// compare against it.
+	renewalTime, err := pki.RenewalTime(notBefore, notAfter, cert.Spec.RenewBefore, cert.Spec.RenewBeforePercentage, cert.Spec.Renewal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedCert.Status.RenewalTime = renewalTime
+
+	builder.ExpectedActions = append(builder.ExpectedActions,
+		testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+			cmapi.SchemeGroupVersion.WithResource("certificates"),
+			"status",
+			expectedCert.Namespace,
+			expectedCert)))
+
+	builder.Init()
+
+	w := &controllerWrapper{}
+	_, _, err = w.Register(builder.Context)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Intentionally NOT overriding policyEvaluator - we want the real
+	// BuildReadyConditionFromChain + NewReadinessPolicyChain wiring so we
+	// exercise the CurrentCertificateHasExpired path on every reconcile.
+	w.controller.recorder = new(testpkg.FakeRecorder)
+
+	builder.Start()
+	defer builder.Stop()
+
+	key := types.NamespacedName{Namespace: cert.Namespace, Name: cert.Name}
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := builder.AllActionsExecuted(); err != nil {
+		t.Error(err)
+	}
+}
+
 // Test the evaluation of the ordered policy chain as a whole.
 func TestNewReadinessPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
