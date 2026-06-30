@@ -370,6 +370,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
 			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
+			CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
 		},
 
 		ConfigOptions: controller.ConfigOptions{

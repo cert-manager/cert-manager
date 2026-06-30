@@ -277,6 +277,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
+	controllerContext.CertificateRequestMaximumBackoffDuration = 32 * time.Hour
 
 	// Start the trigger controller
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)

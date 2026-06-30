@@ -78,5 +78,6 @@
 		"enabled": false,
 		"enableListenerSet": false
 	},
-	"certificateRequestMinimumBackoffDuration": "1h0m0s"
+	"certificateRequestMinimumBackoffDuration": "1h0m0s",
+	"certificateRequestMaximumBackoffDuration": "32h0m0s"
 }

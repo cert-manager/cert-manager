@@ -356,6 +356,7 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 	}
 
 	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
+	controllerContext.CertificateRequestMaximumBackoffDuration = 32 * time.Hour
 
 	// TODO: set field manager before calling each of those - is that what we do in actual code?
 	revCtrl, revQueue, revMustSync, err := revisionmanager.NewController(log, &controllerContext)
