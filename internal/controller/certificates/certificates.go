@@ -64,6 +64,15 @@ func CertificateOwnsSecret(
 		}
 	}
 
+	// If the passed Certificate is not present in the lister's cache (for
+	// example, because it was deleted while a reconcile was in progress, such
+	// as during namespace teardown), duplicateCrts will be empty. Return false
+	// so the caller treats the Certificate as not owning the Secret rather
+	// than panicking when indexing the slice below.
+	if len(duplicateCrts) == 0 {
+		return false, nil, nil
+	}
+
 	// If there are no duplicates, return early.
 	if len(duplicateCrts) == 1 && duplicateCrts[0].Name == crt.Name {
 		return true, nil, nil
