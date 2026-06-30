@@ -1851,6 +1851,9 @@
         "enableClientVerification": {
           "$ref": "#/$defs/helm-values.webhook.enableClientVerification"
         },
+        "enabled": {
+          "$ref": "#/$defs/helm-values.webhook.enabled"
+        },
         "enableServiceLinks": {
           "$ref": "#/$defs/helm-values.webhook.enableServiceLinks"
         },
@@ -2006,6 +2009,11 @@
     "helm-values.webhook.enableClientVerification": {
       "default": false,
       "description": "enableClientVerification turns on client verification of requests made to the webhook server",
+      "type": "boolean"
+    },
+    "helm-values.webhook.enabled": {
+      "default": true,
+      "description": "Enable or disable the cert-manager webhook component",
       "type": "boolean"
     },
     "helm-values.webhook.enableServiceLinks": {
