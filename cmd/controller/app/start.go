@@ -21,14 +21,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	"github.com/cert-manager/cert-manager/internal/apis/config/controller/validation"
 	controllerconfigfile "github.com/cert-manager/cert-manager/pkg/controller/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/configfile"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/controller-binary/app/options"
 
@@ -100,6 +104,13 @@ to renew certificates at an appropriate time before expiry.`,
 			if err := validation.ValidateControllerConfiguration(controllerConfig, nil); len(err) > 0 {
 				return fmt.Errorf("error validating flags: %w", err.ToAggregate())
 			}
+
+			metricLabels, err := parseAndValidateMetricLabels(controllerConfig.MetricStaticLabels, nil)
+			if len(err) > 0 {
+				return fmt.Errorf("error validating static metric labels: %w", err.ToAggregate())
+			}
+			controllerConfig.ParsedMetricStaticLabels = metricLabels
+			controllerConfig.MetricStaticLabels = nil
 
 			// ValidateControllerConfiguration should already have validated the
 			// logging flags, the logging API does not have an Apply-only function
@@ -180,4 +191,91 @@ func loadConfigFromFile(
 	}
 
 	return nil
+}
+
+// - Must match `metric_name:label_key=label_value` format
+// - Metric name must be a supported certificate metric
+// - Maximum of 10 labels per metric
+// - Label key must contain only alphanumeric characters and underscores
+// - Label value must not be empty
+// - Label key must not conflict with existing metric labels (`name`, `namespace`, `issuer_name`, `issuer_kind`, `issuer_group`)
+func parseAndValidateMetricLabels(metricStaticLabels map[string]string, fldPath *field.Path) (map[string]map[string]string, field.ErrorList) {
+	var allErrors field.ErrorList
+	const MAX_LABELS_PER_METRIC = 10
+
+	forbiddenLabelKeys := sets.NewString("name", "namespace", "issuer_name", "issuer_kind", "issuer_group")
+	result := make(map[string]map[string]string)
+	if metricStaticLabels == nil {
+		return nil, nil
+	}
+
+	for key := range metricStaticLabels {
+		metricAndLabel := strings.Split(key, ":")
+		if len(metricAndLabel) != 2 {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child(key), key, "must be in the format <metric_name>:<label_key>=<label_value>"))
+			continue
+		}
+		metric, label := metricAndLabel[0], metricAndLabel[1]
+		if len(metric) == 0 || !isAlphaNumericOrUnderscore(metric) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), metric, "must be alphanumeric"))
+			continue
+		}
+
+		if !sets.NewString(metrics.MetricsSupportingStaticLabels...).Has(metric) {
+			allErrors = append(allErrors, field.NotSupported(fldPath.Child("MetricStaticLabels").Child(key), metric, metrics.MetricsSupportingStaticLabels))
+			continue
+		}
+
+		if len(label) == 0 || !isAlphaNumericOrUnderscore(label) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), label, "must be alphanumeric"))
+			continue
+		}
+
+		if !doesNotStartWithNumber(label) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels"), label, "cannot start with a number"))
+			continue
+		}
+
+		if forbiddenLabelKeys.Has(label) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels").Key(key), label, "cannot be used as a label key"))
+			continue
+		}
+
+		labelValue := metricStaticLabels[key]
+		if len(labelValue) == 0 || !isAlphaNumericOrUnderscore(labelValue) {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("MetricStaticLabels").Key(key), key, "must be alphanumeric"))
+			continue
+		}
+
+		if _, ok := result[metric]; !ok {
+			result[metric] = map[string]string{}
+		}
+
+		if len(result[metric]) >= MAX_LABELS_PER_METRIC {
+			allErrors = append(allErrors, field.Forbidden(fldPath.Child("MetricStaticLabels").Key(key), fmt.Sprintf("cannot have more than %d labels per metric", MAX_LABELS_PER_METRIC)))
+			continue
+		}
+
+		result[metric][label] = labelValue
+	}
+
+	return result, allErrors
+}
+
+func isAlphaNumericOrUnderscore(in string) bool {
+	// Check if the byte value falls within the range of alphanumeric characters
+	for _, v := range in {
+		if !(v >= 'a' && v <= 'z') && !(v >= 'A' && v <= 'Z') && !(v >= '0' && v <= '9') && v != '_' {
+			return false
+		}
+	}
+	return true
+}
+
+func doesNotStartWithNumber(in string) bool {
+	if len(in) == 0 {
+		return true
+	}
+	v := in[0]
+	return !(v >= '0' && v <= '9')
 }

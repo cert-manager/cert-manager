@@ -26,12 +26,7 @@ import (
 )
 
 var (
-	certReadyConditionStatuses     = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
-	certReadyStatusMetric          = prometheus.NewDesc("certmanager_certificate_ready_status", "The ready status of the certificate.", []string{"name", "namespace", "condition", "issuer_name", "issuer_kind", "issuer_group"}, nil)
-	certNotAfterTimeSecondMetric   = prometheus.NewDesc("certmanager_certificate_not_after_timestamp_seconds", "The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, nil)
-	certNotBeforeTimeSecondMetric  = prometheus.NewDesc("certmanager_certificate_not_before_timestamp_seconds", "The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, nil)
-	certExpirationTimestampSeconds = prometheus.NewDesc("certmanager_certificate_expiration_timestamp_seconds", "The timestamp after which the certificate expires, expressed in Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, nil)
-	certRenewalTimestampSeconds    = prometheus.NewDesc("certmanager_certificate_renewal_timestamp_seconds", "The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, nil)
+	certReadyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 )
 
 type CertificateCollector struct {
@@ -43,15 +38,27 @@ type CertificateCollector struct {
 	certificateRenewalTimestampSeconds    *prometheus.Desc
 }
 
-func NewCertificateCollector(certificatesLister cmlisters.CertificateLister) prometheus.Collector {
+func NewCertificateCollector(certificatesLister cmlisters.CertificateLister, staticLabels map[string]map[string]string) prometheus.Collector {
 	return &CertificateCollector{
 		certificatesLister:                    certificatesLister,
-		certificateReadyStatusMetric:          certReadyStatusMetric,
-		certificateNotAfterTimeSecondMetric:   certNotAfterTimeSecondMetric,
-		certificateNotBeforeTimeSecondMetric:  certNotBeforeTimeSecondMetric,
-		certificateExpirationTimestampSeconds: certExpirationTimestampSeconds,
-		certificateRenewalTimestampSeconds:    certRenewalTimestampSeconds,
+		certificateReadyStatusMetric:          prometheus.NewDesc("certmanager_certificate_ready_status", "The ready status of the certificate.", []string{"name", "namespace", "condition", "issuer_name", "issuer_kind", "issuer_group"}, getStaticLabels("certmanager_certificate_ready_status", staticLabels)),
+		certificateNotAfterTimeSecondMetric:   prometheus.NewDesc("certmanager_certificate_not_after_timestamp_seconds", "The timestamp after which the certificate is invalid, expressed as a Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, getStaticLabels("certmanager_certificate_not_after_timestamp_seconds", staticLabels)),
+		certificateNotBeforeTimeSecondMetric:  prometheus.NewDesc("certmanager_certificate_not_before_timestamp_seconds", "The timestamp before which the certificate is invalid, expressed as a Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, getStaticLabels("certmanager_certificate_not_before_timestamp_seconds", staticLabels)),
+		certificateExpirationTimestampSeconds: prometheus.NewDesc("certmanager_certificate_expiration_timestamp_seconds", "The timestamp after which the certificate expires, expressed in Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, getStaticLabels("certmanager_certificate_expiration_timestamp_seconds", staticLabels)),
+		certificateRenewalTimestampSeconds:    prometheus.NewDesc("certmanager_certificate_renewal_timestamp_seconds", "The timestamp after which the certificate should be renewed, expressed in Unix Epoch Time.", []string{"name", "namespace", "issuer_name", "issuer_kind", "issuer_group"}, getStaticLabels("certmanager_certificate_renewal_timestamp_seconds", staticLabels)),
 	}
+}
+
+func getStaticLabels(key string, labels map[string]map[string]string) prometheus.Labels {
+	if labels == nil {
+		return nil
+	}
+
+	if v, ok := labels[key]; ok {
+		return v
+	}
+
+	return nil
 }
 
 func (cc *CertificateCollector) Describe(ch chan<- *prometheus.Desc) {

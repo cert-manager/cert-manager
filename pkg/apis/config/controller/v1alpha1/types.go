@@ -156,6 +156,11 @@ type ControllerConfiguration struct {
 	// when a certificate request fails. This duration is exponentially increased
 	// (up to a maximum of 32 hours) based on the number of consecutive failures.
 	CertificateRequestMinimumBackoffDuration *sharedv1alpha1.Duration `json:"certificateRequestMinimumBackoffDuration,omitempty"`
+
+	// metricStaticLabels is a map of static labels that are set on all metrics
+	// emitted by cert-manager.
+	// +optional
+	MetricStaticLabels map[string]string `json:"metricStaticLabels,omitempty"`
 }
 
 type LeaderElectionConfig struct {

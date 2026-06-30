@@ -119,6 +119,10 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []any {
 				s.ACMEDNS01Config.CheckRetryPeriod = time.Second * 8875
 			}
 
+			// ParsedMetricStaticLabels is internal-only and does not exist in the
+			// v1alpha1 external type, so it cannot survive a round-trip.
+			s.ParsedMetricStaticLabels = nil
+
 			// The deprecated top-level fields are always overwritten by the defaulter
 			// to mirror the canonical GatewayAPIConfig fields, so keep them in sync here
 			// to ensure the round-trip produces an identical object.
