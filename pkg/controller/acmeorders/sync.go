@@ -603,7 +603,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		}
 		//Another request is finalizing the same underlying ACME order. Requeue and retry when it completes.
 		if acmeOrder.Status == acmeapi.StatusProcessing {
-			log.V(logf.DebugLevel).Info("ACME order is still processing a concurrent finalize request, scheduling a retry")
+			log.V(logf.DebugLevel).Info("ACME order is still processing a concurrent finalize request, scheduling a retry", "acme_order_url", acmeOrder.URI)
 			c.setOrderState(&o.Status, string(cmacme.Pending))
 
 			c.scheduledWorkQueue.Add(types.NamespacedName{
