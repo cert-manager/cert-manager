@@ -113,4 +113,14 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 	fs.StringVar(&c.MetricsTLSConfig.MinTLSVersion, "metrics-tls-min-version", c.MetricsTLSConfig.MinTLSVersion,
 		"Minimum TLS version supported by the metrics server. If omitted, the default Go minimum version will be used. "+
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
+
+	// PEM size limits configuration
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxCertificateSize, "max-certificate-size", c.PEMSizeLimitsConfig.MaxCertificateSize, ""+
+		"Maximum size in bytes for a single PEM-encoded certificate. Large certificates with many DNS names may need larger values.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxPrivateKeySize, "max-private-key-size", c.PEMSizeLimitsConfig.MaxPrivateKeySize, ""+
+		"Maximum size in bytes for a single PEM-encoded private key.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxChainLength, "max-certificate-chain-length", c.PEMSizeLimitsConfig.MaxChainLength, ""+
+		"Maximum size in bytes for a PEM-encoded certificate chain.")
+	fs.IntVar(&c.PEMSizeLimitsConfig.MaxBundleSize, "max-certificate-bundle-size", c.PEMSizeLimitsConfig.MaxBundleSize, ""+
+		"Maximum size in bytes for PEM-encoded certificate bundles.")
 }

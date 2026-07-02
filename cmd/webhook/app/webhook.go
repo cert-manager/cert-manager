@@ -22,8 +22,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-logr/logr"
+
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -44,6 +47,10 @@ func NewServerCommand(ctx context.Context) *cobra.Command {
 
 			versionInfo := util.VersionInfo()
 			log.Info("starting cert-manager webhook", "version", versionInfo.GitVersion, "git_commit", versionInfo.GitCommit, "go_version", versionInfo.GoVersion, "platform", versionInfo.Platform)
+
+			if err := configurePEMSizeLimits(webhookConfig, log); err != nil {
+				return fmt.Errorf("failed to configure PEM size limits: %w", err)
+			}
 
 			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookConfig)
 			if err != nil {
@@ -178,6 +185,52 @@ func loadConfigFromFile(
 			return err
 		}
 	}
+
+	return nil
+}
+
+func configurePEMSizeLimits(cfg *config.WebhookConfiguration, log logr.Logger) error {
+	if cfg == nil {
+		return fmt.Errorf("webhook configuration is nil")
+	}
+
+	if cfg.PEMSizeLimitsConfig.MaxCertificateSize <= 0 {
+		return fmt.Errorf("maxCertificateSize must be greater than 0, got %d", cfg.PEMSizeLimitsConfig.MaxCertificateSize)
+	}
+	if cfg.PEMSizeLimitsConfig.MaxPrivateKeySize <= 0 {
+		return fmt.Errorf("maxPrivateKeySize must be greater than 0, got %d", cfg.PEMSizeLimitsConfig.MaxPrivateKeySize)
+	}
+	if cfg.PEMSizeLimitsConfig.MaxChainLength <= 0 {
+		return fmt.Errorf("maxChainLength must be greater than 0, got %d", cfg.PEMSizeLimitsConfig.MaxChainLength)
+	}
+	if cfg.PEMSizeLimitsConfig.MaxBundleSize <= 0 {
+		return fmt.Errorf("maxBundleSize must be greater than 0, got %d", cfg.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	if cfg.PEMSizeLimitsConfig.MaxCertificateSize > cfg.PEMSizeLimitsConfig.MaxBundleSize {
+		return fmt.Errorf("maxCertificateSize (%d) must not be larger than maxBundleSize (%d)",
+			cfg.PEMSizeLimitsConfig.MaxCertificateSize, cfg.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	if cfg.PEMSizeLimitsConfig.MaxChainLength > cfg.PEMSizeLimitsConfig.MaxBundleSize {
+		return fmt.Errorf("maxChainLength (%d) must not exceed maxBundleSize (%d)",
+			cfg.PEMSizeLimitsConfig.MaxChainLength, cfg.PEMSizeLimitsConfig.MaxBundleSize)
+	}
+
+	limits := pem.NewSizeLimitsFromConfig(
+		cfg.PEMSizeLimitsConfig.MaxCertificateSize,
+		cfg.PEMSizeLimitsConfig.MaxPrivateKeySize,
+		cfg.PEMSizeLimitsConfig.MaxChainLength,
+		cfg.PEMSizeLimitsConfig.MaxBundleSize,
+	)
+
+	pem.SetGlobalSizeLimits(limits)
+
+	log.V(logf.InfoLevel).Info("configured PEM size limits",
+		"maxCertificateSize", limits.MaxCertificateSize,
+		"maxPrivateKeySize", limits.MaxPrivateKeySize,
+		"maxChainLength", limits.MaxChainLength,
+		"maxBundleSize", limits.MaxBundleSize)
 
 	return nil
 }
