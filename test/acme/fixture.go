@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/cert-manager/cert-manager/test/apiserver"
 )
 
@@ -79,6 +80,8 @@ type fixture struct {
 
 	pollInterval     time.Duration
 	propagationLimit time.Duration
+
+	resolver util.Resolver
 }
 
 // RunConformance will execute all conformance tests using the supplied
@@ -130,6 +133,8 @@ func (f *fixture) setup(t *testing.T) func() {
 		t.Fatalf("unable to provision admin user: %s", err)
 	}
 	f.adminUser = adminUser
+
+	f.resolver = util.NewCachingResolver()
 
 	cl, err := kubernetes.NewForConfig(env.Config)
 	if err != nil {

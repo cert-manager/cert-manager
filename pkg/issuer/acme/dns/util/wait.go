@@ -34,21 +34,33 @@ type preCheckDNSFunc func(ctx context.Context, fqdn, value string, nameservers [
 	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
-type cachedEntry struct {
-	Response   *dns.Msg
-	ExpiryTime time.Time
-}
-
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
 	// the DNS challenge is ready.
+	//
+	// Deprecated: The CachingResolver struct has replaced this functionality
 	PreCheckDNS preCheckDNSFunc = checkDNSPropagation
 
 	// dnsQuery is used to be able to mock DNSQuery
 	dnsQuery dnsQueryFunc = DNSQuery
 
-	fqdnToZoneLock sync.RWMutex
-	fqdnToZone     = map[string]cachedEntry{}
+	// We have moved functionality to the CachingResolver, in order to not break
+	// anything importing this package we have the original functions use this
+	// instance.
+	//
+	// Every call to LegacyCachedResolver will return the same Resolver, it is
+	// safe to call multiple times.
+	//
+	// The legacy cache resolver starts a goroutine to clean the cache that
+	// cannot be stopped.
+	//
+	// Deprecated: The CachingResolver struct has replaced this functionality
+	LegacyCachedResolver = sync.OnceValue(func() Resolver {
+		cache := &CachingResolver{}
+		//nolint:errcheck // Error is returned to satisfy the runnable interface, in reality it should never error
+		go cache.Start(context.Background())
+		return cache
+	})
 )
 
 const defaultResolvConf = "/etc/resolv.conf"
@@ -116,25 +128,8 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error) {
 
-	var err error
-	fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
-	if err != nil {
-		return false, err
-	}
-
-	if !useAuthoritative {
-		return checkAuthoritativeNss(ctx, fqdn, value, nameservers)
-	}
-
-	authoritativeNss, err := lookupNameservers(ctx, fqdn, nameservers)
-	if err != nil {
-		return false, err
-	}
-
-	for i, ans := range authoritativeNss {
-		authoritativeNss[i] = net.JoinHostPort(ans, "53")
-	}
-	return checkAuthoritativeNss(ctx, fqdn, value, authoritativeNss)
+	return LegacyCachedResolver().
+		CheckTXTRecordPropagation(ctx, fqdn, value, nameservers, UseAuthoritative(useAuthoritative))
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
@@ -177,6 +172,10 @@ func DNSQuery(ctx context.Context, fqdn string, rtype uint16, nameservers []stri
 	default:
 		// We explicitly specified here what types are supported, so we can more confidently create tests for this function.
 		return nil, fmt.Errorf("unsupported DNS record type %d", rtype)
+	}
+
+	if len(nameservers) == 0 {
+		return nil, fmt.Errorf("nameservers is required")
 	}
 
 	m := new(dns.Msg)
@@ -278,121 +277,12 @@ func (c *httpDNSClient) Exchange(ctx context.Context, m *dns.Msg, a string) (r *
 	return r, rtt, nil
 }
 
-// lookupNameservers returns the authoritative nameservers for the given fqdn.
-func lookupNameservers(ctx context.Context, fqdn string, nameservers []string) ([]string, error) {
-	var authoritativeNss []string
-
-	logf.FromContext(ctx).V(logf.DebugLevel).Info("Searching fqdn", "fqdn", fqdn, "seedNameservers", nameservers)
-	zone, err := FindZoneByFqdn(ctx, fqdn, nameservers)
-	if err != nil {
-		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
-	}
-
-	r, err := dnsQuery(ctx, zone, dns.TypeNS, nameservers, true)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, rr := range r.Answer {
-		if ns, ok := rr.(*dns.NS); ok {
-			authoritativeNss = append(authoritativeNss, strings.ToLower(ns.Ns))
-		}
-	}
-
-	if len(authoritativeNss) > 0 {
-		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNss)
-		return authoritativeNss, nil
-	}
-	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
-}
-
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
 // domain labels until the nameserver returns a SOA record in the answer section.
+//
+// Deprecated: The CachingResolver struct has replaced this functionality
 func FindZoneByFqdn(ctx context.Context, fqdn string, nameservers []string) (string, error) {
-	// Do we have it cached?
-	fqdnToZoneLock.RLock()
-	cachedEntryItem, existsInCache := fqdnToZone[fqdn]
-	fqdnToZoneLock.RUnlock()
-
-	if existsInCache {
-		// ensure cachedEntry is not expired
-		if time.Now().Before(cachedEntryItem.ExpiryTime) {
-			logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached DNS response", "fqdn", fqdn)
-
-			for _, ans := range cachedEntryItem.Response.Answer {
-				if soa, ok := ans.(*dns.SOA); ok {
-					return soa.Hdr.Name, nil
-				}
-			}
-
-			return "", fmt.Errorf("cached response has no SOA record")
-		}
-
-		// Remove expired entry
-		fqdnToZoneLock.Lock()
-		delete(fqdnToZone, fqdn)
-		fqdnToZoneLock.Unlock()
-	}
-
-	labelIndexes := dns.Split(fqdn)
-
-	// We are climbing up the domain tree, looking for the SOA record on
-	// one of them. For example, imagine that the DNS tree looks like this:
-	//
-	//  example.com.                                   ← SOA is here.
-	//  └── foo.example.com.
-	//      └── _acme-challenge.foo.example.com.       ← Starting point.
-	//
-	// We start at the bottom of the tree and climb up. The NXDOMAIN error
-	// lets us know that we should climb higher:
-	//
-	//  _acme-challenge.foo.example.com. returns NXDOMAIN
-	//                  foo.example.com. returns NXDOMAIN
-	//                      example.com. returns NOERROR along with the SOA
-	for _, index := range labelIndexes {
-		domain := fqdn[index:]
-
-		in, err := dnsQuery(ctx, domain, dns.TypeSOA, nameservers, true)
-		if err != nil {
-			return "", err
-		}
-
-		// NXDOMAIN tells us that we did not climb far enough up the DNS tree. We
-		// thus continue climbing to find the SOA record.
-		if in.Rcode == dns.RcodeNameError {
-			continue
-		}
-
-		// Any non-successful response code, other than NXDOMAIN, is treated as an error
-		// and interrupts the search.
-		if in.Rcode != dns.RcodeSuccess {
-			return "", fmt.Errorf("When querying the SOA record for the domain '%s' using nameservers %v, rcode was expected to be 'NOERROR' or 'NXDOMAIN', but got '%s'",
-				domain, nameservers, dns.RcodeToString[in.Rcode])
-		}
-
-		// As per RFC 2181, CNAME records cannot not exist at the root of a zone,
-		// which means we won't be finding any SOA record for this domain.
-		if dnsMsgContainsCNAME(in) {
-			continue
-		}
-
-		for _, ans := range in.Answer {
-			if soa, ok := ans.(*dns.SOA); ok {
-				fqdnToZoneLock.Lock()
-				defer fqdnToZoneLock.Unlock()
-
-				fqdnToZone[fqdn] = cachedEntry{
-					Response:   in,
-					ExpiryTime: time.Now().Add(time.Duration(soa.Hdr.Ttl) * time.Second),
-				}
-
-				logf.FromContext(ctx).V(logf.DebugLevel).Info("Caching DNS response", "fqdn", fqdn, "ttl", soa.Hdr.Ttl)
-				return soa.Hdr.Name, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("Could not find the SOA record in the DNS tree for the domain '%s' using nameservers %v", fqdn, nameservers)
+	return LegacyCachedResolver().FindZoneByFQDN(ctx, fqdn, nameservers)
 }
 
 // dnsMsgContainsCNAME checks for a CNAME answer in msg

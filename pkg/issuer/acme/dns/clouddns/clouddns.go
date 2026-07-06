@@ -12,6 +12,7 @@ package clouddns
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -21,7 +22,9 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/option"
+	"k8s.io/utils/ptr"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -32,34 +35,71 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	project          string
 	client           *dns.Service
+	resolver         util.Resolver
 	log              logr.Logger
 }
 
+// NewDNSProviderFromOptions constructs an ACME DNS provider for Google Cloud DNS.
+//
+// All options are passed via the variadic options parameter.
+//
+// Required options:
+// - Project
+// - Nameservers
+// - Resolver
+func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
+	}
+
+	err := errors.Join(
+		utiloptions.Required(&opt.Project, "Google Cloud project name missing"),
+		utiloptions.NotEmpty(&opt.Nameservers, "nameservers are required"),
+		utiloptions.Required(&opt.Resolver, "resolver is required"),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the DNS service for the given config
+	svc, err := getDNSService(ctx, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DNSProvider{
+		project:          opt.Project,
+		client:           svc,
+		dns01Nameservers: opt.Nameservers,
+		hostedZoneName:   opt.HostedZoneName,
+		resolver:         opt.Resolver,
+		log:              logf.Log.WithName("clouddns"),
+	}, nil
+
+}
+
 // NewDNSProvider returns a new DNSProvider Instance with configuration
+//
+// Deprecated: Use NewDNSProviderFromOptions
 func NewDNSProvider(ctx context.Context, project string, saBytes []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*DNSProvider, error) {
-	// project is a required field
-	if project == "" {
-		return nil, fmt.Errorf("Google Cloud project name missing")
-	}
-	// if the service account bytes are not provided, we will attempt to instantiate
-	// with 'ambient credentials' (if they are allowed/enabled)
-	if len(saBytes) == 0 {
-		if !ambient {
-			return nil, fmt.Errorf("unable to construct clouddns provider: empty credentials; perhaps you meant to enable ambient credentials?")
-		}
-		return NewDNSProviderCredentials(ctx, project, dns01Nameservers, hostedZoneName)
-	}
-	// if service account data is provided, we instantiate using that
-	if len(saBytes) != 0 {
-		return NewDNSProviderServiceAccountBytes(ctx, project, saBytes, dns01Nameservers, hostedZoneName)
-	}
-	return nil, fmt.Errorf("missing Google Cloud DNS provider credentials")
+	return NewDNSProviderFromOptions(ctx,
+		Project(project),
+		ServiceAccountBytes(saBytes),
+		Nameservers(dns01Nameservers),
+		Ambient(ambient),
+		HostedZoneName(hostedZoneName),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // NewDNSProviderEnvironment returns a DNSProvider instance configured for Google Cloud
 // DNS. Project name must be passed in the environment variable: GCE_PROJECT.
 // A Service Account file can be passed in the environment variable:
 // GCE_SERVICE_ACCOUNT_FILE
+//
+// Deprecated: Use NewDNSProviderFromOptions
 func NewDNSProviderEnvironment(ctx context.Context, dns01Nameservers []string, hostedZoneName string) (*DNSProvider, error) {
 	project := os.Getenv("GCE_PROJECT")
 	if saFile, ok := os.LookupEnv("GCE_SERVICE_ACCOUNT_FILE"); ok {
@@ -70,75 +110,52 @@ func NewDNSProviderEnvironment(ctx context.Context, dns01Nameservers []string, h
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for Google Cloud DNS.
+//
+// Deprecated: Use NewDNSProviderFromOptions
 func NewDNSProviderCredentials(ctx context.Context, project string, dns01Nameservers []string, hostedZoneName string) (*DNSProvider, error) {
-	if project == "" {
-		return nil, fmt.Errorf("Google Cloud project name missing")
-	}
-
-	client, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get Google Cloud client: %v", err)
-	}
-
-	svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
-	}
-
-	return &DNSProvider{
-		project:          project,
-		client:           svc,
-		dns01Nameservers: dns01Nameservers,
-		hostedZoneName:   hostedZoneName,
-		log:              logf.Log.WithName("clouddns"),
-	}, nil
+	return NewDNSProviderFromOptions(ctx,
+		Project(project),
+		Ambient(true),
+		Nameservers(dns01Nameservers),
+		HostedZoneName(hostedZoneName),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // NewDNSProviderServiceAccount uses the supplied service account JSON file to
 // return a DNSProvider instance configured for Google Cloud DNS.
+//
+// Deprecated: Use NewDNSProviderFromOptions
 func NewDNSProviderServiceAccount(ctx context.Context, project string, saFile string, dns01Nameservers []string, hostedZoneName string) (*DNSProvider, error) {
-	if project == "" {
-		return nil, fmt.Errorf("Google Cloud project name missing")
-	}
 	if saFile == "" {
 		return nil, fmt.Errorf("Google Cloud Service Account file missing")
 	}
 
-	dat, err := os.ReadFile(saFile)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to read Service Account file: %v", err)
-	}
-	return NewDNSProviderServiceAccountBytes(ctx, project, dat, dns01Nameservers, hostedZoneName)
+	return NewDNSProviderFromOptions(ctx,
+		Project(project),
+		Nameservers(dns01Nameservers),
+		ServiceAccountFile(saFile),
+		HostedZoneName(hostedZoneName),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // NewDNSProviderServiceAccountBytes uses the supplied service account JSON
 // file data to return a DNSProvider instance configured for Google Cloud DNS.
+//
+// Deprecated: Use NewDNSProviderFromOptions
 func NewDNSProviderServiceAccountBytes(ctx context.Context, project string, saBytes []byte, dns01Nameservers []string, hostedZoneName string) (*DNSProvider, error) {
-	if project == "" {
-		return nil, fmt.Errorf("Google Cloud project name missing")
-	}
 	if len(saBytes) == 0 {
 		return nil, fmt.Errorf("Google Cloud Service Account data missing")
 	}
 
-	conf, err := google.JWTConfigFromJSON(saBytes, dns.NdevClouddnsReadwriteScope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to acquire config: %v", err)
-	}
-
-	client := conf.Client(ctx)
-
-	svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
-	}
-	return &DNSProvider{
-		project:          project,
-		client:           svc,
-		dns01Nameservers: dns01Nameservers,
-		hostedZoneName:   hostedZoneName,
-		log:              logf.Log.WithName("clouddns"),
-	}, nil
+	return NewDNSProviderFromOptions(ctx,
+		Project(project),
+		Nameservers(dns01Nameservers),
+		ServiceAccountBytes(saBytes),
+		HostedZoneName(hostedZoneName),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
@@ -246,7 +263,7 @@ func (c *DNSProvider) getHostedZone(ctx context.Context, domain string) (string,
 		return c.hostedZoneName, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(ctx, util.ToFqdn(domain), c.dns01Nameservers)
+	authZone, err := c.resolver.FindZoneByFQDN(ctx, util.ToFqdn(domain), c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
@@ -299,4 +316,61 @@ RecLoop:
 	}
 
 	return found, nil
+}
+
+func getDNSService(ctx context.Context, o DNSProviderOptions) (*dns.Service, error) {
+	// Get the service account bytes from either config or the file
+	saBytes, err := getServiceAccountBytes(o)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we have no service account then we are using ambient credentials
+	if len(saBytes) == 0 {
+		if !ptr.Deref(o.Ambient, false) {
+			return nil, fmt.Errorf("unable to construct clouddns provider: empty credentials; perhaps you meant to enable ambient credentials?")
+		}
+
+		client, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to get Google Cloud client: %v", err)
+		}
+
+		svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
+		if err != nil {
+			return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
+		}
+
+		return svc, nil
+	}
+
+	conf, err := google.JWTConfigFromJSON(saBytes, dns.NdevClouddnsReadwriteScope)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to acquire config: %v", err)
+	}
+
+	client := conf.Client(ctx)
+
+	svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
+	}
+
+	return svc, nil
+}
+
+func getServiceAccountBytes(o DNSProviderOptions) ([]byte, error) {
+	if len(o.ServiceAccountBytes) != 0 {
+		return o.ServiceAccountBytes, nil
+	}
+
+	if len(o.ServiceAccountFile) != 0 {
+		data, err := os.ReadFile(o.ServiceAccountFile)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to read Service Account file: %v", err)
+		}
+		return data, nil
+	}
+
+	return nil, nil
 }

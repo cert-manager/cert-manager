@@ -27,46 +27,76 @@ package acmedns
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/nrdcg/goacmedns"
+
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	dns01Nameservers []string
-	client           *goacmedns.Client
-	accounts         map[string]goacmedns.Account
+	client   *goacmedns.Client
+	accounts map[string]goacmedns.Account
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for ACME DNS
-// Credentials and acme-dns server host are given in environment variables
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
-	host := os.Getenv("ACME_DNS_HOST")
-	accountJSON := os.Getenv("ACME_DNS_ACCOUNT_JSON")
-	return NewDNSProviderHostBytes(host, []byte(accountJSON), dns01Nameservers)
-}
+// NewDNSProviderFromOptions returns a DNSProvider configured from the given options.
+//
+// ctx is not used by this provider; it is accepted to standardize the constructor signature across all providers.
+func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
+	}
 
-// NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
-// acme-dns server host is given in a string
-// credentials are stored in json in the given string
-func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string) (*DNSProvider, error) {
-	client, err := goacmedns.NewClient(host)
+	err := errors.Join(
+		utiloptions.Required(&opt.Host, "host is required"),
+		utiloptions.NotEmpty(&opt.AccountJSON, "account json is required"),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := goacmedns.NewClient(opt.Host)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating acme-dns client: %s", err)
 	}
 
 	var accounts map[string]goacmedns.Account
-	if err := json.Unmarshal(accountJSON, &accounts); err != nil {
+	if err := json.Unmarshal(opt.AccountJSON, &accounts); err != nil {
 		return nil, fmt.Errorf("Error unmarshalling accountJSON: %s", err)
 	}
 
 	return &DNSProvider{
-		client:           client,
-		accounts:         accounts,
-		dns01Nameservers: dns01Nameservers,
+		client:   client,
+		accounts: accounts,
 	}, nil
+}
+
+// NewDNSProvider returns a DNSProvider instance configured for ACME DNS
+// Credentials and acme-dns server host are given in environment variables
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(context.Background(),
+		Host(os.Getenv("ACME_DNS_HOST")),
+		AccountJSON([]byte(os.Getenv("ACME_DNS_ACCOUNT_JSON"))),
+	)
+}
+
+// NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
+// acme-dns server host is given in a string
+// credentials are stored in json in the given string
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(context.Background(),
+		Host(host),
+		AccountJSON(accountJSON),
+	)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge

@@ -60,6 +60,7 @@ import (
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	utildns "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -129,6 +130,9 @@ type Context struct {
 	// gateway.networking.k8s.io types
 	GWShared             gwinformers.SharedInformerFactory
 	GatewaySolverEnabled bool
+
+	// DNSResolver is used to resolve ACME DNS challenges
+	DNSResolver *utildns.CachingResolver
 
 	ContextOptions
 }
@@ -371,6 +375,7 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 			ACMEAccountRegistry: accounts.NewDefaultRegistry(
 				accounts.NewClient(metrics, restConfig.UserAgent),
 			),
+			DNSResolver: utildns.NewCachingResolver(),
 		},
 	}, nil
 }

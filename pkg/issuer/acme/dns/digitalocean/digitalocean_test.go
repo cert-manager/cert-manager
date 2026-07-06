@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -82,4 +83,62 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 
 	err = provider.CleanUp(t.Context(), doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(t *testing.T)
+		options []DNSProviderOption
+		wantErr string
+	}{
+		{
+			name: "valid token",
+			options: []DNSProviderOption{
+				Token("123"),
+				Nameservers(util.RecursiveNameservers),
+				UserAgent("cert-manager-test"),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "missing token",
+			options: []DNSProviderOption{
+				Nameservers(util.RecursiveNameservers),
+				UserAgent("cert-manager-test"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "DigitalOcean token missing",
+		},
+		{
+			name: "missing resolver",
+			options: []DNSProviderOption{
+				Token("123"),
+				Nameservers(util.RecursiveNameservers),
+			},
+			wantErr: "resolver is required",
+		},
+		{
+			name: "missing nameservers",
+			options: []DNSProviderOption{
+				Token("123"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "nameservers is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup(t)
+			}
+			_, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }

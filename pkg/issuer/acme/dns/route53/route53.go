@@ -18,15 +18,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/smithy-go/logging"
-	"github.com/aws/smithy-go/middleware"
+	"k8s.io/utils/ptr"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -41,195 +37,33 @@ type DNSProvider struct {
 	client           *route53.Client
 	hostedZoneID     string
 	userAgent        string
+	resolver         util.Resolver
 }
 
-type sessionProvider struct {
-	AccessKeyID      string
-	SecretAccessKey  string
-	Ambient          bool
-	Region           string
-	Role             string
-	WebIdentityToken string
-	StsProvider      func(aws.Config) StsClient
-	userAgent        string
-}
-
-type StsClient interface {
-	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
-	AssumeRoleWithWebIdentity(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error)
-}
-
-func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
-	switch {
-	case d.Role == "" && d.WebIdentityToken != "":
-		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: role must be set when web identity token is set")
-	case d.AccessKeyID == "" && d.SecretAccessKey == "":
-		if !d.Ambient && d.WebIdentityToken == "" {
-			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
-		}
-	case d.AccessKeyID == "" || d.SecretAccessKey == "":
-		// It's always an error to set one of those but not the other
-		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
+func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
 	}
 
-	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
-
-	log := logf.FromContext(ctx)
-	optFns := []func(*config.LoadOptions) error{
-		// Print AWS API requests but only at cert-manager debug level
-		config.WithLogger(logging.LoggerFunc(func(classification logging.Classification, format string, v ...any) {
-			log := log.WithValues("aws-classification", classification)
-			if classification == logging.Debug {
-				log = log.V(logf.DebugLevel)
-			}
-			log.Info(fmt.Sprintf(format, v...))
-		})),
-		config.WithClientLogMode(aws.LogDeprecatedUsage | aws.LogRequest),
-		config.WithLogConfigurationWarnings(true),
-		// Append cert-manager user-agent string to all AWS API requests
-		config.WithAPIOptions(
-			[]func(*middleware.Stack) error{
-				func(stack *middleware.Stack) error {
-					return awsmiddleware.AddUserAgentKeyValue("cert-manager", d.userAgent)(stack)
-				},
-			},
-		),
-	}
-
-	var envRegionFound bool
-	{
-		envConfig, err := config.NewEnvConfig()
-		if err != nil {
-			return aws.Config{}, err
-		}
-		envRegionFound = envConfig.Region != ""
-	}
-
-	if !envRegionFound && d.Region == "" {
-		log.Info(
-			"Region not found",
-			"reason", "The AWS_REGION or AWS_DEFAULT_REGION environment variables were not set and the Issuer region field was empty",
-		)
-	}
-
-	if d.Region != "" {
-		if envRegionFound && useAmbientCredentials {
-			log.Info(
-				"Ignoring Issuer region",
-				"reason", "Issuer is configured to use ambient credentials and AWS_REGION or AWS_DEFAULT_REGION environment variables were found",
-				"suggestion", "Since cert-manager 1.16, the Issuer region field is optional and can be removed from your Issuer or ClusterIssuer",
-				"issuer-region", d.Region,
-			)
-		} else {
-			optFns = append(optFns,
-				config.WithRegion(d.Region),
-			)
-		}
-	}
-
-	switch {
-	case d.Role != "" && d.WebIdentityToken != "":
-		log.V(logf.DebugLevel).Info("using assume role with web identity")
-	case useAmbientCredentials:
-		log.V(logf.DebugLevel).Info("using ambient credentials")
-		// Leaving credentials unset results in a default credential chain being
-		// used; this chain is a reasonable default for getting ambient creds.
-		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	default:
-		log.V(logf.DebugLevel).Info("not using ambient credentials")
-		optFns = append(optFns, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(d.AccessKeyID, d.SecretAccessKey, "")))
-	}
-
-	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
-	if err != nil {
-		return aws.Config{}, fmt.Errorf("unable to create aws config: %w", err)
-	}
-
-	if d.Role != "" && d.WebIdentityToken == "" {
-		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
-		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
-			RoleArn:         aws.String(d.Role),
-			RoleSessionName: aws.String("cert-manager"),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role: %w", err)
-		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
-	}
-
-	if d.Role != "" && d.WebIdentityToken != "" {
-		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
-
-		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
-			RoleArn:          aws.String(d.Role),
-			RoleSessionName:  aws.String("cert-manager"),
-			WebIdentityToken: aws.String(d.WebIdentityToken),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %w", err)
-		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
-	}
-
-	// Log some key values of the loaded configuration, so that users can
-	// self-diagnose problems in the field. If users shared logs in their bug
-	// reports, we can know whether the region was detected and whether an
-	// alternative defaults mode has been configured.
-	//
-	// TODO(wallrj): Loop through the cfg.ConfigSources and log which config
-	// source was used to load the region and credentials, so that it is clearer
-	// to the user where environment variables or config files or IMDS metadata
-	// are being used.
-	log.V(logf.DebugLevel).Info(
-		"loaded-config",
-		"defaults-mode", cfg.DefaultsMode,
-		"region", cfg.Region,
-		"runtime-environment", cfg.RuntimeEnvironment,
+	err := errors.Join(
+		utiloptions.Required(&opt.Resolver, "resolver is required"),
+		utiloptions.NotEmpty(&opt.Nameservers, "nameservers is required"),
 	)
 
-	return cfg, nil
-}
-
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityToken string, ambient bool, userAgent string) *sessionProvider {
-	return &sessionProvider{
-		AccessKeyID:      accessKeyID,
-		SecretAccessKey:  secretAccessKey,
-		Ambient:          ambient,
-		Region:           region,
-		Role:             role,
-		WebIdentityToken: webIdentityToken,
-		StsProvider:      defaultSTSProvider,
-		userAgent:        userAgent,
+	if err != nil {
+		return nil, err
 	}
-}
 
-func defaultSTSProvider(cfg aws.Config) StsClient {
-	return sts.NewFromConfig(cfg)
-}
-
-// NewDNSProvider returns a DNSProvider instance configured for the AWS
-// Route 53 service using static credentials from its parameters or, if they're
-// unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(
-	ctx context.Context,
-	accessKeyID, secretAccessKey, hostedZoneID, region, role, webIdentityToken string,
-	ambient bool,
-	dns01Nameservers []string,
-	userAgent string,
-) (*DNSProvider, error) {
-	provider := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, ambient, userAgent)
+	provider := newSessionProvider(
+		opt.AccessKeyID,
+		opt.SecretAccessKey,
+		opt.Region,
+		opt.Role,
+		opt.WebIdentityToken,
+		ptr.Deref(opt.Ambient, false),
+		opt.UserAgent,
+	)
 
 	cfg, err := provider.GetSession(ctx)
 	if err != nil {
@@ -240,10 +74,37 @@ func NewDNSProvider(
 
 	return &DNSProvider{
 		client:           client,
-		hostedZoneID:     hostedZoneID,
-		dns01Nameservers: dns01Nameservers,
-		userAgent:        userAgent,
+		hostedZoneID:     opt.HostedZoneID,
+		dns01Nameservers: opt.Nameservers,
+		userAgent:        opt.UserAgent,
+		resolver:         opt.Resolver,
 	}, nil
+}
+
+// NewDNSProvider returns a DNSProvider instance configured for the AWS
+// Route 53 service using static credentials from its parameters or, if they're
+// unset and the 'ambient' option is set, credentials from the environment.
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProvider(
+	ctx context.Context,
+	accessKeyID, secretAccessKey, hostedZoneID, region, role, webIdentityToken string,
+	ambient bool,
+	dns01Nameservers []string,
+	userAgent string,
+) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(ctx,
+		AccessKeyID(accessKeyID),
+		SecretAccessKey(secretAccessKey),
+		HostedZoneID(hostedZoneID),
+		Region(region),
+		Role(role),
+		WebIdentityToken(webIdentityToken),
+		Ambient(ambient),
+		Nameservers(dns01Nameservers),
+		UserAgent(userAgent),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // Present creates a TXT record using the specified parameters
@@ -318,7 +179,7 @@ func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string,
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(ctx, fqdn, r.dns01Nameservers)
+	authZone, err := r.resolver.FindZoneByFQDN(ctx, fqdn, r.dns01Nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %w", err)
 	}

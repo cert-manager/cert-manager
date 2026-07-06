@@ -59,12 +59,13 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS     func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
-	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error)
-	route53      func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error)
-	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...azuredns.ProviderOption) (*azuredns.DNSProvider, error)
-	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	digitalOcean func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error)
+	akamai       func(context.Context, ...akamai.DNSProviderOption) (*akamai.DNSProvider, error)
+	cloudDNS     func(context.Context, ...clouddns.DNSProviderOption) (*clouddns.DNSProvider, error)
+	cloudFlare   func(context.Context, ...cloudflare.DNSProviderOption) (*cloudflare.DNSProvider, error)
+	route53      func(context.Context, ...route53.DNSProviderOption) (*route53.DNSProvider, error)
+	azureDNS     func(context.Context, ...azuredns.DNSProviderOption) (*azuredns.DNSProvider, error)
+	acmeDNS      func(context.Context, ...acmedns.DNSProviderOption) (*acmedns.DNSProvider, error)
+	digitalOcean func(context.Context, ...digitalocean.DNSProviderOption) (*digitalocean.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -117,8 +118,8 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	log.V(logf.DebugLevel).Info("checking DNS propagation", "nameservers", s.Context.DNS01Nameservers)
 
-	ok, err := util.PreCheckDNS(ctx, fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
-		s.Context.DNS01CheckAuthoritative)
+	ok, err := s.DNSResolver.CheckTXTRecordPropagation(ctx, fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
+		util.UseAuthoritative(s.Context.DNS01CheckAuthoritative))
 	if err != nil {
 		return err
 	}
@@ -208,12 +209,14 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			return nil, nil, fmt.Errorf("error getting akamai client token: %w", err)
 		}
 
-		impl, err = akamai.NewDNSProvider(
-			providerConfig.Akamai.ServiceConsumerDomain,
-			string(clientToken),
-			string(clientSecret),
-			string(accessToken),
-			s.DNS01Nameservers)
+		impl, err = s.dnsProviderConstructors.akamai(ctx,
+			akamai.ServiceConsumerDomain(providerConfig.Akamai.ServiceConsumerDomain),
+			akamai.ClientToken(clientToken),
+			akamai.ClientSecret(clientSecret),
+			akamai.AccessToken(accessToken),
+			akamai.Nameservers(s.DNS01Nameservers),
+			akamai.Resolver(s.DNSResolver))
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating akamai challenge solver: %w", err)
 		}
@@ -238,7 +241,14 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		}
 
 		// attempt to construct the cloud dns provider
-		impl, err = s.dnsProviderConstructors.cloudDNS(ctx, providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef), providerConfig.CloudDNS.HostedZoneName)
+		impl, err = s.dnsProviderConstructors.cloudDNS(ctx,
+			clouddns.Project(providerConfig.CloudDNS.Project),
+			clouddns.ServiceAccountBytes(keyData),
+			clouddns.Nameservers(s.DNS01Nameservers),
+			clouddns.Ambient(s.CanUseAmbientCredentialsFromRef(ch.Spec.IssuerRef)),
+			clouddns.HostedZoneName(providerConfig.CloudDNS.HostedZoneName),
+			clouddns.Resolver(s.DNSResolver))
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
@@ -275,7 +285,11 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		}
 
 		email := providerConfig.Cloudflare.Email
-		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey, apiToken, s.DNS01Nameservers, s.RESTConfig.UserAgent)
+		impl, err = s.dnsProviderConstructors.cloudFlare(ctx,
+			cloudflare.Email(email),
+			cloudflare.APIKey(apiKey),
+			cloudflare.APIToken(apiToken),
+			cloudflare.UserAgent(s.RESTConfig.UserAgent))
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
@@ -286,9 +300,14 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			return nil, nil, fmt.Errorf("error getting digitalocean token: %s", err)
 		}
 
-		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
+		apiToken := strings.TrimSpace(string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key]))
 
-		impl, err = s.dnsProviderConstructors.digitalOcean(strings.TrimSpace(apiToken), s.DNS01Nameservers, s.RESTConfig.UserAgent)
+		impl, err = s.dnsProviderConstructors.digitalOcean(ctx,
+			digitalocean.Token(apiToken),
+			digitalocean.Nameservers(s.DNS01Nameservers),
+			digitalocean.UserAgent(s.RESTConfig.UserAgent),
+			digitalocean.Resolver(s.DNSResolver))
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
 		}
@@ -365,18 +384,18 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			webIdentityToken = jwt
 		}
 
-		impl, err = s.dnsProviderConstructors.route53(
-			ctx,
-			secretAccessKeyID,
-			strings.TrimSpace(secretAccessKey),
-			providerConfig.Route53.HostedZoneID,
-			providerConfig.Route53.Region,
-			providerConfig.Route53.Role,
-			webIdentityToken,
-			canUseAmbientCredentials,
-			s.DNS01Nameservers,
-			s.RESTConfig.UserAgent,
-		)
+		impl, err = s.dnsProviderConstructors.route53(ctx,
+			route53.AccessKeyID(secretAccessKeyID),
+			route53.SecretAccessKey(strings.TrimSpace(secretAccessKey)),
+			route53.HostedZoneID(providerConfig.Route53.HostedZoneID),
+			route53.Region(providerConfig.Route53.Region),
+			route53.Role(providerConfig.Route53.Role),
+			route53.WebIdentityToken(webIdentityToken),
+			route53.Ambient(canUseAmbientCredentials),
+			route53.Nameservers(s.DNS01Nameservers),
+			route53.UserAgent(s.RESTConfig.UserAgent),
+			route53.Resolver(s.DNSResolver))
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %w", err)
 		}
@@ -397,19 +416,21 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			}
 			secret = string(clientSecretBytes)
 		}
-		impl, err = s.dnsProviderConstructors.azureDNS(
-			string(providerConfig.AzureDNS.Environment),
-			providerConfig.AzureDNS.ClientID,
-			secret,
-			providerConfig.AzureDNS.SubscriptionID,
-			providerConfig.AzureDNS.TenantID,
-			providerConfig.AzureDNS.ResourceGroupName,
-			providerConfig.AzureDNS.HostedZoneName,
-			s.DNS01Nameservers,
-			canUseAmbientCredentials,
-			providerConfig.AzureDNS.ManagedIdentity,
-			azuredns.WithAzureZone(providerConfig.AzureDNS.ZoneType),
-		)
+
+		impl, err = s.dnsProviderConstructors.azureDNS(ctx,
+			azuredns.Environment(providerConfig.AzureDNS.Environment),
+			azuredns.ClientID(providerConfig.AzureDNS.ClientID),
+			azuredns.ClientSecret(secret),
+			azuredns.SubscriptionID(providerConfig.AzureDNS.SubscriptionID),
+			azuredns.TenantID(providerConfig.AzureDNS.TenantID),
+			azuredns.ResourceGroupName(providerConfig.AzureDNS.ResourceGroupName),
+			azuredns.ZoneName(providerConfig.AzureDNS.HostedZoneName),
+			azuredns.Nameservers(s.DNS01Nameservers),
+			azuredns.Ambient(canUseAmbientCredentials),
+			azuredns.ManagedIdentity(providerConfig.AzureDNS.ManagedIdentity),
+			azuredns.ZoneType(providerConfig.AzureDNS.ZoneType),
+			azuredns.Resolver(s.DNSResolver))
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
 		}
@@ -425,11 +446,10 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			return nil, nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
 		}
 
-		impl, err = s.dnsProviderConstructors.acmeDNS(
-			providerConfig.AcmeDNS.Host,
-			accountSecretBytes,
-			s.DNS01Nameservers,
-		)
+		impl, err = s.dnsProviderConstructors.acmeDNS(ctx,
+			acmedns.Host(providerConfig.AcmeDNS.Host),
+			acmedns.AccountJSON(accountSecretBytes))
+
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
@@ -456,7 +476,7 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 		return nil, nil, err
 	}
 
-	zone, err := util.FindZoneByFqdn(ctx, fqdn, s.DNS01Nameservers)
+	zone, err := s.DNSResolver.FindZoneByFQDN(ctx, fqdn, s.DNS01Nameservers)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -537,12 +557,13 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		Context:      ctx,
 		secretLister: ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		dnsProviderConstructors: dnsProviderConstructors{
-			clouddns.NewDNSProvider,
-			cloudflare.NewDNSProviderCredentials,
-			route53.NewDNSProvider,
-			azuredns.NewDNSProviderCredentials,
-			acmedns.NewDNSProviderHostBytes,
-			digitalocean.NewDNSProviderCredentials,
+			akamai.NewDNSProviderFromOptions,
+			clouddns.NewDNSProviderFromOptions,
+			cloudflare.NewDNSProviderFromOptions,
+			route53.NewDNSProviderFromOptions,
+			azuredns.NewDNSProviderFromOptions,
+			acmedns.NewDNSProviderFromOptions,
+			digitalocean.NewDNSProviderFromOptions,
 		},
 		webhookSolvers: initialized,
 	}, nil
