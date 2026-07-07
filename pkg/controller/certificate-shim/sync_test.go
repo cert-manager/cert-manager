@@ -2465,6 +2465,97 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			// Regression test: multiple listeners referencing the same Secret
+			// and hostname must yield a single dnsName, otherwise the CSR has
+			// more SANs than the ACME order has identifiers and finalize fails.
+			Name:   "de-duplicates the same hostname referenced by multiple listeners for one Secret",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Name:     "listener-1",
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "listener-2",
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "listener-3",
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						Annotations:     buildParentRefAnnotations(),
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "return a single Certificate for a Gateway with a single valid TLS entry and common-name annotation (TLS)",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &gwapi.Gateway{
@@ -5393,6 +5484,50 @@ func TestMergeAnnotations(t *testing.T) {
 			result := mergeAnnotations(tt.existing, tt.update)
 			if !reflect.DeepEqual(result, tt.expected) {
 				t.Errorf("mergeAnnotations() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func Test_splitHosts(t *testing.T) {
+	tests := []struct {
+		name            string
+		hosts           []string
+		wantDNSNames    []string
+		wantIPAddresses []string
+	}{
+		{
+			name:         "de-duplicates repeated DNS names, keeping first-seen order",
+			hosts:        []string{"example.com", "www.example.com", "example.com", "www.example.com"},
+			wantDNSNames: []string{"example.com", "www.example.com"},
+		},
+		{
+			name:            "splits DNS names from IPv4 and IPv6 addresses",
+			hosts:           []string{"example.com", "192.0.2.1", "2001:db8::1"},
+			wantDNSNames:    []string{"example.com"},
+			wantIPAddresses: []string{"192.0.2.1", "2001:db8::1"},
+		},
+		{
+			name:            "de-duplicates across both DNS names and IP addresses",
+			hosts:           []string{"example.com", "192.0.2.1", "example.com", "192.0.2.1"},
+			wantDNSNames:    []string{"example.com"},
+			wantIPAddresses: []string{"192.0.2.1"},
+		},
+		{
+			name:         "empty input yields nil slices",
+			hosts:        nil,
+			wantDNSNames: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDNSNames, gotIPAddresses := splitHosts(tt.hosts)
+			if !reflect.DeepEqual(gotDNSNames, tt.wantDNSNames) {
+				t.Errorf("dnsNames = %#v, want %#v", gotDNSNames, tt.wantDNSNames)
+			}
+			if !reflect.DeepEqual(gotIPAddresses, tt.wantIPAddresses) {
+				t.Errorf("ipAddresses = %#v, want %#v", gotIPAddresses, tt.wantIPAddresses)
 			}
 		})
 	}

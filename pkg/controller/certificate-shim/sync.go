@@ -387,14 +387,7 @@ func buildCertificates(
 			controllerGVK = gatewayGVK
 		}
 
-		var ipAddress, dnsNames []string
-		for _, h := range hosts {
-			if ip := net.ParseIP(h); ip != nil {
-				ipAddress = append(ipAddress, h)
-			} else {
-				dnsNames = append(dnsNames, h)
-			}
-		}
+		dnsNames, ipAddress := splitHosts(hosts)
 
 		labels := ingLike.GetLabels()
 
@@ -533,6 +526,26 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 			tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
 		}
 	}
+}
+
+// splitHosts de-duplicates hosts and splits them into DNS names and IP
+// addresses, preserving first-seen order. Duplicates arise when several
+// listeners reference the same Secret and hostname; dropping them keeps the
+// Certificate's SAN count in sync with the ACME order's identifiers.
+func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
+	seen := sets.New[string]()
+	for _, h := range hosts {
+		if seen.Has(h) {
+			continue
+		}
+		seen.Insert(h)
+		if ip := net.ParseIP(h); ip != nil {
+			ipAddresses = append(ipAddresses, h)
+		} else {
+			dnsNames = append(dnsNames, h)
+		}
+	}
+	return dnsNames, ipAddresses
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
