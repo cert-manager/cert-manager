@@ -149,7 +149,7 @@ Create required ClusterRoles and ClusterRoleBindings for cert-manager.
 > true
 > ```
 
-Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
+Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles).
 #### **global.podSecurityPolicy.enabled** ~ `bool`
 > Default value:
 > ```yaml
@@ -765,7 +765,7 @@ Configures the NO_PROXY environment variable where a HTTP proxy is required, but
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -800,7 +800,7 @@ runtimeClassName: gvisor
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -817,7 +817,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -845,7 +845,7 @@ topologySpreadConstraints:
 LivenessProbe settings for the controller container of the controller Pod.  
   
 This is enabled by default, in order to enable the clock-skew liveness probe that restarts the controller in case of a skew between the system clock and the monotonic clock. LivenessProbe durations and thresholds are based on those used for the Kubernetes controller-manager. For more information see the following on the  
-[Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245)
+[Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245).
 
 #### **enableServiceLinks** ~ `bool`
 > Default value:
@@ -1083,7 +1083,7 @@ metricsTLSConfig:
 > {}
 > ```
 
-The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)  
+The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).  
   
 For example:
 
@@ -1270,7 +1270,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -1305,7 +1305,7 @@ runtimeClassName: gvisor
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -1322,7 +1322,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -1783,7 +1783,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -1818,7 +1818,7 @@ runtimeClassName: gvisor
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -1835,7 +1835,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -2120,7 +2120,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
 For example:
 
 ```yaml
@@ -2154,7 +2154,7 @@ runtimeClassName: gvisor
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -2329,7 +2329,7 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm install my-release -f values.yaml .
 ```
-> **Tip**: You can use the default [values.yaml](https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
+> **Tip**: You can use the default [values.yaml](https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml).
 
 ## Contributing
 
