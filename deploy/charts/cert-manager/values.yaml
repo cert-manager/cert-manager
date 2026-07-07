@@ -92,7 +92,7 @@ global:
     # +docs:property
     # retryPeriod: 15s
 
-  # A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+  # A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
   #
   # For example:
   #   runtimeClassName: gvisor
@@ -593,7 +593,7 @@ ingressShim: {}
 #            - master
 affinity: {}
 
-# A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+# A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
 #
 # For example:
 #   runtimeClassName: gvisor
@@ -983,7 +983,7 @@ webhook:
   #            - master
   affinity: {}
 
-  # A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+  # A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
   #
   # For example:
   #   runtimeClassName: gvisor
@@ -1375,7 +1375,7 @@ cainjector:
   #            - master
   affinity: {}
 
-  # A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+  # A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
   #
   # For example:
   #   runtimeClassName: gvisor
@@ -1515,6 +1515,13 @@ acmesolver:
     # Kubernetes imagePullPolicy on Deployment.
     pullPolicy: IfNotPresent
 
+  # A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
+  #
+  # For example:
+  #   runtimeClassName: gvisor
+  # +docs:property
+  runtimeClassName: ""
+
 # +docs:section=Startup API Check
 # This startupapicheck is a Helm post-install hook that waits for the webhook
 # endpoints to become available.
@@ -1625,7 +1632,7 @@ startupapicheck:
   #            - master
   affinity: {}
 
-  # A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)
+  # A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).
   #
   # For example:
   #   runtimeClassName: gvisor

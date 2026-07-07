@@ -194,6 +194,9 @@
       "properties": {
         "image": {
           "$ref": "#/$defs/helm-values.acmesolver.image"
+        },
+        "runtimeClassName": {
+          "$ref": "#/$defs/helm-values.acmesolver.runtimeClassName"
         }
       },
       "type": "object"
@@ -247,6 +250,11 @@
     },
     "helm-values.acmesolver.image.tag": {
       "description": "Override the image tag to deploy by setting this variable. If no value is set, the chart's appVersion is used.",
+      "type": "string"
+    },
+    "helm-values.acmesolver.runtimeClassName": {
+      "default": "",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.affinity": {
@@ -593,7 +601,7 @@
     },
     "helm-values.cainjector.runtimeClassName": {
       "default": "",
-      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.cainjector.securityContext": {
@@ -955,7 +963,7 @@
     },
     "helm-values.global.runtimeClassName": {
       "default": "",
-      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.hostAliases": {
@@ -1408,7 +1416,7 @@
     },
     "helm-values.runtimeClassName": {
       "default": "",
-      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.securityContext": {
@@ -1708,7 +1716,7 @@
     },
     "helm-values.startupapicheck.runtimeClassName": {
       "default": "",
-      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.startupapicheck.securityContext": {
@@ -2265,7 +2273,7 @@
     },
     "helm-values.webhook.runtimeClassName": {
       "default": "",
-      "description": "A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)\n\nFor example:\nruntimeClassName: gvisor",
+      "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
     },
     "helm-values.webhook.securePort": {

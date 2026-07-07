@@ -198,7 +198,7 @@ The duration the clients should wait between attempting acquisition and renewal 
 > ""
 > ```
 
-A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
   
 For example:
 
@@ -786,7 +786,7 @@ affinity:
 > ""
 > ```
 
-A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
   
 For example:
 
@@ -1291,7 +1291,7 @@ affinity:
 > ""
 > ```
 
-A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
   
 For example:
 
@@ -1804,7 +1804,7 @@ affinity:
 > ""
 > ```
 
-A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
   
 For example:
 
@@ -1997,6 +1997,20 @@ Setting a digest pins the image. If a tag is also set, the rendered reference wi
 > ```
 
 Kubernetes imagePullPolicy on Deployment.
+#### **acmesolver.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 ### Startup API Check
 
 
@@ -2140,7 +2154,7 @@ affinity:
 > ""
 > ```
 
-A Kubernetes Runtime Class, if required. For more information, see [RuntimeClass v1 node](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#runtimeclass-v1-node-k8s-io)  
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
   
 For example:
 
