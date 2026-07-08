@@ -447,3 +447,10 @@ tests:
     - equal:
         path: spec.template.spec.runtimeClassName
         value: something
+  - it: should set acme-http01-solver-runtime-class-name when acmesolver.runtimeClassName is set
+    set:
+      acmesolver.runtimeClassName: something
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --acme-http01-solver-runtime-class-name="something"

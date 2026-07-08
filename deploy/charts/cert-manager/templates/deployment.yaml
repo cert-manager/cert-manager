@@ -152,6 +152,9 @@ spec:
           {{- if .Values.disableAutoApproval }}
           - --controllers=-certificaterequests-approver
           {{- end }}
+          {{- with .Values.acmesolver.runtimeClassName }}
+          - --acme-http01-solver-runtime-class-name={{ . | quote }}
+          {{- end }}
           ports:
           - containerPort: 9402
             name: http-metrics
