@@ -2,3 +2,8 @@
 # the version detection is wrongly looking at apiserver packages with versions < 1 - but all apiserver packages have
 # a major version of 0. In any case this is a vuln in Kubernetes clusters, not in our code.
 CVE-2020-8559
+
+# GO-2026-5932 flags golang.org/x/crypto/openpgp as unmaintained. cert-manager does not import the openpgp
+# sub-package; we only use x/crypto for SSH and other unrelated packages. No fixed version exists because the
+# advisory is a permanent deprecation notice, not a code bug.
+GO-2026-5932
