@@ -32,7 +32,7 @@ export GOVENDOR_DIR ?= $(default_shared_dir)/go_vendor
 
 # https://go.dev/dl/
 # renovate: datasource=golang-version packageName=go
-VENDORED_GO_VERSION := 1.25.11
+VENDORED_GO_VERSION := 1.25.12
 
 $(bin_dir)/tools $(DOWNLOAD_DIR)/tools:
 	@mkdir -p $@
@@ -440,10 +440,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=34f14304e856893f4ba30c2cacfe93906e9de7915c5f6aaaf3a81cdccd7ba30b
-go_linux_arm64_SHA256SUM=c30bf9e156a54ea4e31fbbbf31a712b32734b58cc9a22426fa5ee632d0885124
-go_darwin_amd64_SHA256SUM=26d0ee4071de42b5c332337db9fdd234072877697c547e46e85efb0f59507c66
-go_darwin_arm64_SHA256SUM=cd8d4920e7930d55da1a5a57ba43a64b1305f71cdf2ca3c76cd8c549272b1680
+go_linux_amd64_SHA256SUM=234828b7a89e0e303d2556310ee549fbcf253d28de937bac3da13d6294262ac1
+go_linux_arm64_SHA256SUM=8b5884aef89600aef5b0b051fb971f11f49bb996521e911f30f02a66884f7bd2
+go_darwin_amd64_SHA256SUM=00a2e743b82bccec03c51c4b0f7e46d5fec52184075fd6c5183c3bb39ae9fb00
+go_darwin_arm64_SHA256SUM=fa2c88bbcf64bd3b2aef355f026cfec6d3a4a01c132f999c8f8c964eb767164f
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
