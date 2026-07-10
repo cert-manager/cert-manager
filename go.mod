@@ -47,12 +47,12 @@ require (
 	k8s.io/component-base v0.36.2
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-aggregator v0.36.2
-	k8s.io/kube-openapi v0.0.0-20260501160325-927ab1f70cd6
+	k8s.io/kube-openapi v0.0.0-20260706235625-cdb1db5517a0
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/gateway-api v1.6.0
 	sigs.k8s.io/randfill v1.0.0
-	sigs.k8s.io/structured-merge-diff/v6 v6.4.0
+	sigs.k8s.io/structured-merge-diff/v6 v6.4.1
 	software.sslmate.com/src/go-pkcs12 v0.7.2
 )
 
