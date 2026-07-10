@@ -452,7 +452,7 @@ config:
   kubernetesAPIBurst: 9000
   numberOfConcurrentWorkers: 200
   gatewayAPI:
-    enable: true
+    enabled: true
   # Feature gates as of v1.20.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
