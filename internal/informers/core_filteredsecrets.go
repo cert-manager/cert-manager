@@ -195,11 +195,12 @@ func (i *informer) HasSynced() bool {
 }
 
 func (i *informer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	_, err := i.typedInformer.AddEventHandler(handler)
+	return nil, err
+}
+
+func (i *informer) AddMetadataEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	_, err := i.metadataInformer.AddEventHandler(handler)
-	if err != nil {
-		return nil, err
-	}
-	_, err = i.typedInformer.AddEventHandler(handler)
 	return nil, err
 }
 

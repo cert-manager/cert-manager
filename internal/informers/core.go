@@ -68,9 +68,15 @@ type SecretLister interface {
 
 // Informer is a subset of client-go SharedIndexInformer https://github.com/kubernetes/client-go/blob/release-1.26/tools/cache/shared_informer.go#L35-L211
 type Informer interface {
-	// AddEventHandler allows the reconcile loop to register an event handler so
-	// it gets triggered when the informer has a new event
+	// AddEventHandler registers an event handler on the typed (full-object)
+	// informer. For the filtered Secret informer, this receives only
+	// cert-manager-labelled Secrets as *corev1.Secret.
 	AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error)
+	// AddMetadataEventHandler registers an event handler on the metadata-only
+	// informer. For the filtered Secret informer, this receives non-labelled
+	// Secrets as *v1.PartialObjectMetadata. For non-filtered informers this
+	// is a no-op.
+	AddMetadataEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error)
 	// HasSynced returns true if the informer's cache has synced (at least
 	// one LIST has been performed)
 	HasSynced() bool

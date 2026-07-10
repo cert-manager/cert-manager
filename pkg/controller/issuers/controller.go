@@ -94,8 +94,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	if _, err := issuerInformer.Informer().AddEventHandler(controllerpkg.QueuingEventHandler(c.queue)); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
 	}
-	if _, err := secretInformer.Informer().AddEventHandler(controllerpkg.BlockingEventHandler(c.secretEvent)); err != nil {
+	secretHandler := controllerpkg.BlockingEventHandler(c.secretEvent)
+	if _, err := secretInformer.Informer().AddEventHandler(secretHandler); err != nil {
 		return nil, nil, fmt.Errorf("error setting up event handler: %v", err)
+	}
+	if _, err := secretInformer.Informer().AddMetadataEventHandler(secretHandler); err != nil {
+		return nil, nil, fmt.Errorf("error setting up metadata event handler: %v", err)
 	}
 
 	// instantiate additional helpers used by this controller

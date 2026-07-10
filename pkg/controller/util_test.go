@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -362,12 +364,23 @@ func TestFilterEventHandler(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			callCount := 0
-			handler := FilterEventHandler(
-				BlockingEventHandler(func(obj metav1.Object) { callCount++ }),
+			increment := func() { callCount++ }
+			h := FilterEventHandler(
+				handler.TypedFuncs[metav1.Object, types.NamespacedName]{
+					CreateFunc: func(_ context.Context, _ event.TypedCreateEvent[metav1.Object], _ workqueue.TypedRateLimitingInterface[types.NamespacedName]) {
+						increment()
+					},
+					UpdateFunc: func(_ context.Context, _ event.TypedUpdateEvent[metav1.Object], _ workqueue.TypedRateLimitingInterface[types.NamespacedName]) {
+						increment()
+					},
+					DeleteFunc: func(_ context.Context, _ event.TypedDeleteEvent[metav1.Object], _ workqueue.TypedRateLimitingInterface[types.NamespacedName]) {
+						increment()
+					},
+				},
 				test.predicate,
 			)
 
-			test.triggerEvent(handler)
+			test.triggerEvent(h)
 
 			if callCount != test.expectCalls {
 				t.Errorf("expected handler to be called %d times, got %d", test.expectCalls, callCount)
