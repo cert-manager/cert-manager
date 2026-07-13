@@ -8,6 +8,22 @@ linters:
       max-blank-identifiers: 4
     exhaustive:
       default-signifies-exhaustive: true
+    forbidigo:
+      # Resolve each expression's real type so rules can match by import path
+      # regardless of the local import alias
+      analyze-types: true
+      forbid:
+        # golangci-lint only applies its built-in "forbid" list when none is
+        # configured; defining our own replaces it, so the default rule banning
+        # stray debug prints is repeated here.
+        - pattern: ^(fmt\.Print(|f|ln)|print|println)$
+          msg: Do not commit print statements.
+        # Ban naming the forked ACME client type (e.g. constructing acme.Client)
+        # so clients can only be created via pkg/acme/accounts.NewClient.
+        - pattern: \.Client$
+          pkg: ^github\.com/cert-manager/cert-manager/third_party/forked/acme$
+          msg: >-
+            Do not construct the forked ACME client directly; obtain one via pkg/acme/accounts.NewClient.
     gosec:
       excludes:
         - G101 # Look for hardcoded credentials
