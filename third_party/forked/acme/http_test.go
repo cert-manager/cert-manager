@@ -239,6 +239,78 @@ func TestUserAgent(t *testing.T) {
 	}
 }
 
+func TestPostRetriesOnNotFound(t *testing.T) {
+	// Verify that 404 responses are retried on POST, simulating ACME server replication lag.
+	// See: https://github.com/cert-manager/cert-manager/issues/8939
+	var postCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Replay-Nonce", "test-nonce")
+		if r.Method == "HEAD" {
+			return
+		}
+
+		postCount++
+		if postCount <= 2 {
+			// Return 404 for the first 2 POST attempts to simulate replication lag.
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"type":"urn:ietf:params:acme:error:malformed","detail":"Not Found"}`))
+			return
+		}
+		// Succeed on the 3rd POST attempt.
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"status":"valid"}`))
+	}))
+	defer ts.Close()
+
+	client := &Client{
+		Key:          testKey,
+		DirectoryURL: ts.URL,
+		dir:          &Directory{AuthzURL: ts.URL},
+	}
+
+	if _, err := client.Authorize(context.Background(), "example.com"); err != nil {
+		t.Errorf("client.Authorize: %v", err)
+	}
+	// Should have retried and eventually succeeded after 3 POST attempts.
+	if postCount != 3 {
+		t.Errorf("total POST requests count: %d; want 3", postCount)
+	}
+}
+
+func TestGetRetriesOnNotFound(t *testing.T) {
+	// Verify that 404 responses are retried on GET, simulating ACME server replication lag.
+	// See: https://github.com/cert-manager/cert-manager/issues/8939
+	var getCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		getCount++
+		if getCount <= 2 {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"type":"urn:ietf:params:acme:error:malformed","detail":"Not Found"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"valid","identifier":{"type":"dns","value":"example.com"}}`))
+	}))
+	defer ts.Close()
+
+	client := &Client{
+		Key:          testKey,
+		RetryBackoff: func(n int, r *http.Request, res *http.Response) time.Duration {
+			return time.Millisecond // small delay for tests
+		},
+		dir: &Directory{AuthzURL: ts.URL},
+	}
+
+	_, err := client.GetAuthorization(context.Background(), ts.URL)
+	if err != nil {
+		t.Errorf("client.GetAuthorization: %v", err)
+	}
+	if getCount != 3 {
+		t.Errorf("total GET requests count: %d; want 3", getCount)
+	}
+}
+
 func TestAccountKidLoop(t *testing.T) {
 	// if Client.postNoRetry is called with a nil key argument
 	// then Client.Key must be set, otherwise we fall into an

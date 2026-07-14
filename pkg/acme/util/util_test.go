@@ -77,6 +77,39 @@ func TestRetryBackoff(t *testing.T) {
 				return duration == -1
 			},
 		},
+		{
+			name: "Retry a 404 error when the first time",
+			args: args{
+				n:    0,
+				r:    &http.Request{},
+				resp: &http.Response{StatusCode: http.StatusNotFound},
+			},
+			validateOutput: func(duration time.Duration) bool {
+				return duration > 0
+			},
+		},
+		{
+			name: "Retry a 404 error when less than 3 times",
+			args: args{
+				n:    2,
+				r:    &http.Request{},
+				resp: &http.Response{StatusCode: http.StatusNotFound},
+			},
+			validateOutput: func(duration time.Duration) bool {
+				return duration > 0
+			},
+		},
+		{
+			name: "Do not retry a 404 error after 3 tries",
+			args: args{
+				n:    3,
+				r:    &http.Request{},
+				resp: &http.Response{StatusCode: http.StatusNotFound},
+			},
+			validateOutput: func(duration time.Duration) bool {
+				return duration == -1
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

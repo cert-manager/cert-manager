@@ -23,24 +23,36 @@ import (
 )
 
 const (
-	maxDelay   = 3 * time.Second
-	maxRetries = 5
+	maxDelay       = 3 * time.Second
+	maxRetries     = 5
+	maxRetries404  = 3
 )
 
 // RetryBackoff is the ACME client RetryBackoff which is modified
-// to act upon badNonce errors. all other retries will be handled by cert-manager.
+// to act upon badNonce and 404 errors. All other retries will be handled by cert-manager.
 // Since we cannot check the exact error this is best effort.
 func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
 	// However, we cannot use the request body in here as it is closed already.
 	// So we're using its status code instead: 400
-	if resp.StatusCode != http.StatusBadRequest {
+	//
+	// A 404 Not Found can also occur transiently due to ACME server replication lag
+	// (e.g. Let's Encrypt), where a resource created via POST is not yet visible on
+	// a read replica. See: https://github.com/cert-manager/cert-manager/issues/8939
+	retryable := resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound
+	if !retryable {
 		return -1
 	}
 
-	// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
-	if n > maxRetries {
+	// Differentiate retry limits based on error type.
+	// badNonce (400): more retries needed as nonce desync can persist.
+	// 404: fewer retries as replication lag is typically very short-lived.
+	if resp.StatusCode == http.StatusNotFound {
+		if n >= maxRetries404 {
+			return -1
+		}
+	} else if n > maxRetries {
 		return -1
 	}
 
