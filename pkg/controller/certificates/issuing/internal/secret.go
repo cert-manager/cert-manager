@@ -45,6 +45,25 @@ var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
+// SecretOwnedByAnotherControllerError is returned by UpdateData when the
+// target Secret has a controller ownerReference pointing to a resource other
+// than the current Certificate (either a different Certificate when
+// --enable-certificate-owner-ref is enabled, or a resource managed by an
+// entirely different operator). This check is only performed when
+// --enable-certificate-owner-ref is enabled; when it is disabled, an existing
+// ownerReference to an unrelated resource is not detected.
+type SecretOwnedByAnotherControllerError struct {
+	SecretName      string
+	OwnerName       string
+	OwnerKind       string
+	OwnerAPIVersion string
+}
+
+func (e *SecretOwnedByAnotherControllerError) Error() string {
+	return fmt.Sprintf("secret %q is already controlled by %s %s %q; cannot be modified by a different Certificate",
+		e.SecretName, e.OwnerAPIVersion, e.OwnerKind, e.OwnerName)
+}
+
 // SecretsManager creates and updates secrets with certificate and key data.
 type SecretsManager struct {
 	secretClient coreclient.SecretsGetter
@@ -87,11 +106,53 @@ func NewSecretsManager(
 	}
 }
 
+// checkExistingSecretOwnership returns a SecretOwnedByAnotherControllerError
+// if the Secret already exists and has a controller ownerReference pointing to
+// a resource other than crt (either a different Certificate when
+// --enable-certificate-owner-ref is enabled, or a resource owned by an
+// entirely different operator).
+//
+// This check is only performed when --enable-certificate-owner-ref is
+// enabled, since ownerReferences are only set on Secrets managed by
+// cert-manager in that mode. When the flag is disabled, this function always
+// returns nil, even if the Secret has a conflicting controller
+// ownerReference set by an external operator.
+func (s *SecretsManager) checkExistingSecretOwnership(crt *cmapi.Certificate) error {
+	if !s.enableSecretOwnerReferences {
+		return nil
+	}
+
+	existing, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, ref := range existing.OwnerReferences {
+		if ref.Controller != nil && *ref.Controller && ref.UID != crt.UID {
+			return &SecretOwnedByAnotherControllerError{
+				SecretName:      crt.Spec.SecretName,
+				OwnerName:       ref.Name,
+				OwnerKind:       ref.Kind,
+				OwnerAPIVersion: ref.APIVersion,
+			}
+		}
+	}
+
+	return nil
+}
+
 // UpdateData will ensure the Secret resource contains the given secret data as
 // well as appropriate metadata using an Apply call.
 // If the Secret resource does not exist, it will be created on Apply.
 // UpdateData will also update deprecated annotations if they exist.
 func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
+	if err := s.checkExistingSecretOwnership(crt); err != nil {
+		return err
+	}
+
 	secret, err := s.getCertificateSecret(crt)
 	if err != nil {
 		return err
