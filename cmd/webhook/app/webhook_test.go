@@ -28,6 +28,7 @@ import (
 	"github.com/go-logr/logr"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 	logsapi "k8s.io/component-base/logs/api/v1"
 )
@@ -260,6 +261,11 @@ func TestConfigurePEMSizeLimits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			originalLimits := pem.GetGlobalSizeLimits()
+			t.Cleanup(func() {
+				pem.SetGlobalSizeLimits(originalLimits)
+			})
+
 			err := configurePEMSizeLimits(tt.config, log)
 
 			if tt.expectErr {
@@ -270,8 +276,20 @@ func TestConfigurePEMSizeLimits(t *testing.T) {
 				if tt.errMsg != "" && err.Error() != tt.errMsg {
 					t.Errorf("expected error %q, got %q", tt.errMsg, err.Error())
 				}
-			} else if err != nil {
-				t.Errorf("unexpected error: %v", err)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+
+				expectedLimits := pem.NewSizeLimitsFromConfig(
+					tt.config.PEMSizeLimitsConfig.MaxCertificateSize,
+					tt.config.PEMSizeLimitsConfig.MaxPrivateKeySize,
+					tt.config.PEMSizeLimitsConfig.MaxChainLength,
+					tt.config.PEMSizeLimitsConfig.MaxBundleSize,
+				)
+				if actualLimits := pem.GetGlobalSizeLimits(); actualLimits != expectedLimits {
+					t.Errorf("expected PEM size limits %+v, got %+v", expectedLimits, actualLimits)
+				}
 			}
 		})
 	}
