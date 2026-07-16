@@ -273,8 +273,7 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 
 		// If the certificate renewal policy is set to Disabled, do not renew.
 		if crt.Spec.Renewal != nil && crt.Spec.Renewal.Policy == cmapi.CertificateRenewalPolicyDisabled {
-			// renewal policy is set to disabled, do not renew
-			return RenewalDisabled, fmt.Sprintf("The certificate renewal policy is set to %s", cmapi.CertificateRenewalPolicyDisabled), true
+			return RenewalDisabled, fmt.Sprintf("The certificate renewal policy is set to %s", cmapi.CertificateRenewalPolicyDisabled), false
 		}
 
 		reason := Renewing
