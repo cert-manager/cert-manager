@@ -439,9 +439,10 @@ func TestSetToken(t *testing.T) {
 		expectedToken string
 		expectedErr   error
 
-		issuer          cmapiv1.GenericIssuer
-		fakeLister      *listers.FakeSecretLister
-		mockCreateToken func(t *testing.T) CreateToken
+		issuer                   cmapiv1.GenericIssuer
+		canUseAmbientCredentials bool
+		fakeLister               *listers.FakeSecretLister
+		mockCreateToken          func(t *testing.T) CreateToken
 
 		fakeClient *vaultfake.FakeClient
 	}{
@@ -456,6 +457,25 @@ func TestSetToken(t *testing.T) {
 			expectedToken: "",
 			expectedErr: errors.New(
 				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, or AWS auth must be set",
+			),
+		},
+
+		"if aws auth omits serviceAccountRef and ambient credentials are not permitted, should error without using ambient credentials": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapiv1.VaultAuth{
+						AWS: &cmapiv1.VaultAWSAuth{
+							Role: "vault-aws-role",
+						},
+					},
+				}),
+			),
+			canUseAmbientCredentials: false,
+			fakeLister:               listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
+			expectedToken:            "",
+			expectedErr: errors.New(
+				"while requesting a Vault token using the AWS auth: cannot authenticate to Vault using ambient AWS credentials: set auth.aws.serviceAccountRef, or enable ambient credentials via --issuer-ambient-credentials / --cluster-issuer-ambient-credentials",
 			),
 		},
 
@@ -958,10 +978,11 @@ func TestSetToken(t *testing.T) {
 			}
 
 			v := &Vault{
-				namespace:     "test-namespace",
-				secretsLister: test.fakeLister,
-				createToken:   mockCreateToken,
-				issuer:        test.issuer,
+				namespace:                "test-namespace",
+				secretsLister:            test.fakeLister,
+				createToken:              mockCreateToken,
+				issuer:                   test.issuer,
+				canUseAmbientCredentials: test.canUseAmbientCredentials,
 			}
 
 			err := v.setToken(t.Context(), test.fakeClient)
@@ -978,6 +999,34 @@ func TestSetToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Verifies that the Vault AWS IAM auth path refuses to fall back to the controller's
+// ambient AWS credentials unless the issuer is permitted to use them.
+func TestRequestTokenWithAWSAuthAmbientCredentialsGate(t *testing.T) {
+	awsIssuer := gen.Issuer("vault-issuer",
+		gen.SetIssuerVault(cmapiv1.VaultIssuer{
+			CABundle: []byte(testLeafCertificate),
+			Auth: cmapiv1.VaultAuth{
+				AWS: &cmapiv1.VaultAWSAuth{
+					Role: "vault-aws-role",
+				},
+			},
+		}),
+	)
+
+	v := &Vault{
+		namespace:                "test-namespace",
+		issuer:                   awsIssuer,
+		canUseAmbientCredentials: false,
+	}
+
+	// The fake client errors on any Write call; the gate must fire before the
+	// login request is ever sent, so a Write error would indicate the gate was
+	// bypassed.
+	_, err := v.requestTokenWithAWSAuth(t.Context(), &vaultfake.FakeClient{T: t}, awsIssuer.GetSpec().Vault.Auth.AWS)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot authenticate to Vault using ambient AWS credentials")
 }
 
 type testAppRoleRefT struct {
@@ -1658,7 +1707,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, false)
 			require.NoError(t, err)
 			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vaultClientWrapper).Client.Namespace(),
 				"The vault client should have the namespace provided in the Issuer resource")
@@ -1715,7 +1764,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, false)
 	require.NoError(t, err)
 
 	err = v.IsVaultInitializedAndUnsealed()
@@ -1782,7 +1831,7 @@ func TestSignIntegration(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, false)
 	require.NoError(t, err)
 
 	certPEM, caPEM, err := v.Sign(csrPEM, time.Hour)
