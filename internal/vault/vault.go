@@ -53,7 +53,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer) (Interface, error)
+type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -87,10 +87,11 @@ type CreateToken func(ctx context.Context, saName string, req *authv1.TokenReque
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
 // Vault client.
 type Vault struct {
-	createToken   CreateToken // Uses the same namespace as below.
-	secretsLister internalinformers.SecretLister
-	issuer        v1.GenericIssuer
-	namespace     string
+	createToken              CreateToken // Uses the same namespace as below.
+	secretsLister            internalinformers.SecretLister
+	issuer                   v1.GenericIssuer
+	namespace                string
+	canUseAmbientCredentials bool
 
 	// The pattern below, of namespaced and non-namespaced Vault clients, is copied from Hashicorp Nomad:
 	// https://github.com/hashicorp/nomad/blob/6e4410a9b13ce167bc7ef53da97c621b5c9dcd12/nomad/vault.go#L180-L190
@@ -114,12 +115,13 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error) {
 	v := &Vault{
-		createToken:   createTokenFn(namespace),
-		secretsLister: secretsLister,
-		namespace:     namespace,
-		issuer:        issuer,
+		createToken:              createTokenFn(namespace),
+		secretsLister:            secretsLister,
+		namespace:                namespace,
+		issuer:                   issuer,
+		canUseAmbientCredentials: canUseAmbientCredentials,
 	}
 
 	cfg, err := v.newConfig()
@@ -664,6 +666,12 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	// When using ambient credentials and a region is found from environment
 	// variables, the environment region takes precedence.
 	useAmbientCredentials := awsAuth.ServiceAccountRef == nil
+
+	// An Issuer/ClusterIssuer must never borrow the controller's ambient AWS identity
+	// unless the operator has explicitly opted in via the appropriate ambient-credentials flag.
+	if useAmbientCredentials && !v.canUseAmbientCredentials {
+		return "", fmt.Errorf("cannot authenticate to Vault using ambient AWS credentials: set auth.aws.serviceAccountRef, or enable ambient credentials via --issuer-ambient-credentials / --cluster-issuer-ambient-credentials")
+	}
 
 	var envRegionFound bool
 	{
