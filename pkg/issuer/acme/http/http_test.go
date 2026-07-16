@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -203,5 +205,70 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 		default:
 			t.Errorf("Unexpected error: %v", err)
 		}
+	}
+}
+
+// errorLeaksBody reports whether err's message contains body.
+func errorLeaksBody(err error, body string) bool {
+	return strings.Contains(strings.ToLower(err.Error()), strings.ToLower(body))
+}
+
+// TestReachabilityDoesNotReflectResponseBody ensures that when the endpoint
+// returns a body that does not match the expected key, the contents of that
+// body are not included in the returned error.
+func TestReachabilityDoesNotReflectResponseBody(t *testing.T) {
+	const responseBody = "SENTINEL-BODY"
+	const key = "the-expected-challenge-key"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, responseBody)
+	}))
+	defer server.Close()
+
+	u, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("failed to parse test server URL %q: %v", server.URL, err)
+	}
+
+	err = testReachability(t.Context(), u, key, nil, "cert-manager-test")
+	if err == nil {
+		t.Fatal("expected testReachability to return an error for a mismatched response, but got none")
+	}
+	if errorLeaksBody(err, responseBody) {
+		t.Errorf("expected error not to contain the response body %q, but it did: %v", responseBody, err)
+	}
+}
+
+// TestReachabilityDoesNotReflectRedirectedResponseBody ensures that a response
+// body reached by following a redirect is not reflected in the returned error.
+func TestReachabilityDoesNotReflectRedirectedResponseBody(t *testing.T) {
+	const internalBody = "SENTINEL-REDIRECT"
+	const key = "the-expected-challenge-key"
+
+	// internal represents an internal-only endpoint reachable from the
+	// controller pod but not intended to be exposed to tenants.
+	internal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, internalBody)
+	}))
+	defer internal.Close()
+
+	// public is the host being validated; it redirects the self-check to the
+	// internal endpoint.
+	public := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, internal.URL, http.StatusFound)
+	}))
+	defer public.Close()
+
+	u, err := url.Parse(public.URL)
+	if err != nil {
+		t.Fatalf("failed to parse test server URL %q: %v", public.URL, err)
+	}
+
+	err = testReachability(t.Context(), u, key, nil, "cert-manager-test")
+	if err == nil {
+		t.Fatal("expected testReachability to return an error, but got none")
+	}
+	if errorLeaksBody(err, internalBody) {
+		t.Errorf("response body reached via a redirect must not be reflected in the error, but got: %v", err)
 	}
 }
