@@ -67,7 +67,7 @@ const (
 	// missing labels that should have been added by cert-manager
 	SecretManagedMetadataMismatch string = "SecretManagedMetadataMismatch"
 	// RenewalDisabled is a policy violation whereby the Certificate's
-	// Renewal Policy is set to RenewalDisabled.
+	// Renewal Policy is set to Disabled.
 	RenewalDisabled string = "Disabled"
 
 	// AdditionalOutputFormatsMismatch is a policy violation whereby the
