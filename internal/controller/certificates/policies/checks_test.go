@@ -543,6 +543,42 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 		},
+		"does not trigger renewal if renewal policy is disabled": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.IssuerReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					Renewal: &cmapi.CertificateRenewal{
+						Policy: cmapi.CertificateRenewalPolicyDisabled,
+					},
+				},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: nil,
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						clock.Now().Add(time.Minute*-30),
+						// expires in 5 minutes time
+						clock.Now().Add(time.Minute*5),
+					),
+				},
+			},
+		},
 	}
 	policyChain := NewTriggerPolicyChain(clock)
 	for name, test := range tests {
