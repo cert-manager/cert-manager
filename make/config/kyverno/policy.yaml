@@ -795,12 +795,12 @@ spec:
       - CREATE
       - UPDATE
       resources:
-      - serviceaccounts
+      - pods
   validationActions:
   - Deny
   validations:
-  - expression: object.?automountServiceAccountToken.orValue(true) == false
-    message: ServiceAccounts must set automountServiceAccountToken to false.
+  - expression: object.spec.?automountServiceAccountToken.orValue(true) == false
+    message: Pods must set automountServiceAccountToken to false.
 ---
 apiVersion: policies.kyverno.io/v1alpha1
 kind: ValidatingPolicy

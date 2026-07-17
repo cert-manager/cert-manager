@@ -13,6 +13,15 @@
 #   variable, which works uniformly for all rules.
 # * `restrict-apparmor-profiles` from the legacy `pod-security/baseline` bundle
 #   has no equivalent in `pod-security-vpol/baseline` yet and is omitted.
+# * The pre-migration policy was `other/restrict-automount-sa-token`, which
+#   validates Pods (spec.automountServiceAccountToken). Its CEL/ValidatingPolicy
+#   catalog has no like-for-like replacement: the only automount-related entry
+#   in `other-vpol` is `restrict-sa-automount-sa-token`, which validates
+#   ServiceAccounts themselves (object.automountServiceAccountToken) - a
+#   different resource and field, not an equivalent rewrite. Enforcing that as
+#   published denies Kubernetes' own creation of the "default" ServiceAccount
+#   for every namespace (nothing sets automountServiceAccountToken on it), so
+#   it's patched below to restore the original Pod-targeting semantics instead.
 #
 # Use as follows:
 #  kustomize build . > policy.yaml
@@ -46,3 +55,17 @@ patches:
                 - kgateway-system
                 - sample-external-issuer-system
                 - samplewebhook
+  - target:
+      kind: ValidatingPolicy
+      name: restrict-sa-automount-sa-token
+    patch: |
+      - op: replace
+        path: /spec/matchConstraints/resourceRules/0/resources
+        value:
+          - pods
+      - op: replace
+        path: /spec/validations/0/expression
+        value: object.spec.?automountServiceAccountToken.orValue(true) == false
+      - op: replace
+        path: /spec/validations/0/message
+        value: Pods must set automountServiceAccountToken to false.
