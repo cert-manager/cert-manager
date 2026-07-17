@@ -29,15 +29,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
-	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
-	"github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	"github.com/cert-manager/cert-manager/pkg/acme/client"
-	"github.com/cert-manager/cert-manager/pkg/api"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -584,7 +579,7 @@ var acmev1ToV2Mappings = map[string]string{
 func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) []string {
 	var warning []string
 
-	secrets, err := extractSecrets(issuer)
+	secrets, err := acme.RequiredDNS01SolverSecrets(issuer)
 	if err != nil {
 		logf.FromContext(ctx).Error(err, "error extracting secrets")
 		warning = append(warning, "unable to verify dns solvers")
@@ -608,33 +603,4 @@ func (a *Acme) validateDNSSolvers(ctx context.Context, issuer v1.GenericIssuer) 
 		}
 	}
 	return warning
-}
-
-func extractSecrets(issuer v1.GenericIssuer) ([]*meta.SecretKeySelector, error) {
-	var secrets []*meta.SecretKeySelector
-	spec := issuer.GetSpec()
-	if spec.ACME == nil {
-		return secrets, nil
-	}
-
-	solvers := spec.ACME.Solvers
-	for i := range solvers {
-		sol := solvers[i]
-		if sol.DNS01 == nil {
-			continue
-		}
-
-		var out cmacme.ACMEChallengeSolver
-		if err := api.Scheme.Convert(&sol, &out, nil); err != nil {
-			return nil, fmt.Errorf("unable to convert ACME challenge solver to internal challenge type: %w", err)
-		}
-
-		_, requiredSecrets := validation.ValidateACMEChallengeSolverDNS01(out.DNS01, field.NewPath("spec"))
-		if len(requiredSecrets) == 0 {
-			continue
-		}
-		secrets = append(secrets, requiredSecrets...)
-	}
-
-	return secrets, nil
 }

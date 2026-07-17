@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -47,6 +48,16 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 				if iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
 					affected = append(affected, iss)
 					continue
+				}
+			}
+			solverSecrets, err := acme.RequiredDNS01SolverSecrets(iss)
+			if err != nil {
+				return nil, fmt.Errorf("error determining ACME DNS-01 solver secrets for issuer %s: %w", iss.Name, err)
+			}
+			for _, s := range solverSecrets {
+				if s.Name == secret.Name {
+					affected = append(affected, iss)
+					break
 				}
 			}
 		case iss.Spec.CA != nil:
