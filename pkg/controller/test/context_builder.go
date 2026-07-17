@@ -44,6 +44,7 @@ import (
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/pkg/controller"
+	utildns "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -148,6 +149,15 @@ func (b *Builder) Init() {
 	b.HTTP01ResourceMetadataInformersFactory = metadatainformer.NewFilteredSharedInformerFactory(b.MetadataClient, informerResyncPeriod, "", func(listOptions *metav1.ListOptions) {})
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log, clock.RealClock{})
+
+	if b.DNSResolver == nil {
+		b.DNSResolver = utildns.NewCachingResolver()
+	}
+
+	// Defaulted in buildControllerContextFactory for real contexts
+	if len(b.DNS01Nameservers) == 0 {
+		b.DNS01Nameservers = utildns.RecursiveNameservers
+	}
 
 	// set the Clock on the context
 	if b.Clock == nil {

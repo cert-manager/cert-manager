@@ -101,12 +101,89 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(t *testing.T)
+		options []DNSProviderOption
+		wantErr string
+	}{
+		{
+			name: "valid with ambient credentials",
+			setup: func(t *testing.T) {
+				if !gcloudLiveTest {
+					t.Skip("skipping live test (requires credentials)")
+				}
+			},
+			options: []DNSProviderOption{
+				Project("my-project"),
+				Ambient(true),
+				Nameservers(util.RecursiveNameservers),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "empty credentials without ambient",
+			options: []DNSProviderOption{
+				Project("my-project"),
+				Nameservers(util.RecursiveNameservers),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "unable to construct clouddns provider: empty credentials",
+		},
+		{
+			name: "missing project",
+			options: []DNSProviderOption{
+				Nameservers(util.RecursiveNameservers),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "Google Cloud project name missing",
+		},
+		{
+			name: "missing nameservers",
+			options: []DNSProviderOption{
+				Project("my-project"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "nameservers are required",
+		},
+		{
+			name: "missing resolver",
+			options: []DNSProviderOption{
+				Project("my-project"),
+				Nameservers(util.RecursiveNameservers),
+			},
+			wantErr: "resolver is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup(t)
+			}
+			_, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestDNSProvider_getHostedZone(t *testing.T) {
 	if !gcloudLiveTest {
 		t.Skip("skipping live test")
 	}
 
-	testProvider, err := NewDNSProviderCredentials(t.Context(), "my-project", util.RecursiveNameservers, "test-zone")
+	testProvider, err := NewDNSProviderFromOptions(t.Context(),
+		Project("my-project"),
+		Ambient(true),
+		HostedZoneName("test-zone"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err)
 
 	type args struct {

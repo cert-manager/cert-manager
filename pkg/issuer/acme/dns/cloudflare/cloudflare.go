@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -40,10 +41,9 @@ type DNSProviderType interface {
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	dns01Nameservers []string
-	authEmail        string
-	authKey          string
-	authToken        string
+	authEmail string
+	authKey   string
+	authToken string
 
 	userAgent string
 }
@@ -55,45 +55,69 @@ type DNSZone struct {
 	Name string `json:"name"`
 }
 
+// NewDNSProviderFromOptions returns a DNSProvider configured from the given options.
+//
+// ctx is not used by this provider; it is accepted to standardize the constructor signature across all providers.
+func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opts DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opts)
+	}
+
+	err := errors.Join(
+		utiloptions.First(
+			utiloptions.False(
+				opts.APIKey != "" && opts.APIToken != "",
+				"the Cloudflare API key and API token cannot be both present simultaneously"),
+			utiloptions.False(
+				(opts.Email == "" && opts.APIKey != "") || (opts.APIKey == "" && opts.APIToken == ""),
+				"no Cloudflare credential has been given (can be either an API key or an API token)"),
+		),
+		// Cloudflare uses the X-Auth-Key header for its authentication.
+		// However, if the value of the X-Auth-Key header is invalid, the go
+		// http library will "helpfully" print out the value to help with
+		// debugging. To prevent leaking the X-Auth-Key value into the logs, we
+		// first check that the X-Auth-Key header contains a valid value to
+		// prevent the Go HTTP library from displaying it.
+		utiloptions.True(validHeaderFieldValue(opts.APIKey), "the Cloudflare API key is invalid (does the API key contain a newline?)"),
+		utiloptions.True(validHeaderFieldValue(opts.APIToken), "the Cloudflare API token is invalid (does the API token contain a newline?)"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DNSProvider{
+		authEmail: opts.Email,
+		authKey:   opts.APIKey,
+		authToken: opts.APIToken,
+		userAgent: opts.UserAgent,
+	}, nil
+}
+
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
 // and CLOUDFLARE_API_KEY.
+//
+// Deprecated: Use NewDNSProviderFromOptions instead.
 func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
-	email := os.Getenv("CLOUDFLARE_EMAIL")
-	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key, "", dns01Nameservers, userAgent)
+	return NewDNSProviderFromOptions(context.Background(),
+		Email(os.Getenv("CLOUDFLARE_EMAIL")),
+		APIKey(os.Getenv("CLOUDFLARE_API_KEY")),
+		UserAgent(userAgent),
+	)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
+//
+// Deprecated: Use NewDNSProviderFromOptions instead.
 func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
-	if (email == "" && key != "") || (key == "" && token == "") {
-		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
-	}
-	if key != "" && token != "" {
-		return nil, fmt.Errorf("the Cloudflare API key and API token cannot be both present simultaneously")
-	}
-	// Cloudflare uses the X-Auth-Key header for its authentication.
-	// However, if the value of the X-Auth-Key header is invalid, the go
-	// http library will "helpfully" print out the value to help with
-	// debugging. To prevent leaking the X-Auth-Key value into the logs, we
-	// first check that the X-Auth-Key header contains a valid value to
-	// prevent the Go HTTP library from displaying it.
-	if !validHeaderFieldValue(key) {
-		return nil, fmt.Errorf("the Cloudflare API key is invalid (does the API key contain a newline?)")
-	}
-
-	if !validHeaderFieldValue(token) {
-		return nil, fmt.Errorf("the Cloudflare API token is invalid (does the API token contain a newline?)")
-	}
-
-	return &DNSProvider{
-		authEmail:        email,
-		authKey:          key,
-		authToken:        token,
-		dns01Nameservers: dns01Nameservers,
-		userAgent:        userAgent,
-	}, nil
+	return NewDNSProviderFromOptions(context.Background(),
+		Email(email),
+		APIKey(key),
+		APIToken(token),
+		UserAgent(userAgent),
+	)
 }
 
 // FindNearestZoneForFQDN will try to traverse the official Cloudflare API to find the nearest valid Zone.

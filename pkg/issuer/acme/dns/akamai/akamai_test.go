@@ -83,7 +83,14 @@ func TestNewDNSProvider(t *testing.T) {
 
 // TestPresentBasicFlow tests basic flow, e.g., no record exists.
 func TestPresentBasicFlow(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -100,7 +107,14 @@ func TestPresentBasicFlow(t *testing.T) {
 
 // TestPresentExists tests flow with existing record.
 func TestPresentExists(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -117,7 +131,14 @@ func TestPresentExists(t *testing.T) {
 
 // TestPresentValueExists tests flow with existing record.
 func TestPresentValueExists(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -133,7 +154,14 @@ func TestPresentValueExists(t *testing.T) {
 }
 
 func TestPresentFailGetRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -150,7 +178,14 @@ func TestPresentFailGetRecord(t *testing.T) {
 }
 
 func TestPresentFailSaveRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -166,7 +201,14 @@ func TestPresentFailSaveRecord(t *testing.T) {
 }
 
 func TestPresentFailUpdateRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -184,7 +226,14 @@ func TestPresentFailUpdateRecord(t *testing.T) {
 
 // TestCleanUpBasicFlow tests flow with existing record.
 func TestCleanUpBasicFlow(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -201,7 +250,14 @@ func TestCleanUpBasicFlow(t *testing.T) {
 
 // TestPresentExists tests flow with existing record.
 func TestCleanUpExists(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -218,7 +274,14 @@ func TestCleanUpExists(t *testing.T) {
 
 // TestCleanUpExistsNoValue tests flow with existing record.
 func TestCleanUpExistsNoValue(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -235,7 +298,14 @@ func TestCleanUpExistsNoValue(t *testing.T) {
 
 // TestCleanUpNoRecord tests flow with no existing record.
 func TestCleanUpNoRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -251,7 +321,14 @@ func TestCleanUpNoRecord(t *testing.T) {
 }
 
 func TestCleanUpFailGetRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -268,7 +345,14 @@ func TestCleanUpFailGetRecord(t *testing.T) {
 }
 
 func TestCleanUpFailUpdateRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -285,7 +369,14 @@ func TestCleanUpFailUpdateRecord(t *testing.T) {
 }
 
 func TestCleanUpFailDeleteRecord(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	akamai, err := NewDNSProviderFromOptions(t.Context(),
+		ServiceConsumerDomain("akamai.example.com"),
+		ClientToken("token"),
+		ClientSecret("secret"),
+		AccessToken("access-token"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
@@ -407,4 +498,91 @@ func (o StubOpenDNSConfig) RecordDelete(ctx context.Context, rec *dns.RecordBody
 	}
 
 	return nil
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		options     []DNSProviderOption
+		wantErr     string
+		checkResult func(t *testing.T, p *DNSProvider)
+	}{
+		{
+			name: "valid configuration",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"),
+				ClientToken("token"),
+				ClientSecret("secret"),
+				AccessToken("access-token"),
+				Nameservers(util.RecursiveNameservers),
+				Resolver(util.NewCachingResolver()),
+			},
+			checkResult: func(t *testing.T, p *DNSProvider) {
+				assert.Equal(t, "akamai.example.com", p.serviceConsumerDomain)
+				assert.Equal(t, fmt.Sprintf("%T", p.dnsclient), "*akamai.OpenDNSClient")
+			},
+		},
+		{
+			name: "missing service consumer domain",
+			options: []DNSProviderOption{
+				ClientToken("token"), ClientSecret("secret"), AccessToken("access-token"),
+				Nameservers(util.RecursiveNameservers), Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "service consumer domain is required",
+		},
+		{
+			name: "missing client token",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"), ClientSecret("secret"), AccessToken("access-token"),
+				Nameservers(util.RecursiveNameservers), Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "client token is required",
+		},
+		{
+			name: "missing client secret",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"), ClientToken("token"), AccessToken("access-token"),
+				Nameservers(util.RecursiveNameservers), Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "client secret is required",
+		},
+		{
+			name: "missing access token",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"), ClientToken("token"), ClientSecret("secret"),
+				Nameservers(util.RecursiveNameservers), Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "access token is required",
+		},
+		{
+			name: "missing nameservers",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"), ClientToken("token"), ClientSecret("secret"), AccessToken("access-token"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: "nameservers is required",
+		},
+		{
+			name: "missing resolver",
+			options: []DNSProviderOption{
+				ServiceConsumerDomain("akamai.example.com"), ClientToken("token"), ClientSecret("secret"), AccessToken("access-token"),
+				Nameservers(util.RecursiveNameservers),
+			},
+			wantErr: "resolver is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.checkResult != nil {
+				tt.checkResult(t, p)
+			}
+		})
+	}
 }

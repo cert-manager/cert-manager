@@ -29,8 +29,9 @@ import (
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 	logrtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -160,7 +161,16 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderFromOptions(t.Context(),
+		ClientID(azureClientID),
+		ClientSecret(azureClientSecret),
+		SubscriptionID(azuresubscriptionID),
+		TenantID(azureTenantID),
+		ResourceGroupName(azureResourceGroupName),
+		ZoneName(azureHostedZoneName),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -171,7 +181,16 @@ func TestLiveAzureDnsPresentMultiple(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderFromOptions(t.Context(),
+		ClientID(azureClientID),
+		ClientSecret(azureClientSecret),
+		SubscriptionID(azuresubscriptionID),
+		TenantID(azureTenantID),
+		ResourceGroupName(azureResourceGroupName),
+		ZoneName(azureHostedZoneName),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -187,7 +206,16 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderFromOptions(t.Context(),
+		ClientID(azureClientID),
+		ClientSecret(azureClientSecret),
+		SubscriptionID(azuresubscriptionID),
+		TenantID(azureTenantID),
+		ResourceGroupName(azureResourceGroupName),
+		ZoneName(azureHostedZoneName),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -201,7 +229,16 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 
 	time.Sleep(time.Second * 10)
 
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderFromOptions(t.Context(),
+		ClientID(azureClientID),
+		ClientSecret(azureClientSecret),
+		SubscriptionID(azuresubscriptionID),
+		TenantID(azureTenantID),
+		ResourceGroupName(azureResourceGroupName),
+		ZoneName(azureHostedZoneName),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()),
+	)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(t.Context(), azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -213,21 +250,30 @@ func TestLiveAzureDnsCleanUpMultiple(t *testing.T) {
 func TestInvalidAzureDns(t *testing.T) {
 	validEnv := []string{"", "AzurePublicCloud", "AzureChinaCloud", "AzureUSGovernmentCloud"}
 	for _, env := range validEnv {
-		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &cmacme.AzureManagedIdentity{})
 		assert.NoError(t, err)
 	}
 
 	// Invalid environment
-	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "tenid", "", "", util.RecursiveNameservers, false, &cmacme.AzureManagedIdentity{})
 	assert.Error(t, err)
 
 	// Invalid tenantID
-	_, err = NewDNSProviderCredentials("", "cid", "secret", "", "invalid env value", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	_, err = NewDNSProviderCredentials("", "cid", "secret", "", "invalid env value", "", "", util.RecursiveNameservers, false, &cmacme.AzureManagedIdentity{})
 	assert.Error(t, err)
 }
 
 func TestAuthenticationError(t *testing.T) {
-	provider, err := NewDNSProviderCredentials("", "invalid-client-id", "invalid-client-secret", "subid", "tenid", "rg", "example.com", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
+	provider, err := NewDNSProviderFromOptions(t.Context(),
+		ClientID("invalid-client-id"),
+		ClientSecret("invalid-client-secret"),
+		SubscriptionID("subid"),
+		TenantID("tenid"),
+		ResourceGroupName("rg"),
+		ZoneName("example.com"),
+		Nameservers(util.RecursiveNameservers),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err)
 
 	err = provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
@@ -346,7 +392,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 			Cloud:     cloud.Configuration{ActiveDirectoryAuthorityHost: ts.URL},
 			Transport: ts.Client(),
 		}
-		managedIdentity := &v1.AzureManagedIdentity{ClientID: ""}
+		managedIdentity := &cmacme.AzureManagedIdentity{ClientID: ""}
 
 		spt, err := getAuthorization(clientOpt, "", "", "", ambient, managedIdentity)
 		assert.NoError(t, err)
@@ -372,7 +418,7 @@ func TestGetAuthorizationFederatedSPT(t *testing.T) {
 	})
 
 	t.Run("clientID overrides through managedIdentity section", func(t *testing.T) {
-		managedIdentity := &v1.AzureManagedIdentity{ClientID: "anotherClientID"}
+		managedIdentity := &cmacme.AzureManagedIdentity{ClientID: "anotherClientID"}
 
 		ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/.well-known/openid-configuration") {
@@ -470,6 +516,7 @@ func TestMockAzurePublicDNSPresent(t *testing.T) {
 				resourceGroupName: "test-rg",
 				zoneName:          "internal.example.com",
 				log:               logrtesting.NewTestLogger(t),
+				resolver:          util.NewCachingResolver(),
 			}
 
 			err := provider.Present(t.Context(), tt.domain, tt.fqdn, tt.value)
@@ -522,6 +569,7 @@ func TestMockAzurePrivateDNSPresent(t *testing.T) {
 				resourceGroupName: "test-rg",
 				zoneName:          "internal.example.com",
 				log:               logrtesting.NewTestLogger(t),
+				resolver:          util.NewCachingResolver(),
 			}
 
 			err := provider.Present(t.Context(), tt.domain, tt.fqdn, tt.value)
@@ -578,6 +626,7 @@ func TestMockAzurePublicDNSCleanUp(t *testing.T) {
 				resourceGroupName: "test-rg",
 				zoneName:          "internal.example.com",
 				log:               logrtesting.NewTestLogger(t),
+				resolver:          util.NewCachingResolver(),
 			}
 
 			assert.Equal(t, len(recordSets[tt.fqdn].GetTXTRecords()), 1)
@@ -634,12 +683,141 @@ func TestMockAzurePrivateDNSCleanUp(t *testing.T) {
 				resourceGroupName: "test-rg",
 				zoneName:          "internal.example.com",
 				log:               logrtesting.NewTestLogger(t),
+				resolver:          util.NewCachingResolver(),
 			}
 
 			assert.Equal(t, len(recordSets[tt.fqdn].GetTXTRecords()), 1)
 			err := provider.CleanUp(t.Context(), tt.domain, tt.fqdn, tt.value)
 			assert.NoError(t, err)
 			assert.Equal(t, len(recordSets), 0)
+		})
+	}
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		options     []DNSProviderOption
+		wantErr     bool
+		checkResult func(t *testing.T, p *DNSProvider)
+	}{
+		{
+			name: "valid credentials default environment",
+			options: []DNSProviderOption{
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "valid credentials AzurePublicCloud",
+			options: []DNSProviderOption{
+				Environment("AzurePublicCloud"),
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "valid credentials AzureChinaCloud",
+			options: []DNSProviderOption{
+				Environment("AzureChinaCloud"),
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "valid credentials AzureUSGovernmentCloud",
+			options: []DNSProviderOption{
+				Environment("AzureUSGovernmentCloud"),
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+		},
+		{
+			name: "valid credentials private zone",
+			options: []DNSProviderOption{
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				ZoneType(cmacme.PrivateAzureZone),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+			checkResult: func(t *testing.T, p *DNSProvider) {
+				assert.Equal(t, cmacme.PrivateAzureZone, p.zoneType)
+			},
+		},
+		{
+			name: "invalid environment",
+			options: []DNSProviderOption{
+				Environment("invalid env"),
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid tenant ID",
+			options: []DNSProviderOption{
+				ClientID("cid"), ClientSecret("secret"), TenantID("invalid env value"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid credentials succeed at construction fail at runtime",
+			options: []DNSProviderOption{
+				ClientID("invalid-client-id"), ClientSecret("invalid-client-secret"),
+				SubscriptionID("subid"), TenantID("tenid"),
+				ResourceGroupName("rg"), ZoneName("example.com"),
+				Nameservers(util.RecursiveNameservers),
+				ManagedIdentity(&cmacme.AzureManagedIdentity{}),
+				Resolver(util.NewCachingResolver()),
+			},
+			checkResult: func(t *testing.T, p *DNSProvider) {
+				assert.Error(t, p.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d=="))
+				assert.Error(t, p.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d=="))
+			},
+		},
+		{
+			name: "missing resolver",
+			options: []DNSProviderOption{
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Nameservers(util.RecursiveNameservers),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing nameservers",
+			options: []DNSProviderOption{
+				ClientID("cid"), ClientSecret("secret"), TenantID("tenid"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.checkResult != nil {
+				tt.checkResult(t, p)
+			}
 		})
 	}
 }

@@ -34,7 +34,7 @@ var (
 
 func init() {
 	acmednsHost = os.Getenv("ACME_DNS_HOST")
-	acmednsAccountJSON = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
+	acmednsAccountJSON = []byte(os.Getenv("ACME_DNS_ACCOUNT_JSON"))
 	acmednsDomain = os.Getenv("ACME_DNS_DOMAIN")
 	if len(acmednsHost) > 0 && len(acmednsAccountJSON) > 0 {
 		acmednsLiveTest = true
@@ -65,6 +65,79 @@ func TestNoValidJson(t *testing.T) {
 	accountJson := []byte("b00m")
 	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
 	assert.Error(t, err, "Expected error constructing DNSProvider from invalid JSON")
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	validAccountJSON := []byte(`{
+        "domain": {
+            "fulldomain": "fooldom",
+            "password": "secret",
+            "subdomain": "subdom",
+            "username": "usernom"
+        }
+    }`)
+
+	tests := []struct {
+		name        string
+		options     []DNSProviderOption
+		wantErr     string
+		checkResult func(t *testing.T, p *DNSProvider)
+	}{
+		{
+			name: "valid JSON account",
+			options: []DNSProviderOption{
+				Host("http://localhost/"),
+				AccountJSON(validAccountJSON),
+			},
+			checkResult: func(t *testing.T, p *DNSProvider) {
+				assert.Equal(t, "fooldom", p.accounts["domain"].FullDomain)
+			},
+		},
+		{
+			name: "invalid JSON data",
+			options: []DNSProviderOption{
+				Host("http://localhost/"),
+				AccountJSON([]byte(`{"duck": "quack"}`)),
+			},
+			wantErr: "Error unmarshalling accountJSON",
+		},
+		{
+			name: "invalid JSON bytes",
+			options: []DNSProviderOption{
+				Host("http://localhost/"),
+				AccountJSON([]byte("b00m")),
+			},
+			wantErr: "Error unmarshalling accountJSON",
+		},
+		{
+			name: "missing host",
+			options: []DNSProviderOption{
+				AccountJSON(validAccountJSON),
+			},
+			wantErr: "host is required",
+		},
+		{
+			name: "missing account JSON",
+			options: []DNSProviderOption{
+				Host("http://localhost/"),
+			},
+			wantErr: "account json is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.checkResult != nil {
+				tt.checkResult(t, p)
+			}
+		})
+	}
 }
 
 func TestLiveAcmeDnsPresent(t *testing.T) {

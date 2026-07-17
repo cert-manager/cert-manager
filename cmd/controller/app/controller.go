@@ -265,6 +265,10 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
 	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
+	g.Go(func() error {
+		return ctx.DNSResolver.Start(rootCtx)
+	})
+
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.GatewayAPIConfig.Enabled {
 		ctx.GWShared.Start(rootCtx.Done())
 	}

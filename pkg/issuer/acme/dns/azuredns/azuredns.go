@@ -27,7 +27,9 @@ import (
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 	"github.com/go-logr/logr"
+	"k8s.io/utils/ptr"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -42,9 +44,10 @@ type DNSProvider struct {
 	zoneName          string
 	log               logr.Logger
 	zoneType          cmacme.AzureZoneType
+	resolver          util.Resolver
 }
 
-// TODO:(@hjoshi123) change all arguments of NewDNSProviderCredentials to use variadic functions
+// ProviderOption is a legacy option for NewDNSProviderCredentials
 type ProviderOption func(*DNSProvider)
 
 // WithAzureZone is a provider option for specifying the type of Azure DNS zone (public or private) to be used by the DNSProvider.
@@ -54,51 +57,71 @@ func WithAzureZone(zone cmacme.AzureZoneType) ProviderOption {
 	}
 }
 
-// NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
-// DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...ProviderOption) (*DNSProvider, error) {
-	cloudCfg, err := getCloudConfiguration(environment)
+// NewDNSProviderFromOptions constructs an ACME DNS provider for AzureDNS.
+//
+// All options are passed via the variadic options parameter.
+//
+// Required options:
+// - Nameservers
+// - Resolver
+// - One of: ClientID (with ClientSecret and TenantID) or Ambient=true
+//
+// ctx is not used by this provider; it is accepted to standardize the constructor signature across all providers.
+func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
+	}
+
+	err := errors.Join(
+		utiloptions.NotEmpty(&opt.Nameservers, "nameservers is required"),
+		utiloptions.Required(&opt.Resolver, "resolver is required"),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cloudCfg, err := getCloudConfiguration(opt.Environment)
 	if err != nil {
 		return nil, err
 	}
 
 	clientOpt := policy.ClientOptions{Cloud: cloudCfg}
-	cred, err := getAuthorization(clientOpt, clientID, clientSecret, tenantID, ambient, managedIdentity)
+	cred, err := getAuthorization(clientOpt, opt.ClientID, opt.ClientSecret, opt.TenantID, ptr.Deref(opt.Ambient, false), opt.ManagedIdentity)
 	if err != nil {
 		return nil, err
 	}
 
 	provider := &DNSProvider{
-		dns01Nameservers:  dns01Nameservers,
-		resourceGroupName: resourceGroupName,
-		zoneName:          zoneName,
+		dns01Nameservers:  opt.Nameservers,
+		resourceGroupName: opt.ResourceGroupName,
+		zoneName:          opt.ZoneName,
+		zoneType:          opt.ZoneType,
 		log:               logf.Log.WithName("azure-dns"),
-	}
-
-	for _, opt := range opts {
-		opt(provider)
+		resolver:          opt.Resolver,
 	}
 
 	if provider.zoneType == cmacme.PrivateAzureZone {
-		rc, err := privatedns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		rc, err := privatedns.NewRecordSetsClient(opt.SubscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
 		if err != nil {
 			return nil, err
 		}
 		provider.recordClient = NewPrivateRecordsClient(rc)
 
-		zc, err := privatedns.NewPrivateZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		zc, err := privatedns.NewPrivateZonesClient(opt.SubscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
 		if err != nil {
 			return nil, err
 		}
 		provider.zoneClient = NewPrivateZonesClient(zc)
 	} else {
-		rc, err := dns.NewRecordSetsClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		rc, err := dns.NewRecordSetsClient(opt.SubscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
 		if err != nil {
 			return nil, err
 		}
 		provider.recordClient = NewPublicRecordsClient(rc)
 
-		zc, err := dns.NewZonesClient(subscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
+		zc, err := dns.NewZonesClient(opt.SubscriptionID, cred, &arm.ClientOptions{ClientOptions: clientOpt})
 		if err != nil {
 			return nil, err
 		}
@@ -106,6 +129,35 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}
 
 	return provider, nil
+}
+
+// NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
+// DNS service using static credentials from its parameters
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...ProviderOption) (*DNSProvider, error) {
+	// Apply any legacy ProviderOptions to extract the zoneType they may have set;
+	// the resulting DNSProvider is otherwise unused.
+	var p DNSProvider
+	for _, opt := range opts {
+		opt(&p)
+	}
+
+	// Delegate to NewDNSProviderFromOptions
+	return NewDNSProviderFromOptions(context.Background(),
+		Environment(environment),
+		ClientID(clientID),
+		ClientSecret(clientSecret),
+		SubscriptionID(subscriptionID),
+		TenantID(tenantID),
+		ResourceGroupName(resourceGroupName),
+		ZoneName(zoneName),
+		Nameservers(dns01Nameservers),
+		Ambient(ambient),
+		ManagedIdentity(managedIdentity),
+		ZoneType(p.zoneType),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 func getCloudConfiguration(name string) (cloud.Configuration, error) {
@@ -211,7 +263,7 @@ func (c *DNSProvider) getHostedZoneName(ctx context.Context, fqdn string) (strin
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
+	z, err := c.resolver.FindZoneByFQDN(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}

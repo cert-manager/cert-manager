@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -146,4 +147,77 @@ func TestCloudFlareCleanUp(t *testing.T) {
 
 	err = provider.CleanUp(t.Context(), cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		options []DNSProviderOption
+		wantErr string
+	}{
+		{
+			name: "valid API key auth",
+			options: []DNSProviderOption{
+				Email("123"), APIKey("123"),
+				UserAgent("cert-manager-test"),
+			},
+		},
+		{
+			name: "valid API token auth",
+			options: []DNSProviderOption{
+				APIToken("123"),
+				UserAgent("cert-manager-test"),
+			},
+		},
+		{
+			name: "API key with embedded newline",
+			options: []DNSProviderOption{
+				Email("test@example.com"), APIKey("key\nvalue"),
+				UserAgent("cert-manager-test"),
+			},
+			wantErr: "the Cloudflare API key is invalid (does the API key contain a newline?)",
+		},
+		{
+			name: "API token with embedded newline",
+			options: []DNSProviderOption{
+				APIToken("token\nvalue"),
+				UserAgent("cert-manager-test"),
+			},
+			wantErr: "the Cloudflare API token is invalid (does the API token contain a newline?)",
+		},
+		{
+			name: "key and token both provided",
+			options: []DNSProviderOption{
+				Email("123"), APIKey("123"), APIToken("123"),
+				UserAgent("cert-manager-test"),
+			},
+			wantErr: "the Cloudflare API key and API token cannot be both present simultaneously",
+		},
+		{
+			name: "key without email",
+			options: []DNSProviderOption{
+				APIKey("123"),
+				UserAgent("cert-manager-test"),
+			},
+			wantErr: "no Cloudflare credential has been given (can be either an API key or an API token)",
+		},
+		{
+			name: "no credentials",
+			options: []DNSProviderOption{
+				UserAgent("cert-manager-test"),
+			},
+			wantErr: "no Cloudflare credential has been given (can be either an API key or an API token)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewDNSProviderFromOptions(t.Context(), tt.options...)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
