@@ -271,6 +271,11 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
 
+		// If the certificate renewal policy is set to Disabled, do not renew.
+		if crt.Spec.Renewal != nil && crt.Spec.Renewal.Policy == cmapi.CertificateRenewalPolicyDisabled {
+			return "", "", false
+		}
+
 		reason := Renewing
 		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
 
