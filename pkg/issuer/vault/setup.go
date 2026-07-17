@@ -146,7 +146,7 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		return nil
 	}
 
-	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer, v.CanUseAmbientCredentials(issuer))
+	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer, v.CanUseAmbientCredentials(issuer), v.Metrics)
 	if err != nil {
 		msg := vaultinternal.SafeErrorMessage(err)
 		logVaultError(ctx, issuer, messageVaultClientInitFailed, msg, err)
