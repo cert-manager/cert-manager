@@ -243,6 +243,13 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Status.NotAfter = &notAfter
 		crt.Status.RenewalTime = renewalTime
 
+		// Schedule a re-evaluation at the certificate's expiry time so that the
+		// Ready condition is updated to False (Expired) if the cert expires while
+		// a renewal is stalled and no informer event fires to trigger a re-check.
+		if timeUntilExpiry := x509cert.NotAfter.Sub(c.clock.Now()); timeUntilExpiry > 0 {
+			c.scheduledWorkQueue.Add(key, timeUntilExpiry)
+		}
+
 	default:
 		// clear status fields if the secret does not have any data
 		crt.Status.NotAfter = nil
