@@ -13,7 +13,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +36,12 @@ var (
 
 type DNSProviderMock struct {
 	mock.Mock
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
 
 func (c *DNSProviderMock) makeRequest(ctx context.Context, method, uri string, body io.Reader) (json.RawMessage, error) {
@@ -220,4 +228,79 @@ func TestNewDNSProviderFromOptions(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestNewDNSProviderTTL(t *testing.T) {
+	tests := []struct {
+		name    string
+		setTTL  bool
+		ttl     int32
+		wantTTL int32
+		wantErr string
+	}{
+		{name: "default", wantTTL: cloudFlareDefaultTTL},
+		{name: "automatic", setTTL: true, ttl: 1, wantTTL: 1},
+		{name: "enterprise minimum", setTTL: true, ttl: 30, wantTTL: 30},
+		{name: "standard minimum", setTTL: true, ttl: 60, wantTTL: 60},
+		{name: "maximum", setTTL: true, ttl: 86400, wantTTL: 86400},
+		{name: "zero", setTTL: true, ttl: 0, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
+		{name: "below minimum", setTTL: true, ttl: 29, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
+		{name: "above maximum", setTTL: true, ttl: 86401, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			options := []DNSProviderOption{APIToken("token")}
+			if tt.setTTL {
+				options = append(options, TTL(tt.ttl))
+			}
+
+			provider, err := NewDNSProviderFromOptions(t.Context(), options...)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantTTL, provider.ttl)
+		})
+	}
+}
+
+func TestPresentUsesConfiguredTTL(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+
+	var createdRecord cloudFlareRecord
+	http.DefaultTransport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		requestURI := strings.TrimPrefix(req.URL.RequestURI(), "/client/v4")
+		var response string
+		switch {
+		case req.Method == http.MethodGet && strings.HasPrefix(requestURI, "/zones?name="):
+			response = `{"success":true,"errors":[],"result":[{"id":"zone-id","name":"example.com"}]}`
+		case req.Method == http.MethodGet && strings.HasPrefix(requestURI, "/zones/zone-id/dns_records?"):
+			response = `{"success":true,"errors":[],"result":[]}`
+		case req.Method == http.MethodPost && requestURI == "/zones/zone-id/dns_records":
+			if err := json.NewDecoder(req.Body).Decode(&createdRecord); err != nil {
+				return nil, err
+			}
+			response = `{"success":true,"errors":[],"result":{}}`
+		default:
+			return nil, fmt.Errorf("unexpected Cloudflare API request: %s %s", req.Method, requestURI)
+		}
+
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(response)),
+			Request:    req,
+		}, nil
+	})
+
+	provider, err := NewDNSProviderFromOptions(t.Context(), APIToken("token"), TTL(300))
+	require.NoError(t, err)
+
+	err = provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "challenge-value")
+	require.NoError(t, err)
+	assert.Equal(t, int32(300), createdRecord.TTL)
 }

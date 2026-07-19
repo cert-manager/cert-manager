@@ -31,6 +31,11 @@ import (
 type ACMEIssuerDNS01ProviderCloudflareApplyConfiguration struct {
 	// Email of the account, only required when using API key based authentication.
 	Email *string `json:"email,omitempty"`
+	// TTL is the time-to-live in seconds for Cloudflare DNS challenge records.
+	// When unset, cert-manager uses 120 seconds. A value of 1 uses Cloudflare's
+	// automatic TTL. Explicit values must be between 30 and 86400 seconds;
+	// non-Enterprise Cloudflare zones require a minimum of 60 seconds.
+	TTL *int32 `json:"ttl,omitempty"`
 	// API key to use to authenticate with Cloudflare.
 	// Note: using an API token to authenticate is now the recommended method
 	// as it allows greater control of permissions.
@@ -50,6 +55,14 @@ func ACMEIssuerDNS01ProviderCloudflare() *ACMEIssuerDNS01ProviderCloudflareApply
 // If called multiple times, the Email field is set to the value of the last call.
 func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithEmail(value string) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
 	b.Email = &value
+	return b
+}
+
+// WithTTL sets the TTL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TTL field is set to the value of the last call.
+func (b *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration) WithTTL(value int32) *ACMEIssuerDNS01ProviderCloudflareApplyConfiguration {
+	b.TTL = &value
 	return b
 }
 

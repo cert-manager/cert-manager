@@ -390,6 +390,68 @@ func TestSolverFor(t *testing.T) {
 	}
 }
 
+func TestSolveForCloudflareTTL(t *testing.T) {
+	t.Parallel()
+	ttl := int32(300)
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("cloudflare-token", map[string][]byte{
+					"api-token": []byte("FAKE-TOKEN"),
+				}, fakeIssuerNamespace),
+			},
+		},
+		Challenge: &cmacme.Challenge{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: fakeIssuerNamespace,
+			},
+			Spec: cmacme.ChallengeSpec{
+				Solver: cmacme.ACMEChallengeSolver{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+							Email: "test@example.com",
+							APIToken: &cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
+									Name: "cloudflare-token",
+								},
+								Key: "api-token",
+							},
+							TTL: &ttl,
+						},
+					},
+				},
+				IssuerRef: cmmeta.IssuerReference{
+					Name: "test-issuer",
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	_, _, err := f.Solver.solverForChallenge(t.Context(), f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverForChallenge to not error, but got: %s", err)
+	}
+
+	expectedCalls := []fakeDNSProviderCall{
+		{
+			name: "cloudflare",
+			args: []any{cloudflare.DNSProviderOptions{
+				Email:     "test@example.com",
+				APIToken:  "FAKE-TOKEN",
+				UserAgent: f.Solver.RESTConfig.UserAgent,
+				TTL:       ttl,
+			}},
+		},
+	}
+	if !reflect.DeepEqual(expectedCalls, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedCalls, f.dnsProviders.calls)
+	}
+}
+
 func TestSolveForDigitalOcean(t *testing.T) {
 	t.Parallel()
 	f := &solverFixture{
