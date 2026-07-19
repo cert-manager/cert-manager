@@ -526,6 +526,46 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 			tlsHosts[secretRef] = append(tlsHosts[secretRef], string(*l.Hostname))
 		}
 	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.GatewayAPIWildcardHostnameDeduplication) {
+		for secretRef, hostnames := range tlsHosts {
+			tlsHosts[secretRef] = removeGatewayAPIHostnamesCoveredByWildcards(hostnames)
+		}
+	}
+}
+
+// removeGatewayAPIHostnamesCoveredByWildcards removes concrete DNS names that
+// are covered by a wildcard DNS name in the same slice. X.509 wildcard DNS
+// names cover exactly one label, so *.example.com covers foo.example.com but
+// not example.com or foo.bar.example.com. The order of retained names is
+// preserved, and wildcard names are always retained.
+func removeGatewayAPIHostnamesCoveredByWildcards(hostnames []string) []string {
+	wildcardSuffixes := sets.New[string]()
+	for _, hostname := range hostnames {
+		if suffix, found := strings.CutPrefix(hostname, "*."); found {
+			wildcardSuffixes.Insert(suffix)
+		}
+	}
+	if wildcardSuffixes.Len() == 0 {
+		return hostnames
+	}
+
+	filtered := make([]string, 0, len(hostnames))
+	for _, hostname := range hostnames {
+		if strings.HasPrefix(hostname, "*.") {
+			filtered = append(filtered, hostname)
+			continue
+		}
+
+		_, suffix, found := strings.Cut(hostname, ".")
+		if found && wildcardSuffixes.Has(suffix) {
+			continue
+		}
+
+		filtered = append(filtered, hostname)
+	}
+
+	return filtered
 }
 
 // splitHosts de-duplicates hosts and splits them into DNS names and IP
