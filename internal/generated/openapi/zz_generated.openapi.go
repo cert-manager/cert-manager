@@ -3627,7 +3627,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					},
 					"revisionHistoryLimit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number.\n\nIf set, revisionHistoryLimit must be a value of `1` or greater. Default value is `1`.",
+							Description: "The maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number.\n\nIf set to `0`, cert-manager will retain one current CertificateRequest to ensure the current state of the Certificate can still be determined.\n\nIf set, revisionHistoryLimit must be a value of `0` or greater. Default value is `1`.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
