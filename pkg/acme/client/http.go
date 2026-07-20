@@ -18,7 +18,6 @@ package client
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -43,23 +42,7 @@ const AcmeActionLabel = MetricsContextKey("acme_action")
 // buffered into memory, guarding against a hostile server streaming an unbounded body.
 const maxACMEResponseBodyBytes int64 = 16 << 20 // 16 MiB
 
-// limitedReadCloser wraps an io.ReadCloser to limit the number of bytes read,
-// while preserving the underlying Close method.
-type limitedReadCloser struct {
-	io.Reader
-	io.Closer
-}
-
-// newLimitedReadCloser returns an io.ReadCloser that reads at most n bytes from
-// rc before returning io.EOF.
-func newLimitedReadCloser(rc io.ReadCloser, n int64) io.ReadCloser {
-	return &limitedReadCloser{
-		Reader: io.LimitReader(rc, n),
-		Closer: rc,
-	}
-}
-
-// Transport is a http.RoundTripper that instruments every request it processes:
+// Transport is an http.RoundTripper that instruments every request it processes:
 // it records Prometheus metrics for the request and caps the size of the
 // response body to guard against an ACME server returning an unbounded body.
 type Transport struct {
@@ -102,9 +85,12 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		statusCode = resp.StatusCode
 
 		// Cap every response body (including retries, which flow through here)
-		// so the ACME library cannot buffer an unbounded body.
+		// so the ACME library cannot buffer an unbounded body. Reading past the
+		// limit yields a *http.MaxBytesError, so an oversized body surfaces as a
+		// distinct error rather than being silently truncated. A nil
+		// ResponseWriter is accepted since we only need the client-side cap.
 		if resp.Body != nil {
-			resp.Body = newLimitedReadCloser(resp.Body, maxACMEResponseBodyBytes)
+			resp.Body = http.MaxBytesReader(nil, resp.Body, maxACMEResponseBodyBytes)
 		}
 	}
 	var action string
