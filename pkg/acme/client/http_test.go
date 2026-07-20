@@ -19,6 +19,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -140,7 +141,7 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 	}
 }
 
-// newInstrumentedTestClient returns an *http.Client for talking to server whose
+// newInstrumentedTestClient returns an *http.Client for talking to a server whose
 // transport is wrapped with the instrumented RoundTripper under test.
 func newInstrumentedTestClient(t *testing.T, server *httptest.Server) *http.Client {
 	t.Helper()
@@ -186,15 +187,17 @@ func TestInstrumentedRoundTripper_CapsOversizedResponseBody(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	// The body is truncated at the limit, so the read completes without error
-	// and yields exactly maxACMEResponseBodyBytes - memory stays bounded
-	// regardless of how much the server tried to send.
+	// Reading past the limit surfaces a *http.MaxBytesError rather than truncating,
+	// so an oversized body is a distinct, detectable condition. The
+	// number of bytes delivered to the caller stays bounded by the limit
+	// regardless of how much the server tried to send, keeping memory bounded.
 	n, err := io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		t.Fatalf("unexpected error reading a capped body: %v", err)
+	var maxBytesErr *http.MaxBytesError
+	if !errors.As(err, &maxBytesErr) {
+		t.Fatalf("expected a *http.MaxBytesError reading an oversized body, got %T: %v", err, err)
 	}
-	if n != maxACMEResponseBodyBytes {
-		t.Errorf("read %d bytes from response body, expected it to be capped at %d", n, maxACMEResponseBodyBytes)
+	if n > maxACMEResponseBodyBytes {
+		t.Errorf("read %d bytes from response body, expected it to be bounded by %d", n, maxACMEResponseBodyBytes)
 	}
 }
 
