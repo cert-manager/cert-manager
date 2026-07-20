@@ -22,9 +22,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-logr/logr"
-	"github.com/spf13/cobra"
-
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
 	"github.com/cert-manager/cert-manager/internal/pem"
@@ -35,6 +32,8 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	webhookconfigfile "github.com/cert-manager/cert-manager/pkg/webhook/configfile"
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
+	"github.com/go-logr/logr"
+	"github.com/spf13/cobra"
 )
 
 const componentWebhook = "webhook"

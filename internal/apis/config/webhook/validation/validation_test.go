@@ -176,4 +176,3 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 		})
 	}
 }
-
