@@ -41,4 +41,5 @@ func SetObjectDefaults_WebhookConfiguration(in *webhookv1alpha1.WebhookConfigura
 	SetDefaults_WebhookConfiguration(in)
 	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.TLSConfig.Dynamic)
 	sharedv1alpha1.SetDefaults_DynamicServingConfig(&in.MetricsTLSConfig.Dynamic)
+	SetDefaults_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig)
 }
