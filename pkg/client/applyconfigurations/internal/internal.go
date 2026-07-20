@@ -756,6 +756,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.SecretKeySelector
       default: {}
+    - name: caBundle
+      type:
+        scalar: string
     - name: host
       type:
         scalar: string

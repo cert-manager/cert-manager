@@ -16,6 +16,8 @@ limitations under the License.
 
 package acmedns
 
+import "net/http"
+
 // DNSProviderOptions holds the full configuration for the ACME DNS provider.
 type DNSProviderOptions struct {
 	// Host is the base URL of the acme-dns instance.
@@ -23,6 +25,10 @@ type DNSProviderOptions struct {
 	// AccountJSON contains the JSON-encoded account credentials returned by the
 	// acme-dns registration endpoint.
 	AccountJSON []byte
+	// HTTPClient is an optional custom HTTP client used to communicate with the
+	// acme-dns instance. If nil, the goacmedns default client is used. It is
+	// primarily used to trust a custom CA bundle for the acme-dns endpoint.
+	HTTPClient *http.Client
 }
 
 // DNSProviderOption is a functional option for configuring a DNSProvider.
@@ -44,4 +50,15 @@ type AccountJSON []byte
 // ApplyToDNSProviderOptions sets the AccountJSON field.
 func (a AccountJSON) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
 	o.AccountJSON = a
+}
+
+// HTTPClient sets a custom HTTP client on DNSProviderOptions. This is primarily
+// used to trust a custom CA bundle when connecting to the acme-dns instance.
+type HTTPClient struct {
+	Client *http.Client
+}
+
+// ApplyToDNSProviderOptions sets the HTTPClient field.
+func (h HTTPClient) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
+	o.HTTPClient = h.Client
 }
