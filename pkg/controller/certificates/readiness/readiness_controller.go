@@ -221,8 +221,21 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
+		issuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return err
+			}
+			// Issuer not (yet) in cache. Skip ARI but still update status
+			// from the decoded X.509 so the Certificate reflects reality;
+			log.V(logf.DebugLevel).Info("issuer not found; skipping ARI branch",
+				"issuer", crt.Spec.IssuerRef.Name, "kind", crt.Spec.IssuerRef.Kind)
+			issuer = nil
+			err = nil
+		}
+
 		var renewalTime *metav1.Time
-		if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+		if issuer != nil && feature.ARIEnabledForIssuer(issuer) {
 			renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
 		}
 
@@ -435,7 +448,8 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Type
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
-	ctrl, queue, mustSync, err := NewController(log,
+	ctrl, queue, mustSync, err := NewController(
+		log,
 		ctx,
 		policies.NewReadinessPolicyChain(ctx.Clock),
 		pki.RenewalTime,

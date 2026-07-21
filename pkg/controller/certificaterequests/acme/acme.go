@@ -45,7 +45,6 @@ import (
 	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
 	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
@@ -156,7 +155,7 @@ func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cm
 	// ACME server can correlate this renewal with the cert being replaced
 	// (RFC 9773).
 	var replaces string
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+	if feature.ARIEnabledForIssuer(issuer) {
 		replaces = a.resolveReplacesCertID(ctx, cr)
 	}
 

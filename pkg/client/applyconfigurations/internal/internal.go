@@ -726,6 +726,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: email
       type:
         scalar: string
+    - name: enableARI
+      type:
+        scalar: string
     - name: enableDurationFeature
       type:
         scalar: boolean

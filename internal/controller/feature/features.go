@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
@@ -247,4 +249,21 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	// > E...] "error executing command" err="failed to set feature gates from initial flags-based config: unrecognized feature gate: ValidateCAA" logger="cert-manager"
 	// So we leave it here, set to alpha.
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
+}
+
+// ARIEnabledForIssuer returns true if the ACMEUseARI feature gate is enabled and the issuer has ARI enabled in its spec.
+func ARIEnabledForIssuer(issuer cmapi.GenericIssuer) bool {
+	if !utilfeature.DefaultFeatureGate.Enabled(ACMEUseARI) {
+		return false
+	}
+
+	if issuer == nil {
+		return false
+	}
+	acme := issuer.GetSpec().ACME
+	if acme == nil {
+		return false
+	}
+
+	return acme.EnableARI != cmacme.EnableARITypeDisabled
 }

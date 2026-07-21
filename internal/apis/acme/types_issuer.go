@@ -107,6 +107,10 @@ type ACMEIssuer struct {
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
 	Profile string `json:"profile,omitempty"`
+
+	// EnableARI enables fetching ACME Renewal Information from the ACME CA
+	// server. Default is `Enabled`.
+	EnableARI EnableARIType
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -750,3 +754,13 @@ type ACMEIssuerStatus struct {
 	// associated with the Issuer
 	LastPrivateKeyHash string
 }
+
+// EnableARIType determines whether to enable fetching ACME Renewal Information
+// from the ACME CA server. This is independent of the feature gate `ACMEUseARI`
+// and can be used to enable or disable the feature on a per-issuer basis.
+type EnableARIType string
+
+const (
+	EnableARITypeDisabled EnableARIType = "Disabled"
+	EnableARITypeEnabled  EnableARIType = "Enabled"
+)

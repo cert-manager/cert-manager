@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/client/applyconfigurations/meta/v1"
 )
 
@@ -100,6 +101,9 @@ type ACMEIssuerApplyConfiguration struct {
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
 	Profile *string `json:"profile,omitempty"`
+	// EnableARI enables fetching ACME Renewal Information from the ACME CA
+	// server. Default is `Enabled`.
+	EnableARI *acmev1.EnableARIType `json:"enableARI,omitempty"`
 }
 
 // ACMEIssuerApplyConfiguration constructs a declarative configuration of the ACMEIssuer type for use with
@@ -200,5 +204,13 @@ func (b *ACMEIssuerApplyConfiguration) WithEnableDurationFeature(value bool) *AC
 // If called multiple times, the Profile field is set to the value of the last call.
 func (b *ACMEIssuerApplyConfiguration) WithProfile(value string) *ACMEIssuerApplyConfiguration {
 	b.Profile = &value
+	return b
+}
+
+// WithEnableARI sets the EnableARI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the EnableARI field is set to the value of the last call.
+func (b *ACMEIssuerApplyConfiguration) WithEnableARI(value acmev1.EnableARIType) *ACMEIssuerApplyConfiguration {
+	b.EnableARI = &value
 	return b
 }
