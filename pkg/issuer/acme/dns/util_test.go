@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/akamai"
@@ -30,6 +31,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 type solverFixture struct {
@@ -67,6 +69,12 @@ func (s *solverFixture) Setup(t *testing.T) {
 	}
 	if s.Builder.T == nil {
 		s.Builder.T = t
+	}
+	if s.Builder.Context == nil {
+		s.Builder.Context = &controller.Context{}
+	}
+	if len(s.Builder.Context.DNS01Nameservers) == 0 {
+		s.Builder.Context.DNS01Nameservers = util.RecursiveNameservers
 	}
 	if s.dnsProviders == nil {
 		s.dnsProviders = newFakeDNSProviders()
