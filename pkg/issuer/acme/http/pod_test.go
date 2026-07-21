@@ -298,6 +298,29 @@ func TestEnsurePod(t *testing.T) {
 			chal:        chal,
 			expectedErr: true,
 		},
+		"should create a new pod if the only existing pod is terminating": {
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{func(p metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
+					now := metav1.Now()
+					p.DeletionTimestamp = &now
+					return &p
+				}(*podMeta)},
+				ExpectedActions: []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+			},
+			chal: chal,
+		},
+		"should do nothing if one pod is active and another is terminating": {
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMeta, func(p metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
+					p.Name = "foobar"
+					now := metav1.Now()
+					p.DeletionTimestamp = &now
+					return &p
+				}(*podMeta)},
+				ExpectedActions: []testpkg.Action{},
+			},
+			chal: chal,
+		},
 	}
 	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
