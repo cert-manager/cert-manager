@@ -65,6 +65,7 @@ type Interface interface { //nolint:interfacebloat
 	GetRenewalInfo(ctx context.Context, cert *x509.Certificate) (*acme.RenewalInfoResponse, error)
 }
 
-var _ Interface = &acme.Client{
+// Compile-time assertion that *acme.Client satisfies Interface.
+var _ Interface = &acme.Client{ //nolint:forbidigo // compile-time interface assertion, not a client instance
 	RetryBackoff: acmeutil.RetryBackoff,
 }

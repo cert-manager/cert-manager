@@ -60,7 +60,9 @@ func NewClient(
 }
 
 func newClientFromHTTPClient(httpClient *http.Client, userAgent string, options NewClientOptions) acmecl.Interface {
-	return middleware.NewLogger(&acmeapi.Client{
+	// The only sanctioned place to construct the ACME client,
+	// forbidigo forces all other callers through NewClient.
+	return middleware.NewLogger(&acmeapi.Client{ //nolint:forbidigo // sanctioned ACME client constructor
 		Key:          options.PrivateKey,
 		HTTPClient:   httpClient,
 		DirectoryURL: options.Server,
