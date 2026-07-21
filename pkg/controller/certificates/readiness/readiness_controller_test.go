@@ -591,13 +591,7 @@ func TestReadinessForARI(t *testing.T) {
 			},
 		},
 	}
-	// Issuer referenced by the Certificate. Required so the readiness
-	// controller's issuer helper can resolve the issuer when the
-	// ACMEUseARI feature gate is enabled.
-	issuer := gen.Issuer("test-issuer",
-		gen.SetIssuerNamespace("testns"),
-		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
-	)
+
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -643,6 +637,8 @@ func TestReadinessForARI(t *testing.T) {
 		wantsErr bool
 
 		acmeClient acmecl.Interface
+
+		issuer *cmapi.Issuer
 	}{
 		"update status for a Certificate that is evaluated as Ready with ARI and whose spec.secretName secret contains a valid X509 cert": {
 			condition: cmapi.CertificateCondition{
@@ -668,6 +664,44 @@ func TestReadinessForARI(t *testing.T) {
 					}, nil
 				},
 			},
+			issuer: gen.Issuer("test-issuer",
+				gen.SetIssuerNamespace("testns"),
+				gen.SetIssuerACME(cmacme.ACMEIssuer{
+					RenewalInformationSource: cmacme.ACMERenewalInformationSourceARI,
+				}),
+			),
+		},
+		"skip ARI if issuer has it disabled": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaNow,
+			},
+			cert:              gen.CertificateFrom(cert),
+			certShouldUpdate:  true,
+			secretShouldExist: true,
+			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
+			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
+			renewalTime:       func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
+			acmeClient: &acmecl.FakeACME{
+				FakeGetRenewalInfo: func(ctx context.Context, cert *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+					return &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: now.Add(24 * time.Hour),
+							End:   now.Add(48 * time.Hour),
+						},
+						ExplanationURL: "example.com/explanation",
+					}, nil
+				},
+			},
+			issuer: gen.Issuer("test-issuer",
+				gen.SetIssuerNamespace("testns"),
+				gen.SetIssuerACME(cmacme.ACMEIssuer{
+					RenewalInformationSource: cmacme.ACMERenewalInformationSourceNone,
+				}),
+			),
 		},
 	}
 
@@ -686,9 +720,7 @@ func TestReadinessForARI(t *testing.T) {
 				// Ensures cert is loaded into the builder's fake clientset.
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.cert)
 			}
-			// Load the Issuer referenced by the Certificate so the
-			// readiness controller's issuer helper can resolve it.
-			builder.CertManagerObjects = append(builder.CertManagerObjects, issuer)
+			builder.CertManagerObjects = append(builder.CertManagerObjects, test.issuer)
 
 			if test.secretShouldExist {
 				mods := make([]gen.SecretModifier, 0)
@@ -726,19 +758,24 @@ func TestReadinessForARI(t *testing.T) {
 				},
 			}
 
-			ariInfo, _ := test.acmeClient.GetRenewalInfo(t.Context(), nil)
+			var expectedRenewalTime *metav1.Time
+			var ariInfo *acmeapi.RenewalInfoResponse
+			if test.renewalTime != nil {
+				expectedRenewalTime = test.renewalTime
+			} else {
+				ariInfo, _ = test.acmeClient.GetRenewalInfo(t.Context(), nil)
+				// Pre-compute renewal time once. pki.RenewalTime selects a random
+				// instant within the ARI SuggestedWindow, so we must compute the
+				// expected value here and have the override return the same
+				// deterministic value when invoked by the controller.
+				expectedRenewalTime, err := pki.RenewalTime(test.notBefore.Time, test.notAfter.Time, nil, nil, nil, pki.WithARIInfo(ariInfo))
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			// Pre-compute renewal time once. pki.RenewalTime selects a random
-			// instant within the ARI SuggestedWindow, so we must compute the
-			// expected value here and have the override return the same
-			// deterministic value when invoked by the controller.
-			expectedRenewalTime, err := pki.RenewalTime(test.notBefore.Time, test.notAfter.Time, nil, nil, nil, pki.WithARIInfo(ariInfo))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if expectedRenewalTime.Time.Before(ariInfo.SuggestedWindow.Start) || expectedRenewalTime.After(ariInfo.SuggestedWindow.End) {
-				t.Fatalf("expected renewal time %v to be within the ARI suggested window (%v - %v)", expectedRenewalTime, ariInfo.SuggestedWindow.Start, ariInfo.SuggestedWindow.End)
+				if expectedRenewalTime.Time.Before(ariInfo.SuggestedWindow.Start) || expectedRenewalTime.After(ariInfo.SuggestedWindow.End) {
+					t.Fatalf("expected renewal time %v to be within the ARI suggested window (%v - %v)", expectedRenewalTime, ariInfo.SuggestedWindow.Start, ariInfo.SuggestedWindow.End)
+				}
 			}
 
 			w.controller.renewalTimeCalculator = func(t1, t2 time.Time, d *metav1.Duration, i *int32, cr *cmapi.CertificateRenewal, rto ...pki.RenewalTimeOptions) (*metav1.Time, error) {
@@ -753,20 +790,23 @@ func TestReadinessForARI(t *testing.T) {
 				c.Status.NotAfter = test.notAfter
 				c.Status.NotBefore = test.notBefore
 				c.Status.RenewalTime = expectedRenewalTime
-				// Expected ACME ARI status populated by the controller
-				// when ACMEUseARI is enabled. LastChecked is set to the
-				// fake clock's "now" by the controller. NextCheck is
-				// computed with random jitter so it is ignored in the
-				// match below.
-				c.Status.ACME = &cmapi.CertificateACMEStatus{
-					ARI: &cmapi.CertificateACMEARIStatus{
-						ExplanationURL: ariInfo.ExplanationURL,
-						SuggestedWindow: &cmapi.ACMERenewalWindow{
-							Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
-							End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+
+				if ariInfo != nil {
+					// Expected ACME ARI status populated by the controller
+					// when ACMEUseARI is enabled. LastChecked is set to the
+					// fake clock's "now" by the controller. NextCheck is
+					// computed with random jitter so it is ignored in the
+					// match below.
+					c.Status.ACME = &cmapi.CertificateACMEStatus{
+						ARI: &cmapi.CertificateACMEARIStatus{
+							ExplanationURL: ariInfo.ExplanationURL,
+							SuggestedWindow: &cmapi.ACMERenewalWindow{
+								Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
+								End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+							},
+							LastChecked: &metaNow,
 						},
-						LastChecked: &metaNow,
-					},
+					}
 				}
 
 				builder.ExpectedActions = append(builder.ExpectedActions,

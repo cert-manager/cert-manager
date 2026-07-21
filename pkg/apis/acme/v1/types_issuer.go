@@ -121,6 +121,12 @@ type ACMEIssuer struct {
 	// Supported profiles are listed by the server's ACME directory URL.
 	// +optional
 	Profile string `json:"profile,omitempty"`
+
+	// RenewalInformationSource allows fetching ACME Renewal Information from the ACME CA
+	// server. Default is `ARI`.
+	// +optional
+	// +kubebuilder:default=ARI
+	RenewalInformationSource ACMERenewalInformationSource `json:"renewalInformationSource,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -912,3 +918,15 @@ type ACMEIssuerStatus struct {
 	// +optional
 	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
 }
+
+// ACMERenewalInformationSource determines whether to fetch ACME Renewal Information
+// from the ACME CA server.
+// This field is used in conjunction with the `ACMEUseARI` feature gate i.e. if the feature gate is
+// disabled then ARI Information won't be fetched.
+// +kubebuilder:validation:Enum=ARI;None
+type ACMERenewalInformationSource string
+
+const (
+	ACMERenewalInformationSourceARI  ACMERenewalInformationSource = "ARI"
+	ACMERenewalInformationSourceNone ACMERenewalInformationSource = "None"
+)

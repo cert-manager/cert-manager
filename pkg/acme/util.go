@@ -19,8 +19,11 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // IsFinalState will return true if the given ACME State is a 'final' state.
@@ -50,4 +53,23 @@ func PrivateKeySelector(sel cmmeta.SecretKeySelector) cmmeta.SecretKeySelector {
 		sel.Key = corev1.TLSPrivateKeyKey
 	}
 	return sel
+}
+
+// ARIEnabledForIssuer returns true if the ACMEUseARI feature gate is enabled and the issuer has ARI enabled in its spec.
+func ARIEnabledForIssuer(issuer cmapi.GenericIssuer) bool {
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+		return false
+	}
+
+	if issuer == nil {
+		return false
+	}
+	acme := issuer.GetSpec().ACME
+	if acme == nil {
+		return false
+	}
+
+	// Empty string is treated as ARI to preserve behaviour for Issuers that
+	// predate the CRD default (kubebuilder:default=ARI) being applied.
+	return acme.RenewalInformationSource == "" || acme.RenewalInformationSource == cmacme.ACMERenewalInformationSourceARI
 }
