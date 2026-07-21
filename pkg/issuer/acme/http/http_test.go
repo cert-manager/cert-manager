@@ -213,12 +213,27 @@ func errorLeaksBody(err error, body string) bool {
 	return strings.Contains(strings.ToLower(err.Error()), strings.ToLower(body))
 }
 
+// maxUntruncatedBodyLen is the length the old (removed) code truncated the
+// reflected body to. A sentinel has to be shorter than this for the tests to be
+// an effective regression test for the future: otherwise the old code would
+// only have leaked a prefix and the tests would pass against it too.
+// assertEffectiveSentinel enforces this.
+const maxUntruncatedBodyLen = 24
+
+func assertEffectiveSentinel(t *testing.T, sentinel string) {
+	t.Helper()
+	if len(sentinel) > maxUntruncatedBodyLen {
+		t.Fatalf("sentinel %q is %d chars; it must be <= %d to be an effective regression test", sentinel, len(sentinel), maxUntruncatedBodyLen)
+	}
+}
+
 // TestReachabilityDoesNotReflectResponseBody ensures that when the endpoint
 // returns a body that does not match the expected key, the contents of that
 // body are not included in the returned error.
 func TestReachabilityDoesNotReflectResponseBody(t *testing.T) {
 	const responseBody = "SENTINEL-BODY"
 	const key = "the-expected-challenge-key"
+	assertEffectiveSentinel(t, responseBody)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, responseBody)
@@ -244,6 +259,7 @@ func TestReachabilityDoesNotReflectResponseBody(t *testing.T) {
 func TestReachabilityDoesNotReflectRedirectedResponseBody(t *testing.T) {
 	const internalBody = "SENTINEL-REDIRECT"
 	const key = "the-expected-challenge-key"
+	assertEffectiveSentinel(t, internalBody)
 
 	// internal represents an internal-only endpoint reachable from the
 	// controller pod but not intended to be exposed to tenants.
