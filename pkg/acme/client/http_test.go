@@ -17,8 +17,11 @@ limitations under the License.
 package client
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -135,5 +138,98 @@ func TestInstrumentedRoundTripper_LabelsAndAccumulation(t *testing.T) {
 				t.Errorf("unexpected counter metric result:\n%v", err)
 			}
 		})
+	}
+}
+
+// newInstrumentedTestClient returns an *http.Client for talking to a server whose
+// transport is wrapped with the instrumented RoundTripper under test.
+func newInstrumentedTestClient(t *testing.T, server *httptest.Server) *http.Client {
+	t.Helper()
+
+	fixedClock := fakeclock.NewFakeClock(time.Now())
+	metrics := metricspkg.New(testr.New(t), fixedClock)
+
+	httpClient := server.Client()
+	httpClient.Transport = &Transport{
+		wrappedRT: httpClient.Transport,
+		metrics:   metrics,
+	}
+	return httpClient
+}
+
+func TestInstrumentedRoundTripper_CapsOversizedResponseBody(t *testing.T) {
+	// The server attempts to stream far more than the limit allows,
+	// mimicking a hostile ACME endpoint returning an unbounded body.
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		chunk := bytes.Repeat([]byte("A"), 1<<20) // 1 MiB
+		// Attempt to write more than maxACMEResponseBodyBytes.
+		for range (maxACMEResponseBodyBytes / (1 << 20)) + 8 {
+			if _, err := w.Write(chunk); err != nil {
+				return
+			}
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	httpClient := newInstrumentedTestClient(t, server)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	// #nosec G704 -- test code using controlled httptest server
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		t.Fatalf("failed to make request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Reading past the limit surfaces a *http.MaxBytesError rather than truncating,
+	// so an oversized body is a distinct, detectable condition. The
+	// number of bytes delivered to the caller stays bounded by the limit
+	// regardless of how much the server tried to send, keeping memory bounded.
+	n, err := io.Copy(io.Discard, resp.Body)
+	var maxBytesErr *http.MaxBytesError
+	if !errors.As(err, &maxBytesErr) {
+		t.Fatalf("expected a *http.MaxBytesError reading an oversized body, got %T: %v", err, err)
+	}
+	if n > maxACMEResponseBodyBytes {
+		t.Errorf("read %d bytes from response body, expected it to be bounded by %d", n, maxACMEResponseBodyBytes)
+	}
+}
+
+func TestInstrumentedRoundTripper_AllowsResponseBodyWithinLimit(t *testing.T) {
+	// A body well within the limit (1 MiB) must be delivered in full.
+	body := bytes.Repeat([]byte("A"), 1<<20)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(body) //nolint:errcheck // test handler, response writer errors are not actionable
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	httpClient := newInstrumentedTestClient(t, server)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	// #nosec G704 -- test code using controlled httptest server
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		t.Fatalf("failed to make request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	got, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("unexpected error reading a within-limit body: %v", err)
+	}
+	if len(got) != len(body) {
+		t.Errorf("read %d bytes, expected the full %d byte body", len(got), len(body))
 	}
 }
