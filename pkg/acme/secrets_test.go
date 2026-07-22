@@ -63,6 +63,71 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 			}),
 			expectNames: []string{"route53-creds"},
 		},
+		"ACME issuer with an Akamai DNS-01 solver returns its secrets": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
+						ServiceConsumerDomain: "example.com",
+						AccessToken:           cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-access-token"}},
+						ClientSecret:          cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-client-secret"}},
+						ClientToken:           cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-client-token"}},
+					},
+				}},
+			}),
+			expectNames: []string{"akamai-access-token", "akamai-client-secret", "akamai-client-token"},
+		},
+		"ACME issuer with an AzureDNS DNS-01 solver returns its secret": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+						ClientSecret: &cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "azuredns-creds"}},
+					},
+				}},
+			}),
+			expectNames: []string{"azuredns-creds"},
+		},
+		"ACME issuer with a Cloudflare DNS-01 solver returns its secret": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+						APIToken: &cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "cloudflare-token"}},
+					},
+				}},
+			}),
+			expectNames: []string{"cloudflare-token"},
+		},
+		"ACME issuer with an AcmeDNS DNS-01 solver returns its secret": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+						Host:          "https://auth.example.com",
+						AccountSecret: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "acmedns-creds"}},
+					},
+				}},
+			}),
+			expectNames: []string{"acmedns-creds"},
+		},
+		"ACME issuer with a DigitalOcean DNS-01 solver returns its secret": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					DigitalOcean: &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{
+						Token: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "digitalocean-token"}},
+					},
+				}},
+			}),
+			expectNames: []string{"digitalocean-token"},
+		},
+		"ACME issuer with an RFC2136 DNS-01 solver returns its secret": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+						Nameserver: "ns.example.com:53",
+						TSIGSecret: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "rfc2136-tsig"}},
+					},
+				}},
+			}),
+			expectNames: []string{"rfc2136-tsig"},
+		},
 		"ACME issuer with multiple DNS-01 solvers returns all their secrets": {
 			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
