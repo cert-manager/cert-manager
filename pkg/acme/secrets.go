@@ -23,9 +23,9 @@ import (
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
-	"github.com/cert-manager/cert-manager/internal/apis/meta"
 	"github.com/cert-manager/cert-manager/pkg/api"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // RequiredDNS01SolverSecrets returns the Kubernetes Secret references required
@@ -34,8 +34,8 @@ import (
 // shared by the code that validates those Secrets exist (pkg/issuer/acme) and
 // the code that decides whether a Secret event is relevant to a given
 // Issuer/ClusterIssuer (pkg/controller/issuers, pkg/controller/clusterissuers).
-func RequiredDNS01SolverSecrets(issuer v1.GenericIssuer) ([]*meta.SecretKeySelector, error) {
-	var secrets []*meta.SecretKeySelector
+func RequiredDNS01SolverSecrets(issuer v1.GenericIssuer) ([]cmmeta.SecretKeySelector, error) {
+	var secrets []cmmeta.SecretKeySelector
 	spec := issuer.GetSpec()
 	if spec.ACME == nil {
 		return secrets, nil
@@ -54,10 +54,16 @@ func RequiredDNS01SolverSecrets(issuer v1.GenericIssuer) ([]*meta.SecretKeySelec
 		}
 
 		_, requiredSecrets := validation.ValidateACMEChallengeSolverDNS01(out.DNS01, field.NewPath("spec"))
-		if len(requiredSecrets) == 0 {
-			continue
+		for _, s := range requiredSecrets {
+			// Convert back to the external type: this is a public function in a
+			// non-internal package, so it must not leak internal/... types into
+			// callers outside this module.
+			var external cmmeta.SecretKeySelector
+			if err := api.Scheme.Convert(s, &external, nil); err != nil {
+				return nil, fmt.Errorf("unable to convert required secret reference to external type: %w", err)
+			}
+			secrets = append(secrets, external)
 		}
-		secrets = append(secrets, requiredSecrets...)
 	}
 
 	return secrets, nil
