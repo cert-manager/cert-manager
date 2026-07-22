@@ -19,106 +19,122 @@ package issuers
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
-func TestACMEIssuerReferencesSecret(t *testing.T) {
-	solverSecret := "dns-solver-creds"
-	eabSecret := "eab-creds"
-	accountSecret := "account-key"
+// TestIssuersForSecret_ACMEDNS01Solver is a regression test for
+// https://github.com/cert-manager/cert-manager/issues/9036: an Issuer with an
+// ACME DNS-01 solver referencing a Secret must be requeued when that Secret
+// is created or updated, the same way it already is for its PrivateKey and
+// ExternalAccountBinding Secrets.
+func TestIssuersForSecret_ACMEDNS01Solver(t *testing.T) {
+	const ns = "testns"
 
-	tests := []struct {
-		name       string
-		acme       *cmacme.ACMEIssuer
-		secretName string
-		want       bool
+	route53Issuer := gen.Issuer("route53-issuer",
+		gen.SetIssuerNamespace(ns),
+		gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+			{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					SecretAccessKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "route53-creds"},
+						Key:                  "secret-access-key",
+					},
+				},
+			}},
+		}),
+	)
+	eabIssuer := gen.Issuer("eab-issuer",
+		gen.SetIssuerNamespace(ns),
+		gen.SetIssuerACMEEAB("kid", "eab-creds"),
+	)
+	privateKeyIssuer := gen.Issuer("privatekey-issuer",
+		gen.SetIssuerNamespace(ns),
+		gen.SetIssuerACMEPrivKeyRef("privatekey-creds"),
+	)
+	caIssuer := gen.Issuer("ca-issuer",
+		gen.SetIssuerNamespace(ns),
+		gen.SetIssuerCASecretName("ca-creds"),
+	)
+	otherNamespaceIssuer := gen.Issuer("other-ns-issuer",
+		gen.SetIssuerNamespace("other"),
+		gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+			{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+					SecretAccessKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "route53-creds"},
+						Key:                  "secret-access-key",
+					},
+				},
+			}},
+		}),
+	)
+
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	for _, iss := range []*v1.Issuer{route53Issuer, eabIssuer, privateKeyIssuer, caIssuer, otherNamespaceIssuer} {
+		require.NoError(t, indexer.Add(iss))
+	}
+
+	c := &controller{issuerLister: cmlisters.NewIssuerLister(indexer)}
+
+	tests := map[string]struct {
+		secret        *corev1.Secret
+		expectIssuers []string
 	}{
-		{
-			name: "private key",
-			acme: &cmacme.ACMEIssuer{
-				PrivateKey: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: accountSecret}},
-			},
-			secretName: accountSecret,
-			want:       true,
+		"a Secret referenced by a DNS-01 solver requeues the matching Issuer": {
+			secret:        secretNamed(ns, "route53-creds"),
+			expectIssuers: []string{"route53-issuer"},
 		},
-		{
-			name: "eab key",
-			acme: &cmacme.ACMEIssuer{
-				PrivateKey: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: accountSecret}},
-				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
-					Key: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: eabSecret}},
-				},
-			},
-			secretName: eabSecret,
-			want:       true,
+		"a Secret referenced by ExternalAccountBinding still requeues its Issuer": {
+			secret:        secretNamed(ns, "eab-creds"),
+			expectIssuers: []string{"eab-issuer"},
 		},
-		{
-			name: "route53 solver secret",
-			acme: &cmacme.ACMEIssuer{
-				PrivateKey: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: accountSecret}},
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-								SecretAccessKey: cmmeta.SecretKeySelector{
-									LocalObjectReference: cmmeta.LocalObjectReference{Name: solverSecret},
-									Key:                  "secret-access-key",
-								},
-							},
-						},
-					},
-				},
-			},
-			secretName: solverSecret,
-			want:       true,
+		"a Secret referenced by the ACME PrivateKey still requeues its Issuer": {
+			secret:        secretNamed(ns, "privatekey-creds"),
+			expectIssuers: []string{"privatekey-issuer"},
 		},
-		{
-			name: "clouddns solver secret",
-			acme: &cmacme.ACMEIssuer{
-				PrivateKey: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: accountSecret}},
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
-								ServiceAccount: &cmmeta.SecretKeySelector{
-									LocalObjectReference: cmmeta.LocalObjectReference{Name: solverSecret},
-									Key:                  "key.json",
-								},
-							},
-						},
-					},
-				},
-			},
-			secretName: solverSecret,
-			want:       true,
+		"a Secret referenced by a CA Issuer still requeues its Issuer": {
+			secret:        secretNamed(ns, "ca-creds"),
+			expectIssuers: []string{"ca-issuer"},
 		},
-		{
-			name: "unrelated secret",
-			acme: &cmacme.ACMEIssuer{
-				PrivateKey: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: accountSecret}},
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-								SecretAccessKey: cmmeta.SecretKeySelector{
-									LocalObjectReference: cmmeta.LocalObjectReference{Name: solverSecret},
-								},
-							},
-						},
-					},
-				},
-			},
-			secretName: "other",
-			want:       false,
+		"a same-named Secret in a different namespace does not requeue": {
+			secret:        secretNamed("other", "route53-creds"),
+			expectIssuers: []string{"other-ns-issuer"},
+		},
+		"an unreferenced Secret requeues nothing": {
+			secret:        secretNamed(ns, "unrelated-secret"),
+			expectIssuers: nil,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := acmeIssuerReferencesSecret(tt.acme, tt.secretName); got != tt.want {
-				t.Fatalf("acmeIssuerReferencesSecret() = %v, want %v", got, tt.want)
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			affected, err := c.issuersForSecret(tc.secret)
+			require.NoError(t, err)
+
+			var names []string
+			for _, iss := range affected {
+				names = append(names, iss.Name)
 			}
+			assert.Equal(t, tc.expectIssuers, names)
 		})
+	}
+}
+
+func secretNamed(namespace, name string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
 	}
 }

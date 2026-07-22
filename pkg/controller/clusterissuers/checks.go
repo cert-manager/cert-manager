@@ -21,8 +21,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/runtime"
 
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -40,11 +41,28 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 		}
 		switch {
 		case iss.Spec.ACME != nil:
-			// Match account key, EAB key, and DNS-01 solver secrets so creating
-			// a missing solver Secret re-queues the ClusterIssuer (see #9036).
-			if acmeIssuerReferencesSecret(iss.Spec.ACME, secret.Name) {
+			if iss.Spec.ACME.PrivateKey.Name == secret.Name {
 				affected = append(affected, iss)
 				continue
+			}
+			if iss.Spec.ACME.ExternalAccountBinding != nil && iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+				affected = append(affected, iss)
+				continue
+			}
+			// Match DNS-01 solver secrets so creating a missing solver Secret
+			// re-queues the ClusterIssuer (see #9036).
+			solverSecrets, err := acme.RequiredDNS01SolverSecrets(iss)
+			if err != nil {
+				// Don't let one issuer's conversion error stop every other
+				// issuer from being matched against this Secret event.
+				runtime.HandleError(fmt.Errorf("error determining ACME DNS-01 solver secrets for issuer %s: %w", iss.Name, err))
+				continue
+			}
+			for _, s := range solverSecrets {
+				if s.Name == secret.Name {
+					affected = append(affected, iss)
+					break
+				}
 			}
 		case iss.Spec.CA != nil:
 			if iss.Spec.CA.SecretName == secret.Name {
@@ -105,70 +123,4 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 	}
 
 	return affected, nil
-}
-
-// acmeIssuerReferencesSecret reports whether the ACME issuer config references
-// the given Secret name via the account private key, EAB key, or any DNS-01
-// solver provider secret.
-func acmeIssuerReferencesSecret(acme *cmacme.ACMEIssuer, secretName string) bool {
-	if acme.PrivateKey.Name == secretName {
-		return true
-	}
-	if acme.ExternalAccountBinding != nil && acme.ExternalAccountBinding.Key.Name == secretName {
-		return true
-	}
-	for i := range acme.Solvers {
-		if dns01SolverReferencesSecret(acme.Solvers[i].DNS01, secretName) {
-			return true
-		}
-	}
-	return false
-}
-
-// dns01SolverReferencesSecret matches the secret names collected by
-// validation.ValidateACMEChallengeSolverDNS01 so creating or updating a solver
-// Secret re-queues the ClusterIssuer that depends on it (see #9036).
-func dns01SolverReferencesSecret(dns *cmacme.ACMEChallengeSolverDNS01, secretName string) bool {
-	if dns == nil {
-		return false
-	}
-	if dns.Akamai != nil {
-		if dns.Akamai.AccessToken.Name == secretName ||
-			dns.Akamai.ClientSecret.Name == secretName ||
-			dns.Akamai.ClientToken.Name == secretName {
-			return true
-		}
-	}
-	if dns.AzureDNS != nil && dns.AzureDNS.ClientSecret != nil && dns.AzureDNS.ClientSecret.Name == secretName {
-		return true
-	}
-	if dns.CloudDNS != nil && dns.CloudDNS.ServiceAccount != nil && dns.CloudDNS.ServiceAccount.Name == secretName {
-		return true
-	}
-	if dns.Cloudflare != nil {
-		if dns.Cloudflare.APIKey != nil && dns.Cloudflare.APIKey.Name == secretName {
-			return true
-		}
-		if dns.Cloudflare.APIToken != nil && dns.Cloudflare.APIToken.Name == secretName {
-			return true
-		}
-	}
-	if dns.Route53 != nil {
-		if dns.Route53.SecretAccessKey.Name == secretName {
-			return true
-		}
-		if dns.Route53.SecretAccessKeyID != nil && dns.Route53.SecretAccessKeyID.Name == secretName {
-			return true
-		}
-	}
-	if dns.AcmeDNS != nil && dns.AcmeDNS.AccountSecret.Name == secretName {
-		return true
-	}
-	if dns.DigitalOcean != nil && dns.DigitalOcean.Token.Name == secretName {
-		return true
-	}
-	if dns.RFC2136 != nil && dns.RFC2136.TSIGSecret.Name == secretName {
-		return true
-	}
-	return false
 }
