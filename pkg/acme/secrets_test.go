@@ -30,10 +30,15 @@ import (
 )
 
 func TestRequiredDNS01SolverSecrets(t *testing.T) {
+	// RequiredDNS01SolverSecrets can only return an error if api.Scheme.Convert
+	// fails converting the external ACMEChallengeSolver to its internal type.
+	// That conversion is entirely generated field-copying (no parsing or
+	// validation), so it cannot fail for any value of the external Go struct
+	// type - there is no test case for it here because there is no reachable
+	// way to construct one.
 	tests := map[string]struct {
 		issuer        gen.IssuerModifier
 		expectNames   []string
-		expectErr     bool
 		expectNoSlice bool
 	}{
 		"non-ACME issuer returns no secrets": {
@@ -156,10 +161,6 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 			issuer := gen.Issuer("test", tc.issuer)
 
 			secrets, err := acme.RequiredDNS01SolverSecrets(issuer)
-			if tc.expectErr {
-				require.Error(t, err)
-				return
-			}
 			require.NoError(t, err)
 
 			if tc.expectNoSlice {
