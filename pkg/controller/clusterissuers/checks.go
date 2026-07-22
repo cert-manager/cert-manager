@@ -55,7 +55,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 			if err != nil {
 				// Don't let one issuer's conversion error stop every other
 				// issuer from being matched against this Secret event.
-				runtime.HandleError(fmt.Errorf("error determining ACME DNS-01 solver secrets for issuer %s: %w", iss.Name, err))
+				runtime.HandleError(fmt.Errorf("error determining ACME DNS-01 solver secrets for ClusterIssuer %s: %w", iss.Name, err))
 				continue
 			}
 			for _, s := range solverSecrets {
