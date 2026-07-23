@@ -22,6 +22,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -282,6 +283,17 @@ func CertificateTemplateFromCSRPEM(csrPEM []byte, validatorMutators ...Certifica
 	return CertificateTemplateFromCSR(csr, validatorMutators...)
 }
 
+// TODO: we should use the conversion functions in the API package to convert
+// to internal types, rather than reimplementing them here.
+func convertPointerInt32ToPointerInt(p *int32) *int {
+	if p == nil {
+		return nil
+	}
+
+	i := int(*p)
+	return &i
+}
+
 // CertificateTemplateFromCertificate will create a x509.Certificate for the given
 // Certificate resource
 func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate, error) {
@@ -299,7 +311,7 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 	return CertificateTemplateFromCSR(
 		csr,
 		CertificateTemplateOverrideDuration(certDuration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(crt.Spec.IsCA, nil),
+		CertificateTemplateValidateAndOverrideBasicConstraints(crt.Spec.IsCA, convertPointerInt32ToPointerInt(crt.Spec.MaxPathLen)),
 		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)
 }
@@ -336,10 +348,20 @@ func CertificateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certif
 
 	isCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
+	var maxPathLen *int
+	maxPathLenValue, hasMaxPathLen := csr.Annotations[experimentalapi.CertificateSigningRequestMaxPathLenAnnotationKey]
+	if hasMaxPathLen {
+		integerValue, err := strconv.Atoi(maxPathLenValue)
+		if err != nil {
+			return nil, err
+		}
+		maxPathLen = &integerValue
+	}
+
 	return CertificateTemplateFromCSRPEM(
 		csr.Spec.Request,
 		CertificateTemplateOverrideDuration(duration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		CertificateTemplateValidateAndOverrideKeyUsages(ku, eku),          // Override the key usages, but make sure they match the usages in the CSR if present
+		CertificateTemplateValidateAndOverrideBasicConstraints(isCA, maxPathLen), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		CertificateTemplateValidateAndOverrideKeyUsages(ku, eku),                 // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }

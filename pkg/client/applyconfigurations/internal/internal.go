@@ -1364,6 +1364,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.meta.v1.IssuerReference
       default: {}
+    - name: maxPathLen
+      type:
+        scalar: numeric
     - name: request
       type:
         scalar: string
@@ -1439,6 +1442,9 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+    - name: encodeBasicConstraintsInRequest
+      type:
+        scalar: boolean
     - name: encodeUsagesInRequest
       type:
         scalar: boolean
@@ -1461,6 +1467,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: literalSubject
       type:
         scalar: string
+    - name: maxPathLen
+      type:
+        scalar: numeric
     - name: nameConstraints
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.NameConstraints

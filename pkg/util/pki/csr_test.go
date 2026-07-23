@@ -36,6 +36,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -421,14 +422,15 @@ func TestGenerateCSR(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                                    string
-		crt                                     *cmapi.Certificate
-		want                                    *x509.CertificateRequest
-		wantErr                                 bool
-		literalCertificateSubjectFeatureEnabled bool
-		basicConstraintsFeatureEnabled          bool
-		nameConstraintsFeatureEnabled           bool
-		otherNamesFeatureEnabled                bool
+		name                                                   string
+		crt                                                    *cmapi.Certificate
+		want                                                   *x509.CertificateRequest
+		wantErr                                                bool
+		literalCertificateSubjectFeatureEnabled                bool
+		encodeBasicConstraintsInRequestByDefaultFeatureEnabled bool
+		basicConstraintsFeatureEnabled                         bool
+		nameConstraintsFeatureEnabled                          bool
+		otherNamesFeatureEnabled                               bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
@@ -516,7 +518,7 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
-			name: "Generate CSR from certificate with isCA not set and with UseCertificateRequestBasicConstraints flag enabled",
+			name: "Generate CSR from certificate with isCA not set and with EncodeBasicConstraintsInRequestByDefault=true and EncodeBasicConstraintsInRequest not set",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org"}},
 			want: &x509.CertificateRequest{
 				Version:            0,
@@ -536,11 +538,51 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
 			},
-			basicConstraintsFeatureEnabled: true,
+			encodeBasicConstraintsInRequestByDefaultFeatureEnabled: true,
 		},
 		{
-			name: "Generate CSR from certificate with isCA set and with UseCertificateRequestBasicConstraints flag enabled",
-			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", IsCA: true}},
+			name: "Generate CSR from certificate with EncodeBasicConstraintsInRequestByDefault=true and EncodeBasicConstraintsInRequest=false",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", EncodeBasicConstraintsInRequest: ptr.To(false)}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1DefaultKeyUsage,
+						Critical: true,
+					},
+				},
+				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
+			},
+			encodeBasicConstraintsInRequestByDefaultFeatureEnabled: true,
+		},
+		{
+			name: "Generate CSR from certificate with isCA not set and with EncodeBasicConstraintsInRequest set to true",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", EncodeBasicConstraintsInRequest: ptr.To(true)}},
+			want: &x509.CertificateRequest{
+				Version:            0,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				ExtraExtensions: []pkix.Extension{
+					{
+						Id:       OIDExtensionKeyUsage,
+						Value:    asn1DefaultKeyUsage,
+						Critical: true,
+					},
+					{
+						Id:       OIDExtensionBasicConstraints,
+						Value:    basicConstraintsGenerator(t, false),
+						Critical: true,
+					},
+				},
+				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
+			},
+		},
+		{
+			name: "Generate CSR from certificate with isCA set and with EncodeBasicConstraintsInRequest set to true",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", IsCA: true, EncodeBasicConstraintsInRequest: ptr.To(true)}},
 			want: &x509.CertificateRequest{
 				Version:            0,
 				SignatureAlgorithm: x509.SHA256WithRSA,
@@ -559,7 +601,6 @@ func TestGenerateCSR(t *testing.T) {
 				},
 				RawSubject: subjectGenerator(t, pkix.Name{CommonName: "example.org"}),
 			},
-			basicConstraintsFeatureEnabled: true,
 		},
 		{
 			name: "Generate CSR from certificate with extended key usages",
@@ -859,7 +900,7 @@ func TestGenerateCSR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GenerateCSR(
 				tt.crt,
-				WithEncodeBasicConstraintsInRequest(tt.basicConstraintsFeatureEnabled),
+				WithEncodeBasicConstraintsInRequestByDefault(tt.encodeBasicConstraintsInRequestByDefaultFeatureEnabled),
 				WithNameConstraints(tt.nameConstraintsFeatureEnabled),
 				WithOtherNames(tt.otherNamesFeatureEnabled),
 				WithUseLiteralSubject(tt.literalCertificateSubjectFeatureEnabled),
