@@ -1449,6 +1449,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 							Format:      "",
 						},
 					},
+					"enableARI": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableARI enables fetching ACME Renewal Information from the ACME CA server. Default is `Enabled`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"server", "privateKeySecretRef"},
 			},

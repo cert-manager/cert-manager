@@ -95,6 +95,15 @@ spec:
                         certificates, including expiry notification emails.
                         This field may be updated after the account is initially registered.
                       type: string
+                    enableARI:
+                      default: Enabled
+                      description: |-
+                        EnableARI enables fetching ACME Renewal Information from the ACME CA
+                        server. Default is `Enabled`.
+                      enum:
+                        - Disabled
+                        - Enabled
+                      type: string
                     enableDurationFeature:
                       description: |-
                         Enables requesting a Not After date on certificates that matches the

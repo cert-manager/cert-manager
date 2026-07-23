@@ -307,7 +307,12 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
 	}
 
-	ariEnabled := utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI)
+	genericIssuer, err := c.helper.GetGenericIssuer(o.Spec.IssuerRef, o.Namespace)
+	if err != nil {
+		return fmt.Errorf("error reading (cluster)issuer %q: %v", o.Spec.IssuerRef.Name, err)
+	}
+
+	ariEnabled := feature.ARIEnabledForIssuer(genericIssuer)
 	// optsBeforeReplaces lets us cheaply retry the order without the replaces
 	// option if the server rejects it. It is only meaningful when replaces
 	// was actually appended.

@@ -596,7 +596,9 @@ func TestReadinessForARI(t *testing.T) {
 	// ACMEUseARI feature gate is enabled.
 	issuer := gen.Issuer("test-issuer",
 		gen.SetIssuerNamespace("testns"),
-		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			EnableARI: cmacme.EnableARITypeEnabled,
+		}),
 	)
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
