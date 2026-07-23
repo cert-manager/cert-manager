@@ -139,7 +139,7 @@ func TestProcessItem(t *testing.T) {
 					LastTransitionTime: &metaNow,
 				},
 			},
-			expectedEvent: "Normal cert-manager.io Certificate request has been approved by cert-manager.io",
+			expectedEvent: "Normal AutoApproved Certificate request has been approved by cert-manager.io",
 		},
 		"approve CertificateRequest has 'Ready' Pending condition": {
 			request: &cmapi.CertificateRequest{
@@ -168,7 +168,7 @@ func TestProcessItem(t *testing.T) {
 					LastTransitionTime: &metaNow,
 				},
 			},
-			expectedEvent: "Normal cert-manager.io Certificate request has been approved by cert-manager.io",
+			expectedEvent: "Normal AutoApproved Certificate request has been approved by cert-manager.io",
 		},
 	}
 	for name, test := range tests {
