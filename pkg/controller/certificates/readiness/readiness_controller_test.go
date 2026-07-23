@@ -812,3 +812,92 @@ func TestReadinessForARI(t *testing.T) {
 		})
 	}
 }
+
+// fakeScheduledWorkQueue records the duration passed to Add so tests can assert
+// that the expiry re-check is scheduled at the right time.
+type fakeScheduledWorkQueue struct {
+	added map[types.NamespacedName]time.Duration
+}
+
+func (f *fakeScheduledWorkQueue) Add(key types.NamespacedName, d time.Duration) {
+	if f.added == nil {
+		f.added = make(map[types.NamespacedName]time.Duration)
+	}
+	f.added[key] = d
+}
+
+func (f *fakeScheduledWorkQueue) Forget(key types.NamespacedName) {}
+
+// TestProcessItemSchedulesExpiryRecheck verifies that ProcessItem schedules a
+// re-evaluation at the certificate's expiry time, so that the Ready condition
+// is updated to False (Expired) if the cert expires while a renewal is stalled
+// and no informer event fires. Fixes https://github.com/cert-manager/cert-manager/issues/7895.
+func TestProcessItemSchedulesExpiryRecheck(t *testing.T) {
+	now := time.Now().UTC()
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+		},
+	}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test-secret"},
+	}
+
+	notBefore := now.Truncate(time.Second)
+	notAfter := now.Add(2 * time.Hour).Truncate(time.Second)
+
+	builder := &testpkg.Builder{
+		T:     t,
+		Clock: fakeclock.NewFakeClock(now),
+	}
+	builder.CertManagerObjects = append(builder.CertManagerObjects, gen.CertificateFrom(cert))
+
+	x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, notBefore, notAfter)
+	builder.KubeObjects = append(builder.KubeObjects, gen.SecretFrom(secret,
+		gen.SetSecretData(map[string][]byte{corev1.TLSCertKey: x509Bytes})))
+
+	builder.Init()
+
+	w := &controllerWrapper{}
+	_, _, err := w.Register(builder.Context)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fakeQueue := &fakeScheduledWorkQueue{}
+	w.controller.scheduledWorkQueue = fakeQueue
+	w.controller.policyEvaluator = policyEvaluatorBuilder(cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionReady,
+		Status: cmmeta.ConditionTrue,
+		Reason: ReadyReason,
+	})
+	w.controller.renewalTimeCalculator = renewalTimeBuilder(
+		func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
+		nil,
+	)
+	w.controller.recorder = new(testpkg.FakeRecorder)
+
+	builder.Start()
+	defer builder.Stop()
+
+	key := types.NamespacedName{Namespace: cert.Namespace, Name: cert.Name}
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("unexpected error from ProcessItem: %v", err)
+	}
+
+	d, ok := fakeQueue.added[key]
+	if !ok {
+		t.Fatal("expected scheduledWorkQueue.Add to be called for the certificate, but it was not")
+	}
+
+	// The scheduled duration should equal notAfter − now (approximately 2 hours).
+	// Allow a small slack to account for time elapsed between setup and assertion.
+	expectedDuration := notAfter.Sub(now)
+	const slack = 5 * time.Second
+	if d < expectedDuration-slack || d > expectedDuration+slack {
+		t.Errorf("expected scheduled duration ≈ %v, got %v", expectedDuration, d)
+	}
+}
