@@ -164,13 +164,7 @@ func SyncFnFor(
 						OwnerReferences: crt.OwnerReferences,
 						Annotations:     extraAnnotations,
 					},
-					Spec: cmapi.CertificateSpec{
-						DNSNames:    crt.Spec.DNSNames,
-						IPAddresses: crt.Spec.IPAddresses,
-						SecretName:  crt.Spec.SecretName,
-						IssuerRef:   crt.Spec.IssuerRef,
-						Usages:      crt.Spec.Usages,
-					},
+					Spec: crt.Spec,
 				})
 			} else {
 				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
