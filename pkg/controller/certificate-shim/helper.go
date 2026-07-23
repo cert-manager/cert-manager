@@ -201,8 +201,8 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, err)
 		}
 
-		if limit < 1 {
-			return fmt.Errorf("%w %q: revision history limit must be a positive number %q", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, revisionHistoryLimit)
+		if limit < 0 {
+			return fmt.Errorf("%w %q: revision history limit must be a non-negative number %q", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, revisionHistoryLimit)
 		}
 
 		crt.Spec.RevisionHistoryLimit = new(int32(limit))

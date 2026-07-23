@@ -254,7 +254,10 @@ type CertificateSpec struct {
 	// was changed. Revisions will be removed by oldest first if the number of
 	// revisions exceeds this number.
 	//
-	// If set, revisionHistoryLimit must be a value of `1` or greater.
+	// If set to `0`, cert-manager will retain one current CertificateRequest to
+	// ensure the current state of the Certificate can still be determined.
+	//
+	// If set, revisionHistoryLimit must be a value of `0` or greater.
 	// Default value is `1`.
 	RevisionHistoryLimit *int32
 

@@ -235,6 +235,16 @@ func Test_translateAnnotations(t *testing.T) {
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.RevisionHistoryLimitAnnotationKey] = "0"
 			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(new(int32(0)), crt.Spec.RevisionHistoryLimit)
+			},
+		},
+		"negative revision history limit": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.RevisionHistoryLimitAnnotationKey] = "-1"
+			},
 			expectedError: errInvalidIngressAnnotation,
 		},
 		"bad private key algorithm": {

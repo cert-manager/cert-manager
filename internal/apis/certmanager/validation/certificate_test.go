@@ -597,7 +597,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"invalid certificate with revision history limit < 1": {
+		"valid certificate with revision history limit == 0": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName:           "abc",
@@ -607,8 +607,19 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			a: someAdmissionRequest,
+		},
+		"invalid certificate with revision history limit < 0": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:           "abc",
+					SecretName:           "abc",
+					IssuerRef:            validIssuerRef,
+					RevisionHistoryLimit: new(int32(-1)),
+				},
+			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(0), "must not be less than 1"),
+				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(-1), "must not be less than 0"),
 			},
 		},
 		"valid with empty secretTemplate": {
