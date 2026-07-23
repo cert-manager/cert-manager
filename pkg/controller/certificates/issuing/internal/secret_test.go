@@ -916,3 +916,156 @@ func Test_getCertificateSecret(t *testing.T) {
 		})
 	}
 }
+
+func Test_checkExistingSecretOwnership(t *testing.T) {
+	crt := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "test-certificate",
+			UID:       apitypes.UID("cert-uid-123"),
+		},
+		Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+	}
+
+	trueVal := true
+	falseVal := false
+
+	tests := map[string]struct {
+		enableSecretOwnerReferences bool
+		existingSecret              *corev1.Secret
+		expErr                      bool
+		expOwnerName                string
+		expOwnerKind                string
+		expOwnerAPIVersion          string
+	}{
+		"ownerRef disabled: always returns nil even when conflicting ownerRef present": {
+			enableSecretOwnerReferences: false,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-secret",
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: "cert-manager.io/v1",
+						Kind:       "Certificate",
+						Name:       "other-cert",
+						UID:        apitypes.UID("other-uid"),
+						Controller: &trueVal,
+					}},
+				},
+			},
+		},
+		"ownerRef enabled: secret does not exist, returns nil": {
+			enableSecretOwnerReferences: true,
+		},
+		"ownerRef enabled: secret has no ownerReferences, returns nil": {
+			enableSecretOwnerReferences: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-ns", Name: "test-secret"},
+			},
+		},
+		"ownerRef enabled: secret has non-controller ownerRef with different UID, returns nil": {
+			enableSecretOwnerReferences: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-secret",
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: "cert-manager.io/v1",
+						Kind:       "Certificate",
+						Name:       "other-cert",
+						UID:        apitypes.UID("other-uid"),
+						Controller: &falseVal,
+					}},
+				},
+			},
+		},
+		"ownerRef enabled: secret has controller ownerRef with same UID as current cert, returns nil": {
+			enableSecretOwnerReferences: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-secret",
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: "cert-manager.io/v1",
+						Kind:       "Certificate",
+						Name:       "test-certificate",
+						UID:        apitypes.UID("cert-uid-123"),
+						Controller: &trueVal,
+					}},
+				},
+			},
+		},
+		"ownerRef enabled: secret has controller ownerRef from different Certificate, returns SecretOwnedByAnotherControllerError": {
+			enableSecretOwnerReferences: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-secret",
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: "cert-manager.io/v1",
+						Kind:       "Certificate",
+						Name:       "other-cert",
+						UID:        apitypes.UID("other-uid"),
+						Controller: &trueVal,
+					}},
+				},
+			},
+			expErr:             true,
+			expOwnerName:       "other-cert",
+			expOwnerKind:       "Certificate",
+			expOwnerAPIVersion: "cert-manager.io/v1",
+		},
+		"ownerRef enabled: secret has controller ownerRef from another operator (non-cert-manager), returns SecretOwnedByAnotherControllerError": {
+			enableSecretOwnerReferences: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-secret",
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+						Name:       "other-owner",
+						UID:        apitypes.UID("other-uid"),
+						Controller: &trueVal,
+					}},
+				},
+			},
+			expErr:             true,
+			expOwnerName:       "other-owner",
+			expOwnerKind:       "Deployment",
+			expOwnerAPIVersion: "apps/v1",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			builder := &testpkg.Builder{T: t}
+			if test.existingSecret != nil {
+				builder.KubeObjects = append(builder.KubeObjects, test.existingSecret)
+			}
+
+			builder.Init()
+
+			s := SecretsManager{
+				secretLister:                builder.KubeSharedInformerFactory.Secrets().Lister(),
+				enableSecretOwnerReferences: test.enableSecretOwnerReferences,
+			}
+
+			builder.Start()
+			defer builder.Stop()
+
+			err := s.checkExistingSecretOwnership(crt)
+			if !test.expErr {
+				assert.NoError(t, err)
+				return
+			}
+
+			var ownershipErr *SecretOwnedByAnotherControllerError
+			assert.Error(t, err)
+			assert.True(t, errors.As(err, &ownershipErr))
+			assert.Equal(t, test.expOwnerName, ownershipErr.OwnerName)
+			assert.Equal(t, test.expOwnerKind, ownershipErr.OwnerKind)
+			assert.Equal(t, test.expOwnerAPIVersion, ownershipErr.OwnerAPIVersion)
+		})
+	}
+}

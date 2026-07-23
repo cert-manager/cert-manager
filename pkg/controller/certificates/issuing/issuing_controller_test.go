@@ -56,6 +56,7 @@ func TestIssuingController(t *testing.T) {
 
 		certificate             *cmapi.Certificate
 		expSecretUpdateDataCall *internal.SecretData
+		secretsUpdateDataErr    error
 
 		expectedErr bool
 	}
@@ -468,6 +469,64 @@ func TestIssuingController(t *testing.T) {
 				ExpectedEvents:  []string{},
 			},
 			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state, CertificateRequest is ready, but Secret is controlled by another resource, fail issuance with SecretConflict": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "SecretConflict",
+								Message:            "The certificate request has failed to complete and will be retried: " + (&internal.SecretOwnedByAnotherControllerError{SecretName: "output", OwnerName: "other-owner", OwnerKind: "Deployment", OwnerAPIVersion: "apps/v1"}).Error(),
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(new(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning SecretConflict The certificate request has failed to complete and will be retried: " + (&internal.SecretOwnedByAnotherControllerError{SecretName: "output", OwnerName: "other-owner", OwnerKind: "Deployment", OwnerAPIVersion: "apps/v1"}).Error(),
+				},
+			},
+			expSecretUpdateDataCall: &internal.SecretData{
+				Certificate:     exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:      exampleBundle.PrivateKeyBytes,
+				CA:              nil,
+				CertificateName: "test",
+				IssuerName:      "ca-issuer",
+				IssuerKind:      "Issuer",
+				IssuerGroup:     "foo.io",
+			},
+			secretsUpdateDataErr: &internal.SecretOwnedByAnotherControllerError{SecretName: "output", OwnerName: "other-owner", OwnerKind: "Deployment", OwnerAPIVersion: "apps/v1"},
+			expectedErr:          false,
 		},
 
 		"if certificate is in Issuing state, one CertificateRequests, and is ready, store the signed certificate, ca, and private key to a new secret, and log an event": {
@@ -1483,8 +1542,10 @@ func TestIssuingController(t *testing.T) {
 			var secretsUpdateDataCalled bool
 			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {
 				secretsUpdateDataCalled = true
-				assert.Equal(t, *test.expSecretUpdateDataCall, secretData, "expected secretData: %#+v, got %#+v", *test.expSecretUpdateDataCall, secretData)
-				return nil
+				if test.expSecretUpdateDataCall != nil {
+					assert.Equal(t, *test.expSecretUpdateDataCall, secretData, "expected secretData: %#+v, got %#+v", *test.expSecretUpdateDataCall, secretData)
+				}
+				return test.secretsUpdateDataErr
 			}
 			t.Cleanup(func() {
 				wantsSecretUpdateDataCall := test.expSecretUpdateDataCall != nil

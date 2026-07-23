@@ -19,6 +19,7 @@ package issuing
 import (
 	"context"
 	"crypto"
+	"errors"
 	"fmt"
 	"time"
 
@@ -442,6 +443,20 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // Secret in the appropriate format type. The caller must verify the certificate
 // public key matches the CSR before calling this function.
 func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+	// Guard against two Certificates referencing the same Secret. The trigger
+	// controller performs the same check before setting the Issuing condition,
+	// but ownership can change between then and now (e.g. a conflicting
+	// Certificate is created while issuance is in progress), so re-check here
+	// before writing certificate data to the Secret.
+	isOwner, duplicates, err := internalcertificates.CertificateOwnsSecret(ctx, c.certificateLister, c.secretLister, crt)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Certificate.Spec.SecretName refers to the same Secret as another Certificate in the same namespace, skipping issueCertificate.", "duplicates", duplicates)
+		return nil
+	}
+
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
@@ -462,6 +477,16 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	}
 
 	if err := c.secretsUpdateData(ctx, crt, secretData); err != nil {
+		var conflictErr *internal.SecretOwnedByAnotherControllerError
+		if errors.As(err, &conflictErr) {
+			// The Secret is owned by a different Certificate.
+			return c.failIssueCertificate(ctx, logf.FromContext(ctx), crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  "SecretConflict",
+				Message: err.Error(),
+			})
+		}
 		return err
 	}
 
