@@ -1223,6 +1223,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1_ACMEIssuerDNS01ProviderC
 
 func autoConvert_v1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *acmev1.ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
+	out.TTL = (*int32)(unsafe.Pointer(in.TTL))
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
 		*out = new(meta.SecretKeySelector)
@@ -1251,6 +1252,7 @@ func Convert_v1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01Provide
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *acmev1.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
+	out.TTL = (*int32)(unsafe.Pointer(in.TTL))
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
 		*out = new(pkgapismetav1.SecretKeySelector)

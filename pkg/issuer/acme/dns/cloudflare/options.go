@@ -26,6 +26,8 @@ type DNSProviderOptions struct {
 	APIToken string
 	// UserAgent is the HTTP User-Agent string sent to the Cloudflare API.
 	UserAgent string
+	// TTL is the time-to-live in seconds for DNS challenge records.
+	TTL int32
 }
 
 // DNSProviderOption is a functional option for configuring a DNSProvider.
@@ -63,4 +65,12 @@ type UserAgent string
 // ApplyToDNSProviderOptions sets the UserAgent field.
 func (u UserAgent) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
 	o.UserAgent = string(u)
+}
+
+// TTL sets the time-to-live in seconds for DNS challenge records.
+type TTL int32
+
+// ApplyToDNSProviderOptions sets the TTL field.
+func (t TTL) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
+	o.TTL = int32(t)
 }

@@ -842,6 +842,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: email
       type:
         scalar: string
+    - name: ttl
+      type:
+        scalar: numeric
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEIssuerDNS01ProviderDigitalOcean
   map:
     fields:

@@ -30,9 +30,15 @@ import (
 // TODO: Unexport?
 const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
-// cloudFlareMaxBodySize is the max size of a received response body. The value is arbitrary
-// and is chosen to be large enough that any reasonable response would fit.
-const cloudFlareMaxBodySize = 1024 * 1024 // 1mb
+const (
+	// cloudFlareMaxBodySize is the max size of a received response body. The value is arbitrary
+	// and is chosen to be large enough that any reasonable response would fit.
+	cloudFlareMaxBodySize  = 1024 * 1024 // 1mb
+	cloudFlareDefaultTTL   = 120
+	cloudFlareAutomaticTTL = 1
+	cloudFlareMinTTL       = 30
+	cloudFlareMaxTTL       = 86400
+)
 
 // DNSProviderType is the Mockable Interface
 type DNSProviderType interface {
@@ -46,6 +52,7 @@ type DNSProvider struct {
 	authToken string
 
 	userAgent string
+	ttl       int32
 }
 
 // DNSZone is the Zone-Record returned from Cloudflare (we'll ignore everything we don't need)
@@ -59,7 +66,7 @@ type DNSZone struct {
 //
 // ctx is not used by this provider; it is accepted to standardize the constructor signature across all providers.
 func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
-	var opts DNSProviderOptions
+	opts := DNSProviderOptions{TTL: cloudFlareDefaultTTL}
 	for _, o := range options {
 		o.ApplyToDNSProviderOptions(&opts)
 	}
@@ -81,6 +88,7 @@ func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) 
 		// prevent the Go HTTP library from displaying it.
 		utiloptions.True(validHeaderFieldValue(opts.APIKey), "the Cloudflare API key is invalid (does the API key contain a newline?)"),
 		utiloptions.True(validHeaderFieldValue(opts.APIToken), "the Cloudflare API token is invalid (does the API token contain a newline?)"),
+		utiloptions.True(validTTL(opts.TTL), "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"),
 	)
 	if err != nil {
 		return nil, err
@@ -91,6 +99,7 @@ func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) 
 		authKey:   opts.APIKey,
 		authToken: opts.APIToken,
 		userAgent: opts.UserAgent,
+		ttl:       opts.TTL,
 	}, nil
 }
 
@@ -176,7 +185,7 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 			Type:    "TXT",
 			Name:    util.UnFqdn(fqdn),
 			Content: value,
-			TTL:     120,
+			TTL:     c.ttl,
 		}
 
 		body, err := json.Marshal(rec)
@@ -338,7 +347,7 @@ type cloudFlareRecord struct {
 	Type    string `json:"type"`
 	Content string `json:"content"`
 	ID      string `json:"id,omitempty"`
-	TTL     int    `json:"ttl,omitempty"`
+	TTL     int32  `json:"ttl,omitempty"`
 	ZoneID  string `json:"zone_id,omitempty"`
 }
 
@@ -352,6 +361,10 @@ func validHeaderFieldValue(v string) bool {
 		}
 	}
 	return true
+}
+
+func validTTL(ttl int32) bool {
+	return ttl == cloudFlareAutomaticTTL || (ttl >= cloudFlareMinTTL && ttl <= cloudFlareMaxTTL)
 }
 
 func isCTL(b byte) bool {

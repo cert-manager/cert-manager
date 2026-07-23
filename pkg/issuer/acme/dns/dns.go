@@ -298,11 +298,16 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		}
 
 		email := providerConfig.Cloudflare.Email
-		impl, err = s.dnsProviderConstructors.cloudFlare(ctx,
+		cloudFlareOptions := []cloudflare.DNSProviderOption{
 			cloudflare.Email(email),
 			cloudflare.APIKey(apiKey),
 			cloudflare.APIToken(apiToken),
-			cloudflare.UserAgent(s.RESTConfig.UserAgent))
+			cloudflare.UserAgent(s.RESTConfig.UserAgent),
+		}
+		if providerConfig.Cloudflare.TTL != nil {
+			cloudFlareOptions = append(cloudFlareOptions, cloudflare.TTL(*providerConfig.Cloudflare.TTL))
+		}
+		impl, err = s.dnsProviderConstructors.cloudFlare(ctx, cloudFlareOptions...)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}

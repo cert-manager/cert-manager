@@ -536,6 +536,10 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 	// Email of the account, only required when using API key based authentication.
 	Email string
 
+	// TTL is the time-to-live in seconds for Cloudflare DNS challenge records.
+	// When unset, cert-manager uses 120 seconds.
+	TTL *int32
+
 	// API key to use to authenticate with Cloudflare.
 	// Note: using an API token to authenticate is now the recommended method
 	// as it allows greater control of permissions.
