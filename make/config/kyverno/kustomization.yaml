@@ -69,3 +69,12 @@ patches:
       - op: replace
         path: /spec/validations/0/message
         value: Pods must set automountServiceAccountToken to false.
+      - op: replace
+        path: /metadata/annotations/policies.kyverno.io~1description
+        value: Kubernetes automatically mounts ServiceAccount credentials in each Pod. The ServiceAccount may be assigned roles allowing Pods to access API resources. Blocking this ability is an extension of the least privilege best practice and should be followed if Pods do not need to speak to the API server to function. This policy ensures that mounting of these ServiceAccount tokens is blocked.
+      - op: replace
+        path: /metadata/annotations/policies.kyverno.io~1subject
+        value: ServiceAccount,Pod
+      - op: replace
+        path: /metadata/annotations/policies.kyverno.io~1title
+        value: Restrict Auto-Mount of Service Account Tokens
