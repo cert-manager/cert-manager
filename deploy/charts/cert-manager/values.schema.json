@@ -833,6 +833,9 @@
         "nodeSelector": {
           "$ref": "#/$defs/helm-values.global.nodeSelector"
         },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.global.tolerations"
+        },
         "podSecurityPolicy": {
           "$ref": "#/$defs/helm-values.global.podSecurityPolicy"
         },
@@ -909,6 +912,12 @@
       "default": {},
       "description": "Global node selector\n\nThe nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).\n\nIf a component-specific nodeSelector is also set, it will be merged and take precedence.",
       "type": "object"
+    },
+    "helm-values.global.tolerations": {
+      "default": [],
+      "description": "Global tolerations\n\nA list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).\n\nIf a component-specific tolerations list is also set, it will be appended to the global list.",
+      "items": {},
+      "type": "array"
     },
     "helm-values.global.podSecurityPolicy": {
       "properties": {
