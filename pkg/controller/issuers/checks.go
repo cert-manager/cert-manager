@@ -21,7 +21,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -45,10 +47,23 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, erro
 				affected = append(affected, iss)
 				continue
 			}
-			if iss.Spec.ACME.ExternalAccountBinding != nil {
-				if iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+			if iss.Spec.ACME.ExternalAccountBinding != nil && iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+				affected = append(affected, iss)
+				continue
+			}
+			// Match DNS-01 solver secrets so creating a missing solver Secret
+			// re-queues the Issuer (see #9036).
+			solverSecrets, err := acme.RequiredDNS01SolverSecrets(iss)
+			if err != nil {
+				// Don't let one issuer's conversion error stop every other
+				// issuer from being matched against this Secret event.
+				runtime.HandleError(fmt.Errorf("error determining ACME DNS-01 solver secrets for issuer %s/%s: %w", iss.Namespace, iss.Name, err))
+				continue
+			}
+			for _, s := range solverSecrets {
+				if s.Name == secret.Name {
 					affected = append(affected, iss)
-					continue
+					break
 				}
 			}
 		case iss.Spec.CA != nil:
