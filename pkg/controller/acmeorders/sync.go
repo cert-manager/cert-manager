@@ -300,7 +300,11 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 
 	var options []acmeapi.OrderOption
 	if o.Spec.Duration != nil {
-		options = append(options, acmeapi.WithOrderNotAfter(c.clock.Now().Add(o.Spec.Duration.Duration)))
+		now := c.clock.Now()
+		options = append(options,
+			acmeapi.WithOrderNotBefore(now),
+			acmeapi.WithOrderNotAfter(now.Add(o.Spec.Duration.Duration)),
+		)
 	}
 
 	if o.Spec.Profile != "" {
