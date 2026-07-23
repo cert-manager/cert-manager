@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,13 +32,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
+	internalfeature "github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -5484,6 +5489,147 @@ func TestMergeAnnotations(t *testing.T) {
 			result := mergeAnnotations(tt.existing, tt.update)
 			if !reflect.DeepEqual(result, tt.expected) {
 				t.Errorf("mergeAnnotations() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func Test_handleGatewayAPIListeners_WildcardHostnameDeduplication(t *testing.T) {
+	listeners := []gwapi.Listener{
+		gatewayAPITLSListener("api.example.com", "example-tls"),
+		gatewayAPITLSListener("*.example.com", "example-tls"),
+		gatewayAPITLSListener("other.example.com", "other-tls"),
+	}
+
+	tests := []struct {
+		name        string
+		enabled     bool
+		wantHosts   []string
+		listenerSet bool
+	}{
+		{
+			name:      "disabled preserves concrete and wildcard hostnames",
+			wantHosts: []string{"api.example.com", "*.example.com"},
+		},
+		{
+			name:      "enabled removes a covered concrete Gateway hostname",
+			enabled:   true,
+			wantHosts: []string{"*.example.com"},
+		},
+		{
+			name:        "enabled removes a covered concrete ListenerSet hostname",
+			enabled:     true,
+			wantHosts:   []string{"*.example.com"},
+			listenerSet: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, internalfeature.GatewayAPIWildcardHostnameDeduplication, test.enabled)
+
+			tlsHosts := make(map[corev1.ObjectReference][]string)
+			if test.listenerSet {
+				listenerSet := &gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "testns"}}
+				handleGatewayAPIListeners([]gwapi.ListenerEntry{
+					gwapi.ListenerEntry(listeners[0]),
+					gwapi.ListenerEntry(listeners[1]),
+					gwapi.ListenerEntry(listeners[2]),
+				}, listenerSet, record.NewFakeRecorder(10), tlsHosts, controllerpkg.IngressShimOptions{})
+			} else {
+				gateway := &gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{Namespace: "testns"}}
+				handleGatewayAPIListeners(listeners, gateway, record.NewFakeRecorder(10), tlsHosts, controllerpkg.IngressShimOptions{})
+			}
+
+			secretRef := corev1.ObjectReference{Namespace: "testns", Name: "example-tls"}
+			if got := tlsHosts[secretRef]; !reflect.DeepEqual(got, test.wantHosts) {
+				t.Errorf("hosts = %#v, want %#v", got, test.wantHosts)
+			}
+			otherSecretRef := corev1.ObjectReference{Namespace: "testns", Name: "other-tls"}
+			if got, want := tlsHosts[otherSecretRef], []string{"other.example.com"}; !reflect.DeepEqual(got, want) {
+				t.Errorf("hosts for other Secret = %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
+func gatewayAPITLSListener(hostname, secretName string) gwapi.Listener {
+	group := gwapi.Group("core")
+	kind := gwapi.Kind("Secret")
+	mode := gwapi.TLSModeTerminate
+
+	return gwapi.Listener{
+		Hostname: ptrHostname(hostname),
+		Port:     443,
+		Protocol: gwapi.HTTPSProtocolType,
+		TLS: &gwapi.ListenerTLSConfig{
+			Mode: &mode,
+			CertificateRefs: []gwapi.SecretObjectReference{{
+				Group: &group,
+				Kind:  &kind,
+				Name:  gwapi.ObjectName(secretName),
+			}},
+		},
+	}
+}
+
+func Test_removeGatewayAPIHostnamesCoveredByWildcards(t *testing.T) {
+	tests := []struct {
+		name      string
+		hostnames []string
+		want      []string
+	}{
+		{
+			name:      "wildcard before concrete hostname still removes the concrete hostname",
+			hostnames: []string{"*.example.com", "api.example.com", "api.example.net"},
+			want:      []string{"*.example.com", "api.example.net"},
+		},
+		{
+			name: "wildcards cover exactly one concrete label and preserve order",
+			hostnames: []string{
+				"api.example.com",
+				"example.com",
+				"foo.bar.example.com",
+				"*.example.com",
+				"api.example.net",
+			},
+			want: []string{
+				"example.com",
+				"foo.bar.example.com",
+				"*.example.com",
+				"api.example.net",
+			},
+		},
+		{
+			name: "multiple wildcard suffixes cover only their direct children",
+			hostnames: []string{
+				"api.example.com",
+				"*.example.com",
+				"login.example.net",
+				"*.example.net",
+				"deep.login.example.net",
+			},
+			want: []string{
+				"*.example.com",
+				"*.example.net",
+				"deep.login.example.net",
+			},
+		},
+		{
+			name:      "no wildcard returns hostnames unchanged",
+			hostnames: []string{"api.example.com", "example.com"},
+			want:      []string{"api.example.com", "example.com"},
+		},
+		{
+			name: "empty input remains nil",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := removeGatewayAPIHostnamesCoveredByWildcards(test.hostnames)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("hostnames = %#v, want %#v", got, test.want)
 			}
 		})
 	}
