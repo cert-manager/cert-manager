@@ -48,7 +48,7 @@ type ACMEIssuerApplyConfiguration struct {
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	// This value picks the first certificate bundle in the combined set of
 	// ACME default and alternative chains that has a root-most certificate with
-	// this value as its issuer's commonname.
+	// this value as its issuer's common name.
 	PreferredChain *string `json:"preferredChain,omitempty"`
 	// Base64-encoded bundle of PEM CAs which can be used to validate the certificate
 	// chain presented by the ACME server.
