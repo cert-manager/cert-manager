@@ -318,8 +318,13 @@ func isBadNonce(err error) bool {
 //
 // Note that a "bad nonce" error is returned with a non-retriable 400 Bad Request code.
 // Callers should parse the response and check with isBadNonce.
+//
+// A 404 Not Found response is also considered retriable because some ACME servers
+// (e.g. Let's Encrypt) use replicated databases which can cause transient 404 errors
+// for recently created resources due to replication lag. See:
+// https://github.com/cert-manager/cert-manager/issues/8939
 func isRetriable(code int) bool {
-	return code <= 399 || code >= 500 || code == http.StatusTooManyRequests
+	return code <= 399 || code >= 500 || code == http.StatusTooManyRequests || code == http.StatusNotFound
 }
 
 // responseError creates an error of Error type from resp.
