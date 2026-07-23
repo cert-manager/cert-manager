@@ -1,4 +1,4 @@
-{{- if .Values.webhook.config -}}
+{{- if and .Values.webhook.enabled .Values.webhook.config -}}
 {{- $config := .Values.webhook.config -}}
 {{- $_ := set $config "apiVersion" (default "webhook.config.cert-manager.io/v1alpha1" $config.apiVersion) -}}
 {{- $_ := set $config "kind" (default "WebhookConfiguration" $config.kind) -}}
