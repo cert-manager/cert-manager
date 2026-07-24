@@ -168,7 +168,6 @@ github.com/ryanuber/go-glob,MIT
 github.com/sosodev/duration,MIT
 github.com/spf13/cobra,Apache-2.0
 github.com/spf13/pflag,BSD-3-Clause
-github.com/stoewer/go-strcase,MIT
 github.com/stretchr/objx,MIT
 github.com/stretchr/testify,MIT
 github.com/vektah/gqlparser/v2,MIT
