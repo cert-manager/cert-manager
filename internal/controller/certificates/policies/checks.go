@@ -318,6 +318,10 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			message = fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", renewalTime)
 		}
 
+		if renewalTime == nil {
+			return "", "", false
+		}
+
 		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {
 			// renewal time is in the future, no need to renew

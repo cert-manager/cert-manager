@@ -2473,3 +2473,29 @@ func Test_CurrentCertificateRequestMismatchesSpec_NameConstraints(t *testing.T) 
 		assert.Equal(t, "Fields on existing CertificateRequest resource not up to date: [spec.nameConstraints]", message)
 	})
 }
+
+func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
+	clock := &fakeclock.FakeClock{}
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	})
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyDisabled,
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+	assert.Equal(t, "", reason)
+	assert.Equal(t, "", message)
+	assert.False(t, violation)
+}
+}
