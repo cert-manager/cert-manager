@@ -537,8 +537,9 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 	}
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.GatewayAPIWildcardHostnameDeduplication) {
+		commonName := ingLike.GetAnnotations()[cmapi.CommonNameAnnotationKey]
 		for secretRef, hostnames := range tlsHosts {
-			tlsHosts[secretRef] = removeGatewayAPIHostnamesCoveredByWildcards(hostnames)
+			tlsHosts[secretRef] = removeGatewayAPIHostnamesCoveredByWildcards(hostnames, commonName)
 		}
 	}
 }
@@ -547,8 +548,8 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 // are covered by a wildcard DNS name in the same slice. X.509 wildcard DNS
 // names cover exactly one label, so *.example.com covers foo.example.com but
 // not example.com or foo.bar.example.com. The order of retained names is
-// preserved, and wildcard names are always retained.
-func removeGatewayAPIHostnamesCoveredByWildcards(hostnames []string) []string {
+// preserved, and wildcard names and preserveHostname are always retained.
+func removeGatewayAPIHostnamesCoveredByWildcards(hostnames []string, preserveHostname string) []string {
 	wildcardSuffixes := sets.New[string]()
 	for _, hostname := range hostnames {
 		if suffix, found := strings.CutPrefix(hostname, "*."); found {
@@ -561,7 +562,7 @@ func removeGatewayAPIHostnamesCoveredByWildcards(hostnames []string) []string {
 
 	filtered := make([]string, 0, len(hostnames))
 	for _, hostname := range hostnames {
-		if strings.HasPrefix(hostname, "*.") {
+		if hostname == preserveHostname || strings.HasPrefix(hostname, "*.") {
 			filtered = append(filtered, hostname)
 			continue
 		}
