@@ -1639,7 +1639,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderCloudflare(ref common.Refere
 					},
 					"ttl": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TTL is the time-to-live in seconds for Cloudflare DNS challenge records. When unset, cert-manager uses 120 seconds. A value of 1 uses Cloudflare's automatic TTL. Explicit values must be between 30 and 86400 seconds; non-Enterprise Cloudflare zones require a minimum of 60 seconds.",
+							Description: "TTL is the time-to-live in seconds for Cloudflare DNS challenge records. When unset, cert-manager uses 120 seconds. A value of 1 uses Cloudflare's automatic TTL. Explicit values must be between 60 and 86400 seconds.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

@@ -604,10 +604,9 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 
 	// TTL is the time-to-live in seconds for Cloudflare DNS challenge records.
 	// When unset, cert-manager uses 120 seconds. A value of 1 uses Cloudflare's
-	// automatic TTL. Explicit values must be between 30 and 86400 seconds;
-	// non-Enterprise Cloudflare zones require a minimum of 60 seconds.
+	// automatic TTL. Explicit values must be between 60 and 86400 seconds.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == 1 || (self >= 30 && self <= 86400)",message="ttl must be 1 (automatic) or between 30 and 86400 seconds"
+	// +kubebuilder:validation:XValidation:rule="self == 1 || (self >= 60 && self <= 86400)",message="ttl must be 1 (automatic) or between 60 and 86400 seconds"
 	TTL *int32 `json:"ttl,omitempty"`
 
 	// API key to use to authenticate with Cloudflare.

@@ -240,12 +240,12 @@ func TestNewDNSProviderTTL(t *testing.T) {
 	}{
 		{name: "default", wantTTL: cloudFlareDefaultTTL},
 		{name: "automatic", setTTL: true, ttl: 1, wantTTL: 1},
-		{name: "enterprise minimum", setTTL: true, ttl: 30, wantTTL: 30},
 		{name: "standard minimum", setTTL: true, ttl: 60, wantTTL: 60},
 		{name: "maximum", setTTL: true, ttl: 86400, wantTTL: 86400},
-		{name: "zero", setTTL: true, ttl: 0, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
-		{name: "below minimum", setTTL: true, ttl: 29, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
-		{name: "above maximum", setTTL: true, ttl: 86401, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"},
+		{name: "zero", setTTL: true, ttl: 0, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 60 and 86400 seconds"},
+		{name: "enterprise-only minimum", setTTL: true, ttl: 30, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 60 and 86400 seconds"},
+		{name: "below standard minimum", setTTL: true, ttl: 59, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 60 and 86400 seconds"},
+		{name: "above maximum", setTTL: true, ttl: 86401, wantErr: "the Cloudflare TTL must be 1 (automatic) or between 60 and 86400 seconds"},
 	}
 
 	for _, tt := range tests {

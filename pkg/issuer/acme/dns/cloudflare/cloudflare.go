@@ -36,7 +36,7 @@ const (
 	cloudFlareMaxBodySize  = 1024 * 1024 // 1mb
 	cloudFlareDefaultTTL   = 120
 	cloudFlareAutomaticTTL = 1
-	cloudFlareMinTTL       = 30
+	cloudFlareMinTTL       = 60
 	cloudFlareMaxTTL       = 86400
 )
 
@@ -88,7 +88,7 @@ func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) 
 		// prevent the Go HTTP library from displaying it.
 		utiloptions.True(validHeaderFieldValue(opts.APIKey), "the Cloudflare API key is invalid (does the API key contain a newline?)"),
 		utiloptions.True(validHeaderFieldValue(opts.APIToken), "the Cloudflare API token is invalid (does the API token contain a newline?)"),
-		utiloptions.True(validTTL(opts.TTL), "the Cloudflare TTL must be 1 (automatic) or between 30 and 86400 seconds"),
+		utiloptions.True(validTTL(opts.TTL), "the Cloudflare TTL must be 1 (automatic) or between 60 and 86400 seconds"),
 	)
 	if err != nil {
 		return nil, err

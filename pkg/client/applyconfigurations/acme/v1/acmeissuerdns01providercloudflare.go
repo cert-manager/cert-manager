@@ -33,8 +33,7 @@ type ACMEIssuerDNS01ProviderCloudflareApplyConfiguration struct {
 	Email *string `json:"email,omitempty"`
 	// TTL is the time-to-live in seconds for Cloudflare DNS challenge records.
 	// When unset, cert-manager uses 120 seconds. A value of 1 uses Cloudflare's
-	// automatic TTL. Explicit values must be between 30 and 86400 seconds;
-	// non-Enterprise Cloudflare zones require a minimum of 60 seconds.
+	// automatic TTL. Explicit values must be between 60 and 86400 seconds.
 	TTL *int32 `json:"ttl,omitempty"`
 	// API key to use to authenticate with Cloudflare.
 	// Note: using an API token to authenticate is now the recommended method
