@@ -100,7 +100,7 @@ const (
 	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
 
 	// Annotation key used to limit the number of CertificateRequests to be kept for a Certificate.
-	// Minimum value is 0. If set to 0, one current CertificateRequest will be kept.
+	// Minimum value is 0. Values 0 and 1 both retain only the current CertificateRequest.
 	// If unset, the default value is 1.
 	RevisionHistoryLimitAnnotationKey = "cert-manager.io/revision-history-limit"
 

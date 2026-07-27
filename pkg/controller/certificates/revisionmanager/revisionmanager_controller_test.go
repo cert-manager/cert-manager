@@ -183,6 +183,18 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "cr-2")),
 			},
 		},
+		"do not delete the current request if limit is 0": {
+			certificate: gen.CertificateFrom(baseCrt,
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevisionHistoryLimit(0),
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-1"),
+					gen.SetCertificateRequestRevision("1"),
+				),
+			},
+		},
 		"delete 3 requests if limit is 3 and 6 requests exist": {
 			certificate: gen.CertificateFrom(baseCrt,
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}),

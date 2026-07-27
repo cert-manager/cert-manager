@@ -136,8 +136,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Fetch and delete all CertificateRequests that need to be deleted.
-	// If RevisionHistoryLimit is nil, default to 1. A value of 0 means no
-	// historical revisions, but the current CertificateRequest must be retained.
+	// If RevisionHistoryLimit is nil, default to 1. Values of 0 and 1 both
+	// retain the current CertificateRequest and no historical revisions.
 	limit := 1
 	if crt.Spec.RevisionHistoryLimit != nil && *crt.Spec.RevisionHistoryLimit > 0 {
 		limit = int(*crt.Spec.RevisionHistoryLimit)
