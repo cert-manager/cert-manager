@@ -17,7 +17,9 @@ limitations under the License.
 package shimhelper
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -31,13 +33,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -4649,6 +4654,261 @@ func TestSync(t *testing.T) {
 			t.Run(test.Name, testFn(test))
 		}
 	})
+}
+
+// matchRootCertificateApply validates a root-resource Certificate Apply patch
+// (verb, patch type, options) and then runs check on the unmarshaled object.
+func matchRootCertificateApply(check func(applied cmapi.Certificate) error) testpkg.ActionMatchFn {
+	return func(_, actual coretesting.Action) error {
+		patchAction, ok := actual.(coretesting.PatchAction)
+		if !ok {
+			return fmt.Errorf("expected PatchAction, got %T", actual)
+		}
+		if patchAction.GetVerb() != "patch" {
+			return fmt.Errorf("expected patch, got %q", patchAction.GetVerb())
+		}
+		if patchAction.GetPatchType() != types.ApplyPatchType {
+			return fmt.Errorf("expected ApplyPatchType, got %q", patchAction.GetPatchType())
+		}
+		if patchAction.GetSubresource() != "" {
+			return fmt.Errorf("expected root resource Apply, got subresource %q", patchAction.GetSubresource())
+		}
+		optsGetter, ok := actual.(interface{ GetPatchOptions() metav1.PatchOptions })
+		if !ok {
+			return fmt.Errorf("expected GetPatchOptions on action, got %T", actual)
+		}
+		opts := optsGetter.GetPatchOptions()
+		if opts.FieldManager != testpkg.FieldManager {
+			return fmt.Errorf("expected FieldManager %q, got %q", testpkg.FieldManager, opts.FieldManager)
+		}
+		if opts.Force == nil || !*opts.Force {
+			return fmt.Errorf("expected Force=true, got %v", opts.Force)
+		}
+
+		var applied cmapi.Certificate
+		if err := json.Unmarshal(patchAction.GetPatch(), &applied); err != nil {
+			return fmt.Errorf("unmarshal Apply patch: %w", err)
+		}
+		return check(applied)
+	}
+}
+
+// TestSync_ServerSideApplyCreate checks Certificate create uses Apply under SSA.
+func TestSync_ServerSideApplyCreate(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
+
+	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
+	revisionHistoryLimit := int32(7)
+	expectedAnnotations := map[string]string{"example.com/foo": "bar"}
+	expectedLabels := map[string]string{"my-test-label": "should-be-applied"}
+	expectedOwnerRefs := buildIngressOwnerReferences("ingress-name")
+
+	ing := &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ingress-name",
+			Namespace: gen.DefaultTestNamespace,
+			Labels: map[string]string{
+				"my-test-label": "should-be-applied",
+			},
+			Annotations: map[string]string{
+				cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				cmapi.RevisionHistoryLimitAnnotationKey:     "7",
+				"example.com/foo":                           "bar",
+			},
+			UID: types.UID("ingress-name"),
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      []string{"example.com"},
+					SecretName: "example-com-tls",
+				},
+			},
+		},
+	}
+
+	b := &testpkg.Builder{
+		T:                  t,
+		CertManagerObjects: []runtime.Object{acmeClusterIssuer},
+		ExpectedEvents:     []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+		ExpectedActions: []testpkg.Action{
+			testpkg.NewCustomMatch(
+				coretesting.NewPatchActionWithOptions(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					gen.DefaultTestNamespace,
+					"example-com-tls",
+					types.ApplyPatchType,
+					[]byte(`{}`),
+					metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
+				),
+				matchRootCertificateApply(func(applied cmapi.Certificate) error {
+					if applied.Name != "example-com-tls" {
+						return fmt.Errorf("unexpected name %q", applied.Name)
+					}
+					if applied.Spec.RevisionHistoryLimit == nil || *applied.Spec.RevisionHistoryLimit != revisionHistoryLimit {
+						return fmt.Errorf("expected revisionHistoryLimit=%d in Apply Spec, got %v", revisionHistoryLimit, applied.Spec.RevisionHistoryLimit)
+					}
+					if applied.Spec.SecretName != "example-com-tls" {
+						return fmt.Errorf("unexpected secretName %q", applied.Spec.SecretName)
+					}
+					if !reflect.DeepEqual(applied.Spec.DNSNames, []string{"example.com"}) {
+						return fmt.Errorf("unexpected dnsNames %v", applied.Spec.DNSNames)
+					}
+					if !reflect.DeepEqual(applied.Spec.IssuerRef, cmmeta.IssuerReference{Name: "issuer-name", Kind: "ClusterIssuer"}) {
+						return fmt.Errorf("unexpected issuerRef %#v", applied.Spec.IssuerRef)
+					}
+					if !reflect.DeepEqual(applied.Spec.Usages, cmapi.DefaultKeyUsages()) {
+						return fmt.Errorf("unexpected usages %v", applied.Spec.Usages)
+					}
+					if !reflect.DeepEqual(applied.Labels, expectedLabels) {
+						return fmt.Errorf("expected Ingress labels on create Apply, got %v", applied.Labels)
+					}
+					if !reflect.DeepEqual(applied.OwnerReferences, expectedOwnerRefs) {
+						return fmt.Errorf("unexpected OwnerReferences %#v", applied.OwnerReferences)
+					}
+					if !reflect.DeepEqual(applied.Annotations, expectedAnnotations) {
+						return fmt.Errorf("unexpected create Apply annotations: %v", applied.Annotations)
+					}
+					return nil
+				}),
+			),
+		},
+	}
+	b.Init()
+	defer b.Stop()
+
+	sync := SyncFnFor(b.Recorder, logr.Discard(), b.CMClient, b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), controllerpkg.IngressShimOptions{
+		DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
+		ExtraCertificateAnnotations:       []string{"example.com/foo"},
+	}, testpkg.FieldManager)
+	b.Start()
+
+	err := sync(t.Context(), ing)
+	assert.NoError(t, err)
+	assert.NoError(t, b.AllEventsCalled())
+	assert.NoError(t, b.AllActionsExecuted())
+}
+
+// TestSync_ServerSideApplyUpdate checks Certificate update uses Apply under SSA.
+func TestSync_ServerSideApplyUpdate(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
+
+	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
+	revisionHistoryLimit := int32(7)
+	expectedAnnotations := map[string]string{"example.com/foo": "bar"}
+	expectedLabels := map[string]string{"my-test-label": "should-be-applied"}
+	expectedOwnerRefs := buildIngressOwnerReferences("ingress-name")
+
+	ing := &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ingress-name",
+			Namespace: gen.DefaultTestNamespace,
+			Labels: map[string]string{
+				"my-test-label": "should-be-applied",
+			},
+			Annotations: map[string]string{
+				cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				cmapi.RevisionHistoryLimitAnnotationKey:     "7",
+				"example.com/foo":                           "bar",
+			},
+			UID: types.UID("ingress-name"),
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      []string{"example.com"},
+					SecretName: "example-com-tls",
+				},
+			},
+		},
+	}
+
+	existingCrt := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "example-com-tls",
+			Namespace:       gen.DefaultTestNamespace,
+			OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+			Labels: map[string]string{
+				"stale-label": "remove-me",
+			},
+			Annotations: map[string]string{
+				"user.io/keep": "me",
+			},
+		},
+		Spec: cmapi.CertificateSpec{
+			DNSNames:   []string{"example.com"},
+			SecretName: "example-com-tls",
+			IssuerRef: cmmeta.IssuerReference{
+				Name: "issuer-name",
+				Kind: "ClusterIssuer",
+			},
+			Usages:               cmapi.DefaultKeyUsages(),
+			RevisionHistoryLimit: new(int32(1)),
+		},
+	}
+
+	b := &testpkg.Builder{
+		T:                  t,
+		CertManagerObjects: []runtime.Object{acmeClusterIssuer, existingCrt},
+		ExpectedEvents:     []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
+		ExpectedActions: []testpkg.Action{
+			testpkg.NewCustomMatch(
+				coretesting.NewPatchActionWithOptions(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					gen.DefaultTestNamespace,
+					"example-com-tls",
+					types.ApplyPatchType,
+					[]byte(`{}`),
+					metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
+				),
+				matchRootCertificateApply(func(applied cmapi.Certificate) error {
+					if applied.Name != "example-com-tls" {
+						return fmt.Errorf("unexpected name %q", applied.Name)
+					}
+					if applied.Spec.RevisionHistoryLimit == nil || *applied.Spec.RevisionHistoryLimit != revisionHistoryLimit {
+						return fmt.Errorf("expected revisionHistoryLimit=%d in update Apply Spec, got %v", revisionHistoryLimit, applied.Spec.RevisionHistoryLimit)
+					}
+					if applied.Spec.SecretName != "example-com-tls" {
+						return fmt.Errorf("unexpected secretName %q", applied.Spec.SecretName)
+					}
+					if !reflect.DeepEqual(applied.Spec.DNSNames, []string{"example.com"}) {
+						return fmt.Errorf("unexpected dnsNames %v", applied.Spec.DNSNames)
+					}
+					if !reflect.DeepEqual(applied.Spec.IssuerRef, cmmeta.IssuerReference{Name: "issuer-name", Kind: "ClusterIssuer"}) {
+						return fmt.Errorf("unexpected issuerRef %#v", applied.Spec.IssuerRef)
+					}
+					if !reflect.DeepEqual(applied.Spec.Usages, cmapi.DefaultKeyUsages()) {
+						return fmt.Errorf("unexpected usages %v", applied.Spec.Usages)
+					}
+					if !reflect.DeepEqual(applied.Labels, expectedLabels) {
+						return fmt.Errorf("expected Ingress labels on update Apply, got %v", applied.Labels)
+					}
+					if !reflect.DeepEqual(applied.OwnerReferences, expectedOwnerRefs) {
+						return fmt.Errorf("unexpected OwnerReferences %#v", applied.OwnerReferences)
+					}
+					if !reflect.DeepEqual(applied.Annotations, expectedAnnotations) {
+						return fmt.Errorf("unexpected update Apply annotations: %v", applied.Annotations)
+					}
+					return nil
+				}),
+			),
+		},
+	}
+	b.Init()
+	defer b.Stop()
+
+	sync := SyncFnFor(b.Recorder, logr.Discard(), b.CMClient, b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), controllerpkg.IngressShimOptions{
+		DefaultAutoCertificateAnnotations: []string{"kubernetes.io/tls-acme"},
+		ExtraCertificateAnnotations:       []string{"example.com/foo"},
+	}, testpkg.FieldManager)
+	b.Start()
+
+	err := sync(t.Context(), ing)
+	assert.NoError(t, err)
+	assert.NoError(t, b.AllEventsCalled())
+	assert.NoError(t, b.AllActionsExecuted())
 }
 
 func TestIssuerForIngress(t *testing.T) {

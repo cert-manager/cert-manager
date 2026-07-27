@@ -78,6 +78,7 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 		Spec:       *crt.Spec.DeepCopy(),
 		Status:     cmapi.CertificateStatus{},
 	}
+	crt.ObjectMeta.ManagedFields = nil
 	crtData, err := json.Marshal(crt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal certificate object: %w", err)
