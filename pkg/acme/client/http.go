@@ -38,9 +38,13 @@ type MetricsContextKey string
 // AcmeActionLabel is the context key for storing the logical ACME operation name.
 const AcmeActionLabel = MetricsContextKey("acme_action")
 
-// Transport is a http.RoundTripper that collects Prometheus metrics of every
-// request it processes. It allows to be configured with callbacks that process
-// request path and query into a suitable label value.
+// maxACMEResponseBodyBytes caps how much of any single ACME response body is
+// buffered into memory, guarding against a hostile server streaming an unbounded body.
+const maxACMEResponseBodyBytes int64 = 16 << 20 // 16 MiB
+
+// Transport is an http.RoundTripper that instruments every request it processes:
+// it records Prometheus metrics for the request and caps the size of the
+// response body to guard against an ACME server returning an unbounded body.
 type Transport struct {
 	metrics *metrics.Metrics
 
@@ -79,6 +83,15 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := it.wrappedRT.RoundTrip(req)
 	if resp != nil {
 		statusCode = resp.StatusCode
+
+		// Cap every response body (including retries, which flow through here)
+		// so the ACME library cannot buffer an unbounded body. Reading past the
+		// limit yields a *http.MaxBytesError, so an oversized body surfaces as a
+		// distinct error rather than being silently truncated. A nil
+		// ResponseWriter is accepted since we only need the client-side cap.
+		if resp.Body != nil {
+			resp.Body = http.MaxBytesReader(nil, resp.Body, maxACMEResponseBodyBytes)
+		}
 	}
 	var action string
 	if op, ok := req.Context().Value(AcmeActionLabel).(string); ok {

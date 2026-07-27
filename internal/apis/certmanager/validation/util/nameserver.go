@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 )
 
@@ -63,4 +64,20 @@ func ValidNameserver(nameserver string) (string, error) {
 	}
 
 	return net.JoinHostPort(host, port), nil
+}
+
+// ValidDNS01Nameserver validates a DNS01 nameserver entry. Each entry must be
+// either <ip address>:<port> for plain DNS or https://<host> for DNS-over-HTTPS (RFC 8484).
+func ValidDNS01Nameserver(nameserver string) error {
+	if strings.HasPrefix(nameserver, "https://") {
+		u, err := url.ParseRequestURI(nameserver)
+		if err != nil || u.Host == "" {
+			return fmt.Errorf("must be in the format https://<DoH RFC 8484 server address>")
+		}
+		return nil
+	}
+	if _, _, err := net.SplitHostPort(nameserver); err != nil {
+		return fmt.Errorf("must be in the format <ip address>:<port>")
+	}
+	return nil
 }

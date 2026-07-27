@@ -533,6 +533,7 @@ func Convert_acme_ACMEChallengeSolver_To_v1_ACMEChallengeSolver(in *acme.ACMECha
 
 func autoConvert_v1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *acmev1.ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = acme.CNAMEStrategy(in.CNAMEStrategy)
+	out.Nameservers = *(*[]string)(unsafe.Pointer(&in.Nameservers))
 	if in.Akamai != nil {
 		in, out := &in.Akamai, &out.Akamai
 		*out = new(acme.ACMEIssuerDNS01ProviderAkamai)
@@ -616,6 +617,7 @@ func Convert_v1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *ac
 
 func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *acmev1.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = acmev1.CNAMEStrategy(in.CNAMEStrategy)
+	out.Nameservers = *(*[]string)(unsafe.Pointer(&in.Nameservers))
 	if in.Akamai != nil {
 		in, out := &in.Akamai, &out.Akamai
 		*out = new(acmev1.ACMEIssuerDNS01ProviderAkamai)

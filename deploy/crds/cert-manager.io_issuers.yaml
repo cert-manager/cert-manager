@@ -537,6 +537,19 @@ spec:
                               required:
                               - tokenSecretRef
                               type: object
+                            nameservers:
+                              description: |-
+                                Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+                                checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+                                where host may be an IP address or hostname, or
+                                `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+                                the controller's configured global DNS01 recursive nameservers are used.
+                                When specified, this overrides the global nameservers for this solver
+                                only, and disables the authoritative nameserver check.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: atomic
                             rfc2136:
                               description: |-
                                 Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)

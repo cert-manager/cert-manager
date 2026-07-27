@@ -150,7 +150,10 @@ func (s *Suite) Define() {
 						},
 					),
 					gen.SetCertificateEmails("email@domain.test"),
-					gen.SetCertificateCommonName("someCN"),
+					// Some issuers use the CN to define the cert's "ID"
+					// if one cert manages to be in an error state in the issuer it might throw an error
+					// this makes the CN more unique
+					gen.SetCertificateCommonName("someCN-" + rand.String(10)),
 				},
 				extraValidations: []certificates.ValidationFunc{
 					func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
