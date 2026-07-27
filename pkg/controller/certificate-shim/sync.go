@@ -146,7 +146,22 @@ func SyncFnFor(
 		}
 
 		for _, crt := range newCrts {
-			_, err := cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{FieldManager: fieldManager})
+			// Create with FieldManager records ownership as operation:Update.
+			// Use Apply under SSA so create ownership matches updates (operation:Apply).
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            crt.Name,
+						Namespace:       crt.Namespace,
+						Labels:          crt.Labels,
+						OwnerReferences: crt.OwnerReferences,
+						Annotations:     extraAnnotations,
+					},
+					Spec: crt.Spec,
+				})
+			} else {
+				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{FieldManager: fieldManager})
+			}
 			if err != nil {
 				return err
 			}
