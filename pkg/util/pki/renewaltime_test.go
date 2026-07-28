@@ -104,6 +104,12 @@ func TestRenewalTime(t *testing.T) {
 				},
 			},
 		},
+		"very long lived cert, spec.renewBeforePercentage does not overflow": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 87600), // 10 years
+			renewBeforePct:      new(int32(30)),
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 61320)}, // 70% of 10 years
+		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
