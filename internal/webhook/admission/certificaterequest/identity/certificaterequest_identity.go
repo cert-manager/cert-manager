@@ -81,6 +81,14 @@ func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissi
 }
 
 func (p *certificateRequestIdentity) Validate(ctx context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) ([]string, error) {
+	// request.RequestResource is optional on the AdmissionRequest API and may
+	// be nil, for example if the caller posts an AdmissionReview directly to
+	// the webhook without populating it. Guard against that to avoid a nil
+	// pointer dereference.
+	if request.RequestResource == nil {
+		return nil, fmt.Errorf("internal error: admission request is missing requestResource")
+	}
+
 	// Only run this admission plugin for CertificateRequest resources
 	if request.RequestResource.Group != "cert-manager.io" ||
 		request.RequestResource.Resource != "certificaterequests" {

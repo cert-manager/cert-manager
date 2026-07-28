@@ -239,6 +239,34 @@ func TestValidateCreate(t *testing.T) {
 	}
 }
 
+// TestValidate_NilRequestResource reproduces
+// https://github.com/cert-manager/cert-manager/issues/9064: when an
+// AdmissionRequest is received with a nil RequestResource (e.g. because the
+// caller posted a hand-crafted AdmissionReview payload directly to the
+// webhook without populating the optional "requestResource" field),
+// Validate must not panic with a nil pointer dereference. It should instead
+// return gracefully.
+func TestValidate_NilRequestResource(t *testing.T) {
+	p := NewPlugin().(*certificateRequestIdentity)
+	req := admissionv1.AdmissionRequest{
+		Operation:       admissionv1.Create,
+		RequestResource: nil,
+		UserInfo: authenticationv1.UserInfo{
+			UID:      "abc",
+			Username: "user-1",
+		},
+	}
+	cr := &certmanager.CertificateRequest{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Validate() panicked with nil RequestResource: %v", r)
+		}
+	}()
+
+	_, _ = p.Validate(t.Context(), req, nil, cr)
+}
+
 func compareErrors(t *testing.T, exp, act error) {
 	if exp == nil && act == nil {
 		return
