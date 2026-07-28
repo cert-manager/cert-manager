@@ -27,6 +27,14 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// issuersForSecret returns Issuers that reference the given Secret so Secret
+// events can re-queue the right issuers.
+//
+// TODO(hjoshi123, wallrj): This walks every Issuer on each Secret event
+// (O(numIssuers)). ACME DNS-01 matching also runs RequiredDNS01SolverSecrets
+// per Issuer (extra conversion). Under high Secret churn that is expensive;
+// index Issuers by referenced Secret names for O(1)/O(related) lookup.
+// Deferred so the Ready=False re-queue fix (#9036) can land first.
 func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, error) {
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
