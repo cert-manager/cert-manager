@@ -23,38 +23,18 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 var (
-	sampleSchemaGVR = schema.GroupVersionResource{
+	sampleMetaGVR = metav1.GroupVersionResource{
 		Group:    "sample-group",
 		Version:  "sample-version",
 		Resource: "sample-resource",
-	}
-	sampleMetaGVR = metav1.GroupVersionResource{
-		Group:    sampleSchemaGVR.Group,
-		Version:  sampleSchemaGVR.Version,
-		Resource: sampleSchemaGVR.Resource,
-	}
-
-	alwaysFailsCreateFunc = func(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
-		panic("create function not expected to be called")
-	}
-	alwaysFailsUpdateFunc = func(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
-		panic("update function not expected to be called")
-	}
-
-	alwaysFailsValidationPair = validationPair{
-		create: alwaysFailsCreateFunc,
-		update: alwaysFailsUpdateFunc,
 	}
 )
 
 func TestResourceValidation(t *testing.T) {
 	tests := map[string]struct {
-		mapping     map[schema.GroupVersionResource]validationPair
 		req         admissionv1.AdmissionRequest
 		oldObj, obj runtime.Object
 
@@ -62,26 +42,25 @@ func TestResourceValidation(t *testing.T) {
 		expectedError    error
 	}{
 		"should not perform any validation if no validation functions are registered": {
-			mapping: map[schema.GroupVersionResource]validationPair{},
 			req: admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: &sampleMetaGVR,
+				Operation: admissionv1.Create,
+				Resource:  sampleMetaGVR,
 			},
 		},
 		"does nothing for non-create or update operations": {
-			mapping: map[schema.GroupVersionResource]validationPair{
-				sampleSchemaGVR: alwaysFailsValidationPair,
-			},
 			req: admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Connect,
-				RequestResource: &sampleMetaGVR,
+				Operation: admissionv1.Connect,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
 			},
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			p := NewPlugin().(*resourceValidation)
-			p.validationMappings = test.mapping
 			warnings, err := p.Validate(t.Context(), test.req, test.oldObj, test.obj)
 			compareErrors(t, test.expectedError, err)
 			if !reflect.DeepEqual(test.expectedWarnings, warnings) {

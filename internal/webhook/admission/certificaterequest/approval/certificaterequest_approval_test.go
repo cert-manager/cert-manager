@@ -36,10 +36,6 @@ import (
 	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
-var (
-	expNoDiscovery = discovery.DiscoveryInterface(nil)
-)
-
 func TestValidate(t *testing.T) {
 	baseCR := &certmanager.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
@@ -77,24 +73,23 @@ func TestValidate(t *testing.T) {
 		"if the request is not for CertificateRequest, exit nil": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "issuers",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
-			authorizer:     alwaysPanicAuthorizer,
-			discoverclient: expNoDiscovery,
-			expErr:         nil,
+			authorizer: alwaysPanicAuthorizer,
+			expErr:     nil,
 		},
 		"if the request is not for cert-manager.io, exit nil": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "foo.cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			authorizer: alwaysPanicAuthorizer,
 			expErr:     nil,
@@ -102,11 +97,11 @@ func TestValidate(t *testing.T) {
 		"if the CertificateRequest references a signer that doesn't exist, error": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR:      baseCR,
 			newCR:      approvedCR,
@@ -124,11 +119,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -170,11 +165,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -214,11 +209,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -258,11 +253,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
