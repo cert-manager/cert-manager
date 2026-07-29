@@ -21,10 +21,20 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// issuersForSecret returns ClusterIssuers that reference the given Secret so
+// Secret events can re-queue the right cluster issuers.
+//
+// TODO(hjoshi123, wallrj): This walks every ClusterIssuer on each Secret event
+// (O(numClusterIssuers)). ACME DNS-01 matching also runs RequiredDNS01SolverSecrets
+// per ClusterIssuer (extra conversion). Under high Secret churn that is expensive;
+// index ClusterIssuers by referenced Secret names for O(1)/O(related) lookup.
+// Deferred so the Ready=False re-queue fix (#9036) can land first.
 func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssuer, error) {
 	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
 
@@ -43,10 +53,23 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.ClusterIssue
 				affected = append(affected, iss)
 				continue
 			}
-			if iss.Spec.ACME.ExternalAccountBinding != nil {
-				if iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+			if iss.Spec.ACME.ExternalAccountBinding != nil && iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+				affected = append(affected, iss)
+				continue
+			}
+			// Match DNS-01 solver secrets so creating a missing solver Secret
+			// re-queues the ClusterIssuer (see #9036).
+			solverSecrets, err := acme.RequiredDNS01SolverSecrets(iss)
+			if err != nil {
+				// Don't let one issuer's conversion error stop every other
+				// issuer from being matched against this Secret event.
+				runtime.HandleError(fmt.Errorf("error determining ACME DNS-01 solver secrets for ClusterIssuer %s: %w", iss.Name, err))
+				continue
+			}
+			for _, s := range solverSecrets {
+				if s.Name == secret.Name {
 					affected = append(affected, iss)
-					continue
+					break
 				}
 			}
 		case iss.Spec.CA != nil:
