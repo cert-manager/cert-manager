@@ -25,6 +25,10 @@ CMREL_KEY ?=
 ## @category Release
 RELEASE_TARGET_BUCKET ?=
 
+## cosign wants the KMS key as "versions" (not "cryptoKeyVersions") with a
+## gcpkms:// scheme. Derive it from CMREL_KEY so callers only set one key.
+COSIGN_KMS_KEY := gcpkms://$(subst cryptoKeyVersions,versions,$(CMREL_KEY))
+
 .PHONY: release-artifacts
 ## Build all release artifacts which might be run or used locally, except
 ## for anything which requires signing. Note that since the manifests bundle
@@ -54,6 +58,7 @@ release-artifacts-signed: release-artifacts release-manifests-signed
 ## @category Release
 release: release-artifacts-signed
 	$(MAKE) --no-print-directory $(bin_dir)/release/metadata.json
+	$(MAKE) --no-print-directory $(bin_dir)/release/metadata.json.sig
 
 .PHONY: upload-release
 ## Create a complete release and then upload it to a target GCS bucket specified by
@@ -74,6 +79,12 @@ $(bin_dir)/release/metadata.json: $(wildcard $(bin_dir)/metadata/*.json) | $(bin
 		--arg buildSource "make" \
 		--arg gitCommitRef "$(GITCOMMIT)" \
 		'.releaseVersion = $$releaseVersion | .gitCommitRef = $$gitCommitRef | .buildSource = $$buildSource | .artifacts += [inputs]' $^ > $@
+
+# Sign metadata.json so the publish step can verify it was produced by this
+# pipeline (which holds the KMS key), not by anyone who can write to the staging
+# bucket. upload-release copies the whole release dir, so the .sig ships too.
+$(bin_dir)/release/metadata.json.sig: $(bin_dir)/release/metadata.json | $(NEEDS_COSIGN)
+	$(COSIGN) sign-blob --yes --tlog-upload=false --key $(COSIGN_KMS_KEY) --output-signature $@ $<
 
 .PHONY: release-containers
 release-containers: release-container-bundles release-container-metadata
