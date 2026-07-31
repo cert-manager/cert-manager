@@ -73,10 +73,10 @@ tools :=
 tools += helm=v4.2.3
 # https://github.com/helm-unittest/helm-unittest/releases
 # renovate: datasource=github-releases packageName=helm-unittest/helm-unittest
-tools += helm-unittest=v1.1.1
+tools += helm-unittest=v1.1.2
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.36.2
+tools += kubectl=v1.36.3
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
 tools += kind=v0.32.0
@@ -109,7 +109,7 @@ tools += ytt=v0.55.1
 tools += rclone=v1.74.4
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.30.2
+tools += istioctl=1.30.3
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -138,7 +138,7 @@ tools += crane=v0.21.7
 tools += protoc-gen-go=v1.36.11
 # https://pkg.go.dev/github.com/sigstore/cosign/v2/cmd/cosign?tab=versions
 # renovate: datasource=go packageName=github.com/sigstore/cosign/v2
-tools += cosign=v2.6.3
+tools += cosign=v2.6.4
 # https://pkg.go.dev/github.com/cert-manager/boilersuite?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/boilersuite
 tools += boilersuite=v0.2.0
@@ -160,10 +160,10 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.3.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.17.0
+tools += goreleaser=v2.17.1
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.46.0
+tools += syft=v1.50.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.6.0
@@ -190,7 +190,7 @@ tools += operator-sdk=v1.42.3
 tools += gh=v2.96.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
-tools += preflight=1.19.1
+tools += preflight=1.19.2
 # https://github.com/daixiang0/gci/releases
 # renovate: datasource=github-releases packageName=daixiang0/gci
 tools += gci=v0.14.0
@@ -207,7 +207,7 @@ tools += pinact=v4.1.0
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.36.2
+K8S_CODEGEN_VERSION ?= v0.36.3
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -217,7 +217,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20260706235625-cdb1db5517a0
+tools += openapi-gen=v0.0.0-20260721132016-d427ff9ee9ad
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -500,10 +500,10 @@ $(DOWNLOAD_DIR)/tools/helm@$(HELM_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		chmod +x $(outfile); \
 		rm -f $(outfile).tar.gz
 
-helm-unittest_linux_amd64_SHA256SUM=07c4fee69e9402e5f66f35b4f932b66afdf9c848637f06196fc479b501d6ad29
-helm-unittest_linux_arm64_SHA256SUM=9ac79f441ea65bd095c632c66a6e429b3d89e7aacb5a157d891dc0b6217e9045
-helm-unittest_darwin_amd64_SHA256SUM=aeeb891c34e0f447a6f55bbe1605704b46fbc4da41a4448e3227ec57aecbf92b
-helm-unittest_darwin_arm64_SHA256SUM=0163ad5fe1aedb75d09e42d3bfe930680daf628471e4cc5130980a6abfe51e8e
+helm-unittest_linux_amd64_SHA256SUM=de03d6b7ba7683282064702d0b36fbbe812ab2a22691fa3a8b2ce57c2682609c
+helm-unittest_linux_arm64_SHA256SUM=5f8d24d163b65a9244c4371078bfecaa236f7f6807fd8e923700783db78c1626
+helm-unittest_darwin_amd64_SHA256SUM=40757889f5a5a84334ae6b433724fdd50d73390e522bc233a525c076eb3e90aa
+helm-unittest_darwin_arm64_SHA256SUM=d78208521e6407287870345aa38f7e37eb588c74fb110cf27d1758852089e7fb
 
 # helm-unittest uses "macos" instead of "darwin" in release filenames
 helm_unittest_os := $(HOST_OS)
@@ -520,10 +520,10 @@ $(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_A
 		chmod +x $(outfile); \
 		rm -f $(outfile).tgz
 
-kubectl_linux_amd64_SHA256SUM=1e9045ec32bea85da43de85f0065358529ea7c7a152eca78154fba5b58c27d82
-kubectl_linux_arm64_SHA256SUM=c957eb8c4bea27a3bb35b269edd9082e27f027f7b76b20b5bf4afebc726c6d3e
-kubectl_darwin_amd64_SHA256SUM=ce6c5e55cd17559e87e4fb5e73ebbbc2511bcf2b695d7a40c1b1461a9817d4b3
-kubectl_darwin_arm64_SHA256SUM=4408c85c83fd3a31adaa555bdf3c7a6c81f74b19449a9060ba31ab91926f023d
+kubectl_linux_amd64_SHA256SUM=ebbd080e7c2e275093b55915722043257eb24004363e20acb3c4d71919f88336
+kubectl_linux_arm64_SHA256SUM=3d86f24401c41ae5a46ac50eef8865fe891d3647d324a0836f6c63757a126e62
+kubectl_darwin_amd64_SHA256SUM=158b3b46cf74e8b6bd9b1d7cd30f665e3efb2bc1ec3c843ec925bcfdd2930de0
+kubectl_darwin_arm64_SHA256SUM=fc8582acde13869a606730a79379d6515f30c68afcced0b5ac8789d5d002b7d6
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -704,10 +704,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=ba8ee0ee408a97fe64dbcd408f7374864c1edccf5bf88bb6ad2131bfb0af6adf
-istioctl_linux_arm64_SHA256SUM=7cd62e298d6e982d463dc18bd32f47f44e0b0a857ad99a7820318dca694d0cc0
-istioctl_darwin_amd64_SHA256SUM=10d8ac9ae5156c6801395e70e91169c9094521b0ffea8a2eac8b72cb96490be1
-istioctl_darwin_arm64_SHA256SUM=56deb84b26fefbf425eadc6b71cc9a32da5d8d1a62560c74968d27af80ba18d7
+istioctl_linux_amd64_SHA256SUM=55ada076ba1b37af49e8a24e5e539b4abccabdb33894c923279edd293eea3993
+istioctl_linux_arm64_SHA256SUM=926d265818e8ab69de9f81bfe78447c3bc8f4ae32a356a39545b790bfcfd63e5
+istioctl_darwin_amd64_SHA256SUM=9a2b70d8257861156336c89bf33251b90cc77924116c10a281d39d996d4f0bac
+istioctl_darwin_arm64_SHA256SUM=4d78e3effac3253c9348cef73563af405dc3429bea9536eae98a724ee81761c7
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -721,10 +721,10 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=e8d80effa42b802a88ce90002fb74449a672fd53b9a0addc8c32caa0f6937d58
-preflight_linux_arm64_SHA256SUM=027ecfa68e87831ed5a25720730134d38b584e23d6ad43727c1d44164cac65e7
-preflight_darwin_amd64_SHA256SUM=f25cf8948166360e14a856e457a6837372cadf76a39b148022adededb23c51a7
-preflight_darwin_arm64_SHA256SUM=c2f770992aa424de65218174d4e14e387b4709989834c22a47d16513d7b7e14d
+preflight_linux_amd64_SHA256SUM=396b3072e5cbee9fbb244d4a576a57ad1594484abbf9012829252ed133630f73
+preflight_linux_arm64_SHA256SUM=8a7e2d73eb93d146f3a1d4ac7ba677f3e3246d0f95323cbbccc092391ba3a920
+preflight_darwin_amd64_SHA256SUM=5efc48cf81cbc3eed4769e0937574b9a2307fb4ba96cab6845443844815bc956
+preflight_darwin_arm64_SHA256SUM=b812f3e008dc8ee547fd16b4189f026e9d5cb6b0455211691687ba76555a776d
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
