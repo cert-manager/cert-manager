@@ -322,7 +322,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			digitalocean.Resolver(s.DNSResolver))
 
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
+			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %w", err)
 		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
