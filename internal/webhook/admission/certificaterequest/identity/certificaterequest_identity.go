@@ -46,7 +46,12 @@ func NewPlugin() admission.Interface {
 }
 
 func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
-	// Only run this admission plugin for the certificaterequests/status sub-resource
+	// request.RequestResource is optional and may be nil (same as Validate).
+	if request.RequestResource == nil {
+		return nil
+	}
+
+	// Only run this admission plugin for CertificateRequest creates
 	if request.RequestResource.Group != "cert-manager.io" ||
 		request.RequestResource.Resource != "certificaterequests" ||
 		request.Operation != admissionv1.Create {

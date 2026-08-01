@@ -52,6 +52,28 @@ var (
 	}
 )
 
+func TestValidate_NilRequestResource(t *testing.T) {
+	p := NewPlugin().(*resourceValidation)
+	req := admissionv1.AdmissionRequest{
+		Operation:       admissionv1.Create,
+		RequestResource: nil,
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Validate() panicked with nil RequestResource: %v", r)
+		}
+	}()
+
+	warnings, err := p.Validate(t.Context(), req, nil, nil)
+	if err != nil {
+		t.Fatalf("Validate() unexpected error: %v", err)
+	}
+	if warnings != nil {
+		t.Fatalf("Validate() unexpected warnings: %v", warnings)
+	}
+}
+
 func TestResourceValidation(t *testing.T) {
 	tests := map[string]struct {
 		mapping     map[schema.GroupVersionResource]validationPair

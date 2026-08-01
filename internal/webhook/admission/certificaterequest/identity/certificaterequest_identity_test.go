@@ -157,6 +157,29 @@ func TestMutate_Ignores(t *testing.T) {
 	}
 }
 
+func TestMutate_NilRequestResource(t *testing.T) {
+	p := NewPlugin().(*certificateRequestIdentity)
+	req := admissionv1.AdmissionRequest{
+		Operation:       admissionv1.Create,
+		RequestResource: nil,
+		UserInfo: authenticationv1.UserInfo{
+			UID:      "abc",
+			Username: "user-1",
+		},
+	}
+	obj := &unstructured.Unstructured{Object: map[string]any{"spec": map[string]any{}}}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Mutate() panicked with nil RequestResource: %v", r)
+		}
+	}()
+
+	if err := p.Mutate(t.Context(), req, obj); err != nil {
+		t.Fatalf("Mutate() unexpected error: %v", err)
+	}
+}
+
 func TestValidateCreate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 
