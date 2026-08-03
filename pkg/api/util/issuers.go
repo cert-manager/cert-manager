@@ -19,6 +19,9 @@ package util
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
@@ -60,4 +63,34 @@ func IssuerKind(ref cmmeta.IssuerReference) string {
 		return cmapi.IssuerKind
 	}
 	return ref.Kind
+}
+
+func SecretIssuerAnnotationsMatch(secret *corev1.Secret, issuerRef cmmeta.IssuerReference) bool {
+	if secret == nil {
+		return false
+	}
+
+	name, hasName := secret.Annotations[cmapi.IssuerNameAnnotationKey]
+	kind, hasKind := secret.Annotations[cmapi.IssuerKindAnnotationKey]
+	group, hasGroup := secret.Annotations[cmapi.IssuerGroupAnnotationKey]
+
+	if (hasName || hasKind || hasGroup) && name != issuerRef.Name {
+		return false
+	}
+	return issuerKindOrDefault(kind) == issuerKindOrDefault(issuerRef.Kind) &&
+		issuerGroupOrDefault(group) == issuerGroupOrDefault(issuerRef.Group)
+}
+
+func issuerKindOrDefault(kind string) string {
+	if kind == "" {
+		return cmapi.IssuerKind
+	}
+	return kind
+}
+
+func issuerGroupOrDefault(group string) string {
+	if group == "" {
+		return certmanager.GroupName
+	}
+	return group
 }

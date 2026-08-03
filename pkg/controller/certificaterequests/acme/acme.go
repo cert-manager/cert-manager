@@ -355,6 +355,12 @@ func (a *ACME) resolveReplacesCertID(ctx context.Context, cr *cmapi.CertificateR
 		log.V(logf.DebugLevel).Info("could not resolve Secret for ARI replaces", "error", err)
 		return ""
 	}
+
+	if !apiutil.SecretIssuerAnnotationsMatch(secret, cr.Spec.IssuerRef) {
+		log.V(logf.DebugLevel).Info("skipping ARI replaces: Secret issuer annotations do not match CertificateRequest issuerRef for ARI replaces")
+		return ""
+	}
+
 	pemBytes, ok := secret.Data[corev1.TLSCertKey]
 	if !ok || len(pemBytes) == 0 {
 		return ""
