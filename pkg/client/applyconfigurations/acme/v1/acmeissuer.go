@@ -81,7 +81,9 @@ type ACMEIssuerApplyConfiguration struct {
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
 	// Solver configurations must be provided in order to obtain certificates
-	// from an ACME server.
+	// from an ACME server, unless the ACME server authorizes the requested
+	// identifiers out of band (e.g. pre-validated domains), in which case
+	// solvers may be omitted and no Challenge resources will be created.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	Solvers []ACMEChallengeSolverApplyConfiguration `json:"solvers,omitempty"`
 	// Enables or disables generating a new ACME account key.
