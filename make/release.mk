@@ -84,6 +84,9 @@ $(bin_dir)/release/metadata.json: $(wildcard $(bin_dir)/metadata/*.json) | $(bin
 # pipeline (which holds the KMS key), not by anyone who can write to the staging
 # bucket. upload-release copies the whole release dir, so the .sig ships too.
 $(bin_dir)/release/metadata.json.sig: $(bin_dir)/release/metadata.json | $(NEEDS_COSIGN)
+ifeq ($(strip $(CMREL_KEY)),)
+	$(error Trying to sign metadata.json but CMREL_KEY is empty)
+endif
 	$(COSIGN) sign-blob --yes --tlog-upload=false --key $(COSIGN_KMS_KEY) --output-signature $@ $<
 
 .PHONY: release-containers
