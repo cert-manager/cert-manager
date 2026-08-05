@@ -106,7 +106,7 @@ tools += trivy=v0.72.0
 tools += ytt=v0.55.1
 # https://github.com/rclone/rclone/releases
 # renovate: datasource=github-releases packageName=rclone/rclone
-tools += rclone=v1.74.4
+tools += rclone=v1.75.0
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.30.3
@@ -132,7 +132,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.7
+tools += crane=v0.21.8
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
@@ -187,7 +187,7 @@ tools += govulncheck=v1.6.0
 tools += operator-sdk=v1.42.3
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.96.0
+tools += gh=v2.97.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
 tools += preflight=1.19.2
@@ -202,7 +202,7 @@ tools += yamlfmt=v0.21.0
 tools += kubeconform=v0.8.0
 # https://github.com/suzuki-shunsuke/pinact/releases
 # renovate: datasource=github-releases packageName=suzuki-shunsuke/pinact
-tools += pinact=v4.1.0
+tools += pinact=v4.1.1
 
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
@@ -687,10 +687,10 @@ $(DOWNLOAD_DIR)/tools/ytt@$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_D
 		$(checkhash_script) $(outfile) $(ytt_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-rclone_linux_amd64_SHA256SUM=fe435e0c36228e7c2f116a8701f01127bb1f694005fc11d1f27186c8bca4115d
-rclone_linux_arm64_SHA256SUM=97685285c9ad6a0cf17d5844115d2a67245af6444db672187074bd9c358de419
-rclone_darwin_amd64_SHA256SUM=4188aa84043d7a6240912923f47639a9d2da21f3b40a521c065c8d92e66563f6
-rclone_darwin_arm64_SHA256SUM=c2100e2d4a4b3be04c55cd45380cafe7647e1ad772bb055f52f00876ed701167
+rclone_linux_amd64_SHA256SUM=aa2804e08f48250e71009c727124b6341cd0288465804a9a09d14663cabafbaa
+rclone_linux_arm64_SHA256SUM=d0ad88ba4c8e285b7c9efa591e0ab643280a91741e13c27f3a9c0957ccfa5203
+rclone_darwin_amd64_SHA256SUM=19edbb8e5e73096eb66e92a42abbc5c34bfa8981ea3986a53872c7eef85a22f4
+rclone_darwin_arm64_SHA256SUM=35e8f2a666ce789b29111db0dd843ddabc0d59c6b609d07bcaae5d1a07cba6f8
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
