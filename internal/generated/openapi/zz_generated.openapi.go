@@ -1449,6 +1449,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 							Format:      "",
 						},
 					},
+					"renewalInformationSource": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RenewalInformationSource allows fetching ACME Renewal Information from the ACME CA server. Default is `ARI`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"server", "privateKeySecretRef"},
 			},

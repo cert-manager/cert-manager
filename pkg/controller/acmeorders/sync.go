@@ -96,7 +96,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return nil
 	case o.Status.URL == "":
 		log.V(logf.DebugLevel).Info("Creating new ACME order as status.url is not set")
-		return c.createOrder(ctx, cl, o)
+		return c.createOrder(ctx, cl, o, genericIssuer)
 	case o.Status.FinalizeURL == "":
 		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
 		_, err := c.updateOrderStatus(ctx, cl, o)
@@ -275,7 +275,7 @@ func isRetryableError(err error) bool {
 	return true
 }
 
-func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
+func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order, genericIssuer cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx)
 
 	if o.Status.URL != "" {
@@ -307,7 +307,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
 	}
 
-	ariEnabled := utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI)
+	ariEnabled := acme.ARIEnabledForIssuer(genericIssuer)
 	// optsBeforeReplaces lets us cheaply retry the order without the replaces
 	// option if the server rejects it. It is only meaningful when replaces
 	// was actually appended.

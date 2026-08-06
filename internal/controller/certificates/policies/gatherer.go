@@ -321,6 +321,8 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		NextRevisionRequest:    nextCR,
 	}
 
+	// NB: We don't care if issuer has enabled/disabled the ARI feature because there is a null check here.
+	// We don't want to bring in issuer/clusterissuer lister here since it is not required.
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
 		if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil && crt.Status.ACME.ARI.SuggestedWindow != nil {
 			i.ARIRenewalInfo = &acmeapi.RenewalInfoResponse{

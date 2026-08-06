@@ -40,6 +40,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	acmeutil "github.com/cert-manager/cert-manager/pkg/acme"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -222,9 +223,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
 		var renewalTime *metav1.Time
-		if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
-			renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
-		}
+		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -280,6 +279,11 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, key types.NamespacedName) *metav1.Time {
 	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
 	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
+		return nil
+	}
+
+	if !acmeutil.ARIEnabledForIssuer(genericIssuer) {
+		crt.Status.ACME = nil
 		return nil
 	}
 

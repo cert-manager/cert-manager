@@ -742,6 +742,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: profile
       type:
         scalar: string
+    - name: renewalInformationSource
+      type:
+        scalar: string
     - name: server
       type:
         scalar: string
