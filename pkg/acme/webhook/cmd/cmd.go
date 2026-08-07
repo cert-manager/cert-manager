@@ -44,10 +44,6 @@ func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 	ctrl.SetLogger(logf.Log)
 	ctx = logf.NewContext(ctx, logf.Log, "acme-dns-webhook")
 
-	if len(os.Getenv("GOMAXPROCS")) == 0 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
-
 	cmd := server.NewCommandStartWebhookServer(ctx, groupName, hooks...)
 
 	if err := cmd.ExecuteContext(ctx); err != nil {
