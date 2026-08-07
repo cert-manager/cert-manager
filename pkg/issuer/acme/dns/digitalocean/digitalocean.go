@@ -117,7 +117,7 @@ func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error 
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 		return err
 	}
 
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
@@ -171,30 +171,56 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.DomainRecord, error) {
-	zoneName, err := c.resolver.FindZoneByFQDN(ctx, fqdn, c.dns01Nameservers)
-	if err != nil {
-		return nil, err
-	}
+// recordsPerPage is the page size requested when listing TXT records from
+// the DigitalOcean API. The API defaults to a page size of 20 when no
+// per_page value is supplied, which is not enough for zones that hold
+// more than 20 TXT records. findTxtRecord also loops over every page of
+// results (see below), so this value only needs to be a reasonable
+// upper bound to keep the number of requests low for large zones.
+const recordsPerPage = 200
 
-	allRecords, _, err := c.client.Domains.RecordsByType(
-		ctx,
-		util.UnFqdn(zoneName),
-		"TXT",
-		nil,
-	)
-
-	var records []godo.DomainRecord
-
+// findTxtRecord returns every TXT record in zoneName whose name matches
+// fqdn. It pages through the DigitalOcean API's record listing rather
+// than requesting a single page, since the API silently caps unpaginated
+// requests at 20 records: in any zone holding more than 20 TXT records,
+// an unpaginated request would never see (and CleanUp would therefore
+// never remove) challenge records beyond the first page.
+// See https://github.com/cert-manager/cert-manager/issues/9099.
+func (c *DNSProvider) findTxtRecord(ctx context.Context, zoneName, fqdn string) ([]godo.DomainRecord, error) {
 	// The record Name doesn't contain the zoneName, so
 	// lets remove it before filtering the array of record
 	targetName := strings.TrimSuffix(fqdn, zoneName)
 
-	for _, record := range allRecords {
-		if util.ToFqdn(record.Name) == targetName {
-			records = append(records, record)
+	var records []godo.DomainRecord
+
+	opt := &godo.ListOptions{PerPage: recordsPerPage}
+	for {
+		allRecords, resp, err := c.client.Domains.RecordsByType(
+			ctx,
+			util.UnFqdn(zoneName),
+			"TXT",
+			opt,
+		)
+		if err != nil {
+			return nil, err
 		}
+
+		for _, record := range allRecords {
+			if util.ToFqdn(record.Name) == targetName {
+				records = append(records, record)
+			}
+		}
+
+		if resp == nil || resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+
+		page, err := resp.Links.CurrentPage()
+		if err != nil {
+			return nil, err
+		}
+		opt.Page = page + 1
 	}
 
-	return records, err
+	return records, nil
 }
