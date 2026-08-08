@@ -1415,6 +1415,7 @@ func autoConvert_v1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *acmev1.ACMEIss
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
 	out.LastPrivateKeyHash = in.LastPrivateKeyHash
+	out.LastRegisteredServer = in.LastRegisteredServer
 	return nil
 }
 
@@ -1427,6 +1428,7 @@ func autoConvert_acme_ACMEIssuerStatus_To_v1_ACMEIssuerStatus(in *acme.ACMEIssue
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
 	out.LastPrivateKeyHash = in.LastPrivateKeyHash
+	out.LastRegisteredServer = in.LastRegisteredServer
 	return nil
 }
 
