@@ -882,7 +882,15 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 			vbundle.Certificate,
 		), "\n")))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
+		// Vault may return a cross-signed intermediate CA signed by multiple root CAs.
+		// The parser requires a single linear chain and fails in that case.
+		// Fall back to using the raw Vault data directly.
+		chainPEM := strings.Join(append([]string{vbundle.Certificate}, vbundle.CAChain...), "\n")
+		caPEM := vbundle.IssuingCA
+		if caPEM == "" && len(vbundle.CAChain) > 0 {
+			caPEM = vbundle.CAChain[0]
+		}
+		return []byte(chainPEM), []byte(caPEM), nil
 	}
 
 	return bundle.ChainPEM, bundle.CAPEM, nil

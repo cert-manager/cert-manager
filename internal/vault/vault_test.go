@@ -22,6 +22,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"fmt"
 	"io"
@@ -414,6 +415,64 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 		if test.expectedCA != string(ca) {
 			t.Errorf("%s: unexpected root certificate, exp=%q, got=%q", name, test.expectedCA, cert)
 		}
+	}
+}
+
+func TestExtractCertificatesFromVaultCertificateSecret_CrossSigned(t *testing.T) {
+	// generate two root CAs and a cross-signed intermediate
+	rootAKey, _ := pki.GenerateECPrivateKey(256)
+	rootBKey, _ := pki.GenerateECPrivateKey(256)
+	intKey, _ := pki.GenerateECPrivateKey(256)
+
+	rootATemplate := &x509.Certificate{
+		BasicConstraintsValid: true, IsCA: true,
+		Subject:   pkix.Name{CommonName: "rootA"},
+		NotBefore: time.Now(), NotAfter: time.Now().Add(time.Minute),
+		KeyUsage: x509.KeyUsageCertSign,
+	}
+	rootBTemplate := &x509.Certificate{
+		BasicConstraintsValid: true, IsCA: true,
+		Subject:   pkix.Name{CommonName: "rootB"},
+		NotBefore: time.Now(), NotAfter: time.Now().Add(time.Minute),
+		KeyUsage: x509.KeyUsageCertSign,
+	}
+	intTemplate := &x509.Certificate{
+		BasicConstraintsValid: true, IsCA: true,
+		Subject:   pkix.Name{CommonName: "intermediate"},
+		NotBefore: time.Now(), NotAfter: time.Now().Add(time.Minute),
+		KeyUsage: x509.KeyUsageCertSign,
+	}
+
+	rootAPEM, rootACert, _ := pki.SignCertificate(rootATemplate, rootATemplate, rootAKey.Public(), rootAKey)
+	rootBPEM, rootBCert, _ := pki.SignCertificate(rootBTemplate, rootBTemplate, rootBKey.Public(), rootBKey)
+	intByAPEM, intACert, _ := pki.SignCertificate(intTemplate, rootACert, intKey.Public(), rootAKey)
+	intByBPEM, _, _ := pki.SignCertificate(intTemplate, rootBCert, intKey.Public(), rootBKey)
+	leafPEM, _, _ := pki.SignCertificate(&x509.Certificate{
+		Subject:   pkix.Name{CommonName: "leaf"},
+		NotBefore: time.Now(), NotAfter: time.Now().Add(time.Minute),
+	}, intACert, intKey.Public(), intKey)
+
+	// build the secret as Vault would return it for a cross-signed intermediate
+	secret := &certutil.Secret{
+		Data: map[string]any{
+			"certificate": string(leafPEM),
+			"issuing_ca":  string(intByAPEM),
+			"ca_chain":    []string{string(intByAPEM), string(intByBPEM), string(rootAPEM), string(rootBPEM)},
+		},
+	}
+
+	cert, ca, err := extractCertificatesFromVaultCertificateSecret(secret)
+	t.Logf("cert=%q", string(cert))
+	t.Logf("ca=%q", string(ca))
+
+	if err != nil {
+		t.Fatalf("expected no error for cross-signed intermediate, got: %s", err)
+	}
+	if len(cert) == 0 {
+		t.Error("expected non-empty cert chain")
+	}
+	if strings.TrimSpace(string(ca)) != strings.TrimSpace(string(intByAPEM)) {
+		t.Errorf("unexpected CA: expected issuing_ca, got %q", ca)
 	}
 }
 
