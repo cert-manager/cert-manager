@@ -239,3 +239,25 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 		}
 	}
 }
+
+func TestUnmarshalSANsRejectsNonContextSpecificClass(t *testing.T) {
+	// A dNSName uses context-specific tag 2. An element carrying the same tag
+	// number but a UNIVERSAL class must not be accepted as a dNSName.
+	good := asn1.RawValue{Class: asn1.ClassContextSpecific, Tag: nameTypeDNSName, Bytes: []byte("good.example.com")}
+	goodSAN, err := asn1.Marshal([]asn1.RawValue{good})
+	if err != nil {
+		t.Fatalf("failed to marshal SAN: %v", err)
+	}
+	if gns, err := UnmarshalSANs(goodSAN); err != nil || len(gns.DNSNames) != 1 || gns.DNSNames[0] != "good.example.com" {
+		t.Fatalf("expected good.example.com to parse as a dNSName, got %v (err %v)", gns.DNSNames, err)
+	}
+
+	bad := asn1.RawValue{Class: asn1.ClassUniversal, Tag: nameTypeDNSName, Bytes: []byte("evil.example.com")}
+	badSAN, err := asn1.Marshal([]asn1.RawValue{bad})
+	if err != nil {
+		t.Fatalf("failed to marshal SAN: %v", err)
+	}
+	if gns, err := UnmarshalSANs(badSAN); err == nil {
+		t.Fatalf("expected error for UNIVERSAL-class element, got DNSNames=%v", gns.DNSNames)
+	}
+}
