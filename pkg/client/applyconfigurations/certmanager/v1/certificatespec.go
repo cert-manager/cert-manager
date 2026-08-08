@@ -171,7 +171,11 @@ type CertificateSpecApplyConfiguration struct {
 	// was changed. Revisions will be removed by oldest first if the number of
 	// revisions exceeds this number.
 	//
-	// If set, revisionHistoryLimit must be a value of `1` or greater.
+	// Values `0` and `1` have the same behavior: cert-manager retains one current
+	// CertificateRequest to ensure the current state of the Certificate can still
+	// be determined.
+	//
+	// If set, revisionHistoryLimit must be a value of `0` or greater.
 	// Default value is `1`.
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"`
 	// Defines extra output formats of the private key and signed certificate chain
