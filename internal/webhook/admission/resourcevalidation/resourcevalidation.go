@@ -33,8 +33,6 @@ import (
 
 type resourceValidation struct {
 	*admission.Handler
-
-	validationMappings map[schema.GroupVersionResource]validationPair
 }
 
 var _ admission.ValidationInterface = &resourceValidation{}
@@ -75,9 +73,9 @@ func NewPlugin() admission.Interface {
 
 func (p resourceValidation) Validate(_ context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) ([]string, error) {
 	requestResource := schema.GroupVersionResource{
-		Group:    request.RequestResource.Group,
-		Version:  request.RequestResource.Version,
-		Resource: request.RequestResource.Resource,
+		Group:    request.Resource.Group,
+		Version:  request.Resource.Version,
+		Resource: request.Resource.Resource,
 	}
 
 	pair, ok := validationMapping[requestResource]

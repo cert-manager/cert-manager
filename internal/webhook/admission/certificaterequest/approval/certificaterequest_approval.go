@@ -80,9 +80,9 @@ func NewPlugin(authz authorizer.Authorizer, discoveryClient discovery.DiscoveryI
 }
 
 func (c *certificateRequestApproval) Validate(ctx context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (warnings []string, err error) {
-	if request.RequestResource.Group != "cert-manager.io" ||
-		request.RequestResource.Resource != "certificaterequests" ||
-		request.RequestSubResource != "status" {
+	if request.Resource.Group != "cert-manager.io" ||
+		request.Resource.Resource != "certificaterequests" ||
+		request.SubResource != "status" {
 		return nil, nil
 	}
 
