@@ -85,7 +85,7 @@ tools += kind=v0.32.0
 tools += vault=v2.0.4
 # https://github.com/Azure/azure-workload-identity/releases
 # renovate: datasource=github-releases packageName=Azure/azure-workload-identity
-tools += azwi=v1.6.0
+tools += azwi=v1.6.1
 # https://github.com/kyverno/kyverno/releases
 # renovate: datasource=github-releases packageName=kyverno/kyverno
 tools += kyverno=v1.18.2
@@ -132,13 +132,13 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.8
+tools += crane=v0.21.9
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.11
 # https://pkg.go.dev/github.com/sigstore/cosign/v2/cmd/cosign?tab=versions
 # renovate: datasource=go packageName=github.com/sigstore/cosign/v2
-tools += cosign=v2.6.4
+tools += cosign=v2.6.5
 # https://pkg.go.dev/github.com/cert-manager/boilersuite?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/boilersuite
 tools += boilersuite=v0.2.0
@@ -558,10 +558,10 @@ $(DOWNLOAD_DIR)/tools/vault@$(VAULT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLO
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-azwi_linux_amd64_SHA256SUM=d478f877bea2882666f0ddda3c42276140c86167a938d801df484d109890d5c0
-azwi_linux_arm64_SHA256SUM=29f624bb87f563aa120d284ecf5763fc0f78900a23ba0480b64df417d2668c92
-azwi_darwin_amd64_SHA256SUM=ed1c50d14f339a79abdf3c2225d9d901f4045d70eea74d845faab2e8715cc9cb
-azwi_darwin_arm64_SHA256SUM=2c62df9dacc4a2b893f3ec482fd2dc087ac52dd1f2fd30d6e3e8d40646bf216e
+azwi_linux_amd64_SHA256SUM=f0e2fdfc71004ecee56e9a4c9f44e278acaa96a365b32c82555805f7449529c7
+azwi_linux_arm64_SHA256SUM=f1229c94c6e3f94796ff1c05b12d0f95e787499c1cbf8e482d1672bc19d4eb02
+azwi_darwin_amd64_SHA256SUM=b4800da9d448e24627f878dce0f3a49bad029239fe8ba963485af10ffb040d04
+azwi_darwin_arm64_SHA256SUM=95ec6f20769cd442b0764734b659ca84542d084ee87440930bde8f59d06ece67
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
