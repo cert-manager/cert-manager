@@ -324,7 +324,7 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	// can be retried.
 	// TODO: don't mark *all* malformed errors as expired, we may be able to be
 	// more informative to the user by further inspecting the Error response.
-	if acmeErr.ProblemType == "urn:ietf:params:acme:error:malformed" {
+	if acmeErr.ProblemType == "urn:ietf:params:acme:error:malformed" && acmeErr.StatusCode != 404 {
 		ch.Status.State = cmacme.Expired
 		// absorb the error as updating the challenge's status will trigger a sync
 		return nil
@@ -333,7 +333,9 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-		return nil
+		if acmeErr.StatusCode != 404 {
+			return nil
+		}
 	}
 
 	return err

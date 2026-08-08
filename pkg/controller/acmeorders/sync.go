@@ -105,7 +105,9 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-				return nil
+				if acmeErr.StatusCode != 404 {
+					return nil
+				}
 			}
 		}
 		return err
@@ -187,7 +189,9 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-			return nil
+			if acmeErr.StatusCode != 404 {
+				return nil
+			}
 		}
 	}
 	if err != nil {
@@ -591,7 +595,9 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-			return nil
+			if acmeGetOrderErr.StatusCode != 404 {
+				return nil
+			}
 		}
 		if getOrderErr != nil {
 			return getOrderErr
@@ -605,11 +611,13 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	// Any other ACME 4xx error means that the Order can be considered failed.
-	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 && acmeErr.StatusCode != 404 {
 		log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
 		c.setOrderState(&o.Status, string(cmacme.Errored))
 		o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
-		return nil
+		if acmeErr.StatusCode != 404 {
+			return nil
+		}
 	}
 
 	if ok && acmeErr.StatusCode >= 500 {
@@ -624,7 +632,10 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", errUpdate)
-			return nil
+			if acmeErr.StatusCode != 404 {
+				return nil
+			}
+
 		}
 		if acmeErr.StatusCode >= 500 {
 			log.Error(acmeErr, "acme server fatal error", "errorCode", acmeErr.StatusCode, "dnsNames", o.Spec.DNSNames, "ipAddresses", o.Spec.IPAddresses, "responseHeaders", acmeErr.Header)
@@ -686,7 +697,9 @@ func (c *controller) syncCertificateData(ctx context.Context, cl acmecl.Interfac
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-			return nil
+			if acmeErr.StatusCode != 404 {
+				return nil
+			}
 		}
 	}
 	if err != nil {
