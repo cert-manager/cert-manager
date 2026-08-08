@@ -79,11 +79,24 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
 	if err != nil {
 		return err
 	}
-	if len(existingPods) == 1 {
-		logf.WithRelatedResource(log, existingPods[0]).Info("found one existing HTTP01 solver pod")
+
+	// Pods that are already terminating (e.g. deleted on a previous sync, or
+	// stuck terminating on a drained/unreachable node) are ignored here: they
+	// are already on their way out, and waiting for them to disappear from
+	// the lister cache before making progress can block forever. See
+	// https://github.com/cert-manager/cert-manager/issues/7768.
+	var activePods []*metav1.PartialObjectMetadata
+	for _, pod := range existingPods {
+		if pod.DeletionTimestamp == nil {
+			activePods = append(activePods, pod)
+		}
+	}
+
+	if len(activePods) == 1 {
+		logf.WithRelatedResource(log, activePods[0]).Info("found one existing HTTP01 solver pod")
 		return nil
 	}
-	if len(existingPods) > 1 {
+	if len(activePods) > 1 {
 		log.V(logf.InfoLevel).Info("multiple challenge solver pods found for challenge. cleaning up all existing pods.")
 		err := s.cleanupPods(ctx, ch)
 		if err != nil {
