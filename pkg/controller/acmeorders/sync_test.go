@@ -1133,6 +1133,62 @@ func runTest(t *testing.T, test testT) {
 	test.builder.CheckAndFinish(err)
 }
 
+func TestIsARIReplacesRejection(t *testing.T) {
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"CA does not support ARI": {
+			err:  acmeapi.ErrCADoesNotSupportARI,
+			want: true,
+		},
+		"wrapped CA does not support ARI": {
+			err:  fmt.Errorf("authorizing order: %w", acmeapi.ErrCADoesNotSupportARI),
+			want: true,
+		},
+		"alreadyReplaced problem type": {
+			err: &acmeapi.Error{
+				ProblemType: "urn:ietf:params:acme:error:alreadyReplaced",
+				Detail:      "Certificate has already been replaced",
+			},
+			want: true,
+		},
+		"malformed problem mentioning replaces field": {
+			err: &acmeapi.Error{
+				ProblemType: "urn:ietf:params:acme:error:malformed",
+				Detail:      "Could not validate ARI 'replaces' field :: path contained an Authority Key Identifier that did not match a known issuer",
+			},
+			want: true,
+		},
+		"malformed problem mentioning replaces field with different casing": {
+			err: &acmeapi.Error{
+				ProblemType: "urn:ietf:params:acme:error:malformed",
+				Detail:      "Could not validate ARI 'Replaces' field",
+			},
+			want: true,
+		},
+		"malformed problem unrelated to replaces": {
+			err: &acmeapi.Error{
+				ProblemType: "urn:ietf:params:acme:error:malformed",
+				Detail:      "Error creating new order :: invalid DNS name",
+			},
+			want: false,
+		},
+		"unrelated error": {
+			err:  fmt.Errorf("connection refused"),
+			want: false,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := isARIReplacesRejection(test.err)
+			if got != test.want {
+				t.Errorf("isARIReplacesRejection(%v) = %v, want %v", test.err, got, test.want)
+			}
+		})
+	}
+}
+
 func TestFinalizeOrder(t *testing.T) {
 	tests := map[string]struct {
 		cl               acmecl.Interface

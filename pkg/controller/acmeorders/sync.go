@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -846,6 +847,13 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Orde
 // RFC 9773, servers signal this with the `alreadyReplaced` problem type.
 // We also treat ErrCADoesNotSupportARI as a rejection so renewal can fall
 // back gracefully if the directory changes between Discover and newOrder.
+//
+// RFC 9773 does not mandate a problem type for a `replaces` value the server
+// cannot otherwise validate, e.g. when the Certificate's issuerRef has been
+// switched to a different CA and the CertID's Authority Key Identifier is no
+// longer recognised. Servers we've observed (e.g. Let's Encrypt) report this
+// as a generic `malformed` problem whose detail mentions the `replaces`
+// field, so we also treat that as a rejection.
 func isARIReplacesRejection(err error) bool {
 	if errors.Is(err, acmeapi.ErrCADoesNotSupportARI) {
 		return true
@@ -853,6 +861,9 @@ func isARIReplacesRejection(err error) bool {
 	var ae *acmeapi.Error
 	if errors.As(err, &ae) {
 		if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
+			return true
+		}
+		if ae.ProblemType == "urn:ietf:params:acme:error:malformed" && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
 			return true
 		}
 	}
