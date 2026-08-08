@@ -24,6 +24,11 @@ type CAIssuerApplyConfiguration struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.
 	SecretName *string `json:"secretName,omitempty"`
+	// SecretNamespace is the namespace of the secret used
+	// to sign Certificates issued by this Issuer.
+	// If empty, the secret is looked up in the same namespace as the Issuer itself,
+	// or the Cluster Resource Namespace for ClusterIssuers.
+	SecretNamespace *string `json:"secretNamespace,omitempty"`
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
@@ -51,6 +56,14 @@ func CAIssuer() *CAIssuerApplyConfiguration {
 // If called multiple times, the SecretName field is set to the value of the last call.
 func (b *CAIssuerApplyConfiguration) WithSecretName(value string) *CAIssuerApplyConfiguration {
 	b.SecretName = &value
+	return b
+}
+
+// WithSecretNamespace sets the SecretNamespace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SecretNamespace field is set to the value of the last call.
+func (b *CAIssuerApplyConfiguration) WithSecretNamespace(value string) *CAIssuerApplyConfiguration {
+	b.SecretNamespace = &value
 	return b
 }
 

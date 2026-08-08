@@ -76,12 +76,15 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	log := logf.FromContext(ctx, "sign")
 
 	secretName := issuerObj.GetSpec().CA.SecretName
-	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
+	secretNamespace := issuerObj.GetSpec().CA.SecretNamespace
+	if secretNamespace == "" {
+		secretNamespace = c.issuerOptions.ResourceNamespace(issuerObj)
+	}
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPairAndCA(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPairAndCA(ctx, c.secretsLister, secretNamespace, secretName)
 	if k8sErrors.IsNotFound(err) {
-		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
+		message := fmt.Sprintf("Referenced secret %s/%s not found", secretNamespace, secretName)
 
 		c.reporter.Pending(cr, err, "SecretMissing", message)
 		log.Error(err, message)
@@ -90,7 +93,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	}
 
 	if cmerrors.IsInvalidData(err) {
-		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
+		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", secretNamespace, secretName)
 
 		c.reporter.Pending(cr, err, "SecretInvalidData", message)
 		log.Error(err, message)
@@ -99,7 +102,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 
 	if err != nil {
 		// We are probably in a network error here so we should backoff and retry
-		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
+		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", secretNamespace, secretName)
 		c.reporter.Pending(cr, err, "SecretGetError", message)
 		log.Error(err, message)
 		return nil, err
