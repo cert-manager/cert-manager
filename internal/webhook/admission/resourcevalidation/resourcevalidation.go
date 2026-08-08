@@ -74,6 +74,11 @@ func NewPlugin() admission.Interface {
 }
 
 func (p resourceValidation) Validate(_ context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) ([]string, error) {
+	// request.RequestResource is optional and may be nil.
+	if request.RequestResource == nil {
+		return nil, nil
+	}
+
 	requestResource := schema.GroupVersionResource{
 		Group:    request.RequestResource.Group,
 		Version:  request.RequestResource.Version,

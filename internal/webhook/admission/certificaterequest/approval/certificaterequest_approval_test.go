@@ -40,6 +40,30 @@ var (
 	expNoDiscovery = discovery.DiscoveryInterface(nil)
 )
 
+func TestValidate_NilRequestResource(t *testing.T) {
+	c := NewPlugin(nil, expNoDiscovery).(*certificateRequestApproval)
+	req := admissionv1.AdmissionRequest{
+		Operation:           admissionv1.Update,
+		RequestResource:     nil,
+		RequestSubResource:  "status",
+	}
+	cr := &certmanager.CertificateRequest{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Validate() panicked with nil RequestResource: %v", r)
+		}
+	}()
+
+	warnings, err := c.Validate(context.Background(), req, cr, cr)
+	if err != nil {
+		t.Fatalf("Validate() unexpected error: %v", err)
+	}
+	if warnings != nil {
+		t.Fatalf("Validate() unexpected warnings: %v", warnings)
+	}
+}
+
 func TestValidate(t *testing.T) {
 	baseCR := &certmanager.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
