@@ -54,6 +54,11 @@ func Test_ensureSecretData(t *testing.T) {
 		// cert is the optional cert to be loaded to fake clientset.
 		cert *cmapi.Certificate
 
+		// duplicateCert is an optional second Certificate in the same namespace
+		// that references the same spec.secretName, used to exercise the
+		// CertificateOwnsSecret guard in ensureSecretData.
+		duplicateCert *cmapi.Certificate
+
 		// secret is the optional secret to be loaded into the fake clientset.
 		secret *corev1.Secret
 
@@ -63,6 +68,8 @@ func Test_ensureSecretData(t *testing.T) {
 
 		// enableOwnerRef is passed to the post issuance policy checks.
 		enableOwnerRef bool
+
+		secretsUpdateDataErr error
 	}{
 		"if 'key' is empty, should do nothing and not error": {
 			expectedAction: false,
@@ -572,6 +579,117 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			expectedAction: true,
 		},
+		"if Certificate exists, Secret is owned by another controller, secretsUpdateData returns conflict error, skip update silently": {
+			enableOwnerRef: true,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-test-name")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					OwnerReferences: []metav1.OwnerReference{
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "other-cert", UID: types.UID("other-uid"), Controller: new(true), BlockOwnerDeletion: new(true)},
+					},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+							Raw: []byte(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
+								"f:ownerReferences": {
+									"k:{\"uid\":\"other-uid\"}": {}
+								}
+							}}`),
+						}},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk},
+			},
+			secretsUpdateDataErr: &internal.SecretOwnedByAnotherControllerError{SecretName: "test-secret", OwnerName: "other-cert", OwnerKind: "Certificate", OwnerAPIVersion: "cert-manager.io/v1"},
+			expectedAction:       true,
+		},
+
+		// CertificateOwnsSecret guard: a second Certificate in the same namespace
+		// pointing to the same spec.secretName means only the owner Certificate
+		// may perform Secret writes. The non-owner must skip ensureSecretData
+		// entirely, regardless of whether --enable-certificate-owner-ref is set.
+		"if a newer duplicate Certificate exists with the same secretName, the current Certificate is the owner and should still reconcile the Secret": {
+			cert: &cmapi.Certificate{
+				// Older Certificate (lower lexicographic name) – will be selected as
+				// the owner by CertificateOwnsSecret when no annotation is present.
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "test-namespace",
+					Name:              "aaa-cert",
+					CreationTimestamp: metav1.Unix(1000, 0),
+				},
+				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			duplicateCert: &cmapi.Certificate{
+				// Newer Certificate – not the owner.
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "test-namespace",
+					Name:              "zzz-cert",
+					CreationTimestamp: metav1.Unix(2000, 0),
+				},
+				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace",
+					Name:      "test-secret",
+					// No cert-manager.io/certificate-name annotation: CertificateOwnsSecret
+					// falls back to oldest Certificate (aaa-cert).
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk},
+			},
+			// The owning Certificate (aaa-cert) has no Issuing condition and the
+			// post-issuance policy will fire (missing managed fields), so
+			// secretsUpdateData IS expected to be called.
+			expectedAction: true,
+		},
+		"if a duplicate Certificate owns the Secret via annotation, the non-owner Certificate must skip ensureSecretData without modifying the Secret": {
+			cert: &cmapi.Certificate{
+				// This Certificate is NOT the annotation-based owner.
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "test-namespace",
+					Name:              "non-owner-cert",
+					CreationTimestamp: metav1.Unix(1000, 0),
+				},
+				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			duplicateCert: &cmapi.Certificate{
+				// This Certificate IS the annotation-based owner.
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "test-namespace",
+					Name:              "owner-cert",
+					CreationTimestamp: metav1.Unix(2000, 0),
+				},
+				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace",
+					Name:      "test-secret",
+					Annotations: map[string]string{
+						// Annotation names "owner-cert" as the owner, even though
+						// "non-owner-cert" was created earlier.
+						cmapi.CertificateNameKey: "owner-cert",
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk},
+			},
+			// non-owner-cert must NOT call secretsUpdateData.
+			expectedAction: false,
+		},
+
 		"enabledOwnerRef=true if Secret has owner reference to Certificate owned by field manager, expect no action": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
@@ -1138,6 +1256,9 @@ func Test_ensureSecretData(t *testing.T) {
 				// Ensures cert is loaded into the builder's fake clientset.
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.cert)
 			}
+			if test.duplicateCert != nil {
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.duplicateCert)
+			}
 			if test.secret != nil {
 				// Ensures secret is loaded into the builder's fake clientset.
 				builder.KubeObjects = append(builder.KubeObjects, test.secret)
@@ -1155,7 +1276,7 @@ func Test_ensureSecretData(t *testing.T) {
 			var actionCalled bool
 			w.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, _ internal.SecretData) error {
 				actionCalled = true
-				return nil
+				return test.secretsUpdateDataErr
 			}
 			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(test.enableOwnerRef, fieldManager)
 
