@@ -120,6 +120,9 @@ func TestSync(t *testing.T) {
 	testOrderReplacesID := gen.OrderFrom(testOrder,
 		gen.SetOrderReplacesID("testorder-old"))
 
+	testOrderDuration := gen.OrderFrom(testOrder,
+		gen.SetOrderDuration(90*24*time.Hour))
+
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
 		URL:         "http://testurl.com/abcde",
@@ -394,6 +397,89 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			acmeClient: &acmecl.FakeACME{
 				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+		},
+		"create a new order with the acme server, with Duration set, NotBefore and NotAfter are populated and NotAfter > NotBefore": {
+			order: testOrderDuration,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderDuration},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderDuration, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					if len(opt) < 2 {
+						return nil, fmt.Errorf("expected at least 2 OrderOptions (NotBefore + NotAfter), got %d", len(opt))
+					}
+					// Both orderNotBeforeOpt and orderNotAfterOpt are defined in
+					// the third-party ACME library as `type X time.Time`. We
+					// use reflect.Value.Convert to perform the same type
+					// conversion the lib does internally at rfc8555.go:223
+					// (`time.Time(o).Format(time.RFC3339)`).
+					extractOptTime := func(o acmeapi.OrderOption) (time.Time, bool) {
+						local := o
+						v := reflect.ValueOf(&local).Elem()
+						if v.Kind() != reflect.Interface {
+							return time.Time{}, false
+						}
+						concrete := v.Elem()
+						tType := reflect.TypeOf(time.Time{})
+						if !concrete.Type().ConvertibleTo(tType) {
+							return time.Time{}, false
+						}
+						converted := concrete.Convert(tType)
+						t, ok := converted.Interface().(time.Time)
+						if !ok {
+							return time.Time{}, false
+						}
+						return t, true
+					}
+					var notBefore, notAfter time.Time
+					for _, o := range opt {
+						t, ok := extractOptTime(o)
+						if !ok || t.IsZero() {
+							continue
+						}
+						if notBefore.IsZero() {
+							notBefore = t
+						} else if notAfter.IsZero() {
+							notAfter = t
+						}
+					}
+					if notBefore.IsZero() {
+						return nil, errors.New("WithOrderNotBefore was not called (no non-zero time in OrderOption slice)")
+					}
+					if notAfter.IsZero() {
+						return nil, errors.New("WithOrderNotAfter was not called (only one non-zero time in OrderOption slice)")
+					}
+					if !notAfter.After(notBefore) {
+						return nil, fmt.Errorf("expected NotAfter > NotBefore, got NotBefore=%v NotAfter=%v", notBefore, notAfter)
+					}
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
