@@ -313,8 +313,13 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			message = err.Error()
 		}
 
+		// pki.RenewalTime returns a nil time together with an error for renewal
+		// window errors (bad cron expression, unknown timezone, non-positive
+		// windowDuration). The Disabled policy is already handled above, so a
+		// nil renewalTime here always means err != nil. Surface it as a
+		// WindowError violation rather than dereferencing nil below.
 		if renewalTime == nil {
-			return "", "", false
+			return reason, message, true
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())

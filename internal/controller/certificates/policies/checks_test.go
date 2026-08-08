@@ -2379,3 +2379,35 @@ func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
 	assert.Equal(t, "", message)
 	assert.False(t, violation)
 }
+
+// Test_CurrentCertificateNearingExpiry_WindowError covers the renewal-window
+// error path: pki.RenewalTime returns a nil time with an error (here for an
+// invalid cron expression), which previously caused a nil pointer panic in the
+// trigger controller. The error must surface as a WindowError violation.
+func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
+	clock := &fakeclock.FakeClock{}
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	})
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyRenewBefore,
+					Windows: []cmapi.CertificateRenewalWindows{{
+						Cron:           "not a valid cron",
+						WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+					}},
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
+	assert.Equal(t, WindowError, reason)
+	assert.True(t, violation)
+}
