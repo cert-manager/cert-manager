@@ -24,6 +24,7 @@ import (
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
@@ -133,42 +134,28 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to create aws config: %w", err)
 	}
 
-	if d.Role != "" && d.WebIdentityToken == "" {
-		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
+	// Rather than assuming the role once here and storing the resulting
+	// static credentials, configure a credential provider so that the AWS
+	// SDK can re-assume the role whenever the temporary STS credentials
+	// expire; for example if a challenge is retried, or if there is a long
+	// delay between presenting and cleaning up the DNS01 challenge record.
+	// The CredentialsCache avoids repeating the STS request for every AWS
+	// API request made with this config.
+	if d.Role != "" {
 		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRole(ctx, &sts.AssumeRoleInput{
-			RoleArn:         aws.String(d.Role),
-			RoleSessionName: aws.String("cert-manager"),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role: %w", err)
+		var credProvider aws.CredentialsProvider
+		if d.WebIdentityToken == "" {
+			log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
+			credProvider = stscreds.NewAssumeRoleProvider(stsSvc, d.Role, func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = "cert-manager"
+			})
+		} else {
+			log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
+			credProvider = stscreds.NewWebIdentityRoleProvider(stsSvc, d.Role, staticIdentityToken(d.WebIdentityToken), func(o *stscreds.WebIdentityRoleOptions) {
+				o.RoleSessionName = "cert-manager"
+			})
 		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
-	}
-
-	if d.Role != "" && d.WebIdentityToken != "" {
-		log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
-
-		stsSvc := d.StsProvider(cfg)
-		result, err := stsSvc.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
-			RoleArn:          aws.String(d.Role),
-			RoleSessionName:  aws.String("cert-manager"),
-			WebIdentityToken: aws.String(d.WebIdentityToken),
-		})
-		if err != nil {
-			return aws.Config{}, fmt.Errorf("unable to assume role with web identity: %w", err)
-		}
-
-		cfg.Credentials = credentials.NewStaticCredentialsProvider(
-			*result.Credentials.AccessKeyId,
-			*result.Credentials.SecretAccessKey,
-			*result.Credentials.SessionToken,
-		)
+		cfg.Credentials = aws.NewCredentialsCache(credProvider)
 	}
 
 	// Log some key values of the loaded configuration, so that users can
@@ -205,4 +192,12 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webId
 
 func defaultSTSProvider(cfg aws.Config) StsClient {
 	return sts.NewFromConfig(cfg)
+}
+
+// staticIdentityToken supplies the web identity token from the Issuer
+// configuration to the AWS SDK whenever it needs to re-assume the role.
+type staticIdentityToken string
+
+func (t staticIdentityToken) GetIdentityToken() ([]byte, error) {
+	return []byte(t), nil
 }

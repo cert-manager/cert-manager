@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
@@ -374,6 +375,9 @@ func TestAssumeRole(t *testing.T) {
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),
 		SessionToken:    aws.String("my-token"),
+		// The stscreds credential providers dereference the expiration when
+		// computing the credential lifetime.
+		Expiration: aws.Time(time.Now().Add(time.Hour)),
 	}
 	cases := []struct {
 		name             string
@@ -390,11 +394,11 @@ func TestAssumeRole(t *testing.T) {
 		mockSTS          *mockSTS
 	}{
 		{
-			name:          "should remove request ID for assumeRole",
+			name:          "forwards STS errors including the request ID, which is redacted later by the challenge controller",
 			role:          "my-role",
 			ambient:       true,
 			expErr:        true,
-			expErrMessage: "unable to assume role: https response error StatusCode: 0, RequestID: fake-request-id, foo",
+			expErrMessage: "failed to refresh cached credentials, https response error StatusCode: 0, RequestID: fake-request-id, foo",
 			expCreds:      creds,
 			expRegion:     "",
 			mockSTS: &mockSTS{
@@ -516,6 +520,12 @@ func TestAssumeRole(t *testing.T) {
 			}, c.key, c.secret, c.region, c.role, c.webIdentityToken, c.ambient)
 			_, ctx := ktesting.NewTestContext(t)
 			cfg, err := provider.GetSession(ctx)
+			// The role is now assumed lazily, so STS errors surface when the
+			// credentials are first retrieved, not when the session is created.
+			var sessCreds aws.Credentials
+			if err == nil {
+				sessCreds, err = cfg.Credentials.Retrieve(ctx)
+			}
 			if c.expErr {
 				assert.NotNil(t, err)
 				if c.expErrMessage != "" {
@@ -523,7 +533,6 @@ func TestAssumeRole(t *testing.T) {
 				}
 			} else {
 				assert.Nil(t, err)
-				sessCreds, _ := cfg.Credentials.Retrieve(ctx)
 				assert.Equal(t, c.mockSTS.assumedRole, c.role)
 				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
 				assert.Equal(t, *c.expCreds.AccessKeyId, sessCreds.AccessKeyID)
