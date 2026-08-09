@@ -19,6 +19,8 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
+
 	restclient "k8s.io/client-go/rest"
 
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
@@ -35,12 +37,12 @@ type Solver interface {
 	// Present should 'present' the ACME challenge solving parameters as
 	// defined in the given challenge resource.
 	// TODO: add notes about duplicate records with DNS01
-	Present(ch *whapi.ChallengeRequest) error
+	Present(ctx context.Context, ch *whapi.ChallengeRequest) error
 
 	// CleanUp should remove any presented challenge records for the given
 	// challenge resource
 	// TODO: add notes about duplicate records with DNS01
-	CleanUp(ch *whapi.ChallengeRequest) error
+	CleanUp(ctx context.Context, ch *whapi.ChallengeRequest) error
 
 	// Initialize is called as a post-start hook when the apiserver starts.
 	// https://github.com/kubernetes/apiserver/blob/release-1.26/pkg/server/hooks.go#L32-L42

@@ -17,6 +17,7 @@ limitations under the License.
 package rfc2136
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -88,7 +89,7 @@ func (s *Solver) Name() string {
 	return SolverName
 }
 
-func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
+func (s *Solver) Present(_ context.Context, ch *whapi.ChallengeRequest) error {
 	p, err := s.buildDNSProvider(ch)
 	if err != nil {
 		return err
@@ -102,7 +103,7 @@ func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
 	return nil
 }
 
-func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
+func (s *Solver) CleanUp(_ context.Context, ch *whapi.ChallengeRequest) error {
 	p, err := s.buildDNSProvider(ch)
 	if err != nil {
 		return err
