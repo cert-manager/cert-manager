@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -538,6 +539,78 @@ func TestAssumeRole(t *testing.T) {
 				assert.Equal(t, *c.expCreds.AccessKeyId, sessCreds.AccessKeyID)
 				assert.Equal(t, c.region, cfg.Region)
 			}
+		})
+	}
+}
+
+// TestGetSessionRefreshesExpiredSTSCredentials demonstrates that the role is
+// re-assumed when the temporary STS credentials expire, and that valid
+// credentials are served from the cache without repeated STS requests.
+//
+// It runs in a synctest bubble: the SDK's credential expiry check bottoms out
+// in time.Now, so sleeping past the expiry advances the fake clock instantly
+// and no real time passes.
+//
+// This test fails with the previous implementation, which assumed the role
+// once in GetSession and stored the result in a static credentials provider
+// which the SDK can never refresh.
+func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
+	const validity = 15 * time.Minute
+	tests := []struct {
+		name             string
+		webIdentityToken string
+	}{
+		{name: "assume role"},
+		{name: "assume role with web identity", webIdentityToken: jwt},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("AWS_CONFIG_FILE", "/dev/null")
+			synctest.Test(t, func(t *testing.T) {
+				var stsCalls int
+				issueCreds := func() *ststypes.Credentials {
+					stsCalls++
+					return &ststypes.Credentials{
+						AccessKeyId:     aws.String(fmt.Sprintf("key-%d", stsCalls)),
+						SecretAccessKey: aws.String("secret"),
+						SessionToken:    aws.String("session-token"),
+						Expiration:      aws.Time(time.Now().Add(validity)),
+					}
+				}
+				mock := &mockSTS{
+					AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+						return &sts.AssumeRoleOutput{Credentials: issueCreds()}, nil
+					},
+					AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+						return &sts.AssumeRoleWithWebIdentityOutput{Credentials: issueCreds()}, nil
+					},
+				}
+				provider := makeMockSessionProvider(func(cfg aws.Config) StsClient {
+					return mock
+				}, "", "", "", "my-role", tc.webIdentityToken, true)
+				_, ctx := ktesting.NewTestContext(t)
+				cfg, err := provider.GetSession(ctx)
+				require.NoError(t, err)
+
+				before, err := cfg.Credentials.Retrieve(ctx)
+				require.NoError(t, err)
+				assert.Equal(t, "key-1", before.AccessKeyID)
+
+				// While the credentials are valid they are served from the
+				// cache without another STS request.
+				cached, err := cfg.Credentials.Retrieve(ctx)
+				require.NoError(t, err)
+				assert.Equal(t, "key-1", cached.AccessKeyID)
+				assert.Equal(t, 1, stsCalls)
+
+				// Once the credentials have expired, the SDK re-assumes the
+				// role to obtain fresh credentials.
+				time.Sleep(validity + time.Minute)
+				after, err := cfg.Credentials.Retrieve(ctx)
+				require.NoError(t, err)
+				assert.Equal(t, "key-2", after.AccessKeyID)
+				assert.Equal(t, 2, stsCalls)
+			})
 		})
 	}
 }
