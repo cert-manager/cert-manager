@@ -579,9 +579,18 @@ func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
 				}
 				mock := &mockSTS{
 					AssumeRoleFn: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+						// The previous implementation omitted DurationSeconds
+						// and STS applied its server-side default of 3600
+						// seconds; the same duration is now requested
+						// explicitly.
+						assert.Equal(t, int32(3600), aws.ToInt32(params.DurationSeconds))
 						return &sts.AssumeRoleOutput{Credentials: issueCreds()}, nil
 					},
 					AssumeRoleWithWebIdentityFn: func(ctx context.Context, params *sts.AssumeRoleWithWebIdentityInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleWithWebIdentityOutput, error) {
+						// DurationSeconds remains unset, as in the previous
+						// implementation, so the STS server-side default
+						// session duration applies.
+						assert.Nil(t, params.DurationSeconds)
 						return &sts.AssumeRoleWithWebIdentityOutput{Credentials: issueCreds()}, nil
 					},
 				}
@@ -591,6 +600,10 @@ func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
 				_, ctx := ktesting.NewTestContext(t)
 				cfg, err := provider.GetSession(ctx)
 				require.NoError(t, err)
+
+				// The role is not assumed during GetSession; only when the
+				// credentials are first needed.
+				assert.Equal(t, 0, stsCalls)
 
 				before, err := cfg.Credentials.Retrieve(ctx)
 				require.NoError(t, err)

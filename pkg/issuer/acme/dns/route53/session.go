@@ -19,6 +19,7 @@ package route53
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
@@ -136,11 +137,13 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 
 	// Rather than assuming the role once here and storing the resulting
 	// static credentials, configure a credential provider so that the AWS
-	// SDK can re-assume the role whenever the temporary STS credentials
-	// expire; for example if a challenge is retried, or if there is a long
-	// delay between presenting and cleaning up the DNS01 challenge record.
-	// The CredentialsCache avoids repeating the STS request for every AWS
-	// API request made with this config.
+	// SDK can re-assume the role if the temporary STS credentials expire
+	// while this config is in use. A new config is constructed for every
+	// Present and CleanUp call (see dns.Solver.solverForChallenge), so in
+	// practice this covers the SDK's own request retries and the polling
+	// for the Route53 change to become INSYNC, which can take tens of
+	// minutes. The CredentialsCache avoids repeating the STS request for
+	// every AWS API request made with this config.
 	if d.Role != "" {
 		stsSvc := d.StsProvider(cfg)
 		var credProvider aws.CredentialsProvider
@@ -148,9 +151,17 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 			credProvider = stscreds.NewAssumeRoleProvider(stsSvc, d.Role, func(o *stscreds.AssumeRoleOptions) {
 				o.RoleSessionName = "cert-manager"
+				// The previous implementation omitted DurationSeconds, so STS
+				// applied its server-side default of 3600 seconds. Request the
+				// same duration explicitly, because AssumeRoleProvider would
+				// otherwise request only stscreds.DefaultDuration (15 minutes).
+				o.Duration = time.Hour
 			})
 		} else {
 			log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role with web identity")
+			// WebIdentityRoleProvider omits DurationSeconds unless a Duration
+			// is configured, so the STS server-side default session duration
+			// applies, as before.
 			credProvider = stscreds.NewWebIdentityRoleProvider(stsSvc, d.Role, staticIdentityToken(d.WebIdentityToken), func(o *stscreds.WebIdentityRoleOptions) {
 				o.RoleSessionName = "cert-manager"
 			})
