@@ -18,8 +18,6 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"runtime"
 
 	"k8s.io/component-base/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
