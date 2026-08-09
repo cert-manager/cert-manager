@@ -18,8 +18,6 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"runtime"
 
 	"k8s.io/component-base/logs"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,10 +41,6 @@ func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 	defer logs.FlushLogs()
 	ctrl.SetLogger(logf.Log)
 	ctx = logf.NewContext(ctx, logf.Log, "acme-dns-webhook")
-
-	if len(os.Getenv("GOMAXPROCS")) == 0 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 
 	cmd := server.NewCommandStartWebhookServer(ctx, groupName, hooks...)
 
