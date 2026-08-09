@@ -17,6 +17,7 @@ limitations under the License.
 package apiserver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,11 +42,11 @@ func (s noOpSolver) Name() string {
 	return s.name
 }
 
-func (s noOpSolver) Present(_ *whapi.ChallengeRequest) error {
+func (s noOpSolver) Present(_ context.Context, _ *whapi.ChallengeRequest) error {
 	return nil
 }
 
-func (s noOpSolver) CleanUp(_ *whapi.ChallengeRequest) error {
+func (s noOpSolver) CleanUp(_ context.Context, _ *whapi.ChallengeRequest) error {
 	return nil
 }
 

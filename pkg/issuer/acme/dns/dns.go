@@ -89,7 +89,7 @@ func (s *Solver) Present(ctx context.Context, _ v1.GenericIssuer, ch *cmacme.Cha
 	}
 	if err == nil {
 		log.V(logf.InfoLevel).Info("presenting DNS01 challenge for domain")
-		return webhookSolver.Present(req)
+		return webhookSolver.Present(ctx, req)
 	}
 
 	slv, providerConfig, err := s.solverForChallenge(ctx, ch)
@@ -156,7 +156,7 @@ func (s *Solver) CleanUp(ctx context.Context, ch *cmacme.Challenge) error {
 	}
 	if err == nil {
 		log.V(logf.DebugLevel).Info("cleaning up DNS01 challenge")
-		return webhookSolver.CleanUp(req)
+		return webhookSolver.CleanUp(ctx, req)
 	}
 
 	slv, providerConfig, err := s.solverForChallenge(ctx, ch)

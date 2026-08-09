@@ -43,13 +43,13 @@ func (r *Webhook) Name() string {
 }
 
 // Present creates a TXT record using the specified parameters
-func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
+func (r *Webhook) Present(ctx context.Context, ch *v1alpha1.ChallengeRequest) error {
 	cl, pl, solverName, err := r.buildPayload(ch, v1alpha1.ChallengeActionPresent)
 	if err != nil {
 		return err
 	}
 
-	result := cl.Post().Resource(solverName).Body(pl).Do(context.TODO())
+	result := cl.Post().Resource(solverName).Body(pl).Do(ctx)
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
@@ -79,13 +79,13 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
+func (r *Webhook) CleanUp(ctx context.Context, ch *v1alpha1.ChallengeRequest) error {
 	cl, pl, solverName, err := r.buildPayload(ch, v1alpha1.ChallengeActionCleanUp)
 	if err != nil {
 		return err
 	}
 
-	result := cl.Post().Resource(solverName).Body(pl).Do(context.TODO())
+	result := cl.Post().Resource(solverName).Body(pl).Do(ctx)
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
