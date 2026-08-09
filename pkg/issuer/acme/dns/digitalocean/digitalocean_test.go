@@ -169,6 +169,15 @@ func (f fakeResolver) CheckTXTRecordPropagation(_ context.Context, _, _ string, 
 	return false, fmt.Errorf("not implemented")
 }
 
+// testDomain and testZone are used by every fake-server-backed test below;
+// none of them need a different domain, so it's a shared constant rather
+// than a parameter threaded through helpers that would always receive the
+// same value.
+const (
+	testDomain = "example.com"
+	testZone   = testDomain + "."
+)
+
 // fakeDORecord mirrors the subset of the DigitalOcean domain record JSON
 // shape that findTxtRecord relies on.
 type fakeDORecord struct {
@@ -181,12 +190,12 @@ type fakeDORecord struct {
 // fullName reconstructs the fully-qualified name DigitalOcean's `name`
 // list filter matches against from a record's (relative) Name field, the
 // same way the real API does: apex records are stored with Name "@" and
-// everything else is relative to domain.
-func (r fakeDORecord) fullName(domain string) string {
+// everything else is relative to testDomain.
+func (r fakeDORecord) fullName() string {
 	if r.Name == "@" {
-		return domain
+		return testDomain
 	}
-	return r.Name + "." + domain
+	return r.Name + "." + testDomain
 }
 
 // fakeDOServer is a minimal in-memory stand-in for the DigitalOcean
@@ -197,7 +206,6 @@ func (r fakeDORecord) fullName(domain string) string {
 // needed against the real API), and deleting a record by ID.
 type fakeDOServer struct {
 	t        *testing.T
-	domain   string
 	pageSize int
 
 	mu      sync.Mutex
@@ -205,14 +213,14 @@ type fakeDOServer struct {
 	deleted []int
 }
 
-func newFakeDOServer(t *testing.T, domain string, records []fakeDORecord, pageSize int) (*httptest.Server, *fakeDOServer) {
+func newFakeDOServer(t *testing.T, records []fakeDORecord, pageSize int) (*httptest.Server, *fakeDOServer) {
 	t.Helper()
 
-	s := &fakeDOServer{t: t, domain: domain, records: records, pageSize: pageSize}
+	s := &fakeDOServer{t: t, records: records, pageSize: pageSize}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v2/domains/"+domain+"/records", s.handleList)
-	mux.HandleFunc("DELETE /v2/domains/"+domain+"/records/{id}", s.handleDelete)
+	mux.HandleFunc("GET /v2/domains/"+testDomain+"/records", s.handleList)
+	mux.HandleFunc("DELETE /v2/domains/"+testDomain+"/records/{id}", s.handleDelete)
 
 	return httptest.NewServer(mux), s
 }
@@ -227,7 +235,7 @@ func (s *fakeDOServer) handleList(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	var matched []fakeDORecord
 	for _, rec := range s.records {
-		if rec.Type == "TXT" && rec.fullName(s.domain) == name {
+		if rec.Type == "TXT" && rec.fullName() == name {
 			matched = append(matched, rec)
 		}
 	}
@@ -249,11 +257,11 @@ func (s *fakeDOServer) handleList(w http.ResponseWriter, r *http.Request) {
 
 	pages := map[string]string{}
 	if start > 0 {
-		pages["prev"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", s.domain, page-1)
+		pages["prev"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", testDomain, page-1)
 	}
 	if end < len(matched) {
-		pages["next"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", s.domain, page+1)
-		pages["last"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", s.domain, (len(matched)+s.pageSize-1)/s.pageSize)
+		pages["next"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", testDomain, page+1)
+		pages["last"] = fmt.Sprintf("/v2/domains/%s/records?page=%d", testDomain, (len(matched)+s.pageSize-1)/s.pageSize)
 	}
 
 	links := map[string]any{}
@@ -291,14 +299,14 @@ func (s *fakeDOServer) deletedIDs() []int {
 	return append([]int(nil), s.deleted...)
 }
 
-func newTestProvider(t *testing.T, serverURL, zone string) *DNSProvider {
+func newTestProvider(t *testing.T, serverURL string) *DNSProvider {
 	t.Helper()
 
 	provider, err := NewDNSProviderFromOptions(t.Context(),
 		Token("fake-token"),
 		Nameservers(util.RecursiveNameservers),
 		UserAgent("cert-manager-test"),
-		Resolver(fakeResolver{zone: zone}),
+		Resolver(fakeResolver{zone: testZone}),
 	)
 	require.NoError(t, err)
 
@@ -313,11 +321,7 @@ func newTestProvider(t *testing.T, serverURL, zone string) *DNSProvider {
 // returns records that share fqdn's name, relying on the fake server to
 // enforce the name filter the same way the real DigitalOcean API does.
 func TestFindTxtRecordFiltersServerSide(t *testing.T) {
-	const (
-		domain = "example.com"
-		zone   = "example.com."
-		fqdn   = "_acme-challenge.example.com."
-	)
+	const fqdn = "_acme-challenge.example.com."
 
 	records := []fakeDORecord{
 		{ID: 1, Type: "TXT", Name: "unrelated", Data: "irrelevant"},
@@ -325,12 +329,12 @@ func TestFindTxtRecordFiltersServerSide(t *testing.T) {
 		{ID: 3, Type: "TXT", Name: "unrelated", Data: "also-irrelevant"},
 	}
 
-	server, _ := newFakeDOServer(t, domain, records, 200)
+	server, _ := newFakeDOServer(t, records, 200)
 	defer server.Close()
 
-	provider := newTestProvider(t, server.URL, zone)
+	provider := newTestProvider(t, server.URL)
 
-	got, err := provider.findTxtRecord(t.Context(), zone, fqdn)
+	got, err := provider.findTxtRecord(t.Context(), testZone, fqdn)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	assert.Equal(t, 2, got[0].ID)
@@ -344,14 +348,10 @@ func TestFindTxtRecordFiltersServerSide(t *testing.T) {
 // must still walk every page and return all of them, not just the first
 // pageSize.
 func TestFindTxtRecordPagination(t *testing.T) {
-	const (
-		domain = "example.com"
-		zone   = "example.com."
-		fqdn   = "_acme-challenge.example.com."
-	)
+	const fqdn = "_acme-challenge.example.com."
 
 	var records []fakeDORecord
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		records = append(records, fakeDORecord{
 			ID:   1000 + i,
 			Type: "TXT",
@@ -365,12 +365,12 @@ func TestFindTxtRecordPagination(t *testing.T) {
 
 	// Page size of 10 forces the loop to walk three pages of matching
 	// records, exercising the pagination safety net end-to-end.
-	server, _ := newFakeDOServer(t, domain, records, 10)
+	server, _ := newFakeDOServer(t, records, 10)
 	defer server.Close()
 
-	provider := newTestProvider(t, server.URL, zone)
+	provider := newTestProvider(t, server.URL)
 
-	got, err := provider.findTxtRecord(t.Context(), zone, fqdn)
+	got, err := provider.findTxtRecord(t.Context(), testZone, fqdn)
 	require.NoError(t, err)
 	require.Len(t, got, 25, "expected every same-name record to be found across all pages")
 	for _, record := range got {
@@ -381,21 +381,16 @@ func TestFindTxtRecordPagination(t *testing.T) {
 // TestFindTxtRecordNoMatch ensures that findTxtRecord returns an empty
 // result without error when nothing matches the name filter.
 func TestFindTxtRecordNoMatch(t *testing.T) {
-	const (
-		domain = "example.com"
-		zone   = "example.com."
-	)
-
 	records := []fakeDORecord{
 		{ID: 1, Type: "TXT", Name: "unrelated", Data: "irrelevant"},
 	}
 
-	server, _ := newFakeDOServer(t, domain, records, 200)
+	server, _ := newFakeDOServer(t, records, 200)
 	defer server.Close()
 
-	provider := newTestProvider(t, server.URL, zone)
+	provider := newTestProvider(t, server.URL)
 
-	got, err := provider.findTxtRecord(t.Context(), zone, "_acme-challenge.example.com.")
+	got, err := provider.findTxtRecord(t.Context(), testZone, "_acme-challenge.example.com.")
 	require.NoError(t, err)
 	assert.Empty(t, got)
 }
@@ -409,11 +404,7 @@ func TestFindTxtRecordNoMatch(t *testing.T) {
 // challenge finished would rip the record out from under the other
 // mid-validation.
 func TestCleanUpOnlyDeletesMatchingValue(t *testing.T) {
-	const (
-		domain = "example.com"
-		zone   = "example.com."
-		fqdn   = "_acme-challenge.example.com."
-	)
+	const fqdn = "_acme-challenge.example.com."
 
 	const (
 		thisChallengeID    = 1
@@ -424,12 +415,12 @@ func TestCleanUpOnlyDeletesMatchingValue(t *testing.T) {
 		{ID: siblingChallengeID, Type: "TXT", Name: "_acme-challenge", Data: "sibling-challenge-value"},
 	}
 
-	server, fake := newFakeDOServer(t, domain, records, 200)
+	server, fake := newFakeDOServer(t, records, 200)
 	defer server.Close()
 
-	provider := newTestProvider(t, server.URL, zone)
+	provider := newTestProvider(t, server.URL)
 
-	err := provider.CleanUp(t.Context(), domain, fqdn, "this-challenge-value")
+	err := provider.CleanUp(t.Context(), testDomain, fqdn, "this-challenge-value")
 	require.NoError(t, err)
 
 	assert.Equal(t, []int{thisChallengeID}, fake.deletedIDs(),
