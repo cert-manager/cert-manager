@@ -574,16 +574,6 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 	}
 }
 
-func TestFormatTime(t *testing.T) {
-	if got, want := formatTime(nil), "<nil>"; got != want {
-		t.Errorf("formatTime(nil) = %q, want %q", got, want)
-	}
-	tm := metav1.NewTime(time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC))
-	if got, want := formatTime(&tm), "2026-08-10 12:00:00 +0000 UTC"; got != want {
-		t.Errorf("formatTime(&tm) = %q, want %q", got, want)
-	}
-}
-
 func TestReadinessForARI(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)

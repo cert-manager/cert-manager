@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -249,24 +250,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Status.RenewalTime = nil
 	}
 	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
+		// klog.SafePtr prevents a nil *metav1.Time from reaching the logger's
+		// Stringer call, which would panic in the promoted time.Time.String
+		// method and render the field as "<panic: ...>".
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
-			formatTime(crt.Status.NotAfter), "notBefore", formatTime(crt.Status.NotBefore), "renewalTime",
-			formatTime(crt.Status.RenewalTime))
+			klog.SafePtr(crt.Status.NotAfter), "notBefore", klog.SafePtr(crt.Status.NotBefore), "renewalTime",
+			klog.SafePtr(crt.Status.RenewalTime))
 		return c.updateOrApplyStatus(ctx, crt)
 	}
 	return nil
-}
-
-// formatTime renders a possibly-nil time for logging. A nil *metav1.Time must
-// not be passed to the logger directly: its String method is promoted from the
-// embedded time.Time with a value receiver, so calling it through a nil
-// pointer panics, which the logger recovers from by rendering the field as
-// "<panic: runtime error: invalid memory address or nil pointer dereference>".
-func formatTime(t *metav1.Time) string {
-	if t == nil {
-		return "<nil>"
-	}
-	return t.String()
 }
 
 func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) time.Time {
