@@ -61,6 +61,7 @@ func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption
 		opt.Region,
 		opt.Role,
 		opt.WebIdentityToken,
+		opt.WebIdentityTokenRetriever,
 		ptr.Deref(opt.Ambient, false),
 		opt.UserAgent,
 	)

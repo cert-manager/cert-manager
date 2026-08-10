@@ -17,6 +17,8 @@ limitations under the License.
 package route53
 
 import (
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -35,9 +37,15 @@ type DNSProviderOptions struct {
 	Region string
 	// Role is the ARN of the IAM role to assume when making Route 53 API calls.
 	Role string
-	// WebIdentityToken is the web identity token used with Role for OIDC-based
-	// role assumption.
+	// WebIdentityToken is a fixed web identity token used with Role for
+	// OIDC-based role assumption. Prefer WebIdentityTokenRetriever, which
+	// allows the AWS SDK to fetch a fresh token whenever it re-assumes the
+	// role. Only one of the two may be set.
 	WebIdentityToken string
+	// WebIdentityTokenRetriever supplies a web identity token, used with Role
+	// for OIDC-based role assumption, whenever the AWS SDK re-assumes the
+	// role.
+	WebIdentityTokenRetriever stscreds.IdentityTokenRetriever
 	// HostedZoneID restricts zone discovery to this specific Route 53 hosted zone ID.
 	// When empty, the zone is discovered automatically from the FQDN.
 	HostedZoneID string
@@ -100,6 +108,22 @@ type WebIdentityToken string
 // ApplyToDNSProviderOptions sets the WebIdentityToken field.
 func (w WebIdentityToken) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
 	o.WebIdentityToken = string(w)
+}
+
+// WithWebIdentityTokenRetriever sets the web identity token retriever on DNSProviderOptions.
+type WithWebIdentityTokenRetriever struct {
+	stscreds.IdentityTokenRetriever
+}
+
+// ApplyToDNSProviderOptions sets the WebIdentityTokenRetriever field.
+func (w WithWebIdentityTokenRetriever) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
+	o.WebIdentityTokenRetriever = w.IdentityTokenRetriever
+}
+
+// WebIdentityTokenRetriever returns a WithWebIdentityTokenRetriever option that
+// sets the WebIdentityTokenRetriever field on DNSProviderOptions.
+func WebIdentityTokenRetriever(r stscreds.IdentityTokenRetriever) WithWebIdentityTokenRetriever {
+	return WithWebIdentityTokenRetriever{IdentityTokenRetriever: r}
 }
 
 // HostedZoneID sets the Route 53 hosted zone ID on DNSProviderOptions.

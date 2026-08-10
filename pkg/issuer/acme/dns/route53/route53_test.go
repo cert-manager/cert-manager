@@ -22,6 +22,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -136,7 +137,7 @@ func TestSessionProviderGetSessionRegion(t *testing.T) {
 			region = fakeIssuerRegion
 		}
 
-		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, allowAmbientCredentials, userAgent)
+		p := newSessionProvider(accessKeyID, secretAccessKey, region, role, webIdentityToken, nil, allowAmbientCredentials, userAgent)
 		p.StsProvider = func(cfg aws.Config) StsClient {
 			return &mockSTS{
 				AssumeRoleWithWebIdentityFn: func(
@@ -559,15 +560,31 @@ func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
 	tests := []struct {
 		name             string
 		webIdentityToken string
+		tokenRetriever   stscreds.IdentityTokenRetriever
+		// expTokens are the web identity tokens the STS mock is expected to
+		// receive, one per role assumption.
+		expTokens []string
 	}{
 		{name: "assume role"},
-		{name: "assume role with web identity", webIdentityToken: jwt},
+		{
+			name:             "assume role with web identity",
+			webIdentityToken: jwt,
+			// A fixed token is presented for every role assumption.
+			expTokens: []string{jwt, jwt},
+		},
+		{
+			name:           "assume role with web identity token retriever",
+			tokenRetriever: &countingTokenRetriever{},
+			// A fresh token is retrieved for every role assumption.
+			expTokens: []string{"token-1", "token-2"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("AWS_CONFIG_FILE", "/dev/null")
 			synctest.Test(t, func(t *testing.T) {
 				var stsCalls int
+				var seenTokens []string
 				issueCreds := func() *ststypes.Credentials {
 					stsCalls++
 					return &ststypes.Credentials{
@@ -591,12 +608,14 @@ func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
 						// implementation, so the STS server-side default
 						// session duration applies.
 						assert.Nil(t, params.DurationSeconds)
+						seenTokens = append(seenTokens, aws.ToString(params.WebIdentityToken))
 						return &sts.AssumeRoleWithWebIdentityOutput{Credentials: issueCreds()}, nil
 					},
 				}
 				provider := makeMockSessionProvider(func(cfg aws.Config) StsClient {
 					return mock
 				}, "", "", "", "my-role", tc.webIdentityToken, true)
+				provider.WebIdentityTokenRetriever = tc.tokenRetriever
 				_, ctx := ktesting.NewTestContext(t)
 				cfg, err := provider.GetSession(ctx)
 				require.NoError(t, err)
@@ -623,9 +642,19 @@ func TestGetSessionRefreshesExpiredSTSCredentials(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, "key-2", after.AccessKeyID)
 				assert.Equal(t, 2, stsCalls)
+				assert.Equal(t, tc.expTokens, seenTokens)
 			})
 		})
 	}
+}
+
+// countingTokenRetriever returns a distinct token on each call, so that tests
+// can verify that a fresh token is retrieved for every role assumption.
+type countingTokenRetriever struct{ calls int }
+
+func (r *countingTokenRetriever) GetIdentityToken() ([]byte, error) {
+	r.calls++
+	return fmt.Appendf(nil, "token-%d", r.calls), nil
 }
 
 type mockSTS struct {

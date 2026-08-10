@@ -34,14 +34,19 @@ import (
 )
 
 type sessionProvider struct {
-	AccessKeyID      string
-	SecretAccessKey  string
-	Ambient          bool
-	Region           string
-	Role             string
-	WebIdentityToken string
-	StsProvider      func(aws.Config) StsClient
-	userAgent        string
+	AccessKeyID     string
+	SecretAccessKey string
+	Ambient         bool
+	Region          string
+	Role            string
+	// WebIdentityToken is a fixed web identity token. It is wrapped in a
+	// static stscreds.IdentityTokenRetriever, so prefer
+	// WebIdentityTokenRetriever, which allows the AWS SDK to fetch a fresh
+	// token whenever it re-assumes the role.
+	WebIdentityToken          string
+	WebIdentityTokenRetriever stscreds.IdentityTokenRetriever
+	StsProvider               func(aws.Config) StsClient
+	userAgent                 string
 }
 
 type StsClient interface {
@@ -50,11 +55,19 @@ type StsClient interface {
 }
 
 func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
+	webIdentityTokenRetriever := d.WebIdentityTokenRetriever
+	if d.WebIdentityToken != "" {
+		if webIdentityTokenRetriever != nil {
+			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of web identity token and web identity token retriever may be set")
+		}
+		webIdentityTokenRetriever = staticIdentityToken(d.WebIdentityToken)
+	}
+
 	switch {
-	case d.Role == "" && d.WebIdentityToken != "":
+	case d.Role == "" && webIdentityTokenRetriever != nil:
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: role must be set when web identity token is set")
 	case d.AccessKeyID == "" && d.SecretAccessKey == "":
-		if !d.Ambient && d.WebIdentityToken == "" {
+		if !d.Ambient && webIdentityTokenRetriever == nil {
 			return aws.Config{}, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
 	case d.AccessKeyID == "" || d.SecretAccessKey == "":
@@ -62,7 +75,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 		return aws.Config{}, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
 
-	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && d.WebIdentityToken == ""
+	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "") && webIdentityTokenRetriever == nil
 
 	log := logf.FromContext(ctx)
 	optFns := []func(*config.LoadOptions) error{
@@ -118,7 +131,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	}
 
 	switch {
-	case d.Role != "" && d.WebIdentityToken != "":
+	case d.Role != "" && webIdentityTokenRetriever != nil:
 		log.V(logf.DebugLevel).Info("using assume role with web identity")
 	case useAmbientCredentials:
 		log.V(logf.DebugLevel).Info("using ambient credentials")
@@ -147,7 +160,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	if d.Role != "" {
 		stsSvc := d.StsProvider(cfg)
 		var credProvider aws.CredentialsProvider
-		if d.WebIdentityToken == "" {
+		if webIdentityTokenRetriever == nil {
 			log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 			credProvider = stscreds.NewAssumeRoleProvider(stsSvc, d.Role, func(o *stscreds.AssumeRoleOptions) {
 				o.RoleSessionName = "cert-manager"
@@ -162,7 +175,7 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 			// WebIdentityRoleProvider omits DurationSeconds unless a Duration
 			// is configured, so the STS server-side default session duration
 			// applies, as before.
-			credProvider = stscreds.NewWebIdentityRoleProvider(stsSvc, d.Role, staticIdentityToken(d.WebIdentityToken), func(o *stscreds.WebIdentityRoleOptions) {
+			credProvider = stscreds.NewWebIdentityRoleProvider(stsSvc, d.Role, webIdentityTokenRetriever, func(o *stscreds.WebIdentityRoleOptions) {
 				o.RoleSessionName = "cert-manager"
 			})
 		}
@@ -188,16 +201,17 @@ func (d *sessionProvider) GetSession(ctx context.Context) (aws.Config, error) {
 	return cfg, nil
 }
 
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityToken string, ambient bool, userAgent string) *sessionProvider {
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, webIdentityToken string, webIdentityTokenRetriever stscreds.IdentityTokenRetriever, ambient bool, userAgent string) *sessionProvider {
 	return &sessionProvider{
-		AccessKeyID:      accessKeyID,
-		SecretAccessKey:  secretAccessKey,
-		Ambient:          ambient,
-		Region:           region,
-		Role:             role,
-		WebIdentityToken: webIdentityToken,
-		StsProvider:      defaultSTSProvider,
-		userAgent:        userAgent,
+		AccessKeyID:               accessKeyID,
+		SecretAccessKey:           secretAccessKey,
+		Ambient:                   ambient,
+		Region:                    region,
+		Role:                      role,
+		WebIdentityToken:          webIdentityToken,
+		WebIdentityTokenRetriever: webIdentityTokenRetriever,
+		StsProvider:               defaultSTSProvider,
+		userAgent:                 userAgent,
 	}
 }
 
