@@ -250,11 +250,23 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
-			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
-			crt.Status.RenewalTime)
+			formatTime(crt.Status.NotAfter), "notBefore", formatTime(crt.Status.NotBefore), "renewalTime",
+			formatTime(crt.Status.RenewalTime))
 		return c.updateOrApplyStatus(ctx, crt)
 	}
 	return nil
+}
+
+// formatTime renders a possibly-nil time for logging. A nil *metav1.Time must
+// not be passed to the logger directly: its String method is promoted from the
+// embedded time.Time with a value receiver, so calling it through a nil
+// pointer panics, which the logger recovers from by rendering the field as
+// "<panic: runtime error: invalid memory address or nil pointer dereference>".
+func formatTime(t *metav1.Time) string {
+	if t == nil {
+		return "<nil>"
+	}
+	return t.String()
 }
 
 func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) time.Time {
