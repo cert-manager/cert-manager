@@ -17,6 +17,7 @@ limitations under the License.
 package identity
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -29,9 +30,10 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
-var correctRequestResource = &metav1.GroupVersionResource{
+var correctResource = metav1.GroupVersionResource{
 	Group:    "cert-manager.io",
 	Version:  "v1",
 	Resource: "certificaterequests",
@@ -68,11 +70,7 @@ func TestMutate(t *testing.T) {
 	crUnstr := toUnstructured(t, cr)
 	err := plugin.Mutate(t.Context(), admissionv1.AdmissionRequest{
 		Operation: admissionv1.Create,
-		RequestResource: &metav1.GroupVersionResource{
-			Group:    "cert-manager.io",
-			Version:  "v1",
-			Resource: "certificaterequests",
-		},
+		Resource:  correctResource,
 		UserInfo: authenticationv1.UserInfo{
 			Username: "testuser",
 			UID:      "testuid",
@@ -104,11 +102,11 @@ func TestMutate_Ignores(t *testing.T) {
 	plugin := NewPlugin().(*certificateRequestIdentity)
 	tests := map[string]struct {
 		op  admissionv1.Operation
-		gvr *metav1.GroupVersionResource
+		gvr metav1.GroupVersionResource
 	}{
 		"ignores if resource is not 'certificaterequests'": {
 			op: admissionv1.Create,
-			gvr: &metav1.GroupVersionResource{
+			gvr: metav1.GroupVersionResource{
 				Group:    "cert-manager.io",
 				Version:  "v1",
 				Resource: "not-certificaterequests",
@@ -116,7 +114,7 @@ func TestMutate_Ignores(t *testing.T) {
 		},
 		"ignores if group is not 'cert-manager.io'": {
 			op: admissionv1.Create,
-			gvr: &metav1.GroupVersionResource{
+			gvr: metav1.GroupVersionResource{
 				Group:    "not-cert-manager.io",
 				Version:  "v1",
 				Resource: "certificaterequests",
@@ -124,7 +122,7 @@ func TestMutate_Ignores(t *testing.T) {
 		},
 		"ignores if operation is not Create": {
 			op: admissionv1.Update,
-			gvr: &metav1.GroupVersionResource{
+			gvr: metav1.GroupVersionResource{
 				Group:    "cert-manager.io",
 				Version:  "v1",
 				Resource: "certificaterequests",
@@ -136,8 +134,8 @@ func TestMutate_Ignores(t *testing.T) {
 			cr := &cmapi.CertificateRequest{}
 			crUnstr := toUnstructured(t, cr)
 			err := plugin.Mutate(t.Context(), admissionv1.AdmissionRequest{
-				Operation:       test.op,
-				RequestResource: test.gvr,
+				Operation: test.op,
+				Resource:  test.gvr,
 				UserInfo: authenticationv1.UserInfo{
 					Username: "testuser",
 					UID:      "testuid",
@@ -157,6 +155,25 @@ func TestMutate_Ignores(t *testing.T) {
 	}
 }
 
+// TestMutate_ResourceUnset verifies that a zero-valued Resource is rejected
+// with an error rather than silently skipped like a genuinely non-matching
+// Resource (TestMutate_Ignores). See admission.ErrResourceUnset for why.
+func TestMutate_ResourceUnset(t *testing.T) {
+	plugin := NewPlugin().(*certificateRequestIdentity)
+	cr := &cmapi.CertificateRequest{}
+	crUnstr := toUnstructured(t, cr)
+	err := plugin.Mutate(t.Context(), admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
+		UserInfo: authenticationv1.UserInfo{
+			Username: "testuser",
+			UID:      "testuid",
+		},
+	}, crUnstr)
+	if !errors.Is(err, admission.ErrResourceUnset) {
+		t.Errorf("expected ErrResourceUnset, got: %v", err)
+	}
+}
+
 func TestValidateCreate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 
@@ -168,8 +185,8 @@ func TestValidateCreate(t *testing.T) {
 	}{
 		"if identity fields don't match that of requester, should fail": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Create,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -200,8 +217,8 @@ func TestValidateCreate(t *testing.T) {
 		},
 		"if identity fields match that of requester, should pass": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Create,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -224,6 +241,57 @@ func TestValidateCreate(t *testing.T) {
 				},
 			},
 			wantE: nil,
+		},
+		"ignores if resource is not 'certificaterequests'": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "not-certificaterequests",
+				},
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+				},
+			},
+			cr: &certmanager.CertificateRequest{
+				Spec: certmanager.CertificateRequestSpec{
+					UID: "wrong-uid",
+				},
+			},
+			wantE: nil,
+		},
+		"ignores if group is not 'cert-manager.io'": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+				Resource: metav1.GroupVersionResource{
+					Group:    "not-cert-manager.io",
+					Version:  "v1",
+					Resource: "certificaterequests",
+				},
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+				},
+			},
+			cr: &certmanager.CertificateRequest{
+				Spec: certmanager.CertificateRequestSpec{
+					UID: "wrong-uid",
+				},
+			},
+			wantE: nil,
+		},
+		"rejects if Resource is unset": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+				},
+			},
+			cr:    &certmanager.CertificateRequest{},
+			wantE: admission.ErrResourceUnset,
 		},
 	}
 
@@ -261,8 +329,8 @@ func TestValidateUpdate(t *testing.T) {
 	}{
 		"if identity fields don't match that of the old CertificateRequest, should fail": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Update,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Update,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -304,8 +372,8 @@ func TestValidateUpdate(t *testing.T) {
 		},
 		"if identity fields match that of requester, should pass": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Update,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Update,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -340,6 +408,18 @@ func TestValidateUpdate(t *testing.T) {
 			},
 			wantE: nil,
 		},
+		"rejects if Resource is unset": {
+			req: &admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+				},
+			},
+			oldCR: &certmanager.CertificateRequest{},
+			newCR: &certmanager.CertificateRequest{},
+			wantE: admission.ErrResourceUnset,
+		},
 	}
 
 	for name, test := range tests {
@@ -361,8 +441,8 @@ func TestMutateCreate(t *testing.T) {
 	}{
 		"should set the identity of CertificateRequest to that of the requester": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Create,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -388,8 +468,8 @@ func TestMutateCreate(t *testing.T) {
 		},
 		"should overwrite user info fields if already present during a CREATE operation": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Create,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -425,8 +505,8 @@ func TestMutateCreate(t *testing.T) {
 		},
 		"should handle nil Extra values": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Create,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",
@@ -477,8 +557,8 @@ func TestMutateUpdate(t *testing.T) {
 	}{
 		"should not overwrite user info fields during an Update operation": {
 			req: &admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Update,
-				RequestResource: correctRequestResource,
+				Operation: admissionv1.Update,
+				Resource:  correctResource,
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
 					Username: "user-1",

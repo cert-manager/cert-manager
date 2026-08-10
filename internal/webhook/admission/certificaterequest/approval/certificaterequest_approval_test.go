@@ -18,6 +18,7 @@ package approval
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	authnv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
@@ -33,11 +35,8 @@ import (
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
-)
-
-var (
-	expNoDiscovery = discovery.DiscoveryInterface(nil)
 )
 
 func TestValidate(t *testing.T) {
@@ -77,24 +76,23 @@ func TestValidate(t *testing.T) {
 		"if the request is not for CertificateRequest, exit nil": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "issuers",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
-			authorizer:     alwaysPanicAuthorizer,
-			discoverclient: expNoDiscovery,
-			expErr:         nil,
+			authorizer: alwaysPanicAuthorizer,
+			expErr:     nil,
 		},
 		"if the request is not for cert-manager.io, exit nil": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "foo.cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			authorizer: alwaysPanicAuthorizer,
 			expErr:     nil,
@@ -102,11 +100,11 @@ func TestValidate(t *testing.T) {
 		"if the CertificateRequest references a signer that doesn't exist, error": {
 			req: &admissionv1.AdmissionRequest{
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR:      baseCR,
 			newCR:      approvedCR,
@@ -124,11 +122,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -170,11 +168,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -214,11 +212,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -258,11 +256,11 @@ func TestValidate(t *testing.T) {
 					Username: "user-1",
 				},
 				Operation: admissionv1.Update,
-				RequestResource: &metav1.GroupVersionResource{
+				Resource: metav1.GroupVersionResource{
 					Group:    "cert-manager.io",
 					Resource: "certificaterequests",
 				},
-				RequestSubResource: "status",
+				SubResource: "status",
 			},
 			oldCR: baseCR,
 			newCR: approvedCR,
@@ -310,6 +308,66 @@ func TestValidate(t *testing.T) {
 				t.Errorf("expected no warnings but got: %v", warnings)
 			}
 			compareErrors(t, test.expErr, err)
+		})
+	}
+}
+
+// TestValidate_ResourceUnset verifies that a zero-valued Resource is rejected
+// with an error rather than silently skipped. See admission.ErrResourceUnset
+// for why: skipping here would mean the approval RBAC check is never
+// enforced.
+func TestValidate_ResourceUnset(t *testing.T) {
+	var alwaysPanicAuthorizer *fakeAuthorizer
+	a := NewPlugin(alwaysPanicAuthorizer, discoveryfake.NewDiscovery()).(*certificateRequestApproval)
+
+	_, err := a.Validate(t.Context(), admissionv1.AdmissionRequest{
+		Operation:   admissionv1.Update,
+		SubResource: "status",
+	}, &certmanager.CertificateRequest{}, &certmanager.CertificateRequest{})
+	if !errors.Is(err, admission.ErrResourceUnset) {
+		t.Errorf("expected ErrResourceUnset, got: %v", err)
+	}
+}
+
+// TestValidate_ObjectTypeMismatch verifies that Validate returns a clean
+// error instead of panicking when obj or oldObj is not
+// *certmanager.CertificateRequest (see resourcevalidation.validationPair's
+// objType doc for why). Each case corrupts exactly one of the two so the
+// test isolates that cast.
+func TestValidate_ObjectTypeMismatch(t *testing.T) {
+	req := admissionv1.AdmissionRequest{
+		Operation: admissionv1.Update,
+		Resource: metav1.GroupVersionResource{
+			Group:    "cert-manager.io",
+			Resource: "certificaterequests",
+		},
+		SubResource: "status",
+	}
+
+	var wrongObj runtime.Object = &certmanager.Certificate{}
+	validObj := &certmanager.CertificateRequest{}
+
+	tests := map[string]struct {
+		oldObj, obj runtime.Object
+	}{
+		"obj is not a CertificateRequest": {
+			oldObj: validObj,
+			obj:    wrongObj,
+		},
+		"oldObj is not a CertificateRequest": {
+			oldObj: wrongObj,
+			obj:    validObj,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var alwaysPanicAuthorizer *fakeAuthorizer
+			a := NewPlugin(alwaysPanicAuthorizer, discoveryfake.NewDiscovery()).(*certificateRequestApproval)
+
+			_, err := a.Validate(t.Context(), req, test.oldObj, test.obj)
+			if err == nil {
+				t.Fatal("expected an error but got none")
+			}
 		})
 	}
 }

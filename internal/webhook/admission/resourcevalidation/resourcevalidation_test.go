@@ -17,71 +17,98 @@ limitations under the License.
 package resourcevalidation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 var (
-	sampleSchemaGVR = schema.GroupVersionResource{
+	sampleMetaGVR = metav1.GroupVersionResource{
 		Group:    "sample-group",
 		Version:  "sample-version",
 		Resource: "sample-resource",
-	}
-	sampleMetaGVR = metav1.GroupVersionResource{
-		Group:    sampleSchemaGVR.Group,
-		Version:  sampleSchemaGVR.Version,
-		Resource: sampleSchemaGVR.Resource,
-	}
-
-	alwaysFailsCreateFunc = func(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
-		panic("create function not expected to be called")
-	}
-	alwaysFailsUpdateFunc = func(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
-		panic("update function not expected to be called")
-	}
-
-	alwaysFailsValidationPair = validationPair{
-		create: alwaysFailsCreateFunc,
-		update: alwaysFailsUpdateFunc,
 	}
 )
 
 func TestResourceValidation(t *testing.T) {
 	tests := map[string]struct {
-		mapping     map[schema.GroupVersionResource]validationPair
 		req         admissionv1.AdmissionRequest
 		oldObj, obj runtime.Object
 
 		expectedWarnings []string
 		expectedError    error
 	}{
-		"should not perform any validation if no validation functions are registered": {
-			mapping: map[schema.GroupVersionResource]validationPair{},
+		"does nothing when the requested resource has no registered validation functions": {
 			req: admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Create,
-				RequestResource: &sampleMetaGVR,
+				Operation: admissionv1.Create,
+				Resource:  sampleMetaGVR,
 			},
 		},
 		"does nothing for non-create or update operations": {
-			mapping: map[schema.GroupVersionResource]validationPair{
-				sampleSchemaGVR: alwaysFailsValidationPair,
-			},
 			req: admissionv1.AdmissionRequest{
-				Operation:       admissionv1.Connect,
-				RequestResource: &sampleMetaGVR,
+				Operation: admissionv1.Connect,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
 			},
+		},
+		"rejects requests where Resource is unset instead of skipping validation": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+			},
+			expectedError: admission.ErrResourceUnset,
+		},
+		"rejects a Create object that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			obj:           &certmanager.CertificateRequest{},
+			expectedError: fmt.Errorf("internal error: object in admission request is not of type *certmanager.Certificate"),
+		},
+		"rejects an Update object that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			oldObj:        &certmanager.Certificate{},
+			obj:           &certmanager.CertificateRequest{},
+			expectedError: fmt.Errorf("internal error: object in admission request is not of type *certmanager.Certificate"),
+		},
+		"rejects an Update oldObject that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			oldObj:        &certmanager.CertificateRequest{},
+			obj:           &certmanager.Certificate{},
+			expectedError: fmt.Errorf("internal error: oldObject in admission request is not of type *certmanager.Certificate"),
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			p := NewPlugin().(*resourceValidation)
-			p.validationMappings = test.mapping
 			warnings, err := p.Validate(t.Context(), test.req, test.oldObj, test.obj)
 			compareErrors(t, test.expectedError, err)
 			if !reflect.DeepEqual(test.expectedWarnings, warnings) {
