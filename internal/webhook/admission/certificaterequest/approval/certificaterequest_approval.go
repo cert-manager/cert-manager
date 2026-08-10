@@ -80,13 +80,24 @@ func NewPlugin(authz authorizer.Authorizer, discoveryClient discovery.DiscoveryI
 }
 
 func (c *certificateRequestApproval) Validate(ctx context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (warnings []string, err error) {
+	if admission.IsResourceUnset(request.Resource) {
+		return nil, admission.ErrResourceUnset
+	}
+
 	if request.Resource.Group != "cert-manager.io" ||
 		request.Resource.Resource != "certificaterequests" ||
 		request.SubResource != "status" {
 		return nil, nil
 	}
 
-	oldCR, cr := oldObj.(*certmanager.CertificateRequest), obj.(*certmanager.CertificateRequest)
+	cr, ok := obj.(*certmanager.CertificateRequest)
+	if !ok {
+		return nil, fmt.Errorf("internal error: object in admission request is not of type *certmanager.CertificateRequest")
+	}
+	oldCR, ok := oldObj.(*certmanager.CertificateRequest)
+	if !ok {
+		return nil, fmt.Errorf("internal error: oldObject in admission request is not of type *certmanager.CertificateRequest")
+	}
 	if !approvalConditionsHaveChanged(oldCR, cr) {
 		return nil, nil
 	}

@@ -17,12 +17,16 @@ limitations under the License.
 package resourcevalidation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 var (
@@ -41,7 +45,7 @@ func TestResourceValidation(t *testing.T) {
 		expectedWarnings []string
 		expectedError    error
 	}{
-		"should not perform any validation if no validation functions are registered": {
+		"does nothing when the requested resource has no registered validation functions": {
 			req: admissionv1.AdmissionRequest{
 				Operation: admissionv1.Create,
 				Resource:  sampleMetaGVR,
@@ -56,6 +60,50 @@ func TestResourceValidation(t *testing.T) {
 					Resource: "certificates",
 				},
 			},
+		},
+		"rejects requests where Resource is unset instead of skipping validation": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+			},
+			expectedError: admission.ErrResourceUnset,
+		},
+		"rejects a Create object that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Create,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			obj:           &certmanager.CertificateRequest{},
+			expectedError: fmt.Errorf("internal error: object in admission request is not of type *certmanager.Certificate"),
+		},
+		"rejects an Update object that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			oldObj:        &certmanager.Certificate{},
+			obj:           &certmanager.CertificateRequest{},
+			expectedError: fmt.Errorf("internal error: object in admission request is not of type *certmanager.Certificate"),
+		},
+		"rejects an Update oldObject that does not match the resource's expected type": {
+			req: admissionv1.AdmissionRequest{
+				Operation: admissionv1.Update,
+				Resource: metav1.GroupVersionResource{
+					Group:    "cert-manager.io",
+					Version:  "v1",
+					Resource: "certificates",
+				},
+			},
+			oldObj:        &certmanager.CertificateRequest{},
+			obj:           &certmanager.Certificate{},
+			expectedError: fmt.Errorf("internal error: oldObject in admission request is not of type *certmanager.Certificate"),
 		},
 	}
 	for name, test := range tests {

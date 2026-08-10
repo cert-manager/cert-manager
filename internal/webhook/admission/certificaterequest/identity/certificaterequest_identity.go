@@ -46,6 +46,10 @@ func NewPlugin() admission.Interface {
 }
 
 func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissionv1.AdmissionRequest, obj *unstructured.Unstructured) error {
+	if admission.IsResourceUnset(request.Resource) {
+		return admission.ErrResourceUnset
+	}
+
 	// Only run this admission plugin for CertificateRequest CREATE operations
 	if request.Resource.Group != "cert-manager.io" ||
 		request.Resource.Resource != "certificaterequests" ||
@@ -81,6 +85,10 @@ func (p *certificateRequestIdentity) Mutate(ctx context.Context, request admissi
 }
 
 func (p *certificateRequestIdentity) Validate(ctx context.Context, request admissionv1.AdmissionRequest, oldObj, obj runtime.Object) ([]string, error) {
+	if admission.IsResourceUnset(request.Resource) {
+		return nil, admission.ErrResourceUnset
+	}
+
 	// Only run this admission plugin for CertificateRequest resources
 	if request.Resource.Group != "cert-manager.io" ||
 		request.Resource.Resource != "certificaterequests" {
