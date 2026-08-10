@@ -71,10 +71,7 @@ type fixture struct {
 	// Default: "123d=="
 	dnsChallengeKey string
 
-	setupLock     sync.Mutex
-	setupRC       int32
-	setupStopFunc func()
-
+	setupLock   sync.Mutex
 	environment *envtest.Environment
 	// An admin user for running kubectl commands against this envtest
 	// environment.
@@ -94,20 +91,36 @@ type fixture struct {
 func (f *fixture) RunConformance(t *testing.T) {
 	defer f.setup(t)()
 	t.Run("Conformance", func(t *testing.T) {
-		f.RunBasic(t)
-		f.RunExtended(t)
+		f.runBasic(t)
+		f.runExtended(t)
 	})
 }
 
+// RunBasic runs the Basic suite against a dedicated control plane and DNS
+// solver, which are stopped when the suite completes.
 func (f *fixture) RunBasic(t *testing.T) {
 	defer f.setup(t)()
+	f.runBasic(t)
+}
+
+// runBasic runs the Basic suite. The caller is responsible for calling setup
+// first.
+func (f *fixture) runBasic(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
 		t.Run("PresentRecord", f.TestBasicPresentRecord)
 	})
 }
 
+// RunExtended runs the Extended suite against a dedicated control plane and
+// DNS solver, which are stopped when the suite completes.
 func (f *fixture) RunExtended(t *testing.T) {
 	defer f.setup(t)()
+	f.runExtended(t)
+}
+
+// runExtended runs the Extended suite. The caller is responsible for calling
+// setup first.
+func (f *fixture) runExtended(t *testing.T) {
 	t.Run("Extended", func(t *testing.T) {
 		t.Run("DeletingOneRecordRetainsOthers", f.TestExtendedDeletingOneRecordRetainsOthers)
 	})
@@ -117,58 +130,42 @@ func (f *fixture) setup(t *testing.T) func() {
 	f.setupLock.Lock()
 	defer f.setupLock.Unlock()
 
-	f.setupRC++
+	if err := validate(f); err != nil {
+		t.Fatalf("error validating test fixture configuration: %v", err)
+	}
 
-	// Only run the setup, if there is no instance running already.
-	if f.setupRC == 1 {
-		if err := validate(f); err != nil {
-			t.Fatalf("error validating test fixture configuration: %v", err)
-		}
+	env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
+	f.environment = env
 
-		env, stopControlPlaneFn := apiserver.RunBareControlPlane(t)
-		f.environment = env
+	// An admin user instance for running kubectl against this envtest
+	// environment.
+	// Derived from the envtest global config which is configured with very high
+	// QPS and Burst settings for rapid interactions with the API server.
+	adminUser, err := env.AddUser(envtest.User{
+		Name:   "envtest-admin",
+		Groups: []string{"system:masters"},
+	}, env.Config)
+	if err != nil {
+		t.Fatalf("unable to provision admin user: %s", err)
+	}
+	f.adminUser = adminUser
 
-		// An admin user instance for running kubectl against this envtest
-		// environment.
-		// Derived from the envtest global config which is configured with very high
-		// QPS and Burst settings for rapid interactions with the API server.
-		adminUser, err := env.AddUser(envtest.User{
-			Name:   "envtest-admin",
-			Groups: []string{"system:masters"},
-		}, env.Config)
-		if err != nil {
-			t.Fatalf("unable to provision admin user: %s", err)
-		}
-		f.adminUser = adminUser
+	f.resolver = util.NewCachingResolver()
 
-		f.resolver = util.NewCachingResolver()
+	cl, err := kubernetes.NewForConfig(env.Config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.clientset = cl
 
-		cl, err := kubernetes.NewForConfig(env.Config)
-		if err != nil {
-			t.Fatal(err)
-		}
-		f.clientset = cl
+	stopCh := make(chan struct{})
 
-		stopCh := make(chan struct{})
-
-		if err := f.testSolver.Initialize(env.Config, stopCh); err != nil {
-			t.Fatalf("error initializing solver: %v", err)
-		}
-
-		f.setupStopFunc = func() {
-			close(stopCh)
-			stopControlPlaneFn()
-		}
+	if err := f.testSolver.Initialize(env.Config, stopCh); err != nil {
+		t.Fatalf("error initializing solver: %v", err)
 	}
 
 	return func() {
-		f.setupLock.Lock()
-		defer f.setupLock.Unlock()
-
-		f.setupRC--
-		// Only stop the setup, if this is the last reference to the running instance.
-		if f.setupRC == 0 {
-			f.setupStopFunc()
-		}
+		close(stopCh)
+		stopControlPlaneFn()
 	}
 }
