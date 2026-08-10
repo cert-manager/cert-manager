@@ -271,6 +271,23 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	// If public key does not match, do nothing (requestmanager will handle this).
+	// Settle this before any terminal state is acted on: a request built from a key
+	// we have since replaced is one the requestmanager deletes and rebuilds, so its
+	// denial, invalidity or failure says nothing about the current issuance.
+	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.Request)
+	if err != nil {
+		return err
+	}
+	publicKeyMatchesCSR, err := utilpki.PublicKeyMatchesCSR(pk.Public(), csr)
+	if err != nil {
+		return err
+	}
+	if !publicKeyMatchesCSR {
+		logf.WithResource(log, nextPrivateKeySecret).Info("next private key does not match CSR public key, waiting for requestmanager controller")
+		return nil
+	}
+
 	certIssuingCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 	crReadyCond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if certIssuingCond == nil {
@@ -329,20 +346,6 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// to False.
 	if crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
 		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady))
-	}
-
-	// If public key does not match, do nothing (requestmanager will handle this).
-	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.Request)
-	if err != nil {
-		return err
-	}
-	publicKeyMatchesCSR, err := utilpki.PublicKeyMatchesCSR(pk.Public(), csr)
-	if err != nil {
-		return err
-	}
-	if !publicKeyMatchesCSR {
-		logf.WithResource(log, nextPrivateKeySecret).Info("next private key does not match CSR public key, waiting for requestmanager controller")
-		return nil
 	}
 
 	// If the CertificateRequest is valid and ready, verify its status and issue
