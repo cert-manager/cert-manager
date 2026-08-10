@@ -307,19 +307,22 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			return reason, message, true
 		}
 
-		// pki.RenewalTime always returns a non-nil renewal time here: the only
-		// nil case is the Disabled policy, which is handled by the early return
-		// above. On a renewal-window misconfiguration it returns the
-		// deterministic renewBefore-based time together with an error, so we can
-		// keep gating renewal on that time while surfacing the error as the
-		// WindowError reason once renewal is actually due. This avoids both the
-		// nil pointer panic and immediately re-issuing certificates that are
-		// nowhere near expiry (which would spam re-issuance while the window
-		// config stays invalid).
 		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 		if err != nil {
+			// On a renewal-window misconfiguration RenewalTime still returns the
+			// deterministic renewBefore-based time, so we gate renewal on it and
+			// surface the error as the WindowError reason once renewal is due,
+			// rather than re-issuing a certificate that is nowhere near expiry.
 			reason = WindowError
 			message = err.Error()
+		}
+
+		// A nil renewal time means renewal is disabled for this Certificate, so
+		// it is never nearing expiry. RenewalTime only returns nil for the
+		// Disabled policy (also short-circuited by the early return above); a
+		// window error always comes with the fallback time handled above.
+		if renewalTime == nil {
+			return "", "", false
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())
