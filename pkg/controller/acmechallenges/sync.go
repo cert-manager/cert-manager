@@ -309,12 +309,12 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 		// Errored, after which IsFinalState() makes the controller stop
 		// reconciling it (see issues #8696 and #8747).
 		if isTransientACMEError(err) {
-			logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "transient non-ACME API error, will retry")
+			logf.FromContext(ctx).Error(err, "transient non-ACME API error, will retry")
 			return err
 		}
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
-		logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "unexpected non-ACME API error")
+		logf.FromContext(ctx).Error(err, "unexpected non-ACME API error")
 		return err
 	}
 
