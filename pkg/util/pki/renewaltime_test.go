@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -406,4 +407,66 @@ func TestRenewalWithDisable(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Nil(t, res)
+}
+
+// TestRenewalWindowErrorReturnsFallbackTime asserts that a renewal-window
+// misconfiguration returns an error together with the deterministic
+// renewBefore-based renewal time (rather than a nil time). A nil time here
+// previously caused a nil pointer panic that crash-looped the trigger
+// controller; returning the fallback lets callers keep scheduling renewal on
+// the sane default while surfacing the error.
+func TestRenewalWindowErrorReturnsFallbackTime(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	notBefore := now.Add(-10 * 24 * time.Hour)
+	notAfter := now.Add(10 * 24 * time.Hour)
+	renewBefore := &metav1.Duration{Duration: 5 * 24 * time.Hour}
+	// desiredRenewalTime respects renewBefore, so the fallback is notAfter-renewBefore.
+	wantFallback := notAfter.Add(-renewBefore.Duration)
+
+	tests := map[string]apiv1.CertificateRenewalWindows{
+		"invalid cron": {
+			Cron:           "not a valid cron",
+			WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+		},
+		"non-positive windowDuration": {
+			Cron:           "0 10 * * *",
+			WindowDuration: &metav1.Duration{Duration: 0},
+		},
+		"invalid timezone": {
+			Timezone:       "Not/AZone",
+			Cron:           "0 10 * * *",
+			WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+		},
+	}
+
+	for name, window := range tests {
+		t.Run(name, func(t *testing.T) {
+			res, err := RenewalTime(notBefore, notAfter, renewBefore, nil, &apiv1.CertificateRenewal{
+				Policy:  apiv1.CertificateRenewalPolicyRenewBefore,
+				Windows: []apiv1.CertificateRenewalWindows{window},
+			})
+
+			assert.NotNil(t, err)
+			require.NotNil(t, res)
+			assert.Equal(t, wantFallback, res.Time)
+		})
+	}
+}
+
+// TestRenewalUnsupportedPolicyReturnsFallbackTime asserts that an unrecognized
+// renewal policy also returns the fallback renewal time alongside the error,
+// keeping RenewalTime's contract "non-nil time for every non-Disabled path".
+func TestRenewalUnsupportedPolicyReturnsFallbackTime(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	notBefore := now.Add(-10 * 24 * time.Hour)
+	notAfter := now.Add(10 * 24 * time.Hour)
+	renewBefore := &metav1.Duration{Duration: 5 * 24 * time.Hour}
+
+	res, err := RenewalTime(notBefore, notAfter, renewBefore, nil, &apiv1.CertificateRenewal{
+		Policy: apiv1.CertificateRenewalPolicy("Bogus"),
+	})
+
+	assert.ErrorContains(t, err, "unsupported renewal policy")
+	require.NotNil(t, res)
+	assert.Equal(t, notAfter.Add(-renewBefore.Duration), res.Time)
 }

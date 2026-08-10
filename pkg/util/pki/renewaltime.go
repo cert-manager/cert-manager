@@ -94,7 +94,7 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	case apiv1.CertificateRenewalPolicyRenewBefore:
 		return applyRenewBeforeWithWindows(notAfter, notBefore, rt.Time, renewalSpec.Windows)
 	default:
-		return nil, fmt.Errorf("unsupported renewal policy: %s", renewalSpec.Policy)
+		return &rt, fmt.Errorf("unsupported renewal policy: %s", renewalSpec.Policy)
 	}
 }
 
@@ -155,6 +155,11 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 		return &metav1.Time{Time: desiredRenewalTime}, nil
 	}
 
+	// On any window misconfiguration we still return the deterministic
+	// renewBefore-based desiredRenewalTime alongside the error (as the
+	// "cannot find a time" case below already does). Callers can then keep
+	// scheduling renewal on the sane default while surfacing the error,
+	// rather than being handed a nil time to dereference.
 	for _, w := range windows {
 		loc := time.UTC
 		if w.Timezone != "" {
@@ -162,17 +167,17 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 				loc = tz
 			} else {
 				// This shouldn't get triggered as we validate timezones in the validation webhook.
-				return nil, fmt.Errorf("error parsing timezone in window %s", err.Error())
+				return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("error parsing timezone in window %s", err.Error())
 			}
 		}
 
 		cronSched, err := util.CronParse(w.Cron, loc.String())
 		if err != nil {
-			return nil, fmt.Errorf("error parsing cron in window %s", err.Error())
+			return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("error parsing cron in window %s", err.Error())
 		}
 
 		if w.WindowDuration == nil || w.WindowDuration.Duration <= 0 {
-			return nil, fmt.Errorf("windowDuration must be a positive duration in window %v", w)
+			return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("windowDuration must be a positive duration in window %v", w)
 		}
 
 		// Any renewal logic should only start after notBefore and before notAfter. Bounds are [notBefore - dur, notAfter + dur)

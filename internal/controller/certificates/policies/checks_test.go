@@ -2381,12 +2381,17 @@ func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
 }
 
 // Test_CurrentCertificateNearingExpiry_WindowError covers the renewal-window
-// error path: pki.RenewalTime returns a nil time with an error (here for an
-// invalid cron expression), which previously caused a nil pointer panic in the
-// trigger controller. The error must surface as a WindowError violation.
+// error path (here an invalid cron expression). pki.RenewalTime previously
+// returned a nil time with an error, which crash-looped the trigger controller
+// with a nil pointer panic. It now returns the deterministic renewBefore-based
+// time alongside the error, so renewal is gated on that time and the error
+// surfaces as a WindowError violation only once renewal is actually due; a
+// certificate nowhere near expiry must not be flagged for re-issuance.
 func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
-	clock := &fakeclock.FakeClock{}
+	now := time.Now()
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	// Default validity is ~90 days from now, so the renewBefore-based renewal
+	// time lands well inside that range.
 	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
 	})
@@ -2407,7 +2412,19 @@ func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
 		},
 	}
 
-	reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
-	assert.Equal(t, WindowError, reason)
-	assert.True(t, violation)
+	t.Run("not yet due: no premature re-issuance despite the window error", func(t *testing.T) {
+		clock := fakeclock.NewFakeClock(now)
+		reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.False(t, violation)
+		assert.Equal(t, "", reason)
+		assert.Equal(t, "", message)
+	})
+
+	t.Run("due: surface the window error as a violation", func(t *testing.T) {
+		// Past the certificate's NotAfter, so renewal is unambiguously due.
+		clock := fakeclock.NewFakeClock(now.Add(91 * 24 * time.Hour))
+		reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.True(t, violation)
+		assert.Equal(t, WindowError, reason)
+	})
 }
