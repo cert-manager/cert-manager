@@ -161,9 +161,9 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 // it must match the issuer ref.
 func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
 	if !apiutil.SecretIssuerAnnotationsMatch(input.Secret, input.Certificate.Spec.IssuerRef) {
-		name, _ := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
-		kind, _ := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
-		group, _ := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
+		name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
+		kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
+		group := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
 
 		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %q", formatIssuerRef(name, kind, group)), true
 	}
@@ -347,31 +347,6 @@ func formatIssuerRef(name, kind, group string) string {
 		kind = "Issuer"
 	}
 	return fmt.Sprintf("%s.%s/%s", kind, group, name)
-}
-
-const (
-	defaultIssuerKind  = "Issuer"
-	defaultIssuerGroup = "cert-manager.io"
-)
-
-func issuerKindsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerKind
-	}
-	if r == "" {
-		r = defaultIssuerKind
-	}
-	return l == r
-}
-
-func issuerGroupsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerGroup
-	}
-	if r == "" {
-		r = defaultIssuerGroup
-	}
-	return l == r
 }
 
 // SecretSecretTemplateMismatch will inspect the given Secret's Annotations

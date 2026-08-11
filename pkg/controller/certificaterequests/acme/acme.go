@@ -357,7 +357,7 @@ func (a *ACME) resolveReplacesCertID(ctx context.Context, cr *cmapi.CertificateR
 	}
 
 	if !apiutil.SecretIssuerAnnotationsMatch(secret, cr.Spec.IssuerRef) {
-		log.V(logf.DebugLevel).Info("skipping ARI replaces: Secret issuer annotations do not match CertificateRequest issuerRef for ARI replaces")
+		log.V(logf.DebugLevel).Info("skipping ARI replaces: Secret issuer annotations do not match CertificateRequest issuerRef", "secret", secret.Name, "issuerRef", cr.Spec.IssuerRef)
 		return ""
 	}
 

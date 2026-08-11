@@ -65,6 +65,25 @@ func IssuerKind(ref cmmeta.IssuerReference) string {
 	return ref.Kind
 }
 
+// IssuerGroup returns the API group of the issuer for a certificate.
+func IssuerGroup(ref cmmeta.IssuerReference) string {
+	if ref.Group == "" {
+		return certmanager.GroupName
+	}
+	return ref.Group
+}
+
+// SecretIssuerAnnotationsMatch reports whether the issuer recorded in the
+// Secret's cert-manager annotations is the same issuer resource as issuerRef.
+//
+// A Secret carrying none of the issuer annotations has no verifiable
+// provenance — it is typically pre-created by the user and may hold a
+// certificate from another CA. It nevertheless matches a ref whose kind and
+// group are the defaults (Issuer / cert-manager.io), and only mismatches
+// refs to other kinds or groups.
+//
+// Annotations that are present are compared against issuerRef with the usual
+// kind/group defaulting; a nil Secret returns false.
 func SecretIssuerAnnotationsMatch(secret *corev1.Secret, issuerRef cmmeta.IssuerReference) bool {
 	if secret == nil {
 		return false
@@ -77,20 +96,17 @@ func SecretIssuerAnnotationsMatch(secret *corev1.Secret, issuerRef cmmeta.Issuer
 	if (hasName || hasKind || hasGroup) && name != issuerRef.Name {
 		return false
 	}
-	return issuerKindOrDefault(kind) == issuerKindOrDefault(issuerRef.Kind) &&
-		issuerGroupOrDefault(group) == issuerGroupOrDefault(issuerRef.Group)
+	return IssuerKindsEqual(kind, issuerRef.Kind) && IssuerGroupsEqual(group, issuerRef.Group)
 }
 
-func issuerKindOrDefault(kind string) string {
-	if kind == "" {
-		return cmapi.IssuerKind
-	}
-	return kind
+// IssuerKindsEqual returns true if the two issuer reference kinds are equal,
+// taking into account the defaulting of an empty kind to "Issuer".
+func IssuerKindsEqual(l, r string) bool {
+	return IssuerKind(cmmeta.IssuerReference{Kind: l}) == IssuerKind(cmmeta.IssuerReference{Kind: r})
 }
 
-func issuerGroupOrDefault(group string) string {
-	if group == "" {
-		return certmanager.GroupName
-	}
-	return group
+// IssuerGroupsEqual returns true if the two issuer reference groups are equal,
+// taking into account the defaulting of an empty group to "cert-manager.io".
+func IssuerGroupsEqual(l, r string) bool {
+	return IssuerGroup(cmmeta.IssuerReference{Group: l}) == IssuerGroup(cmmeta.IssuerReference{Group: r})
 }

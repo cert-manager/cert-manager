@@ -861,7 +861,7 @@ func isARIReplacesRejection(err error) bool {
 		return true
 	}
 
-	if ae.StatusCode >= 400 && ae.StatusCode < 500 && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
+	if ae.ProblemType == "urn:ietf:params:acme:error:malformed" && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
 		return true
 	}
 	return false
