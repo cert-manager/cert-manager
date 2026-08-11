@@ -1417,7 +1417,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Solvers is a list of challenge solvers that will be used to solve ACME challenges for the matching domains. Solver configurations must be provided in order to obtain certificates from an ACME server. For more information, see: https://cert-manager.io/docs/configuration/acme/",
+							Description: "Solvers is a list of challenge solvers that will be used to solve ACME challenges for the matching domains. Solver configurations must be provided in order to obtain certificates from an ACME server, unless the ACME server pre-authorizes every identifier on every order, including renewals, out of band (e.g. pre-validated domains), in which case solvers may be omitted and no Challenge resources will be created. If any identifier on an order is not pre-authorized and no solver matches it, the order will remain pending indefinitely, with only a Warning event recorded against it. For more information, see: https://cert-manager.io/docs/configuration/acme/",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
