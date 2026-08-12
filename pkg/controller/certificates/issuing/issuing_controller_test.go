@@ -514,7 +514,7 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, do nothing": {
+		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, emit a Stalled event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -539,7 +539,9 @@ func TestIssuingController(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{},
-				ExpectedEvents:  []string{},
+				ExpectedEvents: []string{
+					"Warning Stalled CertificateRequest has a failureTime set but no Ready condition; issuance is stalled",
+				},
 			},
 			expectedErr: false,
 		},
