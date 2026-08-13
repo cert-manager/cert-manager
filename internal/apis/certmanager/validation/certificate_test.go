@@ -986,6 +986,30 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"invalid renewal window with zero windowDuration": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+					Renewal: &internalcmapi.CertificateRenewal{
+						Policy: internalcmapi.RenewBefore,
+						Windows: []internalcmapi.CertificateRenewalWindows{
+							{
+								WindowDuration: &metav1.Duration{Duration: 0},
+								Cron:           "0 12 * * *",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), "0s", "windowDuration must be greater than 0"),
+			},
+		},
 		"invalid renewal cron with timezone prefix and no schedule": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
