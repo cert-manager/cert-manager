@@ -239,3 +239,44 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 		}
 	}
 }
+
+func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
+	rdn := pkix.Name{
+		CommonName:   "dir.example.org",
+		Organization: []string{"ExampleOrg"},
+	}.ToRDNSequence()
+
+	// directoryName is [4] Name and Name is a CHOICE, so RFC 5280 section
+	// 4.2.1.6 (per X.680) requires the [4] tag to be explicit. Build a
+	// conformant SAN extension value directly with encoding/asn1 (an oracle
+	// independent of MarshalSANs) so the assertions below pin the wire format,
+	// not just self-consistency of the round trip.
+	dirNameElem, err := asn1.MarshalWithParams(rdn, "explicit,tag:4")
+	if err != nil {
+		t.Fatalf("marshalling oracle directoryName element: %v", err)
+	}
+	conformantValue, err := asn1.Marshal([]asn1.RawValue{{FullBytes: dirNameElem}})
+	if err != nil {
+		t.Fatalf("marshalling oracle SAN sequence: %v", err)
+	}
+
+	// Marshal side: MarshalSANs must emit the explicit form byte for byte.
+	ext, err := MarshalSANs(GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}, true)
+	if err != nil {
+		t.Fatalf("MarshalSANs returned an error: %v", err)
+	}
+	if !reflect.DeepEqual(ext.Value, conformantValue) {
+		t.Errorf("MarshalSANs directoryName is not RFC 5280 conformant:\n got: % x\nwant: % x", ext.Value, conformantValue)
+	}
+
+	// Parse side: UnmarshalSANs must accept a conformant, explicitly tagged
+	// directoryName SAN (before the fix it failed with "sequence tag mismatch").
+	gns, err := UnmarshalSANs(conformantValue)
+	if err != nil {
+		t.Fatalf("UnmarshalSANs failed on a conformant directoryName SAN: %v", err)
+	}
+	want := GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}
+	if !reflect.DeepEqual(gns, want) {
+		t.Errorf("UnmarshalSANs round trip mismatch:\n got: %v\nwant: %v", gns, want)
+	}
+}
