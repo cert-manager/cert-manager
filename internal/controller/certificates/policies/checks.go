@@ -320,8 +320,13 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		// A nil renewal time means renewal is disabled for this Certificate, so
 		// it is never nearing expiry. RenewalTime only returns nil for the
 		// Disabled policy (also short-circuited by the early return above); a
-		// window error always comes with the fallback time handled above.
+		// window error always comes with the fallback time handled above. If a
+		// regression ever reintroduces a (nil, error) return, fail loudly
+		// rather than silently never renewing until the certificate expires.
 		if renewalTime == nil {
+			if err != nil {
+				return reason, message, true
+			}
 			return "", "", false
 		}
 

@@ -2388,13 +2388,13 @@ func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
 // surfaces as a WindowError violation only once renewal is actually due; a
 // certificate nowhere near expiry must not be flagged for re-issuance.
 func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
-	now := time.Now()
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	notBefore := now
+	notAfter := now.Add(30 * 24 * time.Hour)
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
-	// Default validity is ~90 days from now, so the renewBefore-based renewal
-	// time lands well inside that range.
-	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
+	certPEM := testcrypto.MustCreateCertWithNotBeforeAfter(t, pk, &cmapi.Certificate{
 		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
-	})
+	}, notBefore, notAfter)
 	input := Input{
 		Certificate: &cmapi.Certificate{
 			Spec: cmapi.CertificateSpec{
@@ -2422,7 +2422,7 @@ func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
 
 	t.Run("due: surface the window error as a violation", func(t *testing.T) {
 		// Past the certificate's NotAfter, so renewal is unambiguously due.
-		clock := fakeclock.NewFakeClock(now.Add(91 * 24 * time.Hour))
+		clock := fakeclock.NewFakeClock(notAfter.Add(time.Hour))
 		reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
 		assert.True(t, violation)
 		assert.Equal(t, WindowError, reason)
