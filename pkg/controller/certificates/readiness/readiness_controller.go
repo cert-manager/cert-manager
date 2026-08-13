@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -249,9 +250,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Status.RenewalTime = nil
 	}
 	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
+		// klog.SafePtr prevents a nil *metav1.Time from reaching the logger's
+		// Stringer call, which would panic in the promoted time.Time.String
+		// method and render the field as "<panic: ...>".
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
-			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
-			crt.Status.RenewalTime)
+			klog.SafePtr(crt.Status.NotAfter), "notBefore", klog.SafePtr(crt.Status.NotBefore), "renewalTime",
+			klog.SafePtr(crt.Status.RenewalTime))
 		return c.updateOrApplyStatus(ctx, crt)
 	}
 	return nil
