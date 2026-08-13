@@ -536,6 +536,8 @@ func validateCertificateRenewalWindows(window internalcmapi.CertificateRenewalWi
 
 	if window.WindowDuration == nil {
 		el = append(el, field.Required(fldPath.Child("windowDuration"), "windowDuration must be specified and should be greater than 0"))
+	} else if window.WindowDuration.Duration <= 0 {
+		el = append(el, field.Invalid(fldPath.Child("windowDuration"), window.WindowDuration.Duration.String(), "windowDuration must be greater than 0"))
 	}
 
 	if _, err := time.LoadLocation(window.Timezone); err != nil && window.Timezone != "" {

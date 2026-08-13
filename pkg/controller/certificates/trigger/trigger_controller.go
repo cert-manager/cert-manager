@@ -222,8 +222,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	reason, message, reissue := c.shouldReissue(input)
 	if reason == policies.WindowError {
-		c.recorder.Event(crt, corev1.EventTypeWarning, reason, fmt.Sprintf("Renewing certificate without satisfying renewal windows due to %s", message))
-		message = fmt.Sprintf("Renewing certificate without satisfying renewal windows at: %s", crt.Status.RenewalTime)
+		// The message deliberately contains no renewal time:
+		// crt.Status.RenewalTime is written by the readiness controller and
+		// may be nil (e.g. during a rolling upgrade) or an ARI-derived time
+		// unrelated to the fallback schedule that gated this decision.
+		message = fmt.Sprintf("Renewing certificate on the default schedule because the renewal configuration could not be honored: %s", message)
+		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
 		reason = policies.Renewing
 	}
 
