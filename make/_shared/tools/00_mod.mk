@@ -32,7 +32,7 @@ export GOVENDOR_DIR ?= $(default_shared_dir)/go_vendor
 
 # https://go.dev/dl/
 # renovate: datasource=golang-version packageName=go
-VENDORED_GO_VERSION := 1.26.5
+VENDORED_GO_VERSION := 1.26.6
 
 $(bin_dir)/tools $(DOWNLOAD_DIR)/tools:
 	@mkdir -p $@
@@ -135,7 +135,7 @@ tools += gojq=v0.12.19
 tools += crane=v0.21.9
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
-tools += protoc-gen-go=v1.36.11
+tools += protoc-gen-go=v1.36.12
 # https://pkg.go.dev/github.com/sigstore/cosign/v2/cmd/cosign?tab=versions
 # renovate: datasource=go packageName=github.com/sigstore/cosign/v2
 tools += cosign=v2.6.5
@@ -163,7 +163,7 @@ tools += klone=v0.3.0
 tools += goreleaser=v2.17.1
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.50.0
+tools += syft=v1.51.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.6.0
@@ -475,10 +475,10 @@ $(call for_each_kv,go_dependency,$(go_dependencies))
 # File downloads #
 ##################
 
-go_linux_amd64_SHA256SUM=5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053
-go_linux_arm64_SHA256SUM=fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49
-go_darwin_amd64_SHA256SUM=6231d8d3b8f5552ec6cbf6d685bdd5482e1e703214b120e89b3bf0d7bf1ef725
-go_darwin_arm64_SHA256SUM=efb87ff28af9a188d0536ef5d42e63dd52ba8263cd7344a993cc48dd11dedb6a
+go_linux_amd64_SHA256SUM=708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89
+go_linux_arm64_SHA256SUM=d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e
+go_darwin_amd64_SHA256SUM=08b65a63f244115121ced6c3b55ad38d801a7442acad5c949a17aad84ae6d684
+go_darwin_arm64_SHA256SUM=2dc95ce4675829f2df0e86b28bcef3283635902062a5f0580ca659bf570f3204
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/go@$(VENDORED_GO_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
