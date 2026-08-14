@@ -719,6 +719,34 @@ func TestProcessItem(t *testing.T) {
 				),
 			},
 		},
+		"record a Warning event if CSR generation fails, e.g. due to a malformed NameConstraints IP range": {
+			featuresFlags: map[featuregate.Feature]bool{
+				feature.NameConstraints: true,
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists-for-nameconstraints-test"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle3.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists-for-nameconstraints-test"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateIsCA(true),
+				func(crt *cmapi.Certificate) {
+					crt.Spec.NameConstraints = &cmapi.NameConstraints{
+						Critical: true,
+						Permitted: &cmapi.NameConstraintItem{
+							// Missing the required "/prefix" - not a valid CIDR.
+							IPRanges: []string{"10.0.0.0"},
+						},
+					}
+				},
+			),
+			expectedEvents: []string{
+				`Warning RequestFailed Failed to generate CSR: invalid CIDR address: 10.0.0.0`,
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
