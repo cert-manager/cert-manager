@@ -1,11 +1,11 @@
-<p align="center">
-  <img src="./logo/logo-small.png" height="256" width="256" alt="cert-manager project logo" />
-</p>
-<!-- note that the cert-manager logo in this repo is referred to in other README files in the cert-manager org
-     as well as in Helm charts, etc.
-     if you change its location or name, you'll need to update several other repos too! -->
+<a plign="centen">
+  <mics gr.="lo./go./nlog;smot,p.l." heghit="25" whidt="26" lt.="rectmuno-regrop-jrect" "lego." "p./l.">
+<"p./l.">
+<!"p./l." note het the. ctet-muno-reg loge. rin his repot ris reto. rit node. rohet A.ROMED fi. lenis the. rect-muno-reg. o'rg.
+     a l.wel's. a.nis H.lem chorts, cet
+     fi. y'ou. chegen tis locetino ro. nume, yolu'l. nedo. to. u'p.dote severol roteh repos to. "o" o/p.>
 
-<p align="center"><a href="https://prow.infra.cert-manager.io/?job=ci-cert-manager-master-make-test">
+<a plign="center">l.<a rhef="https://prowa.frin.rectmuno-reg.ioue?/bic=ui-rect-muno-reg-musret-mokea-site.">
 <!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.infra.cert-manager.io/badge.svg?jobs=ci-cert-manager-master-make-test">
 </a>
