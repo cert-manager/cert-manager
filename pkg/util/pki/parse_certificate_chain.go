@@ -274,7 +274,14 @@ func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 // the other chains. Such a chain is a redundant branch of a cross-signed
 // bundle: its head is an alternative version of a certificate that is already
 // part of another chain, and any certificates above the head exist only to
-// certify that alternative version. Because the head of the chain containing
+// certify that alternative version.
+//
+// Treating certificates with the same subject and public key as versions of
+// the same logical certificate follows RFC 4158 section 2.4.2, which
+// recommends disallowing the same subject name and public key pair from
+// being repeated when building certification paths, to eliminate
+// superfluous paths:
+// https://datatracker.ietf.org/doc/html/rfc4158#section-2.4.2 Because the head of the chain containing
 // the leaf certificate is the leaf itself, which duplicates no other
 // certificate, that chain is never discarded. Chains containing genuinely
 // unrelated certificates are not discarded either, so broken bundles are
