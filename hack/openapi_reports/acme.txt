@@ -1,3 +1,4 @@
+API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1,ChallengeRequest,ctx
 API rule violation: names_match,github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1,ChallengeResponse,Result
 API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1,JSONSchemaProps,Ref
 API rule violation: names_match,k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1,JSONSchemaProps,Schema
