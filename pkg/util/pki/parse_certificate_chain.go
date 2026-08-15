@@ -64,6 +64,12 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // This function removes duplicate certificate entries as well as comments and
 // unnecessary white space.
 //
+// If the bundle contains cross-signed certificates (multiple certificates
+// with the same subject and public key, each signed by a different issuer, as
+// used during CA rotation), a single chain is selected and the redundant
+// branches are discarded. The selection is deterministic for a given set of
+// input certificates, but it is unspecified which branch is selected.
+//
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
@@ -137,10 +143,18 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 			}
 		}
 
-		// If no chains were merged in this pass, the chain can never be built as a
-		// single list. Error.
+		// If no chains were merged in this pass, the certificates can never be
+		// built into a single list. This can happen when the bundle contains
+		// cross-signed certificates: two versions of the same certificate, each
+		// signed by a different issuer. In that case one of the stuck chains
+		// duplicates a certificate in another chain and can be discarded.
+		// Otherwise, the chain is genuinely broken. Error.
 		if !mergedTwoChains {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			var discardedRedundantChain bool
+			chains, discardedRedundantChain = discardRedundantChain(append(chains, lastChain))
+			if !discardedRedundantChain {
+				return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			}
 		}
 	}
 
@@ -253,6 +267,35 @@ func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 
 	// Chains cannot be added together.
 	return a, false
+}
+
+// discardRedundantChain removes the first chain whose head (leaf-most)
+// certificate has the same subject and public key as a certificate in one of
+// the other chains. Such a chain is a redundant branch of a cross-signed
+// bundle: its head is an alternative version of a certificate that is already
+// part of another chain, and any certificates above the head exist only to
+// certify that alternative version. Because the head of the chain containing
+// the leaf certificate is the leaf itself, which duplicates no other
+// certificate, that chain is never discarded. Chains containing genuinely
+// unrelated certificates are not discarded either, so broken bundles are
+// still rejected. Returns false if no chain could be discarded.
+func discardRedundantChain(chains []*chainNode) ([]*chainNode, bool) {
+	for i, chain := range chains {
+		for j, other := range chains {
+			if i == j {
+				continue
+			}
+
+			for node := other; node != nil; node = node.issuer {
+				if bytes.Equal(chain.cert.RawSubject, node.cert.RawSubject) &&
+					bytes.Equal(chain.cert.RawSubjectPublicKeyInfo, node.cert.RawSubjectPublicKeyInfo) {
+					return slices.Delete(chains, i, i+1), true
+				}
+			}
+		}
+	}
+
+	return chains, false
 }
 
 // Return the root most node of this chain.

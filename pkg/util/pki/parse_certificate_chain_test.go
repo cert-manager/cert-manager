@@ -25,6 +25,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 type testBundle struct {
@@ -72,6 +74,25 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 	}
 
 	return &testBundle{pem: certPEM, cert: cert, pk: pk}
+}
+
+// mustCrossSign returns a version of bundle's certificate with the same
+// subject and public key, but signed by issuer instead of bundle's original
+// issuer.
+func mustCrossSign(t *testing.T, bundle, issuer *testBundle) *testBundle {
+	template := &x509.Certificate{
+		BasicConstraintsValid: bundle.cert.BasicConstraintsValid,
+		IsCA:                  bundle.cert.IsCA,
+		Subject:               bundle.cert.Subject,
+		NotBefore:             bundle.cert.NotBefore,
+		NotAfter:              bundle.cert.NotAfter,
+		KeyUsage:              bundle.cert.KeyUsage,
+	}
+
+	certPEM, cert, err := SignCertificate(template, issuer.cert, bundle.pk.(crypto.Signer).Public(), issuer.pk)
+	require.NoError(t, err)
+
+	return &testBundle{pem: certPEM, cert: cert, pk: bundle.pk}
 }
 
 func joinPEM(first []byte, rest ...[]byte) []byte {
@@ -249,6 +270,112 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 			if !reflect.DeepEqual(bundle, test.expPEMBundle) {
 				t.Errorf("unexpected pem bundle, exp=%+s got=%+s",
 					test.expPEMBundle, bundle)
+			}
+		})
+	}
+}
+
+// permutations returns every ordering of the given PEM blocks.
+func permutations(pems [][]byte) [][][]byte {
+	if len(pems) <= 1 {
+		return [][][]byte{append([][]byte{}, pems...)}
+	}
+
+	var out [][][]byte
+	for i := range pems {
+		rest := append([][]byte{}, pems[:i]...)
+		rest = append(rest, pems[i+1:]...)
+		for _, perm := range permutations(rest) {
+			out = append(out, append([][]byte{pems[i]}, perm...))
+		}
+	}
+
+	return out
+}
+
+// TestParseSingleCertificateChainPEMCrossSigned checks that bundles containing
+// cross-signed certificates (multiple versions of a certificate with the same
+// subject and public key, each signed by a different issuer, as used during CA
+// rotation) are parsed into a single chain by discarding the redundant
+// branches, that the result does not depend on the order of the input
+// certificates, and that bundles containing genuinely unrelated certificates
+// are still rejected.
+func TestParseSingleCertificateChainPEMCrossSigned(t *testing.T) {
+	rootA := mustCreateBundle(t, nil, "rootA")
+	rootB := mustCreateBundle(t, nil, "rootB")
+	intByA := mustCreateBundle(t, rootA, "int")
+	intByB := mustCrossSign(t, intByA, rootB)
+	leaf := mustCreateBundle(t, intByA, "leaf")
+	random := mustCreateBundle(t, nil, "random")
+
+	// A root cross-signed by an older root, as served by e.g. Let's Encrypt:
+	// leaf2 <- int2 <- newRoot, with newRoot also cross-signed by oldRoot.
+	oldRoot := mustCreateBundle(t, nil, "old-root")
+	newRoot := mustCreateBundle(t, nil, "new-root")
+	newRootByOldRoot := mustCrossSign(t, newRoot, oldRoot)
+	int2 := mustCreateBundle(t, newRoot, "int2")
+	leaf2 := mustCreateBundle(t, int2, "leaf2")
+
+	tests := map[string]struct {
+		inputPEMs [][]byte
+		// expPEMBundles enumerates the acceptable outputs; parsing must
+		// succeed and return one of them for every input order.
+		expPEMBundles []PEMBundle
+		expErr        bool
+	}{
+		"cross-signed intermediate with both roots": {
+			inputPEMs: [][]byte{leaf.pem, intByA.pem, intByB.pem, rootA.pem, rootB.pem},
+			expPEMBundles: []PEMBundle{
+				{ChainPEM: joinPEM(nil, leaf.pem, intByA.pem), CAPEM: rootA.pem},
+				{ChainPEM: joinPEM(nil, leaf.pem, intByB.pem), CAPEM: rootB.pem},
+			},
+		},
+		"cross-signed intermediate with one root": {
+			inputPEMs: [][]byte{leaf.pem, intByA.pem, intByB.pem, rootA.pem},
+			expPEMBundles: []PEMBundle{
+				{ChainPEM: joinPEM(nil, leaf.pem, intByA.pem), CAPEM: rootA.pem},
+				{ChainPEM: joinPEM(nil, leaf.pem, intByB.pem), CAPEM: intByB.pem},
+			},
+		},
+		"cross-signed intermediate without roots": {
+			inputPEMs: [][]byte{leaf.pem, intByA.pem, intByB.pem},
+			expPEMBundles: []PEMBundle{
+				{ChainPEM: joinPEM(nil, leaf.pem, intByA.pem), CAPEM: intByA.pem},
+				{ChainPEM: joinPEM(nil, leaf.pem, intByB.pem), CAPEM: intByB.pem},
+			},
+		},
+		"cross-signed root with both roots": {
+			inputPEMs: [][]byte{leaf2.pem, int2.pem, newRoot.pem, newRootByOldRoot.pem, oldRoot.pem},
+			expPEMBundles: []PEMBundle{
+				{ChainPEM: joinPEM(nil, leaf2.pem, int2.pem, newRoot.pem, newRootByOldRoot.pem), CAPEM: oldRoot.pem},
+				{ChainPEM: joinPEM(nil, leaf2.pem, int2.pem, newRootByOldRoot.pem), CAPEM: oldRoot.pem},
+			},
+		},
+		"cross-signed intermediate with an unrelated certificate should error": {
+			inputPEMs: [][]byte{leaf.pem, intByA.pem, intByB.pem, random.pem},
+			expErr:    true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var first *PEMBundle
+			for _, perm := range permutations(test.inputPEMs) {
+				bundle, err := ParseSingleCertificateChainPEM(joinPEM(nil, perm...))
+				if test.expErr {
+					require.Error(t, err)
+					continue
+				}
+
+				require.NoError(t, err)
+
+				if first == nil {
+					first = &bundle
+					require.Contains(t, test.expPEMBundles, bundle, "bundle does not match any acceptable output")
+					continue
+				}
+
+				require.Equal(t, *first, bundle, "output depends on input order")
 			}
 		})
 	}
