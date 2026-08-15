@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
+	"os"
 	"reflect"
 	"slices"
 	"testing"
@@ -376,6 +377,73 @@ func TestParseSingleCertificateChainPEMCrossSigned(t *testing.T) {
 				}
 
 				require.Equal(t, *first, bundle, "output depends on input order")
+			}
+		})
+	}
+}
+
+// mustLoadPKITS returns the PEM encoding of the named DER certificate from
+// the NIST PKITS test suite (see testdata/pkits/README.md).
+func mustLoadPKITS(t *testing.T, name string) []byte {
+	der, err := os.ReadFile("testdata/pkits/" + name + ".crt")
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(der)
+	require.NoError(t, err)
+
+	certPEM, err := EncodeX509(cert)
+	require.NoError(t, err)
+
+	return certPEM
+}
+
+// TestParseSingleCertificateChainPEMPKITSKeyRollover pins the parser's
+// behavior on the NIST PKITS section 4.5 CA key rollover chains, in which
+// self-issued certificates share a subject but carry different public keys.
+// Unlike cross-signed certificates (same subject and same public key), such
+// certificates are ordinary chain links and must not be discarded as
+// redundant: each bundle parses to a single full chain, independent of input
+// order, and adding a self-issued certificate from an unrelated CA is still
+// rejected.
+func TestParseSingleCertificateChainPEMPKITSKeyRollover(t *testing.T) {
+	ta := mustLoadPKITS(t, "TrustAnchorRootCertificate")
+	newKeyCA := mustLoadPKITS(t, "BasicSelfIssuedNewKeyCACert")
+	oldWithNew := mustLoadPKITS(t, "BasicSelfIssuedNewKeyOldWithNewCACert")
+	ee1 := mustLoadPKITS(t, "ValidBasicSelfIssuedOldWithNewTest1EE")
+	oldKeyCA := mustLoadPKITS(t, "BasicSelfIssuedOldKeyCACert")
+	newWithOld := mustLoadPKITS(t, "BasicSelfIssuedOldKeyNewWithOldCACert")
+	ee3 := mustLoadPKITS(t, "ValidBasicSelfIssuedNewWithOldTest3EE")
+
+	tests := map[string]struct {
+		inputPEMs    [][]byte
+		expPEMBundle PEMBundle
+		expErr       bool
+	}{
+		"PKITS 4.5.1: EE signed with the old key, old key certified with the new key": {
+			inputPEMs:    [][]byte{ee1, oldWithNew, newKeyCA, ta},
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(nil, ee1, oldWithNew, newKeyCA), CAPEM: ta},
+		},
+		"PKITS 4.5.3: EE signed with the new key, new key certified with the old key": {
+			inputPEMs:    [][]byte{ee3, newWithOld, oldKeyCA, ta},
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(nil, ee3, newWithOld, oldKeyCA), CAPEM: ta},
+		},
+		"PKITS 4.5.1 chain with a self-issued certificate from an unrelated CA should error": {
+			inputPEMs: [][]byte{ee1, oldWithNew, newKeyCA, ta, newWithOld},
+			expErr:    true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			for _, perm := range permutations(test.inputPEMs) {
+				bundle, err := ParseSingleCertificateChainPEM(joinPEM(nil, perm...))
+				if test.expErr {
+					require.Error(t, err)
+					continue
+				}
+
+				require.NoError(t, err)
+				require.Equal(t, test.expPEMBundle, bundle)
 			}
 		})
 	}
