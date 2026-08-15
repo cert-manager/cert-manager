@@ -87,6 +87,14 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 			return nil, err
 		}
 
+		// RFC 7468 §2 requires that the label be used to determine the type of
+		// content in a PEM block; reject anything that isn't a certificate
+		// rather than passing it to x509.ParseCertificate, which would fail
+		// with a misleading "malformed certificate" error.
+		if block.Type != "CERTIFICATE" {
+			return nil, errors.NewInvalidData("error decoding certificate PEM block: expected only \"CERTIFICATE\" blocks, found %q", block.Type)
+		}
+
 		// parse the tls certificate
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
