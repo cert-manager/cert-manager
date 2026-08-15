@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -109,6 +111,8 @@ type ChallengeRequest struct {
 	// references to Kubernetes Secret resources that the webhook can fetch.
 	// +optional
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
+
+	ctx context.Context
 }
 
 // ChallengeAction represents an action associated with a challenge such as
@@ -136,4 +140,13 @@ type ChallengeResponse struct {
 	// This field will be completely ignored if 'success' is true.
 	// +optional
 	Result *metav1.Status `json:"status,omitempty"`
+}
+
+func (c *ChallengeRequest) WithContext(ctx context.Context) *ChallengeRequest {
+	c.ctx = ctx
+	return c
+}
+
+func (c *ChallengeRequest) Context() context.Context {
+	return c.ctx
 }
