@@ -347,6 +347,12 @@ func TestParseSingleCertificateChainPEMCrossSigned(t *testing.T) {
 		},
 		"cross-signed root with both roots": {
 			inputPEMs: [][]byte{leaf2.pem, int2.pem, newRoot.pem, newRootByOldRoot.pem, oldRoot.pem},
+			// The two versions of newRoot carry the same key, so newRoot
+			// verifies from newRootByOldRoot and the pair can linearize into
+			// a genuine chain containing both versions (the pre-existing
+			// behavior for the input orders that previous versions of the
+			// parser accepted). Alternatively the merge gets stuck and the
+			// self-signed version is pruned. Both are valid outcomes.
 			expPEMBundles: []PEMBundle{
 				{ChainPEM: joinPEM(nil, leaf2.pem, int2.pem, newRoot.pem, newRootByOldRoot.pem), CAPEM: oldRoot.pem},
 				{ChainPEM: joinPEM(nil, leaf2.pem, int2.pem, newRootByOldRoot.pem), CAPEM: oldRoot.pem},
@@ -379,6 +385,29 @@ func TestParseSingleCertificateChainPEMCrossSigned(t *testing.T) {
 				require.Equal(t, *first, bundle, "output depends on input order")
 			}
 		})
+	}
+}
+
+// TestParseSingleCertificateChainCrossSignedDoS checks that a bundle
+// consisting of many unrelated cross-signed pairs — the worst case for the
+// redundant-chain pruning, which runs once per discarded branch — is rejected
+// quickly.
+func TestParseSingleCertificateChainCrossSignedDoS(t *testing.T) {
+	rootA := mustCreateBundle(t, nil, "rootA")
+	rootB := mustCreateBundle(t, nil, "rootB")
+
+	var certs []*x509.Certificate
+	for i := range 499 {
+		intByA := mustCreateBundle(t, rootA, fmt.Sprintf("int-%d", i))
+		certs = append(certs, intByA.cert, mustCrossSign(t, intByA, rootB).cert)
+	}
+
+	startTime := time.Now()
+	_, err := ParseSingleCertificateChain(certs)
+	require.Error(t, err)
+
+	if time.Since(startTime) > time.Second {
+		t.Errorf("ParseSingleCertificateChain took too long to complete, input could cause DoS")
 	}
 }
 

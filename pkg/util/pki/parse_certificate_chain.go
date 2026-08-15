@@ -70,6 +70,13 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // branches are discarded. The selection is deterministic for a given set of
 // input certificates, but it is unspecified which branch is selected.
 //
+// A cross-signed pair can instead form a genuine linear chain, because each
+// version of the certificate carries the key that signed the other versions.
+// For example, a root that is both self-signed and signed by an older root
+// can verify and precede its cross-signed version in the chain. Such a chain
+// is returned as-is, with both versions retained — the behavior of previous
+// versions of this function for those inputs which they did not reject.
+//
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
@@ -286,18 +293,41 @@ func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 // certificate, that chain is never discarded. Chains containing genuinely
 // unrelated certificates are not discarded either, so broken bundles are
 // still rejected. Returns false if no chain could be discarded.
+//
+// Each call visits every certificate a constant number of times, so even
+// with the up to O(n) calls made by the merge loop above, pruning stays
+// within the merge loop's own complexity bound.
 func discardRedundantChain(chains []*chainNode) ([]*chainNode, bool) {
-	for i, chain := range chains {
-		for j, other := range chains {
-			if i == j {
-				continue
-			}
+	type identity struct {
+		subject string
+		spki    string
+	}
 
-			for node := other; node != nil; node = node.issuer {
-				if bytes.Equal(chain.cert.RawSubject, node.cert.RawSubject) &&
-					bytes.Equal(chain.cert.RawSubjectPublicKeyInfo, node.cert.RawSubjectPublicKeyInfo) {
-					return slices.Delete(chains, i, i+1), true
-				}
+	// Record up to two distinct chain indices per identity: that is enough
+	// to decide, for any chain, whether an identity also appears in a chain
+	// other than itself.
+	chainsWithIdentity := make(map[identity][]int, len(chains))
+	for i, chain := range chains {
+		for node := chain; node != nil; node = node.issuer {
+			id := identity{
+				subject: string(node.cert.RawSubject),
+				spki:    string(node.cert.RawSubjectPublicKeyInfo),
+			}
+			indices := chainsWithIdentity[id]
+			if len(indices) < 2 && (len(indices) == 0 || indices[len(indices)-1] != i) {
+				chainsWithIdentity[id] = append(indices, i)
+			}
+		}
+	}
+
+	for i, chain := range chains {
+		id := identity{
+			subject: string(chain.cert.RawSubject),
+			spki:    string(chain.cert.RawSubjectPublicKeyInfo),
+		}
+		for _, j := range chainsWithIdentity[id] {
+			if j != i {
+				return slices.Delete(chains, i, i+1), true
 			}
 		}
 	}
