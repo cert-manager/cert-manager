@@ -243,11 +243,8 @@ func schema_webhook_apis_acme_v1alpha1_ChallengeRequest(ref common.ReferenceCall
 							Ref:         ref(v1.JSON{}.OpenAPIModelName()),
 						},
 					},
-					"ctx": {
-						SchemaProps: spec.SchemaProps{},
-					},
 				},
-				Required: []string{"uid", "action", "type", "dnsName", "key", "resourceNamespace", "allowAmbientCredentials", "ctx"},
+				Required: []string{"uid", "action", "type", "dnsName", "key", "resourceNamespace", "allowAmbientCredentials"},
 			},
 		},
 		Dependencies: []string{
