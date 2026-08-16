@@ -112,6 +112,7 @@ type ChallengeRequest struct {
 	// +optional
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 
+	// +k8s:deepcopy-gen=false
 	ctx context.Context
 }
 
