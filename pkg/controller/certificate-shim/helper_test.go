@@ -365,6 +365,14 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 			annotations:   map[string]string{cmapi.CommonNameAnnotationKey: strings.Repeat("a", 65)},
 			expectedError: errInvalidIngressAnnotation,
 		},
+		"duration exactly one hour rejected": {
+			annotations:   map[string]string{cmapi.DurationAnnotationKey: "1h"},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"renew-before exactly five minutes rejected": {
+			annotations:   map[string]string{cmapi.RenewBeforeAnnotationKey: "5m"},
+			expectedError: errInvalidIngressAnnotation,
+		},
 	}
 
 	for name, tc := range tests {
@@ -373,5 +381,23 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 			err := translateAnnotations(crt, tc.annotations)
 			assertErrorIs(t, err, tc.expectedError)
 		})
+	}
+}
+
+// Test_translateAnnotations_validAnnotationValuesWithWhitespace ensures that,
+// when a valid annotation value contains surrounding whitespace, the shim
+// trims it before storing so the resulting Certificate passes admission
+// validation (regression for cert-manager/cert-manager#9145).
+func Test_translateAnnotations_validAnnotationValuesWithWhitespace(t *testing.T) {
+	crt := gen.Certificate("example-cert")
+	annotations := map[string]string{
+		cmapi.IPSANAnnotationKey:    "1.2.3.4, 5.6.7.8",
+		cmapi.EmailsAnnotationKey:   "test@example.com, admin@example.com",
+		cmapi.DurationAnnotationKey: "2160h",
+	}
+	err := translateAnnotations(crt, annotations)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []string{"1.2.3.4", "5.6.7.8"}, crt.Spec.IPAddresses)
+		assert.Equal(t, []string{"test@example.com", "admin@example.com"}, crt.Spec.EmailAddresses)
 	}
 }

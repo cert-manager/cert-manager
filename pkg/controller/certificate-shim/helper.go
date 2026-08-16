@@ -82,22 +82,28 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if ipSANs, found := ingLikeAnnotations[cmapi.IPSANAnnotationKey]; found && ipSANs != "" {
 		ipAddresses := strings.Split(ipSANs, ",")
+		trimmedIPs := make([]string, 0, len(ipAddresses))
 		for _, ipStr := range ipAddresses {
-			if net.ParseIP(strings.TrimSpace(ipStr)) == nil {
+			ipStr = strings.TrimSpace(ipStr)
+			if net.ParseIP(ipStr) == nil {
 				return fmt.Errorf("%w %q: %q is not a valid IP address", errInvalidIngressAnnotation, cmapi.IPSANAnnotationKey, ipStr)
 			}
+			trimmedIPs = append(trimmedIPs, ipStr)
 		}
-		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, ipAddresses...)
+		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, trimmedIPs...)
 	}
 
 	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
 		emails := strings.Split(emailAddresses, ",")
+		trimmedEmails := make([]string, 0, len(emails))
 		for _, email := range emails {
-			if _, err := mail.ParseAddress(strings.TrimSpace(email)); err != nil {
+			email = strings.TrimSpace(email)
+			if _, err := mail.ParseAddress(email); err != nil {
 				return fmt.Errorf("%w %q: %q is not a valid email address", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
 			}
+			trimmedEmails = append(trimmedEmails, email)
 		}
-		crt.Spec.EmailAddresses = emails
+		crt.Spec.EmailAddresses = trimmedEmails
 	}
 
 	subject := &cmapi.X509Subject{}
@@ -178,7 +184,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
-		if d < time.Hour {
+		if d <= time.Hour {
 			return fmt.Errorf("%w %q: duration must be greater than %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, time.Hour)
 		}
 		crt.Spec.Duration = &metav1.Duration{Duration: d}
@@ -189,7 +195,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
 		}
-		if duration < 5*time.Minute {
+		if duration <= 5*time.Minute {
 			return fmt.Errorf("%w %q: renewBefore must be greater than %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, 5*time.Minute)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
