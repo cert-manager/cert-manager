@@ -15,7 +15,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/miekg/dns v1.1.72
 	github.com/munnerz/crd-schema-fuzz v1.1.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	golang.org/x/sync v0.22.0
 	k8s.io/api v0.36.3
 	k8s.io/apiextensions-apiserver v0.36.3
