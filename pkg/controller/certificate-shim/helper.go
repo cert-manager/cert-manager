@@ -93,13 +93,19 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, trimmedIPs...)
 	}
 
-	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
+	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found && emailAddresses != "" {
 		emails := strings.Split(emailAddresses, ",")
 		trimmedEmails := make([]string, 0, len(emails))
 		for _, email := range emails {
 			email = strings.TrimSpace(email)
-			if _, err := mail.ParseAddress(email); err != nil {
+			e, err := mail.ParseAddress(email)
+			if err != nil {
 				return fmt.Errorf("%w %q: %q is not a valid email address", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
+			}
+			// Mirror the cert-manager webhook: reject display-name forms
+			// (e.g. "Name <a@b.com>") so the stored value is exactly the address.
+			if e.Address != email {
+				return fmt.Errorf("%w %q: %q must only contain the email address itself", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
 			}
 			trimmedEmails = append(trimmedEmails, email)
 		}
@@ -184,8 +190,8 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
-		if d <= time.Hour {
-			return fmt.Errorf("%w %q: duration must be greater than %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, time.Hour)
+		if d < cmapi.MinimumCertificateDuration {
+			return fmt.Errorf("%w %q: duration must be greater than %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, cmapi.MinimumCertificateDuration)
 		}
 		crt.Spec.Duration = &metav1.Duration{Duration: d}
 	}
@@ -195,8 +201,8 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
 		}
-		if duration <= 5*time.Minute {
-			return fmt.Errorf("%w %q: renewBefore must be greater than %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, 5*time.Minute)
+		if duration < cmapi.MinimumRenewBefore {
+			return fmt.Errorf("%w %q: renewBefore must be greater than %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, cmapi.MinimumRenewBefore)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}

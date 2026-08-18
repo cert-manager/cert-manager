@@ -353,6 +353,10 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 			annotations:   map[string]string{cmapi.EmailsAnnotationKey: "2160h"},
 			expectedError: errInvalidIngressAnnotation,
 		},
+		"email-sans display-name form rejected": {
+			annotations:   map[string]string{cmapi.EmailsAnnotationKey: "Name <test@example.com>"},
+			expectedError: errInvalidIngressAnnotation,
+		},
 		"duration too small": {
 			annotations:   map[string]string{cmapi.DurationAnnotationKey: "-5s"},
 			expectedError: errInvalidIngressAnnotation,
@@ -363,14 +367,6 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 		},
 		"common-name too long": {
 			annotations:   map[string]string{cmapi.CommonNameAnnotationKey: strings.Repeat("a", 65)},
-			expectedError: errInvalidIngressAnnotation,
-		},
-		"duration exactly one hour rejected": {
-			annotations:   map[string]string{cmapi.DurationAnnotationKey: "1h"},
-			expectedError: errInvalidIngressAnnotation,
-		},
-		"renew-before exactly five minutes rejected": {
-			annotations:   map[string]string{cmapi.RenewBeforeAnnotationKey: "5m"},
 			expectedError: errInvalidIngressAnnotation,
 		},
 	}
@@ -391,9 +387,10 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 func Test_translateAnnotations_validAnnotationValuesWithWhitespace(t *testing.T) {
 	crt := gen.Certificate("example-cert")
 	annotations := map[string]string{
-		cmapi.IPSANAnnotationKey:    "1.2.3.4, 5.6.7.8",
-		cmapi.EmailsAnnotationKey:   "test@example.com, admin@example.com",
-		cmapi.DurationAnnotationKey: "2160h",
+		cmapi.IPSANAnnotationKey:       "1.2.3.4, 5.6.7.8",
+		cmapi.EmailsAnnotationKey:      "test@example.com, admin@example.com",
+		cmapi.DurationAnnotationKey:    "2160h",
+		cmapi.RenewBeforeAnnotationKey: "5m",
 	}
 	err := translateAnnotations(crt, annotations)
 	if assert.NoError(t, err) {
