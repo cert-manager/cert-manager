@@ -176,7 +176,7 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 			Type:    "TXT",
 			Name:    util.UnFqdn(fqdn),
 			Content: value,
-			TTL:     120,
+			TTL:     60,
 		}
 
 		body, err := json.Marshal(rec)
