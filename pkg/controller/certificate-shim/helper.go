@@ -202,7 +202,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
 		}
 		if duration < cmapi.MinimumRenewBefore {
-			return fmt.Errorf("%w %q: renewBefore must be greater than %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, cmapi.MinimumRenewBefore)
+			return fmt.Errorf("%w %q: renewBefore must be greater than or equal to %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, cmapi.MinimumRenewBefore)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
