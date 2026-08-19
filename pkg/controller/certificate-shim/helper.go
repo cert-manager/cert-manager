@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/mail"
 	"reflect"
 	"strconv"
 	"strings"
@@ -67,6 +69,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if commonName, found := ingLikeAnnotations[cmapi.CommonNameAnnotationKey]; found {
+		if len(commonName) > 64 {
+			return fmt.Errorf("%w %q: common name may not be more than 64 bytes", errInvalidIngressAnnotation, cmapi.CommonNameAnnotationKey)
+		}
 		crt.Spec.CommonName = commonName
 	}
 
@@ -77,11 +82,34 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if ipSANs, found := ingLikeAnnotations[cmapi.IPSANAnnotationKey]; found && ipSANs != "" {
 		ipAddresses := strings.Split(ipSANs, ",")
-		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, ipAddresses...)
+		trimmedIPs := make([]string, 0, len(ipAddresses))
+		for _, ipStr := range ipAddresses {
+			ipStr = strings.TrimSpace(ipStr)
+			if net.ParseIP(ipStr) == nil {
+				return fmt.Errorf("%w %q: %q is not a valid IP address", errInvalidIngressAnnotation, cmapi.IPSANAnnotationKey, ipStr)
+			}
+			trimmedIPs = append(trimmedIPs, ipStr)
+		}
+		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, trimmedIPs...)
 	}
 
-	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
-		crt.Spec.EmailAddresses = strings.Split(emailAddresses, ",")
+	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found && emailAddresses != "" {
+		emails := strings.Split(emailAddresses, ",")
+		trimmedEmails := make([]string, 0, len(emails))
+		for _, email := range emails {
+			email = strings.TrimSpace(email)
+			e, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("%w %q: %q is not a valid email address", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
+			}
+			// Mirror the cert-manager webhook: reject display-name forms
+			// (e.g. "Name <a@b.com>") so the stored value is exactly the address.
+			if e.Address != email {
+				return fmt.Errorf("%w %q: %q must only contain the email address itself", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
+			}
+			trimmedEmails = append(trimmedEmails, email)
+		}
+		crt.Spec.EmailAddresses = trimmedEmails
 	}
 
 	subject := &cmapi.X509Subject{}
@@ -162,6 +190,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
+		if duration < cmapi.MinimumCertificateDuration {
+			return fmt.Errorf("%w %q: duration must be greater than or equal to %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, cmapi.MinimumCertificateDuration)
+		}
 		crt.Spec.Duration = &metav1.Duration{Duration: duration}
 	}
 
@@ -169,6 +200,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		duration, err := time.ParseDuration(renewBefore)
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
+		}
+		if duration < cmapi.MinimumRenewBefore {
+			return fmt.Errorf("%w %q: renewBefore must be greater than or equal to %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, cmapi.MinimumRenewBefore)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
