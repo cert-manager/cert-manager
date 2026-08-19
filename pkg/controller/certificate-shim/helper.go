@@ -186,7 +186,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if duration, found := ingLikeAnnotations[cmapi.DurationAnnotationKey]; found {
-		d, err := time.ParseDuration(duration)
+		duration, err := time.ParseDuration(duration)
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
