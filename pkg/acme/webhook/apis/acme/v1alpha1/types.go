@@ -18,11 +18,32 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
+
+// challengeRequestContext is an alias type of context.Context
+// because the deepcopy generator does not work well with interfaces
+// this type have been created to allow embedding the context within ChallengeRequest
+// without breaking deepcopy-gen
+// +k8s:openapi-gen=false
+type challengeRequestContext struct {
+	ctx context.Context
+}
+
+func (c *challengeRequestContext) Deadline() (deadline time.Time, ok bool) { return c.ctx.Deadline() }
+func (c *challengeRequestContext) Done() <-chan struct{}                   { return c.ctx.Done() }
+func (c *challengeRequestContext) Err() error                              { return c.ctx.Err() }
+func (c *challengeRequestContext) Value(key any) any                       { return c.ctx.Value(key) }
+func (c *challengeRequestContext) DeepCopyInto(_ *challengeRequestContext) {
+
+}
+func (c *challengeRequestContext) DeepCopy() *challengeRequestContext {
+	return nil
+}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -112,8 +133,11 @@ type ChallengeRequest struct {
 	// +optional
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 
-	// +k8s:deepcopy-gen=false
-	ctx context.Context
+	// ctx is the request context. It should only
+	// be modified using WithContext.
+	// It is unexported to prevent people from using Context wrong
+	// and mutating the contexts held by callers of the same request.
+	ctx *challengeRequestContext `json:"-"`
 }
 
 // ChallengeAction represents an action associated with a challenge such as
@@ -144,10 +168,13 @@ type ChallengeResponse struct {
 }
 
 func (c *ChallengeRequest) WithContext(ctx context.Context) *ChallengeRequest {
-	c.ctx = ctx
+	c.ctx = &challengeRequestContext{ctx: ctx}
 	return c
 }
 
 func (c *ChallengeRequest) Context() context.Context {
-	return c.ctx
+	if c.ctx != nil {
+		return c.ctx
+	}
+	return context.Background()
 }
