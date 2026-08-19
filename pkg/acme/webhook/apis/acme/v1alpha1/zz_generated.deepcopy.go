@@ -70,6 +70,10 @@ func (in *ChallengeRequest) DeepCopyInto(out *ChallengeRequest) {
 		*out = new(v1.JSON)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ctx != nil {
+		in, out := &in.ctx, &out.ctx
+		*out = (*in).DeepCopy()
+	}
 	return
 }
 
