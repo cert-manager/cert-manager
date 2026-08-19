@@ -190,10 +190,10 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
-		if d < cmapi.MinimumCertificateDuration {
+		if duration < cmapi.MinimumCertificateDuration {
 			return fmt.Errorf("%w %q: duration must be greater than %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, cmapi.MinimumCertificateDuration)
 		}
-		crt.Spec.Duration = &metav1.Duration{Duration: d}
+		crt.Spec.Duration = &metav1.Duration{Duration: duration}
 	}
 
 	if renewBefore, found := ingLikeAnnotations[cmapi.RenewBeforeAnnotationKey]; found {
