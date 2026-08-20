@@ -192,8 +192,7 @@ func TestInstrumentedRoundTripper_CapsOversizedResponseBody(t *testing.T) {
 	// number of bytes delivered to the caller stays bounded by the limit
 	// regardless of how much the server tried to send, keeping memory bounded.
 	n, err := io.Copy(io.Discard, resp.Body)
-	var maxBytesErr *http.MaxBytesError
-	if !errors.As(err, &maxBytesErr) {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); !ok {
 		t.Fatalf("expected a *http.MaxBytesError reading an oversized body, got %T: %v", err, err)
 	}
 	if n > maxACMEResponseBodyBytes {

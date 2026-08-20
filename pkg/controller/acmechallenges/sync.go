@@ -246,45 +246,33 @@ func stabilizeSolverErrorMessage(err error) string {
 		return ""
 	}
 	fullMessage := err.Error()
-	{
-		var target *awshttp.ResponseError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted AWS SDK error: http.ResponseError: see events and logs for details>",
-			)
-		}
+	if target, ok := errors.AsType[*awshttp.ResponseError](err); ok {
+		fullMessage = strings.ReplaceAll(
+			fullMessage,
+			target.Error(),
+			"<redacted AWS SDK error: http.ResponseError: see events and logs for details>",
+		)
 	}
-	{
-		var target *azidentity.AuthenticationFailedError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted Azure SDK error: azidentity.AuthenticationFailedError: see events and logs for details>",
-			)
-		}
+	if target, ok := errors.AsType[*azidentity.AuthenticationFailedError](err); ok {
+		fullMessage = strings.ReplaceAll(
+			fullMessage,
+			target.Error(),
+			"<redacted Azure SDK error: azidentity.AuthenticationFailedError: see events and logs for details>",
+		)
 	}
-	{
-		var target *azcore.ResponseError
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted Azure SDK error: azcore.ResponseError: see events and logs for details>",
-			)
-		}
+	if target, ok := errors.AsType[*azcore.ResponseError](err); ok {
+		fullMessage = strings.ReplaceAll(
+			fullMessage,
+			target.Error(),
+			"<redacted Azure SDK error: azcore.ResponseError: see events and logs for details>",
+		)
 	}
-	{
-		var target *godo.ErrorResponse
-		if errors.As(err, &target) {
-			fullMessage = strings.ReplaceAll(
-				fullMessage,
-				target.Error(),
-				"<redacted DigitalOcean SDK error: godo.ErrorResponse: see events and logs for details>",
-			)
-		}
+	if target, ok := errors.AsType[*godo.ErrorResponse](err); ok {
+		fullMessage = strings.ReplaceAll(
+			fullMessage,
+			target.Error(),
+			"<redacted DigitalOcean SDK error: godo.ErrorResponse: see events and logs for details>",
+		)
 	}
 	return fullMessage
 }
