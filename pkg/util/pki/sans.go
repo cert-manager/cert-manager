@@ -131,7 +131,9 @@ func UnmarshalSANs(value []byte) (GeneralNames, error) {
 			gns.X400Addresses = append(gns.X400Addresses, v)
 		case nameTypeDirectoryName:
 			var rdn pkix.RDNSequence
-			if _, err := asn1.UnmarshalWithParams(v.FullBytes, &rdn, fmt.Sprintf("tag:%d", nameTypeDirectoryName)); err != nil {
+			// directoryName is [4] Name, and Name is a CHOICE, so RFC 5280
+			// section 4.2.1.6 (per X.680) requires the tag to be explicit.
+			if _, err := asn1.UnmarshalWithParams(v.FullBytes, &rdn, fmt.Sprintf("explicit,tag:%d", nameTypeDirectoryName)); err != nil {
 				return err
 			}
 			gns.DirectoryNames = append(gns.DirectoryNames, rdn)
@@ -256,9 +258,13 @@ func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 		}
 	}
 	for _, val := range gns.DirectoryNames {
-		if err := addMarshalable(nameTypeDirectoryName, val); err != nil {
+		// directoryName is [4] Name, and Name is a CHOICE, so RFC 5280
+		// section 4.2.1.6 (per X.680) requires the tag to be explicit.
+		fullBytes, err := asn1.MarshalWithParams(val, fmt.Sprintf("explicit,tag:%d", nameTypeDirectoryName))
+		if err != nil {
 			return pkix.Extension{}, err
 		}
+		rawValues = append(rawValues, asn1.RawValue{FullBytes: fullBytes})
 	}
 	for _, val := range gns.EDIPartyNames {
 		if err := addMarshalable(nameTypeEDIPartyName, val); err != nil {
