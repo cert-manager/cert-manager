@@ -372,9 +372,6 @@ func httpClientForVcert(options *httpClientForVcertOptions) *http.Client {
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-			// Note: This DualStack setting is copied from vcert but
-			// deviates from the http.DefaultTransport in Go's stdlib.
-			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,

@@ -674,8 +674,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
 				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
-					KeyID:        "test",
-					Key:          validSecretKeyRef,
+					KeyID: "test",
+					Key:   validSecretKeyRef,
+					//nolint:staticcheck // SA1019 setting the deprecated eab.KeyAlgorithm field is intentional: this test asserts the deprecation warning.
 					KeyAlgorithm: cmacme.HS384,
 				},
 				Solvers: []cmacme.ACMEChallengeSolver{
