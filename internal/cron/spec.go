@@ -59,6 +59,10 @@ var (
 const (
 	// Set the top bit if a star was included in the expression.
 	starBit = 1 << 63
+
+	// nextSearchLimitYears is how far Next will search for a matching time.
+	// Must cover the 8-year gap between leap days around a non-leap century year.
+	nextSearchLimitYears = 9
 )
 
 // Next returns the next time this schedule is activated, greater than the given
@@ -94,8 +98,10 @@ func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// This flag indicates whether a field has been incremented.
 	added := false
 
-	// If no time is found within five years, return zero.
-	yearLimit := t.Year() + 5
+	// If no time is found within this horizon, return zero.
+	// Ordinary schedules resolve in well under five years, but Feb 29 can be
+	// eight years apart around a non-leap century year (2096-03-01 → 2104-02-29).
+	yearLimit := t.Year() + nextSearchLimitYears
 
 WRAP:
 	if t.Year() > yearLimit {
