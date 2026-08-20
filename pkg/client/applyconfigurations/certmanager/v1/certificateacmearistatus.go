@@ -26,15 +26,20 @@ import (
 // with apply.
 type CertificateACMEARIStatusApplyConfiguration struct {
 	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+	//
 	SuggestedWindow *ACMERenewalWindowApplyConfiguration `json:"suggestedWindow,omitempty"`
 	// ExplanationURL is a human-readable URL that may explain why the suggested window
 	// has its current value.
+	//
 	ExplanationURL *string `json:"explanationURL,omitempty"`
 	// LastChecked is the time at which the ACME server was last checked for renewal information.
+	//
 	LastChecked *metav1.Time `json:"lastChecked,omitempty"`
 	// NextCheck is the time at which the ACME server will next be checked for renewal information.
+	//
 	NextCheck *metav1.Time `json:"nextCheck,omitempty"`
 	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
+	//
 	LastError *string `json:"lastError,omitempty"`
 }
 

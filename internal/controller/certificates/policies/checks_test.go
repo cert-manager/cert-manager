@@ -622,13 +622,11 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 	}{
 		"if there are no cert-manager annotations and the certificate data is nil, should return false": {
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:labels": {
 								"f:controller.cert-manager.io/fao": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -636,8 +634,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 		},
 		"if optional cert-manager annotations are present with no certificate data, should return false": {
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:labels": {
 								"f:controller.cert-manager.io/fao": {}
 							},
@@ -649,8 +646,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 								"f:cert-manager.io/issuer-kind": {},
 								"f:cert-manager.io/issuer-group": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -658,8 +654,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 		},
 		"if cert-manager annotations are present with certificate data, should return false": {
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:labels": {
 								"f:controller.cert-manager.io/fao": {}
 							},
@@ -675,8 +670,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 								"f:cert-manager.io/ip-sans": {},
 								"f:cert-manager.io/uri-sans": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
 			expReason:    "",
@@ -685,8 +679,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 		},
 		"if required and optional cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:labels": {
 								"f:controller.cert-manager.io/fao": {}
 							},
@@ -700,8 +693,7 @@ func Test_SecretManagedLabelsAndAnnotationsManagedFieldsMismatch(t *testing.T) {
 								"f:cert-manager.io/uri-sans": {},
 								"f:cert-manager.io/ip-sans": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretManagedMetadataMismatch,
 			expMessage:   "Secret has these extra Annotations: [cert-manager.io/ip-sans cert-manager.io/uri-sans]",
@@ -863,16 +855,14 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 		"if template is nil, managed fields is not nil but not managed by cert-manager, should return false": {
 			tmpl: nil,
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:bar": {}
 							},
 							"f:labels": {
 								"f:123": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -898,16 +888,14 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 		"if template is nil but managed fields is not nil, should return true": {
 			tmpl: nil,
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo": {}
 							},
 							"f:labels": {
 								"f:abc": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret has these extra Labels: [abc]",
@@ -919,8 +907,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo3": {}
@@ -929,8 +916,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret is missing these Template Annotations: [foo2 foo4]",
@@ -942,8 +928,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -952,8 +937,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:erg": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret is missing these Template Labels: [def ghi]",
@@ -965,8 +949,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -975,8 +958,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -988,8 +970,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {},
@@ -1000,8 +981,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret has these extra Annotations: [foo3 foo4]",
@@ -1013,8 +993,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -1025,8 +1004,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:ghi": {},
 								"f:jkl": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret has these extra Labels: [ghi jkl]",
@@ -1038,8 +1016,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -1048,8 +1025,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret is missing these Template Annotations: [foo3]",
@@ -1061,8 +1037,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{{
-				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -1071,8 +1046,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Secret is missing these Template Labels: [ghi]",
@@ -1084,15 +1058,12 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:labels": {
 								"f:ghi": {}
 							}
-						}}`),
-				}},
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+						}}`)},
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo3": {}
@@ -1101,11 +1072,9 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-				}},
+						}}`)},
 				{Manager: fieldManager,
-					FieldsV1: &metav1.FieldsV1{
-						Raw: []byte(`{"f:metadata": {
+					FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {}
@@ -1114,8 +1083,7 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 								"f:abc": {},
 								"f:def": {}
 							}
-						}}`),
-					}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -1126,16 +1094,14 @@ func Test_SecretSecretTemplateManagedFieldsMismatch(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 			},
 			secretManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-					Raw: []byte(`{"f:metadata": {
+				{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:foo1": {},
 								"f:foo2": {},
 								"f:cert-manager.io/foo1": {},
 								"f:cert-manager.io/foo2": {}
 							}
-						}}`),
-				}},
+						}}`)},
 			},
 			expReason:    "",
 			expMessage:   "",
@@ -1492,13 +1458,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1515,13 +1479,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1538,14 +1500,12 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1562,13 +1522,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1585,13 +1543,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1608,14 +1564,12 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1634,13 +1588,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1659,13 +1611,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1685,14 +1635,12 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1711,13 +1659,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1736,13 +1682,11 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1762,14 +1706,12 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1789,20 +1731,16 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {}
-							}}`),
-							}},
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							}}`)},
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1822,22 +1760,18 @@ func Test_SecretAdditionalOutputFormatsManagedFieldsMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:tls-combined.pem": {},
 								"f:key.der": {}
-							}}`),
-							}},
-							{Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							}}`)},
+							{Manager: "not-cert-manager", FieldsV1: metav1.NewFieldsV1(`
 							{"f:data": {
 								".": {},
 								"f:key.der": {},
 								"f:tls-combined.pem": {}
-							}}`),
-							}},
+							}}`)},
 						},
 					},
 				},
@@ -1889,13 +1823,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},
@@ -1911,13 +1843,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 								{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},
@@ -1933,13 +1863,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 								{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},
@@ -1966,13 +1894,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 								{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"4c71e68f-5271-4b8d-9df5-5eb71d130d7d\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},
@@ -1988,13 +1914,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 								{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},
@@ -2010,13 +1934,11 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Secret: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						ManagedFields: []metav1.ManagedFieldsEntry{
-							{Manager: "not-cert-manager-test", FieldsV1: &metav1.FieldsV1{
-								Raw: []byte(`
+							{Manager: "not-cert-manager-test", FieldsV1: metav1.NewFieldsV1(`
 								{"f:metadata": {
 								"f:ownerReferences": {
 								"k:{\"uid\":\"uid-123\"}": {}
-							}}}`),
-							}},
+							}}}`)},
 						},
 					},
 				},

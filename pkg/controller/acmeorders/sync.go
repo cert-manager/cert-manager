@@ -266,8 +266,7 @@ func isRetryableError(err error) bool {
 			return false
 		}
 	}
-	var acmeErr *acmeapi.Error
-	if errors.As(err, &acmeErr) {
+	if acmeErr, ok := errors.AsType[*acmeapi.Error](err); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			return false
 		}
@@ -850,8 +849,7 @@ func isARIReplacesRejection(err error) bool {
 	if errors.Is(err, acmeapi.ErrCADoesNotSupportARI) {
 		return true
 	}
-	var ae *acmeapi.Error
-	if errors.As(err, &ae) {
+	if ae, ok := errors.AsType[*acmeapi.Error](err); ok {
 		if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
 			return true
 		}

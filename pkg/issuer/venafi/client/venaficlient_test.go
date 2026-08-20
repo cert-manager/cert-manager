@@ -642,9 +642,8 @@ func TestAuthFailedError_ErrorAndUnwrap(t *testing.T) {
 		t.Error("errors.Is should find underlying error through Unwrap chain")
 	}
 
-	var authErr AuthFailedError
 	wrapped := fmt.Errorf("client.VerifyCredentials: %w", err)
-	if !errors.As(wrapped, &authErr) {
+	if _, ok := errors.AsType[AuthFailedError](wrapped); !ok {
 		t.Error("errors.As should find AuthFailedError through wrapping chain")
 	}
 }

@@ -33,8 +33,7 @@ import (
 func (v *Venafi) Setup(ctx context.Context, issuer cmapi.GenericIssuer) (err error) {
 	defer func() {
 		if err != nil {
-			var authErr venaficlient.AuthFailedError
-			if errors.As(err, &authErr) {
+			if authErr, ok := errors.AsType[venaficlient.AuthFailedError](err); ok {
 				msg := fmt.Sprintf("OAuth token request failed: %v", authErr.Err)
 				apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "AuthFailed", msg)
 				err = errors.New(msg)
