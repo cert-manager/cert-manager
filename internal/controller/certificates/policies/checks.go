@@ -36,6 +36,7 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -159,15 +160,14 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 // SecretIssuerAnnotationsMismatch - When the issuer annotations are defined,
 // it must match the issuer ref.
 func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
-	name, ok1 := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
-	kind, ok2 := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
-	group, ok3 := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
-	if (ok1 || ok2 || ok3) && // only check if an annotation is present
-		name != input.Certificate.Spec.IssuerRef.Name ||
-		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
-		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
+	if !apiutil.SecretIssuerAnnotationsMatch(input.Secret, input.Certificate.Spec.IssuerRef) {
+		name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
+		kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
+		group := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
+
 		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %q", formatIssuerRef(name, kind, group)), true
 	}
+
 	return "", "", false
 }
 
@@ -347,31 +347,6 @@ func formatIssuerRef(name, kind, group string) string {
 		kind = "Issuer"
 	}
 	return fmt.Sprintf("%s.%s/%s", kind, group, name)
-}
-
-const (
-	defaultIssuerKind  = "Issuer"
-	defaultIssuerGroup = "cert-manager.io"
-)
-
-func issuerKindsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerKind
-	}
-	if r == "" {
-		r = defaultIssuerKind
-	}
-	return l == r
-}
-
-func issuerGroupsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerGroup
-	}
-	if r == "" {
-		r = defaultIssuerGroup
-	}
-	return l == r
 }
 
 // SecretSecretTemplateMismatch will inspect the given Secret's Annotations

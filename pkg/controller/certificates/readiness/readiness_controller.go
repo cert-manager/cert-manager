@@ -224,7 +224,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
 		var renewalTime *metav1.Time
-		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
+		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -280,13 +280,20 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 	return now.Add(d + jit)
 }
 
-func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, key types.NamespacedName) *metav1.Time {
+func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, secret *corev1.Secret, key types.NamespacedName) *metav1.Time {
 	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
 	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
 		return nil
 	}
 
 	if !acmeutil.ARIEnabledForIssuer(genericIssuer) {
+		crt.Status.ACME = nil
+		return nil
+	}
+
+	if !apiutil.SecretIssuerAnnotationsMatch(secret, crt.Spec.IssuerRef) {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, policies.ARIError, "Secret %s/%s does not have matching issuer annotations for Certificate %s/%s", secret.Namespace, secret.Name, crt.Namespace, crt.Name)
+
 		crt.Status.ACME = nil
 		return nil
 	}

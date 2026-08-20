@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -849,10 +850,19 @@ func isARIReplacesRejection(err error) bool {
 	if errors.Is(err, acmeapi.ErrCADoesNotSupportARI) {
 		return true
 	}
-	if ae, ok := errors.AsType[*acmeapi.Error](err); ok {
-		if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
-			return true
-		}
+
+	var ae *acmeapi.Error
+
+	if !errors.As(err, &ae) {
+		return false
+	}
+
+	if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
+		return true
+	}
+
+	if ae.ProblemType == "urn:ietf:params:acme:error:malformed" && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
+		return true
 	}
 	return false
 }
