@@ -44,6 +44,8 @@ helm_chart_sources := $(shell find $(helm_chart_source_dir) -maxdepth 1 -type f)
 helm_chart_archive := $(bin_dir)/scratch/helm/$(helm_chart_name)-$(helm_chart_version).tgz
 helm_digest_path := $(bin_dir)/scratch/helm/$(helm_chart_name)-$(helm_chart_version).digests
 helm_digest = $(shell head -1 $(helm_digest_path) 2> /dev/null)
+HELM_IGNORE_FIELDS ?= ^Pulled:|^Digest:|app.kubernetes.io/version|helm.sh/chart|chart:|appVersion:|managed-by:|meta.helm.sh/release-namespace
+helm_chart_old_version ?=
 
 $(bin_dir)/scratch/helm:
 	@mkdir -p $@
@@ -195,3 +197,19 @@ verify-helm-kubeconform: $(helm_chart_archive) | $(NEEDS_KUBECONFORM)
 		-strict
 
 shared_verify_targets_dirty += verify-helm-kubeconform
+
+## Diff the locally built Helm chart against a released version,
+## ignoring version-label noise. Set helm_chart_old_version to the
+## previously released chart version to compare against.
+## @category [shared] Helm Chart
+.PHONY: helm-diff
+helm-diff: $(helm_chart_archive) | $(NEEDS_HELM)
+	@if [ -z "$(helm_chart_old_version)" ]; then \
+		echo "Usage: make helm-diff helm_chart_old_version=<version>"; \
+		exit 1; \
+	fi
+	@$(HELM) show chart "oci://$(helm_chart_image_registry)$(helm_chart_name)" --version "$(helm_chart_old_version)" > /dev/null
+	@diff -u \
+		<($(HELM) template "oci://$(helm_chart_image_registry)$(helm_chart_name)" --version "$(helm_chart_old_version)" $(INSTALL_OPTIONS) | grep -vE -- '$(HELM_IGNORE_FIELDS)') \
+		<($(HELM) template "$(helm_chart_archive)" $(INSTALL_OPTIONS) | grep -vE -- '$(HELM_IGNORE_FIELDS)') \
+		|| [ $$? -eq 1 ]
