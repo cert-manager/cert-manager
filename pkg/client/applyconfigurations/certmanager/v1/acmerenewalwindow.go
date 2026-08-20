@@ -26,8 +26,10 @@ import (
 // with apply.
 type ACMERenewalWindowApplyConfiguration struct {
 	// Start is the start of the suggested renewal window.
+	//
 	Start *metav1.Time `json:"start,omitempty"`
 	// End is the end of the suggested renewal window.
+	//
 	End *metav1.Time `json:"end,omitempty"`
 }
 
