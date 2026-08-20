@@ -18,42 +18,13 @@ package pki
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
-	"math/big"
 	"strings"
 	"testing"
-	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
-
-// generateSelfSignedCertBytesPEM generates a minimal self-signed certificate
-// and returns its PEM encoding, for use in tests that need valid CERTIFICATE
-// PEM blocks.
-func generateSelfSignedCertBytesPEM() ([]byte, error) {
-	key, err := rsa.GenerateKey(rand.Reader, MinRSAKeySize)
-	if err != nil {
-		return nil, err
-	}
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "test"},
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(time.Hour),
-	}
-
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
-	if err != nil {
-		return nil, err
-	}
-
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}), nil
-}
 
 func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
 	cert := buildCertificateWithKeyParams(keyAlgo, keySize)
@@ -74,26 +45,20 @@ func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 }
 
 func TestDecodeX509CertificateSetBytes(t *testing.T) {
-	certBytes, err := generateSelfSignedCertBytesPEM()
-	if err != nil {
-		t.Fatalf("error generating cert bytes: %s", err)
-	}
+	certBytes := mustCreateBundle(t, nil, "test").pem
 
-	keyBytes, err := generatePrivateKeyBytes(v1.RSAKeyAlgorithm, MinRSAKeySize)
-	if err != nil {
-		t.Fatalf("error generating key bytes: %s", err)
-	}
+	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: []byte("dummy")})
 
 	// A bundle containing a valid certificate followed by a non-certificate
 	// PEM block, e.g. a combined cert+key file.
 	certAndKeyBytes := append(append([]byte{}, certBytes...), keyBytes...)
 
-	_, err = DecodeX509CertificateSetBytes(certAndKeyBytes)
+	_, err := DecodeX509CertificateSetBytes(certAndKeyBytes)
 	if err == nil {
 		t.Fatal("expected an error decoding a bundle containing a non-certificate PEM block, got none")
 	}
 
-	expectErrStr := `expected only "CERTIFICATE" blocks, found "RSA PRIVATE KEY"`
+	expectErrStr := `expected a "CERTIFICATE" block, found "RSA PRIVATE KEY"`
 	if !strings.Contains(err.Error(), expectErrStr) {
 		t.Errorf("expected err string to match: '%s', got: '%s'", expectErrStr, err.Error())
 	}
