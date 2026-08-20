@@ -106,13 +106,14 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 // is escaped with quotes if necessary
 func JoinWithEscapeCSV(in []string) (string, error) {
 	for _, v := range in {
-		if strings.ContainsRune(v, '\r') {
-			// encoding/csv's reader silently normalises "\r\n" to "\n" inside
-			// quoted fields, so a value containing a carriage return cannot
-			// round-trip through SplitWithEscapeCSV without being silently
-			// altered. Reject it here rather than writing a value that reads
-			// back different from what was given.
-			return "", fmt.Errorf("value %q contains a carriage return, which cannot round-trip through CSV encoding", v)
+		if strings.Contains(v, "\r\n") {
+			// encoding/csv's reader silently normalises "\r\n" to "\n" inside a
+			// quoted field, so a value containing that sequence cannot round-trip
+			// through SplitWithEscapeCSV without being altered. Reject it here
+			// rather than writing a value that reads back different from what was
+			// given. A carriage return on its own does survive the round trip, so
+			// only the pair is rejected.
+			return "", fmt.Errorf("value %q contains a CRLF sequence, which cannot round-trip through CSV encoding", v)
 		}
 	}
 

@@ -263,6 +263,7 @@ func TestJoinSplitWithEscapeCSVRoundTrip(t *testing.T) {
 		{desc: "multiple values", in: []string{"example.com", "other.example.com"}},
 		{desc: "value containing a comma", in: []string{"10 Downing Street, Westminster", "Manchester"}},
 		{desc: "single empty value", in: []string{""}},
+		{desc: "value containing a lone carriage return", in: []string{"line1\rline2"}},
 	}
 
 	for _, test := range tests {
@@ -284,9 +285,9 @@ func TestJoinSplitWithEscapeCSVRoundTrip(t *testing.T) {
 	}
 }
 
-func TestJoinWithEscapeCSVRejectsCarriageReturn(t *testing.T) {
+func TestJoinWithEscapeCSVRejectsCRLF(t *testing.T) {
 	_, err := JoinWithEscapeCSV([]string{"line1\r\nline2"})
 	if err == nil {
-		t.Fatal("JoinWithEscapeCSV with a value containing \\r did not return an error, so it would silently corrupt on round trip")
+		t.Fatal("JoinWithEscapeCSV with a value containing \\r\\n did not return an error, so it would silently corrupt on round trip")
 	}
 }
