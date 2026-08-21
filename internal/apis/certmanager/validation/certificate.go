@@ -213,17 +213,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	}
 
 	if crt.NameConstraints != nil {
-		if !utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints) {
-			el = append(el, field.Forbidden(fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"))
-		} else {
-			if !crt.IsCA {
-				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "isCa should be true when nameConstraints is set"))
-			}
-
-			if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
-				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "either permitted or excluded must be set"))
-			}
-		}
+		el = append(el, validateNameConstraints(crt, fldPath)...)
 	}
 
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
@@ -400,6 +390,42 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 		}
 	}
 
+	return el
+}
+
+func validateNameConstraints(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	nameConstraintsPath := fldPath.Child("nameConstraints")
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints) {
+		return field.ErrorList{field.Forbidden(nameConstraintsPath, "feature gate NameConstraints must be enabled")}
+	}
+
+	el := field.ErrorList{}
+
+	if !crt.IsCA {
+		el = append(el, field.Invalid(nameConstraintsPath, crt.NameConstraints, "isCA should be true when nameConstraints is set"))
+	}
+
+	if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
+		el = append(el, field.Invalid(nameConstraintsPath, crt.NameConstraints, "either permitted or excluded must be set"))
+	}
+
+	el = append(el, validateNameConstraintItem(crt.NameConstraints.Permitted, nameConstraintsPath.Child("permitted"))...)
+	el = append(el, validateNameConstraintItem(crt.NameConstraints.Excluded, nameConstraintsPath.Child("excluded"))...)
+
+	return el
+}
+
+func validateNameConstraintItem(item *internalcmapi.NameConstraintItem, fldPath *field.Path) field.ErrorList {
+	if item == nil {
+		return nil
+	}
+
+	el := field.ErrorList{}
+	for i, cidr := range item.IPRanges {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("ipRanges").Index(i), cidr, "invalid CIDR address"))
+		}
+	}
 	return el
 }
 

@@ -748,6 +748,10 @@ func TestValidateCertificate(t *testing.T) {
 					NameConstraints: &internalcmapi.NameConstraints{
 						Permitted: &internalcmapi.NameConstraintItem{
 							DNSDomains: []string{"example.com"},
+							// The invalid CIDR must not be reported: the feature
+							// gate check short-circuits all other nameConstraints
+							// validation.
+							IPRanges: []string{"10.0.0.0"},
 						},
 					},
 					IssuerRef: validIssuerRef,
@@ -758,6 +762,54 @@ func TestValidateCertificate(t *testing.T) {
 				field.Forbidden(
 					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
+		},
+		"valid with name constraints ipRanges": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"10.0.0.0/8", "192.168.0.0/16", "2001:db8::/32"},
+						},
+						Excluded: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"172.16.0.0/12", "fd00::/8"},
+						},
+					},
+					IssuerRef: validIssuerRef,
+				},
+			},
+			a:                             someAdmissionRequest,
+			nameConstraintsFeatureEnabled: true,
+		},
+		"invalid with name constraints ipRanges": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"10.0.0.0", "10.0.0.0/8", "not-a-cidr"},
+						},
+						Excluded: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"2001:db8::/32", "192.168.0.1"},
+						},
+					},
+					IssuerRef: validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("nameConstraints", "permitted", "ipRanges").Index(0), "10.0.0.0", "invalid CIDR address"),
+				field.Invalid(
+					fldPath.Child("nameConstraints", "permitted", "ipRanges").Index(2), "not-a-cidr", "invalid CIDR address"),
+				field.Invalid(
+					fldPath.Child("nameConstraints", "excluded", "ipRanges").Index(1), "192.168.0.1", "invalid CIDR address"),
+			},
+			nameConstraintsFeatureEnabled: true,
 		},
 		"signature algorithm SHA+RSA allowed for empty key (RSA)": {
 			cfg: &internalcmapi.Certificate{
