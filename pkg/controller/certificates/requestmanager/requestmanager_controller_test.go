@@ -744,7 +744,7 @@ func TestProcessItem(t *testing.T) {
 				},
 			),
 			expectedEvents: []string{
-				`Warning RequestFailed Failed to generate CSR: invalid CIDR address: 10.0.0.0`,
+				`Warning RequestFailed Failed to generate CSR: invalid CIDR address: 10.0.0.0 - will not retry`,
 			},
 		},
 	}

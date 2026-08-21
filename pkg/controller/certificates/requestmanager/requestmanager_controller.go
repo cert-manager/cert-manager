@@ -376,7 +376,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	)
 	if err != nil {
 		log.Error(err, "Failed to generate CSR - will not retry")
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to generate CSR: %s", err.Error())
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to generate CSR: %s - will not retry", err.Error())
 		return nil
 	}
 	csrDER, err := pki.EncodeCSR(x509CSR, pk)
