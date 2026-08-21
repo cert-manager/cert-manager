@@ -193,17 +193,22 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		r.pendingChanges.put(action, fqdn, value, changeID)
 	}
 
-	return util.WaitFor(r.pollTimeout, r.pollInterval, func() (bool, error) {
+	// util.WaitFor has no way to stop early with an error, so a fatal poll
+	// result is smuggled out through vanishedErr.
+	var vanishedErr error
+	waitErr := util.WaitFor(r.pollTimeout, r.pollInterval, func() (bool, error) {
 		reqParams := &route53.GetChangeInput{
 			Id: aws.String(changeID),
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
-			// The remembered change no longer exists, so forget it and let
-			// the next attempt submit a new change.
+			// The remembered change no longer exists, so forget it, stop
+			// waiting, and let the next attempt submit a new change.
 			var apiErr *route53types.NoSuchChange
 			if errors.As(err, &apiErr) {
 				r.pendingChanges.delete(fqdn, value)
+				vanishedErr = fmt.Errorf("failed to query Route 53 change status: %w", err)
+				return true, nil
 			}
 			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
@@ -213,6 +218,10 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		}
 		return false, nil
 	})
+	if vanishedErr != nil {
+		return vanishedErr
+	}
+	return waitErr
 }
 
 func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string, error) {

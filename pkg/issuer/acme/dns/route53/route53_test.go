@@ -356,7 +356,10 @@ func (s *pendingChangeServer) changeCallCount() int {
 // TestRoute53PresentResumesPendingChange demonstrates that when Present times
 // out waiting for a submitted record change to reach the INSYNC status, a
 // retried Present polls GetChange for the original change instead of
-// submitting a duplicate ChangeResourceRecordSets request.
+// submitting a duplicate ChangeResourceRecordSets request. The retry uses a
+// new DNSProvider sharing the same PendingChangesCache, because in production
+// a new provider is constructed for every challenge reconcile and only the
+// cache is shared between them.
 // See https://github.com/cert-manager/cert-manager/issues/9066
 func TestRoute53PresentResumesPendingChange(t *testing.T) {
 	_, ctx := ktesting.NewTestContext(t)
@@ -372,11 +375,15 @@ func TestRoute53PresentResumesPendingChange(t *testing.T) {
 
 	ts.setGetChange(MockResponse{StatusCode: 200, Body: GetChangeResponse})
 
-	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	retryProvider, err := makeRoute53Provider(ts.Server)
+	require.NoError(t, err)
+	retryProvider.pendingChanges = provider.pendingChanges
+
+	err = retryProvider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
 	assert.NoError(t, err, "Expected the retried Present to succeed once the change is INSYNC")
 	assert.Equal(t, 1, ts.changeCallCount(), "Expected the retried Present to resume the original change, not submit a new one")
 
-	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	err = retryProvider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ts.changeCallCount(), "Expected a new change to be submitted once the original reached INSYNC")
 }
@@ -425,6 +432,7 @@ func TestRoute53PresentForgetsVanishedChange(t *testing.T) {
 
 	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
 	assert.ErrorContains(t, err, "NoSuchChange", "Expected the retried Present to fail while polling the vanished change")
+	assert.NotContains(t, err.Error(), "Time limit exceeded", "Expected Present to stop polling as soon as the change was reported missing")
 	assert.Equal(t, 1, ts.changeCallCount())
 
 	ts.setGetChange(MockResponse{StatusCode: 200, Body: GetChangeResponse})
