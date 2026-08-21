@@ -204,8 +204,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 		if err != nil {
 			// The remembered change no longer exists, so forget it, stop
 			// waiting, and let the next attempt submit a new change.
-			var apiErr *route53types.NoSuchChange
-			if errors.As(err, &apiErr) {
+			if _, ok := errors.AsType[*route53types.NoSuchChange](err); ok {
 				r.pendingChanges.delete(fqdn, value)
 				vanishedErr = fmt.Errorf("failed to query Route 53 change status: %w", err)
 				return true, nil
