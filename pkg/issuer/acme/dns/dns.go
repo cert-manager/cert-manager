@@ -518,7 +518,7 @@ func (s *Solver) prepareChallengeRequest(ctx context.Context, ch *cmacme.Challen
 		Config:                  &apiextensionsv1.JSON{Raw: b},
 	}
 
-	return webhookSolver, req, nil
+	return webhookSolver, req.WithContext(ctx), nil
 }
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
