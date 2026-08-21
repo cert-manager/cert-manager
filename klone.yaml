@@ -43,9 +43,9 @@ targets:
       repo_hash: ca8dd5c9c12b5d9754bb7c3c0425ad3811b9d17c
       repo_path: modules/repository-base
     - folder_name: tools
-      repo_url: https://github.com/cert-manager/makefile-modules.git
-      repo_ref: main
-      repo_hash: ca8dd5c9c12b5d9754bb7c3c0425ad3811b9d17c
+      repo_url: https://github.com/wallrj/makefile-modules.git
+      repo_ref: tools-cache-verify-at-use
+      repo_hash: 4c9617be37ef6e249f40356d1497b90c427c44cf
       repo_path: modules/tools
   make/_shared_new:
     - folder_name: helm
