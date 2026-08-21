@@ -87,7 +87,7 @@ func (r *REST) callSolver(ctx context.Context, req v1alpha1.ChallengeRequest) (v
 	default:
 		return v1alpha1.ChallengeResponse{}, fmt.Errorf("unknown action type %q", req.Action)
 	}
-	err := fn((&req).WithContext(ctx))
+	err := fn(req.WithContext(ctx))
 	if err == nil {
 		return v1alpha1.ChallengeResponse{
 			UID:     req.UID,

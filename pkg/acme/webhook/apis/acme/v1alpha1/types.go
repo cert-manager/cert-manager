@@ -34,15 +34,18 @@ type challengeRequestContext struct {
 	ctx context.Context
 }
 
-func (c *challengeRequestContext) Deadline() (deadline time.Time, ok bool) { return c.ctx.Deadline() }
-func (c *challengeRequestContext) Done() <-chan struct{}                   { return c.ctx.Done() }
-func (c *challengeRequestContext) Err() error                              { return c.ctx.Err() }
-func (c *challengeRequestContext) Value(key any) any                       { return c.ctx.Value(key) }
-func (c *challengeRequestContext) DeepCopyInto(_ *challengeRequestContext) {
-
-}
+func (c *challengeRequestContext) Deadline() (deadline time.Time, ok bool)   { return c.ctx.Deadline() }
+func (c *challengeRequestContext) Done() <-chan struct{}                     { return c.ctx.Done() }
+func (c *challengeRequestContext) Err() error                                { return c.ctx.Err() }
+func (c *challengeRequestContext) Value(key any) any                         { return c.ctx.Value(key) }
+func (c *challengeRequestContext) DeepCopyInto(out *challengeRequestContext) { *out = *c }
 func (c *challengeRequestContext) DeepCopy() *challengeRequestContext {
-	return nil
+	if c == nil {
+		return nil
+	}
+	out := new(challengeRequestContext)
+	c.DeepCopyInto(out)
+	return out
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -168,8 +171,13 @@ type ChallengeResponse struct {
 }
 
 func (c *ChallengeRequest) WithContext(ctx context.Context) *ChallengeRequest {
-	c.ctx = &challengeRequestContext{ctx: ctx}
-	return c
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	c2 := new(ChallengeRequest)
+	*c2 = *c
+	c2.ctx = &challengeRequestContext{ctx: ctx}
+	return c2
 }
 
 func (c *ChallengeRequest) Context() context.Context {
