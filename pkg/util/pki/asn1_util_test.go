@@ -64,6 +64,16 @@ func TestParseObjectIdentifier(t *testing.T) {
 			expectedOid: nil,
 			expectedErr: errors.New("strconv.Atoi: parsing \"test\": invalid syntax"),
 		},
+		{
+			oidString:   "1.2.-840.113549",
+			expectedOid: nil,
+			expectedErr: errors.New("invalid OBJECT IDENTIFIER arc \"-840\": must not be negative"),
+		},
+		{
+			oidString:   "-1.2.3",
+			expectedOid: nil,
+			expectedErr: errors.New("invalid OBJECT IDENTIFIER arc \"-1\": must not be negative"),
+		},
 	}
 
 	for _, tc := range testCases {
