@@ -46,6 +46,7 @@ import (
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -53,7 +54,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error)
+type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer, canUseAmbientCredentials bool, _ *metrics.Metrics) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -109,19 +110,22 @@ type Vault struct {
 	// header is provided
 	// See https://developer.hashicorp.com/vault/docs/enterprise/namespaces#root-only-api-paths
 	clientSys Client
+
+	metrics *metrics.Metrics
 }
 
 // New returns a new Vault instance with the given namespace, issuer and
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error) {
+func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool, metrics *metrics.Metrics) (Interface, error) {
 	v := &Vault{
 		createToken:              createTokenFn(namespace),
 		secretsLister:            secretsLister,
 		namespace:                namespace,
 		issuer:                   issuer,
 		canUseAmbientCredentials: canUseAmbientCredentials,
+		metrics:                  metrics,
 	}
 
 	cfg, err := v.newConfig()
@@ -185,7 +189,11 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
 	}
 
+	start := time.Now()
 	resp, err := v.client.RawRequest(request)
+	if v.metrics != nil {
+		v.metrics.ObserveVaultRequestDuration(time.Since(start), "sign")
+	}
 	if resp != nil {
 		defer resp.Body.Close()
 	}
