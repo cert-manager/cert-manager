@@ -451,6 +451,20 @@ type CertificateAdditionalOutputFormat struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
 	Type CertificateOutputFormatType `json:"type"`
+
+	// Keys defines the ordered list of keys to concatenate in the combined output.
+	// Defaults to ["tls.key", "tls.crt"] when Type is CombinedPEM.
+	// Supported keys are "tls.key", "tls.crt", and "ca.crt".
+	//
+	// Note: Including "ca.crt" has several important caveats:
+	// 1. The CA certificate is not guaranteed to exist in the issued Secret (e.g. this depends on the Issuer, and changing issuers may cause it to disappear).
+	// 2. The CA certificate in the Secret should NEVER be used for trust verification purposes.
+	// 3. It is primarily provided for software requiring a full certificate chain bundled into a single file.
+	//
+	// Only supported when Type is CombinedPEM.
+	// +optional
+	// +listType=atomic
+	Keys []string `json:"keys,omitempty"`
 }
 
 // X509Subject Full X509 name specification

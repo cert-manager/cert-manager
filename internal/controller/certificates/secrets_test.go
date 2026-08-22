@@ -132,3 +132,42 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 		})
 	}
 }
+
+func Test_OutputFormatCombinedPEM(t *testing.T) {
+	privateKey := []byte("PRIVATE KEY")
+	certificate := []byte("CERTIFICATE")
+	ca := []byte("CA CERTIFICATE")
+
+	tests := map[string]struct {
+		keys     []string
+		expected []byte
+	}{
+		"default order when keys is empty": {
+			keys:     nil,
+			expected: []byte("PRIVATE KEY\nCERTIFICATE"),
+		},
+		"cert then key order": {
+			keys:     []string{"tls.crt", "tls.key"},
+			expected: []byte("CERTIFICATE\nPRIVATE KEY"),
+		},
+		"cert then key then ca order": {
+			keys:     []string{"tls.crt", "tls.key", "ca.crt"},
+			expected: []byte("CERTIFICATE\nPRIVATE KEY\nCA CERTIFICATE"),
+		},
+		"key only": {
+			keys:     []string{"tls.key"},
+			expected: []byte("PRIVATE KEY"),
+		},
+		"cert only": {
+			keys:     []string{"tls.crt"},
+			expected: []byte("CERTIFICATE"),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := OutputFormatCombinedPEM(privateKey, certificate, ca, test.keys...)
+			assert.Equal(t, string(test.expected), string(got))
+		})
+	}
+}
