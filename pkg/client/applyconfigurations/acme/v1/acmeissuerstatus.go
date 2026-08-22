@@ -32,6 +32,11 @@ type ACMEIssuerStatusApplyConfiguration struct {
 	// registered ACME account, in order to track changes made to registered account
 	// associated with the Issuer
 	LastPrivateKeyHash *string `json:"lastPrivateKeyHash,omitempty"`
+	// LastRegisteredServer is the ACME server URL that was used when the account
+	// was last registered. This is used to detect changes to the server URL,
+	// including path changes (e.g., different policy identifier), which should
+	// trigger account re-registration.
+	LastRegisteredServer *string `json:"lastRegisteredServer,omitempty"`
 }
 
 // ACMEIssuerStatusApplyConfiguration constructs a declarative configuration of the ACMEIssuerStatus type for use with
@@ -61,5 +66,13 @@ func (b *ACMEIssuerStatusApplyConfiguration) WithLastRegisteredEmail(value strin
 // If called multiple times, the LastPrivateKeyHash field is set to the value of the last call.
 func (b *ACMEIssuerStatusApplyConfiguration) WithLastPrivateKeyHash(value string) *ACMEIssuerStatusApplyConfiguration {
 	b.LastPrivateKeyHash = &value
+	return b
+}
+
+// WithLastRegisteredServer sets the LastRegisteredServer field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LastRegisteredServer field is set to the value of the last call.
+func (b *ACMEIssuerStatusApplyConfiguration) WithLastRegisteredServer(value string) *ACMEIssuerStatusApplyConfiguration {
+	b.LastRegisteredServer = &value
 	return b
 }

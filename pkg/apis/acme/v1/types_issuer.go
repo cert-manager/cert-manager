@@ -923,6 +923,13 @@ type ACMEIssuerStatus struct {
 	// associated with the Issuer
 	// +optional
 	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
+
+	// LastRegisteredServer is the ACME server URL that was used when the account
+	// was last registered. This is used to detect changes to the server URL,
+	// including path changes (e.g., different policy identifier), which should
+	// trigger account re-registration.
+	// +optional
+	LastRegisteredServer string `json:"lastRegisteredServer,omitempty"`
 }
 
 // ACMERenewalInformationSource determines whether to fetch ACME Renewal Information

@@ -759,6 +759,12 @@ type ACMEIssuerStatus struct {
 	// registered ACME account, in order to track changes made to registered account
 	// associated with the Issuer
 	LastPrivateKeyHash string
+
+	// LastRegisteredServer is the ACME server URL that was used when the account
+	// was last registered. This is used to detect changes to the server URL,
+	// including path changes (e.g., different policy identifier), which should
+	// trigger account re-registration.
+	LastRegisteredServer string
 }
 
 // ACMERenewalInformationSource determines whether to enable fetching ACME Renewal Information
