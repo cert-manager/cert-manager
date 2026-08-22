@@ -1,0 +1,226 @@
+suite: webhook - Enabled Flag
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render webhook deployment by default
+    templates:
+      - templates/webhook-deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip webhook deployment when disabled
+    templates:
+      - templates/webhook-deployment.yaml
+    set:
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render mutating webhook by default
+    templates:
+      - templates/webhook-mutating-webhook.yaml
+    asserts:
+      - isKind:
+          of: MutatingWebhookConfiguration
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip mutating webhook when disabled
+    templates:
+      - templates/webhook-mutating-webhook.yaml
+    set:
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render validating webhook by default
+    templates:
+      - templates/webhook-validating-webhook.yaml
+    asserts:
+      - isKind:
+          of: ValidatingWebhookConfiguration
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip validating webhook when disabled
+    templates:
+      - templates/webhook-validating-webhook.yaml
+    set:
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook service by default
+    templates:
+      - templates/webhook-service.yaml
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip webhook service when disabled
+    templates:
+      - templates/webhook-service.yaml
+    set:
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook RBAC by default
+    templates:
+      - templates/webhook-rbac.yaml
+    set:
+      global.rbac.create: true
+    asserts:
+      - hasDocuments:
+          count: 4
+
+  - it: should skip webhook RBAC when webhook disabled
+    templates:
+      - templates/webhook-rbac.yaml
+    set:
+      global.rbac.create: true
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook service account by default
+    templates:
+      - templates/webhook-serviceaccount.yaml
+    set:
+      webhook.serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - matchRegex:
+          path: metadata.name
+          pattern: "webhook"
+
+  - it: should skip webhook service account when webhook disabled
+    templates:
+      - templates/webhook-serviceaccount.yaml
+    set:
+      webhook.serviceAccount.create: true
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook config when provided and webhook enabled
+    templates:
+      - templates/webhook-config.yaml
+    set:
+      webhook.config:
+        logging:
+          verbosity: 2
+      webhook.enabled: true
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip webhook config when webhook disabled regardless of config
+    templates:
+      - templates/webhook-config.yaml
+    set:
+      webhook.config:
+        logging:
+          verbosity: 2
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should skip webhook config when no config provided
+    templates:
+      - templates/webhook-config.yaml
+    set:
+      webhook.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook PDB when enabled and webhook enabled
+    templates:
+      - templates/webhook-poddisruptionbudget.yaml
+    set:
+      webhook.podDisruptionBudget.enabled: true
+      webhook.enabled: true
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: metadata.name
+          value: cert-manager-webhook
+
+  - it: should skip webhook PDB when webhook disabled
+    templates:
+      - templates/webhook-poddisruptionbudget.yaml
+    set:
+      webhook.podDisruptionBudget.enabled: true
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook network policy by default when enabled
+    templates:
+      - templates/networkpolicy-webhooks.yaml
+    set:
+      webhook.networkPolicy.enabled: true
+      webhook.enabled: true
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - matchRegex:
+          path: metadata.name
+          pattern: "webhook"
+
+  - it: should skip webhook network policy when webhook disabled
+    templates:
+      - templates/networkpolicy-webhooks.yaml
+    set:
+      webhook.networkPolicy.enabled: true
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render webhook PSP when enabled and webhook enabled
+    templates:
+      - templates/webhook-psp.yaml
+    set:
+      global.podSecurityPolicy.enabled: true
+      webhook.enabled: true
+    asserts:
+      - isKind:
+          of: PodSecurityPolicy
+      - matchRegex:
+          path: metadata.name
+          pattern: "webhook"
+
+  - it: should skip webhook PSP when webhook disabled
+    templates:
+      - templates/webhook-psp.yaml
+    set:
+      global.podSecurityPolicy.enabled: true
+      webhook.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
