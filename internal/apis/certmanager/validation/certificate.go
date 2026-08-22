@@ -371,17 +371,24 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	// If spec.renewBeforePercentage is set, check that it's within the allowed
 	// range.
 	if crt.RenewBeforePercentage != nil {
+		// The effective renewBefore is the amount of time before expiry at which
+		// renewal begins. Per the renewBeforePercentage field docs, it is
+		// duration * percentage / 100 (e.g. a 60m certificate with
+		// renewBeforePercentage=25 renews when 25% / 15m of its lifetime
+		// remains). This matches the runtime calculation in
+		// pki.RenewalTime / desiredRenewalTime.
+		//
 		// We cast to float64 to avoid an int overflow.
 		//
 		// This would happen because duration is an int64 (nanoseconds),
-		// duration * (100 - pct) is evaluated in int64 before the / 100, so
+		// duration * pct is evaluated in int64 before the / 100, so
 		// multiplying a large duration by up to 100 can exceed math.MaxInt64
 		// and wrap to a negative/garbage value.
 		//
 		// Technically we lose precision at around 104 days, however the
 		// precision lost is so small it does not matter (a value of 150k years
 		// is required to lose 1ms of precision)
-		renewBefore := time.Duration(float64(duration) * float64(100-*crt.RenewBeforePercentage) / 100)
+		renewBefore := time.Duration(float64(duration) * float64(*crt.RenewBeforePercentage) / 100)
 		if renewBefore < cmapi.MinimumRenewBefore {
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore)))
 		}
