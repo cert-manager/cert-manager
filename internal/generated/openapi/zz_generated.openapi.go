@@ -61,6 +61,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEIssuerDNS01ProviderRoute53":                     schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderRoute53(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEIssuerDNS01ProviderWebhook":                     schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderWebhook(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEIssuerStatus":                                   schema_pkg_apis_acme_v1_ACMEIssuerStatus(ref),
+		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AccountPrivateKey":                                  schema_pkg_apis_acme_v1_AccountPrivateKey(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AzureManagedIdentity":                               schema_pkg_apis_acme_v1_AzureManagedIdentity(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.CertificateDNSNameSelector":                         schema_pkg_apis_acme_v1_CertificateDNSNameSelector(ref),
 		"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.Challenge":                                          schema_pkg_apis_acme_v1_Challenge(ref),
@@ -1435,6 +1436,12 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 							Format:      "",
 						},
 					},
+					"accountPrivateKey": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccountPrivateKey contains the configuration for the ACME account private key. If not specified, defaults to RSA with 2048 bit key size.",
+							Ref:         ref("github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AccountPrivateKey"),
+						},
+					},
 					"enableDurationFeature": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Enables requesting a Not After date on certificates that matches the duration of the certificate. This is not supported by all ACME servers like Let's Encrypt. If set to true when the ACME server does not support it, it will create an error on the Order. Defaults to false.",
@@ -1461,7 +1468,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 			},
 		},
 		Dependencies: []string{
-			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEExternalAccountBinding", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
+			"github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEChallengeSolver", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.ACMEExternalAccountBinding", "github.com/cert-manager/cert-manager/pkg/apis/acme/v1.AccountPrivateKey", "github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"},
 	}
 }
 
@@ -1882,6 +1889,33 @@ func schema_pkg_apis_acme_v1_ACMEIssuerStatus(ref common.ReferenceCallback) comm
 							Description: "LastPrivateKeyHash is a hash of the private key associated with the latest registered ACME account, in order to track changes made to registered account associated with the Issuer",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_acme_v1_AccountPrivateKey(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AccountPrivateKey specifies the configuration for the ACME account private key.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"algorithm": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Algorithm is the algorithm used for the ACME account private key. Supported values are \"RSA\" and \"ECDSA\". If not specified, defaults to \"RSA\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"size": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Size is the key bit size of the account private key. If `algorithm` is set to `RSA`, valid values are any integer between 2048 and 8192 (inclusive), and will default to 2048 if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, corresponding to the P-256, P-384 and P-521 curves respectively, and will default to 256 if not specified.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
