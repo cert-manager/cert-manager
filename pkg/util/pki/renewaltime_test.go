@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -406,4 +407,57 @@ func TestRenewalWithDisable(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Nil(t, res)
+}
+
+// TestRenewalErrorReturnsFallbackTime asserts that a renewal misconfiguration
+// (a bad window or an unrecognized policy) returns an error together with the
+// deterministic renewBefore-based renewal time (rather than a nil time). A
+// nil time here previously caused a nil pointer panic that crash-looped the
+// trigger controller; returning the fallback lets callers keep scheduling
+// renewal on the sane default while surfacing the error.
+func TestRenewalErrorReturnsFallbackTime(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	notBefore := now.Add(-10 * 24 * time.Hour)
+	notAfter := now.Add(10 * 24 * time.Hour)
+	renewBefore := &metav1.Duration{Duration: 5 * 24 * time.Hour}
+	// desiredRenewalTime respects renewBefore, so the fallback is notAfter-renewBefore.
+	wantFallback := notAfter.Add(-renewBefore.Duration)
+
+	tests := map[string]*apiv1.CertificateRenewal{
+		"invalid cron": {
+			Policy: apiv1.CertificateRenewalPolicyRenewBefore,
+			Windows: []apiv1.CertificateRenewalWindows{{
+				Cron:           "not a valid cron",
+				WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+			}},
+		},
+		"non-positive windowDuration": {
+			Policy: apiv1.CertificateRenewalPolicyRenewBefore,
+			Windows: []apiv1.CertificateRenewalWindows{{
+				Cron:           "0 10 * * *",
+				WindowDuration: &metav1.Duration{Duration: 0},
+			}},
+		},
+		"invalid timezone": {
+			Policy: apiv1.CertificateRenewalPolicyRenewBefore,
+			Windows: []apiv1.CertificateRenewalWindows{{
+				Timezone:       "Not/AZone",
+				Cron:           "0 10 * * *",
+				WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+			}},
+		},
+		"unsupported policy": {
+			Policy: apiv1.CertificateRenewalPolicy("Bogus"),
+		},
+	}
+
+	for name, renewal := range tests {
+		t.Run(name, func(t *testing.T) {
+			res, err := RenewalTime(notBefore, notAfter, renewBefore, nil, renewal)
+
+			assert.NotNil(t, err)
+			require.NotNil(t, res)
+			assert.Equal(t, wantFallback, res.Time)
+		})
+	}
 }

@@ -2276,3 +2276,77 @@ func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
 		})
 	}
 }
+
+func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
+	clock := &fakeclock.FakeClock{}
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	})
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyDisabled,
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+	assert.Equal(t, "", reason)
+	assert.Equal(t, "", message)
+	assert.False(t, violation)
+}
+
+// Test_CurrentCertificateNearingExpiry_WindowError covers the renewal-window
+// error path (here an invalid cron expression). pki.RenewalTime previously
+// returned a nil time with an error, which crash-looped the trigger controller
+// with a nil pointer panic. It now returns the deterministic renewBefore-based
+// time alongside the error, so renewal is gated on that time and the error
+// surfaces as a WindowError violation only once renewal is actually due; a
+// certificate nowhere near expiry must not be flagged for re-issuance.
+func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	notBefore := now
+	notAfter := now.Add(30 * 24 * time.Hour)
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCertWithNotBeforeAfter(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	}, notBefore, notAfter)
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyRenewBefore,
+					Windows: []cmapi.CertificateRenewalWindows{{
+						Cron:           "not a valid cron",
+						WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+					}},
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	t.Run("not yet due: no premature re-issuance despite the window error", func(t *testing.T) {
+		clock := fakeclock.NewFakeClock(now)
+		reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.False(t, violation)
+		assert.Equal(t, "", reason)
+		assert.Equal(t, "", message)
+	})
+
+	t.Run("due: surface the window error as a violation", func(t *testing.T) {
+		// Past the certificate's NotAfter, so renewal is unambiguously due.
+		clock := fakeclock.NewFakeClock(notAfter.Add(time.Hour))
+		reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.True(t, violation)
+		assert.Equal(t, WindowError, reason)
+	})
+}
