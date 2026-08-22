@@ -1224,6 +1224,12 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateAdditionalOutputFormat
   map:
     fields:
+    - name: keys
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
     - name: type
       type:
         scalar: string

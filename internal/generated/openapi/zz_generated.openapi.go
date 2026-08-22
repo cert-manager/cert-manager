@@ -2805,6 +2805,25 @@ func schema_pkg_apis_certmanager_v1_CertificateAdditionalOutputFormat(ref common
 							Format:      "",
 						},
 					},
+					"keys": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Keys defines the ordered list of keys to concatenate in the combined output. Defaults to [\"tls.key\", \"tls.crt\"] when Type is CombinedPEM. Supported keys are \"tls.key\", \"tls.crt\", and \"ca.crt\".\n\nNote: Including \"ca.crt\" has several important caveats: 1. The CA certificate is not guaranteed to exist in the issued Secret (e.g. this depends on the Issuer, and changing issuers may cause it to disappear). 2. The CA certificate in the Secret should NEVER be used for trust verification purposes. 3. It is primarily provided for software requiring a full certificate chain bundled into a single file.\n\nOnly supported when Type is CombinedPEM.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"type"},
 			},

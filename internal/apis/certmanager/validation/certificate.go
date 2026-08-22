@@ -26,6 +26,7 @@ import (
 	"unicode/utf8"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	metavalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -429,17 +430,33 @@ func validateNameConstraintItem(item *internalcmapi.NameConstraintItem, fldPath 
 	return el
 }
 
+var supportedCombinedPEMKeys = sets.NewString(corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey)
+
 func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 
 	// Ensure the set of output formats is unique, keyed on "Type".
 	aofSet := sets.NewString()
-	for _, val := range crt.AdditionalOutputFormats {
+	for i, val := range crt.AdditionalOutputFormats {
+		idxPath := fldPath.Child("additionalOutputFormats").Index(i)
 		if aofSet.Has(string(val.Type)) {
 			el = append(el, field.Duplicate(fldPath.Child("additionalOutputFormats").Key("type"), string(val.Type)))
 			continue
 		}
 		aofSet.Insert(string(val.Type))
+
+		switch val.Type {
+		case internalcmapi.CertificateOutputFormatCombinedPEM:
+			for j, key := range val.Keys {
+				if !supportedCombinedPEMKeys.Has(key) {
+					el = append(el, field.NotSupported(idxPath.Child("keys").Index(j), key, supportedCombinedPEMKeys.List()))
+				}
+			}
+		case internalcmapi.CertificateOutputFormatDER:
+			if len(val.Keys) > 0 {
+				el = append(el, field.Forbidden(idxPath.Child("keys"), "keys cannot be specified for DER output format"))
+			}
+		}
 	}
 
 	return el

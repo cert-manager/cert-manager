@@ -83,6 +83,13 @@ func Test_SecretsManager(t *testing.T) {
 		gen.SetCertificateAdditionalOutputFormats(cmapi.CertificateAdditionalOutputFormat{Type: "CombinedPEM"}),
 	)
 
+	baseCertWithAdditionalOutputFormatCombinedPEMCustomKeys := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateAdditionalOutputFormats(cmapi.CertificateAdditionalOutputFormat{
+			Type: "CombinedPEM",
+			Keys: []string{"tls.crt", "tls.key", "ca.crt"},
+		}),
+	)
+
 	baseCertWithAdditionalOutputFormats := gen.CertificateFrom(baseCertBundle.Certificate,
 		gen.SetCertificateAdditionalOutputFormats(
 			cmapi.CertificateAdditionalOutputFormat{Type: "DER"},
@@ -520,6 +527,46 @@ func Test_SecretsManager(t *testing.T) {
 							corev1.TLSPrivateKeyKey:                     baseCertBundle.PrivateKeyBytes,
 							cmmeta.TLSCAKey:                             []byte("test-ca"),
 							cmapi.CertificateOutputFormatCombinedPEMKey: []byte(strings.Join([]string{string(baseCertBundle.PrivateKeyBytes), string(baseCertBundle.CertBytes)}, "\n")),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: testpkg.FieldManager, Force: true}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with additional output format CombinedPEM and custom key order": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithAdditionalOutputFormatCombinedPEMCustomKeys,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:                           baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey:                     baseCertBundle.PrivateKeyBytes,
+							cmmeta.TLSCAKey:                             []byte("test-ca"),
+							cmapi.CertificateOutputFormatCombinedPEMKey: []byte(strings.Join([]string{string(baseCertBundle.CertBytes), string(baseCertBundle.PrivateKeyBytes), "test-ca"}, "\n")),
 						}).
 						WithType(corev1.SecretTypeTLS)
 					assert.Equal(t, expCnf, gotCnf)
