@@ -124,16 +124,16 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 	return fqdn, nil
 }
 
-// checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []string,
+// checkDNSPropagation is a wrapper around [CachingResolver.CheckTXTRecordPropagation].
+func checkDNSPropagation(ctx context.Context, fqdn, value string, configuredNSs []string,
 	useAuthoritative bool) (bool, error) {
 
 	return LegacyCachedResolver().
-		CheckTXTRecordPropagation(ctx, fqdn, value, nameservers, UseAuthoritative(useAuthoritative))
+		CheckTXTRecordPropagation(ctx, fqdn, value, configuredNSs, UseAuthoritative(useAuthoritative))
 }
 
-// checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
-func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
+// checkTXTRecord queries each of the given nameservers for the expected TXT record.
+func checkTXTRecord(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
 		r, err := dnsQuery(ctx, fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
