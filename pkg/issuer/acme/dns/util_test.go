@@ -102,6 +102,7 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 		Context:                 b.Context,
 		secretLister:            b.Context.KubeSharedInformerFactory.Secrets().Lister(),
 		dnsProviderConstructors: dnsProviders,
+		route53PendingChanges:   route53.NewPendingChangesCache(),
 	}
 	b.Start()
 	return s

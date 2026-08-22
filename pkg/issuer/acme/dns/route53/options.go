@@ -47,6 +47,12 @@ type DNSProviderOptions struct {
 	UserAgent string
 	// Resolver performs DNS lookups during challenge verification.
 	Resolver util.Resolver
+	// PendingChanges is a cache of the IDs of record changes which have been
+	// submitted but have not yet reached the INSYNC status. Supply a shared
+	// instance so that a retried Present or CleanUp resumes waiting for the
+	// original change instead of submitting a duplicate. When nil, a new
+	// cache private to this DNSProvider is used.
+	PendingChanges *PendingChangesCache
 }
 
 // DNSProviderOption is a functional option for configuring a DNSProvider.
@@ -137,4 +143,18 @@ func (r WithResolver) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
 // Resolver returns a WithResolver option that sets the Resolver field on DNSProviderOptions.
 func Resolver(r util.Resolver) WithResolver {
 	return WithResolver{Resolver: r}
+}
+
+// WithPendingChanges sets the PendingChanges cache on DNSProviderOptions.
+type WithPendingChanges struct{ *PendingChangesCache }
+
+// ApplyToDNSProviderOptions sets the PendingChanges field.
+func (p WithPendingChanges) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
+	o.PendingChanges = p.PendingChangesCache
+}
+
+// PendingChanges returns a WithPendingChanges option that sets the
+// PendingChanges cache on DNSProviderOptions.
+func PendingChanges(c *PendingChangesCache) WithPendingChanges {
+	return WithPendingChanges{PendingChangesCache: c}
 }
