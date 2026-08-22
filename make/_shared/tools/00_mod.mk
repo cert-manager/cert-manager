@@ -76,7 +76,7 @@ tools += helm=v4.2.4
 tools += helm-unittest=v1.1.2
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.36.3
+tools += kubectl=v1.36.4
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
 tools += kind=v0.32.0
@@ -178,7 +178,12 @@ tools += cmctl=v2.5.0
 tools += cmrel=v1.12.15-0.20241121151736-e3cbe5171488
 # https://pkg.go.dev/github.com/golangci/golangci-lint/v2/cmd/golangci-lint?tab=versions
 # renovate: datasource=go packageName=github.com/golangci/golangci-lint/v2
-tools += golangci-lint=v2.13.0
+golangci_lint_version := v2.13.1
+tools += golangci-lint=$(golangci_lint_version)
+# https://pkg.go.dev/sigs.k8s.io/kube-api-linter?tab=versions
+# renovate: datasource=go packageName=sigs.k8s.io/kube-api-linter
+kube_api_linter_version := v0.0.0-20260716143926-092fe0c72997
+tools += kube-api-linter=$(golangci_lint_version)_$(kube_api_linter_version)
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 # renovate: datasource=go packageName=golang.org/x/vuln
 tools += govulncheck=v1.7.0
@@ -187,10 +192,10 @@ tools += govulncheck=v1.7.0
 tools += operator-sdk=v1.42.3
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.97.0
+tools += gh=v2.98.0
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
-tools += preflight=1.20.0
+tools += preflight=1.21.0
 # https://github.com/daixiang0/gci/releases
 # renovate: datasource=github-releases packageName=daixiang0/gci
 tools += gci=v0.14.0
@@ -207,7 +212,7 @@ tools += pinact=v4.1.1
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.36.3
+K8S_CODEGEN_VERSION ?= v0.36.4
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -217,7 +222,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20260721132016-d427ff9ee9ad
+tools += openapi-gen=v0.0.0-20260821135717-be32def86098
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -520,10 +525,10 @@ $(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_A
 		chmod +x $(outfile); \
 		rm -f $(outfile).tgz
 
-kubectl_linux_amd64_SHA256SUM=ebbd080e7c2e275093b55915722043257eb24004363e20acb3c4d71919f88336
-kubectl_linux_arm64_SHA256SUM=3d86f24401c41ae5a46ac50eef8865fe891d3647d324a0836f6c63757a126e62
-kubectl_darwin_amd64_SHA256SUM=158b3b46cf74e8b6bd9b1d7cd30f665e3efb2bc1ec3c843ec925bcfdd2930de0
-kubectl_darwin_arm64_SHA256SUM=fc8582acde13869a606730a79379d6515f30c68afcced0b5ac8789d5d002b7d6
+kubectl_linux_amd64_SHA256SUM=8b8f088da2dab964f853b38464033b1be15ede2839eca751482357c45abdd05a
+kubectl_linux_arm64_SHA256SUM=0ecf44450ee6063bf19dd166a103ee6df4a9034455c2abce626e6eea657d73fb
+kubectl_darwin_amd64_SHA256SUM=71a3aa7c2ee2c974d9fbb462cba0c5c04a4df2e8d85eee94714fd819ea3c4e63
+kubectl_darwin_arm64_SHA256SUM=c9e4f713d6fee0043a3d835cca13077cda2bc0973840eb9779360df0b5bdfc69
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -721,10 +726,10 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=43a8c5046c800442e58a37f583a9523d79421e81aec3a741c53c9fcffc82955b
-preflight_linux_arm64_SHA256SUM=587716550f5acf7d32900322bc1fa20b9401aa3f8ffbf22c95d5ec0a32e4f6f0
-preflight_darwin_amd64_SHA256SUM=a6866028b255da1ac930e14343c1539af091f853d5de3489a1b3dd53b6bb0140
-preflight_darwin_arm64_SHA256SUM=bbe24db59d0aa24d416ae42d043c27c859014cfe5d5af132d75c8d760ff196bd
+preflight_linux_amd64_SHA256SUM=5e653135503c72f8702bbe31d7643197d12937c68086879133dd6b9650a9a449
+preflight_linux_arm64_SHA256SUM=05a687697a57b746e36cecfea9585b38863449f8853861d9269649eb9cb046c5
+preflight_darwin_amd64_SHA256SUM=8d085713fec15889b240f5621c5543cdd02cc0ced7ea44213b449ce178ed484d
+preflight_darwin_arm64_SHA256SUM=4b4d55f6b764b3887f85ab5aa389bfd774d45770454faada0bcef650729c6c8e
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -743,6 +748,19 @@ $(DOWNLOAD_DIR)/tools/operator-sdk@$(OPERATOR-SDK_VERSION)_$(HOST_OS)_$(HOST_ARC
 	@source $(lock_script) $@; \
 		$(CURL) https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR-SDK_VERSION)/operator-sdk_$(HOST_OS)_$(HOST_ARCH) -o $(outfile); \
 		$(checkhash_script) $(outfile) $(operator-sdk_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
+		chmod +x $(outfile)
+
+.PRECIOUS: $(DOWNLOAD_DIR)/tools/kube-api-linter@$(KUBE-API-LINTER_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+$(DOWNLOAD_DIR)/tools/kube-api-linter@$(KUBE-API-LINTER_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(NEEDS_GO) $(NEEDS_GOLANGCI-LINT) $(DOWNLOAD_DIR)/tools
+	@# Build a custom golangci-lint binary which includes the kube-api-linter
+	@# plugin, see https://golangci-lint.run/plugins/module-plugins/
+	@source $(lock_script) $@; \
+		tmpdir=$$(mktemp -d); \
+		printf 'version: %s\nname: kube-api-linter\nplugins:\n- module: sigs.k8s.io/kube-api-linter\n  version: %s\n' \
+			"$(golangci_lint_version)" "$(kube_api_linter_version)" > "$$tmpdir/.custom-gcl.yaml"; \
+		(cd "$$tmpdir" && GOWORK=off $(GOLANGCI-LINT) custom); \
+		mv "$$tmpdir/kube-api-linter" $(outfile); \
+		rm -rf "$$tmpdir"; \
 		chmod +x $(outfile)
 
 #################
