@@ -87,6 +87,16 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 			return nil, err
 		}
 
+		// Reject anything that isn't labelled as a certificate rather than
+		// passing it to x509.ParseCertificate, which would fail with a
+		// misleading "malformed certificate" error. "X509 CERTIFICATE" and
+		// "X.509 CERTIFICATE" are historic labels (RFC 7468 §5.1) still
+		// produced by some older OpenSSL and Java toolchains, and are
+		// accepted alongside the standard "CERTIFICATE" label.
+		if block.Type != "CERTIFICATE" && block.Type != "X509 CERTIFICATE" && block.Type != "X.509 CERTIFICATE" {
+			return nil, errors.NewInvalidData("error decoding certificate PEM block: expected a \"CERTIFICATE\" block, found %q", block.Type)
+		}
+
 		// parse the tls certificate
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {

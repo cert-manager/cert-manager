@@ -44,6 +44,34 @@ func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 	return EncodePKCS8PrivateKey(privateKey)
 }
 
+func TestDecodeX509CertificateSetBytes(t *testing.T) {
+	certBytes := mustCreateBundle(t, nil, "test").pem
+
+	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: []byte("dummy")})
+
+	// A bundle containing a valid certificate followed by a non-certificate
+	// PEM block, e.g. a combined cert+key file.
+	certAndKeyBytes := append(append([]byte{}, certBytes...), keyBytes...)
+
+	_, err := DecodeX509CertificateSetBytes(certAndKeyBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a bundle containing a non-certificate PEM block, got none")
+	}
+
+	expectErrStr := `expected a "CERTIFICATE" block, found "RSA PRIVATE KEY"`
+	if !strings.Contains(err.Error(), expectErrStr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectErrStr, err.Error())
+	}
+
+	certs, err := DecodeX509CertificateSetBytes(certBytes)
+	if err != nil {
+		t.Fatalf("unexpected error decoding a valid certificate: %s", err)
+	}
+	if len(certs) != 1 {
+		t.Errorf("expected 1 certificate, got %d", len(certs))
+	}
+}
+
 func TestDecodePrivateKeyBytes(t *testing.T) {
 	type testT struct {
 		name         string
