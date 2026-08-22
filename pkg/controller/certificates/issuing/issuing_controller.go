@@ -337,6 +337,18 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	if crReadyCond == nil {
+		if req.Status.FailureTime != nil {
+			// The CertificateRequest has a failureTime but no Ready condition.
+			// This is not reachable via the in-tree issuers, which always set
+			// both in the same update, but can happen with an external issuer
+			// or a partially applied status. Neither this controller nor the
+			// requestmanager controller can make progress from this state, so
+			// surface it loudly rather than waiting silently forever.
+			message := "CertificateRequest has a failureTime set but no Ready condition; issuance is stalled"
+			log.V(logf.InfoLevel).Info(message)
+			c.recorder.Event(crt, corev1.EventTypeWarning, "Stalled", message)
+			return nil
+		}
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}
