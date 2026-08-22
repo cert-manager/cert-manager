@@ -281,6 +281,31 @@ tests:
             global-key: global-value
             component-key: component-value
 
+  - it: should merge global and component tolerations
+    set:
+      global:
+        tolerations:
+          - key: global-key
+            operator: Exists
+            effect: NoSchedule
+      tolerations:
+        - key: component-key
+          operator: Exists
+          effect: NoExecute
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: global-key
+            operator: Exists
+            effect: NoSchedule
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: component-key
+            operator: Exists
+            effect: NoExecute
+
   - it: should set tolerations
     set:
       tolerations:
