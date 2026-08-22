@@ -199,6 +199,14 @@ const (
 	// by GatewayAPI. This featuregate also requires GatewayAPI feature gate to be enabled.
 	ListenerSets featuregate.Feature = "ListenerSets"
 
+	// Owner: @AkashKumar7902
+	// Alpha: v1.22.0
+	//
+	// GatewayAPIWildcardHostnameDeduplication omits concrete DNS names from
+	// Gateway API-derived Certificates when an existing wildcard DNS name covers
+	// them. This can improve compatibility with CAs that reject redundant names.
+	GatewayAPIWildcardHostnameDeduplication featuregate.Feature = "GatewayAPIWildcardHostnameDeduplication"
+
 	// Owner: @hjoshi123
 	// Alpha: v1.21.0
 
@@ -224,6 +232,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: true, PreRelease: featuregate.Beta},
 	ListenerSets:                                     {Default: false, PreRelease: featuregate.Alpha},
+	GatewayAPIWildcardHostnameDeduplication:          {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: true, PreRelease: featuregate.GA},
 	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 	LiteralCertificateSubject:                        {Default: true, PreRelease: featuregate.Beta},
