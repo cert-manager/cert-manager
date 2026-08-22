@@ -302,7 +302,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			cloudflare.Email(email),
 			cloudflare.APIKey(apiKey),
 			cloudflare.APIToken(apiToken),
-			cloudflare.UserAgent(s.RESTConfig.UserAgent))
+			cloudflare.UserAgent(s.RESTConfig.UserAgent),
+			cloudflare.Timeout(s.DNS01Timeout))
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
