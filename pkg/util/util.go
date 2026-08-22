@@ -105,6 +105,27 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 // JoinWithEscapeCSV returns the given list as a single line of CSV that
 // is escaped with quotes if necessary
 func JoinWithEscapeCSV(in []string) (string, error) {
+	for _, v := range in {
+		if strings.Contains(v, "\r\n") {
+			// encoding/csv's reader silently normalises "\r\n" to "\n" inside a
+			// quoted field, so a value containing that sequence cannot round-trip
+			// through SplitWithEscapeCSV without being altered. Reject it here
+			// rather than writing a value that reads back different from what was
+			// given. A carriage return on its own does survive the round trip, so
+			// only the pair is rejected.
+			return "", fmt.Errorf("value %q contains a CRLF sequence, which cannot round-trip through CSV encoding", v)
+		}
+	}
+
+	if len(in) == 1 && in[0] == "" {
+		// encoding/csv writes a single empty field as an empty line, which
+		// SplitWithEscapeCSV cannot distinguish from "no values found" on
+		// read. Force explicit quoting for this one case so it round-trips;
+		// a bare, unquoted empty field is never produced by this function
+		// for any other input, so this is unambiguous to parse back.
+		return `""`, nil
+	}
+
 	b := new(bytes.Buffer)
 	writer := csv.NewWriter(b)
 	if err := writer.Write(in); err != nil {

@@ -253,3 +253,41 @@ func parseIPs(ipStrs []string) []net.IP {
 
 	return ips
 }
+
+func TestJoinSplitWithEscapeCSVRoundTrip(t *testing.T) {
+	tests := []struct {
+		desc string
+		in   []string
+	}{
+		{desc: "single value", in: []string{"example.com"}},
+		{desc: "multiple values", in: []string{"example.com", "other.example.com"}},
+		{desc: "value containing a comma", in: []string{"10 Downing Street, Westminster", "Manchester"}},
+		{desc: "single empty value", in: []string{""}},
+		{desc: "value containing a lone carriage return", in: []string{"line1\rline2"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			joined, err := JoinWithEscapeCSV(test.in)
+			if err != nil {
+				t.Fatalf("JoinWithEscapeCSV(%+v) returned unexpected error: %v", test.in, err)
+			}
+
+			out, err := SplitWithEscapeCSV(joined)
+			if err != nil {
+				t.Fatalf("SplitWithEscapeCSV(%q) (from JoinWithEscapeCSV(%+v)) returned unexpected error: %v", joined, test.in, err)
+			}
+
+			if !slices.Equal(out, test.in) {
+				t.Errorf("round trip of %+v produced %+v (via joined string %q)", test.in, out, joined)
+			}
+		})
+	}
+}
+
+func TestJoinWithEscapeCSVRejectsCRLF(t *testing.T) {
+	_, err := JoinWithEscapeCSV([]string{"line1\r\nline2"})
+	if err == nil {
+		t.Fatal("JoinWithEscapeCSV with a value containing \\r\\n did not return an error, so it would silently corrupt on round trip")
+	}
+}
