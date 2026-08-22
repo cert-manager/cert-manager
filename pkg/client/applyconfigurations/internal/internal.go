@@ -943,13 +943,13 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: dnsZones
       type:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: matchLabels
       type:
         map:
@@ -1159,19 +1159,19 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: issuingCertificateURLs
       type:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: ocspServers
       type:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: secretName
       type:
         scalar: string
@@ -1378,7 +1378,7 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: username
       type:
         scalar: string
@@ -1423,7 +1423,9 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateAdditionalOutputFormat
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - type
     - name: commonName
       type:
         scalar: string
@@ -1432,7 +1434,7 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: duration
       type:
         namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
@@ -1441,7 +1443,7 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: encodeUsagesInRequest
       type:
         scalar: boolean
@@ -1450,7 +1452,7 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: isCA
       type:
         scalar: boolean
@@ -1472,7 +1474,10 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.OtherName
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - oid
+          - utf8Value
     - name: privateKey
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificatePrivateKey
@@ -1506,13 +1511,13 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
     - name: usages
       type:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.CertificateStatus
   map:
     fields:
@@ -1707,9 +1712,11 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: oid
       type:
         scalar: string
+      default: ""
     - name: utf8Value
       type:
         scalar: string
+      default: ""
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.PKCS12Keystore
   map:
     fields:
@@ -1735,7 +1742,7 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             scalar: string
-          elementRelationship: atomic
+          elementRelationship: associative
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.ServiceAccountRef
   map:
     fields:
