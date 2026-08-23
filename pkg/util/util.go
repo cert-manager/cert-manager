@@ -120,9 +120,10 @@ func JoinWithEscapeCSV(in []string) (string, error) {
 	if len(in) == 1 && in[0] == "" {
 		// encoding/csv writes a single empty field as an empty line, which
 		// SplitWithEscapeCSV cannot distinguish from "no values found" on
-		// read. Force explicit quoting for this one case so it round-trips;
-		// a bare, unquoted empty field is never produced by this function
-		// for any other input, so this is unambiguous to parse back.
+		// read. Force explicit quoting for this one case so it round-trips.
+		// No other input produces exactly `""` as the entire output (a literal
+		// quote character would be encoded as `""""`), so this is unambiguous
+		// to parse back.
 		return `""`, nil
 	}
 
