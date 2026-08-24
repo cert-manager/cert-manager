@@ -19,6 +19,8 @@ package pki
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"strings"
 	"testing"
@@ -69,6 +71,41 @@ func TestDecodeX509CertificateSetBytes(t *testing.T) {
 	}
 	if len(certs) != 1 {
 		t.Errorf("expected 1 certificate, got %d", len(certs))
+	}
+}
+
+func TestDecodeX509CertificateRequestBytes(t *testing.T) {
+	pk, err := GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrDER, err := EncodeCSR(&x509.CertificateRequest{Subject: pkix.Name{CommonName: "test"}}, pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	csrBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+	csr, err := DecodeX509CertificateRequestBytes(csrBytes)
+	if err != nil {
+		t.Fatalf("unexpected error decoding a valid CSR: %s", err)
+	}
+	if csr.Subject.CommonName != "test" {
+		t.Errorf("expected common name %q, got %q", "test", csr.Subject.CommonName)
+	}
+
+	// A PEM block that isn't labelled as a certificate request, e.g. a
+	// certificate mistakenly passed as spec.request.
+	nonCSRBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("dummy")})
+
+	_, err = DecodeX509CertificateRequestBytes(nonCSRBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a non-CSR PEM block, got none")
+	}
+
+	expectErrStr := `expected a "CERTIFICATE REQUEST" block, found "CERTIFICATE"`
+	if !strings.Contains(err.Error(), expectErrStr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectErrStr, err.Error())
 	}
 }
 
