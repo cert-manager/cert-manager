@@ -98,6 +98,73 @@ func generateOtherName(t *testing.T, val UniversalValue) asn1.RawValue {
 	return rv
 }
 
+// An OtherName value that is not wrapped in the explicit [0] tag RFC 5280
+// requires used to marshal without complaint, into an extension that
+// UnmarshalSANs could not read back.
+func TestMarshalSANsRejectsUnwrappedOtherNameValue(t *testing.T) {
+	oid := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}
+
+	inner, err := MarshalUniversalValue(UniversalValue{UTF8String: "upn@example.com"})
+	if err != nil {
+		t.Fatalf("MarshalUniversalValue returned an error: %v", err)
+	}
+
+	tests := map[string]struct {
+		value  asn1.RawValue
+		expErr bool
+	}{
+		"wrapped in an explicit [0] tag, as csr.go builds it": {
+			value: asn1.RawValue{
+				Tag:        0,
+				Class:      asn1.ClassContextSpecific,
+				IsCompound: true,
+				Bytes:      inner,
+			},
+		},
+		"wrapped, carrying FullBytes as well": {
+			value: generateOtherName(t, UniversalValue{UTF8String: "upn@example.com"}),
+		},
+		"unwrapped, the inner value given through FullBytes": {
+			value:  asn1.RawValue{FullBytes: inner},
+			expErr: true,
+		},
+		"unwrapped, the inner value given through Tag and Bytes": {
+			value: asn1.RawValue{
+				Tag:   asn1.TagUTF8String,
+				Class: asn1.ClassUniversal,
+				Bytes: []byte("upn@example.com"),
+			},
+			expErr: true,
+		},
+		"no value at all": {
+			value:  asn1.RawValue{},
+			expErr: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gns := GeneralNames{OtherNames: []OtherName{{TypeID: oid, Value: test.value}}}
+
+			extension, err := MarshalSANs(gns, true)
+			if test.expErr {
+				if err == nil {
+					t.Fatalf("expected MarshalSANs to reject the value, but it returned %v", extension)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("MarshalSANs returned an error: %v", err)
+			}
+
+			// Whatever MarshalSANs accepts, UnmarshalSANs must be able to read.
+			if _, err := UnmarshalSANs(extension.Value); err != nil {
+				t.Fatalf("UnmarshalSANs could not read back a marshalled extension: %v", err)
+			}
+		})
+	}
+}
+
 func TestMarshalAndUnmarshalSANs(t *testing.T) {
 	type testCase struct {
 		hasSubject   bool

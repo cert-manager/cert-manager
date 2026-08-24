@@ -198,6 +198,39 @@ func forEachSAN(extension []byte, callback func(v asn1.RawValue) error) error {
 	return nil
 }
 
+// checkOtherNameValue reports whether an OtherName value carries the explicit
+// [0] tag that RFC 5280 section 4.2.1.6 requires of it:
+//
+//	value [0] EXPLICIT ANY DEFINED BY type-id
+//
+// The field is an asn1.RawValue, and encoding/asn1 writes a RawValue out
+// verbatim: the `tag:0,explicit` on the field is honoured when reading but not
+// when writing. A value handed to MarshalSANs without that wrapper is therefore
+// emitted without it, producing a SubjectAlternativeName extension that
+// UnmarshalSANs - and any parser following RFC 5280 - refuses to read.
+func checkOtherNameValue(value asn1.RawValue) error {
+	raw := value
+
+	// A RawValue carrying FullBytes is written out as those bytes, so they are
+	// what has to be checked.
+	if len(value.FullBytes) > 0 {
+		rest, err := asn1.Unmarshal(value.FullBytes, &raw)
+		if err != nil {
+			return fmt.Errorf("x509: otherName value is not valid DER: %w", err)
+		}
+		if len(rest) != 0 {
+			return errors.New("x509: trailing data after otherName value")
+		}
+	}
+
+	// [0] EXPLICIT is a constructed, context-specific tag 0.
+	if raw.Class != asn1.ClassContextSpecific || raw.Tag != 0 || !raw.IsCompound {
+		return errors.New("x509: otherName value must be wrapped in an explicit [0] tag, as required by RFC 5280 section 4.2.1.6")
+	}
+
+	return nil
+}
+
 // adapted from https://cs.opensource.google/go/go/+/master:src/crypto/x509/x509.go;l=1059-1103;drc=e2d9574b14b3db044331da0c6fadeb62315c644a
 // MarshalSANs marshals a list of addresses into the contents of an X.509
 // SubjectAlternativeName extension.
@@ -246,6 +279,9 @@ func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 
 	// Add support for the remaining SAN types.
 	for _, val := range gns.OtherNames {
+		if err := checkOtherNameValue(val.Value); err != nil {
+			return pkix.Extension{}, err
+		}
 		if err := addMarshalable(nameTypeOtherName, val); err != nil {
 			return pkix.Extension{}, err
 		}
