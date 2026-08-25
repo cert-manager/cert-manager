@@ -382,18 +382,18 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
+		return nil, nil, fmt.Errorf("error creating x509 certificate: %w", err)
 	}
 
 	cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error decoding DER certificate bytes: %s", err.Error())
+		return nil, nil, fmt.Errorf("error decoding DER certificate bytes: %w", err)
 	}
 
 	pemBytes := bytes.NewBuffer([]byte{})
 	err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
-		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
+		return nil, nil, fmt.Errorf("error encoding certificate PEM: %w", err)
 	}
 
 	return pemBytes.Bytes(), cert, err
@@ -428,7 +428,7 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caPrivateKey crypto.Signer, te
 func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, error) {
 	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
-		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
+		return nil, fmt.Errorf("error creating x509 certificate: %w", err)
 	}
 
 	return derBytes, nil
