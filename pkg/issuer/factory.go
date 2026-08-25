@@ -71,7 +71,7 @@ func NewFactory(ctx *controller.Context) Factory {
 func (f *factory) IssuerFor(issuer v1.GenericIssuer) (Interface, error) {
 	issuerType, err := apiutil.NameForIssuer(issuer)
 	if err != nil {
-		return nil, fmt.Errorf("could not get issuer type: %s", err.Error())
+		return nil, fmt.Errorf("could not get issuer type: %w", err)
 	}
 
 	constructorsLock.RLock()

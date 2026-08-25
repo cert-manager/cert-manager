@@ -39,7 +39,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, erro
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing issuers: %s", err.Error())
+		return nil, fmt.Errorf("error listing issuers: %w", err)
 	}
 
 	var affected []*v1.Issuer
