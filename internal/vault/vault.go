@@ -199,7 +199,28 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
-	return extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	certPEM, caPEM, leafCert, err := extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// When the path points at the "issue" endpoint, Vault returns its own key
+	// pair. The issuing controller rejects that too, but this names the cause.
+	// See https://github.com/cert-manager/cert-manager/issues/8234
+	matches, err := pki.PublicKeyMatchesCSR(leafCert.PublicKey, csr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to compare public keys: %s", err)
+	}
+
+	if !matches {
+		return nil, nil, fmt.Errorf(
+			"the public key in the certificate returned by Vault does not match the public key in the CSR; " +
+				"this usually means the Vault path is configured to use the 'issue' endpoint " +
+				"instead of the 'sign' endpoint (e.g., use 'pki/sign/role-name' instead of " +
+				"'pki/issue/role-name')")
+	}
+
+	return certPEM, caPEM, nil
 }
 
 func (v *Vault) setToken(ctx context.Context, client Client) error {
@@ -864,15 +885,18 @@ func generateAWSLoginData(ctx context.Context, creds aws.Credentials, headerValu
 	return loginData, nil
 }
 
-func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
+// extractCertificatesFromVaultCertificateSecret returns the certificate chain
+// and the CA of the Vault response, with the leaf that it already parsed.
+// Callers therefore do not parse the same bytes twice.
+func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, *x509.Certificate, error) {
 	parsedBundle, err := certutil.ParsePKIMap(secret.Data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
+		return nil, nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
 	vbundle, err := parsedBundle.ToCertBundle()
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+		return nil, nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
 	bundle, err := pki.ParseSingleCertificateChainPEM([]byte(
@@ -882,10 +906,16 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 			vbundle.Certificate,
 		), "\n")))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
 	}
 
-	return bundle.ChainPEM, bundle.CAPEM, nil
+	// A response with a CA and no certificate parses without an error and
+	// leaves Certificate nil. Reject it here, so no caller dereferences nil.
+	if parsedBundle.Certificate == nil {
+		return nil, nil, nil, fmt.Errorf("no certificate in the response returned by vault")
+	}
+
+	return bundle.ChainPEM, bundle.CAPEM, parsedBundle.Certificate, nil
 }
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
