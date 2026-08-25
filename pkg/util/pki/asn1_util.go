@@ -37,19 +37,12 @@ func ParseObjectIdentifier(oidString string) (oid asn1.ObjectIdentifier, err err
 
 	oid = make(asn1.ObjectIdentifier, 0, len(parts))
 	for _, part := range parts {
-		value, err := strconv.Atoi(part)
+		value, err := strconv.ParseUint(part, 10, 31)
 		if err != nil {
 			return nil, err
 		}
 
-		// Negative arcs are not valid and are silently mis-encoded by
-		// asn1.Marshal (the arc is dropped or merged into its neighbour),
-		// producing an OBJECT IDENTIFIER different from the input string.
-		if value < 0 {
-			return nil, fmt.Errorf("invalid OBJECT IDENTIFIER arc %q: must not be negative", part)
-		}
-
-		oid = append(oid, value)
+		oid = append(oid, int(value))
 	}
 
 	return oid, nil
