@@ -85,12 +85,16 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
 	// are already on their way out, and waiting for them to disappear from
 	// the lister cache before making progress can block forever. See
 	// https://github.com/cert-manager/cert-manager/issues/7768.
-	var activePods []*metav1.PartialObjectMetadata
-	for _, pod := range existingPods {
-		if pod.DeletionTimestamp == nil {
-			activePods = append(activePods, pod)
-		}
-	}
+	//
+	// This is a deliberate trade-off: if one active pod remains alongside
+	// stuck-terminating ones, this func no-ops below and no further Delete
+	// calls are issued for the terminating pods, so they are left as-is
+	// rather than retried; and nothing here bounds how many terminating
+	// pods can accumulate if the underlying cause (e.g. repeated node
+	// drains) keeps recurring. Both are considered acceptable because every
+	// listed pod already carries a DeletionTimestamp and serves the same
+	// token/key as any active pod.
+	activePods, _ := partitionPodsByTermination(existingPods)
 
 	if len(activePods) == 1 {
 		logf.WithRelatedResource(log, activePods[0]).Info("found one existing HTTP01 solver pod")
@@ -146,6 +150,20 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) 
 	}
 
 	return relevantPods, nil
+}
+
+// partitionPodsByTermination splits pods into those that are still active
+// (no DeletionTimestamp set) and those that are already terminating, so
+// callers have a single, shared definition of "active" to work from.
+func partitionPodsByTermination(pods []*metav1.PartialObjectMetadata) (active, terminating []*metav1.PartialObjectMetadata) {
+	for _, pod := range pods {
+		if pod.DeletionTimestamp == nil {
+			active = append(active, pod)
+		} else {
+			terminating = append(terminating, pod)
+		}
+	}
+	return active, terminating
 }
 
 func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
