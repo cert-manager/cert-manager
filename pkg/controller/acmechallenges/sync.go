@@ -247,8 +247,7 @@ func stabilizeSolverErrorMessage(err error) string {
 	}
 	fullMessage := err.Error()
 	{
-		var target *awshttp.ResponseError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*awshttp.ResponseError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -257,8 +256,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *azidentity.AuthenticationFailedError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*azidentity.AuthenticationFailedError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -267,8 +265,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *azcore.ResponseError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*azcore.ResponseError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -277,8 +274,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *godo.ErrorResponse
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*godo.ErrorResponse](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),

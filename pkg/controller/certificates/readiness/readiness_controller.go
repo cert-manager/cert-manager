@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
@@ -223,7 +224,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
 		var renewalTime *metav1.Time
-		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, key)
+		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -249,9 +250,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		crt.Status.RenewalTime = nil
 	}
 	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
+		// klog.SafePtr prevents a nil *metav1.Time from reaching the logger's
+		// Stringer call, which would panic in the promoted time.Time.String
+		// method and render the field as "<panic: ...>".
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
-			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
-			crt.Status.RenewalTime)
+			klog.SafePtr(crt.Status.NotAfter), "notBefore", klog.SafePtr(crt.Status.NotBefore), "renewalTime",
+			klog.SafePtr(crt.Status.RenewalTime))
 		return c.updateOrApplyStatus(ctx, crt)
 	}
 	return nil
@@ -276,13 +280,20 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 	return now.Add(d + jit)
 }
 
-func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, key types.NamespacedName) *metav1.Time {
+func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, secret *corev1.Secret, key types.NamespacedName) *metav1.Time {
 	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
 	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
 		return nil
 	}
 
 	if !acmeutil.ARIEnabledForIssuer(genericIssuer) {
+		crt.Status.ACME = nil
+		return nil
+	}
+
+	if !apiutil.SecretIssuerAnnotationsMatch(secret, crt.Spec.IssuerRef) {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, policies.ARIError, "Secret %s/%s does not have matching issuer annotations for Certificate %s/%s", secret.Namespace, secret.Name, crt.Namespace, crt.Name)
+
 		crt.Status.ACME = nil
 		return nil
 	}

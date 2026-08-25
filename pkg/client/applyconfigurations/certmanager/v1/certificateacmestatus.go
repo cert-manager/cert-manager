@@ -23,6 +23,7 @@ package v1
 type CertificateACMEStatusApplyConfiguration struct {
 	// ARI stores the ACME Renewal Information that is fetched from the ACME server
 	// in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
+	//
 	ARI *CertificateACMEARIStatusApplyConfiguration `json:"ari,omitempty"`
 }
 

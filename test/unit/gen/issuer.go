@@ -216,7 +216,8 @@ func SetIssuerACMEEABWithKeyAlgorithm(keyID, secretName string, keyAlgorithm cma
 			spec.ACME = &cmacme.ACMEIssuer{}
 		}
 		spec.ACME.ExternalAccountBinding = &cmacme.ACMEExternalAccountBinding{
-			KeyID:        keyID,
+			KeyID: keyID,
+			//nolint:staticcheck // SA1019 setting the deprecated eab.KeyAlgorithm field is intentional: this modifier exists so tests can exercise the legacy field.
 			KeyAlgorithm: keyAlgorithm,
 			Key: cmmeta.SecretKeySelector{
 				Key: "key",

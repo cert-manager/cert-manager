@@ -142,7 +142,11 @@ func TestRoundTripRDNSequence(t *testing.T) {
 					{Type: OIDConstants.OrganizationalUnit, Value: "Foo===Long"},
 					{Type: OIDConstants.OrganizationalUnit, Value: "Ba  rq"},
 					{Type: OIDConstants.OrganizationalUnit, Value: "Baz"},
-					{Type: OIDConstants.Country, Value: "fo\x00o-long.com"},
+					// The value contains an RFC 4514 escaped NULL character `(\00`).
+					// As the Go stdlib stringer used to produce the literal test DN implements the legacy RFC 2253,
+					// an unescaped NULL character cannot be used in the roundtrip test after upgrading go-ldap to v3.4.14,
+					// which contains stricter validation of RFC 4514 literals.
+					{Type: OIDConstants.Country, Value: "fo\\00o-long.com"},
 				},
 				[]pkix.AttributeTypeAndValue{
 					{Type: OIDConstants.Organization, Value: "C; orp."},
@@ -179,7 +183,7 @@ func TestRoundTripRDNSequence(t *testing.T) {
 func FuzzRoundTripRDNSequence(f *testing.F) {
 	f.Add("CN=foo-long.com,OU=FooLong,OU=Barq,OU=Baz,OU=Dept.,O=Corp.,C=US")
 	f.Add("CN=foo-lon❤️\\,g.com,OU=Foo===Long,OU=Ba # rq,OU=Baz,O=C\\; orp.,C=US")
-	f.Add("CN=fo\x00o-long.com,OU=\x04FooLong")
+	f.Add("CN=fo\\00o-long.com,OU=\x04FooLong")
 	f.Add("1.2.3.4=String Value")
 	f.Add("1.3.6.1.4.1.1466.0=#04024869")
 
