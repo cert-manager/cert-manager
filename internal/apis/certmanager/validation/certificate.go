@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -62,6 +63,10 @@ var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcma
 // Validation functions for cert-manager Certificate types
 
 func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	return validateCertificateSpec(crt, nil, fldPath)
+}
+
+func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
@@ -193,8 +198,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
-	if crt.Duration != nil || crt.RenewBefore != nil {
-		el = append(el, ValidateDuration(crt, fldPath)...)
+	if crt.Duration != nil || crt.RenewBefore != nil || crt.RenewBeforePercentage != nil {
+		el = append(el, validateDuration(crt, oldCrt, fldPath)...)
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
@@ -246,8 +251,9 @@ func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (a
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	allErrs := validateCertificateSpec(&crt.Spec, &oldCrt.Spec, field.NewPath("spec"))
 	return allErrs, nil
 }
 
@@ -356,6 +362,10 @@ func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPa
 }
 
 func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	return validateDuration(crt, nil, fldPath)
+}
+
+func validateDuration(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
@@ -381,26 +391,14 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	// If spec.renewBeforePercentage is set, check that it's within the allowed
 	// range.
 	if crt.RenewBeforePercentage != nil {
-		// The effective renewBefore is the amount of time before expiry at which
-		// renewal begins. Per the renewBeforePercentage field docs, it is
-		// duration * percentage / 100 (e.g. a 60m certificate with
-		// renewBeforePercentage=25 renews when 25% / 15m of its lifetime
-		// remains). This matches the runtime calculation in
-		// pki.RenewalTime / desiredRenewalTime.
-		//
-		// We cast to float64 to avoid an int overflow.
-		//
-		// This would happen because duration is an int64 (nanoseconds),
-		// duration * pct is evaluated in int64 before the / 100, so
-		// multiplying a large duration by up to 100 can exceed math.MaxInt64
-		// and wrap to a negative/garbage value.
-		//
-		// Technically we lose precision at around 104 days, however the
-		// precision lost is so small it does not matter (a value of 150k years
-		// is required to lose 1ms of precision)
-		renewBefore := time.Duration(float64(duration) * float64(*crt.RenewBeforePercentage) / 100)
-		if renewBefore < cmapi.MinimumRenewBefore {
-			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore)))
+		if *crt.RenewBeforePercentage <= 0 || *crt.RenewBeforePercentage >= 100 {
+			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "must be an integer in the range (0,100)"))
+			return el
+		}
+
+		renewBefore := pki.RenewBeforeFromPercentage(duration, *crt.RenewBeforePercentage)
+		if renewBefore < cmapi.MinimumRenewBefore && !allowLegacyRenewBeforePercentageOnUpdate(crt, oldCrt) {
+			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; %d%% of %s is %s", cmapi.MinimumRenewBefore, *crt.RenewBeforePercentage, duration, renewBefore)))
 		}
 		if renewBefore >= duration {
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "certificate renewBeforePercentage must result in a renewBefore less than duration"))
@@ -408,6 +406,23 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	}
 
 	return el
+}
+
+func allowLegacyRenewBeforePercentageOnUpdate(crt, oldCrt *internalcmapi.CertificateSpec) bool {
+	if oldCrt == nil ||
+		!reflect.DeepEqual(oldCrt.Duration, crt.Duration) ||
+		!reflect.DeepEqual(oldCrt.RenewBeforePercentage, crt.RenewBeforePercentage) {
+		return false
+	}
+	if crt.RenewBeforePercentage == nil || *crt.RenewBeforePercentage <= 0 || *crt.RenewBeforePercentage >= 100 {
+		return false
+	}
+
+	duration := util.DefaultCertDuration(crt.Duration)
+	// Before this validation was fixed, the webhook checked the complement of
+	// the effective renewBefore. Keep those unchanged specs updateable.
+	oldRenewBefore := duration - pki.RenewBeforeFromPercentage(duration, *crt.RenewBeforePercentage)
+	return oldRenewBefore >= cmapi.MinimumRenewBefore && oldRenewBefore < duration
 }
 
 func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
