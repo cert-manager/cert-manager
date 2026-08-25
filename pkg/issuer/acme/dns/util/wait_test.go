@@ -293,6 +293,12 @@ type interaction struct {
 var mu = &sync.Mutex{} // Protects the global dnsQuery variable.
 
 func withMockDNSQuery(t *testing.T, mockDNS []interaction) {
+	withMockDNSQueryFailing(t, mockDNS, "", nil)
+}
+
+// Same as above, except that any query equal to failQuery returns failErr
+// instead of consuming a mocked interaction.
+func withMockDNSQueryFailing(t *testing.T, mockDNS []interaction, failQuery string, failErr error) {
 	mu.Lock()
 	t.Cleanup(func() {
 		mu.Unlock()
@@ -310,6 +316,10 @@ func withMockDNSQuery(t *testing.T, mockDNS []interaction) {
 
 	dnsQuery = func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 		got := dns.TypeToString[rtype] + " " + fqdn
+
+		if failQuery != "" && got == failQuery {
+			return nil, failErr
+		}
 
 		count.Add(1)
 		if int(count.Load()) > len(mockDNS) {
