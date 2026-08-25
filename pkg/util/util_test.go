@@ -285,9 +285,34 @@ func TestJoinSplitWithEscapeCSVRoundTrip(t *testing.T) {
 	}
 }
 
-func TestJoinWithEscapeCSVRejectsCRLF(t *testing.T) {
-	_, err := JoinWithEscapeCSV([]string{"line1\r\nline2"})
-	if err == nil {
-		t.Fatal("JoinWithEscapeCSV with a value containing \\r\\n did not return an error, so it would silently corrupt on round trip")
+func TestSplitWithEscapeCSVRejectsInputItCannotReadBackUnchanged(t *testing.T) {
+	tests := []struct {
+		desc string
+		in   string
+	}{
+		{desc: "CRLF inside a quoted field, which the reader would rewrite as a line feed", in: "\"line1\r\nline2\""},
+		{desc: "a carriage return at the end of the input, which the reader would drop", in: "line1\r"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			out, err := SplitWithEscapeCSV(test.in)
+			if err == nil {
+				t.Fatalf("SplitWithEscapeCSV(%q) returned %+v and no error, so it silently altered its input", test.in, out)
+			}
+		})
+	}
+}
+
+func TestSplitWithEscapeCSVKeepsACarriageReturnItCanReadBack(t *testing.T) {
+	const in = "line1\rline2"
+
+	out, err := SplitWithEscapeCSV(in)
+	if err != nil {
+		t.Fatalf("SplitWithEscapeCSV(%q) returned unexpected error: %v", in, err)
+	}
+
+	if want := []string{in}; !slices.Equal(out, want) {
+		t.Errorf("SplitWithEscapeCSV(%q) = %+v, want %+v", in, out, want)
 	}
 }

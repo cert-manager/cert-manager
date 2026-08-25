@@ -406,12 +406,7 @@ func certificateDataAnnotationsForSecret(secret *corev1.Secret) (annotations map
 		}
 	}
 
-	certificateAnnotations, err := internalcertificates.AnnotationsForCertificate(certificate)
-	if err != nil {
-		return nil, err
-	}
-
-	return certificateAnnotations, nil
+	return internalcertificates.AnnotationsForCertificate(certificate), nil
 }
 
 func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager string) (labels, annotations sets.Set[string], err error) {

@@ -180,10 +180,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		}
 	}
 
-	certificateDetailsAnnotations, err := certificates.AnnotationsForCertificate(certificate)
-	if err != nil {
-		return err
-	}
+	certificateDetailsAnnotations := certificates.AnnotationsForCertificate(certificate)
 	maps.Copy(secret.Annotations, certificateDetailsAnnotations)
 
 	// Add the certificate name and issuer details to the secret annotations.
