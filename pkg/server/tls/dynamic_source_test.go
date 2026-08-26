@@ -17,6 +17,7 @@ limitations under the License.
 package tls
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/ecdsa"
@@ -213,15 +214,13 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 					// Rotate the root
 					mockAuth.notifyCh <- struct{}{}
 
-					// Sleep for a short time to allow the DynamicSource to generate a new certificate
-					time.Sleep(50 * time.Millisecond)
-
-					// Call the GetCertificate method, should return a NEW certificate
-					cert2, err := source.GetCertificate(&tls.ClientHelloInfo{})
-					assert.NoError(t, err)
-					assert.NotNil(t, cert2)
-
-					assert.NotEqual(t, cert.Certificate[0], cert2.Certificate[0])
+					// Wait for the DynamicSource to generate a new certificate; how
+					// long that takes varies with the load on the test machine.
+					previous := cert
+					assert.Eventually(t, func() bool {
+						cert, err = source.GetCertificate(&tls.ClientHelloInfo{})
+						return err == nil && cert != nil && !bytes.Equal(cert.Certificate[0], previous.Certificate[0])
+					}, 10*time.Second, 10*time.Millisecond)
 				}
 			},
 		},
@@ -252,20 +251,14 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 				assert.NotNil(t, cert)
 
 				for range 5 {
-					// Sleep for a short time to allow the DynamicSource to generate a new certificate
-					// The certificate should get renewed after 100ms, we wait for 200ms to allow for
-					// possible delays of max 100ms (based on experiments, we noticed that issuance of
-					// a cert takes about 30ms, so 100ms should be a large enough margin).
-					time.Sleep(200 * time.Millisecond)
-
-					// Call the GetCertificate method, should return a NEW certificate
-					newCert, err := source.GetCertificate(&tls.ClientHelloInfo{})
-					assert.NoError(t, err)
-					assert.NotNil(t, newCert)
-
-					assert.NotEqual(t, cert.Certificate[0], newCert.Certificate[0])
-
-					cert = newCert
+					// Wait for the DynamicSource to renew the certificate, which
+					// should happen 100ms after its NotBefore time; how long the
+					// renewal takes varies with the load on the test machine.
+					previous := cert
+					assert.Eventually(t, func() bool {
+						cert, err = source.GetCertificate(&tls.ClientHelloInfo{})
+						return err == nil && cert != nil && !bytes.Equal(cert.Certificate[0], previous.Certificate[0])
+					}, 10*time.Second, 10*time.Millisecond)
 				}
 			},
 		},
@@ -292,17 +285,19 @@ func TestDynamicSource_FailingSign(t *testing.T) {
 			group.Go(func() error {
 				return source.Start(gctx)
 			})
-			t.Cleanup(func() {
-				err := group.Wait()
-				if tc.expStartErr == "" {
-					assert.NoError(t, err)
-				} else {
-					assert.Error(t, err)
-					assert.Contains(t, err.Error(), tc.expStartErr)
-				}
-			})
-
 			tc.testFn(t, source, mockAuth)
+
+			if tc.expStartErr == "" {
+				// Start returns nil only after t.Context is cancelled, which
+				// happens just before Cleanup-registered functions are called.
+				t.Cleanup(func() {
+					assert.NoError(t, group.Wait())
+				})
+			} else {
+				// Wait while t.Context is still alive: Start must return this
+				// error on its own, not as a side effect of test shutdown.
+				assert.ErrorContains(t, group.Wait(), tc.expStartErr)
+			}
 		})
 	}
 }
