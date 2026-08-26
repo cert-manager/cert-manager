@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"unicode/utf8"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,6 +67,17 @@ const (
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
 	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
+	messageTemplateNonACMEErrorResponse    = "the ACME server returned an HTTP %d response which is not an RFC 8555 problem document; the response body has been omitted and can be found in the cert-manager logs"
+
+	// acmeErrorURNPrefix is the URN namespace that RFC 8555 section 6.7 reserves
+	// for ACME error types. A problem document which does not identify itself
+	// using this namespace did not come from an ACME endpoint.
+	acmeErrorURNPrefix = "urn:ietf:params:acme:error:"
+
+	// maxACMEErrorMessageLength bounds how much of an error is copied into an
+	// Issuer status condition or a Kubernetes Event. Both are persisted to the
+	// API server, so their size has to be bounded even for well behaved ACME servers.
+	maxACMEErrorMessageLength = 1024
 )
 
 // Setup will verify an existing ACME registration, or create one if not
@@ -331,7 +343,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		// TODO: this error could be from an account registration or an attempt
 		// to retrieve an existing account - perhaps we should log different
 		// messages in those two scenarios.
-		msg := messageAccountRegistrationFailed + err.Error()
+		msg := messageAccountRegistrationFailed + safeErrorMessage(err)
 		log.Error(err, "failed to register an ACME account")
 
 		acmeErr, ok := err.(*acmeapi.Error)
@@ -376,7 +388,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	specEmail := issuer.GetSpec().ACME.Email
 	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
 	if err != nil {
-		msg := messageAccountUpdateFailed + err.Error()
+		msg := messageAccountUpdateFailed + safeErrorMessage(err)
 		log.Error(err, "failed to update ACME account")
 		a.recorder.Event(issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, msg)
 
@@ -439,6 +451,52 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		reason:  successAccountRegistered,
 		message: messageAccountRegistered,
 	}
+}
+
+// safeErrorMessage renders err for inclusion in an Issuer status condition and
+// in the Kubernetes Events raised alongside it. Both are persisted to the API
+// server and are readable by anyone who can read the Issuer, so they must not
+// carry content chosen by the ACME server.
+func safeErrorMessage(err error) string {
+	acmeErr, ok := err.(*acmeapi.Error)
+	if !ok {
+		// Not a response from the ACME server: this was raised locally or by the
+		// Kubernetes API and carries no remote content.
+		return truncateMessage(err.Error(), maxACMEErrorMessageLength)
+	}
+
+	// ProblemType is only populated when the response body was successfully
+	// unmarshalled as a problem document, and RFC 8555 section 6.7 requires ACME
+	// errors to use the urn:ietf:params:acme:error: namespace. Anything else is
+	// either a raw body the client could not parse or a problem document from
+	// some other service, and in both cases it is not safe to reflect.
+	if !strings.HasPrefix(strings.ToLower(acmeErr.ProblemType), acmeErrorURNPrefix) {
+		return fmt.Sprintf(messageTemplateNonACMEErrorResponse, acmeErr.StatusCode)
+	}
+
+	return truncateMessage(acmeErr.Error(), maxACMEErrorMessageLength)
+}
+
+// truncateMessage bounds s to maxLen bytes, appending a marker so that readers
+// can tell the message is incomplete.
+func truncateMessage(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+
+	truncated := s[:maxLen]
+	// Cutting on a byte boundary can split a multi-byte rune in half. Drop any
+	// trailing partial rune so that the result is always valid UTF-8, which the
+	// API server requires of the strings it stores.
+	for len(truncated) > 0 {
+		if r, size := utf8.DecodeLastRuneInString(truncated); r != utf8.RuneError || size > 1 {
+			break
+		}
+		truncated = truncated[:len(truncated)-1]
+	}
+
+	// trim spaces to make output readable if it ends with whitespace
+	return strings.TrimSpace(truncated) + "... (truncated)"
 }
 
 func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
