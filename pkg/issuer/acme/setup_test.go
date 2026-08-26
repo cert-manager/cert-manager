@@ -107,6 +107,14 @@ func TestAcme_Setup(t *testing.T) {
 			StatusCode: 403,
 			Detail:     fmt.Sprintf("{\"AccessKeyId\":%q,\"Token\":\"internal-only\"}", reflectedBodySecret),
 		}
+		// reflectedBody5xxACMEErr is the same, but with a status code which
+		// makes setup retry. That path returns the error to the Issuer
+		// controllers, which copy it into an Event of their own.
+		reflectedBody5xxACMEErr = &acmeapi.Error{
+			StatusCode: 502,
+			Detail:     fmt.Sprintf("{\"AccessKeyId\":%q,\"Token\":\"internal-only\"}", reflectedBodySecret),
+		}
+		reflectedBody5xxMessage = fmt.Sprintf(messageTemplateNonACMEErrorResponse, 502)
 		//TODO: we should probably mock calls to net/url instead of doing this.
 		invalidURLErr = parseURLErr(invalidURL)
 
@@ -388,6 +396,19 @@ func TestAcme_Setup(t *testing.T) {
 					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403))),
 			},
 		},
+		"Attempt to register ACME account returns a retryable response which is not a problem document": {
+			issuer:                     gen.IssuerFrom(baseIssuer),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+			registerErr:                reflectedBody5xxACMEErr,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+reflectedBody5xxMessage)),
+			},
+			wantsErr: true,
+		},
 		"ACME account already exists, attempting to retrieve it fails with unknown error": {
 			issuer:                     gen.IssuerFrom(baseIssuer),
 			kfsKey:                     rsaPrivKey,
@@ -580,6 +601,25 @@ func TestAcme_Setup(t *testing.T) {
 			expectedEvents: []string{
 				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403)))},
 		},
+		"Attempt to update ACME account returns a retryable response which is not a problem document": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEEmail(someEmail)),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			registerErr:                acmeapi.ErrAccountAlreadyExists,
+			getRegAcc:                  &acmeapi.Account{Contact: []string{"some@test.com"}},
+			expectedRegisteredAcc:      &acmeapi.Account{Contact: []string{someEmailURL}},
+			updateRegError:             reflectedBody5xxACMEErr,
+			wantsErr:                   true,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition,
+					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
+					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, reflectedBody5xxMessage))),
+			},
+			expectedEvents: []string{
+				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, reflectedBody5xxMessage))},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -653,6 +693,13 @@ func TestAcme_Setup(t *testing.T) {
 			gotErr := a.Setup(t.Context(), test.issuer)
 			if gotErr == nil && test.wantsErr {
 				t.Errorf("Expected error %v, got %v", test.wantsErr, gotErr)
+			}
+
+			// The Issuer controllers copy the error returned here into a
+			// Kubernetes Event, so it must not carry content chosen by the
+			// ACME server either.
+			if gotErr != nil && strings.Contains(gotErr.Error(), reflectedBodySecret) {
+				t.Errorf("Returned error leaks ACME server controlled content: %v", gotErr)
 			}
 
 			// Verify that a client was removed from cache if expected.
@@ -762,6 +809,21 @@ func TestSafeErrorMessage(t *testing.T) {
 			},
 			wantContains: "unsupported key type",
 		},
+		"a problem document in the pre-RFC 8555 namespace is reported in full": {
+			err: &acmeapi.Error{
+				StatusCode:  400,
+				ProblemType: "urn:acme:error:badNonce",
+				Detail:      "JWS has an invalid anti-replay nonce",
+			},
+			want: "400 urn:acme:error:badNonce: JWS has an invalid anti-replay nonce",
+		},
+		"a wrapped ACME error is still sanitised": {
+			err: fmt.Errorf("registering account: %w", &acmeapi.Error{
+				StatusCode: 403,
+				Detail:     secret,
+			}),
+			want: fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403),
+		},
 		"a reflected response body is omitted": {
 			err: &acmeapi.Error{
 				StatusCode: 403,
@@ -794,7 +856,7 @@ func TestSafeErrorMessage(t *testing.T) {
 			if strings.Contains(got, secret) {
 				t.Errorf("message leaks server controlled content: %q", got)
 			}
-			if len(got) > maxACMEErrorMessageLength+len("... (truncated)") {
+			if len(got) > maxACMEErrorMessageLength {
 				t.Errorf("message is %d bytes, want at most %d", len(got), maxACMEErrorMessageLength)
 			}
 
@@ -822,7 +884,7 @@ func TestSafeErrorMessageBoundsLength(t *testing.T) {
 	}
 
 	got := safeErrorMessage(err)
-	if !strings.HasSuffix(got, "... (truncated)") {
+	if !strings.HasSuffix(got, truncationMarker) {
 		t.Errorf("safeErrorMessage() = %q, want it to be marked as truncated", got)
 	}
 	if len(got) > maxACMEErrorMessageLength+len("... (truncated)") {
@@ -836,32 +898,49 @@ func TestTruncateMessage(t *testing.T) {
 		maxLen int
 		want   string
 	}{
+		// maxLen is a bound on the whole result, so a limit of 20 leaves 5 bytes
+		// for the message once the 15 byte marker has been accounted for.
 		"a message within the limit is returned unchanged": {
 			in:     "short",
-			maxLen: 10,
+			maxLen: 20,
 			want:   "short",
 		},
 		"a message at the limit is returned unchanged": {
-			in:     "exactly10!",
-			maxLen: 10,
-			want:   "exactly10!",
+			in:     "exactly20bytes!!!!!!",
+			maxLen: 20,
+			want:   "exactly20bytes!!!!!!",
 		},
 		"a longer message is truncated": {
-			in:     "abcdefghijklmnop",
-			maxLen: 10,
-			want:   "abcdefghij... (truncated)",
+			in:     "abcdefghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abcde" + truncationMarker,
 		},
 		"trailing whitespace is trimmed before the marker is added": {
-			in:     "abcdefgh  ijklmnop",
-			maxLen: 10,
-			want:   "abcdefgh... (truncated)",
+			in:     "abc  defghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abc" + truncationMarker,
 		},
 		"a multi-byte rune is not split in half": {
-			// Each £ is two bytes, so a limit of 5 falls in the middle of the
-			// third one.
+			// Each £ is two bytes, so the 5 byte budget falls in the middle of
+			// the third one.
+			in:     strings.Repeat("£", 12),
+			maxLen: 20,
+			want:   "££" + truncationMarker,
+		},
+		"an invalid byte sequence is dropped": {
+			in:     "ab\xffcdefghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abcd" + truncationMarker,
+		},
+		"a limit too small for the marker drops the marker": {
+			in:     "abcdefghij",
+			maxLen: 4,
+			want:   "abcd",
+		},
+		"a limit too small for the marker still respects rune boundaries": {
 			in:     strings.Repeat("£", 4),
-			maxLen: 5,
-			want:   "££... (truncated)",
+			maxLen: 3,
+			want:   "£",
 		},
 	}
 
@@ -873,6 +952,10 @@ func TestTruncateMessage(t *testing.T) {
 			}
 			if !utf8.ValidString(got) {
 				t.Errorf("truncateMessage() = %q, which is not valid UTF-8", got)
+			}
+			// maxLen bounds the result in full, marker included.
+			if len(got) > test.maxLen {
+				t.Errorf("truncateMessage() returned %d bytes, want at most %d", len(got), test.maxLen)
 			}
 		})
 	}
