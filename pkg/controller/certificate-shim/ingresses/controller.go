@@ -22,12 +22,15 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -39,6 +42,8 @@ const (
 
 type controller struct {
 	ingressLister networkingv1listers.IngressLister
+	certLister    cmlisters.CertificateLister
+	cmClient      clientset.Interface
 	sync          shimhelper.SyncFn
 }
 
@@ -50,7 +55,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
-
+	c.certLister = cmShared.Certmanager().V1().Certificates().Lister()
+	c.cmClient = ctx.CMClient
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(
 		controllerpkg.DefaultItemBasedRateLimiter(),
 		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
@@ -93,17 +99,63 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	namespace, name := key.Namespace, key.Name
+	log := logf.FromContext(ctx, ControllerName)
 
 	ingress, err := c.ingressLister.Ingresses(namespace).Get(name)
-	if err != nil && !k8sErrors.IsNotFound(err) {
+	if k8sErrors.IsNotFound(err) {
+		// The Ingress no longer exists. Clean up any orphaned Certificates that
+		// were created by this Ingress to prevent cert-manager from continually
+		// attempting to renew certificates for non-existent Ingresses.
+		log.V(logf.DebugLevel).Info("ingress no longer exists, cleaning up orphaned certificates", "ingress", key)
+
+		return c.cleanupOrphanedCertificates(ctx, namespace, name)
+	}
+	if err != nil {
 		return err
 	}
-	if ingress == nil || ingress.DeletionTimestamp != nil {
-		// If the Ingress object was/ is being deleted, we don't want to start creating Certificates.
+	if ingress.DeletionTimestamp != nil {
+		// If the Ingress object is being deleted, we don't want to start creating Certificates.
 		return nil
 	}
 
 	return c.sync(ctx, ingress)
+}
+
+// cleanupOrphanedCertificates deletes Certificates that have an ownerReference
+// to an Ingress that no longer exists. This is necessary when Kubernetes
+// garbage collection fail to clean up dependents in certain cases, such as when the ownerReference uses a deprecated API version (e.g., networking.k8s.io/v1beta1).
+func (c *controller) cleanupOrphanedCertificates(ctx context.Context, namespace, ingressName string) error {
+	log := logf.FromContext(ctx, ControllerName)
+
+	// List all Certificates in the namespace
+	certs, err := c.certLister.Certificates(namespace).List(labels.Everything())
+	if err != nil {
+		return fmt.Errorf("failed to list certificates: %w", err)
+	}
+
+	// Find and delete Certificates owned by the deleted Ingress
+	for _, cert := range certs {
+		owner := metav1.GetControllerOf(cert)
+		if owner == nil {
+			continue
+		}
+
+		// Check if this Certificate is owned by the deleted Ingress
+		if owner.Kind == "Ingress" && owner.Name == ingressName {
+			err := c.cmClient.CertmanagerV1().Certificates(namespace).Delete(ctx, cert.Name, metav1.DeleteOptions{})
+			if err != nil && !k8sErrors.IsNotFound(err) {
+				return fmt.Errorf("failed to delete orphaned certificate %s/%s: %w", namespace, cert.Name, err)
+			}
+			if err == nil {
+				log.V(logf.InfoLevel).Info("deleted orphaned certificate",
+					"certificate", cert.Name,
+					"namespace", namespace,
+					"ingress", ingressName)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Whenever a Certificate gets updated, added or deleted, we want to reconcile

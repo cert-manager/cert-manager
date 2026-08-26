@@ -17,12 +17,14 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -184,6 +186,196 @@ func Test_controller_Register(t *testing.T) {
 				assert.Equal(t, []types.NamespacedName{test.expectRequeueKey}, gotKeys)
 			} else {
 				assert.Nil(t, gotKeys)
+			}
+		})
+	}
+}
+
+func Test_controller_ProcessItem_CleansUpOrphanedCertificates(t *testing.T) {
+	tests := []struct {
+		name              string
+		existingCMObjects []runtime.Object
+		ingressKey        types.NamespacedName
+		expectDeleted     []string
+		expectNotDeleted  []string
+	}{
+		{
+			name: "deletes certificate when owning ingress does not exist",
+			existingCMObjects: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "orphaned-cert",
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(
+								&networkingv1.Ingress{
+									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "test-ns",
+										Name:      "deleted-ingress",
+										UID:       "test-uid-123",
+									},
+								},
+								ingressGVK,
+							),
+						},
+					},
+				},
+			},
+			ingressKey: types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      "deleted-ingress",
+			},
+			expectDeleted:    []string{"orphaned-cert"},
+			expectNotDeleted: []string{},
+		},
+		{
+			name: "deletes multiple orphaned certificates for the same ingress",
+			existingCMObjects: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "orphaned-cert-1",
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(
+								&networkingv1.Ingress{
+									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "test-ns",
+										Name:      "deleted-ingress",
+										UID:       "test-uid-123",
+									},
+								},
+								ingressGVK,
+							),
+						},
+					},
+				},
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "orphaned-cert-2",
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(
+								&networkingv1.Ingress{
+									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "test-ns",
+										Name:      "deleted-ingress",
+										UID:       "test-uid-456",
+									},
+								},
+								ingressGVK,
+							),
+						},
+					},
+				},
+			},
+			ingressKey: types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      "deleted-ingress",
+			},
+			expectDeleted:    []string{"orphaned-cert-1", "orphaned-cert-2"},
+			expectNotDeleted: []string{},
+		},
+		{
+			name: "does not delete certificates owned by different ingress",
+			existingCMObjects: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "orphaned-cert",
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(
+								&networkingv1.Ingress{
+									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "test-ns",
+										Name:      "deleted-ingress",
+										UID:       "test-uid-123",
+									},
+								},
+								ingressGVK,
+							),
+						},
+					},
+				},
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "other-cert",
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(
+								&networkingv1.Ingress{
+									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "test-ns",
+										Name:      "other-ingress",
+										UID:       "test-uid-456",
+									},
+								},
+								ingressGVK,
+							),
+						},
+					},
+				},
+			},
+			ingressKey: types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      "deleted-ingress",
+			},
+			expectDeleted:    []string{"orphaned-cert"},
+			expectNotDeleted: []string{"other-cert"},
+		},
+		{
+			name: "does not delete certificates without owner references",
+			existingCMObjects: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						Name:      "standalone-cert",
+					},
+				},
+			},
+			ingressKey: types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      "deleted-ingress",
+			},
+			expectDeleted:    []string{},
+			expectNotDeleted: []string{"standalone-cert"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			b := &testpkg.Builder{T: t, CertManagerObjects: test.existingCMObjects}
+			b.Init()
+
+			c := &controller{
+				ingressLister: b.Context.KubeSharedInformerFactory.Ingresses().Lister(),
+				certLister:    b.Context.SharedInformerFactory.Certmanager().V1().Certificates().Lister(),
+				cmClient:      b.CMClient,
+			}
+
+			b.Start()
+			defer b.Stop()
+
+			// Wait for informers to sync
+			b.Sync()
+
+			// Give the informer cache time to populate
+			time.Sleep(100 * time.Millisecond)
+
+			// Call ProcessItem for the non-existent Ingress
+			err := c.ProcessItem(context.Background(), test.ingressKey)
+			require.NoError(t, err)
+
+			// Verify deleted certificates
+			for _, certName := range test.expectDeleted {
+				_, err := b.CMClient.CertmanagerV1().Certificates(test.ingressKey.Namespace).Get(context.Background(), certName, metav1.GetOptions{})
+				assert.True(t, apierrors.IsNotFound(err),
+					"expected certificate %s to be deleted, got error: %v", certName, err)
+			}
+
+			// Verify not deleted certificates
+			for _, certName := range test.expectNotDeleted {
+				_, err := b.CMClient.CertmanagerV1().Certificates(test.ingressKey.Namespace).Get(context.Background(), certName, metav1.GetOptions{})
+				assert.NoError(t, err, "expected certificate %s to NOT be deleted", certName)
 			}
 		})
 	}
