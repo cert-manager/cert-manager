@@ -797,12 +797,12 @@ $(DOWNLOAD_DIR)/tools/operator-sdk@$(OPERATOR-SDK_VERSION)_$(HOST_OS)_$(HOST_ARC
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kube-api-linter@$(KUBE-API-LINTER_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kube-api-linter@$(KUBE-API-LINTER_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(NEEDS_GO) $(NEEDS_GOLANGCI-LINT) $(DOWNLOAD_DIR)/tools
 	@# Build a custom golangci-lint binary which includes the kube-api-linter
-	@# plugin, see https://golangci-lint.run/plugins/module-plugins/
+	@# plugin, see https://golangci-lint.run/docs/plugins/module-plugins/
 	@source $(lock_script) $@; \
 		tmpdir=$$(mktemp -d); \
 		printf 'version: %s\nname: kube-api-linter\nplugins:\n- module: sigs.k8s.io/kube-api-linter\n  version: %s\n' \
-			"$(golangci_lint_version)" "$(kube_api_linter_version)" > "$$tmpdir/.custom-gcl.yaml"; \
-		(cd "$$tmpdir" && GOWORK=off $(GOLANGCI-LINT) custom); \
+			"$(golangci_lint_version)" "$(kube_api_linter_version)" > "$$tmpdir/.custom-gcl.yml"; \
+		(cd "$$tmpdir" && GOWORK=off $(GOLANGCI-LINT) custom --verbose); \
 		mv "$$tmpdir/kube-api-linter" $(outfile); \
 		rm -rf "$$tmpdir"; \
 		chmod +x $(outfile)
