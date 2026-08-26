@@ -172,7 +172,7 @@ type ChallengeResponse struct {
 
 func (c *ChallengeRequest) WithContext(ctx context.Context) *ChallengeRequest {
 	if ctx == nil {
-		ctx = context.Background()
+		panic("nil context")
 	}
 	c2 := new(ChallengeRequest)
 	*c2 = *c
