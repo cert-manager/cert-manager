@@ -478,7 +478,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
+		return "", fmt.Errorf("error logging in to Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -557,7 +557,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -660,7 +660,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -761,7 +761,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	loginPath := path.Join(mountPath, "login")
 	secret, err := client.Write(loginPath, loginData)
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	// Guard against empty secret

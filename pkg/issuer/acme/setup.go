@@ -84,10 +84,6 @@ const (
 	// Issuer status condition or a Kubernetes Event. Both are persisted to the
 	// API server, so their size has to be bounded even for well behaved ACME servers.
 	maxACMEErrorMessageLength = 1024
-
-	// truncationMarker is appended to messages shortened by truncateMessage so
-	// that readers can tell the message is incomplete.
-	truncationMarker = "... (truncated)"
 )
 
 // Setup will verify an existing ACME registration, or create one if not
@@ -478,7 +474,7 @@ func safeErrorMessage(err error) string {
 	if !ok {
 		// Not a response from the ACME server: this was raised locally or by the
 		// Kubernetes API and carries no remote content.
-		return truncateMessage(err.Error(), maxACMEErrorMessageLength)
+		return cmerrors.TruncateMessage(err.Error(), maxACMEErrorMessageLength)
 	}
 
 	// ProblemType is only populated when the response body was successfully
@@ -490,7 +486,7 @@ func safeErrorMessage(err error) string {
 		return fmt.Sprintf(messageTemplateNonACMEErrorResponse, acmeErr.StatusCode)
 	}
 
-	return truncateMessage(acmeErr.Error(), maxACMEErrorMessageLength)
+	return cmerrors.TruncateMessage(acmeErr.Error(), maxACMEErrorMessageLength)
 }
 
 // isACMEProblemType reports whether problemType names an ACME error type, in
@@ -500,26 +496,6 @@ func isACMEProblemType(problemType string) bool {
 
 	return strings.HasPrefix(problemType, acmeErrorURNPrefix) ||
 		strings.HasPrefix(problemType, legacyACMEErrorURNPrefix)
-}
-
-// truncateMessage bounds s to maxLen bytes in total, including the marker which
-// is appended so that readers can tell the message is incomplete.
-func truncateMessage(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-
-	// Cutting on a byte boundary can split a multi-byte rune in half. Replacing
-	// invalid sequences keeps the result valid UTF-8, which the API server
-	// requires of the strings it stores.
-	if maxLen <= len(truncationMarker) {
-		return strings.ToValidUTF8(s[:maxLen], "")
-	}
-
-	truncated := strings.ToValidUTF8(s[:maxLen-len(truncationMarker)], "")
-
-	// Trim trailing whitespace so that the marker reads cleanly.
-	return strings.TrimRight(truncated, " \t\r\n") + truncationMarker
 }
 
 func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
