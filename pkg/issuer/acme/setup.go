@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -37,7 +38,7 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	"github.com/cert-manager/cert-manager/pkg/util/errors"
+	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
@@ -66,6 +67,27 @@ const (
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
 	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
+	messageTemplateNonACMEErrorResponse    = "the ACME server returned an HTTP %d response which is not an RFC 8555 problem document; the response body has been omitted and can be found in the cert-manager logs"
+
+	// acmeErrorURNPrefix is the URN namespace that RFC 8555 section 6.7 reserves
+	// for ACME error types. A problem document which does not identify itself
+	// using this namespace did not come from an ACME endpoint.
+	acmeErrorURNPrefix = "urn:ietf:params:acme:error:"
+
+	// legacyACMEErrorURNPrefix is the namespace used by the pre-RFC 8555 drafts.
+	// Some CAs still emit it, and isBadNonce in third_party/forked/acme already
+	// tolerates such variations, so errors using it are treated as genuine ACME
+	// errors too.
+	legacyACMEErrorURNPrefix = "urn:acme:error:"
+
+	// maxACMEErrorMessageLength bounds how much of an error is copied into an
+	// Issuer status condition or a Kubernetes Event. Both are persisted to the
+	// API server, so their size has to be bounded even for well behaved ACME servers.
+	maxACMEErrorMessageLength = 1024
+
+	// truncationMarker is appended to messages shortened by truncateMessage so
+	// that readers can tell the message is incomplete.
+	truncationMarker = "... (truncated)"
 )
 
 // Setup will verify an existing ACME registration, or create one if not
@@ -151,7 +173,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 			reason:  errorAccountVerificationFailed,
 			message: wrapErr.Error(),
 		}
-	case errors.IsInvalidData(err):
+	case cmerrors.IsInvalidData(err):
 		msg := fmt.Sprintf("%s%v", messageInvalidPrivateKey, err)
 		return setupResult{
 			err: nil,
@@ -293,7 +315,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		eabKey, err := a.getEABKey(ctx, ns, eabObj.Key)
 		switch {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
-		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
+		case apierrors.IsNotFound(err), cmerrors.IsInvalidData(err):
 			log.Error(err, "failed to verify ACME account")
 			msg := messageAccountRegistrationFailed + err.Error()
 			a.recorder.Event(issuer, corev1.EventTypeWarning,
@@ -331,7 +353,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		// TODO: this error could be from an account registration or an attempt
 		// to retrieve an existing account - perhaps we should log different
 		// messages in those two scenarios.
-		msg := messageAccountRegistrationFailed + err.Error()
+		msg := messageAccountRegistrationFailed + safeErrorMessage(err)
 		log.Error(err, "failed to register an ACME account")
 
 		acmeErr, ok := err.(*acmeapi.Error)
@@ -362,8 +384,10 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		}
 
 		// Otherwise if we receive anything other than a 400, we will retry.
+		// Return the sanitised message rather than the ACME error itself: the
+		// Issuer controllers copy the returned error into a Kubernetes Event.
 		return setupResult{
-			err: err,
+			err: fmt.Errorf("%s", msg),
 
 			status:  cmmeta.ConditionFalse,
 			reason:  errorAccountRegistrationFailed,
@@ -376,7 +400,7 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 	specEmail := issuer.GetSpec().ACME.Email
 	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
 	if err != nil {
-		msg := messageAccountUpdateFailed + err.Error()
+		msg := messageAccountUpdateFailed + safeErrorMessage(err)
 		log.Error(err, "failed to update ACME account")
 		a.recorder.Event(issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, msg)
 
@@ -408,8 +432,10 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		}
 
 		// Otherwise if we receive anything other than a 400, we will retry.
+		// Return the sanitised message rather than the ACME error itself: the
+		// Issuer controllers copy the returned error into a Kubernetes Event.
 		return setupResult{
-			err: err,
+			err: fmt.Errorf("%s", msg),
 
 			status:  cmmeta.ConditionFalse,
 			reason:  errorAccountUpdateFailed,
@@ -439,6 +465,61 @@ func (a *Acme) setup(ctx context.Context, issuer v1.GenericIssuer) setupResult {
 		reason:  successAccountRegistered,
 		message: messageAccountRegistered,
 	}
+}
+
+// safeErrorMessage renders err for inclusion in an Issuer status condition and
+// in the Kubernetes Events raised alongside it. Both are persisted to the API
+// server and are readable by anyone who can read the Issuer, so they must not
+// carry content chosen by the ACME server.
+func safeErrorMessage(err error) string {
+	// Use errors.AsType rather than a bare type assertion so that an ACME error
+	// which has been wrapped on its way up cannot bypass this check.
+	acmeErr, ok := errors.AsType[*acmeapi.Error](err)
+	if !ok {
+		// Not a response from the ACME server: this was raised locally or by the
+		// Kubernetes API and carries no remote content.
+		return truncateMessage(err.Error(), maxACMEErrorMessageLength)
+	}
+
+	// ProblemType is only populated when the response body was successfully
+	// unmarshalled as a problem document, and an ACME error identifies itself
+	// using one of the ACME error URN namespaces. Anything else is either a raw
+	// body the client could not parse or a problem document from some other
+	// service, and in both cases it is not safe to reflect.
+	if !isACMEProblemType(acmeErr.ProblemType) {
+		return fmt.Sprintf(messageTemplateNonACMEErrorResponse, acmeErr.StatusCode)
+	}
+
+	return truncateMessage(acmeErr.Error(), maxACMEErrorMessageLength)
+}
+
+// isACMEProblemType reports whether problemType names an ACME error type, in
+// either the namespace reserved by RFC 8555 section 6.7 or the pre-RFC one.
+func isACMEProblemType(problemType string) bool {
+	problemType = strings.ToLower(problemType)
+
+	return strings.HasPrefix(problemType, acmeErrorURNPrefix) ||
+		strings.HasPrefix(problemType, legacyACMEErrorURNPrefix)
+}
+
+// truncateMessage bounds s to maxLen bytes in total, including the marker which
+// is appended so that readers can tell the message is incomplete.
+func truncateMessage(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+
+	// Cutting on a byte boundary can split a multi-byte rune in half. Replacing
+	// invalid sequences keeps the result valid UTF-8, which the API server
+	// requires of the strings it stores.
+	if maxLen <= len(truncationMarker) {
+		return strings.ToValidUTF8(s[:maxLen], "")
+	}
+
+	truncated := strings.ToValidUTF8(s[:maxLen-len(truncationMarker)], "")
+
+	// Trim trailing whitespace so that the marker reads cleanly.
+	return strings.TrimRight(truncated, " \t\r\n") + truncationMarker
 }
 
 func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
@@ -517,7 +598,7 @@ func (a *Acme) getEABKey(ctx context.Context, ns string, eab cmmeta.SecretKeySel
 
 	encodedKeyData, ok := sec.Data[eab.Key]
 	if !ok {
-		return nil, errors.NewInvalidData("failed to find external account binding key data in Secret %q at index %q", eab.Name, eab.Key)
+		return nil, cmerrors.NewInvalidData("failed to find external account binding key data in Secret %q at index %q", eab.Name, eab.Key)
 	}
 
 	// decode the base64 encoded secret key data.
@@ -526,7 +607,7 @@ func (a *Acme) getEABKey(ctx context.Context, ns string, eab cmmeta.SecretKeySel
 	// base64 encoding.
 	keyData := make([]byte, base64.RawURLEncoding.DecodedLen(len(encodedKeyData)))
 	if _, err := base64.RawURLEncoding.Decode(keyData, encodedKeyData); err != nil {
-		return nil, errors.NewInvalidData("failed to decode external account binding key data: %v", err)
+		return nil, cmerrors.NewInvalidData("failed to decode external account binding key data: %v", err)
 	}
 
 	return keyData, nil

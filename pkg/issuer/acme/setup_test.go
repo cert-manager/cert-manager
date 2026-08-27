@@ -24,8 +24,10 @@ import (
 	"net/url"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -81,6 +83,38 @@ func TestAcme_Setup(t *testing.T) {
 		invalidURL     = "%"
 		acmeErr450     = &acmeapi.Error{StatusCode: 450}
 		acmeErr500     = &acmeapi.Error{StatusCode: 500}
+
+		// acmeErr450 and acmeErr500 carry no ProblemType, so they are not
+		// recognised as RFC 8555 problem documents and are reported by status
+		// code alone.
+		acmeErr450Message = fmt.Sprintf(messageTemplateNonACMEErrorResponse, 450)
+		acmeErr500Message = fmt.Sprintf(messageTemplateNonACMEErrorResponse, 500)
+
+		// conformantACMEErr is what a real ACME server returns. Its detail is
+		// useful to the operator and is safe to surface on the Issuer.
+		conformantACMEErr = &acmeapi.Error{
+			StatusCode:  400,
+			ProblemType: "urn:ietf:params:acme:error:invalidEmail",
+			Detail:      "contact email has an invalid domain: empty label",
+		}
+
+		// reflectedBodyACMEErr models a response from an endpoint which is not an
+		// ACME server. The ACME client cannot parse the body as a problem
+		// document, so it copies it verbatim into Detail; it must not reach the
+		// Issuer status or the Events raised alongside it.
+		reflectedBodySecret  = "AKIAIOSFODNN7EXAMPLE"
+		reflectedBodyACMEErr = &acmeapi.Error{
+			StatusCode: 403,
+			Detail:     fmt.Sprintf("{\"AccessKeyId\":%q,\"Token\":\"internal-only\"}", reflectedBodySecret),
+		}
+		// reflectedBody5xxACMEErr is the same, but with a status code which
+		// makes setup retry. That path returns the error to the Issuer
+		// controllers, which copy it into an Event of their own.
+		reflectedBody5xxACMEErr = &acmeapi.Error{
+			StatusCode: 502,
+			Detail:     fmt.Sprintf("{\"AccessKeyId\":%q,\"Token\":\"internal-only\"}", reflectedBodySecret),
+		}
+		reflectedBody5xxMessage = fmt.Sprintf(messageTemplateNonACMEErrorResponse, 502)
 		//TODO: we should probably mock calls to net/url instead of doing this.
 		invalidURLErr = parseURLErr(invalidURL)
 
@@ -322,7 +356,7 @@ func TestAcme_Setup(t *testing.T) {
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyFalseCondition,
 					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr450.Error())),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr450Message)),
 			},
 		},
 		"Attempt to register ACME account returns an ACME error outside of range [400,500)": {
@@ -334,7 +368,44 @@ func TestAcme_Setup(t *testing.T) {
 			expectedConditions: []cmapi.IssuerCondition{
 				*gen.IssuerConditionFrom(readyFalseCondition,
 					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
-					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr500.Error())),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+acmeErr500Message)),
+			},
+			wantsErr: true,
+		},
+		"Attempt to register ACME account returns a conformant ACME error": {
+			issuer:                     gen.IssuerFrom(baseIssuer),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+			registerErr:                conformantACMEErr,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+conformantACMEErr.Error())),
+			},
+		},
+		"Attempt to register ACME account returns a response which is not a problem document": {
+			issuer:                     gen.IssuerFrom(baseIssuer),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+			registerErr:                reflectedBodyACMEErr,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403))),
+			},
+		},
+		"Attempt to register ACME account returns a retryable response which is not a problem document": {
+			issuer:                     gen.IssuerFrom(baseIssuer),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			expectedRegisteredAcc:      &acmeapi.Account{},
+			registerErr:                reflectedBody5xxACMEErr,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+reflectedBody5xxMessage)),
 			},
 			wantsErr: true,
 		},
@@ -476,10 +547,10 @@ func TestAcme_Setup(t *testing.T) {
 				*gen.IssuerConditionFrom(readyTrueCondition,
 					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
 					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450.Error()))),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450Message))),
 			},
 			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450.Error()))},
+				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr450Message))},
 		},
 		"ACME account with legacy EAB key algorithm set, spec email different from registered email and registered failed with retryable ACME Error": {
 			issuer: gen.IssuerFrom(baseIssuer,
@@ -507,10 +578,47 @@ func TestAcme_Setup(t *testing.T) {
 				*gen.IssuerConditionFrom(readyTrueCondition,
 					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
 					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
-					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500.Error()))),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500Message))),
 			},
 			expectedEvents: []string{
-				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500.Error()))},
+				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, acmeErr500Message))},
+		},
+		"Attempt to update ACME account returns a response which is not a problem document": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEEmail(someEmail)),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			registerErr:                acmeapi.ErrAccountAlreadyExists,
+			getRegAcc:                  &acmeapi.Account{Contact: []string{"some@test.com"}},
+			expectedRegisteredAcc:      &acmeapi.Account{Contact: []string{someEmailURL}},
+			updateRegError:             reflectedBodyACMEErr,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition,
+					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
+					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403)))),
+			},
+			expectedEvents: []string{
+				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403)))},
+		},
+		"Attempt to update ACME account returns a retryable response which is not a problem document": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEEmail(someEmail)),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			registerErr:                acmeapi.ErrAccountAlreadyExists,
+			getRegAcc:                  &acmeapi.Account{Contact: []string{"some@test.com"}},
+			expectedRegisteredAcc:      &acmeapi.Account{Contact: []string{someEmailURL}},
+			updateRegError:             reflectedBody5xxACMEErr,
+			wantsErr:                   true,
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition,
+					gen.SetIssuerConditionStatus(cmmeta.ConditionFalse),
+					gen.SetIssuerConditionReason(errorAccountUpdateFailed),
+					gen.SetIssuerConditionMessage(fmt.Sprintf("%s%s", messageAccountUpdateFailed, reflectedBody5xxMessage))),
+			},
+			expectedEvents: []string{
+				fmt.Sprintf("%s %s %s", corev1.EventTypeWarning, errorAccountUpdateFailed, fmt.Sprintf("%s%s", messageAccountUpdateFailed, reflectedBody5xxMessage))},
 		},
 	}
 	for name, test := range tests {
@@ -587,6 +695,13 @@ func TestAcme_Setup(t *testing.T) {
 				t.Errorf("Expected error %v, got %v", test.wantsErr, gotErr)
 			}
 
+			// The Issuer controllers copy the error returned here into a
+			// Kubernetes Event, so it must not carry content chosen by the
+			// ACME server either.
+			if gotErr != nil && strings.Contains(gotErr.Error(), reflectedBodySecret) {
+				t.Errorf("Returned error leaks ACME server controlled content: %v", gotErr)
+			}
+
 			// Verify that a client was removed from cache if expected.
 			if removeClientWasCalled != test.removeClientShouldBeCalled {
 				t.Errorf("Expected Acme.accountsRegistry.RemoveClient to be called: %v, was called: %v",
@@ -660,6 +775,190 @@ func mustGenerateRSAKey(t *testing.T) crypto.Signer {
 		t.Fatal(err)
 	}
 	return key
+}
+
+func TestSafeErrorMessage(t *testing.T) {
+	// secret stands in for content which the ACME server is able to reflect back
+	// to us but which the reader of an Issuer must not be able to see.
+	const secret = "AKIAIOSFODNN7EXAMPLE"
+
+	tests := map[string]struct {
+		err error
+		// want is the exact message expected, and is only checked when set.
+		want string
+		// wantContains is checked when want is empty.
+		wantContains string
+	}{
+		"a locally raised error is reported unchanged": {
+			err:  fmt.Errorf("failed to build ACME client"),
+			want: "failed to build ACME client",
+		},
+		"a conformant problem document is reported in full": {
+			err: &acmeapi.Error{
+				StatusCode:  400,
+				ProblemType: "urn:ietf:params:acme:error:rateLimited",
+				Detail:      "too many registrations for this IP",
+			},
+			want: "400 urn:ietf:params:acme:error:rateLimited: too many registrations for this IP",
+		},
+		"a conformant problem document is recognised regardless of casing": {
+			err: &acmeapi.Error{
+				StatusCode:  400,
+				ProblemType: "URN:IETF:PARAMS:ACME:ERROR:badCSR",
+				Detail:      "unsupported key type",
+			},
+			wantContains: "unsupported key type",
+		},
+		"a problem document in the pre-RFC 8555 namespace is reported in full": {
+			err: &acmeapi.Error{
+				StatusCode:  400,
+				ProblemType: "urn:acme:error:badNonce",
+				Detail:      "JWS has an invalid anti-replay nonce",
+			},
+			want: "400 urn:acme:error:badNonce: JWS has an invalid anti-replay nonce",
+		},
+		"a wrapped ACME error is still sanitised": {
+			err: fmt.Errorf("registering account: %w", &acmeapi.Error{
+				StatusCode: 403,
+				Detail:     secret,
+			}),
+			want: fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403),
+		},
+		"a reflected response body is omitted": {
+			err: &acmeapi.Error{
+				StatusCode: 403,
+				Detail:     fmt.Sprintf("<html><body>%s</body></html>", secret),
+			},
+			want: fmt.Sprintf(messageTemplateNonACMEErrorResponse, 403),
+		},
+		"a problem document from a service which is not an ACME server is omitted": {
+			err: &acmeapi.Error{
+				StatusCode:  500,
+				ProblemType: "https://internal.example.com/errors/database",
+				Detail:      fmt.Sprintf("connection string: %s", secret),
+			},
+			want: fmt.Sprintf(messageTemplateNonACMEErrorResponse, 500),
+		},
+		"a URN outside the ACME error namespace is omitted": {
+			err: &acmeapi.Error{
+				StatusCode:  500,
+				ProblemType: "urn:ietf:params:acme:notanerror:" + secret,
+				Detail:      secret,
+			},
+			want: fmt.Sprintf(messageTemplateNonACMEErrorResponse, 500),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := safeErrorMessage(test.err)
+
+			if strings.Contains(got, secret) {
+				t.Errorf("message leaks server controlled content: %q", got)
+			}
+			if len(got) > maxACMEErrorMessageLength {
+				t.Errorf("message is %d bytes, want at most %d", len(got), maxACMEErrorMessageLength)
+			}
+
+			switch {
+			case test.want != "":
+				if got != test.want {
+					t.Errorf("safeErrorMessage() = %q, want %q", got, test.want)
+				}
+			case test.wantContains != "":
+				if !strings.Contains(got, test.wantContains) {
+					t.Errorf("safeErrorMessage() = %q, want it to contain %q", got, test.wantContains)
+				}
+			}
+		})
+	}
+}
+
+func TestSafeErrorMessageBoundsLength(t *testing.T) {
+	// Even a conformant ACME server must not be able to fill the Issuer status,
+	// which is persisted to the API server.
+	err := &acmeapi.Error{
+		StatusCode:  400,
+		ProblemType: "urn:ietf:params:acme:error:malformed",
+		Detail:      strings.Repeat("a", 4*maxACMEErrorMessageLength),
+	}
+
+	got := safeErrorMessage(err)
+	if !strings.HasSuffix(got, truncationMarker) {
+		t.Errorf("safeErrorMessage() = %q, want it to be marked as truncated", got)
+	}
+	if len(got) > maxACMEErrorMessageLength+len("... (truncated)") {
+		t.Errorf("message is %d bytes, want at most %d", len(got), maxACMEErrorMessageLength)
+	}
+}
+
+func TestTruncateMessage(t *testing.T) {
+	tests := map[string]struct {
+		in     string
+		maxLen int
+		want   string
+	}{
+		// maxLen is a bound on the whole result, so a limit of 20 leaves 5 bytes
+		// for the message once the 15 byte marker has been accounted for.
+		"a message within the limit is returned unchanged": {
+			in:     "short",
+			maxLen: 20,
+			want:   "short",
+		},
+		"a message at the limit is returned unchanged": {
+			in:     "exactly20bytes!!!!!!",
+			maxLen: 20,
+			want:   "exactly20bytes!!!!!!",
+		},
+		"a longer message is truncated": {
+			in:     "abcdefghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abcde" + truncationMarker,
+		},
+		"trailing whitespace is trimmed before the marker is added": {
+			in:     "abc  defghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abc" + truncationMarker,
+		},
+		"a multi-byte rune is not split in half": {
+			// Each £ is two bytes, so the 5 byte budget falls in the middle of
+			// the third one.
+			in:     strings.Repeat("£", 12),
+			maxLen: 20,
+			want:   "££" + truncationMarker,
+		},
+		"an invalid byte sequence is dropped": {
+			in:     "ab\xffcdefghijklmnopqrstuvwxyz",
+			maxLen: 20,
+			want:   "abcd" + truncationMarker,
+		},
+		"a limit too small for the marker drops the marker": {
+			in:     "abcdefghij",
+			maxLen: 4,
+			want:   "abcd",
+		},
+		"a limit too small for the marker still respects rune boundaries": {
+			in:     strings.Repeat("£", 4),
+			maxLen: 3,
+			want:   "£",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := truncateMessage(test.in, test.maxLen)
+			if got != test.want {
+				t.Errorf("truncateMessage() = %q, want %q", got, test.want)
+			}
+			if !utf8.ValidString(got) {
+				t.Errorf("truncateMessage() = %q, which is not valid UTF-8", got)
+			}
+			// maxLen bounds the result in full, marker included.
+			if len(got) > test.maxLen {
+				t.Errorf("truncateMessage() returned %d bytes, want at most %d", len(got), test.maxLen)
+			}
+		})
+	}
 }
 
 func TestValidateDNSSolvers(t *testing.T) {
