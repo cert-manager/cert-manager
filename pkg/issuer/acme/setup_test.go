@@ -27,7 +27,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -884,80 +883,11 @@ func TestSafeErrorMessageBoundsLength(t *testing.T) {
 	}
 
 	got := safeErrorMessage(err)
-	if !strings.HasSuffix(got, truncationMarker) {
+	if !strings.HasSuffix(got, errors.TruncationMarker) {
 		t.Errorf("safeErrorMessage() = %q, want it to be marked as truncated", got)
 	}
 	if len(got) > maxACMEErrorMessageLength+len("... (truncated)") {
 		t.Errorf("message is %d bytes, want at most %d", len(got), maxACMEErrorMessageLength)
-	}
-}
-
-func TestTruncateMessage(t *testing.T) {
-	tests := map[string]struct {
-		in     string
-		maxLen int
-		want   string
-	}{
-		// maxLen is a bound on the whole result, so a limit of 20 leaves 5 bytes
-		// for the message once the 15 byte marker has been accounted for.
-		"a message within the limit is returned unchanged": {
-			in:     "short",
-			maxLen: 20,
-			want:   "short",
-		},
-		"a message at the limit is returned unchanged": {
-			in:     "exactly20bytes!!!!!!",
-			maxLen: 20,
-			want:   "exactly20bytes!!!!!!",
-		},
-		"a longer message is truncated": {
-			in:     "abcdefghijklmnopqrstuvwxyz",
-			maxLen: 20,
-			want:   "abcde" + truncationMarker,
-		},
-		"trailing whitespace is trimmed before the marker is added": {
-			in:     "abc  defghijklmnopqrstuvwxyz",
-			maxLen: 20,
-			want:   "abc" + truncationMarker,
-		},
-		"a multi-byte rune is not split in half": {
-			// Each £ is two bytes, so the 5 byte budget falls in the middle of
-			// the third one.
-			in:     strings.Repeat("£", 12),
-			maxLen: 20,
-			want:   "££" + truncationMarker,
-		},
-		"an invalid byte sequence is dropped": {
-			in:     "ab\xffcdefghijklmnopqrstuvwxyz",
-			maxLen: 20,
-			want:   "abcd" + truncationMarker,
-		},
-		"a limit too small for the marker drops the marker": {
-			in:     "abcdefghij",
-			maxLen: 4,
-			want:   "abcd",
-		},
-		"a limit too small for the marker still respects rune boundaries": {
-			in:     strings.Repeat("£", 4),
-			maxLen: 3,
-			want:   "£",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := truncateMessage(test.in, test.maxLen)
-			if got != test.want {
-				t.Errorf("truncateMessage() = %q, want %q", got, test.want)
-			}
-			if !utf8.ValidString(got) {
-				t.Errorf("truncateMessage() = %q, which is not valid UTF-8", got)
-			}
-			// maxLen bounds the result in full, marker included.
-			if len(got) > test.maxLen {
-				t.Errorf("truncateMessage() returned %d bytes, want at most %d", len(got), test.maxLen)
-			}
-		})
 	}
 }
 

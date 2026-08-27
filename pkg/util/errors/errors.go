@@ -16,7 +16,14 @@ limitations under the License.
 
 package errors
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+// TruncationMarker is appended to messages shortened by TruncateMessage so that
+// readers can tell the message is incomplete.
+const TruncationMarker = "... (truncated)"
 
 type invalidDataError struct{ error }
 
@@ -29,4 +36,24 @@ func IsInvalidData(err error) bool {
 		return false
 	}
 	return true
+}
+
+// TruncateMessage bounds s to maxLen bytes in total, including the marker which
+// is appended so that readers can tell the message is incomplete.
+func TruncateMessage(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+
+	// Cutting on a byte boundary can split a multi-byte rune in half. Replacing
+	// invalid sequences keeps the result valid UTF-8, which the API server
+	// requires of the strings it stores.
+	if maxLen <= len(TruncationMarker) {
+		return strings.ToValidUTF8(s[:maxLen], "")
+	}
+
+	truncated := strings.ToValidUTF8(s[:maxLen-len(TruncationMarker)], "")
+
+	// Trim trailing whitespace so that the marker reads cleanly.
+	return strings.TrimRight(truncated, " \t\r\n") + TruncationMarker
 }
