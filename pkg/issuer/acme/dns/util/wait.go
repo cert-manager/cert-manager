@@ -103,8 +103,13 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 	if err != nil {
 		return "", err
 	}
-	if r.Rcode != dns.RcodeSuccess {
-		return fqdn, err
+	switch r.Rcode {
+	case dns.RcodeSuccess:
+	case dns.RcodeNameError:
+		// NXDOMAIN: the name does not exist, so there is no CNAME to follow.
+		return fqdn, nil
+	default:
+		return "", fmt.Errorf("could not determine whether there is a CNAME record for %q: DNS query to nameservers %v returned response code %s", fqdn, nameservers, dns.RcodeToString[r.Rcode])
 	}
 	for _, rr := range r.Answer {
 		cn, ok := rr.(*dns.CNAME)
@@ -120,6 +125,9 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 			return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
 		}
 		return followCNAMEs(ctx, cn.Target, nameservers, append(fqdnChain, fqdn)...)
+	}
+	if len(fqdnChain) == 0 {
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("No CNAME found", "fqdn", fqdn)
 	}
 	return fqdn, nil
 }
