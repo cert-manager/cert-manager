@@ -249,6 +249,43 @@ func Test_followCNAMEs(t *testing.T) {
 			},
 		},
 		{
+			name: "Return fqdn unchanged on NXDOMAIN",
+			args: args{
+				fqdn: "missing.example.com.",
+			},
+			want:    "missing.example.com.",
+			wantErr: false,
+			mock: []interaction{
+				{"CNAME missing.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+			},
+		},
+		{
+			name: "Error on SERVFAIL",
+			args: args{
+				fqdn: "broken.example.com.",
+			},
+			wantErr: true,
+			mock: []interaction{
+				{"CNAME broken.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+				}},
+			},
+		},
+		{
+			name: "Error on REFUSED",
+			args: args{
+				fqdn: "refused.example.com.",
+			},
+			wantErr: true,
+			mock: []interaction{
+				{"CNAME refused.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeRefused},
+				}},
+			},
+		},
+		{
 			name: "Error on recursive CNAME",
 			args: args{
 				fqdn: "recursive.example.com.",
