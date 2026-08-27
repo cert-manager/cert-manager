@@ -94,6 +94,12 @@ func getNameservers(path string, defaults []string) []string {
 	return systemNameservers
 }
 
+// errUnexpectedRcode is returned when a CNAME query gets a response code that
+// leaves it unknown whether a CNAME record exists, e.g. SERVFAIL or REFUSED.
+func errUnexpectedRcode(fqdn string, nameservers []string, rcode int) error {
+	return fmt.Errorf("could not determine whether there is a CNAME record for %q: DNS query to nameservers %v returned response code %s", fqdn, nameservers, dns.RcodeToString[rcode])
+}
+
 // Follows the CNAME records and returns the last non-CNAME fully qualified domain name
 // that it finds. Returns an error when a loop is found in the CNAME chain. The
 // argument fqdnChain is used by the function itself to keep track of which fqdns it
@@ -109,7 +115,7 @@ func followCNAMEs(ctx context.Context, fqdn string, nameservers []string, fqdnCh
 		// NXDOMAIN: the name does not exist, so there is no CNAME to follow.
 		return fqdn, nil
 	default:
-		return "", fmt.Errorf("could not determine whether there is a CNAME record for %q: DNS query to nameservers %v returned response code %s", fqdn, nameservers, dns.RcodeToString[r.Rcode])
+		return "", errUnexpectedRcode(fqdn, nameservers, r.Rcode)
 	}
 	for _, rr := range r.Answer {
 		cn, ok := rr.(*dns.CNAME)

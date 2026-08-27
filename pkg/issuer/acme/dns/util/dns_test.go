@@ -391,6 +391,47 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			},
 		},
 		{
+			// A resolver that answers but cannot resolve the challenge name
+			// leaves it unknown whether a CNAME exists, so the lookup must fail
+			// rather than silently use the original name.
+			// See: https://github.com/cert-manager/cert-manager/issues/8095
+			name:    "SERVFAIL for the challenge name should be returned as an error",
+			domain:  "example.com",
+			follow:  true,
+			wantErr: true,
+			mockDNS: []interaction{
+				{"CNAME _acme-challenge.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+				}},
+			},
+		},
+		{
+			// Like the transport-failure case above, a SERVFAIL on the wildcard
+			// probe must not break a delegation that used to work.
+			name:     "SERVFAIL for the wildcard probe should fall back to following the CNAME",
+			domain:   "monitoring.example.com",
+			follow:   true,
+			wantFQDN: "_acme-challenge.dns-validation.example.net.",
+			mockDNS: []interaction{
+				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.CNAME{
+							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
+							Target: "_acme-challenge.dns-validation.example.net.",
+						},
+					},
+				}},
+				{"CNAME *.monitoring.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+				}},
+				{"CNAME _acme-challenge.dns-validation.example.net.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{},
+				}},
+			},
+		},
+		{
 			// Failing to look up the challenge name is not a new failure mode:
 			// followCNAMEs would have made the same query and failed too.
 			name:      "challenge name lookup failure should be returned",

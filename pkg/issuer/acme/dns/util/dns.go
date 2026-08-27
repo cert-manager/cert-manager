@@ -38,6 +38,7 @@ func DNS01LookupFQDN(ctx context.Context, domain string, followCNAME bool, names
 	}
 	if target == "" {
 		// No CNAME record on the challenge name, so there is nothing to follow.
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("No CNAME found", "fqdn", fqdn)
 		return fqdn, nil
 	}
 
@@ -111,11 +112,17 @@ func lookupCNAMETarget(ctx context.Context, fqdn string, nameservers []string) (
 	if err != nil {
 		return "", err
 	}
-	// Any rcode other than NOERROR (NXDOMAIN, SERVFAIL, ...) means there is no
-	// CNAME to use. followCNAMEs treats these the same way, returning the name
-	// unchanged.
-	if r.Rcode != dns.RcodeSuccess {
+	// NXDOMAIN means the name does not exist, so there is no CNAME to use. Any
+	// other non-NOERROR rcode (SERVFAIL, REFUSED, ...) means it is unknown
+	// whether a CNAME exists, which must not be silently treated as "no CNAME":
+	// the challenge record would then be created under the wrong name.
+	// See: https://github.com/cert-manager/cert-manager/issues/8095
+	switch r.Rcode {
+	case dns.RcodeSuccess:
+	case dns.RcodeNameError:
 		return "", nil
+	default:
+		return "", errUnexpectedRcode(fqdn, nameservers, r.Rcode)
 	}
 
 	for _, rr := range r.Answer {
