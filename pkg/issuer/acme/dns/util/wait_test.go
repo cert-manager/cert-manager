@@ -12,17 +12,37 @@ package util
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestWaitForStopsWhenContextIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	start := time.Now()
+	err := WaitFor(ctx, time.Minute, 2*time.Second, func() (bool, error) {
+		cancel()
+		return false, nil
+	})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if elapsed := time.Since(start); elapsed >= 2*time.Second {
+		t.Errorf("WaitFor did not stop promptly after cancellation: %s", elapsed)
+	}
+}
 
 func TestFindZoneByFqdn(t *testing.T) {
 	tests := []struct {

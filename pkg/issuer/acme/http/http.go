@@ -176,8 +176,12 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 		log.V(logf.DebugLevel).Info("reachability test passed, re-checking in 2s time")
 
 		if i != s.requiredPasses-1 {
-			// sleep for 2s between checks
-			time.Sleep(time.Second * 2)
+			// sleep for 2s between checks, but respect context cancellation
+			select {
+			case <-time.After(time.Second * 2):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 

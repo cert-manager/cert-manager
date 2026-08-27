@@ -159,7 +159,7 @@ func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.Chan
 
 	statusID := resp.ChangeInfo.Id
 
-	return util.WaitFor(120*time.Second, 4*time.Second, func() (bool, error) {
+	return util.WaitFor(ctx, 120*time.Second, 4*time.Second, func() (bool, error) {
 		reqParams := &route53.GetChangeInput{
 			Id: statusID,
 		}
