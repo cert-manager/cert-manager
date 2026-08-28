@@ -258,6 +258,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			klog.SafePtr(crt.Status.RenewalTime))
 		return c.updateOrApplyStatus(ctx, crt)
 	}
+
+	// Schedule next check to ensure expired certificates are detected
+	// For ACME with ARI, this is handled in useARIForRenewal
+	// For non-ARI certificates, schedule check at certificate expiry time
+	now := c.clock.Now()
+	if crt.Status.NotAfter != nil && (crt.Status.ACME == nil || crt.Status.ACME.ARI == nil) {
+		c.scheduledWorkQueue.Add(key, crt.Status.NotAfter.Time.Sub(now))
+	}
+
 	return nil
 }
 
