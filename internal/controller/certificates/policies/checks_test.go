@@ -2276,3 +2276,79 @@ func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
 		})
 	}
 }
+
+func Test_CurrentCertificateHasExpired(t *testing.T) {
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
+	tests := map[string]struct {
+		cert           *cmapi.Certificate
+		secret         *corev1.Secret
+		clock          *fakeclock.FakeClock
+		expReason      string
+		expMessage     string
+		expViolation   bool
+	}{
+		"should return violation when certificate has expired": {
+			cert: gen.Certificate("test"),
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: metav1.NamespaceDefault,
+				},
+				Data: map[string][]byte{
+					corev1.TLSCertKey:       testcrypto.MustCreateCert(t, privKey, time.Now().Add(-24*time.Hour), time.Now().Add(-1*time.Hour)),
+					corev1.TLSPrivateKeyKey: privKey,
+				},
+			},
+			clock:        &fakeclock.FakeClock{},
+			expReason:    Expired,
+			expViolation: true,
+		},
+		"should not return violation when certificate has not expired": {
+			cert: gen.Certificate("test"),
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: metav1.NamespaceDefault,
+				},
+				Data: map[string][]byte{
+					corev1.TLSCertKey:       testcrypto.MustCreateCert(t, privKey, time.Now().Add(-1*time.Hour), time.Now().Add(24*time.Hour)),
+					corev1.TLSPrivateKeyKey: privKey,
+				},
+			},
+			clock:        &fakeclock.FakeClock{},
+			expReason:    "",
+			expViolation: false,
+		},
+		"should return violation when certificate data is invalid": {
+			cert: gen.Certificate("test"),
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: metav1.NamespaceDefault,
+				},
+				Data: map[string][]byte{
+					corev1.TLSCertKey:       []byte("invalid certificate data"),
+					corev1.TLSPrivateKeyKey: privKey,
+				},
+			},
+			clock:        &fakeclock.FakeClock{},
+			expReason:    InvalidCertificate,
+			expViolation: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			input := Input{
+				Certificate: test.cert,
+				Secret:      test.secret,
+			}
+			gotReason, gotMessage, gotViolation := CurrentCertificateHasExpired(test.clock)(input)
+			assert.Equal(t, test.expReason, gotReason)
+			assert.Equal(t, test.expViolation, gotViolation)
+			if test.expViolation {
+				assert.NotEmpty(t, gotMessage)
+			}
+		})
+	}
+}
