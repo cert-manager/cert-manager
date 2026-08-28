@@ -160,7 +160,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.3.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.17.1
+tools += goreleaser=v2.18.0
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.51.0
