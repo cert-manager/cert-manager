@@ -886,7 +886,7 @@ func TestSafeErrorMessageBoundsLength(t *testing.T) {
 	if !strings.HasSuffix(got, errors.TruncationMarker) {
 		t.Errorf("safeErrorMessage() = %q, want it to be marked as truncated", got)
 	}
-	if len(got) > maxACMEErrorMessageLength+len("... (truncated)") {
+	if len(got) > maxACMEErrorMessageLength {
 		t.Errorf("message is %d bytes, want at most %d", len(got), maxACMEErrorMessageLength)
 	}
 }
