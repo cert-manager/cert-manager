@@ -307,6 +307,12 @@ func (s *Server) Run(ctx context.Context) error {
 	return mgr.Start(ctx)
 }
 
+// freePort asks the kernel for a free port by binding to port 0, then closes the
+// listener and returns the port number. Anything on the machine can claim the
+// port before the caller binds it, so the caller must be prepared for the bind
+// to fail with EADDRINUSE. Only reachable with --secure-port=0, which is a
+// test-only configuration; see startAttempts in test/webhook for how the tests
+// cope with losing the race.
 func freePort() (int, error) {
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
@@ -320,7 +326,11 @@ func freePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-// Port returns the port number that the webhook listener is listening on
+// Port returns the port number the webhook listener has been assigned. It
+// reports the number as soon as it has been chosen, which is before Run has
+// created the listener, so a port coming back here does not mean the server is
+// accepting connections yet — or that it ever will, since the bind may still
+// fail. ErrNotListening means only that no port has been chosen.
 func (s *Server) Port() (int, error) {
 	if s.ListenAddr == 0 {
 		return 0, ErrNotListening

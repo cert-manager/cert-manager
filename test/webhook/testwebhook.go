@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
@@ -28,6 +29,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
+	"syscall"
 	"testing"
 	"time"
 
@@ -60,7 +63,35 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
+// startAttempts is the number of times StartWebhookServer tries to bring up a
+// webhook server before giving up.
+//
+// The server chooses its port by binding to port 0, closing that listener and
+// then binding again to the port number it was allocated. Anything else on the
+// machine can take the port in between; `go test ./...` runs the integration
+// test packages concurrently and each starts its own webhook server, so they
+// race each other. The loser exits with "address already in use", and a fresh
+// attempt is allocated a different port.
+const startAttempts = 5
+
 func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
+	t.Helper()
+
+	for attempt := 1; ; attempt++ {
+		serverOpts, stop, err := startWebhookServer(t, args, argumentsForNewServerWithOptions...)
+		if err == nil {
+			return serverOpts, stop
+		}
+		if attempt >= startAttempts || !errors.Is(err, syscall.EADDRINUSE) {
+			t.Fatalf("failed to start webhook server: %v", err)
+		}
+		t.Logf("webhook server lost the race for its port, retrying (attempt %d of %d): %v", attempt, startAttempts, err)
+	}
+}
+
+func startWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc, error) {
+	t.Helper()
+
 	// We have to use a global stdout logger, because otherwise -count=2 tests will
 	// fail with "panic: Log in goroutine after Test... has completed: ..." since the
 	// first call to ctrl.SetLogger() will set the logger to the logger linked to the
@@ -128,23 +159,24 @@ func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 	go func() {
 		defer close(errCh)
 		if err := srv.Run(stoppableCtx); err != nil {
-			errCh <- fmt.Errorf("error running webhook server: %v", err)
+			errCh <- fmt.Errorf("error running webhook server: %w", err)
 		}
 	}()
 
-	// Determine the random port number that was chosen
-	var listenPort int
-	if err := wait.PollUntilContextCancel(stoppableCtx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
-		listenPort, err = srv.Port()
-		if err != nil {
-			if errors.Is(err, server.ErrNotListening) {
-				return false, nil
-			}
-			return false, err
+	// stop asks the server to shut down and waits for Run to return.
+	stop := func() error {
+		stopCtxFn()
+		var errs []error
+		for err := range errCh {
+			errs = append(errs, err)
 		}
-		return true, nil
-	}); err != nil {
-		t.Fatalf("Failed waiting for ListenPort to be allocated (got error: %v)", err)
+		return errors.Join(errs...)
+	}
+
+	listenPort, err := waitForListener(stoppableCtx, srv, errCh, caPEM)
+	if err != nil {
+		_ = stop() // Whatever went wrong is already in err.
+		return ServerOptions{}, nil, err
 	}
 
 	serverOpts := ServerOptions{
@@ -152,15 +184,80 @@ func StartWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 		CAPEM: caPEM,
 	}
 	return serverOpts, func() {
-		stopCtxFn()
-		err := <-errCh // Wait for shutdown
-		if err != nil {
+		if err := stop(); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatal(err)
+	}, nil
+}
+
+// waitForListener returns the port the webhook server is listening on, once it
+// is accepting connections. It returns an error if the server stops first. It
+// is modelled on controller-runtime's DefaultServer.StartedChecker, which is not
+// reachable from here because Server.Run does not keep the manager it builds.
+//
+// caPEM is the CA that issued the server's serving certificate, or empty if the
+// caller supplied its own TLS files.
+func waitForListener(ctx context.Context, srv *server.Server, errCh <-chan error, caPEM []byte) (int, error) {
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
+	if len(caPEM) > 0 {
+		// Check the server's certificate against the CA that was generated for
+		// it, so that another process holding the port cannot be mistaken for
+		// our server.
+		roots := x509.NewCertPool()
+		if !roots.AppendCertsFromPEM(caPEM) {
+			return 0, errors.New("failed parsing the CA generated for the webhook server")
 		}
+		tlsConfig.RootCAs = roots
+	} else {
+		// The caller supplied its own TLS files, so there is no CA to check
+		// against and reaching the port has to be good enough.
+		tlsConfig.InsecureSkipVerify = true
 	}
+
+	dialer := &tls.Dialer{Config: tlsConfig}
+
+	var listenPort int
+
+	err := wait.PollUntilContextCancel(ctx, 10*time.Millisecond, true, func(_ context.Context) (bool, error) {
+		select {
+		case err, ok := <-errCh:
+			if !ok {
+				return false, errors.New("webhook server stopped before it began listening")
+			}
+			return false, err
+		default:
+		}
+
+		port, err := srv.Port()
+		if err != nil {
+			if errors.Is(err, server.ErrNotListening) {
+				return false, nil
+			}
+			return false, err
+		}
+
+		// Port reports the port number as soon as it has been chosen, which is
+		// before the listener has been created, so connect to it to confirm that
+		// the server really is up. Without this the caller can be handed the
+		// details of a server that failed to bind, and every request to it is
+		// then refused. The deadline covers the TLS handshake as well as the
+		// connection, so that a listener which never replies cannot wedge the
+		// poll; a loopback handshake takes single-digit milliseconds.
+		dialCtx, cancel := context.WithTimeout(ctx, 250*time.Millisecond)
+		conn, err := dialer.DialContext(dialCtx, "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
+		cancel()
+		if err != nil {
+			return false, nil //nolint:nilerr // not listening yet, keep polling
+		}
+		if err := conn.Close(); err != nil {
+			return false, err
+		}
+
+		listenPort = port
+		return true, nil
+	})
+
+	return listenPort, err
 }
 
 func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {
