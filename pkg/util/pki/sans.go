@@ -39,7 +39,11 @@ var (
 */
 type OtherName struct {
 	TypeID asn1.ObjectIdentifier
-	Value  asn1.RawValue `asn1:"tag:0,explicit"`
+	// Value must already carry the explicit [0] wrapper, holding exactly one
+	// well-formed element. The struct tag does not add it: encoding/asn1 honors
+	// `tag:0,explicit` when reading a RawValue but writes a RawValue out
+	// verbatim, so MarshalSANs emits whatever it is given here.
+	Value asn1.RawValue `asn1:"tag:0,explicit"`
 }
 
 // Based on RFC 5280, section 4.2.1.6
@@ -198,34 +202,70 @@ func forEachSAN(extension []byte, callback func(v asn1.RawValue) error) error {
 	return nil
 }
 
-// checkOtherNameValue reports whether an OtherName value carries the explicit
-// [0] tag that RFC 5280 section 4.2.1.6 requires of it:
+// checkSANsRoundTrip returns an error unless the SubjectAlternativeName
+// contents in value parse back as the same GeneralNames they were built from.
 //
-//	value [0] EXPLICIT ANY DEFINED BY type-id
+// Several GeneralName choices are supplied by the caller as an asn1.RawValue,
+// and encoding/asn1 writes a RawValue out verbatim - makeField returns early for
+// rawValueType - so both the `tag:N` given to MarshalWithParams and the
+// `asn1:"tag:0,explicit"` on OtherName.Value are honored when reading and
+// ignored when writing. A value supplied without the tag its choice is defined
+// with in RFC 5280 section 4.2.1.6 is therefore emitted as-is, and nothing
+// reports a problem:
 //
-// The field is an asn1.RawValue, and encoding/asn1 writes a RawValue out
-// verbatim: the `tag:0,explicit` on the field is honoured when reading but not
-// when writing. A value handed to MarshalSANs without that wrapper is therefore
-// emitted without it, producing a SubjectAlternativeName extension that
-// UnmarshalSANs - and any parser following RFC 5280 - refuses to read.
-func checkOtherNameValue(value asn1.RawValue) error {
-	raw := value
+//   - an otherName missing its explicit [0] wrapper produces an extension that
+//     UnmarshalSANs, in this same package, cannot read at all;
+//   - an x400Address missing its [3] tag, whose own tag happens to be one of the
+//     universal tags 0-8, is read back as a different GeneralName choice
+//     entirely, because UnmarshalSANs dispatches on that tag.
+//
+// Checking the finished bytes against the parser keeps the two in agreement by
+// construction, for every choice at once and for any choice added later, rather
+// than one hand-rolled check per loop that can drift from the parser it mirrors
+// - which is the class of bug being fixed here.
+func checkSANsRoundTrip(value []byte, gns GeneralNames) error {
+	const cause = "a GeneralName value supplied without the tag RFC 5280 section 4.2.1.6 defines it with will do this"
 
-	// A RawValue carrying FullBytes is written out as those bytes, so they are
-	// what has to be checked.
-	if len(value.FullBytes) > 0 {
-		rest, err := asn1.Unmarshal(value.FullBytes, &raw)
-		if err != nil {
-			return fmt.Errorf("x509: otherName value is not valid DER: %w", err)
-		}
-		if len(rest) != 0 {
-			return errors.New("x509: trailing data after otherName value")
+	parsed, err := UnmarshalSANs(value)
+	if err != nil {
+		return fmt.Errorf("x509: the SubjectAlternativeName contents cannot be parsed back; %s: %w", cause, err)
+	}
+
+	for _, choice := range []struct {
+		name     string
+		encoded  int
+		readBack int
+	}{
+		{"otherName", len(gns.OtherNames), len(parsed.OtherNames)},
+		{"rfc822Name", len(gns.RFC822Names), len(parsed.RFC822Names)},
+		{"dNSName", len(gns.DNSNames), len(parsed.DNSNames)},
+		{"x400Address", len(gns.X400Addresses), len(parsed.X400Addresses)},
+		{"directoryName", len(gns.DirectoryNames), len(parsed.DirectoryNames)},
+		{"ediPartyName", len(gns.EDIPartyNames), len(parsed.EDIPartyNames)},
+		{"uniformResourceIdentifier", len(gns.UniformResourceIdentifiers), len(parsed.UniformResourceIdentifiers)},
+		{"iPAddress", len(gns.IPAddresses), len(parsed.IPAddresses)},
+		{"registeredID", len(gns.RegisteredIDs), len(parsed.RegisteredIDs)},
+	} {
+		if choice.encoded != choice.readBack {
+			return fmt.Errorf("x509: encoded %d %s(s) but %d parsed back; %s",
+				choice.encoded, choice.name, choice.readBack, cause)
 		}
 	}
 
-	// [0] EXPLICIT is a constructed, context-specific tag 0.
-	if raw.Class != asn1.ClassContextSpecific || raw.Tag != 0 || !raw.IsCompound {
-		return errors.New("x509: otherName value must be wrapped in an explicit [0] tag, as required by RFC 5280 section 4.2.1.6")
+	// value is [0] EXPLICIT ANY, so exactly one well-formed element belongs
+	// inside the wrapper. encoding/asn1 does not descend into a RawValue under an
+	// explicit tag, so the round-trip above is satisfied by a wrapper holding
+	// arbitrary bytes - which matchOtherNames, reading this same field, then
+	// fails on.
+	for i, otherName := range parsed.OtherNames {
+		var inner asn1.RawValue
+		rest, err := asn1.Unmarshal(otherName.Value.Bytes, &inner)
+		if err != nil {
+			return fmt.Errorf("x509: otherName %d: the explicitly tagged value is not valid DER: %w", i, err)
+		}
+		if len(rest) != 0 {
+			return fmt.Errorf("x509: otherName %d: trailing data after the explicitly tagged value", i)
+		}
 	}
 
 	return nil
@@ -236,6 +276,9 @@ func checkOtherNameValue(value asn1.RawValue) error {
 // SubjectAlternativeName extension.
 func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 	var rawValues []asn1.RawValue
+	// tag is ignored when val is an asn1.RawValue: encoding/asn1 writes a
+	// RawValue out verbatim, so such a value has to carry its own tag already.
+	// checkSANsRoundTrip, below, is what enforces that.
 	addMarshalable := func(tag int, val any) error {
 		fullBytes, err := asn1.MarshalWithParams(val, fmt.Sprint("tag:", tag))
 		if err != nil {
@@ -279,9 +322,6 @@ func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 
 	// Add support for the remaining SAN types.
 	for _, val := range gns.OtherNames {
-		if err := checkOtherNameValue(val.Value); err != nil {
-			return pkix.Extension{}, err
-		}
 		if err := addMarshalable(nameTypeOtherName, val); err != nil {
 			return pkix.Extension{}, err
 		}
@@ -309,6 +349,10 @@ func MarshalSANs(gns GeneralNames, hasSubject bool) (pkix.Extension, error) {
 
 	byteValue, err := asn1.Marshal(rawValues)
 	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	if err := checkSANsRoundTrip(byteValue, gns); err != nil {
 		return pkix.Extension{}, err
 	}
 

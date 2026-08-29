@@ -101,12 +101,19 @@ func generateOtherName(t *testing.T, val UniversalValue) asn1.RawValue {
 // An OtherName value that is not wrapped in the explicit [0] tag RFC 5280
 // requires used to marshal without complaint, into an extension that
 // UnmarshalSANs could not read back.
-func TestMarshalSANsRejectsUnwrappedOtherNameValue(t *testing.T) {
+func TestMarshalSANsRejectsValuesItCannotReadBack(t *testing.T) {
 	oid := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}
 
 	inner, err := MarshalUniversalValue(UniversalValue{UTF8String: "upn@example.com"})
 	if err != nil {
 		t.Fatalf("MarshalUniversalValue returned an error: %v", err)
+	}
+	wrapped := func(b []byte) asn1.RawValue {
+		return asn1.RawValue{Tag: 0, Class: asn1.ClassContextSpecific, IsCompound: true, Bytes: b}
+	}
+	oidValue, err := asn1.Marshal(asn1.ObjectIdentifier{1, 2, 3, 4})
+	if err != nil {
+		t.Fatalf("asn1.Marshal returned an error: %v", err)
 	}
 
 	tests := map[string]struct {
@@ -114,15 +121,15 @@ func TestMarshalSANsRejectsUnwrappedOtherNameValue(t *testing.T) {
 		expErr bool
 	}{
 		"wrapped in an explicit [0] tag, as csr.go builds it": {
-			value: asn1.RawValue{
-				Tag:        0,
-				Class:      asn1.ClassContextSpecific,
-				IsCompound: true,
-				Bytes:      inner,
-			},
+			value: wrapped(inner),
 		},
 		"wrapped, carrying FullBytes as well": {
 			value: generateOtherName(t, UniversalValue{UTF8String: "upn@example.com"}),
+		},
+		// value is ANY DEFINED BY type-id, so the inner element is not required
+		// to be a UTF8String.
+		"wrapped around a value that is not a UTF8String": {
+			value: wrapped(oidValue),
 		},
 		"unwrapped, the inner value given through FullBytes": {
 			value:  asn1.RawValue{FullBytes: inner},
@@ -138,6 +145,27 @@ func TestMarshalSANsRejectsUnwrappedOtherNameValue(t *testing.T) {
 		},
 		"no value at all": {
 			value:  asn1.RawValue{},
+			expErr: true,
+		},
+		// The wrapper is the right shape but holds nothing. UnmarshalSANs fails
+		// on the result with "explicit tag has no child".
+		"an empty wrapper": {
+			value:  wrapped(nil),
+			expErr: true,
+		},
+		"an empty wrapper given through FullBytes": {
+			value:  asn1.RawValue{FullBytes: []byte{0xa0, 0x00}},
+			expErr: true,
+		},
+		// A correct wrapper is not enough on its own: encoding/asn1 does not
+		// descend into a RawValue under an explicit tag, so these survive both
+		// marshalling and UnmarshalSANs, and fail later in matchOtherNames.
+		"a wrapper holding bytes that are not an element": {
+			value:  wrapped([]byte{0xff}),
+			expErr: true,
+		},
+		"a wrapper holding two elements": {
+			value:  wrapped(append(append([]byte{}, inner...), inner...)),
 			expErr: true,
 		},
 	}
@@ -158,8 +186,73 @@ func TestMarshalSANsRejectsUnwrappedOtherNameValue(t *testing.T) {
 			}
 
 			// Whatever MarshalSANs accepts, UnmarshalSANs must be able to read.
-			if _, err := UnmarshalSANs(extension.Value); err != nil {
-				t.Fatalf("UnmarshalSANs could not read back a marshalled extension: %v", err)
+			parsed, err := UnmarshalSANs(extension.Value)
+			if err != nil {
+				t.Fatalf("UnmarshalSANs could not read back a marshaled extension: %v", err)
+			}
+
+			// ...and so must the otherName path that matchOtherNames uses.
+			var innerValue asn1.RawValue
+			if _, err := asn1.Unmarshal(parsed.OtherNames[0].Value.Bytes, &innerValue); err != nil {
+				t.Fatalf("the value inside the wrapper could not be read back: %v", err)
+			}
+		})
+	}
+}
+
+// x400Address is [3] ORAddress, and the tag parameter is equally inert for the
+// asn1.RawValue that carries it. An unwrapped value whose own tag is one of the
+// universal tags 0-8 is not merely unreadable: UnmarshalSANs dispatches on that
+// tag, so it comes back as a different GeneralName choice entirely.
+func TestMarshalSANsRejectsUntaggedX400Address(t *testing.T) {
+	// [3] is implicit, so the ORAddress SEQUENCE tag is replaced by the [3] tag
+	// rather than nested inside it. Note this cannot be built with
+	// asn1.MarshalWithParams(..., "tag:3") - for a RawValue that parameter is
+	// exactly the one that does nothing.
+	tagged := asn1.RawValue{Tag: nameTypeX400Address, Class: asn1.ClassContextSpecific, IsCompound: true}
+	// universal tag 2 is INTEGER, and nameTypeDNSName is 2
+	misleading, err := asn1.Marshal(42)
+	if err != nil {
+		t.Fatalf("asn1.Marshal returned an error: %v", err)
+	}
+
+	tests := map[string]struct {
+		value  asn1.RawValue
+		expErr bool
+	}{
+		"carrying its [3] tag, as UnmarshalSANs returns it": {
+			value: tagged,
+		},
+		"the same value given through FullBytes": {
+			value: asn1.RawValue{FullBytes: []byte{0xa3, 0x00}},
+		},
+		"untagged, and read back as a dNSName instead": {
+			value:  asn1.RawValue{FullBytes: misleading},
+			expErr: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gns := GeneralNames{X400Addresses: []asn1.RawValue{test.value}}
+
+			extension, err := MarshalSANs(gns, true)
+			if test.expErr {
+				if err == nil {
+					t.Fatalf("expected MarshalSANs to reject the value, but it returned %v", extension)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("MarshalSANs returned an error: %v", err)
+			}
+
+			parsed, err := UnmarshalSANs(extension.Value)
+			if err != nil {
+				t.Fatalf("UnmarshalSANs could not read back a marshaled extension: %v", err)
+			}
+			if len(parsed.X400Addresses) != 1 {
+				t.Fatalf("expected the value to come back as an x400Address, got %+v", parsed)
 			}
 		})
 	}
