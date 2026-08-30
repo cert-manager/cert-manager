@@ -20,8 +20,11 @@ import (
 	"bytes"
 	"crypto/x509"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -96,9 +99,30 @@ func OutputFormatDER(privateKey []byte) []byte {
 	return block.Bytes
 }
 
-// OutputFormatCombinedPEM returns the byte slice of the PEM encoded private
-// key and signed certificate chain, concatenated. To be used for Certificate's
-// Additional Output Format Combined PEM.
-func OutputFormatCombinedPEM(privateKey, certificate []byte) []byte {
-	return bytes.Join([][]byte{privateKey, certificate}, []byte("\n"))
+// OutputFormatCombinedPEM returns the byte slice of the PEM encoded certificate
+// components concatenated in the given key order. If keys is empty, defaults to
+// tls.key followed by tls.crt.
+func OutputFormatCombinedPEM(privateKey, certificate, ca []byte, keys ...string) []byte {
+	if len(keys) == 0 {
+		return bytes.Join([][]byte{privateKey, certificate}, []byte("\n"))
+	}
+
+	var parts [][]byte
+	for _, key := range keys {
+		switch key {
+		case corev1.TLSPrivateKeyKey:
+			if len(privateKey) > 0 {
+				parts = append(parts, privateKey)
+			}
+		case corev1.TLSCertKey:
+			if len(certificate) > 0 {
+				parts = append(parts, certificate)
+			}
+		case cmmeta.TLSCAKey:
+			if len(ca) > 0 {
+				parts = append(parts, ca)
+			}
+		}
+	}
+	return bytes.Join(parts, []byte("\n"))
 }

@@ -369,13 +369,16 @@ const (
 	CertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
 )
 
-// CertificateAdditionalOutputFormat defines an additional output format of a
-// Certificate resource. These contain supplementary data formats of the signed
-// certificate chain and paired private key.
 type CertificateAdditionalOutputFormat struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
 	Type CertificateOutputFormatType
+
+	// Keys defines the ordered list of keys to concatenate in the combined output.
+	// Defaults to ["tls.key", "tls.crt"] when Type is CombinedPEM.
+	// Only supported when Type is CombinedPEM.
+	// +optional
+	Keys []string
 }
 
 // X509Subject Full X509 name specification

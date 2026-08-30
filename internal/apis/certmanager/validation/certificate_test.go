@@ -1279,6 +1279,43 @@ func Test_validateAdditionalOutputFormats(t *testing.T) {
 				field.Duplicate(field.NewPath("spec", "additionalOutputFormats").Key("type"), "bar"),
 			},
 		},
+		"if valid keys defined on CombinedPEM, expect no error": {
+			spec: &internalcmapi.CertificateSpec{
+				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
+					{
+						Type: internalcmapi.CertificateOutputFormatCombinedPEM,
+						Keys: []string{"tls.crt", "tls.key", "ca.crt"},
+					},
+				},
+			},
+			expErr: nil,
+		},
+		"if unsupported key defined on CombinedPEM, expect error": {
+			spec: &internalcmapi.CertificateSpec{
+				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
+					{
+						Type: internalcmapi.CertificateOutputFormatCombinedPEM,
+						Keys: []string{"tls.crt", "invalid.key"},
+					},
+				},
+			},
+			expErr: field.ErrorList{
+				field.NotSupported(field.NewPath("spec", "additionalOutputFormats").Index(0).Child("keys").Index(1), "invalid.key", []string{"ca.crt", "tls.crt", "tls.key"}),
+			},
+		},
+		"if keys specified on DER format, expect error": {
+			spec: &internalcmapi.CertificateSpec{
+				AdditionalOutputFormats: []internalcmapi.CertificateAdditionalOutputFormat{
+					{
+						Type: internalcmapi.CertificateOutputFormatDER,
+						Keys: []string{"tls.key"},
+					},
+				},
+			},
+			expErr: field.ErrorList{
+				field.Forbidden(field.NewPath("spec", "additionalOutputFormats").Index(0).Child("keys"), "keys cannot be specified for DER output format"),
+			},
+		},
 	}
 
 	for name, test := range tests {

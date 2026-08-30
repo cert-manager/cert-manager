@@ -637,6 +637,7 @@ func Convert_certmanager_CertificateACMEStatus_To_v1_CertificateACMEStatus(in *c
 
 func autoConvert_v1_CertificateAdditionalOutputFormat_To_certmanager_CertificateAdditionalOutputFormat(in *certmanagerv1.CertificateAdditionalOutputFormat, out *certmanager.CertificateAdditionalOutputFormat, s conversion.Scope) error {
 	out.Type = certmanager.CertificateOutputFormatType(in.Type)
+	out.Keys = *(*[]string)(unsafe.Pointer(&in.Keys))
 	return nil
 }
 
@@ -647,6 +648,7 @@ func Convert_v1_CertificateAdditionalOutputFormat_To_certmanager_CertificateAddi
 
 func autoConvert_certmanager_CertificateAdditionalOutputFormat_To_v1_CertificateAdditionalOutputFormat(in *certmanager.CertificateAdditionalOutputFormat, out *certmanagerv1.CertificateAdditionalOutputFormat, s conversion.Scope) error {
 	out.Type = certmanagerv1.CertificateOutputFormatType(in.Type)
+	out.Keys = *(*[]string)(unsafe.Pointer(&in.Keys))
 	return nil
 }
 

@@ -374,8 +374,8 @@ func setAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, d
 			// Store binary format of the private key
 			secret.Data[cmapi.CertificateOutputFormatDERKey] = certificates.OutputFormatDER(data.PrivateKey)
 		case cmapi.CertificateOutputFormatCombinedPEM:
-			// Combine tls.key and tls.crt
-			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = certificates.OutputFormatCombinedPEM(data.PrivateKey, data.Certificate)
+			// Combine certificate parts in the requested order (defaults to tls.key, tls.crt)
+			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = certificates.OutputFormatCombinedPEM(data.PrivateKey, data.Certificate, data.CA, format.Keys...)
 		default:
 			return fmt.Errorf("unknown additional output format %s", format.Type)
 		}
