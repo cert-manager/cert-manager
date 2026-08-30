@@ -405,6 +405,16 @@ func (f fakeAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) 
 	return f.decision, "", nil
 }
 
+func (f fakeAuthorizer) ConditionsAwareAuthorize(ctx context.Context, a authorizer.Attributes) authorizer.ConditionsAwareDecision {
+	// TODO: implement me
+	panic("implement me")
+}
+
+func (f fakeAuthorizer) EvaluateConditions(ctx context.Context, decision authorizer.ConditionsAwareDecision, data authorizer.ConditionsData) (authorized authorizer.Decision, reason string, err error) {
+	// TODO: implement me
+	panic("implement me")
+}
+
 // groupWithoutKind returns an APIGroupList that contains the given group but
 // none of its resource kinds, simulating the case where a CRD's API group is
 // registered but the specific kind does not exist.
