@@ -34,11 +34,39 @@ import (
 )
 
 // IssuerInformer provides access to a shared informer and lister for
-// Issuers.
+// Issuers. Prefer using the type-safe variant (see [TypedIssuerInformer]).
 type IssuerInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() certmanagerv1.IssuerLister
 }
+
+// TypedIssuerInformer provides access to a shared informer and lister for
+// Issuers, including the type-safe TypedInformer variant.
+// It is a superset of IssuerInformer.
+type TypedIssuerInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() IssuerIndexInformer
+	Lister() certmanagerv1.IssuerLister
+}
+
+// IssuerIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type IssuerIndexInformer cache.TypedSharedIndexInformer[*apiscertmanagerv1.Issuer]
+
+// IssuerHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for Issuer.
+type IssuerHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apiscertmanagerv1.Issuer]
+
+// IssuerDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for Issuer.
+type IssuerDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apiscertmanagerv1.Issuer]
+
+// IssuerFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for Issuer.
+type IssuerFilteringHandler = cache.TypedFilteringResourceEventHandler[*apiscertmanagerv1.Issuer]
+
+// IssuerIndexers is a specialization of [cache.TypedIndexers] for Issuer.
+type IssuerIndexers = cache.TypedIndexers[*apiscertmanagerv1.Issuer]
+
+// DeletedIssuer is a specialization of [cache.DeletedObject] for Issuer.
+type DeletedIssuer = cache.DeletedObject[*apiscertmanagerv1.Issuer]
 
 type issuerInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -49,25 +77,49 @@ type issuerInformer struct {
 // NewIssuerInformer constructs a new informer for Issuer type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedIssuerInformer]).
 func NewIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewIssuerInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedIssuerInformer constructs a new informer for Issuer type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers IssuerIndexers) IssuerIndexInformer {
+	return NewTypedIssuerInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredIssuerInformer constructs a new informer for Issuer type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredIssuerInformer]).
 func NewFilteredIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewIssuerInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedIssuerInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredIssuerInformer constructs a new informer for Issuer type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers IssuerIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) IssuerIndexInformer {
+	return NewTypedIssuerInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewIssuerInformerWithOptions constructs a new informer for Issuer type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedIssuerInformerWithOptions]).
 func NewIssuerInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedIssuerInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedIssuerInformerWithOptions constructs a new informer for Issuer type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedIssuerInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) IssuerIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "issuers"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.Issuer](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -100,17 +152,57 @@ func NewIssuerInformerWithOptions(client versioned.Interface, namespace string, 
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *issuerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewIssuerInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedIssuerInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *issuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiscertmanagerv1.Issuer{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *issuerInformer) TypedInformer() IssuerIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.Issuer](f.factory.InformerFor(&apiscertmanagerv1.Issuer{}, f.defaultInformer))
 }
 
 func (f *issuerInformer) Lister() certmanagerv1.IssuerLister {
 	return certmanagerv1.NewIssuerLister(f.Informer().GetIndexer())
+}
+
+// ToTypedIssuerInformer converts an untyped informer into a TypedIssuerInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Issuer. If that is not the case, calling type-safe methods of the returned
+// TypedIssuerInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedIssuerInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedIssuerInformer(informer IssuerInformer) TypedIssuerInformer {
+	if informer, ok := informer.(TypedIssuerInformer); ok {
+		return informer
+	}
+	return &issuerTypedInformerAdapter{informer}
+}
+
+type issuerTypedInformerAdapter struct {
+	IssuerInformer
+}
+
+func (a *issuerTypedInformerAdapter) TypedInformer() IssuerIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.Issuer](a.Informer())
+}
+
+// ToIssuerIndexInformer converts an untyped informer into a IssuerIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Issuer. If that is not the case, calling type-safe methods of the returned
+// IssuerIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a IssuerIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToIssuerIndexInformer(informer cache.SharedIndexInformer) IssuerIndexInformer {
+	if informer, ok := informer.(IssuerIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.Issuer](informer)
 }

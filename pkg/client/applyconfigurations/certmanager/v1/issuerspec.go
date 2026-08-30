@@ -28,7 +28,7 @@ import (
 // IssuerSpec is the specification of an Issuer. This includes any
 // configuration required for the issuer.
 type IssuerSpecApplyConfiguration struct {
-	IssuerConfigApplyConfiguration `json:",inline"`
+	IssuerConfigApplyConfiguration `json:""`
 }
 
 // IssuerSpecApplyConfiguration constructs a declarative configuration of the IssuerSpec type for use with

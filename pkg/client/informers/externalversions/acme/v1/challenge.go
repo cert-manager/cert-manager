@@ -34,11 +34,39 @@ import (
 )
 
 // ChallengeInformer provides access to a shared informer and lister for
-// Challenges.
+// Challenges. Prefer using the type-safe variant (see [TypedChallengeInformer]).
 type ChallengeInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() acmev1.ChallengeLister
 }
+
+// TypedChallengeInformer provides access to a shared informer and lister for
+// Challenges, including the type-safe TypedInformer variant.
+// It is a superset of ChallengeInformer.
+type TypedChallengeInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() ChallengeIndexInformer
+	Lister() acmev1.ChallengeLister
+}
+
+// ChallengeIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type ChallengeIndexInformer cache.TypedSharedIndexInformer[*apisacmev1.Challenge]
+
+// ChallengeHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for Challenge.
+type ChallengeHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apisacmev1.Challenge]
+
+// ChallengeDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for Challenge.
+type ChallengeDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apisacmev1.Challenge]
+
+// ChallengeFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for Challenge.
+type ChallengeFilteringHandler = cache.TypedFilteringResourceEventHandler[*apisacmev1.Challenge]
+
+// ChallengeIndexers is a specialization of [cache.TypedIndexers] for Challenge.
+type ChallengeIndexers = cache.TypedIndexers[*apisacmev1.Challenge]
+
+// DeletedChallenge is a specialization of [cache.DeletedObject] for Challenge.
+type DeletedChallenge = cache.DeletedObject[*apisacmev1.Challenge]
 
 type challengeInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -49,25 +77,49 @@ type challengeInformer struct {
 // NewChallengeInformer constructs a new informer for Challenge type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedChallengeInformer]).
 func NewChallengeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewChallengeInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedChallengeInformer constructs a new informer for Challenge type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedChallengeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers ChallengeIndexers) ChallengeIndexInformer {
+	return NewTypedChallengeInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredChallengeInformer constructs a new informer for Challenge type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredChallengeInformer]).
 func NewFilteredChallengeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewChallengeInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedChallengeInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredChallengeInformer constructs a new informer for Challenge type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredChallengeInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers ChallengeIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) ChallengeIndexInformer {
+	return NewTypedChallengeInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewChallengeInformerWithOptions constructs a new informer for Challenge type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedChallengeInformerWithOptions]).
 func NewChallengeInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedChallengeInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedChallengeInformerWithOptions constructs a new informer for Challenge type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedChallengeInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) ChallengeIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "acme.cert-manager.io", Version: "v1", Resource: "challenges"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Challenge](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -100,17 +152,57 @@ func NewChallengeInformerWithOptions(client versioned.Interface, namespace strin
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *challengeInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewChallengeInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedChallengeInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *challengeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisacmev1.Challenge{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *challengeInformer) TypedInformer() ChallengeIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Challenge](f.factory.InformerFor(&apisacmev1.Challenge{}, f.defaultInformer))
 }
 
 func (f *challengeInformer) Lister() acmev1.ChallengeLister {
 	return acmev1.NewChallengeLister(f.Informer().GetIndexer())
+}
+
+// ToTypedChallengeInformer converts an untyped informer into a TypedChallengeInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Challenge. If that is not the case, calling type-safe methods of the returned
+// TypedChallengeInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedChallengeInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedChallengeInformer(informer ChallengeInformer) TypedChallengeInformer {
+	if informer, ok := informer.(TypedChallengeInformer); ok {
+		return informer
+	}
+	return &challengeTypedInformerAdapter{informer}
+}
+
+type challengeTypedInformerAdapter struct {
+	ChallengeInformer
+}
+
+func (a *challengeTypedInformerAdapter) TypedInformer() ChallengeIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Challenge](a.Informer())
+}
+
+// ToChallengeIndexInformer converts an untyped informer into a ChallengeIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Challenge. If that is not the case, calling type-safe methods of the returned
+// ChallengeIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a ChallengeIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToChallengeIndexInformer(informer cache.SharedIndexInformer) ChallengeIndexInformer {
+	if informer, ok := informer.(ChallengeIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Challenge](informer)
 }

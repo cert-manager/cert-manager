@@ -25,13 +25,13 @@ import (
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	// Certificates returns a CertificateInformer.
-	Certificates() CertificateInformer
+	Certificates() TypedCertificateInformer
 	// CertificateRequests returns a CertificateRequestInformer.
-	CertificateRequests() CertificateRequestInformer
+	CertificateRequests() TypedCertificateRequestInformer
 	// ClusterIssuers returns a ClusterIssuerInformer.
-	ClusterIssuers() ClusterIssuerInformer
+	ClusterIssuers() TypedClusterIssuerInformer
 	// Issuers returns a IssuerInformer.
-	Issuers() IssuerInformer
+	Issuers() TypedIssuerInformer
 }
 
 type version struct {
@@ -45,22 +45,22 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Certificates returns a CertificateInformer.
-func (v *version) Certificates() CertificateInformer {
+// Certificates returns a TypedCertificateInformer.
+func (v *version) Certificates() TypedCertificateInformer {
 	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// CertificateRequests returns a CertificateRequestInformer.
-func (v *version) CertificateRequests() CertificateRequestInformer {
+// CertificateRequests returns a TypedCertificateRequestInformer.
+func (v *version) CertificateRequests() TypedCertificateRequestInformer {
 	return &certificateRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// ClusterIssuers returns a ClusterIssuerInformer.
-func (v *version) ClusterIssuers() ClusterIssuerInformer {
+// ClusterIssuers returns a TypedClusterIssuerInformer.
+func (v *version) ClusterIssuers() TypedClusterIssuerInformer {
 	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
-// Issuers returns a IssuerInformer.
-func (v *version) Issuers() IssuerInformer {
+// Issuers returns a TypedIssuerInformer.
+func (v *version) Issuers() TypedIssuerInformer {
 	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

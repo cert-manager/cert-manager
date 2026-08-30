@@ -76,10 +76,10 @@ tools += helm=v4.2.4
 tools += helm-unittest=v1.1.2
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.36.4
+tools += kubectl=v1.37.0
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
-tools += kind=v0.32.0
+tools += kind=v0.33.0
 # https://www.vaultproject.io/downloads
 # renovate: datasource=github-releases packageName=hashicorp/vault
 tools += vault=v2.0.4
@@ -132,7 +132,7 @@ tools += kustomize=v5.8.1
 tools += gojq=v0.12.19
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
-tools += crane=v0.21.9
+tools += crane=v0.22.0
 # https://pkg.go.dev/google.golang.org/protobuf/cmd/protoc-gen-go?tab=versions
 # renovate: datasource=go packageName=google.golang.org/protobuf
 tools += protoc-gen-go=v1.36.12
@@ -180,9 +180,12 @@ tools += cmrel=v1.12.15-0.20241121151736-e3cbe5171488
 # renovate: datasource=go packageName=github.com/golangci/golangci-lint/v2
 golangci_lint_version := v2.13.1
 tools += golangci-lint=$(golangci_lint_version)
+# Projects may pin an older kube-api-linter in their make/00_mod.mk, which is
+# included before this file, e.g. to defer acting on findings introduced by a
+# newer snapshot.
 # https://pkg.go.dev/sigs.k8s.io/kube-api-linter?tab=versions
 # renovate: datasource=go packageName=sigs.k8s.io/kube-api-linter
-kube_api_linter_version := v0.0.0-20260716143926-092fe0c72997
+kube_api_linter_version ?= v0.0.0-20260716143926-092fe0c72997
 tools += kube-api-linter=$(golangci_lint_version)_$(kube_api_linter_version)
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 # renovate: datasource=go packageName=golang.org/x/vuln
@@ -212,7 +215,7 @@ tools += pinact=v4.1.1
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.36.4
+K8S_CODEGEN_VERSION ?= v0.37.0
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -569,10 +572,10 @@ $(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_A
 		chmod +x $(outfile); \
 		rm -f $(outfile).tgz
 
-kubectl_linux_amd64_SHA256SUM=8b8f088da2dab964f853b38464033b1be15ede2839eca751482357c45abdd05a
-kubectl_linux_arm64_SHA256SUM=0ecf44450ee6063bf19dd166a103ee6df4a9034455c2abce626e6eea657d73fb
-kubectl_darwin_amd64_SHA256SUM=71a3aa7c2ee2c974d9fbb462cba0c5c04a4df2e8d85eee94714fd819ea3c4e63
-kubectl_darwin_arm64_SHA256SUM=c9e4f713d6fee0043a3d835cca13077cda2bc0973840eb9779360df0b5bdfc69
+kubectl_linux_amd64_SHA256SUM=6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f
+kubectl_linux_arm64_SHA256SUM=922df28df248cc00a9e025f947704f1d1482de64ece54cfe57e61f19eaf1eef3
+kubectl_darwin_amd64_SHA256SUM=d5276c0f4fde77fc446070290f345944a7f1fda153df6b960e5fde93b7a9bccd
+kubectl_darwin_arm64_SHA256SUM=583beedaebe422e71d3f1a96acef8b1fef86ea2f09a45ad01aa6c9ce287c1380
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -581,10 +584,10 @@ $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DO
 		$(checkhash_script) $(outfile) $(kubectl_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
-kind_linux_amd64_SHA256SUM=50030de23cf40a18505f20426f6a8506bedf13c6e509244bd1fa9463721b0f54
-kind_linux_arm64_SHA256SUM=b92cd615e97585de8ddade28ed5cd7feb4248d717c233eea5b03c37298900f5d
-kind_darwin_amd64_SHA256SUM=295ac6d0d634c9819c9907df45e3017d1f13166bd13c3404c45e79f7faa47498
-kind_darwin_arm64_SHA256SUM=dca67911095a110c2b5c36e26df6cac860c602033e456c0db47be498cdef1ebb
+kind_linux_amd64_SHA256SUM=aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+kind_linux_arm64_SHA256SUM=20022bee6cfcd5086cb7234d218e3454e6090022f2a8f55d1fa7fcf42c3867a2
+kind_darwin_amd64_SHA256SUM=5a99f26f57246dc9319dd294803313197a0f34d33c525b3ea8b655db5916ece0
+kind_darwin_arm64_SHA256SUM=0c8c7dbe5e23594a198b786c4bc13dacc101fa6196b0cb0b23a1ca44e61f4b4f
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kind@$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools

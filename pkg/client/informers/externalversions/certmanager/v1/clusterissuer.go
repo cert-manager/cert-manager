@@ -34,11 +34,39 @@ import (
 )
 
 // ClusterIssuerInformer provides access to a shared informer and lister for
-// ClusterIssuers.
+// ClusterIssuers. Prefer using the type-safe variant (see [TypedClusterIssuerInformer]).
 type ClusterIssuerInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() certmanagerv1.ClusterIssuerLister
 }
+
+// TypedClusterIssuerInformer provides access to a shared informer and lister for
+// ClusterIssuers, including the type-safe TypedInformer variant.
+// It is a superset of ClusterIssuerInformer.
+type TypedClusterIssuerInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() ClusterIssuerIndexInformer
+	Lister() certmanagerv1.ClusterIssuerLister
+}
+
+// ClusterIssuerIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type ClusterIssuerIndexInformer cache.TypedSharedIndexInformer[*apiscertmanagerv1.ClusterIssuer]
+
+// ClusterIssuerHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for ClusterIssuer.
+type ClusterIssuerHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apiscertmanagerv1.ClusterIssuer]
+
+// ClusterIssuerDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for ClusterIssuer.
+type ClusterIssuerDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apiscertmanagerv1.ClusterIssuer]
+
+// ClusterIssuerFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for ClusterIssuer.
+type ClusterIssuerFilteringHandler = cache.TypedFilteringResourceEventHandler[*apiscertmanagerv1.ClusterIssuer]
+
+// ClusterIssuerIndexers is a specialization of [cache.TypedIndexers] for ClusterIssuer.
+type ClusterIssuerIndexers = cache.TypedIndexers[*apiscertmanagerv1.ClusterIssuer]
+
+// DeletedClusterIssuer is a specialization of [cache.DeletedObject] for ClusterIssuer.
+type DeletedClusterIssuer = cache.DeletedObject[*apiscertmanagerv1.ClusterIssuer]
 
 type clusterIssuerInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -48,25 +76,49 @@ type clusterIssuerInformer struct {
 // NewClusterIssuerInformer constructs a new informer for ClusterIssuer type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedClusterIssuerInformer]).
 func NewClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedClusterIssuerInformer constructs a new informer for ClusterIssuer type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Duration, indexers ClusterIssuerIndexers) ClusterIssuerIndexInformer {
+	return NewTypedClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredClusterIssuerInformer constructs a new informer for ClusterIssuer type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredClusterIssuerInformer]).
 func NewFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredClusterIssuerInformer constructs a new informer for ClusterIssuer type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredClusterIssuerInformer(client versioned.Interface, resyncPeriod time.Duration, indexers ClusterIssuerIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) ClusterIssuerIndexInformer {
+	return NewTypedClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewClusterIssuerInformerWithOptions constructs a new informer for ClusterIssuer type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedClusterIssuerInformerWithOptions]).
 func NewClusterIssuerInformerWithOptions(client versioned.Interface, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedClusterIssuerInformerWithOptions(client, options)
+}
+
+// NewTypedClusterIssuerInformerWithOptions constructs a new informer for ClusterIssuer type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedClusterIssuerInformerWithOptions(client versioned.Interface, options internalinterfaces.InformerOptions) ClusterIssuerIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "clusterissuers"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.ClusterIssuer](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -99,17 +151,57 @@ func NewClusterIssuerInformerWithOptions(client versioned.Interface, options int
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *clusterIssuerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedClusterIssuerInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *clusterIssuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiscertmanagerv1.ClusterIssuer{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *clusterIssuerInformer) TypedInformer() ClusterIssuerIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.ClusterIssuer](f.factory.InformerFor(&apiscertmanagerv1.ClusterIssuer{}, f.defaultInformer))
 }
 
 func (f *clusterIssuerInformer) Lister() certmanagerv1.ClusterIssuerLister {
 	return certmanagerv1.NewClusterIssuerLister(f.Informer().GetIndexer())
+}
+
+// ToTypedClusterIssuerInformer converts an untyped informer into a TypedClusterIssuerInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *ClusterIssuer. If that is not the case, calling type-safe methods of the returned
+// TypedClusterIssuerInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedClusterIssuerInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedClusterIssuerInformer(informer ClusterIssuerInformer) TypedClusterIssuerInformer {
+	if informer, ok := informer.(TypedClusterIssuerInformer); ok {
+		return informer
+	}
+	return &clusterIssuerTypedInformerAdapter{informer}
+}
+
+type clusterIssuerTypedInformerAdapter struct {
+	ClusterIssuerInformer
+}
+
+func (a *clusterIssuerTypedInformerAdapter) TypedInformer() ClusterIssuerIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.ClusterIssuer](a.Informer())
+}
+
+// ToClusterIssuerIndexInformer converts an untyped informer into a ClusterIssuerIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *ClusterIssuer. If that is not the case, calling type-safe methods of the returned
+// ClusterIssuerIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a ClusterIssuerIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToClusterIssuerIndexInformer(informer cache.SharedIndexInformer) ClusterIssuerIndexInformer {
+	if informer, ok := informer.(ClusterIssuerIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.ClusterIssuer](informer)
 }

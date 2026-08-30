@@ -35,7 +35,7 @@ import (
 // It is scoped to a single namespace and can therefore only be referenced by
 // resources within the same namespace.
 type IssuerApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	metav1.TypeMetaApplyConfiguration    `json:""`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Desired state of the Issuer resource.
 	Spec *IssuerSpecApplyConfiguration `json:"spec,omitempty"`

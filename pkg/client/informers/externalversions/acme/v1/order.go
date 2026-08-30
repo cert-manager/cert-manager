@@ -34,11 +34,39 @@ import (
 )
 
 // OrderInformer provides access to a shared informer and lister for
-// Orders.
+// Orders. Prefer using the type-safe variant (see [TypedOrderInformer]).
 type OrderInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() acmev1.OrderLister
 }
+
+// TypedOrderInformer provides access to a shared informer and lister for
+// Orders, including the type-safe TypedInformer variant.
+// It is a superset of OrderInformer.
+type TypedOrderInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() OrderIndexInformer
+	Lister() acmev1.OrderLister
+}
+
+// OrderIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type OrderIndexInformer cache.TypedSharedIndexInformer[*apisacmev1.Order]
+
+// OrderHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for Order.
+type OrderHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apisacmev1.Order]
+
+// OrderDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for Order.
+type OrderDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apisacmev1.Order]
+
+// OrderFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for Order.
+type OrderFilteringHandler = cache.TypedFilteringResourceEventHandler[*apisacmev1.Order]
+
+// OrderIndexers is a specialization of [cache.TypedIndexers] for Order.
+type OrderIndexers = cache.TypedIndexers[*apisacmev1.Order]
+
+// DeletedOrder is a specialization of [cache.DeletedObject] for Order.
+type DeletedOrder = cache.DeletedObject[*apisacmev1.Order]
 
 type orderInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -49,25 +77,49 @@ type orderInformer struct {
 // NewOrderInformer constructs a new informer for Order type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedOrderInformer]).
 func NewOrderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewOrderInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedOrderInformer constructs a new informer for Order type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedOrderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers OrderIndexers) OrderIndexInformer {
+	return NewTypedOrderInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredOrderInformer constructs a new informer for Order type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredOrderInformer]).
 func NewFilteredOrderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewOrderInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedOrderInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredOrderInformer constructs a new informer for Order type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredOrderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers OrderIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) OrderIndexInformer {
+	return NewTypedOrderInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewOrderInformerWithOptions constructs a new informer for Order type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedOrderInformerWithOptions]).
 func NewOrderInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedOrderInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedOrderInformerWithOptions constructs a new informer for Order type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedOrderInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) OrderIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "acme.cert-manager.io", Version: "v1", Resource: "orders"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Order](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -100,17 +152,57 @@ func NewOrderInformerWithOptions(client versioned.Interface, namespace string, o
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *orderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewOrderInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedOrderInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *orderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisacmev1.Order{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *orderInformer) TypedInformer() OrderIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Order](f.factory.InformerFor(&apisacmev1.Order{}, f.defaultInformer))
 }
 
 func (f *orderInformer) Lister() acmev1.OrderLister {
 	return acmev1.NewOrderLister(f.Informer().GetIndexer())
+}
+
+// ToTypedOrderInformer converts an untyped informer into a TypedOrderInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Order. If that is not the case, calling type-safe methods of the returned
+// TypedOrderInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedOrderInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedOrderInformer(informer OrderInformer) TypedOrderInformer {
+	if informer, ok := informer.(TypedOrderInformer); ok {
+		return informer
+	}
+	return &orderTypedInformerAdapter{informer}
+}
+
+type orderTypedInformerAdapter struct {
+	OrderInformer
+}
+
+func (a *orderTypedInformerAdapter) TypedInformer() OrderIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Order](a.Informer())
+}
+
+// ToOrderIndexInformer converts an untyped informer into a OrderIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *Order. If that is not the case, calling type-safe methods of the returned
+// OrderIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a OrderIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToOrderIndexInformer(informer cache.SharedIndexInformer) OrderIndexInformer {
+	if informer, ok := informer.(OrderIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apisacmev1.Order](informer)
 }
