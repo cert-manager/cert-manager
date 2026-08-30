@@ -192,7 +192,7 @@ func startWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 
 // waitForListener returns the port the webhook server is listening on, once it
 // is accepting connections. It returns an error if the server stops first. It
-// is modelled on controller-runtime's DefaultServer.StartedChecker, which is not
+// is modeled on controller-runtime's DefaultServer.StartedChecker, which is not
 // reachable from here because Server.Run does not keep the manager it builds.
 //
 // caPEM is the CA that issued the server's serving certificate, or empty if the
@@ -210,7 +210,11 @@ func waitForListener(ctx context.Context, srv *server.Server, errCh <-chan error
 		tlsConfig.RootCAs = roots
 	} else {
 		// The caller supplied its own TLS files, so there is no CA to check
-		// against and reaching the port has to be good enough.
+		// against and reaching the port has to be good enough. On this path a
+		// foreign TLS server squatting on the port passes the probe, so the
+		// port race this probe defends against is not detected and not
+		// retried. No current caller takes this path; the framework always
+		// lets StartWebhookServer generate the CA.
 		tlsConfig.InsecureSkipVerify = true
 	}
 
@@ -249,9 +253,9 @@ func waitForListener(ctx context.Context, srv *server.Server, errCh <-chan error
 		if err != nil {
 			return false, nil //nolint:nilerr // not listening yet, keep polling
 		}
-		if err := conn.Close(); err != nil {
-			return false, err
-		}
+		// A close error does not mean the server is down — the handshake
+		// already succeeded — so it must not abort the poll.
+		_ = conn.Close()
 
 		listenPort = port
 		return true, nil
