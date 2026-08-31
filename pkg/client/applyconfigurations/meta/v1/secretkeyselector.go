@@ -25,7 +25,7 @@ package v1
 // In some instances, `key` is a required field.
 type SecretKeySelectorApplyConfiguration struct {
 	// The name of the Secret resource being referred to.
-	LocalObjectReferenceApplyConfiguration `json:",inline"`
+	LocalObjectReferenceApplyConfiguration `json:""`
 	// The key of the entry in the Secret resource's `data` field to be used.
 	// Some instances of this field may be defaulted, in others it may be
 	// required.

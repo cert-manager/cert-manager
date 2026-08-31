@@ -64,11 +64,11 @@ github.com/go-openapi/swag,Apache-2.0
 github.com/go-openapi/swag/cmdutils,Apache-2.0
 github.com/go-openapi/swag/conv,Apache-2.0
 github.com/go-openapi/swag/fileutils,Apache-2.0
-github.com/go-openapi/swag/jsonname,Apache-2.0
 github.com/go-openapi/swag/jsonutils,Apache-2.0
 github.com/go-openapi/swag/loading,Apache-2.0
 github.com/go-openapi/swag/mangling,Apache-2.0
 github.com/go-openapi/swag/netutils,Apache-2.0
+github.com/go-openapi/swag/pools,Apache-2.0
 github.com/go-openapi/swag/stringutils,Apache-2.0
 github.com/go-openapi/swag/typeutils,Apache-2.0
 github.com/go-openapi/swag/yamlutils,Apache-2.0

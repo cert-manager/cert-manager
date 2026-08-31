@@ -30,7 +30,7 @@ import (
 )
 
 type Interface interface {
-	Discovery() discovery.DiscoveryInterface
+	Discovery() discovery.DiscoveryInterfaces
 	AcmeV1() acmev1.AcmeV1Interface
 	CertmanagerV1() certmanagerv1.CertmanagerV1Interface
 }
@@ -53,7 +53,7 @@ func (c *Clientset) CertmanagerV1() certmanagerv1.CertmanagerV1Interface {
 }
 
 // Discovery retrieves the DiscoveryClient
-func (c *Clientset) Discovery() discovery.DiscoveryInterface {
+func (c *Clientset) Discovery() discovery.DiscoveryInterfaces {
 	if c == nil {
 		return nil
 	}

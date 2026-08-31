@@ -32,7 +32,7 @@ import (
 //
 // Order is a type to represent an Order with an ACME server
 type OrderApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	metav1.TypeMetaApplyConfiguration    `json:""`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                                 *OrderSpecApplyConfiguration   `json:"spec,omitempty"`
 	Status                               *OrderStatusApplyConfiguration `json:"status,omitempty"`

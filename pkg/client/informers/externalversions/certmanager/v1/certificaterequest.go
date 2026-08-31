@@ -34,11 +34,39 @@ import (
 )
 
 // CertificateRequestInformer provides access to a shared informer and lister for
-// CertificateRequests.
+// CertificateRequests. Prefer using the type-safe variant (see [TypedCertificateRequestInformer]).
 type CertificateRequestInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() certmanagerv1.CertificateRequestLister
 }
+
+// TypedCertificateRequestInformer provides access to a shared informer and lister for
+// CertificateRequests, including the type-safe TypedInformer variant.
+// It is a superset of CertificateRequestInformer.
+type TypedCertificateRequestInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() CertificateRequestIndexInformer
+	Lister() certmanagerv1.CertificateRequestLister
+}
+
+// CertificateRequestIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type CertificateRequestIndexInformer cache.TypedSharedIndexInformer[*apiscertmanagerv1.CertificateRequest]
+
+// CertificateRequestHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for CertificateRequest.
+type CertificateRequestHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apiscertmanagerv1.CertificateRequest]
+
+// CertificateRequestDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for CertificateRequest.
+type CertificateRequestDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apiscertmanagerv1.CertificateRequest]
+
+// CertificateRequestFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for CertificateRequest.
+type CertificateRequestFilteringHandler = cache.TypedFilteringResourceEventHandler[*apiscertmanagerv1.CertificateRequest]
+
+// CertificateRequestIndexers is a specialization of [cache.TypedIndexers] for CertificateRequest.
+type CertificateRequestIndexers = cache.TypedIndexers[*apiscertmanagerv1.CertificateRequest]
+
+// DeletedCertificateRequest is a specialization of [cache.DeletedObject] for CertificateRequest.
+type DeletedCertificateRequest = cache.DeletedObject[*apiscertmanagerv1.CertificateRequest]
 
 type certificateRequestInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -49,25 +77,49 @@ type certificateRequestInformer struct {
 // NewCertificateRequestInformer constructs a new informer for CertificateRequest type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedCertificateRequestInformer]).
 func NewCertificateRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewCertificateRequestInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedCertificateRequestInformer constructs a new informer for CertificateRequest type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedCertificateRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers CertificateRequestIndexers) CertificateRequestIndexInformer {
+	return NewTypedCertificateRequestInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredCertificateRequestInformer constructs a new informer for CertificateRequest type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredCertificateRequestInformer]).
 func NewFilteredCertificateRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewCertificateRequestInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedCertificateRequestInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredCertificateRequestInformer constructs a new informer for CertificateRequest type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredCertificateRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers CertificateRequestIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) CertificateRequestIndexInformer {
+	return NewTypedCertificateRequestInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewCertificateRequestInformerWithOptions constructs a new informer for CertificateRequest type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedCertificateRequestInformerWithOptions]).
 func NewCertificateRequestInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedCertificateRequestInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedCertificateRequestInformerWithOptions constructs a new informer for CertificateRequest type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedCertificateRequestInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) CertificateRequestIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "certificaterequests"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.CertificateRequest](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -100,17 +152,57 @@ func NewCertificateRequestInformerWithOptions(client versioned.Interface, namesp
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *certificateRequestInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewCertificateRequestInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedCertificateRequestInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *certificateRequestInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiscertmanagerv1.CertificateRequest{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *certificateRequestInformer) TypedInformer() CertificateRequestIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.CertificateRequest](f.factory.InformerFor(&apiscertmanagerv1.CertificateRequest{}, f.defaultInformer))
 }
 
 func (f *certificateRequestInformer) Lister() certmanagerv1.CertificateRequestLister {
 	return certmanagerv1.NewCertificateRequestLister(f.Informer().GetIndexer())
+}
+
+// ToTypedCertificateRequestInformer converts an untyped informer into a TypedCertificateRequestInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *CertificateRequest. If that is not the case, calling type-safe methods of the returned
+// TypedCertificateRequestInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedCertificateRequestInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedCertificateRequestInformer(informer CertificateRequestInformer) TypedCertificateRequestInformer {
+	if informer, ok := informer.(TypedCertificateRequestInformer); ok {
+		return informer
+	}
+	return &certificateRequestTypedInformerAdapter{informer}
+}
+
+type certificateRequestTypedInformerAdapter struct {
+	CertificateRequestInformer
+}
+
+func (a *certificateRequestTypedInformerAdapter) TypedInformer() CertificateRequestIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.CertificateRequest](a.Informer())
+}
+
+// ToCertificateRequestIndexInformer converts an untyped informer into a CertificateRequestIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *CertificateRequest. If that is not the case, calling type-safe methods of the returned
+// CertificateRequestIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a CertificateRequestIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToCertificateRequestIndexInformer(informer cache.SharedIndexInformer) CertificateRequestIndexInformer {
+	if informer, ok := informer.(CertificateRequestIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apiscertmanagerv1.CertificateRequest](informer)
 }

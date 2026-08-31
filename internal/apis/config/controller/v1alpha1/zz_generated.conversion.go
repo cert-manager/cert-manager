@@ -371,11 +371,7 @@ func Convert_controller_GatewayAPIConfig_To_v1alpha1_GatewayAPIConfig(in *contro
 }
 
 func autoConvert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *controllerv1alpha1.IngressShimConfig, out *controller.IngressShimConfig, s conversion.Scope) error {
-	out.DefaultIssuerName = in.DefaultIssuerName
-	out.DefaultIssuerKind = in.DefaultIssuerKind
-	out.DefaultIssuerGroup = in.DefaultIssuerGroup
-	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
-	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
+	*out = *(*controller.IngressShimConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -385,11 +381,7 @@ func Convert_v1alpha1_IngressShimConfig_To_controller_IngressShimConfig(in *cont
 }
 
 func autoConvert_controller_IngressShimConfig_To_v1alpha1_IngressShimConfig(in *controller.IngressShimConfig, out *controllerv1alpha1.IngressShimConfig, s conversion.Scope) error {
-	out.DefaultIssuerName = in.DefaultIssuerName
-	out.DefaultIssuerKind = in.DefaultIssuerKind
-	out.DefaultIssuerGroup = in.DefaultIssuerGroup
-	out.DefaultAutoCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.DefaultAutoCertificateAnnotations))
-	out.ExtraCertificateAnnotations = *(*[]string)(unsafe.Pointer(&in.ExtraCertificateAnnotations))
+	*out = *(*controllerv1alpha1.IngressShimConfig)(unsafe.Pointer(in))
 	return nil
 }
 

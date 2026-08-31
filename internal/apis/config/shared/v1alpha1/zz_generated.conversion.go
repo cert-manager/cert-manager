@@ -143,8 +143,7 @@ func Convert_shared_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *sh
 }
 
 func autoConvert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(in *sharedv1alpha1.FilesystemServingConfig, out *shared.FilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
+	*out = *(*shared.FilesystemServingConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -154,8 +153,7 @@ func Convert_v1alpha1_FilesystemServingConfig_To_shared_FilesystemServingConfig(
 }
 
 func autoConvert_shared_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *shared.FilesystemServingConfig, out *sharedv1alpha1.FilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
+	*out = *(*sharedv1alpha1.FilesystemServingConfig)(unsafe.Pointer(in))
 	return nil
 }
 
