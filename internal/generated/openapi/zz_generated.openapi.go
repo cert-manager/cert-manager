@@ -2768,6 +2768,13 @@ func schema_pkg_apis_certmanager_v1_CertificateACMEARIStatus(ref common.Referenc
 							Format:      "",
 						},
 					},
+					"certID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was fetched for. This is used to determine if we need to re-fetch the renewal information as changed cert id means that ARI fetched before is stale.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

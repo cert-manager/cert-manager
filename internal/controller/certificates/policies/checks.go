@@ -290,18 +290,12 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		// the scheduled wake-up; the gate just compares against the window
 		// start so we reliably renew as soon as the window opens.
 		//
-		// We also ignore the ARI window when it appears to describe a prior
-		// revision of this certificate — i.e. SuggestedWindow.Start is at or
-		// before the current cert's NotBefore. In that case the ACME server's
-		// window cannot meaningfully apply to the certificate currently in
-		// the Secret (we've just renewed and are looking at fresh bytes), so
-		// depending on it would trigger an immediate re-renewal loop. Fall back
-		// to the deterministic renewBefore calculation in that case; the
-		// readiness controller will refresh ARI on its next reconcile.
+		// A window left over from a previous revision cannot reach this point:
+		// the gatherer only populates ARIRenewalInfo when the ARI CertID
+		// recorded in status matches the certificate currently in the Secret.
 		if input.ARIRenewalInfo != nil &&
-			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() &&
-			input.ARIRenewalInfo.SuggestedWindow.Start.After(x509Cert.NotBefore) {
-			if c.Now().Before(input.ARIRenewalInfo.SuggestedWindow.Start) {
+			crt.Status.RenewalTime != nil {
+			if c.Now().Before(crt.Status.RenewalTime.Time) {
 				return "", "", false
 			}
 			return reason, message, true
