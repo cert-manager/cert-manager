@@ -52,7 +52,8 @@ import (
 )
 
 const (
-	ControllerName = "certificates-issuing"
+	ControllerName                   = "certificates-issuing"
+	reasonTemporaryCertificateFailed = "TemporaryCertificateFailed"
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -400,6 +401,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// return early - we will sync again since the target Secret has been
 	// updated.
 	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pk); err != nil || issued {
+		if err != nil {
+			c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonTemporaryCertificateFailed, "Failed to issue temporary certificate: %s", err.Error())
+		}
 		return err
 	}
 
