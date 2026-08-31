@@ -21,7 +21,9 @@ import (
 	"crypto"
 	"encoding/pem"
 	"fmt"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -51,9 +53,10 @@ import (
 )
 
 const (
-	ControllerName      = "certificates-request-manager"
-	reasonRequestFailed = "RequestFailed"
-	reasonRequested     = "Requested"
+	ControllerName        = "certificates-request-manager"
+	reasonRequestFailed   = "RequestFailed"
+	reasonRequested       = "Requested"
+	reasonRequestConflict = "RequestConflict"
 )
 
 var (
@@ -227,7 +230,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		// TODO: we should handle this case better, but for now do nothing to
 		//  avoid getting into loops where we keep creating multiple requests
 		//  and deleting them again.
-		log.V(logf.ErrorLevel).Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
+		// Issuance cannot make progress until a human deletes all but one of
+		// these CertificateRequests, and no error is returned here, so this is
+		// recorded on the Certificate as well as logged.
+		names := make([]string, len(requests))
+		for i, req := range requests {
+			names[i] = req.Name
+		}
+		slices.Sort(names)
+		log.V(logf.ErrorLevel).Info("Multiple matching CertificateRequest resources exist, delete all but one of them to allow issuance to continue", "requests", names)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestConflict, "Multiple matching CertificateRequest resources exist (%s), delete all but one of them to allow issuance to continue", strings.Join(names, ", "))
 		return nil
 	}
 
@@ -453,7 +465,8 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	}
 
 	if err := c.waitForCertificateRequestToExist(ctx, cr.Namespace, cr.Name); err != nil {
-		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried. %w", err)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed waiting for CertificateRequest %q to be observed: %s - will retry", cr.Name, err.Error())
+		return fmt.Errorf("failed whilst waiting for CertificateRequest %q to be observed. Request will be retried. %w", cr.Name, err)
 	}
 	return nil
 }

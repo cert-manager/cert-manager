@@ -17,6 +17,7 @@ limitations under the License.
 package requestmanager
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -642,7 +643,10 @@ func TestProcessItem(t *testing.T) {
 				),
 			},
 		},
-		"should do nothing if multiple owned and up to date CertificateRequests for the current revision exist": {
+		// This state is terminal: nothing is deleted, no error is returned and so
+		// the item is forgotten, and every re-sync takes the same branch. A human
+		// has to delete the surplus CertificateRequests, hence the Warning event.
+		"should record a Warning event if multiple owned and up to date CertificateRequests for the current revision exist": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
@@ -669,6 +673,9 @@ func TestProcessItem(t *testing.T) {
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
+			},
+			expectedEvents: []string{
+				`Warning RequestConflict Multiple matching CertificateRequest resources exist (random-value-1, random-value-2), delete all but one of them to allow issuance to continue`,
 			},
 		},
 		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle": {
@@ -843,5 +850,77 @@ func TestProcessItem(t *testing.T) {
 				builder.T.Error(err)
 			}
 		})
+	}
+}
+
+// If the CertificateRequest we just created never turns up in our own lister,
+// createNewCertificateRequest returns an error so the item is retried. If the
+// lister is still stale on that retry, it can create a second
+// CertificateRequest for the same revision, which ProcessItem refuses to
+// resolve. The timeout is worth surfacing on the Certificate for that reason.
+func TestCreateNewCertificateRequestWaitTimeout(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.StableCertificateRequestName, false)
+
+	bundle := mustCreateCryptoBundle(t, &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: "test"},
+		Spec:       cmapi.CertificateSpec{CommonName: "test-wait-timeout"},
+	})
+	pk, err := pki.DecodePrivateKeyBytes(bundle.privateKeyBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	builder := &testpkg.Builder{
+		T:               t,
+		StringGenerator: func(i int) string { return "notrandom" },
+		ExpectedEvents: []string{
+			`Normal Requested Created new CertificateRequest resource "test-notrandom"`,
+			`Warning RequestFailed Failed waiting for CertificateRequest "test-notrandom" to be observed: context deadline exceeded - will retry`,
+		},
+		ExpectedActions: []testpkg.Action{
+			testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+				gen.CertificateRequestFrom(bundle.certificateRequest,
+					// The create action records the object as submitted, i.e.
+					// before the apiserver expands generateName.
+					gen.SetCertificateRequestName(""),
+					func(cr *cmapi.CertificateRequest) { cr.GenerateName = "test-" },
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+					}),
+				)), relaxedCertificateRequestMatcher),
+		},
+	}
+	builder.Init()
+
+	w := &controllerWrapper{}
+	if _, _, err := w.Register(builder.Context); err != nil {
+		t.Fatal(err)
+	}
+	// The informers are deliberately never started, so the CertificateRequest
+	// lister never observes the CertificateRequest created below - exactly what
+	// a lagging informer looks like to the controller.
+	defer builder.Stop()
+
+	// Cut the 5s poll short rather than making the test wait for it; the poll
+	// honours the parent context.
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+
+	// gen.CertificateFrom applies the API defaults, so that the created
+	// CertificateRequest matches the defaulted fixture below.
+	err = w.controller.createNewCertificateRequest(ctx, gen.CertificateFrom(bundle.certificate), pk, 1, "exists")
+	if err == nil {
+		t.Fatal("expected an error but got none")
+	}
+	if !strings.Contains(err.Error(), `failed whilst waiting for CertificateRequest "test-notrandom" to be observed`) {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if err := builder.AllEventsCalled(); err != nil {
+		t.Error(err)
+	}
+	if err := builder.AllActionsExecuted(); err != nil {
+		t.Error(err)
 	}
 }
