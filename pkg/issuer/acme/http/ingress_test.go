@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -475,6 +476,34 @@ func TestCleanupIngresses(t *testing.T) {
 				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
 					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
 				}
+			},
+		},
+		"should not return an error if the ingress is already gone": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "abcd",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								Class: new("nginx"),
+							},
+						},
+					},
+				},
+			},
+			Err: false,
+			PreFn: func(t *testing.T, s *solverFixture) {
+				ing, err := s.Solver.createIngress(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				s.testResources[createdIngressKey] = ing
+
+				// the lister still has the ingress, the API server no longer does
+				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, k8sErrors.NewNotFound(networkingv1.Resource("ingresses"), ing.Name)
+				})
 			},
 		},
 		"should return an error if a delete fails": {

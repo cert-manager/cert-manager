@@ -314,6 +314,12 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 			log.V(logf.DebugLevel).Info("deleting ingress resource")
 			err := s.Client.NetworkingV1().Ingresses(ingress.Namespace).Delete(ctx, ingress.Name, metav1.DeleteOptions{})
+			if k8sErrors.IsNotFound(err) {
+				// the lister can be behind the API server, so an ingress that
+				// is already gone is the state we wanted anyway
+				log.V(logf.DebugLevel).Info("ingress resource already deleted")
+				continue
+			}
 			if err != nil {
 				log.V(logf.WarnLevel).Info("failed to delete ingress resource", "error", err)
 				errs = append(errs, err)
