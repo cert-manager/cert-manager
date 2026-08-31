@@ -23,7 +23,7 @@ require (
 	github.com/digitalocean/godo v1.204.0
 	github.com/go-ldap/ldap/v3 v3.4.14
 	github.com/go-logr/logr v1.4.4
-	github.com/go-openapi/jsonreference v1.0.0
+	github.com/go-openapi/jsonreference v1.0.1
 	github.com/google/gnostic-models v0.7.1
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/vault/api v1.23.0
