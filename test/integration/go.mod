@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/sync v0.22.0
 	k8s.io/api v0.37.0
-	k8s.io/apiextensions-apiserver v0.36.4
+	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
 	k8s.io/kube-aggregator v0.37.0
