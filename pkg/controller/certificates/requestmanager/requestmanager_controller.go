@@ -17,7 +17,6 @@ limitations under the License.
 package requestmanager
 
 import (
-	"bytes"
 	"context"
 	"crypto"
 	"encoding/pem"
@@ -180,6 +179,11 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	pk, err := pki.DecodePrivateKeyBytes(nextPrivateKeySecret.Data[corev1.TLSPrivateKeyKey])
 	if err != nil {
 		log.Error(err, "Failed to decode next private key secret data, waiting for keymanager before processing certificate")
+		return nil
+	}
+	pkViolations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
+	if len(pkViolations) > 0 {
+		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkViolations)
 		return nil
 	}
 
@@ -384,11 +388,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return err
 	}
 
-	csrPEM := bytes.NewBuffer([]byte{})
-	err = pem.Encode(csrPEM, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
-	if err != nil {
-		return err
-	}
+	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
 
 	annotations := controllerpkg.BuildAnnotationsToCopy(crt.Annotations, c.copiedAnnotationPrefixes)
 	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
@@ -409,7 +409,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		Spec: cmapi.CertificateRequestSpec{
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
-			Request:   csrPEM.Bytes(),
+			Request:   csrPEM,
 			IsCA:      crt.Spec.IsCA,
 			Usages:    crt.Spec.Usages,
 		},
@@ -425,6 +425,10 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		// use a cryptographic hash function to hash the full certificate name to 64 characters.
 		// Finally, for Certificates with a name longer than 233 characters, we build the CertificateRequest
 		// name as follows: <first-168-chars-of-certificate-name>-<64-char-hash>-<19-char-nextRevision>
+		//
+		// ComputeSecureUniqueDeterministicNameFromData only errors if the maximum
+		// length is below the 64 character hash, and the hash write it does
+		// internally never fails, so 233 cannot error here.
 		crName, err := apiutil.ComputeSecureUniqueDeterministicNameFromData(crt.Name, 233)
 		if err != nil {
 			return err

@@ -54,6 +54,18 @@ func mustGenerateRSA(t *testing.T) []byte {
 	return d
 }
 
+func mustGenerateECDSA(t *testing.T) []byte {
+	pk, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := pki.EncodePKCS8PrivateKey(pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
 func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action) error {
 	objL := l.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
 	objR := r.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
@@ -746,6 +758,26 @@ func TestProcessItem(t *testing.T) {
 			expectedEvents: []string{
 				`Warning RequestFailed Failed to generate CSR: invalid CIDR address: 10.0.0.0 - will not retry`,
 			},
+		},
+		// The keymanager regenerates a next private key that does not match the
+		// spec, so this controller must not act on it: no CertificateRequest is
+		// created, no event is recorded and no error is returned. Without the
+		// guard, the CSR would be built and pki.EncodeCSR would fail on every
+		// reconcile.
+		"do nothing if the next private key does not match spec.privateKey.algorithm, waiting for the keymanager": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists-with-mismatched-key"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateECDSA(t)},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle3.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists-with-mismatched-key"),
+				func(crt *cmapi.Certificate) {
+					crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{Algorithm: cmapi.RSAKeyAlgorithm}
+				},
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+			),
 		},
 	}
 	for name, test := range tests {
