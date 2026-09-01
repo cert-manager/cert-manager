@@ -146,7 +146,7 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		return nil
 	}
 
-	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer)
+	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer, v.CanUseAmbientCredentials(issuer))
 	if err != nil {
 		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultClientInitFailed, "err", err, "issuer", klog.KObj(issuer))
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, err.Error()))
