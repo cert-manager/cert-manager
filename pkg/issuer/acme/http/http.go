@@ -316,15 +316,16 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	}
 
 	if string(presentedKey) != key {
-		// truncate the response before displaying it to avoid extra long strings
-		// being displayed to users
+		// truncate the response before logging it to avoid extra long strings
+		// being displayed to operators
 		keyToPrint := string(presentedKey)
 		if len(keyToPrint) > 24 {
 			// trim spaces to make output look right if it ends with whitespace
 			keyToPrint = strings.TrimSpace(keyToPrint[:24]) + "... (truncated)"
 		}
 		log.V(logf.DebugLevel).Info("key returned by server did not match expected", "actual", keyToPrint, "expected", key)
-		return fmt.Errorf("did not get expected response when querying endpoint, expected %q but got: %s", key, keyToPrint)
+		// The response body is deliberately kept out of the returned error
+		return fmt.Errorf("did not get expected response %q when querying endpoint", key)
 	}
 
 	log.V(logf.DebugLevel).Info("reachability test succeeded")
