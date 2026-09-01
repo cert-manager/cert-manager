@@ -100,8 +100,19 @@ imagePullSecrets:
 Global node selector  
   
 The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with matching labels. For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).  
-  
+
 If a component-specific nodeSelector is also set, it will be merged and take precedence.
+#### **global.tolerations** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Global tolerations  
+
+A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+
+If a component-specific tolerations list is also set, it will be appended to the global list.
 
 #### **global.commonLabels** ~ `object`
 > Default value:
