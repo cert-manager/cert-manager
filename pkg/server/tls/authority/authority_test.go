@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/go-logr/logr/testr"
@@ -73,7 +74,17 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 	return da
 }
 
+// The dynamic authority tests run in a synctest bubble so that the timeouts
+// below are measured in the bubble's synthetic time: they can only fire once
+// every goroutine is durably blocked and no informer event is still in
+// flight. This makes the tests immune to slow scheduling on loaded CI nodes;
+// the timeout fires only if rotation provably cannot happen.
+// See https://github.com/cert-manager/cert-manager/issues/8754
 func TestDynamicAuthority(t *testing.T) {
+	synctest.Test(t, testDynamicAuthority)
+}
+
+func testDynamicAuthority(t *testing.T) {
 	fake := kubefake.NewClientset()
 
 	da := testAuthority(t, "authority", fake)
@@ -135,6 +146,10 @@ func TestDynamicAuthority(t *testing.T) {
 }
 
 func TestDynamicAuthorityMulti(t *testing.T) {
+	synctest.Test(t, testDynamicAuthorityMulti)
+}
+
+func testDynamicAuthorityMulti(t *testing.T) {
 	fake := kubefake.NewClientset()
 
 	authorities := make([]*DynamicAuthority, 0)
