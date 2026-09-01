@@ -32,7 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -179,6 +181,56 @@ func TestDynamicAuthorityMulti(t *testing.T) {
 	}
 
 	waitForRotationAndSign()
+}
+
+// TestEnsureCARecoversFromMissedWatchEvent verifies that an authority which
+// loses the race to create the CA Secret recovers even if its informer never
+// delivers an event for the Secret: ensureCA must read the Secret back from
+// the API and notify watches itself.
+// See https://github.com/cert-manager/cert-manager/issues/8754
+func TestEnsureCARecoversFromMissedWatchEvent(t *testing.T) {
+	fake := kubefake.NewClientset()
+
+	// Both authorities have permanently empty informer caches, simulating an
+	// informer that missed the Secret's create event.
+	newAuthority := func(name string) *DynamicAuthority {
+		emptyIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+		return &DynamicAuthority{
+			SecretNamespace: "test-namespace",
+			SecretName:      "test-secret",
+			CommonName:      "test-common-name",
+			CADuration:      365 * 24 * time.Hour,
+			LeafDuration:    7 * 24 * time.Hour,
+			log:             testr.NewWithOptions(t, testr.Options{Verbosity: 3}).WithName(name),
+			lister:          corelisters.NewSecretLister(emptyIndexer).Secrets("test-namespace"),
+			client:          fake.CoreV1().Secrets("test-namespace"),
+		}
+	}
+
+	// The winner creates the CA Secret.
+	winner := newAuthority("winner")
+	assert.NoError(t, winner.ensureCA(t.Context()))
+
+	// The loser's Create fails with AlreadyExists and no watch event will
+	// ever arrive; ensureCA must still leave it able to sign.
+	loser := newAuthority("loser")
+	output := make(chan struct{}, 1)
+	loser.WatchRotation(output)
+	defer loser.StopWatchingRotation(output)
+
+	assert.NoError(t, loser.ensureCA(t.Context()))
+
+	select {
+	case <-output:
+	default:
+		t.Fatal("expected a rotation notification after losing the create race")
+	}
+
+	privateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	assert.NoError(t, err)
+	cert, err := loser.Sign(&x509.Certificate{PublicKey: privateKey.Public()})
+	assert.NoError(t, err)
+	assert.NotNil(t, cert)
 }
 
 func Test__caRequiresRegeneration(t *testing.T) {
