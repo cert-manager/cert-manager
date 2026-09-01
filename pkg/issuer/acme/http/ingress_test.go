@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -492,17 +491,15 @@ func TestCleanupIngresses(t *testing.T) {
 					},
 				},
 			},
-			Err: false,
 			PreFn: func(t *testing.T, s *solverFixture) {
 				ing, err := s.Solver.createIngress(t.Context(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				s.testResources[createdIngressKey] = ing
 
 				// the lister still has the ingress, the API server no longer does
 				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, k8sErrors.NewNotFound(networkingv1.Resource("ingresses"), ing.Name)
+					return true, nil, apierrors.NewNotFound(networkingv1.Resource("ingresses"), ing.Name)
 				})
 			},
 		},
