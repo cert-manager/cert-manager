@@ -56,6 +56,15 @@ func SafeErrorMessage(err error) string {
 	// RawError is set when the body could not be decoded as a Vault error
 	// response, in which case Errors holds the raw body verbatim. That body was
 	// not written by Vault, so it is not safe to reflect.
+	//
+	// This check is best-effort rather than a guarantee. RawError is false
+	// whenever the body parsed as Vault's error envelope, which is not the same
+	// as the body having been written by Vault: any endpoint that responds with
+	// {"errors": ["..."]} decodes cleanly, and its strings are still reflected
+	// here. Unlike ACME, whose problem documents carry a
+	// urn:ietf:params:acme:error prefix we can key on, a Vault error response
+	// has no marker that a hostile endpoint could not also produce. The
+	// truncation below is what bounds that residual case.
 	if respErr.RawError {
 		return fmt.Sprintf(messageTemplateNonVaultErrorResponse, respErr.StatusCode)
 	}
@@ -66,5 +75,54 @@ func SafeErrorMessage(err error) string {
 // LoggableErrorMessage renders err for the cert-manager logs, where the full
 // response details are useful for debugging.
 func LoggableErrorMessage(err error) string {
+	// Recover the unsanitised error if this one left the package through
+	// sanitizeError, so that the logs keep the detail that was withheld from the
+	// API server.
+	if sanitized, ok := errors.AsType[*sanitizedError](err); ok {
+		err = sanitized.err
+	}
+
 	return cmerrors.TruncateMessage(err.Error(), maxVaultErrorLogLength)
+}
+
+// sanitizedError renders as a message that is safe to persist to the API server
+// while keeping the original error reachable, both for the logs via
+// LoggableErrorMessage and for callers matching on it with errors.Is and
+// errors.As.
+type sanitizedError struct {
+	safe string
+	err  error
+}
+
+func (e *sanitizedError) Error() string { return e.safe }
+
+func (e *sanitizedError) Unwrap() error { return e.err }
+
+// sanitizeError prepares err to leave this package. Every caller of New, Sign
+// and IsVaultInitializedAndUnsealed copies the error it gets back into a
+// Kubernetes Event and into the status of an Issuer, a CertificateRequest or a
+// CertificateSigningRequest, all of which are persisted to the API server and
+// readable by anyone who can read the resource. Sanitising here rather than at
+// each of those sinks means a new caller cannot reintroduce the disclosure by
+// forgetting to call SafeErrorMessage.
+func sanitizeError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// Only an error carrying a response can hold content chosen by whatever
+	// spec.vault.server points at. Leaving every other error untouched keeps it
+	// matchable by the callers that type-assert on it without going through
+	// errors.As, notably cmerrors.IsInvalidData.
+	if _, ok := errors.AsType[*vault.ResponseError](err); !ok {
+		return err
+	}
+
+	safe := SafeErrorMessage(err)
+	if safe == err.Error() {
+		// Nothing was withheld, so there is no reason to obscure the chain.
+		return err
+	}
+
+	return &sanitizedError{safe: safe, err: err}
 }
