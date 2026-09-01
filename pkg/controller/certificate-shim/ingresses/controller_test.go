@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	kclient "k8s.io/client-go/kubernetes"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -163,9 +164,15 @@ func Test_controller_Register(t *testing.T) {
 			// We have no way of knowing when the informers will be done adding
 			// items to the queue due to the "shared informer" architecture:
 			// Start(stop) does not allow you to wait for the informers to be
-			// done. To work around that, we do a second queue.Get and expect it
-			// to be nil.
-			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
+			// done. So we shut the queue down shortly *after* the expected key
+			// arrives: the short delay exists only to catch unexpected extra
+			// keys. The generous backstop timer makes the test fail rather
+			// than hang if the expected key never arrives.
+			backstop := time.AfterFunc(wait.ForeverTestTimeout, queue.ShutDown)
+			defer backstop.Stop()
+			if test.expectRequeueKey == (types.NamespacedName{}) {
+				time.AfterFunc(50*time.Millisecond, queue.ShutDown)
+			}
 
 			var gotKeys []types.NamespacedName
 			for {
@@ -176,6 +183,9 @@ func Test_controller_Register(t *testing.T) {
 					break
 				}
 				gotKeys = append(gotKeys, gotKey)
+				if gotKey == test.expectRequeueKey {
+					time.AfterFunc(50*time.Millisecond, queue.ShutDown)
+				}
 			}
 			assert.Equal(t, 0, queue.Len(), "queue should be empty")
 
