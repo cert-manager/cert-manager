@@ -207,9 +207,17 @@ func TestEnsureCARecoversFromMissedWatchEvent(t *testing.T) {
 		}
 	}
 
-	// The winner creates the CA Secret.
+	// The winner creates the CA Secret and must notify its own watches from
+	// the data it just wrote, without waiting for an informer event either.
 	winner := newAuthority("winner")
+	winnerOutput := make(chan struct{}, 1)
+	winner.WatchRotation(winnerOutput)
 	assert.NoError(t, winner.ensureCA(t.Context()))
+	select {
+	case <-winnerOutput:
+	default:
+		t.Fatal("expected a rotation notification after winning the create race")
+	}
 
 	// The loser's Create fails with AlreadyExists and no watch event will
 	// ever arrive; ensureCA must still leave it able to sign.

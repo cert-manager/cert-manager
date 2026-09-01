@@ -396,7 +396,10 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 				cmmeta.TLSCAKey:         certBytes,
 			},
 		}, metav1.CreateOptions{})
-		if err != nil && apierrors.IsAlreadyExists(err) {
+		if err != nil {
+			if !apierrors.IsAlreadyExists(err) {
+				return err
+			}
 			// Another controller created the Secret before we did. Our informer
 			// cache does not have it yet, so read the Secret back directly
 			// instead of waiting for the informer event: this makes us ready
@@ -414,7 +417,8 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 			return nil
 		}
 		d.log.V(logf.InfoLevel).Info("Created new root CA Secret")
-		return err
+		d.notifyWatches(certBytes, pkBytes)
+		return nil
 	}
 
 	if s.Data == nil {
@@ -427,6 +431,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 	d.log.V(logf.InfoLevel).Info("Updated existing root CA Secret")
+	d.notifyWatches(certBytes, pkBytes)
 	return nil
 }
 
