@@ -350,7 +350,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			// Ready condition reason is Failed), so surface it loudly rather
 			// than waiting silently forever.
 			message := fmt.Sprintf("CertificateRequest %q has a failureTime set but no Ready condition; issuance is stalled. Delete the CertificateRequest to retry.", req.Name)
-			log.V(logf.InfoLevel).Info(message)
+			log.V(logf.ErrorLevel).Info(message)
 			c.recorder.Event(crt, corev1.EventTypeWarning, reasonStalled, message)
 			return nil
 		}
