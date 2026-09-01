@@ -19,6 +19,7 @@ package issuing
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -60,6 +61,10 @@ func TestIssuingController(t *testing.T) {
 
 		certificate             *cmapi.Certificate
 		expSecretUpdateDataCall *internal.SecretData
+
+		// localTemporarySigner, if set, overrides the signer that the runner
+		// otherwise wires up to return a valid temporary certificate.
+		localTemporarySigner localTemporarySignerFn
 
 		expectedErr bool
 	}
@@ -824,6 +829,44 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 
+		// Issuing a temporary certificate can fail on a Certificate that the
+		// webhook accepts, e.g. an unsupported spec.privateKey.encoding, and
+		// then fails identically on every reconcile.
+		"if certificate is in Issuing state with temp annotation and the temporary certificate cannot be issued, record a Warning event": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true",
+						}),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedEvents: []string{
+					"Warning TemporaryCertificateFailed Failed to issue temporary certificate: this is a signing error",
+				},
+			},
+			localTemporarySigner: func(_ *cmapi.Certificate, _ []byte) ([]byte, error) {
+				return nil, errors.New("this is a signing error")
+			},
+			expectedErr: true,
+		},
+
 		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, a target Secret but with no data, issue temporary certificate to that Secret": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
@@ -1575,6 +1618,9 @@ func TestIssuingController(t *testing.T) {
 			_, _, err := w.Register(test.builder.Context)
 			require.NoError(t, err)
 			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
+			if test.localTemporarySigner != nil {
+				w.controller.localTemporarySigner = test.localTemporarySigner
+			}
 
 			var secretsUpdateDataCalled bool
 			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {
