@@ -118,6 +118,101 @@ func TestSafeErrorMessageBoundsLength(t *testing.T) {
 	}
 }
 
+func TestSanitizeError(t *testing.T) {
+	rawResponse := &vault.ResponseError{
+		StatusCode: 500,
+		RawError:   true,
+		Errors:     []string{sentinel},
+	}
+
+	tests := map[string]struct {
+		err error
+
+		// wantUnchanged asserts that the same error is handed straight back,
+		// which matters for the callers that match on it without errors.As.
+		wantUnchanged bool
+		wantMessage   string
+	}{
+		"a nil error stays nil": {
+			err:           nil,
+			wantUnchanged: true,
+		},
+		"a local error is left alone": {
+			err:           errors.New("error initializing Vault client: unable to load credentials"),
+			wantUnchanged: true,
+		},
+		"an invalid data error is left alone so that IsInvalidData still matches": {
+			err:           cmerrors.NewInvalidData("no data for %q in secret", "key1"),
+			wantUnchanged: true,
+		},
+		"a Vault error response short enough to reflect is left alone": {
+			err: &vault.ResponseError{
+				StatusCode: 403,
+				Errors:     []string{"permission denied"},
+			},
+			wantUnchanged: true,
+		},
+		"a raw response body is replaced": {
+			err:         rawResponse,
+			wantMessage: fmt.Sprintf(messageTemplateNonVaultErrorResponse, 500),
+		},
+		"a raw response body is replaced when the error has been wrapped": {
+			err:         fmt.Errorf("failed to sign certificate by vault: %w", rawResponse),
+			wantMessage: fmt.Sprintf(messageTemplateNonVaultErrorResponse, 500),
+		},
+		"an oversized Vault error response is truncated": {
+			err: &vault.ResponseError{
+				StatusCode: 403,
+				Errors:     []string{strings.Repeat("a", 4*maxVaultErrorMessageLength)},
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := sanitizeError(test.err)
+
+			if test.wantUnchanged {
+				if got != test.err {
+					t.Fatalf("sanitizeError() = %v, want the error to be handed back unchanged", got)
+				}
+
+				return
+			}
+
+			if strings.Contains(got.Error(), sentinel) {
+				t.Errorf("sanitizeError() = %q, which leaks the response body", got)
+			}
+			if len(got.Error()) > maxVaultErrorMessageLength {
+				t.Errorf("message is %d bytes, want at most %d", len(got.Error()), maxVaultErrorMessageLength)
+			}
+			if test.wantMessage != "" && got.Error() != test.wantMessage {
+				t.Errorf("sanitizeError() = %q, want %q", got, test.wantMessage)
+			}
+
+			// The original has to stay reachable, both for the logs and for the
+			// callers that match on what the server returned.
+			if !strings.Contains(LoggableErrorMessage(got), test.err.Error()) {
+				t.Errorf("LoggableErrorMessage() = %q, want it to keep the original error", LoggableErrorMessage(got))
+			}
+			if _, ok := errors.AsType[*vault.ResponseError](got); !ok {
+				t.Error("sanitizeError() returned an error that errors.As can no longer unwrap to a *vault.ResponseError")
+			}
+		})
+	}
+}
+
+func TestSanitizeErrorKeepsInvalidDataMatchable(t *testing.T) {
+	// cmerrors.IsInvalidData type-asserts rather than using errors.As, so an
+	// invalid data error must never be wrapped on its way out of this package.
+	// The signing controller relies on this to decide not to retry.
+	err := sanitizeError(cmerrors.NewInvalidData("no data for %q in secret", "key1"))
+
+	if !cmerrors.IsInvalidData(err) {
+		t.Errorf("IsInvalidData() = false for %v, want true", err)
+	}
+}
+
 func TestLoggableErrorMessageBoundsLength(t *testing.T) {
 	// The logs are allowed to carry the response body, but an unbounded body
 	// must not be able to flood them.
