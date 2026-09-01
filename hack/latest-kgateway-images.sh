@@ -47,11 +47,19 @@ index=$(curl -fsSL \
   -H "Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json" \
   "https://ghcr.io/v2/${image_repository}/manifests/${kgateway_version}")
 
-for arch in amd64 arm64; do
-  digest=$(jq -er --arg arch "$arch" \
+digest_for_arch() {
+  jq -er --arg arch "$1" \
     'first(.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch)) | .digest' \
-    <<<"${index}")
-  sed -i "s|^IMAGE_kgateway_${arch} := .*|IMAGE_kgateway_${arch} := ${image}:${kgateway_version}@${digest}|" "${makefile}"
-done
+    <<<"${index}"
+}
+amd64_digest=$(digest_for_arch amd64)
+arm64_digest=$(digest_for_arch arm64)
 
-sed -i "s|KGATEWAY_HELM_VERSION=v[0-9][0-9.]*|KGATEWAY_HELM_VERSION=${kgateway_version}|" "${makefile}"
+# sed -i is not portable between GNU and BSD sed, so write to a temporary file
+# and move it into place, like hack/latest-kind-images.sh does.
+sed \
+  -e "s|^IMAGE_kgateway_amd64 := .*|IMAGE_kgateway_amd64 := ${image}:${kgateway_version}@${amd64_digest}|" \
+  -e "s|^IMAGE_kgateway_arm64 := .*|IMAGE_kgateway_arm64 := ${image}:${kgateway_version}@${arm64_digest}|" \
+  -e "s|KGATEWAY_HELM_VERSION=v[0-9][0-9.]*|KGATEWAY_HELM_VERSION=${kgateway_version}|" \
+  "${makefile}" > "${makefile}.tmp"
+mv "${makefile}.tmp" "${makefile}"
