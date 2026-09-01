@@ -80,6 +80,14 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 // flight. This makes the tests immune to slow scheduling on loaded CI nodes;
 // the timeout fires only if rotation provably cannot happen.
 // See https://github.com/cert-manager/cert-manager/issues/8754
+//
+// The tradeoff: these tests depend on every goroutine in the informer path
+// (reflector, SharedInformerFactory, the fake clientset watch, wait.Poll*)
+// blocking durably inside the bubble. If a future client-go change blocks
+// non-durably instead (a syscall, I/O, or a package-level sync.WaitGroup),
+// the synthetic timers never fire and these tests hang until the go test
+// binary timeout kills the package with a goroutine dump. If that happens
+// after a dependency bump, this is why.
 func TestDynamicAuthority(t *testing.T) {
 	synctest.Test(t, testDynamicAuthority)
 }
