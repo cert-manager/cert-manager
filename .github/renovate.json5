@@ -28,6 +28,7 @@
     {
       customType: 'regex',
       managerFilePatterns: [
+        'hack/latest-kgateway-images.sh',
         'hack/latest-kind-images.sh',
         'make/02_mod.mk',
       ],
@@ -67,6 +68,20 @@
       postUpgradeTasks: {
         commands: [
           'hack/latest-kind-images.sh',
+        ],
+      },
+    },
+    {
+      groupName: null,
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'cr.kgateway.dev/kgateway-dev/charts/kgateway',
+      ],
+      postUpgradeTasks: {
+        commands: [
+          'hack/latest-kgateway-images.sh',
         ],
       },
     },
