@@ -198,6 +198,13 @@ func startWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 // caPEM is the CA that issued the server's serving certificate, or empty if the
 // caller supplied its own TLS files.
 func waitForListener(ctx context.Context, srv *server.Server, errCh <-chan error, caPEM []byte) (int, error) {
+	// Bound the wait, so that a server which is up but can never pass the
+	// probe — it requires client certificates, or the caller-supplied TLS
+	// files are unusable — fails fast and attributably here, rather than
+	// hanging until the go test deadline kills the whole package.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 	if len(caPEM) > 0 {
 		// Check the server's certificate against the CA that was generated for
