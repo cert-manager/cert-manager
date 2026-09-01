@@ -398,11 +398,9 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		}, metav1.CreateOptions{})
 		if err != nil && apierrors.IsAlreadyExists(err) {
 			// Another controller created the Secret before we did. Our informer
-			// cache does not have it yet, and the create event may never be
-			// delivered (e.g. if it occurred between the reflector's initial
-			// List and its Watch being registered), so read the Secret back
-			// directly instead of waiting for a watch event that might not
-			// arrive.
+			// cache does not have it yet, so read the Secret back directly
+			// instead of waiting for the informer event: this makes us ready
+			// immediately and recovers even if the event is delayed or missed.
 			d.log.V(logf.DebugLevel).Info("Another controller has created the root CA Secret, reading it back")
 			s, err := d.client.Get(ctx, d.SecretName, metav1.GetOptions{})
 			if err != nil {
