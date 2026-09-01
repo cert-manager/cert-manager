@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -119,6 +120,11 @@ type Server struct {
 	// empty, the server will only verify that the client certificate chains to
 	// the provided ClientCAPath and will not enforce specific subject names.
 	ClientCertificateSubjects []string
+
+	// listenPort is the port Run has chosen for the webhook listener. It is
+	// read by Port from other goroutines, so access must go through the
+	// atomic.
+	listenPort atomic.Int64
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -146,17 +152,19 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
-	if s.ListenAddr == 0 {
+	listenPort := s.ListenAddr
+	if listenPort == 0 {
 		webhookPort, err := freePort()
 		if err != nil {
 			return err
 		}
 
-		s.ListenAddr = webhookPort
+		listenPort = webhookPort
 	}
+	s.listenPort.Store(int64(listenPort))
 
 	webhookOpts := webhook.Options{
-		Port: s.ListenAddr,
+		Port: listenPort,
 		TLSOpts: []func(*tls.Config){
 			func(cfg *tls.Config) {
 				cfg.CipherSuites = cipherSuites
@@ -307,6 +315,13 @@ func (s *Server) Run(ctx context.Context) error {
 	return mgr.Start(ctx)
 }
 
+// freePort asks the kernel for a free port by binding to port 0, then closes the
+// listener and returns the port number. Anything on the machine can claim the
+// port before the caller binds it, so the caller must be prepared for the bind
+// to fail with EADDRINUSE. Reachable with --secure-port=0, which validation
+// accepts for any deployment, not just tests. Only the test framework retries
+// a lost race (see startAttempts in test/webhook); elsewhere it is a hard
+// startup failure.
 func freePort() (int, error) {
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
@@ -320,13 +335,18 @@ func freePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-// Port returns the port number that the webhook listener is listening on
+// Port returns the port number the webhook listener has been assigned. It
+// reports the number as soon as Run has chosen it, which is before Run has
+// created the listener, so a port coming back here does not mean the server is
+// accepting connections yet — or that it ever will, since the bind may still
+// fail. ErrNotListening means only that no port has been chosen.
 func (s *Server) Port() (int, error) {
-	if s.ListenAddr == 0 {
+	port := s.listenPort.Load()
+	if port == 0 {
 		return 0, ErrNotListening
 	}
 
-	return s.ListenAddr, nil
+	return int(port), nil
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
