@@ -50,12 +50,22 @@ func Test_afterFunc(t *testing.T) {
 			cancel()
 		}
 
-		// We don't know when the goroutines will actually finish.
-		time.Sleep(100 * time.Millisecond)
+		// The cancelled goroutines exit asynchronously, so poll instead of
+		// sleeping a fixed amount: on a loaded machine 10000 of them can take
+		// seconds to be scheduled and exit, whereas a real leak never comes
+		// back down and still fails once the deadline passes.
+		//
+		// Only an increase is a failure. Nothing runs concurrently with this
+		// test in this binary, but under `go test -count=N` the baseline of a
+		// run can include still-draining goroutines from the previous run,
+		// which later exit, leaving fewer goroutines at the end than at the
+		// start.
+		const tolerance = 100
+		assert.Eventually(t, func() bool {
+			return runtime.NumGoroutine()-expected <= tolerance
+		}, 30*time.Second, 10*time.Millisecond, "afterFunc leaked goroutines: cancel() did not stop them all")
 
 		t.Logf("%d goroutines before, %d goroutines after", expected, runtime.NumGoroutine())
-
-		assert.InDelta(t, expected, runtime.NumGoroutine(), 100)
 	})
 
 	t.Run("f is called after roughly 100 milliseconds", func(t *testing.T) {
