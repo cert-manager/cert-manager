@@ -27,16 +27,15 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/registry/challengepayload"
 )
 
 type mockSolver struct {
 }
 
-func (s *mockSolver) Name() string                             { return "mock-solver" }
-func (s *mockSolver) Present(ch *whapi.ChallengeRequest) error { return nil }
-func (s *mockSolver) CleanUp(ch *whapi.ChallengeRequest) error { return nil }
+func (s *mockSolver) Name() string                                { return "mock-solver" }
+func (s *mockSolver) Present(ch *v1alpha1.ChallengeRequest) error { return nil }
+func (s *mockSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error { return nil }
 func (s *mockSolver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
 	return nil
 }
@@ -44,15 +43,15 @@ func (s *mockSolver) Initialize(kubeClientConfig *restclient.Config, stopCh <-ch
 func TestCreate(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
-		action whapi.ChallengeAction
+		action v1alpha1.ChallengeAction
 	}{
 		{
 			name:   "create with present action",
-			action: whapi.ChallengeActionPresent,
+			action: v1alpha1.ChallengeActionPresent,
 		},
 		{
 			name:   "create with clean up action",
-			action: whapi.ChallengeActionCleanUp,
+			action: v1alpha1.ChallengeActionCleanUp,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
