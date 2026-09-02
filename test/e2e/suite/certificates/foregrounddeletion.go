@@ -148,6 +148,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 			).
 			WithTimeout(time.Minute * 2).
+			WithPolling(time.Second).
 			Should(BeEmpty())
 
 		By("ensuring no new CertificateRequest objects are created")
