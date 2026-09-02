@@ -41,6 +41,12 @@ func IsInvalidData(err error) bool {
 // TruncateMessage bounds s to maxLen bytes in total, including the marker which
 // is appended so that readers can tell the message is incomplete.
 func TruncateMessage(s string, maxLen int) string {
+	// Nothing fits within a non-positive bound. Guarding here also keeps a
+	// negative bound from panicking on the slices below.
+	if maxLen <= 0 {
+		return ""
+	}
+
 	if len(s) <= maxLen {
 		return s
 	}
