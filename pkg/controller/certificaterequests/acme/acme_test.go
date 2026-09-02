@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -43,6 +44,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 var (
@@ -687,6 +689,7 @@ func Test_buildOrder(t *testing.T) {
 		csr                   *x509.CertificateRequest
 		enableDurationFeature bool
 		profile               string
+		replaces              string
 	}
 	tests := []struct {
 		name    string
@@ -726,10 +729,21 @@ func Test_buildOrder(t *testing.T) {
 				gen.SetOrderProfile("shortlived")),
 			wantErr: false,
 		},
+		{
+			name: "Building with replaces",
+			args: args{
+				cr:       cr,
+				csr:      csr,
+				replaces: "wohgioegjewjg.wogjrpwojg",
+			},
+			want: gen.OrderFrom(baseOrder,
+				gen.SetOrderReplacesID("wohgioegjewjg.wogjrpwojg")),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, tt.args.profile, "")
+			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature, tt.args.profile, tt.args.replaces)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildOrder() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -789,4 +803,182 @@ func Test_buildOrder(t *testing.T) {
 				orderTwo.Name)
 		}
 	})
+}
+
+func Test_resolveReplacesCertID(t *testing.T) {
+	const (
+		certificateName = "test-cert"
+		secretName      = "test-cert-tls"
+	)
+
+	// A leaf signed by a CA. CreateCertificate derives a SubjectKeyId for IsCA
+	// templates and copies it to the leaf's AuthorityKeyId, which is what
+	// acmeapi.CertificateARIID requires.
+	rootPK, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootTmpl := &x509.Certificate{
+		BasicConstraintsValid: true,
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "root"},
+		NotBefore:             fixedClockStart,
+		NotAfter:              fixedClockStart.Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign,
+		PublicKey:             rootPK.Public(),
+		IsCA:                  true,
+	}
+	_, rootCert, err := pki.SignCertificate(rootTmpl, rootTmpl, rootPK.Public(), rootPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	leafPK, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leafCSRPEM := generateCSR(t, leafPK, "example.com", "example.com")
+	leafTmpl, err := pki.CertificateTemplateFromCSRPEM(
+		leafCSRPEM,
+		pki.CertificateTemplateOverrideDuration(time.Hour),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(false, nil),
+		pki.CertificateTemplateValidateAndOverrideKeyUsages(0, nil),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leafBundle, err := pki.SignCSRTemplate([]*x509.Certificate{rootCert}, rootPK, leafTmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leaf, err := pki.DecodeX509CertificateBytes(leafBundle.ChainPEM)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantCertID, err := acmeapi.CertificateARIID(leaf)
+	if err != nil {
+		t.Fatalf("test fixture leaf has no usable ARI CertID: %v", err)
+	}
+
+	issuerRef := func(name, kind string) cmmeta.IssuerReference {
+		return cmmeta.IssuerReference{Name: name, Kind: kind, Group: certmanager.GroupName}
+	}
+	issuerAnnotations := func(name, kind string) map[string]string {
+		return map[string]string{
+			cmapiv1.IssuerNameAnnotationKey:  name,
+			cmapiv1.IssuerKindAnnotationKey:  kind,
+			cmapiv1.IssuerGroupAnnotationKey: certmanager.GroupName,
+		}
+	}
+	secretFor := func(annotations map[string]string, data map[string][]byte) *corev1.Secret {
+		s := gen.Secret(secretName, gen.SetSecretData(data))
+		if annotations != nil {
+			s = gen.SecretFrom(s, gen.SetSecretAnnotations(annotations))
+		}
+		return s
+	}
+
+	certificate := gen.Certificate(certificateName,
+		gen.SetCertificateSecretName(secretName),
+	)
+	validData := map[string][]byte{corev1.TLSCertKey: leafBundle.ChainPEM}
+	crAnnotations := map[string]string{cmapiv1.CertificateNameKey: certificateName}
+
+	tests := map[string]struct {
+		crIssuerRef   cmmeta.IssuerReference
+		crAnnotations map[string]string
+		certificate   *cmapiv1.Certificate
+		secret        *corev1.Secret
+		want          string
+	}{
+		"returns the CertID when the Secret was issued by the same issuer": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			secret:        secretFor(issuerAnnotations("letsencrypt", "ClusterIssuer"), validData),
+			want:          wantCertID,
+		},
+		"returns empty when the Secret was issued by a different issuer name": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			secret:        secretFor(issuerAnnotations("digicert-acme", "ClusterIssuer"), validData),
+			want:          "",
+		},
+		"returns empty when the Secret was issued by a different issuer kind": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			secret:        secretFor(issuerAnnotations("letsencrypt", "Issuer"), validData),
+			want:          "",
+		},
+		"returns empty when the CertificateRequest has no certificate-name annotation": {
+			crIssuerRef: issuerRef("letsencrypt", "ClusterIssuer"),
+			certificate: certificate,
+			secret:      secretFor(issuerAnnotations("letsencrypt", "ClusterIssuer"), validData),
+			want:        "",
+		},
+		"returns empty when the parent Certificate does not exist": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			secret:        secretFor(issuerAnnotations("letsencrypt", "ClusterIssuer"), validData),
+			want:          "",
+		},
+		"returns empty when the Secret does not exist": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			want:          "",
+		},
+		"returns empty when the Secret has no tls.crt": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			secret: secretFor(issuerAnnotations("letsencrypt", "ClusterIssuer"),
+				map[string][]byte{corev1.TLSPrivateKeyKey: []byte("key")}),
+			want: "",
+		},
+		"returns empty when tls.crt cannot be decoded": {
+			crIssuerRef:   issuerRef("letsencrypt", "ClusterIssuer"),
+			crAnnotations: crAnnotations,
+			certificate:   certificate,
+			secret: secretFor(issuerAnnotations("letsencrypt", "ClusterIssuer"),
+				map[string][]byte{corev1.TLSCertKey: []byte("not a certificate")}),
+			want: "",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var kubeObjects []runtime.Object
+			if test.secret != nil {
+				kubeObjects = append(kubeObjects, test.secret)
+			}
+			var cmObjects []runtime.Object
+			if test.certificate != nil {
+				cmObjects = append(cmObjects, test.certificate)
+			}
+
+			builder := &testpkg.Builder{
+				T:                  t,
+				KubeObjects:        kubeObjects,
+				CertManagerObjects: cmObjects,
+			}
+			builder.Init()
+			defer builder.Stop()
+
+			// NewACME must run before Start so the informers it requests from
+			// the shared factories are actually started and synced.
+			a := NewACME(builder.Context).(*ACME)
+			builder.Start()
+
+			cr := gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestCSR(leafCSRPEM),
+				gen.SetCertificateRequestIssuer(test.crIssuerRef),
+				gen.SetCertificateRequestAnnotations(test.crAnnotations),
+			)
+
+			assert.Equal(t, test.want, a.resolveReplacesCertID(t.Context(), cr))
+		})
+	}
 }
