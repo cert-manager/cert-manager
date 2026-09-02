@@ -72,6 +72,23 @@ func TestTruncateMessage(t *testing.T) {
 			maxLen: 3,
 			want:   "£",
 		},
+		"a zero limit keeps nothing": {
+			in:     "abcdefghij",
+			maxLen: 0,
+			want:   "",
+		},
+		// No caller passes a negative bound today, but this is a shared helper
+		// and slicing by one would panic.
+		"a negative limit keeps nothing": {
+			in:     "abcdefghij",
+			maxLen: -1,
+			want:   "",
+		},
+		"a negative limit keeps nothing when there is nothing to keep": {
+			in:     "",
+			maxLen: -1,
+			want:   "",
+		},
 	}
 
 	for name, test := range tests {
@@ -84,8 +101,8 @@ func TestTruncateMessage(t *testing.T) {
 				t.Errorf("TruncateMessage() = %q, which is not valid UTF-8", got)
 			}
 			// maxLen bounds the result in full, marker included.
-			if len(got) > test.maxLen {
-				t.Errorf("TruncateMessage() returned %d bytes, want at most %d", len(got), test.maxLen)
+			if want := max(test.maxLen, 0); len(got) > want {
+				t.Errorf("TruncateMessage() returned %d bytes, want at most %d", len(got), want)
 			}
 		})
 	}

@@ -151,16 +151,17 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		msg := vaultinternal.SafeErrorMessage(err)
 		logVaultError(ctx, issuer, messageVaultClientInitFailed, msg, err)
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, msg))
-		// Return the sanitised message rather than the error itself: the Issuer
-		// controllers copy the returned error into a Kubernetes Event.
-		return fmt.Errorf("%s", msg)
+		// The Issuer controllers copy the returned error into a Kubernetes
+		// Event, but internal/vault has already taken any response body out of
+		// it, so it can be returned whole and callers keep the chain.
+		return err
 	}
 
 	if err := client.IsVaultInitializedAndUnsealed(); err != nil {
 		msg := vaultinternal.SafeErrorMessage(err)
 		logVaultError(ctx, issuer, messageVaultInitializedAndUnsealedFailed, msg, err)
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultInitializedAndUnsealedFailed, msg))
-		return fmt.Errorf("%s", msg)
+		return err
 	}
 
 	logf.FromContext(ctx).V(logf.DebugLevel).Info(messageVaultVerified, "issuer", klog.KObj(issuer))
