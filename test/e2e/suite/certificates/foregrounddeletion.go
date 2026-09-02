@@ -136,21 +136,35 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 	})
 
 	It("should not create a CertificateRequest while the Certificate is being deleted", func(testingCtx context.Context) {
-		By("ensuring all CertificateRequest objects are deleted")
+		// The CertificateRequest from the initial issuance is owned by the
+		// Certificate and is deleted by the Kubernetes garbage collector, which
+		// can take a while when the cluster is busy. Wait for it to be deleted
+		// before checking that no new CertificateRequest is created.
+		By("waiting for the garbage collector to delete the existing CertificateRequest objects")
 		Eventually(e2eutil.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
 			WithContext(testingCtx).
 			WithArguments(
 				f.CRClient,
 				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
 			).
+			WithTimeout(time.Minute * 2).
+			Should(BeEmpty())
+
+		By("ensuring no new CertificateRequest objects are created")
+		Consistently(e2eutil.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
+			WithContext(testingCtx).
+			WithArguments(
+				f.CRClient,
+				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
+			).
 			WithTimeout(time.Second * 10).
-			MustPassRepeatedly(10).
+			WithPolling(time.Second).
 			Should(BeEmpty())
 	})
 
 	It("should not create a Secret while the Certificate is being deleted", func(testingCtx context.Context) {
-		By("ensuring all Secret objects are deleted")
-		Eventually(e2eutil.ListMatchingPredicates[corev1.Secret, corev1.SecretList]).
+		By("ensuring no new Secret objects are created")
+		Consistently(e2eutil.ListMatchingPredicates[corev1.Secret, corev1.SecretList]).
 			WithContext(testingCtx).
 			WithArguments(
 				f.CRClient,
@@ -161,7 +175,7 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 				},
 			).
 			WithTimeout(time.Second * 10).
-			MustPassRepeatedly(10).
+			WithPolling(time.Second).
 			Should(BeEmpty())
 	})
 })
