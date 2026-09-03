@@ -74,9 +74,6 @@ type scheduledWorkQueue[T comparable] struct {
 	clock       clock.Clock
 	work        map[T]func()
 	workLock    sync.Mutex
-
-	// Testing purposes.
-	afterFunc func(clock.Clock, time.Duration, func()) func()
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
@@ -86,8 +83,6 @@ func NewScheduledWorkQueue[T comparable](clock clock.Clock, processFunc ProcessF
 		clock:       clock,
 		work:        make(map[T]func()),
 		workLock:    sync.Mutex{},
-
-		afterFunc: afterFunc,
 	}
 }
 
