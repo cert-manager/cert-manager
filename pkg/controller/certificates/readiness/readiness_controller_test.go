@@ -20,9 +20,11 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
@@ -848,6 +850,64 @@ func TestReadinessForARI(t *testing.T) {
 
 			if err := builder.AllActionsExecuted(); err != nil {
 				builder.T.Error(err)
+			}
+		})
+	}
+}
+
+// recordingScheduledQueue records scheduled delays so tests can assert on
+// them without waiting.
+type recordingScheduledQueue struct {
+	added  []time.Duration
+	forgot int
+}
+
+func (q *recordingScheduledQueue) Add(_ types.NamespacedName, duration time.Duration) {
+	q.added = append(q.added, duration)
+}
+
+func (q *recordingScheduledQueue) Forget(_ types.NamespacedName) {
+	q.forgot++
+}
+
+func TestScheduleRecheckAtExpiry(t *testing.T) {
+	now := time.Date(2025, 8, 4, 13, 0, 0, 0, time.UTC)
+	key := types.NamespacedName{Namespace: "testns", Name: "test"}
+
+	tests := map[string]struct {
+		notAfter   *metav1.Time
+		wantAdded  []time.Duration
+		wantForgot int
+	}{
+		"schedules a re-check just after a future expiry": {
+			notAfter:  &metav1.Time{Time: now.Add(time.Hour)},
+			wantAdded: []time.Duration{time.Hour + time.Second},
+		},
+		"does not schedule a re-check for an already expired certificate": {
+			notAfter:   &metav1.Time{Time: now.Add(-time.Hour)},
+			wantForgot: 1,
+		},
+		"does not schedule a re-check when the expiry is unknown": {
+			notAfter:   nil,
+			wantForgot: 1,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			queue := &recordingScheduledQueue{}
+			c := &controller{
+				clock:           fakeclock.NewFakeClock(now),
+				expiryWorkQueue: queue,
+			}
+
+			c.scheduleRecheckAtExpiry(logr.Discard(), key, test.notAfter)
+
+			if !reflect.DeepEqual(queue.added, test.wantAdded) {
+				t.Errorf("expected scheduled delays %v, got %v", test.wantAdded, queue.added)
+			}
+			if queue.forgot != test.wantForgot {
+				t.Errorf("expected %d calls to Forget, got %d", test.wantForgot, queue.forgot)
 			}
 		})
 	}
