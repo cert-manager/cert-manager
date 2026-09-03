@@ -1839,3 +1839,125 @@ func TestSignIntegration(t *testing.T) {
 	require.NotEmpty(t, certPEM)
 	require.NotEmpty(t, caPEM)
 }
+
+// TestExportedFunctionsDoNotLeakResponseBodies pins the invariant that the
+// exported surface of this package never returns an error carrying a response
+// body chosen by whatever spec.vault.server points at. Callers render these
+// errors into Issuer, CertificateRequest and CertificateSigningRequest
+// conditions and into the Kubernetes Events raised alongside them, all of which
+// are persisted to the API server, so the sanitising has to happen here rather
+// than at each of those sinks.
+func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
+	const (
+		vaultToken = "token1"
+		vaultPath  = "my_pki_mount/sign/my-role-name"
+	)
+
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	// An endpoint which is not Vault, reflecting content of its own choosing.
+	// The body is not a Vault error response, so the Vault client hands it back
+	// verbatim.
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		response.WriteHeader(http.StatusInternalServerError)
+		_, err := fmt.Fprintf(response, "<html><body>%s</body></html>", sentinel)
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	secretsLister := listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+		listers.SetFakeSecretNamespaceListerGet(
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"key1": []byte(vaultToken),
+				},
+			}, nil),
+	)
+
+	secretRef := cmmeta.SecretKeySelector{
+		LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret1"},
+		Key:                  "key1",
+	}
+
+	newIssuer := func(auth cmapiv1.VaultAuth) *cmapiv1.Issuer {
+		return &cmapiv1.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: cmapiv1.IssuerSpec{
+				IssuerConfig: cmapiv1.IssuerConfig{
+					Vault: &cmapiv1.VaultIssuer{
+						Server: server.URL,
+						Path:   vaultPath,
+						Auth:   auth,
+					},
+				},
+			},
+		}
+	}
+
+	newVaultForIssuer := func(t *testing.T, auth cmapiv1.VaultAuth) (Interface, error) {
+		t.Helper()
+
+		return New(t.Context(), "k8s-ns1", func(ns string) CreateToken { return nil },
+			secretsLister, newIssuer(auth), false)
+	}
+
+	// Token auth reads the token from a Secret without talking to the server, so
+	// it is what gets us a client for the calls whose own request must be the
+	// one that fails.
+	tokenAuth := cmapiv1.VaultAuth{TokenSecretRef: &secretRef}
+
+	newClient := func(t *testing.T) Interface {
+		t.Helper()
+
+		v, err := newVaultForIssuer(t, tokenAuth)
+		require.NoError(t, err)
+
+		return v
+	}
+
+	tests := map[string]func(t *testing.T) error{
+		"New": func(t *testing.T) error {
+			// AppRole auth logs in to the server, which makes New itself the
+			// call that sees the response.
+			_, err := newVaultForIssuer(t, cmapiv1.VaultAuth{
+				AppRole: &cmapiv1.VaultAppRole{
+					RoleId:    "role1",
+					SecretRef: secretRef,
+				},
+			})
+
+			return err
+		},
+		"Sign": func(t *testing.T) error {
+			_, _, err := newClient(t).Sign(csrPEM, time.Hour)
+
+			return err
+		},
+		"IsVaultInitializedAndUnsealed": func(t *testing.T) error {
+			return newClient(t).IsVaultInitializedAndUnsealed()
+		},
+	}
+
+	for name, call := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := call(t)
+			require.Error(t, err)
+
+			// Error is what the callers render into a condition and an Event,
+			// whether or not they remember to ask for a safe message.
+			assert.NotContains(t, err.Error(), sentinel,
+				"the error returned to the caller leaks the response body")
+			assert.LessOrEqual(t, len(err.Error()), maxVaultErrorMessageLength,
+				"the error returned to the caller is not bounded")
+
+			// The detail withheld from the API server is still available to
+			// whoever can read the controller logs.
+			assert.Contains(t, LoggableErrorMessage(err), sentinel,
+				"the response body should remain recoverable for the logs")
+		})
+	}
+}

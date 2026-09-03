@@ -148,18 +148,36 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 
 	client, err := vaultinternal.New(ctx, v.ResourceNamespace(issuer), v.createTokenFn, v.secretsLister, issuer, v.CanUseAmbientCredentials(issuer))
 	if err != nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultClientInitFailed, "err", err, "issuer", klog.KObj(issuer))
-		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, err.Error()))
+		msg := vaultinternal.SafeErrorMessage(err)
+		logVaultError(ctx, issuer, messageVaultClientInitFailed, msg, err)
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultClientInitFailed, msg))
+		// The Issuer controllers copy the returned error into a Kubernetes
+		// Event, but internal/vault has already taken any response body out of
+		// it, so it can be returned whole and callers keep the chain.
 		return err
 	}
 
 	if err := client.IsVaultInitializedAndUnsealed(); err != nil {
-		logf.FromContext(ctx).V(logf.WarnLevel).Info(messageVaultInitializedAndUnsealedFailed, "err", err, "issuer", klog.KObj(issuer))
-		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultInitializedAndUnsealedFailed, err.Error()))
+		msg := vaultinternal.SafeErrorMessage(err)
+		logVaultError(ctx, issuer, messageVaultInitializedAndUnsealedFailed, msg, err)
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, fmt.Sprintf("%s: %s", messageVaultInitializedAndUnsealedFailed, msg))
 		return err
 	}
 
 	logf.FromContext(ctx).V(logf.DebugLevel).Info(messageVaultVerified, "issuer", klog.KObj(issuer))
 	apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successVaultVerified, messageVaultVerified)
 	return nil
+}
+
+// logVaultError reports a failed interaction with the Vault server. The warning
+// carries the same sanitised message as the status condition, because operators
+// who are not allowed to read the cert-manager logs still see it via kubectl
+// logs of the controller. The unsanitised error, which may contain a response
+// body chosen by whatever spec.vault.server points at, is only written at debug
+// level and is truncated so that it cannot flood the log.
+func logVaultError(ctx context.Context, issuer v1.GenericIssuer, message, safeMessage string, err error) {
+	log := logf.FromContext(ctx)
+
+	log.V(logf.WarnLevel).Info(message, "err", safeMessage, "issuer", klog.KObj(issuer))
+	log.V(logf.DebugLevel).Info(message, "err", vaultinternal.LoggableErrorMessage(err), "issuer", klog.KObj(issuer))
 }

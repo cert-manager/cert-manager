@@ -116,6 +116,15 @@ type Vault struct {
 // Returned errors may be network failures and should be considered for
 // retrying.
 func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error) {
+	v, err := newVault(ctx, namespace, createTokenFn, secretsLister, issuer, canUseAmbientCredentials)
+	if err != nil {
+		return nil, sanitizeError(err)
+	}
+
+	return v, nil
+}
+
+func newVault(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (*Vault, error) {
 	v := &Vault{
 		createToken:              createTokenFn(namespace),
 		secretsLister:            secretsLister,
@@ -160,6 +169,12 @@ func New(ctx context.Context, namespace string, createTokenFn func(ns string) Cr
 
 // Sign will connect to a Vault instance to sign a certificate signing request.
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
+	cert, ca, err = v.sign(csrPEM, duration)
+
+	return cert, ca, sanitizeError(err)
+}
+
+func (v *Vault) sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to decode CSR for signing: %s", err)
@@ -190,7 +205,9 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
+		// Wrap rather than stringify so that the response error survives for
+		// sanitizeError to recognise on the way out.
+		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %w", err)
 	}
 
 	vaultResult := certutil.Secret{}
@@ -457,7 +474,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
+		return "", fmt.Errorf("error logging in to Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -536,7 +553,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -639,7 +656,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	vaultResult := vault.Secret{}
@@ -740,7 +757,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	loginPath := path.Join(mountPath, "login")
 	secret, err := client.Write(loginPath, loginData)
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	// Guard against empty secret
@@ -889,6 +906,10 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 }
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
+	return sanitizeError(v.isVaultInitializedAndUnsealed())
+}
+
+func (v *Vault) isVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
 	healthRequest := v.clientSys.NewRequest("GET", healthURL)
 	healthResp, err := v.clientSys.RawRequest(healthRequest)
