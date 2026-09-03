@@ -518,6 +518,8 @@ spec:
                   minutes.
                   Cannot be set if the `renewBefore` field is set.
                 format: int32
+                maximum: 99
+                minimum: 1
                 type: integer
               renewal:
                 description: |-

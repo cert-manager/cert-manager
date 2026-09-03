@@ -204,6 +204,8 @@ type CertificateSpec struct {
 	// `renewBefore` derived from the `renewBeforePercentage` and `duration` fields is 5
 	// minutes.
 	// Cannot be set if the `renewBefore` field is set.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=99
 	// +optional
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 

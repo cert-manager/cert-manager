@@ -129,17 +129,17 @@ func desiredRenewalTime(actualDuration time.Duration, renewBefore *metav1.Durati
 	if renewBefore != nil && renewBefore.Duration > 0 && renewBefore.Duration < actualDuration {
 		return renewBefore.Duration
 	} else if renewBeforePercentage != nil && *renewBeforePercentage > 0 && *renewBeforePercentage < 100 {
-		// We cast to float64 to avoid an int overflow.
-		//
-		// This would happen because actualDuration is an int64 (nanoseconds),
-		// actualDuration * pct is evaluated in int64 before the / 100, so
-		// multiplying a large duration by up to 99 can exceed math.MaxInt64
-		// and wrap to a negative/garbage value.
-		return time.Duration(float64(actualDuration) * float64(*renewBeforePercentage) / 100)
+		return RenewBeforeFromPercentage(actualDuration, *renewBeforePercentage)
 	}
 
 	// Otherwise, default to renewing 2/3 through certificate's lifetime.
 	return actualDuration / 3
+}
+
+// RenewBeforeFromPercentage calculates duration * percentage / 100 without
+// overflowing int64 nanoseconds for long certificate durations.
+func RenewBeforeFromPercentage(duration time.Duration, percentage int32) time.Duration {
+	return duration/100*time.Duration(percentage) + duration%100*time.Duration(percentage)/100
 }
 
 // applyRenewBeforeWithWindows calculates effective renewal time with windows in it. We want the logic to be as follows:
