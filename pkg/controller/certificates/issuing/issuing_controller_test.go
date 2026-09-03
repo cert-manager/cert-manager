@@ -514,7 +514,7 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, do nothing": {
+		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, emit a Stalled event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -525,7 +525,40 @@ func TestIssuingController(t *testing.T) {
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
-						gen.SetCertificateRequestFailureTime(metav1.Time{Time: metaFixedClockStart.Time.Add(time.Hour * -1)}),
+						// After the Issuing transition, so this is the "stalled
+						// during the current attempt" case, not the earlier
+						// "failed during a previous issuance" case handled above.
+						gen.SetCertificateRequestFailureTime(metav1.Time{Time: metaFixedClockStart.Time.Add(time.Second)}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents: []string{
+					fmt.Sprintf("Warning Stalled CertificateRequest %q has a failureTime set but no Ready condition; issuance is stalled. Delete the CertificateRequest to retry.", exampleBundle.CertificateRequest.Name),
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest with no failure time and no Ready condition, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
+						// Explicit, so the case keeps covering the missing condition.
+						func(cr *cmapi.CertificateRequest) { cr.Status.Conditions = nil },
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{

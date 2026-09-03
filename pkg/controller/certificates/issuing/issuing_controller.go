@@ -54,6 +54,7 @@ import (
 const (
 	ControllerName                   = "certificates-issuing"
 	reasonTemporaryCertificateFailed = "TemporaryCertificateFailed"
+	reasonStalled                    = "Stalled"
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -338,6 +339,21 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	if crReadyCond == nil {
+		if req.Status.FailureTime != nil {
+			// The CertificateRequest has a failureTime but no Ready condition.
+			// This is not reachable via the in-tree issuers, which always set
+			// both in the same update, but can happen with an external issuer
+			// writing failureTime and the Ready condition in separate updates,
+			// or with a partially applied status. Neither this controller nor
+			// the requestmanager controller can make progress from this state
+			// (the requestmanager only cleans up a CertificateRequest whose
+			// Ready condition reason is Failed), so surface it loudly rather
+			// than waiting silently forever.
+			message := fmt.Sprintf("CertificateRequest %q has a failureTime set but no Ready condition; issuance is stalled. Delete the CertificateRequest to retry.", req.Name)
+			log.V(logf.ErrorLevel).Info(message)
+			c.recorder.Event(crt, corev1.EventTypeWarning, reasonStalled, message)
+			return nil
+		}
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}
