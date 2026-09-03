@@ -253,3 +253,66 @@ func parseIPs(ipStrs []string) []net.IP {
 
 	return ips
 }
+
+func TestJoinSplitWithEscapeCSVRoundTrip(t *testing.T) {
+	tests := []struct {
+		desc string
+		in   []string
+	}{
+		{desc: "single value", in: []string{"example.com"}},
+		{desc: "multiple values", in: []string{"example.com", "other.example.com"}},
+		{desc: "value containing a comma", in: []string{"10 Downing Street, Westminster", "Manchester"}},
+		{desc: "single empty value", in: []string{""}},
+		{desc: "value containing a lone carriage return", in: []string{"line1\rline2"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			joined, err := JoinWithEscapeCSV(test.in)
+			if err != nil {
+				t.Fatalf("JoinWithEscapeCSV(%+v) returned unexpected error: %v", test.in, err)
+			}
+
+			out, err := SplitWithEscapeCSV(joined)
+			if err != nil {
+				t.Fatalf("SplitWithEscapeCSV(%q) (from JoinWithEscapeCSV(%+v)) returned unexpected error: %v", joined, test.in, err)
+			}
+
+			if !slices.Equal(out, test.in) {
+				t.Errorf("round trip of %+v produced %+v (via joined string %q)", test.in, out, joined)
+			}
+		})
+	}
+}
+
+func TestSplitWithEscapeCSVRejectsInputItCannotReadBackUnchanged(t *testing.T) {
+	tests := []struct {
+		desc string
+		in   string
+	}{
+		{desc: "CRLF inside a quoted field, which the reader would rewrite as a line feed", in: "\"line1\r\nline2\""},
+		{desc: "a carriage return at the end of the input, which the reader would drop", in: "line1\r"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			out, err := SplitWithEscapeCSV(test.in)
+			if err == nil {
+				t.Fatalf("SplitWithEscapeCSV(%q) returned %+v and no error, so it silently altered its input", test.in, out)
+			}
+		})
+	}
+}
+
+func TestSplitWithEscapeCSVKeepsACarriageReturnItCanReadBack(t *testing.T) {
+	const in = "line1\rline2"
+
+	out, err := SplitWithEscapeCSV(in)
+	if err != nil {
+		t.Fatalf("SplitWithEscapeCSV(%q) returned unexpected error: %v", in, err)
+	}
+
+	if want := []string{in}; !slices.Equal(out, want) {
+		t.Errorf("SplitWithEscapeCSV(%q) = %+v, want %+v", in, out, want)
+	}
+}

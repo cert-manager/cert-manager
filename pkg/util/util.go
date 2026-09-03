@@ -103,8 +103,25 @@ func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 }
 
 // JoinWithEscapeCSV returns the given list as a single line of CSV that
-// is escaped with quotes if necessary
+// is escaped with quotes if necessary.
+//
+// A single empty value is written as `""` rather than as the bare empty line
+// encoding/csv would otherwise produce, so that SplitWithEscapeCSV can tell it
+// apart from "no values at all". No other input encodes to exactly `""` (a
+// literal quote character is written as `""""`), so the encoding stays
+// unambiguous to parse back.
+//
+// The empty slice is deliberately exempt from that round trip: it returns "",
+// which SplitWithEscapeCSV rejects with "no values found". Do not widen the
+// quoting rule to cover it. AnnotationsForCertificate writes alt-names,
+// ip-sans and uri-sans with keepEmpty=true, so that branch produces three
+// annotations on nearly every certificate Secret in existence, and changing
+// their value would rewrite every one of them on upgrade.
 func JoinWithEscapeCSV(in []string) (string, error) {
+	if len(in) == 1 && in[0] == "" {
+		return `""`, nil
+	}
+
 	b := new(bytes.Buffer)
 	writer := csv.NewWriter(b)
 	if err := writer.Write(in); err != nil {
@@ -127,8 +144,23 @@ func JoinWithEscapeCSV(in []string) (string, error) {
 // in each field. For example, a user can specify:
 // "10 Downing Street, Westminster",Manchester
 // to produce []string{"10 Downing Street, Westminster", "Manchester"}, keeping the comma
-// in the first address. Empty lines or multiple CSV records are both rejected.
+// in the first address. Empty lines, multiple CSV records, and input that CSV
+// parsing cannot read back unchanged are all rejected.
 func SplitWithEscapeCSV(in string) ([]string, error) {
+	// encoding/csv's reader alters two inputs instead of failing on them: it
+	// normalizes a "\r\n" inside a quoted field to a bare "\n", and it drops a
+	// carriage return sitting at the very end of the input. Both hand the caller
+	// a value nobody wrote, which matters because this is the parser that reads
+	// user-authored Ingress and Gateway annotations. A carriage return anywhere
+	// else survives the parse unchanged and is left alone.
+	if strings.Contains(in, "\r\n") {
+		return nil, fmt.Errorf("refusing to use %q as input as it contains a CRLF sequence, which CSV parsing would rewrite as a line feed", in)
+	}
+
+	if strings.HasSuffix(in, "\r") {
+		return nil, fmt.Errorf("refusing to use %q as input as it ends in a carriage return, which CSV parsing would drop", in)
+	}
+
 	reader := csv.NewReader(strings.NewReader(in))
 
 	records, err := reader.ReadAll()
