@@ -63,16 +63,22 @@ type ScheduledWorkQueue[T comparable] interface {
 	// Add will add an item to this queue, executing the ProcessFunc after the
 	// Duration has come (since the time Add was called). If an existing Timer
 	// for obj already exists, the previous timer will be cancelled.
+	// An Add made while ProcessFunc is still running for obj is kept: the
+	// fired timer's cleanup never cancels it.
 	Add(T, time.Duration)
 
 	// Forget will cancel the timer for the given object, if the timer exists.
 	Forget(T)
 }
 
+type workEntry struct {
+	cancel func()
+}
+
 type scheduledWorkQueue[T comparable] struct {
 	processFunc ProcessFunc[T]
 	clock       clock.Clock
-	work        map[T]func()
+	work        map[T]*workEntry
 	workLock    sync.Mutex
 }
 
@@ -81,7 +87,7 @@ func NewScheduledWorkQueue[T comparable](clock clock.Clock, processFunc ProcessF
 	return &scheduledWorkQueue[T]{
 		processFunc: processFunc,
 		clock:       clock,
-		work:        make(map[T]func()),
+		work:        make(map[T]*workEntry),
 		workLock:    sync.Mutex{},
 	}
 }
@@ -89,19 +95,22 @@ func NewScheduledWorkQueue[T comparable](clock clock.Clock, processFunc ProcessF
 // Add will add an item to this queue, executing the ProcessFunc after the
 // Duration has come (since the time Add was called). If an existing Timer for
 // obj already exists, the previous timer will be cancelled.
+// An Add made while ProcessFunc is still running for obj is kept: the
+// fired timer's cleanup never cancels it.
 func (s *scheduledWorkQueue[T]) Add(obj T, duration time.Duration) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
 
-	if cancel, ok := s.work[obj]; ok {
-		cancel()
-		delete(s.work, obj)
+	if entry, ok := s.work[obj]; ok {
+		entry.cancel()
 	}
 
-	s.work[obj] = afterFunc(s.clock, duration, func() {
-		defer s.Forget(obj)
+	entry := &workEntry{}
+	entry.cancel = afterFunc(s.clock, duration, func() {
+		defer s.forgetIfOwned(obj, entry)
 		s.processFunc(obj)
 	})
+	s.work[obj] = entry
 }
 
 // Forget will cancel the timer for the given object, if the timer exists.
@@ -109,8 +118,20 @@ func (s *scheduledWorkQueue[T]) Forget(obj T) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
 
-	if cancel, ok := s.work[obj]; ok {
-		cancel()
+	if entry, ok := s.work[obj]; ok {
+		entry.cancel()
+		delete(s.work, obj)
+	}
+}
+
+// forgetIfOwned removes the work entry for obj only if it is still the
+// entry that the fired timer installed. A newer Add for the same obj
+// replaces the entry, and a fired timer's cleanup must not remove it.
+func (s *scheduledWorkQueue[T]) forgetIfOwned(obj T, entry *workEntry) {
+	s.workLock.Lock()
+	defer s.workLock.Unlock()
+
+	if s.work[obj] == entry {
 		delete(s.work, obj)
 	}
 }
