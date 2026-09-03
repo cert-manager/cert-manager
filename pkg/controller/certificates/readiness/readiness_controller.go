@@ -94,6 +94,11 @@ type controller struct {
 	helper             issuer.Helper
 	clock              clock.Clock
 	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+
+	// expiryWorkQueue re-checks a Certificate when it expires. It is separate
+	// from scheduledWorkQueue because each queue holds only one timer per key,
+	// so sharing would mean expiry and ARI checks cancelling each other.
+	expiryWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -187,6 +192,7 @@ func NewController(
 		fieldManager:          ctx.FieldManager,
 		clock:                 ctx.Clock,
 		scheduledWorkQueue:    scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		expiryWorkQueue:       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
 	}, queue, mustSync, nil
 }
 
@@ -266,9 +272,42 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
 			klog.SafePtr(crt.Status.NotAfter), "notBefore", klog.SafePtr(crt.Status.NotBefore), "renewalTime",
 			klog.SafePtr(crt.Status.RenewalTime))
-		return c.updateOrApplyStatus(ctx, crt)
+		if err := c.updateOrApplyStatus(ctx, crt); err != nil {
+			return err
+		}
 	}
+
+	c.scheduleRecheckAtExpiry(log, key, crt.Status.NotAfter)
+
 	return nil
+}
+
+// scheduleRecheckAtExpiry re-processes the Certificate just after it expires.
+//
+// Readiness depends on the clock, but the controller only reconciles on watch
+// events. A Certificate whose renewal is stuck gets no events, so it keeps
+// reporting Ready=True long after expiry. We re-arm on every reconcile because
+// the timers are in memory and are lost on restart.
+func (c *controller) scheduleRecheckAtExpiry(log logr.Logger, key types.NamespacedName, notAfter *metav1.Time) {
+	if notAfter == nil {
+		c.expiryWorkQueue.Forget(key)
+		return
+	}
+
+	// Wake up just after NotAfter, so the clock has definitely passed it.
+	// Add the buffer to the time, not the duration: Sub saturates at
+	// math.MaxInt64 for a NotAfter centuries away (e.g. the RFC 5280
+	// "no well-defined expiration" date of 9999-12-31), and adding to a
+	// saturated duration would wrap negative and skip the re-check.
+	recheckIn := notAfter.Time.Add(time.Second).Sub(c.clock.Now())
+	if recheckIn <= 0 {
+		// Already expired, and this reconcile has just set the condition.
+		c.expiryWorkQueue.Forget(key)
+		return
+	}
+
+	log.V(logf.DebugLevel).Info("scheduling re-check at certificate expiry", "notAfter", notAfter.Time, "recheckIn", recheckIn)
+	c.expiryWorkQueue.Add(key, recheckIn)
 }
 
 func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) time.Time {
