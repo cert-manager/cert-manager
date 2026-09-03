@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/webhook-binary
 
-go 1.25.0
+go 1.26.0
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -71,7 +71,7 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
