@@ -159,6 +159,14 @@ func NewController(
 		issuerInformer.Informer().HasSynced,
 	}
 
+	// ClusterIssuers are only watched when running cluster-wide.
+	var clusterIssuerLister cmlisters.ClusterIssuerLister
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
 	return &controller{
 		policyChain:              chain,
 		certificateLister:        certificateInformer.Lister(),
@@ -168,6 +176,8 @@ func NewController(
 		recorder:                 ctx.Recorder,
 		accountRegistry:          ctx.ACMEAccountRegistry,
 		issuerLister:             issuerInformer.Lister(),
+		clusterIssuerLister:      clusterIssuerLister,
+		helper:                   issuer.NewHelper(issuerInformer.Lister(), clusterIssuerLister),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -457,14 +467,6 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Type
 		BuildReadyConditionFromChain,
 	)
 	c.controller = ctrl
-
-	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
-	}
-
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	return queue, mustSync, err
 }
