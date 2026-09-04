@@ -17,6 +17,9 @@ limitations under the License.
 package util
 
 import (
+	"sync/atomic"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
@@ -26,8 +29,57 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-// Clock is defined as a package var so it can be stubbed out during tests.
-var Clock clock.Clock = clock.RealClock{}
+// Clock is the package clock used to timestamp conditions. Use SetClock to
+// replace it. Reads and swaps are atomic, so stubbing the clock does not
+// introduce data races, but the clock itself is still shared: tests that
+// stub time should restore clock.RealClock{} when they are done.
+var Clock = newAtomicClock(clock.RealClock{})
+
+// atomicClock forwards every method to an atomically stored inner clock.
+// A plain var swap would race when parallel tests stub time, and a plain
+// atomic.Value would panic when the stored concrete type alternates
+// between fake clocks and RealClock, so the pointer form is used.
+type atomicClock struct {
+	inner atomic.Pointer[clock.Clock]
+}
+
+func newAtomicClock(c clock.Clock) *atomicClock {
+	ac := &atomicClock{}
+	ac.inner.Store(&c)
+	return ac
+}
+
+func (ac *atomicClock) Now() time.Time {
+	return (*ac.inner.Load()).Now()
+}
+
+func (ac *atomicClock) Since(t time.Time) time.Duration {
+	return (*ac.inner.Load()).Since(t)
+}
+
+func (ac *atomicClock) After(d time.Duration) <-chan time.Time {
+	return (*ac.inner.Load()).After(d)
+}
+
+func (ac *atomicClock) NewTimer(d time.Duration) clock.Timer {
+	return (*ac.inner.Load()).NewTimer(d)
+}
+
+func (ac *atomicClock) Sleep(d time.Duration) {
+	(*ac.inner.Load()).Sleep(d)
+}
+
+func (ac *atomicClock) Tick(d time.Duration) <-chan time.Time {
+	return (*ac.inner.Load()).Tick(d)
+}
+
+// SetClock replaces the package clock. Tests use it to stub time.
+func SetClock(c clock.Clock) {
+	if c == nil {
+		c = clock.RealClock{}
+	}
+	Clock.inner.Store(&c)
+}
 
 // IssuerHasCondition will return true if the given GenericIssuer has a
 // condition matching the provided IssuerCondition.
