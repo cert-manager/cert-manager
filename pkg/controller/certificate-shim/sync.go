@@ -146,19 +146,12 @@ func SyncFnFor(
 		}
 
 		for _, crt := range newCrts {
-			// Create with FieldManager records ownership as operation:Update.
-			// Use Apply under SSA so create ownership matches updates (operation:Apply).
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            crt.Name,
-						Namespace:       crt.Namespace,
-						Labels:          crt.Labels,
-						OwnerReferences: crt.OwnerReferences,
-						Annotations:     extraAnnotations,
-					},
-					Spec: crt.Spec,
-				})
+				// Apply, not Create, so the Certificate is born owned by an
+				// operation:Apply entry that the update path can prune from.
+				// Not forced, so a Certificate the shim does not own conflicts
+				// rather than being adopted; the error requeues the item.
+				err = internalcertificates.ApplyNonForced(ctx, cmClient, fieldManager, crt)
 			} else {
 				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{FieldManager: fieldManager})
 			}
@@ -171,16 +164,7 @@ func SyncFnFor(
 		for _, crt := range updateCrts {
 
 			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-				err = internalcertificates.Apply(ctx, cmClient, fieldManager, &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            crt.Name,
-						Namespace:       crt.Namespace,
-						Labels:          crt.Labels,
-						OwnerReferences: crt.OwnerReferences,
-						Annotations:     extraAnnotations,
-					},
-					Spec: crt.Spec,
-				})
+				err = internalcertificates.Apply(ctx, cmClient, fieldManager, crt)
 			} else {
 				_, err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
 			}
@@ -416,12 +400,14 @@ func buildCertificates(
 		//
 		delete(labels, applysetLabel)
 
+		// annotations is one map shared by every Certificate built in this loop,
+		// so clone it: setIssuerSpecificConfig below writes into crt.Annotations.
 		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            secretRef.Name,
 				Namespace:       secretRef.Namespace,
 				Labels:          labels,
-				Annotations:     annotations,
+				Annotations:     maps.Clone(annotations),
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
@@ -472,21 +458,22 @@ func buildCertificates(
 				continue
 			}
 
+			// An Apply declares only the fields this manager owns, so crt goes
+			// out as built. An Update replaces the whole object, so the shim's
+			// fields have to be merged into a copy of the live Certificate.
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+				updateCrts = append(updateCrts, crt)
+				continue
+			}
+
 			updateCrt := existingCrt.DeepCopy()
 
 			updateCrt.Spec = crt.Spec
 			updateCrt.Labels = crt.Labels
 
-			// extra annotation wanted but none set
-			if len(updateCrt.GetAnnotations()) == 0 && len(annotations) > 0 {
-				updateCrt.SetAnnotations(annotations)
+			if len(crt.GetAnnotations()) > 0 {
+				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), crt.GetAnnotations()))
 			}
-			// update append extra annotations
-			if len(updateCrt.GetAnnotations()) > 0 && len(annotations) > 0 {
-				updateCrt.SetAnnotations(mergeAnnotations(updateCrt.GetAnnotations(), annotations))
-			}
-
-			setIssuerSpecificConfig(crt, ingLike)
 
 			updateCrts = append(updateCrts, updateCrt)
 		} else {

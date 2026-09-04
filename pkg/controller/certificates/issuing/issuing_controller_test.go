@@ -1683,58 +1683,22 @@ func TestIssuingController(t *testing.T) {
 	}
 }
 
-// applyStatusFieldMap returns the status object from an ApplyStatus JSON patch.
-func applyStatusFieldMap(t *testing.T, patch []byte) map[string]any {
-	t.Helper()
-	var root map[string]any
-	require.NoError(t, json.Unmarshal(patch, &root))
-	status, ok := root["status"].(map[string]any)
-	require.True(t, ok, "ApplyStatus patch missing status object")
-	return status
-}
-
 // TestIssuingController_ServerSideApplyFailedIssuanceAttempts checks ApplyStatus
 // includes failedIssuanceAttempts on failure and omits it on success.
 func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
 
-	nextPrivateKeySecretName := "next-private-key"
-	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
-		gen.SetCertificateGeneration(3),
-		gen.SetCertificateSecretName("output"),
-		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
-		gen.SetCertificateDNSNames("example.com"),
-		gen.SetCertificateRevision(1),
-		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
-	)
-	exampleBundle := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	fixture := failedIssuanceFixture(t)
+	exampleBundle := fixture.bundle
+	issuingCert := fixture.issuingCert
+	nextPrivateKeySecret := fixture.nextPrivateKeySecret
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
-
-	issuingCert := gen.CertificateFrom(baseCert.DeepCopy(),
-		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-			Type:               cmapi.CertificateConditionIssuing,
-			Status:             cmmeta.ConditionTrue,
-			ObservedGeneration: 3,
-			LastTransitionTime: &metaFixedClockStart,
-		}),
-	)
-
-	nextPrivateKeySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: exampleBundle.Certificate.Namespace,
-		},
-		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-		},
-	}
 
 	type testT struct {
 		builder                 *testpkg.Builder
 		certificate             *cmapi.Certificate
 		expSecretUpdateDataCall *internal.SecretData
-		assertApplyStatus       func(t *testing.T, patch []byte)
+		expApplyStatusPatch     []byte
 	}
 
 	tests := map[string]testT{
@@ -1743,45 +1707,26 @@ func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
-						}),
-						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-							Type:    cmapi.CertificateRequestConditionReady,
-							Status:  cmmeta.ConditionFalse,
-							Reason:  cmapi.CertificateRequestReasonFailed,
-							Message: "The certificate request failed because of reasons",
-						}),
-					),
+					fixture.failedRequest,
 				},
 				KubeObjects: []runtime.Object{nextPrivateKeySecret},
 				ExpectedEvents: []string{
 					"Warning Failed The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
 				},
 			},
-			assertApplyStatus: func(t *testing.T, patch []byte) {
-				t.Helper()
-				var applied cmapi.Certificate
-				require.NoError(t, json.Unmarshal(patch, &applied))
-				require.NotNil(t, applied.Status.FailedIssuanceAttempts)
-				assert.Equal(t, 1, *applied.Status.FailedIssuanceAttempts)
-				require.NotNil(t, applied.Status.LastFailureTime)
-				require.NotNil(t, applied.Status.Revision)
-				assert.Equal(t, 1, *applied.Status.Revision)
-				require.Len(t, applied.Status.Conditions, 1)
-				assert.Equal(t, cmapi.CertificateConditionIssuing, applied.Status.Conditions[0].Type)
-				assert.Equal(t, cmmeta.ConditionFalse, applied.Status.Conditions[0].Status)
-				assert.Equal(t, "Failed", applied.Status.Conditions[0].Reason)
-
-				status := applyStatusFieldMap(t, patch)
-				for _, key := range []string{"failedIssuanceAttempts", "lastFailureTime", "revision", "conditions"} {
-					_, ok := status[key]
-					assert.Truef(t, ok, "expected status.%s present in ApplyStatus patch", key)
-				}
-				_, ok := status["nextPrivateKeySecretName"]
-				assert.False(t, ok, "expected status.nextPrivateKeySecretName absent from ApplyStatus patch")
-			},
+			expApplyStatusPatch: mustSerializeApplyStatus(t, exampleBundle.Certificate, cmapi.CertificateStatus{
+				Conditions: []cmapi.CertificateCondition{{
+					Type:               cmapi.CertificateConditionIssuing,
+					Status:             cmmeta.ConditionFalse,
+					LastTransitionTime: &metaFixedClockStart,
+					Reason:             "Failed",
+					Message:            "The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
+					ObservedGeneration: 3,
+				}},
+				LastFailureTime:        &metaFixedClockStart,
+				Revision:               new(1),
+				FailedIssuanceAttempts: new(1),
+			}),
 		},
 		"success ApplyStatus omits failedIssuanceAttempts and lastFailureTime": {
 			certificate: exampleBundle.Certificate,
@@ -1824,27 +1769,17 @@ func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
 			},
-			assertApplyStatus: func(t *testing.T, patch []byte) {
-				t.Helper()
-				var applied cmapi.Certificate
-				require.NoError(t, json.Unmarshal(patch, &applied))
-				require.NotNil(t, applied.Status.Revision)
-				assert.Equal(t, 2, *applied.Status.Revision)
-				require.Len(t, applied.Status.Conditions, 1)
-				assert.Equal(t, cmapi.CertificateConditionIssuing, applied.Status.Conditions[0].Type)
-				assert.Equal(t, cmmeta.ConditionFalse, applied.Status.Conditions[0].Status)
-				assert.Equal(t, "Issued", applied.Status.Conditions[0].Reason)
-
-				status := applyStatusFieldMap(t, patch)
-				for _, key := range []string{"revision", "conditions"} {
-					_, ok := status[key]
-					assert.Truef(t, ok, "expected status.%s present in ApplyStatus patch", key)
-				}
-				for _, key := range []string{"failedIssuanceAttempts", "lastFailureTime", "nextPrivateKeySecretName"} {
-					_, ok := status[key]
-					assert.Falsef(t, ok, "expected status.%s absent from ApplyStatus patch", key)
-				}
-			},
+			expApplyStatusPatch: mustSerializeApplyStatus(t, exampleBundle.Certificate, cmapi.CertificateStatus{
+				Conditions: []cmapi.CertificateCondition{{
+					Type:               cmapi.CertificateConditionIssuing,
+					Status:             cmmeta.ConditionFalse,
+					LastTransitionTime: &metaFixedClockStart,
+					Reason:             "Issued",
+					Message:            "The certificate has been successfully issued",
+					ObservedGeneration: 3,
+				}},
+				Revision: new(2),
+			}),
 		},
 	}
 
@@ -1855,42 +1790,15 @@ func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 			test.builder.T = t
 
 			test.builder.ExpectedActions = []testpkg.Action{
-				testpkg.NewCustomMatch(
-					coretesting.NewPatchSubresourceActionWithOptions(
-						cmapi.SchemeGroupVersion.WithResource("certificates"),
-						exampleBundle.Certificate.Namespace,
-						exampleBundle.Certificate.Name,
-						types.ApplyPatchType,
-						[]byte(`{}`),
-						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
-						"status",
-					),
-					func(_, actual coretesting.Action) error {
-						patchAction, ok := actual.(coretesting.PatchAction)
-						if !ok {
-							return fmt.Errorf("expected PatchAction, got %T", actual)
-						}
-						if patchAction.GetPatchType() != types.ApplyPatchType {
-							return fmt.Errorf("expected ApplyPatchType, got %q", patchAction.GetPatchType())
-						}
-						if patchAction.GetSubresource() != "status" {
-							return fmt.Errorf("expected status subresource, got %q", patchAction.GetSubresource())
-						}
-						optsGetter, ok := actual.(interface{ GetPatchOptions() metav1.PatchOptions })
-						if !ok {
-							return fmt.Errorf("expected GetPatchOptions on action, got %T", actual)
-						}
-						opts := optsGetter.GetPatchOptions()
-						if opts.FieldManager != testpkg.FieldManager {
-							return fmt.Errorf("expected FieldManager %q, got %q", testpkg.FieldManager, opts.FieldManager)
-						}
-						if opts.Force == nil || !*opts.Force {
-							return fmt.Errorf("expected Force=true, got %v", opts.Force)
-						}
-						test.assertApplyStatus(t, patchAction.GetPatch())
-						return nil
-					},
-				),
+				testpkg.NewAction(coretesting.NewPatchSubresourceActionWithOptions(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					exampleBundle.Certificate.Namespace,
+					exampleBundle.Certificate.Name,
+					types.ApplyPatchType,
+					test.expApplyStatusPatch,
+					metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
+					"status",
+				)),
 			}
 
 			test.builder.InitWithRESTConfig()
@@ -1922,4 +1830,135 @@ func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 			test.builder.CheckAndFinish(err)
 		})
 	}
+}
+
+// TestIssuingController_FailIssuanceDoesNotMutateInformerCache checks that a
+// failed issuance is not recorded on the Certificate in the shared informer
+// cache. The gate is pinned both ways because the status write is an update or
+// a patch depending on it, which changes the client verb the reactor matches.
+func TestIssuingController_FailIssuanceDoesNotMutateInformerCache(t *testing.T) {
+	tests := map[string]struct {
+		serverSideApply bool
+		failedVerb      string
+	}{
+		"UpdateStatus, ServerSideApply disabled": {serverSideApply: false, failedVerb: "update"},
+		"ApplyStatus, ServerSideApply enabled":   {serverSideApply: true, failedVerb: "patch"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, test.serverSideApply)
+
+			fixture := failedIssuanceFixture(t)
+
+			fixedClock.SetTime(fixedClockStart)
+			b := &testpkg.Builder{
+				T:                  t,
+				Clock:              fixedClock,
+				CertManagerObjects: []runtime.Object{fixture.issuingCert, fixture.failedRequest},
+				KubeObjects:        []runtime.Object{fixture.nextPrivateKeySecret},
+			}
+			b.InitWithRESTConfig()
+			defer b.Stop()
+
+			w := controllerWrapper{}
+			_, _, err := w.Register(b.Context)
+			require.NoError(t, err)
+			w.controller.localTemporarySigner = testLocalTemporarySignerFn(fixture.bundle.LocalTemporaryCertificateBytes)
+
+			// Fail the status write, so the failure never reaches the API
+			// server and the cache is the only place it could have landed.
+			var failedWriteCalled bool
+			b.FakeCMClient().PrependReactor(test.failedVerb, "certificates", func(coretesting.Action) (bool, runtime.Object, error) {
+				failedWriteCalled = true
+				return true, nil, errors.New("simulated status write failure")
+			})
+
+			b.Start()
+
+			err = w.controller.ProcessItem(t.Context(), types.NamespacedName{
+				Namespace: fixture.bundle.Certificate.Namespace,
+				Name:      fixture.bundle.Certificate.Name,
+			})
+			require.Error(t, err)
+			require.True(t, failedWriteCalled, "the reactor must match the verb the status write actually uses")
+
+			cached, err := b.SharedInformerFactory.Certmanager().V1().Certificates().
+				Lister().Certificates(fixture.bundle.Certificate.Namespace).Get(fixture.bundle.Certificate.Name)
+			require.NoError(t, err)
+			assert.Nil(t, cached.Status.FailedIssuanceAttempts, "failed issuance attempts must not be written to the informer cache")
+			assert.Nil(t, cached.Status.LastFailureTime, "last failure time must not be written to the informer cache")
+		})
+	}
+}
+
+// failedIssuanceObjects is the set of objects a failed-issuance test needs: a
+// Certificate mid-issuance at revision 1, the failed CertificateRequest for
+// revision 2, and the Secret holding the next private key.
+type failedIssuanceObjects struct {
+	bundle               testcrypto.CryptoBundle
+	issuingCert          *cmapi.Certificate
+	failedRequest        *cmapi.CertificateRequest
+	nextPrivateKeySecret *corev1.Secret
+}
+
+func failedIssuanceFixture(t *testing.T) failedIssuanceObjects {
+	t.Helper()
+
+	const nextPrivateKeySecretName = "next-private-key"
+	baseCert := gen.Certificate("test",
+		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
+		gen.SetCertificateGeneration(3),
+		gen.SetCertificateSecretName("output"),
+		gen.SetCertificateRenewBefore(&metav1.Duration{Duration: time.Hour * 36}),
+		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateRevision(1),
+		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
+	)
+	bundle := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	metaFixedClockStart := metav1.NewTime(fixedClockStart)
+
+	return failedIssuanceObjects{
+		bundle: bundle,
+		issuingCert: gen.CertificateFrom(baseCert.DeepCopy(),
+			gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionIssuing,
+				Status:             cmmeta.ConditionTrue,
+				ObservedGeneration: 3,
+				LastTransitionTime: &metaFixedClockStart,
+			}),
+		),
+		failedRequest: gen.CertificateRequestFrom(bundle.CertificateRequestFailed,
+			gen.AddCertificateRequestAnnotations(map[string]string{
+				cmapi.CertificateRequestRevisionAnnotationKey: "2",
+			}),
+			gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  cmapi.CertificateRequestReasonFailed,
+				Message: "The certificate request failed because of reasons",
+			}),
+		),
+		nextPrivateKeySecret: &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nextPrivateKeySecretName,
+				Namespace: bundle.Certificate.Namespace,
+			},
+			Data: map[string][]byte{
+				corev1.TLSPrivateKeyKey: bundle.PrivateKeyBytes,
+			},
+		},
+	}
+}
+
+// mustSerializeApplyStatus renders the bytes internalcertificates.ApplyStatus sends.
+func mustSerializeApplyStatus(t *testing.T, crt *cmapi.Certificate, status cmapi.CertificateStatus) []byte {
+	t.Helper()
+	data, err := json.Marshal(&cmapi.Certificate{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
+		Status:     status,
+	})
+	require.NoError(t, err)
+	return data
 }
