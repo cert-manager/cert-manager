@@ -417,6 +417,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 // an appropriate event. The reason and message of the Issuing condition will be that of
 // the CertificateRequest condition passed.
 func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, condition *cmapi.CertificateRequestCondition) error {
+	// ProcessItem hands us the lister object, so mutate a copy: the trigger
+	// controller reads these counters from that same shared cache.
+	crt = crt.DeepCopy()
+
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
 
@@ -433,7 +437,6 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	message = fmt.Sprintf("The certificate request has failed to complete and will be retried: %s",
 		condition.Message)
 
-	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
 	if err := c.updateOrApplyStatus(ctx, crt, false); err != nil {
