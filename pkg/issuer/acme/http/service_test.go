@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -350,6 +351,74 @@ func TestBuildServiceExtraLabels(t *testing.T) {
 			test.Setup(t)
 			resp, err := test.Solver.createService(t.Context(), test.Challenge)
 			test.Finish(t, resp, err)
+		})
+	}
+}
+
+func TestCleanupServices(t *testing.T) {
+	testNamespace := "foo"
+	chal := &cmacme.Challenge{
+		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Token:   "token",
+			Key:     "key",
+			Solver: cmacme.ACMEChallengeSolver{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+				},
+			},
+		},
+	}
+	serviceMeta := &metav1.PartialObjectMetadata{
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cm-acme-http-solver-abcde",
+			Namespace:       testNamespace,
+			Labels:          podLabels(chal),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+		},
+	}
+
+	tests := map[string]struct {
+		deleteErr   error
+		expectedErr bool
+	}{
+		// The metadata lister has the service but the API server does not, which
+		// is what a delete that already happened looks like from here.
+		"should not return an error if the service is already gone": {},
+		"should return an error if a delete fails": {
+			deleteErr:   fmt.Errorf("simulated error"),
+			expectedErr: true,
+		},
+	}
+
+	for name, scenario := range tests {
+		t.Run(name, func(t *testing.T) {
+			builder := &testpkg.Builder{
+				T:                      t,
+				PartialMetadataObjects: []runtime.Object{serviceMeta},
+			}
+			builder.InitWithRESTConfig()
+			s := &Solver{
+				Context:       builder.Context,
+				serviceLister: builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
+			}
+			if scenario.deleteErr != nil {
+				builder.FakeKubeClient().PrependReactor("delete", "services", func(action coretesting.Action) (bool, runtime.Object, error) {
+					return true, nil, scenario.deleteErr
+				})
+			}
+			builder.Start()
+			defer builder.Stop()
+
+			err := s.cleanupServices(t.Context(), chal)
+			if err != nil && !scenario.expectedErr {
+				t.Errorf("expected no error, got: %v", err)
+			}
+			if err == nil && scenario.expectedErr {
+				t.Error("expected an error, got none")
+			}
 		})
 	}
 }
