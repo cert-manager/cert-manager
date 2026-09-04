@@ -17,9 +17,10 @@ limitations under the License.
 package certificates
 
 import (
-	"encoding/json"
 	"testing"
+	"time"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -28,7 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
@@ -120,6 +120,8 @@ func Test_StatusScalarApply(t *testing.T) {
 
 		otherAttempts := 3
 		t.Log("second field manager ApplyStatus claims failedIssuanceAttempts")
+		// A second Apply manager. Managers are keyed by operation too, so the
+		// Update to Apply case is a separate subtest below.
 		applyCertificateStatus(t, otherCMClient, otherFieldManager, namespace, name, cmapi.CertificateStatus{
 			FailedIssuanceAttempts: &otherAttempts,
 		})
@@ -143,6 +145,70 @@ func Test_StatusScalarApply(t *testing.T) {
 		require.NotNil(t, crt.Status.Revision)
 		assert.Equal(t, 2, *crt.Status.Revision)
 	})
+
+	// Scalars written by UpdateStatus before the ServerSideApply gate was
+	// enabled stay owned by an operation:Update entry, which an omitting
+	// ApplyStatus does not prune. Ownership moves once Apply writes them.
+	t.Run("omit does not clear scalars owned by an Update manager, until Apply claims them", func(t *testing.T) {
+		const (
+			namespace = "test-status-scalar-apply-update-owner"
+			name      = "omit-keeps-update-owned-scalars"
+		)
+
+		t.Log("creating test Namespace")
+		_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: namespace},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		createEmptyCertificate(t, issuingCMClient, namespace, name)
+
+		t.Log("UpdateStatus sets the scalar failure fields, as the pre-gate code path did")
+		crt, err := issuingCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
+		require.NoError(t, err)
+		attempts := 2
+		now := metav1.Now()
+		crt.Status.FailedIssuanceAttempts = &attempts
+		crt.Status.LastFailureTime = &now
+		crt.Status.Revision = new(1)
+		_, err = issuingCMClient.CertmanagerV1().Certificates(namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
+		require.NoError(t, err)
+
+		t.Log("ApplyStatus omitting the scalar failure fields does not clear them")
+		applyCertificateStatus(t, issuingCMClient, issuingFieldManager, namespace, name, cmapi.CertificateStatus{
+			Revision: new(2),
+		})
+
+		crt, err = issuingCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, crt.Status.FailedIssuanceAttempts, "an Update-owned scalar must survive an omitting Apply")
+		assert.Equal(t, 2, *crt.Status.FailedIssuanceAttempts)
+		require.NotNil(t, crt.Status.LastFailureTime)
+
+		t.Log("ApplyStatus including the scalar failure fields takes ownership of them")
+		nextAttempts := 3
+		// Distinct timestamp: an apply writing a field the value it already
+		// holds does not take ownership, so a same-second metav1.Now() would
+		// not exercise the transfer.
+		nextNow := metav1.NewTime(now.Add(time.Hour))
+		applyCertificateStatus(t, issuingCMClient, issuingFieldManager, namespace, name, cmapi.CertificateStatus{
+			FailedIssuanceAttempts: &nextAttempts,
+			LastFailureTime:        &nextNow,
+			Revision:               new(2),
+		})
+
+		t.Log("a later omitting ApplyStatus now clears them")
+		applyCertificateStatus(t, issuingCMClient, issuingFieldManager, namespace, name, cmapi.CertificateStatus{
+			Revision: new(3),
+		})
+
+		crt, err = issuingCMClient.CertmanagerV1().Certificates(namespace).Get(t.Context(), name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Nil(t, crt.Status.FailedIssuanceAttempts, "the stale state must self-heal once Apply has claimed the field")
+		assert.Nil(t, crt.Status.LastFailureTime)
+		require.NotNil(t, crt.Status.Revision)
+		assert.Equal(t, 3, *crt.Status.Revision)
+	})
 }
 
 func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace, name string) {
@@ -159,17 +225,11 @@ func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace
 	require.NoError(t, err)
 }
 
+// applyCertificateStatus calls the same ApplyStatus the controllers call.
 func applyCertificateStatus(t *testing.T, cmClient cmclient.Interface, fieldManager, namespace, name string, status cmapi.CertificateStatus) {
 	t.Helper()
-	patch, err := json.Marshal(&cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+	require.NoError(t, internalcertificates.ApplyStatus(t.Context(), cmClient, fieldManager, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
 		Status:     status,
-	})
-	require.NoError(t, err)
-	_, err = cmClient.CertmanagerV1().Certificates(namespace).Patch(
-		t.Context(), name, apitypes.ApplyPatchType, patch,
-		metav1.PatchOptions{Force: new(true), FieldManager: fieldManager}, "status",
-	)
-	require.NoError(t, err)
+	}))
 }
