@@ -22,6 +22,7 @@ import (
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -163,6 +164,12 @@ func (s *Solver) cleanupServices(ctx context.Context, ch *cmacme.Challenge) erro
 		log.V(logf.DebugLevel).Info("deleting service resource")
 
 		err := s.Client.CoreV1().Services(service.Namespace).Delete(ctx, service.Name, metav1.DeleteOptions{})
+		if k8sErrors.IsNotFound(err) {
+			// the lister can be behind the API server, so a service that is
+			// already gone is the state we wanted anyway
+			log.V(logf.DebugLevel).Info("service resource already deleted")
+			continue
+		}
 		if err != nil {
 			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)

@@ -477,6 +477,32 @@ func TestCleanupIngresses(t *testing.T) {
 				}
 			},
 		},
+		"should not return an error if the ingress is already gone": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "abcd",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								Class: new("nginx"),
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				ing, err := s.Solver.createIngress(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+
+				// the lister still has the ingress, the API server no longer does
+				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, apierrors.NewNotFound(networkingv1.Resource("ingresses"), ing.Name)
+				})
+			},
+		},
 		"should return an error if a delete fails": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
