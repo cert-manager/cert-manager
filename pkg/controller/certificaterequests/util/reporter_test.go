@@ -238,7 +238,7 @@ func TestReporter(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
-			apiutil.Clock = fixedClock
+			apiutil.SetClock(fixedClock)
 			test.runTest(t)
 		})
 	}
