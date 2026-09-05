@@ -214,9 +214,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Fetch and parse the 'next private key secret'
-	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
+	nextPrivateKeySecret, err := certificates.GetNextPrivateKeySecret(c.secretLister.Secrets(crt.Namespace), crt)
 	if apierrors.IsNotFound(err) {
-		log.V(logf.DebugLevel).Info("Next private key secret does not exist, waiting for keymanager controller")
+		log.V(logf.DebugLevel).Info("Next private key secret does not exist or is not owned by this Certificate, waiting for keymanager controller")
 		// If secret does not exist, do nothing (keymanager will handle this).
 		return nil
 	}
