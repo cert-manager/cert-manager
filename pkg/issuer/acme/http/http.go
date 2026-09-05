@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -274,7 +275,9 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
 			// we need to increment a counter to iterate through the dns servers as the dialer will not
 			// return an error if the dns server is not responding.
-			counter := 0
+			// The counter must be atomic: the resolver calls Dial from concurrent
+			// goroutines (parallel A/AAAA lookups).
+			var counter atomic.Int32
 			dialer := &net.Dialer{
 				Timeout: 3 * time.Second,
 				Resolver: &net.Resolver{
@@ -283,8 +286,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 						d := net.Dialer{
 							Timeout: 3 * time.Second,
 						}
-						s := dnsServers[counter%len(dnsServers)]
-						counter++
+						s := dnsServers[int(counter.Add(1)-1)%len(dnsServers)]
 						return d.DialContext(ctx, network, s)
 					},
 				},
