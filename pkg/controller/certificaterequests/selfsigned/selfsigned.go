@@ -93,10 +93,14 @@ func init() {
 						ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
 						clusterIssuerLister,
 					)
-					if _, err := secretInformer.AddEventHandler(controllerpkg.BlockingEventHandler(
+					secretHandler := controllerpkg.BlockingEventHandler(
 						handleSecretReferenceWorkFunc(log, certificateRequestLister, helper, queue),
-					)); err != nil {
+					)
+					if _, err := secretInformer.AddEventHandler(secretHandler); err != nil {
 						return nil, fmt.Errorf("error setting up event handler: %v", err)
+					}
+					if _, err := secretInformer.AddMetadataEventHandler(secretHandler); err != nil {
+						return nil, fmt.Errorf("error setting up metadata event handler: %v", err)
 					}
 					return mustSync, nil
 				},

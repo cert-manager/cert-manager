@@ -95,7 +95,19 @@ type baseSecretInformer struct {
 
 func (bsi *baseSecretInformer) Informer() Informer {
 	bsi.informer = bsi.f.InformerFor(&corev1.Secret{}, bsi.new)
-	return bsi.informer
+	return &singleInformer{bsi.informer}
+}
+
+// singleInformer wraps a cache.SharedIndexInformer to satisfy the Informer
+// interface. AddMetadataEventHandler is a no-op because the base (non-filtered)
+// Secret informer caches all Secrets fully — there is no separate metadata
+// informer.
+type singleInformer struct {
+	cache.SharedIndexInformer
+}
+
+func (s *singleInformer) AddMetadataEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	return nil, nil
 }
 
 func (bsi *baseSecretInformer) Lister() SecretLister {

@@ -31,6 +31,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
+	"k8s.io/client-go/tools/cache"
 )
 
 func Test_secretNamespaceLister_Get(t *testing.T) {
@@ -448,4 +449,38 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			assert.ElementsMatch(t, got, scenario.want)
 		})
 	}
+}
+
+// stubSharedIndexInformer counts AddEventHandler registrations. All other
+// methods of the embedded interface are unimplemented and panic if called.
+type stubSharedIndexInformer struct {
+	cache.SharedIndexInformer
+	addEventHandlerCalls int
+}
+
+func (s *stubSharedIndexInformer) AddEventHandler(cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	s.addEventHandlerCalls++
+	return nil, nil
+}
+
+// Regression test for https://github.com/cert-manager/cert-manager/issues/8994:
+// a handler must only be registered on the informer whose object type it
+// handles. AddEventHandler must register on the typed informer only, and
+// AddMetadataEventHandler on the metadata informer only; registering one
+// handler on both delivers *v1.PartialObjectMetadata to handlers typed for
+// *corev1.Secret.
+func Test_informer_handlerRegistrationSplit(t *testing.T) {
+	typed := &stubSharedIndexInformer{}
+	metadata := &stubSharedIndexInformer{}
+	i := &informer{typedInformer: typed, metadataInformer: metadata}
+
+	_, err := i.AddEventHandler(cache.ResourceEventHandlerFuncs{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, typed.addEventHandlerCalls, "AddEventHandler must register on the typed informer")
+	assert.Equal(t, 0, metadata.addEventHandlerCalls, "AddEventHandler must not register on the metadata informer")
+
+	_, err = i.AddMetadataEventHandler(cache.ResourceEventHandlerFuncs{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, typed.addEventHandlerCalls, "AddMetadataEventHandler must not register on the typed informer")
+	assert.Equal(t, 1, metadata.addEventHandlerCalls, "AddMetadataEventHandler must register on the metadata informer")
 }
