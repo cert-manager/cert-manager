@@ -459,6 +459,8 @@ config:
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
     ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
+    # Set to false if using OpenShift's built-in Ingress-to-Route conversion,
+    # which does not support pathType: Exact.
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
     LiteralCertificateSubject: true # BETA - default=true

@@ -187,7 +187,8 @@ const (
 	// parsing. This allows HTTP01 challenges to be solved when using standards
 	// compliant Ingress controllers such as Cilium. The old default
 	// `ImplementationSpecific`` can be reinstated by disabling this feature gate.
-	// You may need to disable the feature for compatibility with ingress-nginx.
+	// You may need to disable the feature for compatibility with ingress-nginx
+	// or OpenShift's Ingress-to-Route conversion (route-controller-manager).
 	// See: https://cert-manager.io/docs/releases/release-notes/release-notes-1.18
 	ACMEHTTP01IngressPathTypeExact featuregate.Feature = "ACMEHTTP01IngressPathTypeExact"
 
