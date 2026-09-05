@@ -20,9 +20,12 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -41,6 +45,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -849,6 +854,90 @@ func TestReadinessForARI(t *testing.T) {
 			if err := builder.AllActionsExecuted(); err != nil {
 				builder.T.Error(err)
 			}
+		})
+	}
+}
+
+// TestScheduleRecheckAtExpiry drives a real ScheduledWorkQueue inside a
+// synctest bubble, so the assertions are on when the re-check actually fires
+// rather than on the delay that was requested.
+func TestScheduleRecheckAtExpiry(t *testing.T) {
+	key := types.NamespacedName{Namespace: "testns", Name: "test"}
+
+	tests := map[string]struct {
+		notAfter func(now time.Time) *metav1.Time
+		// wantFireAfter is the offset from now at which the re-check must
+		// fire. Zero means it must not fire at all.
+		wantFireAfter time.Duration
+	}{
+		"fires one second after a future expiry": {
+			notAfter:      func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(time.Hour)} },
+			wantFireAfter: time.Hour + time.Second,
+		},
+		"does not fire for an already expired certificate": {
+			notAfter: func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(-time.Hour)} },
+		},
+		"does not fire when the expiry is unknown": {
+			notAfter: func(time.Time) *metav1.Time { return nil },
+		},
+		// time.Time.Sub saturates at math.MaxInt64 for a NotAfter this far
+		// away. Whatever the arithmetic does with that, the re-check must
+		// not fire early.
+		"does not fire early for an expiry centuries away": {
+			notAfter: func(time.Time) *metav1.Time {
+				return &metav1.Time{Time: time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)}
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				start := time.Now()
+
+				// The timer goroutine writes and the test goroutine reads, and
+				// synctest.Wait does not order the two for the race detector.
+				var mu sync.Mutex
+				var fired []time.Duration
+				firedAt := func() []time.Duration {
+					mu.Lock()
+					defer mu.Unlock()
+					return append([]time.Duration(nil), fired...)
+				}
+
+				c := &controller{
+					clock: clock.RealClock{},
+					expiryWorkQueue: scheduler.NewScheduledWorkQueue(clock.RealClock{}, func(types.NamespacedName) {
+						mu.Lock()
+						defer mu.Unlock()
+						fired = append(fired, time.Since(start))
+					}),
+				}
+				defer c.expiryWorkQueue.Forget(key)
+
+				c.scheduleRecheckAtExpiry(logr.Discard(), key, test.notAfter(start))
+
+				if test.wantFireAfter == 0 {
+					time.Sleep(100 * 365 * 24 * time.Hour)
+					synctest.Wait()
+					if got := firedAt(); len(got) != 0 {
+						t.Fatalf("expected no re-check, but it fired at %v", got)
+					}
+					return
+				}
+
+				time.Sleep(test.wantFireAfter - time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 0 {
+					t.Fatalf("re-check fired early at %v", got)
+				}
+
+				time.Sleep(time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 1 || got[0] != test.wantFireAfter {
+					t.Fatalf("expected one re-check at %v, got %v", test.wantFireAfter, got)
+				}
+			})
 		})
 	}
 }
