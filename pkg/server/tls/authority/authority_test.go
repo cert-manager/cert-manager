@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/go-logr/logr/testr"
@@ -73,7 +74,25 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 	return da
 }
 
+// The dynamic authority tests run in a synctest bubble so that the timeouts
+// below are measured in the bubble's synthetic time: they can only fire once
+// every goroutine is durably blocked and no informer event is still in
+// flight. This makes the tests immune to slow scheduling on loaded CI nodes;
+// the timeout fires only if rotation provably cannot happen.
+// See https://github.com/cert-manager/cert-manager/issues/8754
+//
+// The tradeoff: these tests depend on every goroutine in the informer path
+// (reflector, SharedInformerFactory, the fake clientset watch, wait.Poll*)
+// blocking durably inside the bubble. If a future client-go change blocks
+// non-durably instead (a syscall, I/O, or a package-level sync.WaitGroup),
+// the synthetic timers never fire and these tests hang until the go test
+// binary timeout kills the package with a goroutine dump. If that happens
+// after a dependency bump, this is why.
 func TestDynamicAuthority(t *testing.T) {
+	synctest.Test(t, testDynamicAuthority)
+}
+
+func testDynamicAuthority(t *testing.T) {
 	fake := kubefake.NewClientset()
 
 	da := testAuthority(t, "authority", fake)
@@ -135,6 +154,10 @@ func TestDynamicAuthority(t *testing.T) {
 }
 
 func TestDynamicAuthorityMulti(t *testing.T) {
+	synctest.Test(t, testDynamicAuthorityMulti)
+}
+
+func testDynamicAuthorityMulti(t *testing.T) {
 	fake := kubefake.NewClientset()
 
 	authorities := make([]*DynamicAuthority, 0)
