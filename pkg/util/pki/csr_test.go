@@ -1131,6 +1131,123 @@ func ed25519Key(t *testing.T) crypto.Signer {
 	return priv
 }
 
+func TestIPAddressesFromStrings(t *testing.T) {
+	tests := []struct {
+		name        string
+		ipStrings   []string
+		expectErr   bool
+		errContains []string
+		expectedIPs []net.IP
+	}{
+		// --- Main flow (positive) ---
+		{
+			name:        "single IPv4 address",
+			ipStrings:   []string{"192.168.1.1"},
+			expectedIPs: []net.IP{net.ParseIP("192.168.1.1")},
+		},
+		{
+			name:        "single IPv6 address",
+			ipStrings:   []string{"2001:db8::1"},
+			expectedIPs: []net.IP{net.ParseIP("2001:db8::1")},
+		},
+		{
+			name:        "mixed IPv4 and IPv6 addresses",
+			ipStrings:   []string{"10.0.0.1", "2001:db8::1"},
+			expectedIPs: []net.IP{net.ParseIP("10.0.0.1"), net.ParseIP("2001:db8::1")},
+		},
+		// --- Boundary ---
+		{
+			name:        "empty slice returns nil without error",
+			ipStrings:   []string{},
+			expectedIPs: nil,
+		},
+		{
+			name:        "nil slice returns nil without error",
+			ipStrings:   nil,
+			expectedIPs: nil,
+		},
+		// --- Error cases ---
+		{
+			name:      "invalid string returns error",
+			ipStrings: []string{"not-an-ip"},
+			expectErr: true,
+		},
+		{
+			name:      "empty string returns error",
+			ipStrings: []string{""},
+			expectErr: true,
+		},
+		{
+			name:        "zoned IPv6 address returns error containing address and zone",
+			ipStrings:   []string{"fe80::1%eth0"},
+			expectErr:   true,
+			errContains: []string{"fe80::1%eth0", "eth0", "zone"},
+		},
+		{
+			name:      "zoned IPv6 after valid IPv4 returns error",
+			ipStrings: []string{"10.0.0.1", "fe80::1%eth0"},
+			expectErr: true,
+		},
+		{
+			name:      "zoned IPv6 before valid IPv4 returns error",
+			ipStrings: []string{"fe80::1%eth0", "10.0.0.1"},
+			expectErr: true,
+		},
+		{
+			name:      "valid IPv6 followed by invalid string returns error",
+			ipStrings: []string{"2001:db8::1", "invalid"},
+			expectErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ips, err := IPAddressesFromStrings(tt.ipStrings)
+			if tt.expectErr {
+				assert.Error(t, err)
+				assert.Nil(t, ips)
+				for _, s := range tt.errContains {
+					assert.Contains(t, err.Error(), s)
+				}
+				return
+			}
+			require.NoError(t, err)
+			if tt.expectedIPs == nil {
+				assert.Nil(t, ips)
+				return
+			}
+			require.Len(t, ips, len(tt.expectedIPs))
+			for i, expected := range tt.expectedIPs {
+				assert.True(t, ips[i].Equal(expected), "IP at index %d: expected %s, got %s", i, expected, ips[i])
+			}
+		})
+	}
+}
+
+func TestGenerateCSRWithIPAddresssWithZone(t *testing.T) {
+	t.Run("zoned IPv6 address is rejected", func(t *testing.T) {
+		crt := &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"fe80::1%eth0"},
+			},
+		}
+		_, err := GenerateCSR(crt)
+		assert.Error(t, err)
+	})
+
+	t.Run("valid IPv4 and IPv6 addresses generate CSR normally", func(t *testing.T) {
+		crt := &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"10.0.0.1", "2001:db8::1"},
+			},
+		}
+		cr, err := GenerateCSR(crt)
+		require.NoError(t, err)
+		assert.NotNil(t, cr)
+	})
+}
+
 func Test_SignCertificate_Signatures(t *testing.T) {
 	specs := map[string]struct {
 		SignerKey                  crypto.Signer
