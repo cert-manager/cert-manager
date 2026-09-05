@@ -281,6 +281,9 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 }
 
 func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, secret *corev1.Secret, key types.NamespacedName) *metav1.Time {
+	log := logf.FromContext(ctx).WithValues("key", key)
+	ctx = logf.NewContext(ctx, log)
+
 	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
 	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
 		return nil
@@ -300,16 +303,27 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 
 	now := c.clock.Now()
 
-	var (
-		nextCheck   *metav1.Time
-		lastChecked *metav1.Time
-	)
+	var nextCheck *metav1.Time
 	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
 		nextCheck = crt.Status.ACME.ARI.NextCheck
-		lastChecked = crt.Status.ACME.ARI.LastChecked
 	}
 
-	staleForCurrentCert := lastChecked != nil && lastChecked.Time.Before(x509cert.NotBefore)
+	currCertID, err := acmeapi.CertificateARIID(x509cert)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not compute certificate ID for ARI", "error", err)
+
+		if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+			crt.Status.ACME.ARI.SuggestedWindow = nil
+			crt.Status.ACME.ARI.ExplanationURL = ""
+		}
+	}
+
+	var staleForCurrentCert bool
+	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+		staleForCurrentCert = currCertID != crt.Status.ACME.ARI.CertID
+	}
+	// The ACME server may move a suggested window at any time, so the periodic
+	// poll has to keep running even when the certificate has not been replaced.
 	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
 	if !needFetch {
 		return nil
@@ -332,6 +346,14 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	case err != nil:
 		ariStatus.LastChecked = &metav1.Time{Time: now}
 		ariStatus.LastError = err.Error()
+		// Drop any previously recorded window. Keeping it would leave status
+		// advertising a renewal window belonging to a certificate that is no
+		// longer in the Secret, next to a freshly bumped lastChecked.
+		if staleForCurrentCert {
+			ariStatus.SuggestedWindow = nil
+			ariStatus.ExplanationURL = ""
+		}
+		ariStatus.CertID = currCertID
 		reason := policies.ARIError
 		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
 
@@ -348,6 +370,7 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		ariStatus.LastChecked = &metav1.Time{Time: now}
 		existing := crt.Status.RenewalTime
 		ariStatus.ExplanationURL = ariInfo.ExplanationURL
+		ariStatus.CertID = currCertID
 		ariStatus.SuggestedWindow = &cmapi.ACMERenewalWindow{
 			Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
 			End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
