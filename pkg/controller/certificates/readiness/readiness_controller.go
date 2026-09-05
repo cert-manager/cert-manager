@@ -367,6 +367,12 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 				ariStatus.LastError = err.Error()
 				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
+				// Discard the fallback time returned alongside the error: it is
+				// a random time in the ARI window. Returning nil makes the
+				// caller recalculate deterministically and surface the error as
+				// a WindowError Ready condition, the same as on reconciles that
+				// do not fetch ARI.
+				renewalTime = nil
 				break
 			}
 		}

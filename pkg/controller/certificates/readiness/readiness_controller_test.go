@@ -256,7 +256,7 @@ func TestProcessItem(t *testing.T) {
 			secretShouldExist: true,
 			certShouldUpdate:  false,
 		},
-		"update status as not ready (Ready=False) with invalid renewal time": {
+		"update status as not ready (Ready=False) with the fallback renewal time on a window error": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionFalse,
@@ -269,8 +269,11 @@ func TestProcessItem(t *testing.T) {
 			secretShouldExist: true,
 			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
 			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
-			renewalTime:       func() *metav1.Time { return nil }(),
-			renewalTimeError:  fmt.Errorf("cannot find a time with the given windows"),
+			// RenewalTime returns a usable fallback time alongside a window
+			// error; the controller must record it in Status.RenewalTime while
+			// still setting Ready=False with WindowError.
+			renewalTime:      func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
+			renewalTimeError: fmt.Errorf("cannot find a time with the given windows"),
 		},
 	}
 	for name, test := range tests {
