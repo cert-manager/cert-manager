@@ -17,14 +17,18 @@ limitations under the License.
 package controller
 
 import (
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -205,10 +209,19 @@ func Test_controller_Register(t *testing.T) {
 
 			test.givenCall(t, b.CMClient, b.GWClient, b.Context.GWShared.Gateway().V1().ListenerSets().Lister())
 
-			require.Eventually(t, func() bool {
-				require.Subsetf(t, test.expectAddCalls, mock.callsToAdd, "unexpected calls to workqueue.Add: got %v, want subset of %v", mock.callsToAdd, test.expectAddCalls)
-				return true
-			}, 2*time.Second, 10*time.Millisecond)
+			// The informers deliver events asynchronously, so wait generously
+			// for the expected Add calls to arrive, then allow a short grace
+			// period for unexpected extra calls before the final check. The
+			// order of calls across different informers is not deterministic,
+			// and a late Gateway 'Add' event can legitimately enqueue a
+			// duplicate key via the parent index, hence Subset rather than
+			// an exact comparison.
+			assert.Eventually(t, func() bool {
+				return len(mock.addCalls()) >= len(test.expectAddCalls)
+			}, wait.ForeverTestTimeout, 10*time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
+			calls := mock.addCalls()
+			assert.Subsetf(t, test.expectAddCalls, calls, "unexpected calls to workqueue.Add: got %v, want subset of %v", calls, test.expectAddCalls)
 		})
 	}
 }
@@ -291,13 +304,24 @@ func Test_inheritAnnotations(t *testing.T) {
 
 type mockWorkqueue struct {
 	t          *testing.T
+	mu         sync.Mutex
 	callsToAdd []types.NamespacedName
 }
 
 var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+// addCalls returns a snapshot of the Add calls received so far. The informers
+// call Add from their own goroutines, so the mutex is required.
+func (m *mockWorkqueue) addCalls() []types.NamespacedName {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.Clone(m.callsToAdd)
 }
 
 func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
