@@ -7,3 +7,12 @@ CVE-2020-8559
 # sub-package; we only use x/crypto for SSH and other unrelated packages. No fixed version exists because the
 # advisory is a permanent deprecation notice, not a code bug.
 GO-2026-5932
+
+# CVE-2026-56855 (GO-2026-6355) and CVE-2026-78662 (GO-2026-6354) are deadlocks in the golang.org/x/crypto/ssh
+# connection multiplexer, triggered by a malicious SSH peer after a connection is established. cert-manager does
+# not import golang.org/x/crypto/ssh. The only importer is github.com/Venafi/vcert/v5/pkg/util, which calls
+# ssh.NewPublicKey and ssh.MarshalAuthorizedKey to format a public key and never opens an SSH connection.
+# The fixed version, x/crypto v0.56.0, requires go 1.26.0 and cannot be adopted on release-1.20, which builds
+# with go 1.25.0 (see https://github.com/cert-manager/cert-manager/pull/9264).
+CVE-2026-56855
+CVE-2026-78662
