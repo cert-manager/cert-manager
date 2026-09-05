@@ -167,7 +167,7 @@ func (b *Builder) Init() {
 	}
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
-	apiutil.Clock = b.Context.Clock
+	apiutil.SetClock(b.Context.Clock)
 }
 
 // InitWithRESTConfig() will call builder.Init(), then assign an initialised
@@ -302,7 +302,7 @@ func (b *Builder) Stop() {
 	close(b.stopCh)
 	b.stopCh = nil
 	// Reset the clock back to the RealClock in apiutil
-	apiutil.Clock = clock.RealClock{}
+	apiutil.SetClock(clock.RealClock{})
 }
 
 func (b *Builder) Start() {
