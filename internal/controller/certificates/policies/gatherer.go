@@ -333,53 +333,19 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 			crt.Status.ACME.ARI.SuggestedWindow.End != nil {
 			if leaf, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey]); err == nil {
 				if id, err := acmeapi.CertificateARIID(leaf); err == nil && id == crt.Status.ACME.ARI.CertID {
-					windowStart := crt.Status.ACME.ARI.SuggestedWindow.Start.Time
-
-					// The CertID comparison above already establishes that this window
-					// describes the certificate currently held in the Secret, so a window
-					// that opened before that certificate came into existence is not
-					// stale - it is the ACME server asking us to replace a certificate it
-					// has only just issued. Acting on it renews immediately and then hands
-					// the replacement the same instruction, so the window is discarded and
-					// renewal falls back to the deterministic renewBefore calculation.
-					//
-					// Both bounds are checked because neither is sufficient alone. Most
-					// ACME CAs backdate NotBefore (Let's Encrypt by an hour), which makes
-					// that bound too permissive on its own. The CertificateRequest is
-					// created moments before issuance and so is the tighter bound, but it
-					// may have been pruned or restored separately from the Certificate; a
-					// missing one leaves the NotBefore bound in force rather than
-					// withholding the window, since there is no prior revision to protect.
-					//
-					// TODO(@hjoshi123): the bounds here are permissive.
-					// Too permissive and a CA reporting a window starting at the current time
-					// - what a mass-revocation event looks
-					// like - renews repeatedly, since the replacement is handed the same
-					// instruction. Too strict and a legitimate urgent-replacement window is
-					// discarded and renewal silently falls back to renewBefore. A floor scaled to
-					// the certificate's lifetime (ignore a window opening within the first N% of
-					// it) would sharpen both ends, but picking N is a decision about how soon
-					// after issuance an ARI window may legitimately trigger renewal.
-					openedBeforeIssuance := !windowStart.After(leaf.NotBefore)
-					requestCreatedAt := "<no current CertificateRequest>"
-					if curCR != nil {
-						requestCreatedAt = curCR.CreationTimestamp.Time.String()
-						if !windowStart.After(curCR.CreationTimestamp.Time) {
-							openedBeforeIssuance = true
-						}
-					}
-
-					if openedBeforeIssuance {
-						log.V(logf.DebugLevel).Info("Ignoring ACME renewal window that was already open when the current certificate was issued",
-							"windowStart", windowStart, "notBefore", leaf.NotBefore, "requestCreatedAt", requestCreatedAt)
-					} else {
-						i.ARIRenewalInfo = &acmeapi.RenewalInfoResponse{
-							SuggestedWindow: acmeapi.RenewalInfoWindow{
-								Start: crt.Status.ACME.ARI.SuggestedWindow.Start.Time,
-								End:   crt.Status.ACME.ARI.SuggestedWindow.End.Time,
-							},
-							ExplanationURL: crt.Status.ACME.ARI.ExplanationURL,
-						}
+					// The CertID match proves this window was fetched for the
+					// certificate currently in the Secret; a window belonging to a
+					// previous revision can never surface here because renewal changes
+					// the CertID. No issuance-time bound is applied on top: RFC 9773
+					// permits a CA to return an already-open window to request urgent
+					// replacement (e.g. after revocation), including for a certificate
+					// it has only just issued.
+					i.ARIRenewalInfo = &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: crt.Status.ACME.ARI.SuggestedWindow.Start.Time,
+							End:   crt.Status.ACME.ARI.SuggestedWindow.End.Time,
+						},
+						ExplanationURL: crt.Status.ACME.ARI.ExplanationURL,
 					}
 				}
 			}
