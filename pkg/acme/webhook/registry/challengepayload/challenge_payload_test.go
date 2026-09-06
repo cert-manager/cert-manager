@@ -31,11 +31,18 @@ import (
 )
 
 type mockSolver struct {
+	receivedCtx context.Context
 }
 
-func (s *mockSolver) Name() string                                { return "mock-solver" }
-func (s *mockSolver) Present(ch *v1alpha1.ChallengeRequest) error { return nil }
-func (s *mockSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error { return nil }
+func (s *mockSolver) Name() string { return "mock-solver" }
+func (s *mockSolver) Present(ch *v1alpha1.ChallengeRequest) error {
+	s.receivedCtx = ch.Context()
+	return nil
+}
+func (s *mockSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
+	s.receivedCtx = ch.Context()
+	return nil
+}
 func (s *mockSolver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
 	return nil
 }
@@ -55,8 +62,11 @@ func TestCreate(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			testRest := challengepayload.NewREST(&mockSolver{})
-			ctx := context.Background()
+			solver := &mockSolver{}
+			testRest := challengepayload.NewREST(solver)
+			type ctxKey struct{}
+			const sentinel = "foobar"
+			ctx := context.WithValue(t.Context(), ctxKey{}, sentinel)
 
 			input := &v1alpha1.ChallengePayload{
 				Request: &v1alpha1.ChallengeRequest{
@@ -70,7 +80,7 @@ func TestCreate(t *testing.T) {
 			challenge, ok := obj.(*v1alpha1.ChallengePayload)
 			require.Truef(t, ok, "unexpected object type: %T", challenge)
 
-			assert.Equal(t, ctx, challenge.Request.Context())
+			assert.Equal(t, sentinel, solver.receivedCtx.Value(ctxKey{}))
 		})
 	}
 }
