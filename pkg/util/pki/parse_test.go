@@ -21,6 +21,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"strings"
 	"testing"
@@ -142,6 +143,16 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		return
 	}
 
+	// openssl ecparams option writes a leading "EC PARAMATERS" block holding the OID for curve prime256v1 ()
+	ecParamsDER, err := asn1.Marshal(asn1.ObjectIdentifier{1, 2, 840, 10045, 23, 1, 7})
+	if err != nil {
+		t.Errorf("error marshalling EC parameters: %s", err)
+		return
+	}
+	ecParamsBytes := pem.EncodeToMemory(&pem.Block{Type: "EC PARAMETERS", Bytes: ecParamsDER})
+	// This will generate a copy of private key with EC PARAMS
+	ecdsaKeyWithParamsBytes := append(append([]byte{}, ecParamsBytes...), ecdsaKeyBytes...)
+
 	block := &pem.Block{Type: "BLAHBLAHBLAH", Bytes: []byte("blahblahblah")}
 	blahKeyBytes := pem.EncodeToMemory(block)
 
@@ -190,6 +201,18 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		{
 			name:         "fail to decode unknown not pem encoded key bytes",
 			keyBytes:     invalidKeyBytes,
+			expectErr:    true,
+			expectErrStr: "error decoding private key PEM block",
+		},
+		{
+			name:      "decode ecdsa private key preceded by an EC PARAMETERS block",
+			keyBytes:  ecdsaKeyWithParamsBytes,
+			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			expectErr: false,
+		},
+		{
+			name:         "fail to decode an EC PARAMETERS block with no key following it",
+			keyBytes:     ecParamsBytes,
 			expectErr:    true,
 			expectErrStr: "error decoding private key PEM block",
 		},
