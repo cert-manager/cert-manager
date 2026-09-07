@@ -864,6 +864,13 @@ type CertificateACMEARIStatus struct {
 	//
 	// +optional
 	LastError string `json:"lastError,omitempty"`
+
+	// CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was
+	// fetched for. This is used to determine if we need to re-fetch the renewal information
+	// as changed cert id means that ARI fetched before is stale.
+	//
+	// +optional
+	CertID string `json:"certID,omitempty"`
 }
 
 type ACMERenewalWindow struct {

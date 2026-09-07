@@ -41,6 +41,11 @@ type CertificateACMEARIStatusApplyConfiguration struct {
 	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
 	//
 	LastError *string `json:"lastError,omitempty"`
+	// CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was
+	// fetched for. This is used to determine if we need to re-fetch the renewal information
+	// as changed cert id means that ARI fetched before is stale.
+	//
+	CertID *string `json:"certID,omitempty"`
 }
 
 // CertificateACMEARIStatusApplyConfiguration constructs a declarative configuration of the CertificateACMEARIStatus type for use with
@@ -86,5 +91,13 @@ func (b *CertificateACMEARIStatusApplyConfiguration) WithNextCheck(value metav1.
 // If called multiple times, the LastError field is set to the value of the last call.
 func (b *CertificateACMEARIStatusApplyConfiguration) WithLastError(value string) *CertificateACMEARIStatusApplyConfiguration {
 	b.LastError = &value
+	return b
+}
+
+// WithCertID sets the CertID field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CertID field is set to the value of the last call.
+func (b *CertificateACMEARIStatusApplyConfiguration) WithCertID(value string) *CertificateACMEARIStatusApplyConfiguration {
+	b.CertID = &value
 	return b
 }
