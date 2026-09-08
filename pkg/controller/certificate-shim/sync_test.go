@@ -19,6 +19,7 @@ package shimhelper
 import (
 	"encoding/json"
 	"errors"
+	"maps"
 	"reflect"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -5876,6 +5878,98 @@ func Test_splitHosts(t *testing.T) {
 			if !reflect.DeepEqual(gotIPAddresses, tt.wantIPAddresses) {
 				t.Errorf("ipAddresses = %#v, want %#v", gotIPAddresses, tt.wantIPAddresses)
 			}
+		})
+	}
+}
+
+func Test_buildCertificates_doesNotMutateIngressLikeLabels(t *testing.T) {
+	// The ingresses and gateways controllers hand the informer-cached object
+	// to buildCertificates without copying it, so the object passed here
+	// stands in for the object in the shared informer cache.
+	tests := []struct {
+		name    string
+		ingLike metav1.Object
+	}{
+		{
+			name: "ingress",
+			ingLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should-be-propagated",
+						applysetLabel:   "should-not-be-propagated",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "gateway",
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should-be-propagated",
+						applysetLabel:   "should-not-be-propagated",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: new(gwapi.Group("core")),
+										Kind:  new(gwapi.Kind("Secret")),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			lister := cmlisters.NewCertificateLister(cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}))
+			wantLabels := maps.Clone(test.ingLike.GetLabels())
+
+			newCrts, updateCrts, err := buildCertificates(
+				record.NewFakeRecorder(10), logr.Discard(), lister, test.ingLike,
+				"issuer-name", "ClusterIssuer", "cert-manager.io", nil, controllerpkg.IngressShimOptions{},
+			)
+			require.NoError(t, err)
+			require.Empty(t, updateCrts)
+			require.Len(t, newCrts, 1)
+
+			assert.Equal(t, wantLabels, test.ingLike.GetLabels(), "buildCertificates must not modify the labels of the object it was given")
+
+			crt := newCrts[0]
+			assert.Equal(t, map[string]string{"my-test-label": "should-be-propagated"}, crt.Labels)
+
+			// The Certificate must own its labels map: a later write to it must
+			// not show up on the (cached) input object.
+			crt.Labels["added-by-test"] = "should-not-leak"
+			assert.NotContains(t, test.ingLike.GetLabels(), "added-by-test", "Certificate labels alias the labels of the object passed to buildCertificates")
 		})
 	}
 }
