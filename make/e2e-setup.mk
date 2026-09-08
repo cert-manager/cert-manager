@@ -418,7 +418,13 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 		--set admissionController.initContainer.image.pullPolicy=Never \
 		kyverno kyverno/kyverno >/dev/null
 	@$(KUBECTL) create ns cert-manager >/dev/null 2>&1 || true
-	$(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >/dev/null
+	@i=0; until $(KUBECTL) apply --server-side -f make/config/kyverno/policy.yaml >$(bin_dir)/scratch/kyverno-policy-apply.log 2>&1; do \
+		i=$$((i+1)); \
+		cat $(bin_dir)/scratch/kyverno-policy-apply.log >&2; \
+		if [ $$i -ge 10 ]; then exit 1; fi; \
+		echo "Retrying kyverno policy apply (the kyverno admission webhook can take a few seconds to come up after 'helm upgrade --wait' returns)..." >&2; \
+		sleep 3; \
+	done
 
 $(bin_dir)/downloaded:
 	@mkdir -p $@
