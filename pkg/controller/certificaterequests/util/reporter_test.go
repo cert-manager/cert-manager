@@ -23,6 +23,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/clock"
 	clocktesting "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
@@ -239,6 +240,7 @@ func TestReporter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			apiutil.Clock = fixedClock
+			t.Cleanup(func() { apiutil.Clock = clock.RealClock{} })
 			test.runTest(t)
 		})
 	}

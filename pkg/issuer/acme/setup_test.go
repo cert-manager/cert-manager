@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
@@ -687,6 +688,7 @@ func TestAcme_Setup(t *testing.T) {
 			// Stub the clock to get consistent last transition times on conditions.
 			fakeclock.SetTime(fixedClockStart)
 			apiutil.Clock = fakeclock
+			t.Cleanup(func() { apiutil.Clock = clock.RealClock{} })
 
 			// Verify that an error is/is not returned as expected.
 			gotErr := a.Setup(t.Context(), test.issuer)
