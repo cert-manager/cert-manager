@@ -5973,3 +5973,52 @@ func Test_buildCertificates_doesNotMutateIngressLikeLabels(t *testing.T) {
 		})
 	}
 }
+
+func Test_dedupeSANs(t *testing.T) {
+	tests := []struct {
+		name            string
+		dnsNames        []string
+		ipAddresses     []string
+		wantDNSNames    []string
+		wantIPAddresses []string
+	}{
+		{
+			name:         "de-duplicates DNS names re-introduced by the alt-names annotation",
+			dnsNames:     []string{"example.com", "example.com"},
+			wantDNSNames: []string{"example.com"},
+		},
+		{
+			name:            "de-duplicates IP addresses re-introduced by the ip-sans annotation",
+			ipAddresses:     []string{"192.0.2.1", "192.0.2.1"},
+			wantIPAddresses: []string{"192.0.2.1"},
+		},
+		{
+			name:            "de-duplicates IPv6 addresses that differ only in spelling",
+			ipAddresses:     []string{"2001:db8::1", "2001:0db8::1"},
+			wantIPAddresses: []string{"2001:db8::1"},
+		},
+		{
+			name:         "no duplicates leaves order unchanged",
+			dnsNames:     []string{"example.com", "www.example.com"},
+			wantDNSNames: []string{"example.com", "www.example.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			crt := &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					DNSNames:    tt.dnsNames,
+					IPAddresses: tt.ipAddresses,
+				},
+			}
+			dedupeSANs(crt)
+			if !reflect.DeepEqual(crt.Spec.DNSNames, tt.wantDNSNames) {
+				t.Errorf("dnsNames = %#v, want %#v", crt.Spec.DNSNames, tt.wantDNSNames)
+			}
+			if !reflect.DeepEqual(crt.Spec.IPAddresses, tt.wantIPAddresses) {
+				t.Errorf("ipAddresses = %#v, want %#v", crt.Spec.IPAddresses, tt.wantIPAddresses)
+			}
+		})
+	}
+}
