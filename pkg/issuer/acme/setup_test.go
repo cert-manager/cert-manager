@@ -687,8 +687,8 @@ func TestAcme_Setup(t *testing.T) {
 
 			// Stub the clock to get consistent last transition times on conditions.
 			fakeclock.SetTime(fixedClockStart)
-			apiutil.SetClock(fakeclock)
-			t.Cleanup(func() { apiutil.SetClock(clock.RealClock{}) })
+			apiutil.Clock = fakeclock
+			t.Cleanup(func() { apiutil.Clock = clock.RealClock{} })
 
 			// Verify that an error is/is not returned as expected.
 			gotErr := a.Setup(t.Context(), test.issuer)
