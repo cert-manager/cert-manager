@@ -423,7 +423,10 @@ func buildCertificates(
 			}
 		}
 
-		labels := ingLike.GetLabels()
+		// The ingresses and gateways controllers pass the informer-cached
+		// object straight in, so clone its labels before deleting from them
+		// and never let the Certificate alias the cached map.
+		labels := maps.Clone(ingLike.GetLabels())
 
 		// Remove applyset labels, as they cause certificates to be
 		// incorrectly pruned.
