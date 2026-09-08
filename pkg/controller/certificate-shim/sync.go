@@ -440,6 +440,12 @@ func buildCertificates(
 			return nil, nil, err
 		}
 
+		// translateAnnotations appends the alt-names and ip-sans annotation
+		// values without checking against the hosts already collected by
+		// splitHosts above, so the merged spec can contain duplicates again.
+		// Normalise the assembled spec once, after all sources are merged.
+		dedupeSANs(crt)
+
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
@@ -545,6 +551,43 @@ func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
 		}
 	}
 	return dnsNames, ipAddresses
+}
+
+// dedupeSANs removes duplicate values from crt.Spec.DNSNames and
+// crt.Spec.IPAddresses in place, preserving first-seen order. IP addresses
+// are compared by parsed value, so two different spellings of the same
+// address (e.g. "2001:db8::1" and "2001:0db8::1") are treated as duplicates
+// even though splitHosts, which only compares strings, would not catch them.
+func dedupeSANs(crt *cmapi.Certificate) {
+	if len(crt.Spec.DNSNames) > 0 {
+		seen := sets.New[string]()
+		dnsNames := make([]string, 0, len(crt.Spec.DNSNames))
+		for _, name := range crt.Spec.DNSNames {
+			if seen.Has(name) {
+				continue
+			}
+			seen.Insert(name)
+			dnsNames = append(dnsNames, name)
+		}
+		crt.Spec.DNSNames = dnsNames
+	}
+
+	if len(crt.Spec.IPAddresses) > 0 {
+		seen := sets.New[string]()
+		ipAddresses := make([]string, 0, len(crt.Spec.IPAddresses))
+		for _, ipStr := range crt.Spec.IPAddresses {
+			key := ipStr
+			if ip := net.ParseIP(ipStr); ip != nil {
+				key = ip.String()
+			}
+			if seen.Has(key) {
+				continue
+			}
+			seen.Insert(key)
+			ipAddresses = append(ipAddresses, ipStr)
+		}
+		crt.Spec.IPAddresses = ipAddresses
+	}
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
