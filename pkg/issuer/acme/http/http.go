@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -272,9 +273,11 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 
 	if len(dnsServers) != 0 {
 		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
-			// we need to increment a counter to iterate through the dns servers as the dialer will not
-			// return an error if the dns server is not responding.
-			counter := 0
+			// This Dial ignores the resolv.conf address that the resolver passes
+			// in, so we rotate through dnsServers ourselves. Without this, every
+			// resolver retry would hit the same server. The counter is atomic
+			// because the resolver dials from parallel A and AAAA goroutines.
+			var counter atomic.Uint32
 			dialer := &net.Dialer{
 				Timeout: 3 * time.Second,
 				Resolver: &net.Resolver{
@@ -283,8 +286,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 						d := net.Dialer{
 							Timeout: 3 * time.Second,
 						}
-						s := dnsServers[counter%len(dnsServers)]
-						counter++
+						s := dnsServers[int(counter.Add(1)-1)%len(dnsServers)]
 						return d.DialContext(ctx, network, s)
 					},
 				},
