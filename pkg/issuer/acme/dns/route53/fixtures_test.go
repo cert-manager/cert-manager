@@ -79,6 +79,28 @@ var GetChangeResponse = `<?xml version="1.0" encoding="UTF-8"?>
    </ChangeInfo>
 </GetChangeResponse>`
 
+var GetChangePendingResponse = `<?xml version="1.0" encoding="UTF-8"?>
+<GetChangeResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <ChangeInfo>
+      <Id>123456</Id>
+      <Status>PENDING</Status>
+      <SubmittedAt>2016-02-10T01:36:41.958Z</SubmittedAt>
+   </ChangeInfo>
+</GetChangeResponse>`
+
+// An example of the error returned by the GetChange API when the requested
+// change does not exist:
+// - https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html#API_GetChange_Errors
+var GetChangeNoSuchChange404Response = `<?xml version="1.0"?>
+<ErrorResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <Error>
+    <Type>Sender</Type>
+    <Code>NoSuchChange</Code>
+    <Message>Could not find change: 123456</Message>
+  </Error>
+  <RequestId>SOMEREQUESTID</RequestId>
+</ErrorResponse>`
+
 var ChangeResourceRecordSets403Response = `<?xml version="1.0"?>
 <ErrorResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
   <Error>

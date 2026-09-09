@@ -76,6 +76,11 @@ type Solver struct {
 	secretLister            internalinformers.SecretLister
 	dnsProviderConstructors dnsProviderConstructors
 	webhookSolvers          map[string]webhook.Solver
+	// route53PendingChanges is shared by all the Route 53 DNS providers
+	// constructed by this Solver, so that a retried Present or CleanUp
+	// resumes waiting for a previously submitted record change instead of
+	// submitting a duplicate.
+	route53PendingChanges *route53.PendingChangesCache
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
@@ -407,7 +412,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			route53.Ambient(canUseAmbientCredentials),
 			route53.Nameservers(nameservers),
 			route53.UserAgent(s.RESTConfig.UserAgent),
-			route53.Resolver(s.DNSResolver))
+			route53.Resolver(s.DNSResolver),
+			route53.PendingChanges(s.route53PendingChanges))
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %w", err)
@@ -580,7 +586,8 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			acmedns.NewDNSProviderFromOptions,
 			digitalocean.NewDNSProviderFromOptions,
 		},
-		webhookSolvers: initialized,
+		webhookSolvers:        initialized,
+		route53PendingChanges: route53.NewPendingChangesCache(),
 	}, nil
 }
 

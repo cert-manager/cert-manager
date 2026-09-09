@@ -509,6 +509,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 				Ambient:         new(false),
 				UserAgent:       f.Solver.RESTConfig.UserAgent,
 				Resolver:        s.DNSResolver,
+				PendingChanges:  s.route53PendingChanges,
 			}},
 		},
 	}
@@ -581,6 +582,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 				UserAgent:       s.RESTConfig.UserAgent,
 				Ambient:         new(false),
 				Resolver:        s.DNSResolver,
+				PendingChanges:  s.route53PendingChanges,
 			}},
 		},
 	}
@@ -630,11 +632,12 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					return &fakeDNSProviderCall{
 						name: "route53",
 						args: []any{route53.DNSProviderOptions{
-							Region:      "us-west-2",
-							Nameservers: f.Solver.DNS01Nameservers,
-							UserAgent:   f.Solver.RESTConfig.UserAgent,
-							Ambient:     new(true),
-							Resolver:    f.Solver.DNSResolver,
+							Region:         "us-west-2",
+							Nameservers:    f.Solver.DNS01Nameservers,
+							UserAgent:      f.Solver.RESTConfig.UserAgent,
+							Ambient:        new(true),
+							Resolver:       f.Solver.DNSResolver,
+							PendingChanges: f.Solver.route53PendingChanges,
 						}},
 					}
 				},
@@ -677,11 +680,12 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					return &fakeDNSProviderCall{
 						name: "route53",
 						args: []any{route53.DNSProviderOptions{
-							Region:      "us-west-2",
-							Nameservers: util.RecursiveNameservers,
-							UserAgent:   f.Solver.RESTConfig.UserAgent,
-							Ambient:     new(false),
-							Resolver:    f.Solver.DNSResolver,
+							Region:         "us-west-2",
+							Nameservers:    util.RecursiveNameservers,
+							UserAgent:      f.Solver.RESTConfig.UserAgent,
+							Ambient:        new(false),
+							Resolver:       f.Solver.DNSResolver,
+							PendingChanges: f.Solver.route53PendingChanges,
 						}},
 					}
 				},
@@ -738,11 +742,12 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 				return fakeDNSProviderCall{
 					name: "route53",
 					args: []any{route53.DNSProviderOptions{
-						Region:      "us-west-2",
-						Nameservers: perSolverNameservers,
-						Ambient:     new(false),
-						UserAgent:   f.Solver.RESTConfig.UserAgent,
-						Resolver:    f.Solver.DNSResolver,
+						Region:         "us-west-2",
+						Nameservers:    perSolverNameservers,
+						Ambient:        new(false),
+						UserAgent:      f.Solver.RESTConfig.UserAgent,
+						Resolver:       f.Solver.DNSResolver,
+						PendingChanges: f.Solver.route53PendingChanges,
 					}},
 				}
 			},
@@ -804,11 +809,12 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 				return fakeDNSProviderCall{
 					name: "route53",
 					args: []any{route53.DNSProviderOptions{
-						Region:      "us-west-2",
-						Nameservers: util.RecursiveNameservers,
-						Ambient:     new(false),
-						UserAgent:   f.Solver.RESTConfig.UserAgent,
-						Resolver:    f.Solver.DNSResolver,
+						Region:         "us-west-2",
+						Nameservers:    util.RecursiveNameservers,
+						Ambient:        new(false),
+						UserAgent:      f.Solver.RESTConfig.UserAgent,
+						Resolver:       f.Solver.DNSResolver,
+						PendingChanges: f.Solver.route53PendingChanges,
 					}},
 				}
 			},
@@ -966,12 +972,13 @@ func TestRoute53AssumeRole(t *testing.T) {
 					return &fakeDNSProviderCall{
 						name: "route53",
 						args: []any{route53.DNSProviderOptions{
-							Region:      "us-west-2",
-							Role:        "my-role",
-							Nameservers: f.Solver.DNS01Nameservers,
-							UserAgent:   f.Solver.RESTConfig.UserAgent,
-							Ambient:     new(true),
-							Resolver:    f.Solver.DNSResolver,
+							Region:         "us-west-2",
+							Role:           "my-role",
+							Nameservers:    f.Solver.DNS01Nameservers,
+							UserAgent:      f.Solver.RESTConfig.UserAgent,
+							Ambient:        new(true),
+							Resolver:       f.Solver.DNSResolver,
+							PendingChanges: f.Solver.route53PendingChanges,
 						}},
 					}
 				},
@@ -1016,12 +1023,13 @@ func TestRoute53AssumeRole(t *testing.T) {
 						name: "route53",
 						args: []any{
 							route53.DNSProviderOptions{
-								Region:      "us-west-2",
-								Role:        "my-other-role",
-								Nameservers: f.Solver.DNS01Nameservers,
-								UserAgent:   f.Solver.RESTConfig.UserAgent,
-								Ambient:     new(false),
-								Resolver:    f.Solver.DNSResolver,
+								Region:         "us-west-2",
+								Role:           "my-other-role",
+								Nameservers:    f.Solver.DNS01Nameservers,
+								UserAgent:      f.Solver.RESTConfig.UserAgent,
+								Ambient:        new(false),
+								Resolver:       f.Solver.DNSResolver,
+								PendingChanges: f.Solver.route53PendingChanges,
 							},
 						},
 					}

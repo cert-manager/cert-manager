@@ -29,6 +29,9 @@ import (
 
 const (
 	route53TTL = 10
+
+	changePollTimeout  = 120 * time.Second
+	changePollInterval = 4 * time.Second
 )
 
 // DNSProvider implements the util.ChallengeProvider interface
@@ -38,6 +41,14 @@ type DNSProvider struct {
 	hostedZoneID     string
 	userAgent        string
 	resolver         util.Resolver
+	pendingChanges   *PendingChangesCache
+
+	// pollTimeout and pollInterval control how long a single Present or
+	// CleanUp call waits for a submitted record change to reach the INSYNC
+	// status. They exist so that tests can wait for less than the default
+	// changePollTimeout.
+	pollTimeout  time.Duration
+	pollInterval time.Duration
 }
 
 func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
@@ -72,12 +83,20 @@ func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption
 
 	client := route53.NewFromConfig(cfg)
 
+	pendingChanges := opt.PendingChanges
+	if pendingChanges == nil {
+		pendingChanges = NewPendingChangesCache()
+	}
+
 	return &DNSProvider{
 		client:           client,
 		hostedZoneID:     opt.HostedZoneID,
 		dns01Nameservers: opt.Nameservers,
 		userAgent:        opt.UserAgent,
 		resolver:         opt.Resolver,
+		pendingChanges:   pendingChanges,
+		pollTimeout:      changePollTimeout,
+		pollInterval:     changePollInterval,
 	}, nil
 }
 
@@ -121,57 +140,87 @@ func (r *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 
 func (r *DNSProvider) changeRecord(ctx context.Context, action route53types.ChangeAction, fqdn, value string, ttl int) error {
 	log := logf.FromContext(ctx)
-	hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
-	if err != nil {
-		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %w", err)
-	}
 
-	recordSet := newTXTRecordSet(fqdn, value, ttl)
-	reqParams := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: aws.String(hostedZoneID),
-		ChangeBatch: &route53types.ChangeBatch{
-			Comment: aws.String("Managed by cert-manager"),
-			Changes: []route53types.Change{
-				{
-					Action:            action,
-					ResourceRecordSet: recordSet,
+	changeID, resuming := r.pendingChanges.get(action, fqdn, value)
+	if resuming {
+		log.V(logf.DebugLevel).Info(
+			"Found a previously submitted Route 53 record change which has not yet propagated. "+
+				"Resuming the wait for it to reach the INSYNC status instead of submitting a new change.",
+			"changeID", changeID,
+		)
+	} else {
+		// Forget any pending change for the same record with a different
+		// action; the change submitted below supersedes it.
+		r.pendingChanges.delete(fqdn, value)
+
+		hostedZoneID, err := r.getHostedZoneID(ctx, fqdn)
+		if err != nil {
+			return fmt.Errorf("failed to determine Route 53 hosted zone ID: %w", err)
+		}
+
+		recordSet := newTXTRecordSet(fqdn, value, ttl)
+		reqParams := &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(hostedZoneID),
+			ChangeBatch: &route53types.ChangeBatch{
+				Comment: aws.String("Managed by cert-manager"),
+				Changes: []route53types.Change{
+					{
+						Action:            action,
+						ResourceRecordSet: recordSet,
+					},
 				},
 			},
-		},
-	}
-
-	resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
-	if err != nil {
-		// If we try to delete something and get a 'InvalidChangeBatch' that
-		// means it's already deleted, no need to consider it an error.
-		var apiErr *route53types.InvalidChangeBatch
-		if errors.As(err, &apiErr) && action == route53types.ChangeActionDelete {
-			log.V(logf.DebugLevel).Info(
-				"Got InvalidChangeBatch error when attempting to delete the TXT record. "+
-					"Ignoring the error and assuming that the TXT record has already been deleted.",
-				"error", err,
-			)
-			return nil
 		}
-		return fmt.Errorf("failed to change Route 53 record set: %w", err)
 
+		resp, err := r.client.ChangeResourceRecordSets(ctx, reqParams)
+		if err != nil {
+			// If we try to delete something and get a 'InvalidChangeBatch' that
+			// means it's already deleted, no need to consider it an error.
+			var apiErr *route53types.InvalidChangeBatch
+			if errors.As(err, &apiErr) && action == route53types.ChangeActionDelete {
+				log.V(logf.DebugLevel).Info(
+					"Got InvalidChangeBatch error when attempting to delete the TXT record. "+
+						"Ignoring the error and assuming that the TXT record has already been deleted.",
+					"error", err,
+				)
+				return nil
+			}
+			return fmt.Errorf("failed to change Route 53 record set: %w", err)
+
+		}
+
+		changeID = *resp.ChangeInfo.Id
+		r.pendingChanges.put(action, fqdn, value, changeID)
 	}
 
-	statusID := resp.ChangeInfo.Id
-
-	return util.WaitFor(120*time.Second, 4*time.Second, func() (bool, error) {
+	// util.WaitFor has no way to stop early with an error, so a fatal poll
+	// result is smuggled out through vanishedErr.
+	var vanishedErr error
+	waitErr := util.WaitFor(r.pollTimeout, r.pollInterval, func() (bool, error) {
 		reqParams := &route53.GetChangeInput{
-			Id: statusID,
+			Id: aws.String(changeID),
 		}
 		resp, err := r.client.GetChange(ctx, reqParams)
 		if err != nil {
+			// The remembered change no longer exists, so forget it, stop
+			// waiting, and let the next attempt submit a new change.
+			if _, ok := errors.AsType[*route53types.NoSuchChange](err); ok {
+				r.pendingChanges.delete(fqdn, value)
+				vanishedErr = fmt.Errorf("failed to query Route 53 change status: %w", err)
+				return true, nil
+			}
 			return false, fmt.Errorf("failed to query Route 53 change status: %w", err)
 		}
 		if resp.ChangeInfo.Status == route53types.ChangeStatusInsync {
+			r.pendingChanges.delete(fqdn, value)
 			return true, nil
 		}
 		return false, nil
 	})
+	if vanishedErr != nil {
+		return vanishedErr
+	}
+	return waitErr
 }
 
 func (r *DNSProvider) getHostedZoneID(ctx context.Context, fqdn string) (string, error) {

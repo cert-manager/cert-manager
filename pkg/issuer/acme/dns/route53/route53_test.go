@@ -14,7 +14,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
@@ -50,7 +53,15 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg.BaseEndpoint = aws.String(ts.URL)
 
 	client := route53.NewFromConfig(cfg)
-	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers, resolver: util.NewCachingResolver()}, nil
+	return &DNSProvider{
+		client:           client,
+		dns01Nameservers: util.RecursiveNameservers,
+		resolver:         util.NewCachingResolver(),
+		pendingChanges:   NewPendingChangesCache(),
+		// Fail fast in tests if a change unexpectedly stays PENDING.
+		pollTimeout:  3 * time.Second,
+		pollInterval: 10 * time.Millisecond,
+	}, nil
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
@@ -292,6 +303,143 @@ func TestRoute53Present(t *testing.T) {
 	err = provider.Present(ctx, "bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
 	assert.Equal(t, `failed to change Route 53 record set: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 403, RequestID: SOMEREQUESTID, api error AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
+}
+
+// pendingChangeServer is a stateful mock of the Route 53 API for exercising
+// the PendingChangesCache: it counts ChangeResourceRecordSets requests and
+// allows the GetChange response to be switched between test steps.
+type pendingChangeServer struct {
+	*httptest.Server
+	mu          sync.Mutex
+	changeCalls int
+	getChange   MockResponse
+}
+
+func newPendingChangeServer(t *testing.T) *pendingChangeServer {
+	s := &pendingChangeServer{
+		getChange: MockResponse{StatusCode: 200, Body: GetChangePendingResponse},
+	}
+	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		w.Header().Set("Content-Type", "application/xml")
+		w.Header().Set("X-Amzn-Requestid", "SOMEREQUESTID")
+		switch {
+		case r.URL.Path == "/2013-04-01/hostedzonesbyname":
+			_, _ = w.Write([]byte(ListHostedZonesByNameResponse))
+		case strings.HasSuffix(r.URL.Path, "/rrset"):
+			s.changeCalls++
+			_, _ = w.Write([]byte(ChangeResourceRecordSetsResponse))
+		case strings.HasPrefix(r.URL.Path, "/2013-04-01/change/"):
+			w.WriteHeader(s.getChange.StatusCode)
+			_, _ = w.Write([]byte(s.getChange.Body))
+		default:
+			require.FailNow(t, "Requested path not found: "+r.URL.Path)
+		}
+	}))
+	t.Cleanup(s.Server.Close)
+	return s
+}
+
+func (s *pendingChangeServer) setGetChange(resp MockResponse) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.getChange = resp
+}
+
+func (s *pendingChangeServer) changeCallCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.changeCalls
+}
+
+// TestRoute53PresentResumesPendingChange demonstrates that when Present times
+// out waiting for a submitted record change to reach the INSYNC status, a
+// retried Present polls GetChange for the original change instead of
+// submitting a duplicate ChangeResourceRecordSets request. The retry uses a
+// new DNSProvider sharing the same PendingChangesCache, because in production
+// a new provider is constructed for every challenge reconcile and only the
+// cache is shared between them.
+// See https://github.com/cert-manager/cert-manager/issues/9066
+func TestRoute53PresentResumesPendingChange(t *testing.T) {
+	_, ctx := ktesting.NewTestContext(t)
+	ts := newPendingChangeServer(t)
+
+	provider, err := makeRoute53Provider(ts.Server)
+	require.NoError(t, err)
+	provider.pollTimeout = 100 * time.Millisecond
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "Time limit exceeded", "Expected Present to time out while the change is PENDING")
+	assert.Equal(t, 1, ts.changeCallCount())
+
+	ts.setGetChange(MockResponse{StatusCode: 200, Body: GetChangeResponse})
+
+	retryProvider, err := makeRoute53Provider(ts.Server)
+	require.NoError(t, err)
+	retryProvider.pendingChanges = provider.pendingChanges
+
+	err = retryProvider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.NoError(t, err, "Expected the retried Present to succeed once the change is INSYNC")
+	assert.Equal(t, 1, ts.changeCallCount(), "Expected the retried Present to resume the original change, not submit a new one")
+
+	err = retryProvider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, ts.changeCallCount(), "Expected a new change to be submitted once the original reached INSYNC")
+}
+
+// TestRoute53CleanupSupersedesPendingPresent demonstrates that a pending
+// change is only resumed by a retry of the same action: a CleanUp after a
+// timed-out Present submits its own change rather than resuming the upsert,
+// and vice versa.
+func TestRoute53CleanupSupersedesPendingPresent(t *testing.T) {
+	_, ctx := ktesting.NewTestContext(t)
+	ts := newPendingChangeServer(t)
+
+	provider, err := makeRoute53Provider(ts.Server)
+	require.NoError(t, err)
+	provider.pollTimeout = 100 * time.Millisecond
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "Time limit exceeded")
+	assert.Equal(t, 1, ts.changeCallCount())
+
+	err = provider.CleanUp(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "Time limit exceeded")
+	assert.Equal(t, 2, ts.changeCallCount(), "Expected CleanUp to submit a delete, not resume the pending upsert")
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "Time limit exceeded")
+	assert.Equal(t, 3, ts.changeCallCount(), "Expected Present to submit an upsert, not resume the pending delete")
+}
+
+// TestRoute53PresentForgetsVanishedChange demonstrates that when the
+// remembered change no longer exists (GetChange returns NoSuchChange), it is
+// forgotten so that the next attempt submits a new change.
+func TestRoute53PresentForgetsVanishedChange(t *testing.T) {
+	_, ctx := ktesting.NewTestContext(t)
+	ts := newPendingChangeServer(t)
+
+	provider, err := makeRoute53Provider(ts.Server)
+	require.NoError(t, err)
+	provider.pollTimeout = 100 * time.Millisecond
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "Time limit exceeded")
+	assert.Equal(t, 1, ts.changeCallCount())
+
+	ts.setGetChange(MockResponse{StatusCode: 404, Body: GetChangeNoSuchChange404Response})
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.ErrorContains(t, err, "NoSuchChange", "Expected the retried Present to fail while polling the vanished change")
+	assert.NotContains(t, err.Error(), "Time limit exceeded", "Expected Present to stop polling as soon as the change was reported missing")
+	assert.Equal(t, 1, ts.changeCallCount())
+
+	ts.setGetChange(MockResponse{StatusCode: 200, Body: GetChangeResponse})
+
+	err = provider.Present(ctx, "example.com", "_acme-challenge.example.com.", "123456d==")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, ts.changeCallCount(), "Expected a new change to be submitted after the original vanished")
 }
 
 func TestRoute53Cleanup(t *testing.T) {
