@@ -99,3 +99,46 @@ func TestConcurrentAdd(t *testing.T) {
 		synctest.Wait()
 	})
 }
+
+// TestAddDuringCallbackKeepsNewerTimer reproduces #9269: a newer Add for
+// the same object must not be cancelled by the fired timer's deferred
+// cleanup.
+func TestAddDuringCallbackKeepsNewerTimer(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var mu sync.Mutex
+		var calls []string
+
+		release := make(chan struct{})
+		queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj string) {
+			mu.Lock()
+			first := len(calls) == 0
+			mu.Unlock()
+			if first {
+				// Hold the callback open so the map entry can be replaced
+				// while the fired timer's cleanup is still pending.
+				<-release
+			}
+			mu.Lock()
+			calls = append(calls, obj)
+			mu.Unlock()
+		})
+
+		queue.Add("obj", time.Second)
+
+		time.Sleep(time.Second)
+		synctest.Wait() // timer fired; callback is now blocked on release
+
+		queue.Add("obj", time.Minute) // replaces the entry
+		close(release)
+		synctest.Wait() // the first callback's cleanup has run
+		assert.Len(t, queue.(*scheduledWorkQueue[string]).work, 1)
+
+		time.Sleep(time.Minute)
+		synctest.Wait()
+
+		mu.Lock()
+		defer mu.Unlock()
+		assert.Equal(t, []string{"obj", "obj"}, calls)
+		assert.Empty(t, queue.(*scheduledWorkQueue[string]).work)
+	})
+}
