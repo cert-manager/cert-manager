@@ -28,6 +28,7 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -43,13 +44,20 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 	f := framework.NewDefaultFramework("certificatesigningrequests-selfsigned-secret")
 
 	var (
-		request *certificatesv1.CertificateSigningRequest
-		issuer  cmapi.GenericIssuer
-		secret  *corev1.Secret
-		bundle  *testcrypto.CryptoBundle
+		request    *certificatesv1.CertificateSigningRequest
+		issuer     cmapi.GenericIssuer
+		secret     *corev1.Secret
+		secretName string
+		bundle     *testcrypto.CryptoBundle
 	)
 
 	JustBeforeEach(func(testingCtx context.Context) {
+		// The ClusterIssuer specs below put this Secret in the cluster
+		// resource namespace, which the framework does not randomise, so a
+		// fixed name would make them collide when Ginkgo runs them in
+		// parallel.
+		secretName = "selfsigned-test-" + rand.String(10)
+
 		var err error
 		bundle, err = testcrypto.CreateCryptoBundle(&cmapi.Certificate{
 			Spec: cmapi.CertificateSpec{CommonName: "selfsigned-test"}}, clock.RealClock{})
@@ -116,6 +124,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 				"tls.key": bundle.PrivateKeyBytes,
 			},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() bool {
 			request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -203,7 +212,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
+				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
 			},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
@@ -238,11 +247,12 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 
 		By("creating Secret with private key should result in the request to be signed")
 		secret, err = f.KubeClientSet.CoreV1().Secrets("cert-manager").Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: "cert-manager"},
+			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "cert-manager"},
 			Data: map[string][]byte{
 				"tls.key": bundle.PrivateKeyBytes,
 			},
 		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() bool {
 			request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Get(testingCtx, request.Name, metav1.GetOptions{})
@@ -257,7 +267,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		var err error
 		By("creating Secret with missing private key")
 		secret, err = f.KubeClientSet.CoreV1().Secrets("cert-manager").Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: "cert-manager"},
+			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "cert-manager"},
 			Data:       map[string][]byte{},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -272,7 +282,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
+				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
 			},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
