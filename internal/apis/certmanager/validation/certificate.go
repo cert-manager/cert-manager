@@ -141,6 +141,10 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 		el = append(el, field.TooLong(fldPath.Child("commonName"), commonName, 64))
 	}
 
+	if len(crt.DNSNames) > 0 {
+		el = append(el, validateDNSNames(crt, fldPath)...)
+	}
+
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
@@ -289,16 +293,41 @@ func validateIssuerRef(issuerRef cmmeta.IssuerReference, fldPath *field.Path) fi
 	return el
 }
 
+func validateDNSNames(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	if len(a.DNSNames) == 0 {
+		return nil
+	}
+	var el field.ErrorList
+	dnsNameSet := sets.NewString()
+	for i, name := range a.DNSNames {
+		if dnsNameSet.Has(name) {
+			el = append(el, field.Duplicate(fldPath.Child("dnsNames").Index(i), name))
+			continue
+		}
+		dnsNameSet.Insert(name)
+	}
+	return el
+}
+
 func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	if len(a.IPAddresses) == 0 {
 		return nil
 	}
-	el := field.ErrorList{}
+	var el field.ErrorList
+	// Compare by parsed (canonical) value so equivalent IPv6 spellings collide.
+	ipSet := sets.NewString()
 	for i, d := range a.IPAddresses {
 		ip := net.ParseIP(d)
 		if ip == nil {
 			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
+			continue
 		}
+		key := ip.String()
+		if ipSet.Has(key) {
+			el = append(el, field.Duplicate(fldPath.Child("ipAddresses").Index(i), d))
+			continue
+		}
+		ipSet.Insert(key)
 	}
 	return el
 }
