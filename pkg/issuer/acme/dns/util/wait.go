@@ -323,14 +323,17 @@ func UnFqdn(name string) string {
 	return strings.TrimSuffix(name, ".")
 }
 
-// WaitFor polls the given function 'f', once every 'interval', up to 'timeout'.
-func WaitFor(timeout, interval time.Duration, f func() (bool, error)) error {
+// WaitFor polls the given function 'f', once every 'interval', up to 'timeout'
+// or until the context is cancelled.
+func WaitFor(ctx context.Context, timeout, interval time.Duration, f func() (bool, error)) error {
 	var lastErr string
-	timeup := time.After(timeout)
+	timeoutCh := time.After(timeout)
 	for {
 		select {
-		case <-timeup:
+		case <-timeoutCh:
 			return fmt.Errorf("Time limit exceeded. Last error: %s", lastErr)
+		case <-ctx.Done():
+			return ctx.Err()
 		default:
 		}
 
@@ -342,6 +345,10 @@ func WaitFor(timeout, interval time.Duration, f func() (bool, error)) error {
 			lastErr = err.Error()
 		}
 
-		time.Sleep(interval)
+		select {
+		case <-time.After(interval):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }

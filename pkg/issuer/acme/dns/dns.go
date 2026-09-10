@@ -138,7 +138,11 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	ttl := 60
 	log.V(logf.DebugLevel).Info("waiting DNS record TTL to allow the DNS01 record to propagate for domain", "ttl", ttl, "fqdn", fqdn)
-	time.Sleep(time.Second * time.Duration(ttl))
+	select {
+	case <-time.After(time.Second * time.Duration(ttl)):
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 	log.V(logf.DebugLevel).Info("ACME DNS01 validation record propagated", "fqdn", fqdn)
 
 	return nil

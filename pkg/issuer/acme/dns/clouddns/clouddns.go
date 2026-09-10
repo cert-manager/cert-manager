@@ -209,7 +209,11 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 
 	// wait for change to be acknowledged
 	for chg.Status == "pending" {
-		time.Sleep(time.Second)
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 
 		chg, err = c.client.Changes.Get(c.project, zone, chg.Id).Context(ctx).Do()
 		if err != nil {

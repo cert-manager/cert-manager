@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/miekg/dns"
 	"k8s.io/client-go/rest"
@@ -95,6 +97,32 @@ func TestCheck(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+func TestCheckStopsSleepingWhenContextIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	calls := 0
+	s := Solver{
+		Context: &controller.Context{RESTConfig: new(rest.Config)},
+		testReachability: countReachabilityTestCalls(&calls, func(context.Context, *url.URL, string, []string, string) error {
+			cancel()
+			return nil
+		}),
+		requiredPasses: 2,
+	}
+
+	start := time.Now()
+	err := s.Check(ctx, nil, &cmacme.Challenge{})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 reachability call, got %d", calls)
+	}
+	if elapsed := time.Since(start); elapsed >= 2*time.Second {
+		t.Errorf("Check slept through the cancelled context for %s", elapsed)
 	}
 }
 
