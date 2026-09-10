@@ -279,29 +279,24 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		reason := Renewing
 		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
 
-		// When ARI information is available, let the renewal purely on whether
-		// the current time has entered the ACME-server-suggested renewal
-		// window. Do NOT call pki.RenewalTime here: that function picks a
-		// random time within the ARI window on every invocation, so calling
-		// it from the trigger controller would return a different result each
-		// reconcile and could cause us to skip renewal forever once we are
-		// inside the window. The random selection still happens in the
-		// readiness controller when setting Status.RenewalTime, which jitters
-		// the scheduled wake-up; the gate just compares against the window
-		// start so we reliably renew as soon as the window opens.
-		//
-		// We also ignore the ARI window when it appears to describe a prior
-		// revision of this certificate — i.e. SuggestedWindow.Start is at or
-		// before the current cert's NotBefore. In that case the ACME server's
-		// window cannot meaningfully apply to the certificate currently in
-		// the Secret (we've just renewed and are looking at fresh bytes), so
-		// depending on it would trigger an immediate re-renewal loop. Fall back
-		// to the deterministic renewBefore calculation in that case; the
-		// readiness controller will refresh ARI on its next reconcile.
 		if input.ARIRenewalInfo != nil &&
-			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() &&
-			input.ARIRenewalInfo.SuggestedWindow.Start.After(x509Cert.NotBefore) {
-			if c.Now().Before(input.ARIRenewalInfo.SuggestedWindow.Start) {
+			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() {
+			window := input.ARIRenewalInfo.SuggestedWindow
+			// RFC 9773 asks clients to select a uniform random time within the
+			// suggested window so the CA can spread renewal load. The readiness
+			// controller picks and persists that time in Status.RenewalTime; gate on
+			// it when it demonstrably falls inside the current window. If it does
+			// not (the window has moved, or the field still holds a renewBefore
+			// value), fall back to the window start so the CA's instruction is never
+			// deferred past the window itself.
+			gateTime := window.Start
+			if rt := crt.Status.RenewalTime; rt != nil &&
+				rt.Time.After(x509Cert.NotBefore) &&
+				!rt.Time.Before(window.Start) &&
+				!rt.Time.After(window.End) {
+				gateTime = rt.Time
+			}
+			if c.Now().Before(gateTime) {
 				return "", "", false
 			}
 			return reason, message, true

@@ -228,7 +228,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
-			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+			// If status already carries an ARI-derived renewal time that is
+			// still valid for the certificate in the Secret, keep it rather
+			// than recalculating from renewBefore. This stops the ARI-picked
+			// time from being overwritten on the reconcile that follows every
+			// ARI fetch.
+			if t := ariRenewalTimeFromStatus(crt, x509cert); t != nil {
+				renewalTime = t
+			} else {
+				renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+			}
 		}
 		if err != nil {
 			reason := policies.WindowError
@@ -278,6 +287,8 @@ func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) t
 }
 
 func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificate, x509cert *x509.Certificate, secret *corev1.Secret, key types.NamespacedName) *metav1.Time {
+	log := logf.FromContext(ctx)
+
 	genericIssuer, err := c.helper.GetGenericIssuer(crt.Spec.IssuerRef, crt.Namespace)
 	if err != nil || genericIssuer == nil || genericIssuer.GetSpec().ACME == nil {
 		return nil
@@ -292,16 +303,26 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 
 	now := c.clock.Now()
 
-	var (
-		nextCheck   *metav1.Time
-		lastChecked *metav1.Time
-	)
+	var nextCheck *metav1.Time
 	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
 		nextCheck = crt.Status.ACME.ARI.NextCheck
-		lastChecked = crt.Status.ACME.ARI.LastChecked
 	}
 
-	staleForCurrentCert := lastChecked != nil && lastChecked.Time.Before(x509cert.NotBefore)
+	currCertID, err := acmeapi.CertificateARIID(x509cert)
+	if err != nil {
+		log.V(logf.DebugLevel).Info("could not compute certificate ID for ARI", "error", err)
+
+		// If we cannot compute the certificate ID, we cannot use ARI for this certificate. Clear any existing ARI status.
+		crt.Status.ACME = nil
+		return nil
+	}
+
+	var staleForCurrentCert bool
+	if crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+		staleForCurrentCert = crt.Status.ACME.ARI.CertID != "" && currCertID != crt.Status.ACME.ARI.CertID
+	}
+	// The ACME server may move a suggested window at any time, so the periodic
+	// poll has to keep running even when the certificate has not been replaced.
 	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
 	if !needFetch {
 		return nil
@@ -324,6 +345,14 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	case err != nil:
 		ariStatus.LastChecked = &metav1.Time{Time: now}
 		ariStatus.LastError = err.Error()
+		// Drop any previously recorded window. Keeping it would leave status
+		// advertising a renewal window belonging to a certificate that is no
+		// longer in the Secret, next to a freshly bumped lastChecked.
+		if staleForCurrentCert {
+			ariStatus.SuggestedWindow = nil
+			ariStatus.ExplanationURL = ""
+		}
+		ariStatus.CertID = currCertID
 		reason := policies.ARIError
 		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
 
@@ -340,6 +369,7 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		ariStatus.LastChecked = &metav1.Time{Time: now}
 		existing := crt.Status.RenewalTime
 		ariStatus.ExplanationURL = ariInfo.ExplanationURL
+		ariStatus.CertID = currCertID
 		ariStatus.SuggestedWindow = &cmapi.ACMERenewalWindow{
 			Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
 			End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
@@ -386,6 +416,30 @@ func (c *controller) getARIInfo(ctx context.Context, genericIssuer cmapi.Generic
 	}
 
 	return ri, nil
+}
+
+func ariRenewalTimeFromStatus(crt *cmapi.Certificate, x509cert *x509.Certificate) *metav1.Time {
+	if crt.Status.ACME == nil || crt.Status.ACME.ARI == nil {
+		return nil
+	}
+	ari := crt.Status.ACME.ARI
+	if ari.SuggestedWindow == nil || ari.SuggestedWindow.Start == nil || ari.SuggestedWindow.End == nil || ari.CertID == "" {
+		return nil
+	}
+
+	id, err := acmeapi.CertificateARIID(x509cert)
+	if err != nil || id != ari.CertID {
+		return nil
+	}
+
+	existing := crt.Status.RenewalTime
+	if existing == nil ||
+		!existing.Time.After(x509cert.NotBefore) ||
+		existing.Time.Before(ari.SuggestedWindow.Start.Time) ||
+		existing.Time.After(ari.SuggestedWindow.End.Time) {
+		return nil
+	}
+	return existing
 }
 
 // updateOrApplyStatus will update the controller status. If the

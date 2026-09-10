@@ -19,7 +19,11 @@ package readiness
 import (
 	"context"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"errors"
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -27,6 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
@@ -577,8 +582,6 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 func TestReadinessForARI(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
-	// private key to be used to generate X509 certificate
-	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 		Spec: cmapi.CertificateSpec{
@@ -690,11 +693,17 @@ func TestReadinessForARI(t *testing.T) {
 			// readiness controller's issuer helper can resolve it.
 			builder.CertManagerObjects = append(builder.CertManagerObjects, issuer)
 
+			var leafCertID string
 			if test.secretShouldExist {
 				mods := make([]gen.SecretModifier, 0)
 				// If the test scenario needs a secret with a valid X509 cert.
 				if test.notBefore != nil && test.notAfter != nil {
-					x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
+					// The leaf must carry an AKI: without one no ARI CertID
+					// can be computed and the controller clears the ACME
+					// status entirely instead of fetching renewal info.
+					leaf, certID := mustLeafWithAKI(t, test.notBefore.Time, test.notAfter.Time, 41)
+					leafCertID = certID
+					x509Bytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leaf.Raw})
 					mods = append(mods,
 						gen.SetSecretData(map[string][]byte{
 							"tls.crt": x509Bytes,
@@ -753,20 +762,24 @@ func TestReadinessForARI(t *testing.T) {
 				c.Status.NotAfter = test.notAfter
 				c.Status.NotBefore = test.notBefore
 				c.Status.RenewalTime = expectedRenewalTime
-				// Expected ACME ARI status populated by the controller
-				// when ACMEUseARI is enabled. LastChecked is set to the
-				// fake clock's "now" by the controller. NextCheck is
-				// computed with random jitter so it is ignored in the
-				// match below.
-				c.Status.ACME = &cmapi.CertificateACMEStatus{
-					ARI: &cmapi.CertificateACMEARIStatus{
-						ExplanationURL: ariInfo.ExplanationURL,
-						SuggestedWindow: &cmapi.ACMERenewalWindow{
-							Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
-							End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+
+				if ariInfo != nil {
+					// Expected ACME ARI status populated by the controller
+					// when ACMEUseARI is enabled. LastChecked is set to the
+					// fake clock's "now" by the controller. NextCheck is
+					// computed with random jitter so it is ignored in the
+					// match below.
+					c.Status.ACME = &cmapi.CertificateACMEStatus{
+						ARI: &cmapi.CertificateACMEARIStatus{
+							CertID:         leafCertID,
+							ExplanationURL: ariInfo.ExplanationURL,
+							SuggestedWindow: &cmapi.ACMERenewalWindow{
+								Start: &metav1.Time{Time: ariInfo.SuggestedWindow.Start},
+								End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
+							},
+							LastChecked: &metaNow,
 						},
-						LastChecked: &metaNow,
-					},
+					}
 				}
 
 				builder.ExpectedActions = append(builder.ExpectedActions,
@@ -808,6 +821,570 @@ func TestReadinessForARI(t *testing.T) {
 
 			if err := builder.AllActionsExecuted(); err != nil {
 				builder.T.Error(err)
+			}
+		})
+	}
+}
+
+// mustLeafWithAKI returns a leaf certificate signed by a throwaway CA, together
+// with its ARI CertID.
+func mustLeafWithAKI(t *testing.T, notBefore, notAfter time.Time, serial int64) (*x509.Certificate, string) {
+	t.Helper()
+
+	caPK, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	caTmpl := &x509.Certificate{
+		BasicConstraintsValid: true,
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             notBefore.Add(-time.Hour),
+		NotAfter:              notAfter.Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign,
+		PublicKey:             caPK.Public(),
+		IsCA:                  true,
+	}
+	_, caCert, err := pki.SignCertificate(caTmpl, caTmpl, caPK.Public(), caPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	leafPK, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leafTmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(serial),
+		Subject:      pkix.Name{CommonName: "example.com"},
+		DNSNames:     []string{"example.com"},
+		NotBefore:    notBefore,
+		NotAfter:     notAfter,
+		PublicKey:    leafPK.Public(),
+	}
+	_, leaf, err := pki.SignCertificate(leafTmpl, caCert, leafPK.Public(), caPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certID, err := acmeapi.CertificateARIID(leaf)
+	if err != nil {
+		t.Fatalf("test fixture leaf has no usable ARI CertID: %v", err)
+	}
+	return leaf, certID
+}
+
+// mustLeafWithoutAKI returns a self-signed, non-CA leaf. acmeapi.CertificateARIID
+// cannot derive a CertID for it.
+func mustLeafWithoutAKI(t *testing.T, notBefore, notAfter time.Time) *x509.Certificate {
+	t.Helper()
+
+	pk, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(7),
+		Subject:      pkix.Name{CommonName: "example.com"},
+		DNSNames:     []string{"example.com"},
+		NotBefore:    notBefore,
+		NotAfter:     notAfter,
+		PublicKey:    pk.Public(),
+	}
+	_, leaf, err := pki.SignCertificate(tmpl, tmpl, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := acmeapi.CertificateARIID(leaf); err == nil {
+		t.Fatal("expected fixture leaf to have no usable ARI CertID")
+	}
+	return leaf
+}
+
+// TestUseARIForRenewalStaleness covers the decision of whether the ARI block in
+// status still describes the certificate currently held in the Secret.
+//
+// See https://github.com/cert-manager/cert-manager/issues/8993.
+func TestUseARIForRenewalStaleness(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+
+	// ACME CAs backdate NotBefore (Let's Encrypt by an hour). Every fixture
+	// here does the same, because backdating is what defeats a staleness check
+	// based on comparing timestamps against NotBefore.
+	notBefore := now.Add(-time.Hour)
+	notAfter := now.Add(89 * 24 * time.Hour)
+
+	currentLeaf, currentCertID := mustLeafWithAKI(t, notBefore, notAfter, 2)
+	_, previousCertID := mustLeafWithAKI(t, now.Add(-90*24*time.Hour), now.Add(time.Hour), 3)
+	noAKILeaf := mustLeafWithoutAKI(t, notBefore, notAfter)
+
+	// A window belonging to the *previous* certificate: it opened shortly
+	// before the renewal that produced currentLeaf, so its start still falls
+	// after currentLeaf's backdated NotBefore.
+	staleWindow := &cmapi.ACMERenewalWindow{
+		Start: &metav1.Time{Time: now.Add(-30 * time.Minute)},
+		End:   &metav1.Time{Time: now.Add(-10 * time.Minute)},
+	}
+	if !staleWindow.Start.Time.After(notBefore) {
+		t.Fatal("fixture error: stale window must start after the current cert's backdated NotBefore")
+	}
+
+	freshWindow := acmeapi.RenewalInfoWindow{
+		Start: now.Add(24 * time.Hour),
+		End:   now.Add(48 * time.Hour),
+	}
+
+	issuer := gen.Issuer("test-issuer",
+		gen.SetIssuerNamespace("testns"),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+	)
+	secret := gen.Secret("test-secret",
+		gen.SetSecretNamespace("testns"),
+		gen.SetSecretAnnotations(map[string]string{
+			cmapi.IssuerNameAnnotationKey:  "test-issuer",
+			cmapi.IssuerKindAnnotationKey:  cmapi.IssuerKind,
+			cmapi.IssuerGroupAnnotationKey: "cert-manager.io",
+		}),
+	)
+
+	tests := map[string]struct {
+		leaf *x509.Certificate
+
+		// ari is the pre-existing status.acme.ari block, if any.
+		ari *cmapi.CertificateACMEARIStatus
+
+		// fetchErr, when set, is returned by the fake GetRenewalInfo.
+		fetchErr error
+
+		wantFetches           int
+		check                 func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
+		wantACMEStatusCleared bool
+	}{
+		"fetches when no ARI information has been recorded yet": {
+			leaf:        currentLeaf,
+			wantFetches: 1,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari == nil {
+					t.Fatal("expected an ARI status block to be populated")
+				}
+				if ari.CertID != currentCertID {
+					t.Errorf("CertID = %q, want %q", ari.CertID, currentCertID)
+				}
+				if ari.SuggestedWindow == nil || !ari.SuggestedWindow.Start.Time.Equal(freshWindow.Start) {
+					t.Errorf("SuggestedWindow = %v, want start %v", ari.SuggestedWindow, freshWindow.Start)
+				}
+			},
+		},
+		"does not refetch while the CertID matches and nextCheck is in the future": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:      currentCertID,
+				NextCheck:   &metav1.Time{Time: now.Add(time.Hour)},
+				LastChecked: &metav1.Time{Time: now.Add(-time.Minute)},
+				SuggestedWindow: &cmapi.ACMERenewalWindow{
+					Start: &metav1.Time{Time: freshWindow.Start},
+					End:   &metav1.Time{Time: freshWindow.End},
+				},
+			},
+			wantFetches: 0,
+		},
+		"refetches when the recorded CertID belongs to a previous certificate": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:          previousCertID,
+				NextCheck:       &metav1.Time{Time: now.Add(time.Hour)},
+				LastChecked:     &metav1.Time{Time: now.Add(-time.Minute)},
+				SuggestedWindow: staleWindow,
+			},
+			wantFetches: 1,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari.CertID != currentCertID {
+					t.Errorf("CertID = %q, want it restamped to %q", ari.CertID, currentCertID)
+				}
+				if ari.SuggestedWindow == nil || !ari.SuggestedWindow.Start.Time.Equal(freshWindow.Start) {
+					t.Errorf("SuggestedWindow = %v, want it replaced with start %v", ari.SuggestedWindow, freshWindow.Start)
+				}
+			},
+		},
+		"refetches once nextCheck has elapsed": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:      currentCertID,
+				NextCheck:   &metav1.Time{Time: now.Add(-time.Minute)},
+				LastChecked: &metav1.Time{Time: now.Add(-6 * time.Hour)},
+				SuggestedWindow: &cmapi.ACMERenewalWindow{
+					Start: &metav1.Time{Time: freshWindow.Start},
+					End:   &metav1.Time{Time: freshWindow.End},
+				},
+			},
+			wantFetches: 1,
+		},
+		// A failed fetch must not leave a window describing a superseded
+		// certificate next to a freshly bumped lastChecked - that is the
+		// inconsistency reported in the issue.
+		"a failed fetch does not leave a window from a previous certificate": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:          previousCertID,
+				NextCheck:       &metav1.Time{Time: now.Add(time.Hour)},
+				LastChecked:     &metav1.Time{Time: now.Add(-time.Minute)},
+				SuggestedWindow: staleWindow,
+			},
+			fetchErr:    errors.New("simulated ARI fetch failure"),
+			wantFetches: 1,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari.LastError == "" {
+					t.Error("expected LastError to be recorded")
+				}
+				if ari.SuggestedWindow != nil {
+					t.Errorf("SuggestedWindow = %v, want nil so status cannot contradict itself", ari.SuggestedWindow)
+				}
+			},
+		},
+		"clears the ARI info when the certificate has no usable CertID": {
+			leaf: noAKILeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:          currentCertID,
+				NextCheck:       &metav1.Time{Time: now.Add(time.Hour)},
+				LastChecked:     &metav1.Time{Time: now.Add(-time.Minute)},
+				SuggestedWindow: staleWindow,
+				ExplanationURL:  "https://example.com/why",
+			},
+			wantFetches:           0,
+			wantACMEStatusCleared: true,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari != nil {
+					t.Errorf("expected status.acme.ari to be cleared, got %v", ari)
+				}
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.ACMEUseARI, true)
+
+			var fetches int
+			acmeClient := &acmecl.FakeACME{
+				FakeGetRenewalInfo: func(_ context.Context, _ *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+					fetches++
+					if test.fetchErr != nil {
+						return nil, test.fetchErr
+					}
+					return &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: freshWindow,
+						ExplanationURL:  "https://example.com/explanation",
+						RetryAfter:      6 * time.Hour,
+					}, nil
+				},
+			}
+
+			builder := &testpkg.Builder{
+				T:     t,
+				Clock: fakeclock.NewFakeClock(now),
+			}
+			builder.CertManagerObjects = append(builder.CertManagerObjects, issuer)
+			builder.KubeObjects = append(builder.KubeObjects, secret)
+			builder.Init()
+			defer builder.Stop()
+
+			// Register before Start so the informers it requests are synced.
+			w := &controllerWrapper{}
+			if _, _, err := w.Register(builder.Context); err != nil {
+				t.Fatal(err)
+			}
+			w.controller.recorder = new(testpkg.FakeRecorder)
+			w.controller.accountRegistry = &accountstest.FakeRegistry{
+				GetClientFunc: func(string) (acmecl.Interface, error) { return acmeClient, nil },
+			}
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(&metav1.Time{Time: now.Add(24 * time.Hour)}, nil)
+
+			builder.Start()
+
+			crt := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "test-secret",
+					DNSNames:   []string{"example.com"},
+					IssuerRef: cmmeta.IssuerReference{
+						Name:  "test-issuer",
+						Kind:  cmapi.IssuerKind,
+						Group: "cert-manager.io",
+					},
+				},
+			}
+			if test.ari != nil {
+				crt.Status.ACME = &cmapi.CertificateACMEStatus{ARI: test.ari.DeepCopy()}
+			}
+
+			key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
+			w.controller.useARIForRenewal(t.Context(), crt, test.leaf, secret, key)
+
+			if fetches != test.wantFetches {
+				t.Errorf("GetRenewalInfo called %d times, want %d", fetches, test.wantFetches)
+			}
+
+			if test.check != nil {
+				var got *cmapi.CertificateACMEARIStatus
+				if crt.Status.ACME != nil {
+					got = crt.Status.ACME.ARI
+				}
+				if got == nil && !test.wantACMEStatusCleared {
+					t.Fatal("expected status.acme.ari to be present")
+				}
+				test.check(t, got)
+			}
+		})
+	}
+}
+
+// TestARIRenewalTimeFromStatus covers the decision of whether the renewal time
+// already recorded in status was derived from the ARI window of the certificate
+// currently held in the Secret, and can therefore be kept instead of being
+// overwritten by the plain renewBefore calculation.
+func TestARIRenewalTimeFromStatus(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	notBefore := now.Add(-time.Hour)
+	notAfter := now.Add(89 * 24 * time.Hour)
+
+	currentLeaf, currentCertID := mustLeafWithAKI(t, notBefore, notAfter, 11)
+	_, previousCertID := mustLeafWithAKI(t, now.Add(-90*24*time.Hour), now.Add(time.Hour), 12)
+	noAKILeaf := mustLeafWithoutAKI(t, notBefore, notAfter)
+
+	windowStart := &metav1.Time{Time: now.Add(24 * time.Hour)}
+	windowEnd := &metav1.Time{Time: now.Add(48 * time.Hour)}
+	window := &cmapi.ACMERenewalWindow{Start: windowStart, End: windowEnd}
+	inWindow := &metav1.Time{Time: now.Add(36 * time.Hour)}
+
+	crt := func(ari *cmapi.CertificateACMEARIStatus, renewalTime *metav1.Time) *cmapi.Certificate {
+		c := &cmapi.Certificate{}
+		if ari != nil {
+			c.Status.ACME = &cmapi.CertificateACMEStatus{ARI: ari}
+		}
+		c.Status.RenewalTime = renewalTime
+		return c
+	}
+
+	tests := map[string]struct {
+		crt  *cmapi.Certificate
+		leaf *x509.Certificate
+		want *metav1.Time
+	}{
+		"returns the stored renewal time when it falls inside the window of the current certificate": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, inWindow),
+			leaf: currentLeaf,
+			want: inWindow,
+		},
+		"nil when no ACME status has been recorded": {
+			crt:  crt(nil, inWindow),
+			leaf: currentLeaf,
+		},
+		"nil when no window has been recorded": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID}, inWindow),
+			leaf: currentLeaf,
+		},
+		"nil when the recorded window has no end": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: &cmapi.ACMERenewalWindow{Start: windowStart}}, inWindow),
+			leaf: currentLeaf,
+		},
+		"nil when no CertID has been recorded": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{SuggestedWindow: window}, inWindow),
+			leaf: currentLeaf,
+		},
+		"nil when the recorded CertID belongs to a previous certificate": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: previousCertID, SuggestedWindow: window}, inWindow),
+			leaf: currentLeaf,
+		},
+		"nil when the current certificate has no usable CertID": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, inWindow),
+			leaf: noAKILeaf,
+		},
+		"nil when no renewal time has been recorded": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, nil),
+			leaf: currentLeaf,
+		},
+		"nil when the stored renewal time is before the window opens": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, &metav1.Time{Time: now.Add(12 * time.Hour)}),
+			leaf: currentLeaf,
+		},
+		"nil when the stored renewal time is after the window closes": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, &metav1.Time{Time: now.Add(72 * time.Hour)}),
+			leaf: currentLeaf,
+		},
+		"nil when the stored renewal time does not postdate the certificate": {
+			crt:  crt(&cmapi.CertificateACMEARIStatus{CertID: currentCertID, SuggestedWindow: window}, &metav1.Time{Time: notBefore}),
+			leaf: currentLeaf,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := ariRenewalTimeFromStatus(test.crt, test.leaf)
+			if (got == nil) != (test.want == nil) || (got != nil && !got.Time.Equal(test.want.Time)) {
+				t.Errorf("ariRenewalTimeFromStatus() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+// TestProcessItemARIRenewalTimePersistence verifies that once the readiness
+// controller has written an ARI-derived renewal time to status, the reconciles
+// between ARI fetches keep it instead of overwriting it with the plain
+// renewBefore calculation (which would bounce status.renewalTime on the
+// re-enqueue that follows every ARI fetch).
+func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	metaNow := metav1.NewTime(now)
+
+	leaf, leafCertID := mustLeafWithAKI(t, now.Add(-time.Hour), now.Add(89*24*time.Hour), 21)
+	leafPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leaf.Raw})
+
+	window := &cmapi.ACMERenewalWindow{
+		Start: &metav1.Time{Time: now.Add(24 * time.Hour)},
+		End:   &metav1.Time{Time: now.Add(48 * time.Hour)},
+	}
+	// The jittered pick the controller made inside the window on the reconcile
+	// that fetched ARI.
+	ariPickedTime := metav1.NewTime(now.Add(36 * time.Hour))
+	calculatorTime := metav1.NewTime(now.Add(30 * 24 * time.Hour))
+
+	readyCondition := cmapi.CertificateCondition{
+		Type:               cmapi.CertificateConditionReady,
+		Status:             cmmeta.ConditionTrue,
+		Reason:             ReadyReason,
+		Message:            "ready message",
+		LastTransitionTime: &metaNow,
+	}
+
+	newCert := func(renewalTime *metav1.Time) *cmapi.Certificate {
+		return &cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+			Spec: cmapi.CertificateSpec{
+				SecretName: "test-secret",
+				DNSNames:   []string{"example.com"},
+				IssuerRef: cmmeta.IssuerReference{
+					Name:  "test-issuer",
+					Kind:  cmapi.IssuerKind,
+					Group: "cert-manager.io",
+				},
+			},
+			Status: cmapi.CertificateStatus{
+				Conditions:  []cmapi.CertificateCondition{readyCondition},
+				NotBefore:   &metav1.Time{Time: leaf.NotBefore},
+				NotAfter:    &metav1.Time{Time: leaf.NotAfter},
+				RenewalTime: renewalTime,
+				ACME: &cmapi.CertificateACMEStatus{
+					ARI: &cmapi.CertificateACMEARIStatus{
+						CertID:          leafCertID,
+						LastChecked:     &metav1.Time{Time: now.Add(-time.Hour)},
+						NextCheck:       &metav1.Time{Time: now.Add(5 * time.Hour)},
+						SuggestedWindow: window.DeepCopy(),
+					},
+				},
+			},
+		}
+	}
+
+	issuer := gen.Issuer("test-issuer",
+		gen.SetIssuerNamespace("testns"),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+	)
+	secret := gen.Secret("test-secret",
+		gen.SetSecretNamespace("testns"),
+		gen.SetSecretAnnotations(map[string]string{
+			cmapi.IssuerNameAnnotationKey:  "test-issuer",
+			cmapi.IssuerKindAnnotationKey:  cmapi.IssuerKind,
+			cmapi.IssuerGroupAnnotationKey: "cert-manager.io",
+		}),
+		gen.SetSecretData(map[string][]byte{corev1.TLSCertKey: leafPEM}),
+	)
+
+	tests := map[string]struct {
+		// renewalTime is status.renewalTime going into the reconcile.
+		renewalTime *metav1.Time
+
+		wantCalculatorCalls int
+
+		// wantUpdatedRenewalTime, when set, is the renewal time expected in a
+		// status update. When nil, no status update must happen at all.
+		wantUpdatedRenewalTime *metav1.Time
+	}{
+		"keeps the ARI-derived renewal time between fetches without writing status": {
+			renewalTime:         &ariPickedTime,
+			wantCalculatorCalls: 0,
+		},
+		"recalculates when the stored renewal time falls outside the suggested window": {
+			renewalTime:            &metav1.Time{Time: now.Add(72 * time.Hour)},
+			wantCalculatorCalls:    1,
+			wantUpdatedRenewalTime: &calculatorTime,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.ACMEUseARI, true)
+
+			crt := newCert(test.renewalTime)
+
+			builder := &testpkg.Builder{
+				T:                  t,
+				Clock:              fakeclock.NewFakeClock(now),
+				CertManagerObjects: []runtime.Object{crt, issuer},
+				KubeObjects:        []runtime.Object{secret},
+			}
+			builder.Init()
+			defer builder.Stop()
+
+			// Register before Start so the informers it requests are synced.
+			w := &controllerWrapper{}
+			if _, _, err := w.Register(builder.Context); err != nil {
+				t.Fatal(err)
+			}
+			w.controller.policyEvaluator = policyEvaluatorBuilder(readyCondition)
+			w.controller.recorder = new(testpkg.FakeRecorder)
+			w.controller.accountRegistry = &accountstest.FakeRegistry{
+				GetClientFunc: func(string) (acmecl.Interface, error) {
+					return &acmecl.FakeACME{
+						FakeGetRenewalInfo: func(context.Context, *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+							t.Error("GetRenewalInfo called; nextCheck is in the future and the CertID matches, so no fetch is expected")
+							return nil, errors.New("unexpected ARI fetch")
+						},
+					}, nil
+				},
+			}
+			var calculatorCalls int
+			w.controller.renewalTimeCalculator = func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal, opts ...pki.RenewalTimeOptions) (*metav1.Time, error) {
+				calculatorCalls++
+				return &calculatorTime, nil
+			}
+
+			if test.wantUpdatedRenewalTime != nil {
+				expCrt := newCert(test.wantUpdatedRenewalTime)
+				builder.ExpectedActions = append(builder.ExpectedActions,
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						expCrt.Namespace,
+						expCrt,
+					)),
+				)
+			}
+
+			builder.Start()
+
+			key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
+			if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+				t.Fatalf("ProcessItem() error = %v", err)
+			}
+
+			if calculatorCalls != test.wantCalculatorCalls {
+				t.Errorf("renewalTimeCalculator called %d times, want %d", calculatorCalls, test.wantCalculatorCalls)
+			}
+			// With no expected actions this also fails on any unexpected
+			// status write - a reconcile between fetches must not touch the
+			// Certificate at all.
+			if err := builder.AllActionsExecuted(); err != nil {
+				t.Error(err)
 			}
 		})
 	}
