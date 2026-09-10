@@ -465,6 +465,184 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			// Regression test for cert-manager/cert-manager#9295: alt-names and
+			// ip-sans annotation values that duplicate a host already present in
+			// tls.hosts must not reach the created Certificate twice, otherwise
+			// the CSR carries more SANs than the ACME order has identifiers.
+			Name:   "de-duplicates a host present in both tls.hosts and the alt-names/ip-sans annotations",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.AltNamesAnnotationKey:                 "example.com",
+						cmapi.IPSANAnnotationKey:                    "1.1.1.1",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "1.1.1.1"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:    []string{"example.com"},
+						IPAddresses: []string{"1.1.1.1"},
+						SecretName:  "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			// Regression test for cert-manager/cert-manager#9295: a Certificate
+			// left over from before this fix can already hold duplicate SANs;
+			// buildCertificates must detect and repair it, not just prevent new
+			// duplicates.
+			Name:   "updates an existing Certificate that already holds duplicate dnsNames",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.AltNamesAnnotationKey:                 "example.com",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "existing-crt"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			// Regression test for cert-manager/cert-manager#9295 (certNeedsUpdate
+			// gap): before this fix, certNeedsUpdate never compared IPAddresses,
+			// so an existing Certificate whose only duplicates were IP addresses
+			// was reported as already up to date and never repaired.
+			Name:   "updates an existing Certificate that already holds duplicate ipAddresses",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"1.1.1.1"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						IPAddresses: []string{"1.1.1.1", "1.1.1.1"},
+						SecretName:  "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "existing-crt"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						IPAddresses: []string{"1.1.1.1"},
+						SecretName:  "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
