@@ -6024,26 +6024,20 @@ func Test_splitHosts(t *testing.T) {
 		wantIPAddresses []string
 	}{
 		{
-			name:         "de-duplicates repeated DNS names, keeping first-seen order",
-			hosts:        []string{"example.com", "www.example.com", "example.com", "www.example.com"},
-			wantDNSNames: []string{"example.com", "www.example.com"},
-		},
-		{
 			name:            "splits DNS names from IPv4 and IPv6 addresses",
 			hosts:           []string{"example.com", "192.0.2.1", "2001:db8::1"},
 			wantDNSNames:    []string{"example.com"},
 			wantIPAddresses: []string{"192.0.2.1", "2001:db8::1"},
 		},
 		{
-			name:            "de-duplicates across both DNS names and IP addresses",
-			hosts:           []string{"example.com", "192.0.2.1", "example.com", "192.0.2.1"},
-			wantDNSNames:    []string{"example.com"},
-			wantIPAddresses: []string{"192.0.2.1"},
-		},
-		{
 			name:         "empty input yields nil slices",
 			hosts:        nil,
 			wantDNSNames: nil,
+		},
+		{
+			name:         "preserves duplicate hosts; de-duplication happens in dedupeSANs",
+			hosts:        []string{"example.com", "example.com"},
+			wantDNSNames: []string{"example.com", "example.com"},
 		},
 	}
 
@@ -6179,6 +6173,18 @@ func Test_dedupeSANs(t *testing.T) {
 			name:         "no duplicates leaves order unchanged",
 			dnsNames:     []string{"example.com", "www.example.com"},
 			wantDNSNames: []string{"example.com", "www.example.com"},
+		},
+		{
+			name:         "de-duplicates repeated DNS names, keeping first-seen order",
+			dnsNames:     []string{"example.com", "www.example.com", "example.com", "www.example.com"},
+			wantDNSNames: []string{"example.com", "www.example.com"},
+		},
+		{
+			name:            "de-duplicates across both DNS names and IP addresses",
+			dnsNames:        []string{"example.com", "example.com"},
+			ipAddresses:     []string{"192.0.2.1", "192.0.2.1"},
+			wantDNSNames:    []string{"example.com"},
+			wantIPAddresses: []string{"192.0.2.1"},
 		},
 	}
 
