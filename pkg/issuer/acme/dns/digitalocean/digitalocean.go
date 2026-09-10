@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
@@ -74,7 +73,7 @@ func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error 
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
@@ -112,14 +111,22 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 		return err
 	}
 
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
-		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
+		// Only delete the record holding this challenge's value. Multiple
+		// TXT records can share the same name (e.g. concurrent orders for
+		// example.com and *.example.com, or racing renewals), and deleting
+		// every name-matching record regardless of value would remove a
+		// sibling challenge's record out from under it mid-validation.
+		if record.Data != value {
+			continue
+		}
 
+		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
 		if err != nil {
 			return err
 		}
@@ -128,30 +135,52 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.DomainRecord, error) {
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
-	if err != nil {
-		return nil, err
-	}
+// recordsPerPage is the page size requested when listing TXT records from
+// the DigitalOcean API. The API defaults to a page size of 20 when no
+// per_page value is supplied. findTxtRecord filters by name server-side
+// (see below), so in practice a single page is virtually always enough;
+// per_page combined with the pagination loop is only a safety net for the
+// pathological case of many records sharing the same name.
+const recordsPerPage = 200
 
-	allRecords, _, err := c.client.Domains.RecordsByType(
-		ctx,
-		util.UnFqdn(zoneName),
-		"TXT",
-		nil,
-	)
-
+// findTxtRecord returns every TXT record in zoneName named fqdn.
+//
+// It uses DigitalOcean's server-side type+name filter (RecordsByTypeAndName)
+// rather than listing every TXT record in the zone and filtering client
+// side. Besides needing far fewer requests against large zones, this also
+// avoids a race: walking multiple pages of an unfiltered, unsnapshotted
+// listing while another challenge concurrently creates/deletes records in
+// the same zone can shift later pages and skip a record entirely. With a
+// name filter, only records that actually share this name are ever
+// returned, which shrinks that window to near zero.
+//
+// The pagination loop is kept as a defensive fallback in case a name is
+// ever shared by more than recordsPerPage records; it is not expected to
+// run more than once in practice.
+// See https://github.com/cert-manager/cert-manager/issues/9099.
+func (c *DNSProvider) findTxtRecord(ctx context.Context, zoneName, fqdn string) ([]godo.DomainRecord, error) {
 	var records []godo.DomainRecord
 
-	// The record Name doesn't contain the zoneName, so
-	// lets remove it before filtering the array of record
-	targetName := strings.TrimSuffix(fqdn, zoneName)
-
-	for _, record := range allRecords {
-		if util.ToFqdn(record.Name) == targetName {
-			records = append(records, record)
+	opt := &godo.ListOptions{Page: 1, PerPage: recordsPerPage}
+	for {
+		pageRecords, resp, err := c.client.Domains.RecordsByTypeAndName(
+			ctx,
+			util.UnFqdn(zoneName),
+			"TXT",
+			util.UnFqdn(fqdn),
+			opt,
+		)
+		if err != nil {
+			return nil, err
 		}
+
+		records = append(records, pageRecords...)
+
+		if resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+		opt.Page++
 	}
 
-	return records, err
+	return records, nil
 }
