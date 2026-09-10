@@ -443,7 +443,7 @@ func buildCertificates(
 		// translateAnnotations appends the alt-names and ip-sans annotation
 		// values without checking against the hosts already collected by
 		// splitHosts above, so the merged spec can contain duplicates again.
-		// Normalise the assembled spec once, after all sources are merged.
+		// Normalize the assembled spec once, after all sources are merged.
 		dedupeSANs(crt)
 
 		// check if a Certificate for this TLS entry already exists, and if it
@@ -576,10 +576,7 @@ func dedupeSANs(crt *cmapi.Certificate) {
 		seen := sets.New[string]()
 		ipAddresses := make([]string, 0, len(crt.Spec.IPAddresses))
 		for _, ipStr := range crt.Spec.IPAddresses {
-			key := ipStr
-			if ip := net.ParseIP(ipStr); ip != nil {
-				key = ip.String()
-			}
+			key := net.ParseIP(ipStr).String()
 			if seen.Has(key) {
 				continue
 			}
@@ -674,6 +671,16 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 
 	for i := range a.Spec.DNSNames {
 		if a.Spec.DNSNames[i] != b.Spec.DNSNames[i] {
+			return true
+		}
+	}
+
+	if len(a.Spec.IPAddresses) != len(b.Spec.IPAddresses) {
+		return true
+	}
+
+	for i := range a.Spec.IPAddresses {
+		if a.Spec.IPAddresses[i] != b.Spec.IPAddresses[i] {
 			return true
 		}
 	}
