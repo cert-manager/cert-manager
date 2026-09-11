@@ -647,6 +647,10 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		return true
 	}
 
+	if a.Spec.IssuerRef.Group != b.Spec.IssuerRef.Group {
+		return true
+	}
+
 	if !ptr.Equal(a.Spec.RevisionHistoryLimit, b.Spec.RevisionHistoryLimit) {
 		return true
 	}
