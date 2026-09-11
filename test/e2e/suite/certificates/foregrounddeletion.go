@@ -26,6 +26,8 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -47,6 +49,8 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 	f := framework.NewDefaultFramework("certificates-foreground-deletion")
 
 	var crt *cmapi.Certificate
+	// The UIDs of the CertificateRequests created by the initial issuance.
+	var existingCRs sets.Set[types.UID]
 
 	BeforeEach(func(testingCtx context.Context) {
 		By("creating a self-signing issuer")
@@ -105,6 +109,20 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 		crt, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testingCtx, crt, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
+		// Record these before the Secret is deleted below, so that a
+		// CertificateRequest created in response to that deletion is never
+		// mistaken for a pre-existing one.
+		By("recording the CertificateRequests created by the initial issuance")
+		var crList cmapi.CertificateRequestList
+		Expect(f.CRClient.List(testingCtx, &crList)).To(Succeed())
+		existingCRs = sets.New[types.UID]()
+		for _, cr := range crList.Items {
+			if metav1.IsControlledBy(&cr, crt) {
+				existingCRs.Insert(cr.UID)
+			}
+		}
+		Expect(existingCRs).NotTo(BeEmpty(), "expected the initial issuance to have created a CertificateRequest")
+
 		By("adding a finalizer to the Certificate")
 		Eventually(e2eutil.AddFinalizer).
 			WithContext(testingCtx).
@@ -137,33 +155,28 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 
 	It("should not create a CertificateRequest while the Certificate is being deleted", func(testingCtx context.Context) {
 		// The CertificateRequest from the initial issuance is owned by the
-		// Certificate and is deleted by the Kubernetes garbage collector, which
-		// can take a while when the cluster is busy. Wait for it to be deleted
-		// before checking that no new CertificateRequest is created.
-		By("waiting for the garbage collector to delete the existing CertificateRequest objects")
-		Eventually(e2eutil.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
-			WithContext(testingCtx).
-			WithArguments(
-				f.CRClient,
-				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
-			).
-			WithTimeout(time.Minute * 2).
-			WithPolling(time.Second).
-			Should(BeEmpty())
-
+		// Certificate, so the Kubernetes garbage collector deletes it at some
+		// point, but that can take a while on a busy cluster. Ignore it rather
+		// than wait for it: waiting could hide a CertificateRequest that a
+		// buggy controller creates and the garbage collector then deletes.
 		By("ensuring no new CertificateRequest objects are created")
 		Consistently(e2eutil.ListMatchingPredicates[cmapi.CertificateRequest, cmapi.CertificateRequestList]).
 			WithContext(testingCtx).
 			WithArguments(
 				f.CRClient,
 				predicate.ResourceOwnedBy[*cmapi.CertificateRequest](crt),
+				func(cr *cmapi.CertificateRequest) bool { return !existingCRs.Has(cr.UID) },
 			).
-			WithTimeout(time.Second * 10).
-			WithPolling(time.Second).
+			Within(time.Second * 10).
+			ProbeEvery(time.Second).
 			Should(BeEmpty())
 	})
 
 	It("should not create a Secret while the Certificate is being deleted", func(testingCtx context.Context) {
+		// Unlike the CertificateRequest above, nothing needs to be ignored
+		// here. The Secret has no finalizers, so the Delete in BeforeEach
+		// removes it before returning, and f.CRClient reads directly from the
+		// API server, so the first probe already sees it gone.
 		By("ensuring no new Secret objects are created")
 		Consistently(e2eutil.ListMatchingPredicates[corev1.Secret, corev1.SecretList]).
 			WithContext(testingCtx).
@@ -175,8 +188,8 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 						secret.Namespace == crt.Namespace
 				},
 			).
-			WithTimeout(time.Second * 10).
-			WithPolling(time.Second).
+			Within(time.Second * 10).
+			ProbeEvery(time.Second).
 			Should(BeEmpty())
 	})
 })
