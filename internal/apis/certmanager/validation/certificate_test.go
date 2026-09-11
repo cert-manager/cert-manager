@@ -438,16 +438,6 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
 		},
-		"valid certificate with unique dnsNames": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					DNSNames:   []string{"example.com", "www.example.com"},
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			a: someAdmissionRequest,
-		},
 		"certificate with duplicate dnsNames": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -461,16 +451,6 @@ func TestValidateCertificate(t *testing.T) {
 				field.Duplicate(fldPath.Child("dnsNames").Index(2), "example.com"),
 			},
 		},
-		"valid certificate with unique ipAddresses": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					IPAddresses: []string{"127.0.0.1", "2001:db8::1"},
-					SecretName:  "abc",
-					IssuerRef:   validIssuerRef,
-				},
-			},
-			a: someAdmissionRequest,
-		},
 		"certificate with duplicate ipAddresses": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -481,20 +461,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Duplicate(fldPath.Child("ipAddresses").Index(2), "127.0.0.1"),
-			},
-		},
-		"certificate with equivalent IPv6 spellings in ipAddresses": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					IPAddresses: []string{"2001:db8::1", "2001:db8:0:0:0:0:0:1"},
-					SecretName:  "abc",
-					IssuerRef:   validIssuerRef,
-				},
-			},
-			a: someAdmissionRequest,
-			errs: []*field.Error{
-				field.Duplicate(fldPath.Child("ipAddresses").Index(1), "2001:db8:0:0:0:0:0:1"),
+				field.Invalid(fldPath.Child("ipAddresses").Index(2), "127.0.0.1", "duplicates ipAddresses[0]"),
 			},
 		},
 		"valid certificate with commonName exactly 64 bytes": {
@@ -1101,6 +1068,73 @@ func TestValidateUpdateCertificatePreservesLegacyRenewBeforePercentageOnUnchange
 	assert.Empty(t, warnings)
 }
 
+func TestValidateUpdateCertificateDuplicateSANs(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	cert := func(dnsNames, ipAddresses []string) *internalcmapi.Certificate {
+		return &internalcmapi.Certificate{
+			Spec: internalcmapi.CertificateSpec{
+				DNSNames:    dnsNames,
+				IPAddresses: ipAddresses,
+				SecretName:  "abc",
+				IssuerRef:   validIssuerRef,
+			},
+		}
+	}
+
+	tests := map[string]struct {
+		oldCert     *internalcmapi.Certificate
+		newCert     *internalcmapi.Certificate
+		subResource string
+		errs        []*field.Error
+	}{
+		"unchanged duplicate dnsNames on status update are allowed": {
+			oldCert:     cert([]string{"a.example.com", "a.example.com"}, nil),
+			newCert:     cert([]string{"a.example.com", "a.example.com"}, nil),
+			subResource: "status",
+		},
+		"unchanged duplicate ipAddresses on update are allowed": {
+			oldCert: cert(nil, []string{"127.0.0.1", "127.0.0.1"}),
+			newCert: cert(nil, []string{"127.0.0.1", "127.0.0.1"}),
+		},
+		"unchanged equivalent IPv6 spellings on update are allowed": {
+			oldCert: cert(nil, []string{"2001:db8::1", "2001:db8:0:0:0:0:0:1"}),
+			newCert: cert(nil, []string{"2001:db8::1", "2001:db8:0:0:0:0:0:1"}),
+		},
+		"introducing duplicate dnsNames on update is rejected": {
+			oldCert: cert([]string{"a.example.com"}, nil),
+			newCert: cert([]string{"a.example.com", "a.example.com"}, nil),
+			errs: []*field.Error{
+				field.Duplicate(fldPath.Child("dnsNames").Index(1), "a.example.com"),
+			},
+		},
+		"introducing duplicate ipAddresses on update is rejected": {
+			oldCert: cert(nil, []string{"127.0.0.1"}),
+			newCert: cert(nil, []string{"127.0.0.1", "127.0.0.1"}),
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ipAddresses").Index(1), "127.0.0.1", "duplicates ipAddresses[0]"),
+			},
+		},
+		"changing ipAddresses to equivalent IPv6 spellings on update is rejected": {
+			oldCert: cert(nil, []string{"2001:db8::1"}),
+			newCert: cert(nil, []string{"2001:db8::1", "2001:db8:0:0:0:0:0:1"}),
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ipAddresses").Index(1), "2001:db8:0:0:0:0:0:1", "duplicates ipAddresses[0]"),
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			errs, warnings := ValidateUpdateCertificate(&admissionv1.AdmissionRequest{
+				Operation:   admissionv1.Update,
+				SubResource: test.subResource,
+			}, test.oldCert, test.newCert)
+			assert.ElementsMatch(t, test.errs, errs)
+			assert.Empty(t, warnings)
+		})
+	}
+}
+
 func TestValidateUpdateCertificateRejectsChangedRenewBeforePercentageBelowMinimum(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	oldCert := &internalcmapi.Certificate{
@@ -1400,21 +1434,17 @@ func TestValidateDuration(t *testing.T) {
 func Test_validateDNSNames(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	tests := map[string]struct {
-		spec   *internalcmapi.CertificateSpec
+		crt    *internalcmapi.CertificateSpec
+		oldCrt *internalcmapi.CertificateSpec
 		expErr field.ErrorList
 	}{
-		"if no dnsNames defined, expect no error": {
-			spec:   &internalcmapi.CertificateSpec{},
-			expErr: nil,
-		},
 		"if unique dnsNames defined, expect no error": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				DNSNames: []string{"example.com", "www.example.com"},
 			},
-			expErr: nil,
 		},
 		"if duplicate dnsNames defined, expect error": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				DNSNames: []string{"example.com", "www.example.com", "example.com"},
 			},
 			expErr: field.ErrorList{
@@ -1422,7 +1452,7 @@ func Test_validateDNSNames(t *testing.T) {
 			},
 		},
 		"if multiple duplicate dnsNames defined, expect error for each later occurrence": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				DNSNames: []string{"example.com", "example.com", "other.example.com", "example.com"},
 			},
 			expErr: field.ErrorList{
@@ -1430,12 +1460,31 @@ func Test_validateDNSNames(t *testing.T) {
 				field.Duplicate(fldPath.Child("dnsNames").Index(3), "example.com"),
 			},
 		},
+		"if dnsNames unchanged on update including duplicates, expect no error": {
+			crt: &internalcmapi.CertificateSpec{
+				DNSNames: []string{"example.com", "example.com"},
+			},
+			oldCrt: &internalcmapi.CertificateSpec{
+				DNSNames: []string{"example.com", "example.com"},
+			},
+		},
+		"if dnsNames change to introduce duplicates on update, expect error": {
+			crt: &internalcmapi.CertificateSpec{
+				DNSNames: []string{"example.com", "example.com"},
+			},
+			oldCrt: &internalcmapi.CertificateSpec{
+				DNSNames: []string{"example.com"},
+			},
+			expErr: field.ErrorList{
+				field.Duplicate(fldPath.Child("dnsNames").Index(1), "example.com"),
+			},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotErr := validateDNSNames(test.spec, fldPath)
-			assert.Equal(t, test.expErr, gotErr)
+			gotErr := validateDNSNames(test.crt, test.oldCrt, fldPath)
+			assert.ElementsMatch(t, test.expErr, gotErr)
 		})
 	}
 }
@@ -1443,21 +1492,17 @@ func Test_validateDNSNames(t *testing.T) {
 func Test_validateIPAddresses(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	tests := map[string]struct {
-		spec   *internalcmapi.CertificateSpec
+		crt    *internalcmapi.CertificateSpec
+		oldCrt *internalcmapi.CertificateSpec
 		expErr field.ErrorList
 	}{
-		"if no ipAddresses defined, expect no error": {
-			spec:   &internalcmapi.CertificateSpec{},
-			expErr: nil,
-		},
 		"if unique ipAddresses defined, expect no error": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1", "10.0.0.1", "2001:db8::1"},
 			},
-			expErr: nil,
 		},
 		"if invalid ipAddress defined, expect error": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				IPAddresses: []string{"blah"},
 			},
 			expErr: field.ErrorList{
@@ -1465,35 +1510,54 @@ func Test_validateIPAddresses(t *testing.T) {
 			},
 		},
 		"if duplicate ipAddresses defined, expect error": {
-			spec: &internalcmapi.CertificateSpec{
+			crt: &internalcmapi.CertificateSpec{
 				IPAddresses: []string{"127.0.0.1", "10.0.0.1", "127.0.0.1"},
 			},
 			expErr: field.ErrorList{
-				field.Duplicate(fldPath.Child("ipAddresses").Index(2), "127.0.0.1"),
+				field.Invalid(fldPath.Child("ipAddresses").Index(2), "127.0.0.1", "duplicates ipAddresses[0]"),
 			},
 		},
-		"if equivalent IPv6 spellings defined, expect error": {
-			spec: &internalcmapi.CertificateSpec{
+		"if equivalent IPv6 spellings defined, expect error naming first index": {
+			crt: &internalcmapi.CertificateSpec{
 				IPAddresses: []string{"2001:db8::1", "2001:db8:0:0:0:0:0:1"},
 			},
 			expErr: field.ErrorList{
-				field.Duplicate(fldPath.Child("ipAddresses").Index(1), "2001:db8:0:0:0:0:0:1"),
+				field.Invalid(fldPath.Child("ipAddresses").Index(1), "2001:db8:0:0:0:0:0:1", "duplicates ipAddresses[0]"),
 			},
 		},
-		"if equivalent IPv6 spellings including uppercase defined, expect error": {
-			spec: &internalcmapi.CertificateSpec{
+		"if equivalent IPv6 spellings including uppercase defined, expect error naming first index": {
+			crt: &internalcmapi.CertificateSpec{
 				IPAddresses: []string{"2001:DB8::1", "::1", "2001:db8:0:0:0:0:0:1"},
 			},
 			expErr: field.ErrorList{
-				field.Duplicate(fldPath.Child("ipAddresses").Index(2), "2001:db8:0:0:0:0:0:1"),
+				field.Invalid(fldPath.Child("ipAddresses").Index(2), "2001:db8:0:0:0:0:0:1", "duplicates ipAddresses[0]"),
+			},
+		},
+		"if ipAddresses unchanged on update including duplicates, expect no error": {
+			crt: &internalcmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1", "127.0.0.1"},
+			},
+			oldCrt: &internalcmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1", "127.0.0.1"},
+			},
+		},
+		"if ipAddresses change to introduce duplicates on update, expect error": {
+			crt: &internalcmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1", "10.0.0.1", "127.0.0.1"},
+			},
+			oldCrt: &internalcmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1", "10.0.0.1"},
+			},
+			expErr: field.ErrorList{
+				field.Invalid(fldPath.Child("ipAddresses").Index(2), "127.0.0.1", "duplicates ipAddresses[0]"),
 			},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotErr := validateIPAddresses(test.spec, fldPath)
-			assert.Equal(t, test.expErr, gotErr)
+			gotErr := validateIPAddresses(test.crt, test.oldCrt, fldPath)
+			assert.ElementsMatch(t, test.expErr, gotErr)
 		})
 	}
 }
