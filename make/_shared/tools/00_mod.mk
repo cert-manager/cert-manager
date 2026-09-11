@@ -160,7 +160,7 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.3.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.18.0
+tools += goreleaser=v2.18.1
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
 tools += syft=v1.51.1
@@ -229,7 +229,7 @@ tools += openapi-gen=v0.0.0-20260904170622-9ab3195f2a72
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
-KUBEBUILDER_ASSETS_VERSION := v1.36.2
+KUBEBUILDER_ASSETS_VERSION := v1.37.0
 tools += etcd=$(KUBEBUILDER_ASSETS_VERSION)
 tools += kube-apiserver=$(KUBEBUILDER_ASSETS_VERSION)
 
@@ -623,10 +623,10 @@ $(DOWNLOAD_DIR)/tools/azwi@$(AZWI_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD
 		tar xfO $(outfile).tar.gz azwi > $(outfile) && chmod 775 $(outfile); \
 		rm -f $(outfile).tar.gz
 
-kubebuilder_tools_linux_amd64_SHA256SUM=5e99f4eef3d6f9d4dd063730299f708c98da8801f2f14d8fc762cb354f30c332
-kubebuilder_tools_linux_arm64_SHA256SUM=d5eebb129f149a68f8b7bbd7b4c8e51a19f280b3bda1743c94de27f82da78d2e
-kubebuilder_tools_darwin_amd64_SHA256SUM=bcc9e95d9e5195bd7224be291c07938f6878c7788ae2faeb344a54cee0a122c6
-kubebuilder_tools_darwin_arm64_SHA256SUM=f344e7c70961b100471eeea4d2555006f282a6a27bece7f42fbede77b29b886e
+kubebuilder_tools_linux_amd64_SHA256SUM=f03faedfc68d2a78cee5cb02618bb44e7f67044f4c5fc957f72d3307fda61a9c
+kubebuilder_tools_linux_arm64_SHA256SUM=ff2a0cdcadd0a6b3181faa4758e28fc63b774d2e40f29f62645dd7fa0b881a2c
+kubebuilder_tools_darwin_amd64_SHA256SUM=76d90e9f2596194175ebc8e389a3bd8ed7416a51f397fc775f927892b4b89fa6
+kubebuilder_tools_darwin_arm64_SHA256SUM=23cb186d265b8c7d6cd9934f03731b4981e2c06f0fbaccc6d4803958d030fba0
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz
 $(DOWNLOAD_DIR)/tools/kubebuilder_tools_$(KUBEBUILDER_ASSETS_VERSION)_$(HOST_OS)_$(HOST_ARCH).tar.gz: | $(DOWNLOAD_DIR)/tools
