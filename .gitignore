@@ -5,7 +5,6 @@
 /controller
 /ingress-shim
 /ctl
-/hack/build/dockerfiles/cert-manager-*_*_*
 .vscode
 .venv
 /.settings/
