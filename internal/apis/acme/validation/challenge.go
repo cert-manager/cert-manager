@@ -34,7 +34,7 @@ func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj run
 		return nil, nil
 	}
 
-	el := field.ErrorList{}
+	var el field.ErrorList
 	if !reflect.DeepEqual(oldChallenge.Spec, newChallenge.Spec) {
 		el = append(el, field.Forbidden(field.NewPath("spec"), "challenge spec is immutable after creation"))
 	}

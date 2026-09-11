@@ -18,7 +18,6 @@ package http
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -69,8 +68,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				if diff := cmp.Diff(createdIngress, resp[0]); diff != "" {
+					t.Errorf("unexpected ingress (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -103,8 +102,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				if diff := cmp.Diff(createdIngress, resp[0]); diff != "" {
+					t.Errorf("unexpected ingress (-want +got):\n%s", diff)
 				}
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeExact {
 					t.Errorf("Expected pathType to be Exact, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
@@ -140,8 +139,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				if diff := cmp.Diff(createdIngress, resp[0]); diff != "" {
+					t.Errorf("unexpected ingress (-want +got):\n%s", diff)
 				}
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeImplementationSpecific {
 					t.Errorf("Expected pathType to be ImplementationSpecific, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
@@ -176,8 +175,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				if diff := cmp.Diff(createdIngress, resp[0]); diff != "" {
+					t.Errorf("unexpected ingress (-want +got):\n%s", diff)
 				}
 			},
 		},

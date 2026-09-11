@@ -24,6 +24,8 @@ linters:
           pkg: ^github\.com/cert-manager/cert-manager/third_party/forked/acme$
           msg: >-
             Do not construct the forked ACME client directly; obtain one via pkg/acme/accounts.NewClient.
+        - pattern: ^reflect\.DeepEqual$
+          msg: Do not use reflect.DeepEqual in tests; use cmp.Diff/cmp.Equal or testify assert.Equal instead.
     gosec:
       excludes:
         - G101 # Look for hardcoded credentials
@@ -35,6 +37,11 @@ linters:
     generated: lax
     presets: [comments, common-false-positives, legacy, std-error-handling]
     paths: [third_party, builtin$, examples$]
+    rules:
+      - path-except: _test\.go$
+        text: Do not use reflect\.DeepEqual in tests
+        linters:
+          - forbidigo
     warn-unused: true
   disable:
     - nilnil

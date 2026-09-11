@@ -17,9 +17,9 @@ limitations under the License.
 package controller
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,9 +67,8 @@ func TestBuildAnnotationsToCopy(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := BuildAnnotationsToCopy(test.allAnnotations, test.prefixes); !reflect.DeepEqual(got, test.want) {
-				t.Errorf("BuildAnnotationsToCopy() = %+#v, want %+#v", got, test.want)
-			}
+			got := BuildAnnotationsToCopy(test.allAnnotations, test.prefixes)
+			assert.Equal(t, test.want, got, "BuildAnnotationsToCopy()")
 		})
 	}
 }

@@ -17,11 +17,11 @@ limitations under the License.
 package http
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/utils/diff"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -53,8 +53,8 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
-				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
-					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
+				if diff := cmp.Diff(createdHTTPRoute, gotHttpRoute); diff != "" {
+					t.Errorf("HTTPRoute mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -81,8 +81,8 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
-				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
-					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
+				if diff := cmp.Diff(createdHTTPRoute, gotHttpRoute); diff != "" {
+					t.Errorf("HTTPRoute mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -186,8 +186,8 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				if gotHttpRoute.Labels["custom-extra-label"] != "custom-extra-value" {
 					t.Errorf("expected HTTPRoute to have extra label 'custom-extra-label=custom-extra-value', but got %v", gotHttpRoute.Labels)
 				}
-				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
-					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
+				if diff := cmp.Diff(createdHTTPRoute, gotHttpRoute); diff != "" {
+					t.Errorf("HTTPRoute mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -241,9 +241,8 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 
 				gotHTTPRouteSpec := httpRoutes[0].Spec
 				expectedHTTPRoute := generateHTTPRouteSpec(s.Challenge, "fakeservice")
-				if !reflect.DeepEqual(gotHTTPRouteSpec, expectedHTTPRoute) {
-					t.Errorf("Expected HTTPRoute specs to match, but got diff:\n%v",
-						diff.ObjectDiff(gotHTTPRouteSpec, expectedHTTPRoute))
+				if diff := cmp.Diff(expectedHTTPRoute, gotHTTPRouteSpec); diff != "" {
+					t.Errorf("HTTPRoute spec mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -279,9 +278,8 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 
 				gotHTTPRouteSpec := httpRoutes[0].Spec
 				expectedHTTPRoute := generateHTTPRouteSpec(s.Challenge, "fakeservice")
-				if !reflect.DeepEqual(gotHTTPRouteSpec, expectedHTTPRoute) {
-					t.Errorf("Expected HTTPRoute specs to match, but got diff:\n%v",
-						diff.ObjectDiff(gotHTTPRouteSpec, expectedHTTPRoute))
+				if diff := cmp.Diff(expectedHTTPRoute, gotHTTPRouteSpec); diff != "" {
+					t.Errorf("HTTPRoute spec mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -345,9 +343,7 @@ func TestGenerateHTTPRouteSpec(t *testing.T) {
 
 			spec := generateHTTPRouteSpec(ch, "fakeservice")
 
-			if !reflect.DeepEqual(spec.Hostnames, tt.expectedHostnames) {
-				t.Errorf("Expected hostnames %v, but got %v", tt.expectedHostnames, spec.Hostnames)
-			}
+			assert.Equal(t, tt.expectedHostnames, spec.Hostnames, "hostnames")
 		})
 	}
 }

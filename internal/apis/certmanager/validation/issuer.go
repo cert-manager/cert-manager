@@ -56,7 +56,7 @@ func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field
 func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
 	numConfigs := 0
-	el := field.ErrorList{}
+	var el field.ErrorList
 	if iss.ACME != nil {
 		if numConfigs > 0 {
 			el = append(el, field.Forbidden(fldPath.Child("acme"), "may not specify more than one issuer type"))
@@ -108,7 +108,7 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
 
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	if len(iss.CABundle) > 0 && iss.SkipTLSVerify {
 		el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "caBundle and skipTLSVerify are mutually exclusive and cannot both be set"))
@@ -151,7 +151,7 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 }
 
 func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	numProviders := 0
 	if sol.HTTP01 != nil {
@@ -179,7 +179,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 }
 
 func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	numDefined := 0
 	if http01.Ingress != nil {
@@ -201,7 +201,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 }
 
 func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	numFieldsSpecified := 0
 	if ingress.Class != nil {
@@ -238,7 +238,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 }
 
 func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	switch gateway.ServiceType {
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
@@ -265,7 +265,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMECh
 }
 
 func ValidateCAIssuerConfig(iss *certmanager.CAIssuer, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 	if len(iss.SecretName) == 0 {
 		el = append(el, field.Required(fldPath.Child("secretName"), ""))
 	}
@@ -287,7 +287,7 @@ func ValidateSelfSignedIssuerConfig(iss *certmanager.SelfSignedIssuer, fldPath *
 }
 
 func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), ""))
@@ -324,7 +324,7 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 }
 
 func ValidateVaultIssuerAuth(auth *certmanager.VaultAuth, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 
 	unionCount := 0
 	if auth.TokenSecretRef != nil {
@@ -507,7 +507,7 @@ var supportedTSIGAlgorithms = []string{
 }
 
 func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) (field.ErrorList, []*cmmeta.SecretKeySelector) {
-	el := field.ErrorList{}
+	var el field.ErrorList
 	requiredSecrets := []*cmmeta.SecretKeySelector{}
 
 	// allow empty values for now, until we have a MutatingWebhook to apply
@@ -729,7 +729,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 }
 
 func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
+	var el field.ErrorList
 	if sks.Name == "" {
 		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))
 	}

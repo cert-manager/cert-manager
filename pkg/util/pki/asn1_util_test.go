@@ -19,8 +19,9 @@ package pki
 import (
 	"encoding/asn1"
 	"errors"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseObjectIdentifier(t *testing.T) {
@@ -152,9 +153,7 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 					t.Errorf("Unexpected error: %v", err)
 				}
 
-				if !reflect.DeepEqual(rawValue, fullBytes) {
-					t.Errorf("Expected rawValue: %v, got: %v", fullBytes, rawValue)
-				}
+				assert.Equal(t, rawValue, fullBytes)
 			}
 
 			{
@@ -167,9 +166,7 @@ func TestMarshalAndUnmarshalUniversalValue(t *testing.T) {
 				if tc.overrideRoundtripUv != nil {
 					targetUv = *tc.overrideRoundtripUv
 				}
-				if !reflect.DeepEqual(uv, targetUv) {
-					t.Errorf("Expected uv: %v, got: %v", targetUv, uv)
-				}
+				assert.Equal(t, targetUv, uv)
 			}
 		})
 	}

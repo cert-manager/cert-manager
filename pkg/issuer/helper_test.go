@@ -17,9 +17,9 @@ limitations under the License.
 package issuer
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -104,8 +104,8 @@ func TestGetGenericIssuer(t *testing.T) {
 			if err != nil && !row.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
-			if !reflect.DeepEqual(actual, row.Expected) {
-				t.Errorf("Expected %#v but got %#v", row.Expected, actual)
+			if diff := cmp.Diff(row.Expected, actual); diff != "" {
+				t.Errorf("unexpected issuer (-want +got):\n%s", diff)
 			}
 		})
 	}

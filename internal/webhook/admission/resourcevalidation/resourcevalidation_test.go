@@ -18,9 +18,9 @@ package resourcevalidation
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -111,8 +111,8 @@ func TestResourceValidation(t *testing.T) {
 			p := NewPlugin().(*resourceValidation)
 			warnings, err := p.Validate(t.Context(), test.req, test.oldObj, test.obj)
 			compareErrors(t, test.expectedError, err)
-			if !reflect.DeepEqual(test.expectedWarnings, warnings) {
-				t.Errorf("unexpected warnings. exp=%v, got=%v", test.expectedWarnings, warnings)
+			if diff := cmp.Diff(test.expectedWarnings, warnings); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

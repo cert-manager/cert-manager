@@ -20,8 +20,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestCertificateTemplateFromCSR(t *testing.T) {
@@ -152,8 +153,8 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			if !reflect.DeepEqual(result, tc.expected) {
-				t.Errorf("unexpected result: %v", result)
+			if diff := cmp.Diff(tc.expected, result); diff != "" {
+				t.Errorf("unexpected result (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -18,10 +18,10 @@ package acme
 
 import (
 	"crypto/x509"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authzv1 "k8s.io/api/authorization/v1"
@@ -1017,8 +1017,8 @@ func Test_buildOrder(t *testing.T) {
 			}
 
 			// for the current purpose we only test the spec
-			if !reflect.DeepEqual(got.Spec, test.want.Spec) {
-				t.Errorf("buildOrder() got = %v, want %v", got.Spec, test.want.Spec)
+			if diff := cmp.Diff(test.want.Spec, got.Spec); diff != "" {
+				t.Errorf("buildOrder() spec mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

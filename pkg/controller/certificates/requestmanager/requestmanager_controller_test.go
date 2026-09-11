@@ -19,12 +19,12 @@ package requestmanager
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -68,12 +68,10 @@ func mustGenerateECDSA(t *testing.T) []byte {
 }
 
 func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action) error {
-	objL := l.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
-	objR := r.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
-	objL.Spec.Request = nil
-	objR.Spec.Request = nil
-	if !reflect.DeepEqual(objL, objR) {
-		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", cmp.Diff(objL, objR))
+	objL := l.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest)
+	objR := r.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest)
+	if diff := cmp.Diff(objL, objR, cmpopts.IgnoreFields(cmapi.CertificateRequestSpec{}, "Request")); diff != "" {
+		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", diff)
 	}
 	return nil
 }

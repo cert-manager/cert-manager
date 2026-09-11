@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -884,7 +884,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
 			return false, nil
 		}
-		return reflect.DeepEqual(map[string][]byte{
+		return cmp.Equal(map[string][]byte{
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 			"key.der": pkDER, "tls-combined.pem": combinedPEM,
 		}, secret.Data), nil
@@ -907,7 +907,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
 			return false, nil
 		}
-		return reflect.DeepEqual(map[string][]byte{
+		return cmp.Equal(map[string][]byte{
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 		}, secret.Data), nil
 	})
