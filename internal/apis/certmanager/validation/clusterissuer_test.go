@@ -17,9 +17,9 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -37,24 +37,8 @@ func TestValidateClusterIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateClusterIssuer(s.a, s.cfg)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
-			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
+			assert.Equal(t, s.expectedW, gotW)
 		})
 	}
 }
@@ -77,24 +61,8 @@ func TestUpdateValidateClusterIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateUpdateClusterIssuer(s.a, &baseIssuer, s.iss)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
-			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
+			assert.Equal(t, s.expectedW, gotW)
 		})
 	}
 }

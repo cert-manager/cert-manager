@@ -17,8 +17,9 @@ limitations under the License.
 package util
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 func TestIssuerRefFromSignerName(t *testing.T) {
@@ -122,10 +123,7 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 					test.expOK, ok)
 			}
 
-			if !reflect.DeepEqual(ref, test.expSignerIssuerRef) {
-				t.Errorf("unexpected SignerIssuerRef, exp=%v got=%v",
-					test.expSignerIssuerRef, ref)
-			}
+			testutil.AssertEqual(t, test.expSignerIssuerRef, ref)
 		})
 	}
 }

@@ -20,9 +20,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -446,19 +446,8 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotE, gotW := ValidateUpdateCertificateRequest(test.a, test.oldCR, test.newCR)
-			for i := range gotE {
-				if gotE[i].Type != field.ErrorTypeForbidden {
-					// filter out the value so it does not print the full CSR in tests
-					gotE[i].BadValue = nil
-				}
-			}
-
-			if !reflect.DeepEqual(gotE, test.wantE) {
-				t.Errorf("errors from ValidateUpdateCertificateRequest() = %v, want %v", gotE, test.wantE)
-			}
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateUpdateCertificateRequest() = %#+v, want %#+v", gotW, test.wantW)
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, test.wantE, gotE)
+			assert.Equal(t, test.wantW, gotW)
 		})
 	}
 }
@@ -862,18 +851,8 @@ func TestValidateCertificateRequest(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotE, gotW := ValidateCertificateRequest(test.a, test.cr)
-			for i := range gotE {
-				if gotE[i].Type != field.ErrorTypeForbidden {
-					// filter out the value so it does not print the full CSR in tests
-					gotE[i].BadValue = nil
-				}
-			}
-			if !reflect.DeepEqual(gotE, test.wantE) {
-				t.Errorf("errors from ValidateCertificateRequest() = %v, want %v", gotE, test.wantE)
-			}
-			if !reflect.DeepEqual(test.wantW, gotW) {
-				t.Errorf("warnings from ValidateCertificateRequest() = %v, want  %v", gotW, test.wantW)
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, test.wantE, gotE)
+			assert.Equal(t, test.wantW, gotW)
 		})
 	}
 }

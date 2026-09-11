@@ -18,15 +18,14 @@ package acmeorders
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -504,9 +503,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			if err == nil && test.expectedError {
 				t.Errorf("expected to get an error, but got none")
 			}
-			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
-				t.Errorf("returned challenge spec was not as expected (-want +got):\n%s", cmp.Diff(test.expectedChallengeSpec, cs))
-			}
+			testutil.AssertEqual(t, test.expectedChallengeSpec, cs)
 		})
 	}
 }
@@ -575,9 +572,7 @@ func Test_ensureKeysForChallenges(t *testing.T) {
 				t.Errorf("ensureKeysForChallenges() error = %v, wantErr %v", err, scenario.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, scenario.want) {
-				t.Errorf("ensureKeysForChallenges() = %v, want %v", got, scenario.want)
-			}
+			testutil.AssertEqual(t, scenario.want, got)
 		})
 	}
 }

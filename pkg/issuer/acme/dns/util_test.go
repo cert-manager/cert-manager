@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -108,8 +110,17 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 }
 
 type fakeDNSProviderCall struct {
-	name string
-	args []any
+	Name string
+	Args []any
+}
+
+func assertProviderCalls(t *testing.T, want, got []fakeDNSProviderCall) {
+	t.Helper()
+	if diff := cmp.Diff(want, got,
+		cmp.Comparer(func(a, b *util.CachingResolver) bool { return a == b }),
+	); diff != "" {
+		t.Fatalf("unexpected DNS provider calls (-want +got):\n%s", diff)
+	}
 }
 
 type fakeDNSProviders struct {
@@ -118,7 +129,7 @@ type fakeDNSProviders struct {
 }
 
 func (f *fakeDNSProviders) call(name string, args ...any) {
-	f.calls = append(f.calls, fakeDNSProviderCall{name: name, args: args})
+	f.calls = append(f.calls, fakeDNSProviderCall{Name: name, Args: args})
 }
 
 func newFakeDNSProviders() *fakeDNSProviders {
