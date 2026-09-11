@@ -18,9 +18,9 @@ package identity
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -300,8 +300,8 @@ func TestValidateCreate(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
 			gotW, gotE := p.Validate(t.Context(), *test.req, nil, test.cr)
 			compareErrors(t, test.wantE, gotE)
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateCreate() = %v, want %v", gotW, test.wantW)
+			if diff := cmp.Diff(test.wantW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -427,8 +427,8 @@ func TestValidateUpdate(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
 			gotW, gotE := p.Validate(t.Context(), *test.req, test.oldCR, test.newCR)
 			compareErrors(t, test.wantE, gotE)
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateUpdate() = %v, want %v", gotW, test.wantW)
+			if diff := cmp.Diff(test.wantW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -543,8 +543,8 @@ func TestMutateCreate(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
-			if !reflect.DeepEqual(test.expectedCR, cr) {
-				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
+			if diff := cmp.Diff(test.expectedCR, cr); diff != "" {
+				t.Errorf("MutateCreate() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -603,8 +603,8 @@ func TestMutateUpdate(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
-			if !reflect.DeepEqual(test.expectedCR, cr) {
-				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
+			if diff := cmp.Diff(test.expectedCR, cr); diff != "" {
+				t.Errorf("MutateCreate() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

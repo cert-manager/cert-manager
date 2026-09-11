@@ -17,9 +17,9 @@ limitations under the License.
 package solverpicker
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -981,12 +981,12 @@ func TestPick(t *testing.T) {
 
 			solver, ch := Pick(t.Context(), domainToFind, test.authz.Challenges, test.issuer.GetSpec().ACME.Solvers, test.order)
 
-			if !reflect.DeepEqual(test.expectedSolver, solver) {
-				t.Errorf("expected solver %v, got %v", test.expectedSolver, solver)
+			if diff := cmp.Diff(solver, test.expectedSolver); diff != "" {
+				t.Errorf("Solver mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(test.expectedChallenge, ch) {
-				t.Errorf("expected challenge token %v, got %v", test.expectedChallenge, ch)
+			if diff := cmp.Diff(ch, test.expectedChallenge); diff != "" {
+				t.Errorf("Challenge mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

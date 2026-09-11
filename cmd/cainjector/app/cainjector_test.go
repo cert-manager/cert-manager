@@ -22,10 +22,10 @@ import (
 	"io"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
+	"github.com/google/go-cmp/cmp"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
 	"github.com/cert-manager/cert-manager/cainjector-binary/app/options"
@@ -192,8 +192,8 @@ logging:
 				}
 			} else if !tc.expError {
 				expConfig := tc.expConfig(tempDir)
-				if !reflect.DeepEqual(config, expConfig) {
-					t.Errorf("expected config %v but got %v", expConfig, config)
+				if diff := cmp.Diff(expConfig, config); diff != "" {
+					t.Errorf("config mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})

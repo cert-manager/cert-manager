@@ -108,8 +108,8 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 }
 
 type fakeDNSProviderCall struct {
-	name string
-	args []any
+	Name string
+	Args []any
 }
 
 type fakeDNSProviders struct {
@@ -118,7 +118,7 @@ type fakeDNSProviders struct {
 }
 
 func (f *fakeDNSProviders) call(name string, args ...any) {
-	f.calls = append(f.calls, fakeDNSProviderCall{name: name, args: args})
+	f.calls = append(f.calls, fakeDNSProviderCall{Name: name, Args: args})
 }
 
 func newFakeDNSProviders() *fakeDNSProviders {

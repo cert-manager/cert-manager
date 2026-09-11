@@ -17,9 +17,9 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -37,23 +37,11 @@ func TestValidateClusterIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateClusterIssuer(s.a, s.cfg)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
+			if diff := cmp.Diff(s.expectedE, gotE); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
+			if diff := cmp.Diff(s.expectedW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -77,23 +65,11 @@ func TestUpdateValidateClusterIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateUpdateClusterIssuer(s.a, &baseIssuer, s.iss)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
+			if diff := cmp.Diff(s.expectedE, gotE); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
+			if diff := cmp.Diff(s.expectedW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

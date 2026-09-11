@@ -22,12 +22,12 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"net/url"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -719,9 +719,8 @@ func TestAcme_Setup(t *testing.T) {
 
 			// Verify that the expected account value was passed when the
 			// account was registered.
-			if !reflect.DeepEqual(gotAcc, test.expectedRegisteredAcc) {
-				t.Errorf("Expected account value passed to register: %#+v\ngot: %+#v",
-					test.expectedRegisteredAcc, gotAcc)
+			if diff := cmp.Diff(test.expectedRegisteredAcc, gotAcc); diff != "" {
+				t.Errorf("registered account mismatch (-want +got):\n%s", diff)
 			}
 
 			// Verify issuer's state after Setup was called.

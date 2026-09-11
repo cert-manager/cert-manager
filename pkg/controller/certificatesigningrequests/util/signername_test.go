@@ -17,8 +17,9 @@ limitations under the License.
 package util
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestIssuerRefFromSignerName(t *testing.T) {
@@ -122,9 +123,8 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 					test.expOK, ok)
 			}
 
-			if !reflect.DeepEqual(ref, test.expSignerIssuerRef) {
-				t.Errorf("unexpected SignerIssuerRef, exp=%v got=%v",
-					test.expSignerIssuerRef, ref)
+			if diff := cmp.Diff(test.expSignerIssuerRef, ref); diff != "" {
+				t.Errorf("unexpected SignerIssuerRef (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -17,10 +17,10 @@ limitations under the License.
 package clusterissuers
 
 import (
-	"reflect"
 	"runtime/debug"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -90,7 +90,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	obj := updateAction.GetObject()
 	issuer = assertIsClusterIssuer(t, errorf, obj)
 
-	assertDeepEqual(t, errorf, newStatus, issuer.Status)
+	assertEqual(t, errorf, newStatus, issuer.Status)
 }
 
 func assertIsUpdateAction(t *testing.T, f failfFunc, action clientgotesting.Action) clientgotesting.UpdateAction {
@@ -121,9 +121,9 @@ func assertIsClusterIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1.Cl
 	return issuer
 }
 
-func assertDeepEqual(t *testing.T, f failfFunc, left, right any) {
-	if !reflect.DeepEqual(left, right) {
-		f(t, "object '%#v' does not equal '%#v'", left, right)
+func assertEqual(t *testing.T, f failfFunc, left, right any) {
+	if diff := cmp.Diff(left, right); diff != "" {
+		f(t, "objects differ (-left +right):\n%s", diff)
 	}
 }
 

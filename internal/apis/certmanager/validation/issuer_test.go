@@ -17,10 +17,10 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -77,7 +77,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
 		spec *cmapi.VaultIssuer
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"vault issuer defines both caBundle and caBundleSecretRef": {
 			spec: &cmapi.VaultIssuer{
@@ -187,15 +187,8 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVaultIssuerConfig(s.spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -205,7 +198,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 	fldPath := field.NewPath("spec.auth")
 	scenarios := map[string]struct {
 		auth *cmapi.VaultAuth
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		// For backwards compatibility, we allow the user to set all auth types.
 		// We have documented in the API the order of precedence.
@@ -477,15 +470,8 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVaultIssuerAuth(s.auth, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -501,7 +487,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 
 	scenarios := map[string]struct {
 		spec     *cmacme.ACMEIssuer
-		errs     []*field.Error
+		errs     field.ErrorList
 		warnings []string
 	}{
 		"valid acme issuer": {
@@ -881,17 +867,12 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateACMEIssuerConfig(s.spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.warnings, warnings); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
-			assert.Equal(t, s.warnings, warnings)
 		})
 	}
 }
@@ -1001,7 +982,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"ca issuer without secret name specified": {
 			spec: &cmapi.IssuerSpec{
@@ -1017,7 +997,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					SelfSigned: &cmapi.SelfSignedIssuer{},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"valid acme issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -1025,7 +1004,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					ACME: &validACMEIssuer,
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -1033,7 +1011,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					Vault: &validVaultIssuer,
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"missing issuer config": {
 			spec: &cmapi.IssuerSpec{
@@ -1065,7 +1042,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"invalid ocsp url": {
 			spec: &cmapi.IssuerSpec{
@@ -1089,7 +1065,6 @@ func TestValidateIssuerSpec(t *testing.T) {
 					},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"invalid IssuingCertificateURLs": {
 			spec: &cmapi.IssuerSpec{
@@ -1120,7 +1095,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		cfg               *cmacme.ACMEChallengeSolverHTTP01
-		errs              []*field.Error
+		errs              field.ErrorList
 	}{
 		"ingress name field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
@@ -1238,15 +1213,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateACMEIssuerChallengeSolverHTTP01Config(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1256,7 +1224,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
 		cfg  *cmacme.ACMEChallengeSolverDNS01
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"missing clouddns project": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1363,7 +1331,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
 			},
-			errs: []*field.Error{},
 		},
 		"both route53 accessKeyID and accessKeyIDSecretRef specified": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1654,7 +1621,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					ResourceGroupName: "test",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"valid azuredns with managedIdentity with clientID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1666,7 +1632,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"valid azuredns with managedIdentity with resourceID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1678,7 +1643,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					},
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"invalid azuredns managedIdentity with both clientID and resourceID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1718,7 +1682,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					ServiceConsumerDomain: "abc",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider with missing nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1734,7 +1697,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					Nameserver: "127.0.0.1",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider with unenclosed IPv6 nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1762,7 +1724,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					Nameserver: "[2001:db8::1]",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider with FQDN nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1770,7 +1731,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					Nameserver: "dns.example.com",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider with hostname nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1778,7 +1738,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					Nameserver: "dns",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider with nameserver without host": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1797,7 +1756,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					TSIGAlgorithm: "HmAcMd5",
 				},
 			},
-			errs: []*field.Error{},
 		},
 		"rfc2136 provider using unsupported algorithm": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1849,21 +1807,18 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				Nameservers: []string{"8.8.8.8:53", "1.1.1.1:53"},
 				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
 			},
-			errs: []*field.Error{},
 		},
 		"valid nameservers with hostname:port": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Nameservers: []string{"ns.example.com:53"},
 				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
 			},
-			errs: []*field.Error{},
 		},
 		"valid nameservers with doh url": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Nameservers: []string{"https://cloudflare-dns.com/dns-query"},
 				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
 			},
-			errs: []*field.Error{},
 		},
 		"invalid nameserver missing port": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
@@ -1887,15 +1842,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, _ := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1911,7 +1859,7 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	scenarios := map[string]struct {
 		isExpectedFailure bool
 		selector          *cmmeta.SecretKeySelector
-		errs              []*field.Error
+		errs              field.ErrorList
 	}{
 		"valid selector": {
 			selector: &cmmeta.SecretKeySelector{
@@ -1953,15 +1901,8 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateSecretKeySelector(s.selector, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1971,7 +1912,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
 		cfg  *cmapi.VenafiIssuer
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"valid": {
 			cfg: &cmapi.VenafiIssuer{
@@ -2066,14 +2007,8 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiIssuerConfig(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Fatalf("Expected %v but got %v", s.errs, errs)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2087,7 +2022,7 @@ func TestValidateVenafiTPP(t *testing.T) {
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
 		cfg  *cmapi.VenafiTPP
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"valid": {
 			cfg: &cmapi.VenafiTPP{
@@ -2120,14 +2055,8 @@ func TestValidateVenafiTPP(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiTPP(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Fatalf("Expected %v but got %v", s.errs, errs)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2137,7 +2066,7 @@ func TestValidateVenafiNGTS(t *testing.T) {
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
 		cfg  *cmapi.VenafiNGTS
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"valid NGTS config": {
 			cfg: &cmapi.VenafiNGTS{
@@ -2192,14 +2121,8 @@ func TestValidateVenafiNGTS(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiNGTS(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Fatalf("Expected %v but got %v", s.errs, errs)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2216,23 +2139,11 @@ func TestValidateIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateIssuer(s.a, s.cfg)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
+			if diff := cmp.Diff(s.expectedE, gotE); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
+			if diff := cmp.Diff(s.expectedW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2259,20 +2170,11 @@ func TestUpdateValidateIssuer(t *testing.T) {
 			if len(gotE) != len(s.expectedE) {
 				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
 			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
+			if diff := cmp.Diff(s.expectedE, gotE); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
+			if diff := cmp.Diff(s.expectedW, gotW); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

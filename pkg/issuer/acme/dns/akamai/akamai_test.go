@@ -19,12 +19,11 @@ package akamai
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -425,18 +424,10 @@ func (o StubOpenDNSConfig) RecordSave(ctx context.Context, rec *dns.RecordBody, 
 
 	exp, ok := o.FuncOutput["RecordSave"]
 	if ok {
-		// compare passed with expected
-		if rec.Name != exp.(*dns.RecordBody).Name {
-			return fmt.Errorf("RecordSave: expected/actual Name don't match")
-		}
-		if rec.RecordType != exp.(*dns.RecordBody).RecordType {
-			return fmt.Errorf("RecordSave: expected/actual Record Type don't match")
-		}
-		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
-			return fmt.Errorf("RecordSave: expected/actual Target don't match")
-		}
-		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
-			return fmt.Errorf("RecordSave: expected/actual TTL don't match")
+		expected := exp.(*dns.RecordBody)
+
+		if diff := cmp.Diff(expected, rec); diff != "" {
+			return fmt.Errorf("RecordSave: unexpected record (-want +got):\n%s", diff)
 		}
 	}
 	err, ok := o.FuncErrors["RecordSave"]
@@ -452,19 +443,12 @@ func (o StubOpenDNSConfig) RecordUpdate(ctx context.Context, rec *dns.RecordBody
 
 	exp, ok := o.FuncOutput["RecordUpdate"]
 	if ok {
-		// compare passed with expected
-		if rec.Name != exp.(*dns.RecordBody).Name {
-			return fmt.Errorf("RecordUpdate: expected/actual Name don't match")
+		expected := exp.(*dns.RecordBody)
+
+		if diff := cmp.Diff(expected, rec); diff != "" {
+			return fmt.Errorf("RecordUpdate: unexpected record (-want +got):\n%s", diff)
 		}
-		if rec.RecordType != exp.(*dns.RecordBody).RecordType {
-			return fmt.Errorf("RecordUpdate: expected/actual Record Type don't match")
-		}
-		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
-			return fmt.Errorf("RecordUpdate: expected/actual Target don't match")
-		}
-		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
-			return fmt.Errorf("RecordUpdate: expected/actual TTL don't match")
-		}
+
 	}
 	err, ok := o.FuncErrors["RecordUpdate"]
 	if ok {
@@ -478,18 +462,10 @@ func (o StubOpenDNSConfig) RecordDelete(ctx context.Context, rec *dns.RecordBody
 
 	exp, ok := o.FuncOutput["RecordDelete"]
 	if ok {
-		// compare passed with expected
-		if rec.Name != exp.(*dns.RecordBody).Name {
-			return fmt.Errorf("RecordDelete: expected/actual Name don't match")
-		}
-		if rec.RecordType != exp.(*dns.RecordBody).RecordType {
-			return fmt.Errorf("RecordDelete: expected/actual Record Type don't match")
-		}
-		if !reflect.DeepEqual(rec.Target, exp.(*dns.RecordBody).Target) {
-			return fmt.Errorf("RecordDelete: expected/actual Target don't match")
-		}
-		if ptr.Deref(rec.TTL, -1) != ptr.Deref(exp.(*dns.RecordBody).TTL, -1) {
-			return fmt.Errorf("RecordDelete: expected/actual TTL don't match")
+		expected := exp.(*dns.RecordBody)
+
+		if diff := cmp.Diff(expected, rec); diff != "" {
+			return fmt.Errorf("RecordDelete: unexpected record (-want +got):\n%s", diff)
 		}
 	}
 	err, ok := o.FuncErrors["RecordDelete"]

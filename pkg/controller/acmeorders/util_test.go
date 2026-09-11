@@ -18,7 +18,6 @@ package acmeorders
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -504,8 +503,8 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			if err == nil && test.expectedError {
 				t.Errorf("expected to get an error, but got none")
 			}
-			if !reflect.DeepEqual(cs, test.expectedChallengeSpec) {
-				t.Errorf("returned challenge spec was not as expected (-want +got):\n%s", cmp.Diff(test.expectedChallengeSpec, cs))
+			if diff := cmp.Diff(cs, test.expectedChallengeSpec); diff != "" {
+				t.Errorf("Challenge spec mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -575,8 +574,8 @@ func Test_ensureKeysForChallenges(t *testing.T) {
 				t.Errorf("ensureKeysForChallenges() error = %v, wantErr %v", err, scenario.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, scenario.want) {
-				t.Errorf("ensureKeysForChallenges() = %v, want %v", got, scenario.want)
+			if diff := cmp.Diff(scenario.want, got); diff != "" {
+				t.Errorf("ensureKeysForChallenges() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

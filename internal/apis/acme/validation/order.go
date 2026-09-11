@@ -34,7 +34,7 @@ func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime
 		return nil, nil
 	}
 
-	el := field.ErrorList{}
+	var el field.ErrorList
 	el = append(el, ValidateOrderSpecUpdate(oldOrder.Spec, newOrder.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(oldOrder.Status, newOrder.Status, field.NewPath("status"))...)
 	return el, nil

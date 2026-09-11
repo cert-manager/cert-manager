@@ -11,6 +11,7 @@ replace github.com/cert-manager/cert-manager => ../../
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.4.4
+	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.10.2
 	k8s.io/component-base v0.37.0
 	sigs.k8s.io/controller-runtime v0.25.0

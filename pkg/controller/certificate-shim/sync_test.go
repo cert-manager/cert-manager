@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
-	"reflect"
 	"testing"
 	"time"
 
@@ -5110,9 +5109,7 @@ func TestExtractAnnotations(t *testing.T) {
 	}
 	for _, test := range tests {
 		annotations := extractExtraAnnotations(test.IngressLike, []string{"key1"})
-		if !reflect.DeepEqual(annotations, test.Expected) {
-			t.Errorf("expected annotations to be %v but got %v", test.Expected, annotations)
-		}
+		assert.Equal(t, test.Expected, annotations, "annotations")
 	}
 }
 
@@ -5831,9 +5828,7 @@ func TestMergeAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := mergeAnnotations(tt.existing, tt.update)
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("mergeAnnotations() = %v, expected %v", result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result, "mergeAnnotations")
 		})
 	}
 }
@@ -5872,12 +5867,8 @@ func Test_splitHosts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotDNSNames, gotIPAddresses := splitHosts(tt.hosts)
-			if !reflect.DeepEqual(gotDNSNames, tt.wantDNSNames) {
-				t.Errorf("dnsNames = %#v, want %#v", gotDNSNames, tt.wantDNSNames)
-			}
-			if !reflect.DeepEqual(gotIPAddresses, tt.wantIPAddresses) {
-				t.Errorf("ipAddresses = %#v, want %#v", gotIPAddresses, tt.wantIPAddresses)
-			}
+			assert.Equal(t, tt.wantDNSNames, gotDNSNames, "dnsNames")
+			assert.Equal(t, tt.wantIPAddresses, gotIPAddresses, "ipAddresses")
 		})
 	}
 }

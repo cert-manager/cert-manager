@@ -19,9 +19,9 @@ package informers
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -231,8 +231,8 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 				t.Errorf("secretNamespaceLister.Get() error = %v, wantErr %v", err, scenario.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, scenario.want) {
-				t.Errorf("secretNamespaceLister.Get() = %v, want %v", got, scenario.want)
+			if diff := cmp.Diff(scenario.want, got); diff != "" {
+				t.Errorf("secretNamespaceLister.Get() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

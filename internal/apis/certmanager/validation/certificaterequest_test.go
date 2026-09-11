@@ -20,9 +20,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -448,16 +448,16 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 			gotE, gotW := ValidateUpdateCertificateRequest(test.a, test.oldCR, test.newCR)
 			for i := range gotE {
 				if gotE[i].Type != field.ErrorTypeForbidden {
-					// filter out the value so it does not print the full CSR in tests
+					// Filter out the value so it does not print the full CSR in tests.
 					gotE[i].BadValue = nil
 				}
 			}
 
-			if !reflect.DeepEqual(gotE, test.wantE) {
-				t.Errorf("errors from ValidateUpdateCertificateRequest() = %v, want %v", gotE, test.wantE)
+			if diff := cmp.Diff(test.wantE, gotE); diff != "" {
+				t.Errorf("errors from ValidateUpdateCertificateRequest() mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateUpdateCertificateRequest() = %#+v, want %#+v", gotW, test.wantW)
+			if diff := cmp.Diff(test.wantW, gotW); diff != "" {
+				t.Errorf("warnings from ValidateUpdateCertificateRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -864,15 +864,15 @@ func TestValidateCertificateRequest(t *testing.T) {
 			gotE, gotW := ValidateCertificateRequest(test.a, test.cr)
 			for i := range gotE {
 				if gotE[i].Type != field.ErrorTypeForbidden {
-					// filter out the value so it does not print the full CSR in tests
+					// Filter out the value so it does not print the full CSR in tests.
 					gotE[i].BadValue = nil
 				}
 			}
-			if !reflect.DeepEqual(gotE, test.wantE) {
-				t.Errorf("errors from ValidateCertificateRequest() = %v, want %v", gotE, test.wantE)
+			if diff := cmp.Diff(test.wantE, gotE); diff != "" {
+				t.Errorf("errors from ValidateCertificateRequest() mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(test.wantW, gotW) {
-				t.Errorf("warnings from ValidateCertificateRequest() = %v, want  %v", gotW, test.wantW)
+			if diff := cmp.Diff(test.wantW, gotW); diff != "" {
+				t.Errorf("warnings from ValidateCertificateRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

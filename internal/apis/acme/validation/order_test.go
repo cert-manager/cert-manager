@@ -17,9 +17,9 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -50,7 +50,7 @@ var (
 // is not set.
 func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cmacme.Order, testValue)) {
 	t.Run("should reject updates to "+fldPath.String(), func(t *testing.T) {
-		expectedErrs := []*field.Error{
+		expectedErrs := field.ErrorList{
 			field.Forbidden(fldPath, "field is immutable once set"),
 		}
 		var expectedWarnings []string
@@ -59,32 +59,26 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 		setter(oldOrder, testValueOptionOne)
 		setter(newOrder, testValueOptionTwo)
 		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
-		if len(errs) != len(expectedErrs) {
-			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
-			return
+		if diff := cmp.Diff(expectedErrs, errs); diff != "" {
+			t.Errorf("errors mismatch (-want +got):\n%s", diff)
 		}
-		for i, e := range errs {
-			expectedErr := expectedErrs[i] //nolint:gosec // G602: false positive, slice access is guarded by the length check above
-			if !reflect.DeepEqual(e, expectedErr) {
-				t.Errorf("Expected error %v but got %v", expectedErr, e)
-			}
-		}
-		if !reflect.DeepEqual(warnings, expectedWarnings) {
-			t.Errorf("Expected warnings %+#v but got %+#v", expectedWarnings, warnings)
+		if diff := cmp.Diff(expectedWarnings, warnings); diff != "" {
+			t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 		}
 	})
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
+		var expectedErrs field.ErrorList
 		var expectedWarnings []string
 		oldOrder := &cmacme.Order{}
 		newOrder := &cmacme.Order{}
 		setter(oldOrder, testValueNone)
 		setter(newOrder, testValueOptionOne)
 		errs, warnings := ValidateOrderUpdate(someAdmissionRequest, oldOrder, newOrder)
-		if len(errs) != 0 {
-			t.Errorf("Expected no errors but got %v", errs)
+		if diff := cmp.Diff(expectedErrs, errs); diff != "" {
+			t.Errorf("errors mismatch (-want +got):\n%s", diff)
 		}
-		if !reflect.DeepEqual(warnings, expectedWarnings) {
-			t.Errorf("Expected warnings %+#v but got %+#v", expectedWarnings, warnings)
+		if diff := cmp.Diff(expectedWarnings, warnings); diff != "" {
+			t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -210,7 +204,7 @@ func TestValidateOrderUpdate(t *testing.T) {
 	scenarios := map[string]struct {
 		old, new *cmacme.Order
 		a        *admissionv1.AdmissionRequest
-		errs     []*field.Error
+		errs     field.ErrorList
 		warnings []string
 	}{
 		"allows all updates if old is nil": {
@@ -225,18 +219,11 @@ func TestValidateOrderUpdate(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateOrderUpdate(s.a, s.old, s.new)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected errors %v but got %v", expectedErr, e)
-				}
-			}
-			if !reflect.DeepEqual(warnings, s.warnings) {
-				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
+			if diff := cmp.Diff(s.warnings, warnings); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -252,18 +239,11 @@ func TestValidateOrder(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateOrder(s.a, s.order)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
+			if diff := cmp.Diff(s.errs, errs); diff != "" {
+				t.Errorf("errors mismatch (-want +got):\n%s", diff)
 			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected errors %v but got %v", expectedErr, e)
-				}
-			}
-			if !reflect.DeepEqual(warnings, s.warnings) {
-				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
+			if diff := cmp.Diff(s.warnings, warnings); diff != "" {
+				t.Errorf("warnings mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

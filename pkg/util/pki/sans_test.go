@@ -20,8 +20,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/cert-manager/cert-manager/internal/pem"
 )
@@ -382,8 +383,8 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s MarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(extension, tc.sanExtension) {
-				t.Errorf("test: %s Expected extension: %v, got: %v", testName, tc.sanExtension, extension)
+			if diff := cmp.Diff(tc.sanExtension, extension); diff != "" {
+				t.Errorf("test: %s unexpected extension (-want +got):\n%s", testName, diff)
 			}
 		}
 
@@ -393,8 +394,8 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s UnmarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(gns, tc.gns) {
-				t.Errorf("test: %s Expected GeneralNames: %v, got: %v", testName, tc.gns, gns)
+			if diff := cmp.Diff(tc.gns, gns); diff != "" {
+				t.Errorf("test: %s unexpected GeneralNames (-want +got):\n%s", testName, diff)
 			}
 		}
 	}
@@ -425,8 +426,8 @@ func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalSANs returned an error: %v", err)
 	}
-	if !reflect.DeepEqual(ext.Value, conformantValue) {
-		t.Errorf("MarshalSANs directoryName is not RFC 5280 conformant:\n got: % x\nwant: % x", ext.Value, conformantValue)
+	if diff := cmp.Diff(conformantValue, ext.Value); diff != "" {
+		t.Errorf("MarshalSANs directoryName is not RFC 5280 conformant (-want +got):\n%s", diff)
 	}
 
 	// Parse side: UnmarshalSANs must accept a conformant, explicitly tagged
@@ -436,7 +437,7 @@ func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
 		t.Fatalf("UnmarshalSANs failed on a conformant directoryName SAN: %v", err)
 	}
 	want := GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}
-	if !reflect.DeepEqual(gns, want) {
-		t.Errorf("UnmarshalSANs round trip mismatch:\n got: %v\nwant: %v", gns, want)
+	if diff := cmp.Diff(want, gns); diff != "" {
+		t.Errorf("UnmarshalSANs round trip mismatch (-want +got):\n%s", diff)
 	}
 }
