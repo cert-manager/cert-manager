@@ -17,7 +17,7 @@ limitations under the License.
 package accounts
 
 import (
-	"crypto/rsa"
+	"crypto"
 	"crypto/tls"
 	"crypto/x509"
 	"net"
@@ -42,7 +42,7 @@ type NewClientOptions struct {
 	SkipTLSVerify bool
 	CABundle      []byte
 	Server        string
-	PrivateKey    *rsa.PrivateKey
+	PrivateKey    crypto.Signer
 }
 
 // NewClientFunc is a function type for building a new ACME client.
