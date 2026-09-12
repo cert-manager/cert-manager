@@ -133,32 +133,25 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 		var renewMoment time.Time
 
 		for {
-			if done := func() bool {
-				watcherContext, cancel := context.WithCancel(ctx)
-				defer cancel()
-				needsRenewalChan := f.startRenewalWatcher(watcherContext, renewMoment, renewMoment.Add(renewalStaleAfter), renewalCheckInterval)
+			watcherCtx, cancel := context.WithCancel(ctx)
+			needsRenewalChan := f.startRenewalWatcher(watcherCtx, renewMoment, renewMoment.Add(renewalStaleAfter), renewalCheckInterval)
 
-				// Wait for the renewal watcher to signal, or for a new renewal moment to be received
-				select {
-				case <-ctx.Done():
-					// context was cancelled, return nil
-					return true
-				case reason := <-needsRenewalChan:
-					f.log.V(logf.InfoLevel).Info("Certificate needs renewal", "reason", reason)
-					renewMoment = time.Time{}
-				case renewMoment = <-nextRenewCh:
-					// We received a renew moment, next loop iteration will update the timer
-					return false
-				}
-
-				// the renewal channel has a buffer of 1 - drop event if we are already issuing
-				select {
-				case renewalChan <- struct{}{}:
-				default:
-				}
-				return false
-			}(); done {
+			select {
+			case <-ctx.Done():
+				cancel()
 				return nil
+			case reason := <-needsRenewalChan:
+				cancel()
+				f.log.V(logf.InfoLevel).Info("Certificate needs renewal", "reason", reason)
+				renewMoment = time.Time{}
+			case renewMoment = <-nextRenewCh:
+				cancel()
+				continue
+			}
+
+			select {
+			case renewalChan <- struct{}{}:
+			default:
 			}
 		}
 	})
