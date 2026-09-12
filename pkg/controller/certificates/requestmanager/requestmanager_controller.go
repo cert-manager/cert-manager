@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -281,7 +282,7 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 		// same revision). If it is a CertificateRequest that failed
 		// during the previous issuance, then it should be deleted so
 		// that we create a new one for this issuance.
-		if req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) {
+		if internalcertificates.FailedRequestIsFromPreviousIssuance(req, certIssuingCond) {
 			log.V(logf.DebugLevel).Info("Found a failed CertificateRequest for previous issuance of this revision, deleting...")
 			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
