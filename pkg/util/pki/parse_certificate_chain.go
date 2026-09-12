@@ -64,6 +64,19 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // This function removes duplicate certificate entries as well as comments and
 // unnecessary white space.
 //
+// If the bundle contains cross-signed certificates (multiple certificates
+// with the same subject and public key, each signed by a different issuer, as
+// used during CA rotation), a single chain is selected and the redundant
+// branches are discarded. The selection is deterministic for a given set of
+// input certificates, but it is unspecified which branch is selected.
+//
+// A cross-signed pair can instead form a genuine linear chain, because each
+// version of the certificate carries the key that signed the other versions.
+// For example, a root that is both self-signed and signed by an older root
+// can verify and precede its cross-signed version in the chain. Such a chain
+// is returned as-is, with both versions retained — the behavior of previous
+// versions of this function for those inputs which they did not reject.
+//
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
@@ -137,10 +150,18 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 			}
 		}
 
-		// If no chains were merged in this pass, the chain can never be built as a
-		// single list. Error.
+		// If no chains were merged in this pass, the certificates can never be
+		// built into a single list. This can happen when the bundle contains
+		// cross-signed certificates: two versions of the same certificate, each
+		// signed by a different issuer. In that case one of the stuck chains
+		// duplicates a certificate in another chain and can be discarded.
+		// Otherwise, the chain is genuinely broken. Error.
 		if !mergedTwoChains {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			var discardedRedundantChain bool
+			chains, discardedRedundantChain = discardRedundantChain(append(chains, lastChain))
+			if !discardedRedundantChain {
+				return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			}
 		}
 	}
 
@@ -253,6 +274,65 @@ func (a *chainNode) tryMergeChain(b *chainNode) (*chainNode, bool) {
 
 	// Chains cannot be added together.
 	return a, false
+}
+
+// discardRedundantChain removes the first chain whose head (leaf-most)
+// certificate has the same subject and public key as a certificate in one of
+// the other chains. Such a chain is a redundant branch of a cross-signed
+// bundle: its head is an alternative version of a certificate that is already
+// part of another chain, and any certificates above the head exist only to
+// certify that alternative version.
+//
+// Treating certificates with the same subject and public key as versions of
+// the same logical certificate follows RFC 4158 section 2.4.2, which
+// recommends disallowing the same subject name and public key pair from
+// being repeated when building certification paths, to eliminate
+// superfluous paths:
+// https://datatracker.ietf.org/doc/html/rfc4158#section-2.4.2 Because the head of the chain containing
+// the leaf certificate is the leaf itself, which duplicates no other
+// certificate, that chain is never discarded. Chains containing genuinely
+// unrelated certificates are not discarded either, so broken bundles are
+// still rejected. Returns false if no chain could be discarded.
+//
+// Each call visits every certificate a constant number of times, so even
+// with the up to O(n) calls made by the merge loop above, pruning stays
+// within the merge loop's own complexity bound.
+func discardRedundantChain(chains []*chainNode) ([]*chainNode, bool) {
+	type identity struct {
+		subject string
+		spki    string
+	}
+
+	// Record up to two distinct chain indices per identity: that is enough
+	// to decide, for any chain, whether an identity also appears in a chain
+	// other than itself.
+	chainsWithIdentity := make(map[identity][]int, len(chains))
+	for i, chain := range chains {
+		for node := chain; node != nil; node = node.issuer {
+			id := identity{
+				subject: string(node.cert.RawSubject),
+				spki:    string(node.cert.RawSubjectPublicKeyInfo),
+			}
+			indices := chainsWithIdentity[id]
+			if len(indices) < 2 && (len(indices) == 0 || indices[len(indices)-1] != i) {
+				chainsWithIdentity[id] = append(indices, i)
+			}
+		}
+	}
+
+	for i, chain := range chains {
+		id := identity{
+			subject: string(chain.cert.RawSubject),
+			spki:    string(chain.cert.RawSubjectPublicKeyInfo),
+		}
+		for _, j := range chainsWithIdentity[id] {
+			if j != i {
+				return slices.Delete(chains, i, i+1), true
+			}
+		}
+	}
+
+	return chains, false
 }
 
 // Return the root most node of this chain.
