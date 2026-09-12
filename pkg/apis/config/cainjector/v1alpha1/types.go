@@ -76,6 +76,10 @@ type CAInjectorConfiguration struct {
 
 	// metricsTLSConfig is used to configure the metrics server TLS settings.
 	MetricsTLSConfig sharedv1alpha1.TLSConfig `json:"metricsTLSConfig"`
+
+	// The host and port that the healthz endpoint should listen on.
+	// Defaults to ':6080'.
+	HealthzListenAddress string `json:"healthzListenAddress,omitempty"`
 }
 
 type EnableDataSourceConfig struct {

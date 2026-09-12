@@ -93,6 +93,7 @@ func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfig
 	if err := sharedv1alpha1.Convert_v1alpha1_TLSConfig_To_shared_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
+	out.HealthzListenAddress = in.HealthzListenAddress
 	return nil
 }
 
@@ -122,6 +123,7 @@ func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfig
 	if err := sharedv1alpha1.Convert_shared_TLSConfig_To_v1alpha1_TLSConfig(&in.MetricsTLSConfig, &out.MetricsTLSConfig, s); err != nil {
 		return err
 	}
+	out.HealthzListenAddress = in.HealthzListenAddress
 	return nil
 }
 
