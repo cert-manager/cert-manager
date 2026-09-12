@@ -265,3 +265,49 @@ set .installCRDs and disabled .crds.keep.
     {{- fail "ERROR: .crds.keep is not compatible with .installCRDs, please use .crds.enabled and .crds.keep instead" }}
   {{- end }}
 {{- end -}}
+
+{{/*
+Decide whether to render the ServiceMonitor resources.
+*/}}
+{{- define "cert-manager.shouldRenderServiceMonitor" -}}
+  {{- $mode := .Values.prometheus.servicemonitor.renderMode -}}
+  {{- if eq $mode "alwaysRender" -}}
+    true
+  {{- else if eq $mode "skipIfMissing" -}}
+    {{- if has "monitoring.coreos.com/v1/ServiceMonitor" .Capabilities.APIVersions -}}
+      true
+    {{- else -}}
+      false
+    {{- end -}}
+  {{- else if eq $mode "failIfMissing" -}}
+    {{- if not (has "monitoring.coreos.com/v1/ServiceMonitor" .Capabilities.APIVersions) -}}
+      {{- fail "ServiceMonitor CRD is required but not present in the cluster. See https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml or the settings for .Values.serviceMonitor.renderMode to suppress this error." -}}
+    {{- end -}}
+    true
+  {{- else -}}
+    {{- fail (printf "Invalid renderMode '%s'. Must be one of: skipIfMissing, failIfMissing, alwaysRender." $mode) -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Decide whether to render the PodMonitor resources.
+*/}}
+{{- define "cert-manager.shouldRenderPodMonitor" -}}
+  {{- $mode := .Values.prometheus.podmonitor.renderMode -}}
+  {{- if eq $mode "alwaysRender" -}}
+    true
+  {{- else if eq $mode "skipIfMissing" -}}
+    {{- if has "monitoring.coreos.com/v1/PodMonitor" .Capabilities.APIVersions -}}
+      true
+    {{- else -}}
+      false
+    {{- end -}}
+  {{- else if eq $mode "failIfMissing" -}}
+    {{- if not (has "monitoring.coreos.com/v1/PodMonitor" .Capabilities.APIVersions) -}}
+      {{- fail "PodMonitor CRD is required but not present in the cluster. See https://github.com/prometheus-operator/prometheus-operator/blob/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml or the settings for .Values.serviceMonitor.renderMode to suppress this error." -}}
+    {{- end -}}
+    true
+  {{- else -}}
+    {{- fail (printf "Invalid renderMode '%s'. Must be one of: skipIfMissing, failIfMissing, alwaysRender." $mode) -}}
+  {{- end -}}
+{{- end -}}
