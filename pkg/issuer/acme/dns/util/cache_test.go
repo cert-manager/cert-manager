@@ -43,6 +43,26 @@ func TestCachingResolver_FindZoneByFQDN(t *testing.T) {
 			},
 		},
 		{
+			// Regression test for cert-manager/cert-manager#4749: a certificate
+			// for a deep subdomain (multiple labels below the real zone apex)
+			// must climb past every intermediate NXDOMAIN label to find the
+			// zone, rather than stopping at the first one queried.
+			name:       "multiple NXDOMAIN labels: climbs past deep subdomains to zone apex",
+			givenFQDN:  "_acme-challenge.baz.bar.foo.example.com.",
+			expectZone: "foo.example.com.",
+			mockDNS: []interaction{
+				{"SOA _acme-challenge.baz.bar.foo.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA baz.bar.foo.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA bar.foo.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA foo.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Answer: []dns.RR{
+						&dns.SOA{Hdr: dns.RR_Header{Name: "foo.example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
+					},
+				}},
+			},
+		},
+		{
 			// Per RFC 2181, CNAME cannot exist at a zone apex, so a SOA alongside a
 			// CNAME is not authoritative for that label. The search continues up the tree.
 			name:       "CNAME at label is skipped per RFC 2181",
