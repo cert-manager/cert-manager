@@ -204,11 +204,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
-		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
+		latestName, err := c.latestNextPrivateKeySecretName(ctx, crt)
+		if err != nil {
+			return err
+		}
+
 		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets))
 
-		// Use ptr.Deref to get the value or empty string if nil
-		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
+		return c.deleteSecretResources(ctx, secrets, ptr.Deref(latestName, ""))
 	}
 
 	secret := secrets[0]
@@ -220,8 +223,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return c.setNextPrivateKeySecretName(ctx, crt, &secret.Name)
 	}
 	if *crt.Status.NextPrivateKeySecretName != secrets[0].Name {
-		log.V(logf.DebugLevel).Info("Deleting existing private key secret as name does not match status.nextPrivateKeySecretName")
-		return c.deleteSecretResources(ctx, secrets)
+		latestName, err := c.latestNextPrivateKeySecretName(ctx, crt)
+		if err != nil {
+			return err
+		}
+		if latestName == nil || *latestName != secret.Name {
+			log.V(logf.DebugLevel).Info("Deleting existing private key secret as name does not match status.nextPrivateKeySecretName")
+			return c.deleteSecretResources(ctx, secrets)
+		}
+		log.V(logf.DebugLevel).Info("Secret name matches API status.nextPrivateKeySecretName; informer cache was stale")
 	}
 
 	if secret.Data == nil || len(secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
@@ -311,6 +321,15 @@ func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev
 		logf.WithRelatedResource(log, s).V(logf.DebugLevel).Info("Deleted 'next private key' Secret resource")
 	}
 	return nil
+}
+
+// latestNextPrivateKeySecretName avoids acting on stale informer data.
+func (c *controller) latestNextPrivateKeySecretName(ctx context.Context, crt *cmapi.Certificate) (*string, error) {
+	latestCrt, err := c.client.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return latestCrt.Status.NextPrivateKeySecretName, nil
 }
 
 func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi.Certificate, name *string) error {
