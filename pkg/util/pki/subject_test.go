@@ -25,7 +25,7 @@ import (
 )
 
 func TestMustParseRDN(t *testing.T) {
-	subject := "SERIALNUMBER=42, L=some-locality, ST=some-state-or-province, STREET=some-street, CN=foo-long.com, OU=FooLong, OU=Barq, OU=Baz, OU=Dept., O=Corp., C=US+123.544.555= A Test Value "
+	subject := "SERIALNUMBER=42, L=some-locality, GN=given-name, SN=surname, ST=some-state-or-province, STREET=some-street, CN=foo-long.com, OU=FooLong, OU=Barq, OU=Baz, OU=Dept., O=Corp., C=US+123.544.555= A Test Value "
 	rdnSeq, err := UnmarshalSubjectStringToRDNSequence(subject)
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +60,12 @@ func TestMustParseRDN(t *testing.T) {
 			},
 			[]pkix.AttributeTypeAndValue{
 				{Type: OIDConstants.Province, Value: "some-state-or-province"},
+			},
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.Surname, Value: "surname"},
+			},
+			[]pkix.AttributeTypeAndValue{
+				{Type: OIDConstants.GivenName, Value: "given-name"},
 			},
 			[]pkix.AttributeTypeAndValue{
 				{Type: OIDConstants.Locality, Value: "some-locality"},
