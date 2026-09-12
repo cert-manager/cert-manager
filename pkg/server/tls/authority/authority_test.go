@@ -28,6 +28,7 @@ import (
 
 	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -121,8 +122,17 @@ func TestDynamicAuthority(t *testing.T) {
 
 	waitForRotationAndSign(false)
 
-	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
-	assert.NoError(t, err)
+	// The rotation notification does not guarantee that the authority has
+	// recreated the Secret yet: it may be a stale buffered notification from
+	// the initial CA creation, left unconsumed because Sign succeeded
+	// immediately above, and Sign works from in-memory CA data. Poll until
+	// the recreated Secret is visible.
+	var secret *corev1.Secret
+	require.Eventually(t, func() bool {
+		var err error
+		secret, err = fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
+		return err == nil
+	}, 10*time.Second, 10*time.Millisecond)
 
 	secret.Data = map[string][]byte{
 		"tls.crt": []byte("test"),
