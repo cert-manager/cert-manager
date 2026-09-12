@@ -63,6 +63,7 @@ type Metrics struct {
 	venafiClientRequestDurationSeconds  *prometheus.SummaryVec
 	venafiOAuthTokenRequestsTotal       *prometheus.CounterVec
 	venafiOAuthTokenRequestDurationSecs prometheus.Histogram
+	vaultClientRequestDurationSeconds  *prometheus.SummaryVec
 	controllerSyncCallCount             *prometheus.CounterVec
 	controllerSyncErrorCount            *prometheus.CounterVec
 	challengeCollector                  prometheus.Collector
@@ -174,6 +175,17 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			},
 		)
 
+		vaultClientRequestDurationSeconds = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:  namespace,
+				Name:       "vault_client_request_duration_seconds",
+				Help:       "The HTTP request latencies in seconds for the Vault client used by the Vault issuer.",
+				Subsystem:  "http",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"api_call"},
+		)
+
 		controllerSyncCallCount = prometheus.NewCounterVec(
 			//nolint:promlinter
 			prometheus.CounterOpts{
@@ -213,6 +225,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		venafiClientRequestDurationSeconds:  venafiClientRequestDurationSeconds,
 		venafiOAuthTokenRequestsTotal:       venafiOAuthTokenRequestsTotal,
 		venafiOAuthTokenRequestDurationSecs: venafiOAuthTokenRequestDurationSecs,
+		vaultClientRequestDurationSeconds:   vaultClientRequestDurationSeconds,
 		controllerSyncCallCount:             controllerSyncCallCount,
 		controllerSyncErrorCount:            controllerSyncErrorCount,
 	}
@@ -248,6 +261,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiOAuthTokenRequestsTotal)
 	m.registry.MustRegister(m.venafiOAuthTokenRequestDurationSecs)
+	m.registry.MustRegister(m.vaultClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)

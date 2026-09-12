@@ -30,6 +30,7 @@ import (
 	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
 )
 
@@ -45,6 +46,7 @@ type Vault struct {
 	createTokenFn func(ns string) vaultinternal.CreateToken
 	secretsLister internalinformers.SecretLister
 	reporter      *crutil.Reporter
+	metrics       *metrics.Metrics
 
 	vaultClientBuilder vaultinternal.ClientBuilder
 }
@@ -67,6 +69,7 @@ func NewVault(ctx *controllerpkg.Context) certificaterequests.Issuer {
 		},
 		secretsLister:      ctx.KubeSharedInformerFactory.Secrets().Lister(),
 		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		metrics:           ctx.Metrics,
 		vaultClientBuilder: vaultinternal.New,
 	}
 }
@@ -79,7 +82,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.vaultClientBuilder(ctx, resourceNamespace, v.createTokenFn, v.secretsLister, issuerObj, v.issuerOptions.CanUseAmbientCredentials(issuerObj))
+	client, err := v.vaultClientBuilder(ctx, resourceNamespace, v.createTokenFn, v.secretsLister, issuerObj, v.issuerOptions.CanUseAmbientCredentials(issuerObj), v.metrics)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
