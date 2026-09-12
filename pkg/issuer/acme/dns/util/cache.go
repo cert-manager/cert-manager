@@ -198,18 +198,18 @@ func (c *CachingResolver) LookupAuthoritativeNameservers(ctx context.Context, fq
 
 		// Cache hit, return from cache
 		if entry, exists := c.getCache(key, now); exists {
-			var authoritativeNss []string
+			var authoritativeNSs []string
 
 			logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning cached DNS response", "type", "ns", "fqdn", fqdn, "nameserver", nameserver)
 			for _, rr := range entry.Response.Answer {
 				if ns, ok := rr.(*dns.NS); ok {
-					authoritativeNss = append(authoritativeNss, strings.ToLower(ns.Ns))
+					authoritativeNSs = append(authoritativeNSs, strings.ToLower(ns.Ns))
 				}
 			}
 
-			if len(authoritativeNss) != 0 {
-				logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNss)
-				return authoritativeNss, nil
+			if len(authoritativeNSs) != 0 {
+				logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNSs)
+				return authoritativeNSs, nil
 			}
 
 			logf.FromContext(ctx).V(logf.WarnLevel).Info("Cached response has no NS records, retrying DNS query", "fqdn", fqdn, "nameserver", nameserver)
@@ -218,7 +218,7 @@ func (c *CachingResolver) LookupAuthoritativeNameservers(ctx context.Context, fq
 
 	// Cache miss, query DNS
 	return tryAllNameservers(nameservers, func(nameserver string) ([]string, error) {
-		var authoritativeNss []string
+		var authoritativeNSs []string
 
 		// The cache key for this nameserver/fqdn combo
 		key := cacheKey{
@@ -245,7 +245,7 @@ func (c *CachingResolver) LookupAuthoritativeNameservers(ctx context.Context, fq
 		ttl := time.Duration(0)
 		for _, rr := range r.Answer {
 			if ns, ok := rr.(*dns.NS); ok {
-				authoritativeNss = append(authoritativeNss, strings.ToLower(ns.Ns))
+				authoritativeNSs = append(authoritativeNSs, strings.ToLower(ns.Ns))
 				if newTTL := time.Second * time.Duration(ns.Hdr.Ttl); newTTL < ttl || ttl == 0 {
 					ttl = newTTL
 				}
@@ -253,7 +253,7 @@ func (c *CachingResolver) LookupAuthoritativeNameservers(ctx context.Context, fq
 		}
 
 		// If we did not find any NS records, continue
-		if len(authoritativeNss) == 0 {
+		if len(authoritativeNSs) == 0 {
 			return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
 		}
 
@@ -263,48 +263,48 @@ func (c *CachingResolver) LookupAuthoritativeNameservers(ctx context.Context, fq
 			Expiry:   now.Add(ttl),
 		})
 
-		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNss)
-		return authoritativeNss, nil
+		logf.FromContext(ctx).V(logf.DebugLevel).Info("Returning authoritative nameservers", "authoritativeNameservers", authoritativeNSs)
+		return authoritativeNSs, nil
 	})
 }
 
 // CheckTXTRecordPropagation follows any CNAME chain for fqdn, then verifies
-// that value is present in the TXT records returned by the given nameservers.
+// that value is present in the TXT records returned by the configured nameservers.
 // When useAuthoritative is true, the authoritative nameservers for the zone are
 // resolved via LookupAuthoritativeNameservers and queried instead.
 func (c *CachingResolver) CheckTXTRecordPropagation(
 	ctx context.Context,
 	fqdn, value string,
-	nameservers []string,
+	configuredNSs []string,
 	useAuthoritative UseAuthoritative,
 ) (bool, error) {
 
 	// Follow CNAME records to find the real FQDN
 	var err error
-	fqdn, err = followCNAMEs(ctx, fqdn, nameservers)
+	fqdn, err = followCNAMEs(ctx, fqdn, configuredNSs)
 	if err != nil {
 		return false, err
 	}
 
 	// If we are not using the authoritative servers just directly check the
-	// provided nameservers
+	// configured nameservers
 	if !useAuthoritative {
-		return checkAuthoritativeNss(ctx, fqdn, value, nameservers)
+		return checkTXTRecord(ctx, fqdn, value, configuredNSs)
 	}
 
 	// Find the authoritative nameservers
-	authoritativeNss, err := c.LookupAuthoritativeNameservers(ctx, fqdn, nameservers)
+	authoritativeNSs, err := c.LookupAuthoritativeNameservers(ctx, fqdn, configuredNSs)
 	if err != nil {
 		return false, err
 	}
 
 	// Convert the return nameservers to the correct format <ip>:<port>
-	for i, ans := range authoritativeNss {
-		authoritativeNss[i] = net.JoinHostPort(ans, "53")
+	for i, ans := range authoritativeNSs {
+		authoritativeNSs[i] = net.JoinHostPort(ans, "53")
 	}
 
 	// Check for the TXT record using the authoritative nameservers
-	return checkAuthoritativeNss(ctx, fqdn, value, authoritativeNss)
+	return checkTXTRecord(ctx, fqdn, value, authoritativeNSs)
 }
 
 func (c *CachingResolver) putCache(key cacheKey, value cacheEntry) {
