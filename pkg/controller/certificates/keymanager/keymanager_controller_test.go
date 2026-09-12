@@ -233,9 +233,12 @@ func TestProcessItem(t *testing.T) {
 				), relaxedSecretMatcher),
 			},
 		},
-		// TODO: in this case we should adapt the controller behaviour to unset the nextPrivateKeySecretName to
-		//  gracefully recover
-		"error if an existing Secret exists and is named as status.nextPrivateKeySecretName but it is not owned by the Certificate": {
+		// The name in status.nextPrivateKeySecretName cannot be trusted: writing
+		// the certificates/status subresource is a weaker permission than
+		// reading Secrets. The keymanager must not adopt a Secret it does not
+		// own, and must not keep retrying the same name, because the consumers
+		// of the field reject that Secret and issuance would never recover.
+		"create a secret under a generated name if status.nextPrivateKeySecretName names a Secret not owned by the Certificate": {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 				Status: cmapi.CertificateStatus{
@@ -249,13 +252,15 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 			secrets:        []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
-			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
+			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
 			expectedActions: []testpkg.Action{
 				testpkg.NewAction(coretesting.NewGetAction(
 					cmapi.SchemeGroupVersion.WithResource("certificates"),
 					"testns",
 					"test",
 				)),
+				// Creating under the name taken from the status field fails,
+				// because the unrelated Secret already occupies that name.
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -273,6 +278,40 @@ func TestProcessItem(t *testing.T) {
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
 					"fixed-name",
+				)),
+				// The occupying Secret is not ours, so a new one is created
+				// under a generated name.
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace:       "testns",
+							GenerateName:    "test-",
+							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
+						},
+						Data: map[string][]byte{"tls.key": nil},
+					},
+				), relaxedSecretMatcher),
+				// The status field is repointed at the new Secret, which is
+				// what lets the requestmanager and issuing controllers proceed.
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
+					"testns",
+					&cmapi.Certificate{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+						Status: cmapi.CertificateStatus{
+							NextPrivateKeySecretName: new("test-notrandom"),
+							Conditions: []cmapi.CertificateCondition{
+								{
+									Type:   cmapi.CertificateConditionIssuing,
+									Status: cmmeta.ConditionTrue,
+								},
+							},
+						},
+					},
 				)),
 			},
 		},

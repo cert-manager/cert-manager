@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -135,18 +134,6 @@ func NewController(
 	}, queue, mustSync, nil
 }
 
-// isNextPrivateKeyLabelSelector is a label selector used to match Secret
-// resources with the `cert-manager.io/next-private-key: "true"` label.
-var isNextPrivateKeyLabelSelector labels.Selector
-
-func init() {
-	r, err := labels.NewRequirement(cmapi.IsNextPrivateKeySecretLabelKey, selection.Equals, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
-	isNextPrivateKeyLabelSelector = labels.NewSelector().Add(*r)
-}
-
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
@@ -170,7 +157,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy[*corev1.Secret](crt))
+	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), labels.Everything(), func(s *corev1.Secret) bool {
+		return certificates.IsNextPrivateKeySecret(s, crt)
+	})
 	if err != nil {
 		return err
 	}
@@ -393,20 +382,38 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 		s.GenerateName = crt.Name + "-"
 	}
 
-	s, err = c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+	created, err := c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
 
 	// We only get to this code path if both NextPrivateKeySecretName is set AND
-	// we counted zero secrets. If we get an IsAlreadyExists error it means our
-	// cache was outdated and there _is_ a secret.
+	// we counted zero secrets. An IsAlreadyExists error therefore means either
+	// our cache was outdated and there _is_ a secret of ours, or the name in
+	// the status field belongs to a Secret we do not own.
 	if apierrors.IsAlreadyExists(err) && name != "" {
-		return c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+		existing, err := c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if certificates.IsNextPrivateKeySecret(existing, crt) {
+			return existing, nil
+		}
+
+		// The name in status.nextPrivateKeySecretName belongs to a Secret we do
+		// not own. Anyone able to write the certificates/status subresource can
+		// put an arbitrary name there, and the consumers of the field refuse a
+		// Secret we do not own. We must not adopt it, and reusing the name would
+		// fail here on every reconcile, so create the Secret under a generated
+		// name instead. The caller writes that name back to the status field,
+		// which is what lets issuance recover.
+		s.Name = ""
+		s.GenerateName = crt.Name + "-"
+		return c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return created, nil
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
