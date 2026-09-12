@@ -138,8 +138,9 @@ func (c *controller) worker(ctx context.Context) {
 		// use an inlined function so we can use defer
 		func() {
 			defer c.queue.Done(obj)
+			itemLog := log.WithValues("key", obj)
 
-			log.V(logf.DebugLevel).Info("syncing item")
+			itemLog.V(logf.DebugLevel).Info("syncing item")
 
 			// Increase sync count for this controller
 			c.metrics.IncrementSyncCallCount(c.name)
@@ -147,19 +148,19 @@ func (c *controller) worker(ctx context.Context) {
 			err := c.syncHandler(ctx, obj)
 			if err != nil {
 				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
-					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
+					itemLog.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
 					// These errors are not counted towards the controllerSyncErrorCount metric on purpose
 					// as they will go way with
 					// https://github.com/cert-manager/cert-manager/blob/master/design/20220118.server-side-apply.md
 				} else {
-					log.Error(err, "re-queuing item due to error processing")
+					itemLog.Error(err, "re-queuing item due to error processing")
 					c.metrics.IncrementSyncErrorCount(c.name)
 				}
 
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			log.V(logf.DebugLevel).Info("finished processing work item")
+			itemLog.V(logf.DebugLevel).Info("finished processing work item")
 			c.queue.Forget(obj)
 		}()
 	}
