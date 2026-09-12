@@ -440,6 +440,12 @@ func buildCertificates(
 			return nil, nil, err
 		}
 
+		// translateAnnotations appends the alt-names and ip-sans annotation
+		// values without checking against the hosts already collected by
+		// splitHosts above, so the merged spec can contain duplicates again.
+		// Normalize the assembled spec once, after all sources are merged.
+		dedupeSANs(crt)
+
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
@@ -527,17 +533,11 @@ func handleGatewayAPIListeners[L gwapi.Listener | gwapi.ListenerEntry](listeners
 	}
 }
 
-// splitHosts de-duplicates hosts and splits them into DNS names and IP
-// addresses, preserving first-seen order. Duplicates arise when several
-// listeners reference the same Secret and hostname; dropping them keeps the
-// Certificate's SAN count in sync with the ACME order's identifiers.
+// splitHosts splits hosts into DNS names and IP addresses, preserving
+// first-seen order. Any duplicates are left in place; dedupeSANs removes
+// them once the full spec, including annotation-derived SANs, is assembled.
 func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
-	seen := sets.New[string]()
 	for _, h := range hosts {
-		if seen.Has(h) {
-			continue
-		}
-		seen.Insert(h)
 		if ip := net.ParseIP(h); ip != nil {
 			ipAddresses = append(ipAddresses, h)
 		} else {
@@ -545,6 +545,32 @@ func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
 		}
 	}
 	return dnsNames, ipAddresses
+}
+
+// uniqBy returns in with duplicate elements removed, preserving first-seen
+// order. Two elements are duplicates if key returns the same value for both.
+func uniqBy(in []string, key func(string) string) []string {
+	var out []string
+	seen := sets.New[string]()
+	for _, v := range in {
+		k := key(v)
+		if seen.Has(k) {
+			continue
+		}
+		seen.Insert(k)
+		out = append(out, v)
+	}
+	return out
+}
+
+// dedupeSANs removes duplicate values from crt.Spec.DNSNames and
+// crt.Spec.IPAddresses in place, preserving first-seen order. IP addresses
+// are compared by parsed value, so two different spellings of the same
+// address (e.g. "2001:db8::1" and "2001:0db8::1") are treated as duplicates
+// even though splitHosts, which only compares strings, would not catch them.
+func dedupeSANs(crt *cmapi.Certificate) {
+	crt.Spec.DNSNames = uniqBy(crt.Spec.DNSNames, func(name string) string { return name })
+	crt.Spec.IPAddresses = uniqBy(crt.Spec.IPAddresses, func(ipStr string) string { return net.ParseIP(ipStr).String() })
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
@@ -631,6 +657,16 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 
 	for i := range a.Spec.DNSNames {
 		if a.Spec.DNSNames[i] != b.Spec.DNSNames[i] {
+			return true
+		}
+	}
+
+	if len(a.Spec.IPAddresses) != len(b.Spec.IPAddresses) {
+		return true
+	}
+
+	for i := range a.Spec.IPAddresses {
+		if a.Spec.IPAddresses[i] != b.Spec.IPAddresses[i] {
 			return true
 		}
 	}
