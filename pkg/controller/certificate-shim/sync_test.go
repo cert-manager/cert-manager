@@ -1735,6 +1735,69 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:         "should update an existing Certificate resource with different issuer group if it does not match specified on the IngressLike",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "cert-secret-name",
+						},
+					},
+				},
+			},
+			DefaultIssuerKind: "Issuer",
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-secret-name",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "cert-secret-name"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-secret-name",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: cmmeta.IssuerReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:         "should not update an existing Certificate if there are no changes (testing elements that default to the nil pointer)",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
