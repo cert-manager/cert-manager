@@ -23,7 +23,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
-	"math"
 	"math/big"
 	"testing"
 	"time"
@@ -468,6 +467,13 @@ func TestCA_Sign(t *testing.T) {
 	}
 	testCSR := generateCSR(t, testpk)
 
+	// Lower bound for the NotBefore of any certificate signed during this
+	// test. Truncated because NotBefore is truncated to a whole second when
+	// the certificate is serialized to ASN.1 [1].
+	//
+	//  [1]: https://tools.ietf.org/html/rfc5280#section-4.1.2.5.1
+	signStart := time.Now().Truncate(time.Second)
+
 	tests := map[string]struct {
 		givenCASecret    *corev1.Secret
 		givenCAIssuer    cmapi.GenericIssuer
@@ -492,28 +498,15 @@ func TestCA_Sign(t *testing.T) {
 				}),
 			),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
-				// Although there is less than 1µs between the time.Now
-				// call made by the certificate template func (in the "pki"
-				// package) and the time.Now below, rounding or truncating
-				// will always end up with a flaky test. This is due to the
-				// rounding made to the notAfter value when serializing the
-				// certificate to ASN.1 [1].
-				//
-				//  [1]: https://tools.ietf.org/html/rfc5280#section-4.1.2.5.1
-				//
-				// So instead of using a truncation or rounding in order to
-				// check the time, we use a delta of 1 second. One entire
-				// second is totally overkill since, as detailed above, the
-				// delay is probably less than a microsecond. But that will
-				// do for now!
-				//
-				// Note that we do have a plan to fix this. We want to be
-				// injecting a time (instead of time.Now) to the template
-				// functions. This work is being tracked in this issue:
-				// https://github.com/cert-manager/cert-manager/issues/3738
-				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
-				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
-				assert.LessOrEqualf(t, deltaSec, 1., "expected a time delta lower than 1 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
+				// NotBefore and NotAfter are set from a single time.Now
+				// call by the certificate template func (in the "pki"
+				// package), so the validity period of the signed
+				// certificate is exactly the requested duration. Comparing
+				// NotAfter against a fresh time.Now here instead would
+				// flake when the test runs slowly:
+				// https://github.com/cert-manager/cert-manager/issues/9246
+				assert.Equal(t, 30*time.Minute, got.NotAfter.Sub(got.NotBefore))
+				assert.WithinRange(t, got.NotBefore, signStart, time.Now())
 			},
 		},
 		"when the CertificateRequest has the isCA field set, it should appear on the signed ca": {
