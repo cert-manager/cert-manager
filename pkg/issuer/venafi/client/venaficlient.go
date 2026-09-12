@@ -133,7 +133,7 @@ func New(namespace string, secretsLister internalinformers.SecretLister, issuer 
 	// has been created.
 	vcertClient, err := vcert.NewClient(cfg, false)
 	if err != nil {
-		return nil, fmt.Errorf("error creating vcert client: %s", err.Error())
+		return nil, fmt.Errorf("error creating vcert client: %w", err)
 	}
 
 	var tppc *tpp.Connector
