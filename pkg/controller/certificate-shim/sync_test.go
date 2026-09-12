@@ -1183,6 +1183,67 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:         "should update an existing Certificate resource with different ipAddresses if they do not match those specified on the IngressLike",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"192.0.2.9"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						IPAddresses: []string{"192.0.2.1"},
+						SecretName:  "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			DefaultIssuerKind: "Issuer",
+			ExpectedEvents:    []string{`Normal UpdateCertificate Successfully updated Certificate "existing-crt"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						IPAddresses: []string{"192.0.2.9"},
+						SecretName:  "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the IngressLike",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
@@ -5970,6 +6031,84 @@ func Test_buildCertificates_doesNotMutateIngressLikeLabels(t *testing.T) {
 			// not show up on the (cached) input object.
 			crt.Labels["added-by-test"] = "should-not-leak"
 			assert.NotContains(t, test.ingLike.GetLabels(), "added-by-test", "Certificate labels alias the labels of the object passed to buildCertificates")
+		})
+	}
+}
+
+func Test_certNeedsUpdate(t *testing.T) {
+	buildCert := func(ipAddresses []string) *cmapi.Certificate {
+		return &cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "crt",
+			},
+			Spec: cmapi.CertificateSpec{
+				DNSNames:    []string{"example.com"},
+				IPAddresses: ipAddresses,
+				SecretName:  "crt",
+				IssuerRef: cmmeta.IssuerReference{
+					Name: "issuer-name",
+					Kind: "Issuer",
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name        string
+		ipAddresses []string
+		existing    []string
+		want        bool
+	}{
+		{
+			name:        "equal ipAddresses do not need an update",
+			ipAddresses: []string{"192.0.2.1", "2001:db8::1"},
+			existing:    []string{"192.0.2.1", "2001:db8::1"},
+			want:        false,
+		},
+		{
+			name:        "nil and empty ipAddresses are equivalent",
+			ipAddresses: nil,
+			existing:    []string{},
+			want:        false,
+		},
+		{
+			name:        "changed ipAddress needs an update",
+			ipAddresses: []string{"192.0.2.9"},
+			existing:    []string{"192.0.2.1"},
+			want:        true,
+		},
+		{
+			name:        "added ipAddress needs an update",
+			ipAddresses: []string{"192.0.2.1"},
+			existing:    nil,
+			want:        true,
+		},
+		{
+			name:        "removed ipAddress needs an update",
+			ipAddresses: nil,
+			existing:    []string{"192.0.2.1"},
+			want:        true,
+		},
+		{
+			name:        "de-duplicated ipAddresses need an update",
+			ipAddresses: []string{"192.0.2.1"},
+			existing:    []string{"192.0.2.1", "192.0.2.1"},
+			want:        true,
+		},
+		{
+			name:        "re-ordered ipAddresses need an update",
+			ipAddresses: []string{"192.0.2.1", "192.0.2.2"},
+			existing:    []string{"192.0.2.2", "192.0.2.1"},
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := certNeedsUpdate(buildCert(tt.existing), buildCert(tt.ipAddresses))
+			if got != tt.want {
+				t.Errorf("certNeedsUpdate() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
