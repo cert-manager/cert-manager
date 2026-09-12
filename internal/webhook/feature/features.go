@@ -57,6 +57,14 @@ const (
 	// See https://github.com/cert-manager/cert-manager/issues/3203 and https://github.com/cert-manager/cert-manager/issues/4424 for context.
 	LiteralCertificateSubject featuregate.Feature = "LiteralCertificateSubject"
 
+	// Owner: @SgtCoDFish
+	// Alpha: v1.11
+	//
+	// UseCertificateRequestBasicConstraints will add Basic Constraints section in the Extension Request of the Certificate Signing Request
+	// This feature will add BasicConstraints section with CA field defaulting to false; CA field will be set true if the Certificate resource spec has isCA as true
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/5539
+	UseCertificateRequestBasicConstraints featuregate.Feature = "UseCertificateRequestBasicConstraints"
+
 	// Owner: @inteon
 	// Beta: v1.13
 	// GA: v1.15
@@ -99,8 +107,9 @@ func init() {
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DisallowInsecureCSRUsageDefinition: {Default: true, PreRelease: featuregate.GA},
 
-	AdditionalCertificateOutputFormats: {Default: true, PreRelease: featuregate.GA},
-	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
-	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
-	OtherNames:                         {Default: true, PreRelease: featuregate.Beta},
+	AdditionalCertificateOutputFormats:    {Default: true, PreRelease: featuregate.GA},
+	LiteralCertificateSubject:             {Default: true, PreRelease: featuregate.Beta},
+	NameConstraints:                       {Default: true, PreRelease: featuregate.Beta},
+	OtherNames:                            {Default: true, PreRelease: featuregate.Beta},
+	UseCertificateRequestBasicConstraints: {Default: false, PreRelease: featuregate.Alpha},
 }
