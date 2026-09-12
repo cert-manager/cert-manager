@@ -58,15 +58,17 @@ func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 const nextPrivateKeySecretName = "next-private-key"
 
 // nextPrivateKeySecretMeta builds the ObjectMeta that the keymanager
-// controller gives to a next private key Secret: the next-private-key label,
-// and a controller owner reference back to the Certificate. The issuing
-// controller only consumes Secrets carrying both, so fixtures must set them.
+// controller gives to a next private key Secret: the labels it sets, and a
+// controller owner reference back to the Certificate. The issuing controller
+// only consumes Secrets carrying the next-private-key label and that owner
+// reference, so fixtures must set them.
 func nextPrivateKeySecretMeta(crt *cmapi.Certificate) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: crt.Namespace,
 		Name:      nextPrivateKeySecretName,
 		Labels: map[string]string{
-			cmapi.IsNextPrivateKeySecretLabelKey: "true",
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
 		},
 		OwnerReferences: []metav1.OwnerReference{
 			*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),

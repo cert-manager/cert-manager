@@ -207,13 +207,8 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return c.ensureSecretData(ctx, log, crt)
 	}
 
-	if crt.Status.NextPrivateKeySecretName == nil ||
-		len(*crt.Status.NextPrivateKeySecretName) == 0 {
-		// Do nothing if the next private key secret name is not set
-		return nil
-	}
-
-	// Fetch and parse the 'next private key secret'
+	// Fetch and parse the 'next private key secret'. An unset name is reported as
+	// not found, the same as a Secret we must not use.
 	nextPrivateKeySecret, err := certificates.GetNextPrivateKeySecret(c.secretLister.Secrets(crt.Namespace), crt)
 	if apierrors.IsNotFound(err) {
 		log.V(logf.DebugLevel).Info("Next private key secret does not exist or is not owned by this Certificate, waiting for keymanager controller")

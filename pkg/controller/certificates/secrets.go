@@ -36,9 +36,8 @@ func IsNextPrivateKeySecret(secret *corev1.Secret, crt *cmapi.Certificate) bool 
 }
 
 // GetNextPrivateKeySecret returns the Secret named by
-// crt.Status.NextPrivateKeySecretName, but only if that Secret is one that the
-// keymanager controller created for this Certificate: it must carry the
-// `cert-manager.io/next-private-key` label and have crt as its controller.
+// crt.Status.NextPrivateKeySecretName, but only if IsNextPrivateKeySecret
+// accepts it. An unset or empty name is reported as not found.
 //
 // The name alone must not be trusted. status.nextPrivateKeySecretName is
 // writable by any principal with access to the certificates/status

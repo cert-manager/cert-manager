@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -135,18 +134,6 @@ func NewController(
 	}, queue, mustSync, nil
 }
 
-// isNextPrivateKeyLabelSelector is a label selector used to match Secret
-// resources with the `cert-manager.io/next-private-key: "true"` label.
-var isNextPrivateKeyLabelSelector labels.Selector
-
-func init() {
-	r, err := labels.NewRequirement(cmapi.IsNextPrivateKeySecretLabelKey, selection.Equals, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
-	isNextPrivateKeyLabelSelector = labels.NewSelector().Add(*r)
-}
-
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
@@ -170,7 +157,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy[*corev1.Secret](crt))
+	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), labels.Everything(), func(s *corev1.Secret) bool {
+		return certificates.IsNextPrivateKeySecret(s, crt)
+	})
 	if err != nil {
 		return err
 	}

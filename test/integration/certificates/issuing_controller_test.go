@@ -131,9 +131,7 @@ func TestIssuingController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The issuing controller only consumes a next private key Secret that the
-	// keymanager controller created for this Certificate, so the Secret needs
-	// the Certificate as its owner and cannot be created any earlier.
+	// Must come after the Certificate exists: the Secret needs it as owner.
 	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
@@ -329,9 +327,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The issuing controller only consumes a next private key Secret that the
-	// keymanager controller created for this Certificate, so the Secret needs
-	// the Certificate as its owner and cannot be created any earlier.
+	// Must come after the Certificate exists: the Secret needs it as owner.
 	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytesPKCS1)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
@@ -524,9 +520,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The issuing controller only consumes a next private key Secret that the
-	// keymanager controller created for this Certificate, so the Secret needs
-	// the Certificate as its owner and cannot be created any earlier.
+	// Must come after the Certificate exists: the Secret needs it as owner.
 	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
@@ -748,9 +742,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The issuing controller only consumes a next private key Secret that the
-	// keymanager controller created for this Certificate, so the Secret needs
-	// the Certificate as its owner and cannot be created any earlier.
+	// Must come after the Certificate exists: the Secret needs it as owner.
 	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, pkBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, pk)
@@ -1046,9 +1038,9 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 }
 
 // createNextPrivateKeySecret stores skBytes in a Secret that looks like one the
-// keymanager controller created for crt: it carries the
-// cert-manager.io/next-private-key label and has crt as its controller. The
-// issuing controller ignores any Secret that fails those checks.
+// keymanager controller created for crt: it carries the labels the keymanager
+// sets and has crt as its controller. The issuing controller ignores any Secret
+// that is not labelled cert-manager.io/next-private-key and owned by crt.
 func createNextPrivateKeySecret(t *testing.T, kubeClient kubernetes.Interface, crt *cmapi.Certificate, name string, skBytes []byte) {
 	t.Helper()
 
@@ -1057,7 +1049,8 @@ func createNextPrivateKeySecret(t *testing.T, kubeClient kubernetes.Interface, c
 			Name:      name,
 			Namespace: crt.Namespace,
 			Labels: map[string]string{
-				cmapi.IsNextPrivateKeySecretLabelKey: "true",
+				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+				cmapi.PartOfCertManagerControllerLabelKey: "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),

@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	coreinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
@@ -141,11 +140,9 @@ func TestGetNextPrivateKeySecret(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var objects []runtime.Object
-			if test.secret != nil {
-				objects = append(objects, test.secret)
-			}
-			factory := coreinformers.NewSharedInformerFactory(kubefake.NewSimpleClientset(objects...), 0)
+			// The factory is never started, so the informer's indexer is what the
+			// lister reads. Seed it directly.
+			factory := coreinformers.NewSharedInformerFactory(kubefake.NewSimpleClientset(), 0)
 			lister := factory.Core().V1().Secrets().Lister()
 			if test.secret != nil {
 				if err := factory.Core().V1().Secrets().Informer().GetIndexer().Add(test.secret); err != nil {
