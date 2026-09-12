@@ -398,15 +398,15 @@ func Test_controller_ProcessItem(t *testing.T) {
 				}
 			},
 			wantEvent: []string{
-				"Warning WindowError Renewing certificate without satisfying renewal windows due to cannot find renewal time in window",
-				"Normal Issuing Renewing certificate without satisfying renewal windows at: <nil>",
+				"Warning WindowError Renewing certificate on the default schedule because the renewal configuration could not be honored: cannot find renewal time in window",
+				"Normal Issuing Renewing certificate on the default schedule because the renewal configuration could not be honored: cannot find renewal time in window",
 			},
 			wantConditions: []cmapi.CertificateCondition{{
 				Type:               "Issuing",
 				ObservedGeneration: 42,
 				Status:             "True",
 				Reason:             "Renewing",
-				Message:            "Renewing certificate without satisfying renewal windows at: <nil>",
+				Message:            "Renewing certificate on the default schedule because the renewal configuration could not be honored: cannot find renewal time in window",
 				LastTransitionTime: &fixedNow,
 			}},
 		},
