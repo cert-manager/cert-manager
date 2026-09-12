@@ -215,11 +215,14 @@ type CertificateSpec struct {
 	Renewal *CertificateRenewal `json:"renewal,omitempty"`
 
 	// Requested DNS subject alternative names.
+	// Values must be unique.
 	// +optional
 	// +listType=atomic
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// Requested IP address subject alternative names.
+	// Values must be unique. Addresses are compared by parsed value, so
+	// equivalent spellings of one address count as duplicates.
 	// +optional
 	// +listType=atomic
 	IPAddresses []string `json:"ipAddresses,omitempty"`
