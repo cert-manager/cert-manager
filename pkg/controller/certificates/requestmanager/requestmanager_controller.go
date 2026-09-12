@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -264,7 +265,12 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 		// re-tried. In practice no more than one CertificateRequest is
 		// expected at this point.
 		crReadyCond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
-		if crReadyCond == nil || crReadyCond.Status != cmmeta.ConditionFalse || crReadyCond.Reason != cmapi.CertificateRequestReasonFailed {
+		failed := crReadyCond != nil && crReadyCond.Status == cmmeta.ConditionFalse && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed
+		// An external issuer can leave a request with a failureTime and no
+		// Ready condition. It has failed as surely as a Ready=False/Failed
+		// one, so it is recycled on the same terms.
+		incomplete := internalcertificates.IsIncompleteFailure(req)
+		if !failed && !incomplete {
 			remaining = append(remaining, req)
 			continue
 		}
@@ -281,7 +287,16 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 		// same revision). If it is a CertificateRequest that failed
 		// during the previous issuance, then it should be deleted so
 		// that we create a new one for this issuance.
-		if req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) {
+		var previousIssuance bool
+		if incomplete {
+			// creationTimestamp has to predate the transition as well, so an
+			// issuer whose clock is behind cannot have a request it has just
+			// created recycled before its failure is counted.
+			previousIssuance = internalcertificates.IncompleteFailureIsFromPreviousIssuance(req, certIssuingCond)
+		} else {
+			previousIssuance = req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime)
+		}
+		if previousIssuance {
 			log.V(logf.DebugLevel).Info("Found a failed CertificateRequest for previous issuance of this revision, deleting...")
 			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
