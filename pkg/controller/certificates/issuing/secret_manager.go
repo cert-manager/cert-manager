@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -36,6 +37,17 @@ import (
 // Reconciles over the Certificate's SecretTemplate, and
 // AdditionalOutputFormats.
 func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt *cmapi.Certificate) error {
+	// Guard against two Certificates referencing the same Secret. If this
+	// Certificate is not the owner, skip all Secret writes.
+	isOwner, duplicates, err := internalcertificates.CertificateOwnsSecret(ctx, c.certificateLister, c.secretLister, crt)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		log.V(logf.DebugLevel).Info("Certificate.Spec.SecretName refers to the same Secret as another Certificate in the same namespace, skipping ensureSecretData.", "duplicates", duplicates)
+		return nil
+	}
+
 	// Retrieve the Secret which is associated with this Certificate.
 	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
@@ -96,7 +108,25 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 
 			// Here the Certificate need to be re-reconciled.
 			log.Info("applying Secret data", "message", message)
-			return c.secretsUpdateData(ctx, crt, data)
+			if err := c.secretsUpdateData(ctx, crt, data); err != nil {
+				var conflictErr *internal.SecretOwnedByAnotherControllerError
+				if errors.As(err, &conflictErr) {
+					// The Secret is currently controlled by a different owner. Skip
+					// the update, but surface the conflict via a Warning event so it
+					// is visible on `kubectl describe certificate` rather than only
+					// in controller logs. The trigger controller's CertificateOwnsSecret
+					// check governs ownership and will re-evaluate when the Secret changes.
+					log.V(logf.InfoLevel).Info("skipping Secret update: Secret is already controlled by another resource",
+						"secret", crt.Spec.SecretName,
+						"owner_name", conflictErr.OwnerName,
+						"owner_kind", conflictErr.OwnerKind,
+						"owner_api_version", conflictErr.OwnerAPIVersion)
+					c.recorder.Event(crt, corev1.EventTypeWarning, "SecretConflict", conflictErr.Error())
+					return nil
+				}
+				return err
+			}
+			return nil
 		}
 	}
 
