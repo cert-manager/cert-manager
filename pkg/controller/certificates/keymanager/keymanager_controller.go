@@ -134,6 +134,20 @@ func NewController(
 	}, queue, mustSync, nil
 }
 
+// isNextPrivateKeySecretSelector narrows the Secret LIST below to the next
+// private key Secrets. It must stay in the lister selector, and must not be
+// folded into the predicate that follows it.
+//
+// The SecretsFilteredCaching feature, which is on by default, replaces the
+// Secret lister with one that serves a LIST from two caches: a typed cache of
+// cert-manager's own Secrets, which are labelled, and a metadata-only cache of
+// every other Secret in the namespace. The metadata cache stores no labels, so
+// this selector matches nothing in it. A selector that does match there costs
+// one live GET against the API server per Secret, on every reconcile.
+var isNextPrivateKeySecretSelector = labels.SelectorFromSet(labels.Set{
+	cmapi.IsNextPrivateKeySecretLabelKey: "true",
+})
+
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
@@ -157,7 +171,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), labels.Everything(), func(s *corev1.Secret) bool {
+	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeySecretSelector, func(s *corev1.Secret) bool {
 		return certificates.IsNextPrivateKeySecret(s, crt)
 	})
 	if err != nil {

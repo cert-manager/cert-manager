@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
@@ -33,6 +34,24 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
+
+// TestNextPrivateKeySecretSelectorRejectsUnlabelledSecret checks that the
+// selector used for the Secret LIST in ProcessItem still excludes Secrets
+// carrying no labels at all.
+//
+// The SecretsFilteredCaching feature, which is on by default, serves part of
+// that LIST from a metadata-only cache that stores no labels, and charges one
+// live GET against the API server for every Secret it returns. A selector such
+// as labels.Everything() matches every entry in that cache, so the keymanager
+// would GET every Secret in the namespace on every reconcile.
+func TestNextPrivateKeySecretSelectorRejectsUnlabelledSecret(t *testing.T) {
+	if isNextPrivateKeySecretSelector.Matches(labels.Set{}) {
+		t.Error("selector must not match a Secret with no labels, or the Secret LIST will GET every Secret in the namespace")
+	}
+	if !isNextPrivateKeySecretSelector.Matches(labels.Set{cmapi.IsNextPrivateKeySecretLabelKey: "true"}) {
+		t.Error("selector must match a next private key Secret")
+	}
+}
 
 func mustGenerateRSA(t *testing.T, keySize int) []byte {
 	pk, err := pki.GenerateRSAPrivateKey(keySize)
