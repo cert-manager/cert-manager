@@ -635,6 +635,16 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		}
 	}
 
+	if len(a.Spec.IPAddresses) != len(b.Spec.IPAddresses) {
+		return true
+	}
+
+	for i := range a.Spec.IPAddresses {
+		if a.Spec.IPAddresses[i] != b.Spec.IPAddresses[i] {
+			return true
+		}
+	}
+
 	if a.Spec.SecretName != b.Spec.SecretName {
 		return true
 	}
