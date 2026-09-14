@@ -143,7 +143,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		return
 	}
 
-	// openssl ecparams option writes a leading "EC PARAMETERS" block holding the OID for curve prime256v1 ()
+	// openssl ecparams option writes a leading "EC PARAMETERS" block holding the OID for curve prime256v1 (OID is 1.2.840.10045.3.1.7)
 	ecParamsDER, err := asn1.Marshal(asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7})
 	if err != nil {
 		t.Errorf("error marshalling EC parameters: %s", err)
