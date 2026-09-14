@@ -1040,7 +1040,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 // createNextPrivateKeySecret stores skBytes in a Secret that looks like one the
 // keymanager controller created for crt: it carries the labels the keymanager
 // sets and has crt as its controller. The issuing controller ignores any Secret
-// that is not labelled cert-manager.io/next-private-key and owned by crt.
+// that is not labeled cert-manager.io/next-private-key and owned by crt.
 func createNextPrivateKeySecret(t *testing.T, kubeClient kubernetes.Interface, crt *cmapi.Certificate, name string, skBytes []byte) {
 	t.Helper()
 

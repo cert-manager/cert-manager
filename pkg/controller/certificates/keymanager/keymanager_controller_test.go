@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
@@ -34,24 +33,6 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
-
-// TestNextPrivateKeySecretSelectorRejectsUnlabelledSecret checks that the
-// selector used for the Secret LIST in ProcessItem still excludes Secrets
-// carrying no labels at all.
-//
-// The SecretsFilteredCaching feature, which is on by default, serves part of
-// that LIST from a metadata-only cache that stores no labels, and charges one
-// live GET against the API server for every Secret it returns. A selector such
-// as labels.Everything() matches every entry in that cache, so the keymanager
-// would GET every Secret in the namespace on every reconcile.
-func TestNextPrivateKeySecretSelectorRejectsUnlabelledSecret(t *testing.T) {
-	if isNextPrivateKeySecretSelector.Matches(labels.Set{}) {
-		t.Error("selector must not match a Secret with no labels, or the Secret LIST will GET every Secret in the namespace")
-	}
-	if !isNextPrivateKeySecretSelector.Matches(labels.Set{cmapi.IsNextPrivateKeySecretLabelKey: "true"}) {
-		t.Error("selector must match a next private key Secret")
-	}
-}
 
 func mustGenerateRSA(t *testing.T, keySize int) []byte {
 	pk, err := pki.GenerateRSAPrivateKey(keySize)
@@ -109,6 +90,11 @@ func TestProcessItem(t *testing.T) {
 		},
 			Data: data,
 		}
+	}
+	ownerRefTo := func(name string) []metav1.OwnerReference {
+		return []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: name, UID: types.UID(name)},
+		}, certificateGvk)}
 	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -217,9 +203,12 @@ func TestProcessItem(t *testing.T) {
 				), relaxedSecretMatcher),
 			},
 		},
-		"create a secret using the already allocated name if it is set": {
+		"create a secret under a generated name if status.nextPrivateKeySecretName names a Secret that does not exist": {
+			// The name must not be reused. It could be the spec.secretName of
+			// another Certificate that has not issued yet; creating it here would
+			// let this Certificate delete that Secret, or sign with its key.
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -230,12 +219,17 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 			},
-			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "fixed-name"`},
+			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
 			expectedActions: []testpkg.Action{
 				testpkg.NewAction(coretesting.NewGetAction(
 					cmapi.SchemeGroupVersion.WithResource("certificates"),
 					"testns",
 					"test",
+				)),
+				testpkg.NewAction(coretesting.NewGetAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"fixed-name",
 				)),
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
@@ -243,13 +237,30 @@ func TestProcessItem(t *testing.T) {
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace:       "testns",
-							Name:            "fixed-name",
+							GenerateName:    "test-",
 							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
+							OwnerReferences: ownerRefTo("test"),
 						},
 						Data: map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
+					"testns",
+					&cmapi.Certificate{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Status: cmapi.CertificateStatus{
+							NextPrivateKeySecretName: new("test-notrandom"),
+							Conditions: []cmapi.CertificateCondition{
+								{
+									Type:   cmapi.CertificateConditionIssuing,
+									Status: cmmeta.ConditionTrue,
+								},
+							},
+						},
+					},
+				)),
 			},
 		},
 		// The name in status.nextPrivateKeySecretName cannot be trusted: writing
@@ -259,7 +270,7 @@ func TestProcessItem(t *testing.T) {
 		// of the field reject that Secret and issuance would never recover.
 		"create a secret under a generated name if status.nextPrivateKeySecretName names a Secret not owned by the Certificate": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -270,36 +281,24 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 			},
-			secrets:        []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "fixed-name"}}},
-			expectedEvents: []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
+			// The Secret is labeled and owned by another Certificate, so only the
+			// owner UID comparison rejects it.
+			secrets: []runtime.Object{ownedSecretWithName("testns", "fixed-name", "other", nil)},
+			expectedEvents: []string{
+				`Warning NotOwned Ignoring status.nextPrivateKeySecretName "fixed-name": the Secret is not owned by this Certificate`,
+				`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`,
+			},
 			expectedActions: []testpkg.Action{
 				testpkg.NewAction(coretesting.NewGetAction(
 					cmapi.SchemeGroupVersion.WithResource("certificates"),
 					"testns",
 					"test",
 				)),
-				// Creating under the name taken from the status field fails,
-				// because the unrelated Secret already occupies that name.
-				testpkg.NewCustomMatch(coretesting.NewCreateAction(
-					corev1.SchemeGroupVersion.WithResource("secrets"),
-					"testns",
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace:       "testns",
-							Name:            "fixed-name",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
-						},
-						Data: map[string][]byte{"tls.key": nil},
-					},
-				), relaxedSecretMatcher),
 				testpkg.NewAction(coretesting.NewGetAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
 					"fixed-name",
 				)),
-				// The occupying Secret is not ours, so a new one is created
-				// under a generated name.
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -308,7 +307,7 @@ func TestProcessItem(t *testing.T) {
 							Namespace:       "testns",
 							GenerateName:    "test-",
 							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
+							OwnerReferences: ownerRefTo("test"),
 						},
 						Data: map[string][]byte{"tls.key": nil},
 					},
@@ -320,9 +319,52 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("test-notrandom"),
+							Conditions: []cmapi.CertificateCondition{
+								{
+									Type:   cmapi.CertificateConditionIssuing,
+									Status: cmmeta.ConditionTrue,
+								},
+							},
+						},
+					},
+				)),
+			},
+		},
+		"clear nextPrivateKeySecretName if rotationPolicy is Never and the existing key does not match the spec": {
+			// The keymanager cannot make a next private key here, so a stale or
+			// untrusted name must not stay in the status field.
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "output",
+					PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyNever},
+				},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "output"},
+				Data:       map[string][]byte{"tls.key": mustGenerateECDSA(t, pki.ECCurve256)},
+			}},
+			expectedEvents: []string{`Warning CannotRegenerateKey User intervention required: existing private key in Secret "output" does not match requirements on Certificate resource, mismatching fields: [spec.privateKey.algorithm], but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) `},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
+					"testns",
+					&cmapi.Certificate{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Status: cmapi.CertificateStatus{
 							Conditions: []cmapi.CertificateCondition{
 								{
 									Type:   cmapi.CertificateConditionIssuing,
@@ -483,7 +525,11 @@ func TestProcessItem(t *testing.T) {
 				)),
 			},
 		},
-		"if an owned secret exists but has a different name to nextPrivateKeySecretName, delete it": {
+		"if an owned secret exists but has a different name to nextPrivateKeySecretName, repoint nextPrivateKeySecretName at it": {
+			// Deleting the Secret instead would let anyone able to write the
+			// certificates/status subresource force a key rotation on demand,
+			// and would race the Secret informer after the keymanager itself
+			// repoints the field.
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
 				Status: cmapi.CertificateStatus{
@@ -500,10 +546,22 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(
-					corev1.SchemeGroupVersion.WithResource("secrets"),
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
 					"testns",
-					"fixed-name",
+					&cmapi.Certificate{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Status: cmapi.CertificateStatus{
+							NextPrivateKeySecretName: new("fixed-name"),
+							Conditions: []cmapi.CertificateCondition{
+								{
+									Type:   cmapi.CertificateConditionIssuing,
+									Status: cmmeta.ConditionTrue,
+								},
+							},
+						},
+					},
 				)),
 			},
 		},

@@ -92,7 +92,7 @@ func nextPrivateKeySecretMeta(crt *cmapi.Certificate, name string) metav1.Object
 			cmapi.PartOfCertManagerControllerLabelKey: "true",
 		},
 		OwnerReferences: []metav1.OwnerReference{
-			*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
+			*metav1.NewControllerRef(crt, certificateGvk),
 		},
 	}
 }
@@ -216,13 +216,17 @@ func TestProcessItem(t *testing.T) {
 			// A principal with access only to the certificates/status
 			// subresource must not be able to make the controller read an
 			// unrelated Secret and copy its private key into spec.secretName.
+			//
+			// The Secret is labeled and has a controller owner reference, so
+			// only the owner UID comparison rejects it.
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "not-ours"},
+					ObjectMeta: nextPrivateKeySecretMeta(gen.CertificateFrom(bundle1.certificate, gen.SetCertificateUID("other-uid")), "not-ours"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateUID("cert-uid"),
 				gen.SetCertificateNextPrivateKeySecretName("not-ours"),
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
 			),

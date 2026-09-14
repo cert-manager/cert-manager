@@ -150,9 +150,15 @@ func TestIssuingController(t *testing.T) {
 			//
 			// Everything else here matches the successful issuance case below,
 			// so the only reason nothing happens is that the Secret named by
-			// status.nextPrivateKeySecretName carries neither the
-			// cert-manager.io/next-private-key label nor a controller owner
-			// reference back to this Certificate.
+			// status.nextPrivateKeySecretName, although it carries the
+			// cert-manager.io/next-private-key label and a controller owner
+			// reference, is owned by a Certificate with a different UID. Only
+			// the owner UID comparison rejects it.
+			//
+			// The Certificate keeps its empty fixture UID on purpose: the
+			// CertificateRequest fixture's owner reference has that UID too, and
+			// changing it would orphan the request and make this case pass for
+			// the wrong reason.
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -164,10 +170,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(gen.CertificateFrom(issuingCert, gen.SetCertificateUID("other-uid"))),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
