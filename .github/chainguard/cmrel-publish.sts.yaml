@@ -1,0 +1,16 @@
+# Trust policy for octo-sts (https://github.com/octo-sts/app).
+#
+# Lets the cert-manager release pipeline (`cmrel gcb publish`, run by Cloud
+# Build in the cert-manager-release GCP project) create the draft GitHub
+# release for a tag and upload its assets. cmrel exchanges the Google ID token
+# of the Cloud Build service account for a short-lived GitHub token that
+# carries only the permissions below. No long-lived token is stored anywhere.
+#
+# The service account is defined in cert-manager/infrastructure, gcp/release.tf.
+issuer: https://accounts.google.com
+subject_pattern: "[0-9]+"
+claim_pattern:
+  email: "cert-manager-release-gcb@cert-manager-release\\.iam\\.gserviceaccount\\.com"
+  email_verified: "true"
+permissions:
+  contents: write
