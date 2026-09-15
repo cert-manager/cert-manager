@@ -26,8 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -57,6 +55,7 @@ const (
 	reasonDecodeFailed        = "DecodeFailed"
 	reasonCannotRegenerateKey = "CannotRegenerateKey"
 	reasonDeleted             = "Deleted"
+	reasonNotOwned            = "NotOwned"
 )
 
 var (
@@ -135,18 +134,6 @@ func NewController(
 	}, queue, mustSync, nil
 }
 
-// isNextPrivateKeyLabelSelector is a label selector used to match Secret
-// resources with the `cert-manager.io/next-private-key: "true"` label.
-var isNextPrivateKeyLabelSelector labels.Selector
-
-func init() {
-	r, err := labels.NewRequirement(cmapi.IsNextPrivateKeySecretLabelKey, selection.Equals, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
-	isNextPrivateKeyLabelSelector = labels.NewSelector().Add(*r)
-}
-
 func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
@@ -170,7 +157,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	cminternal.SetRuntimeDefaults_Certificate(crt)
 
 	// Discover all 'owned' secrets that have the `next-private-key` label
-	secrets, err := certificates.ListSecretsMatchingPredicates(c.secretLister.Secrets(crt.Namespace), isNextPrivateKeyLabelSelector, predicate.ResourceOwnedBy[*corev1.Secret](crt))
+	secrets, err := certificates.ListNextPrivateKeySecrets(c.secretLister.Secrets(crt.Namespace), crt)
 	if err != nil {
 		return err
 	}
@@ -215,13 +202,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	log = logf.WithRelatedResource(log, secret)
 	ctx = logf.NewContext(ctx, log)
 
-	if crt.Status.NextPrivateKeySecretName == nil {
+	// The Secret we own is the source of truth, not the status field. The
+	// field may be unset, may lag behind a Secret created on the previous
+	// reconcile, or may hold a name written by a principal with access only to
+	// the certificates/status subresource. In every case, point it at the
+	// Secret we own rather than deleting that Secret and generating a new key.
+	if ptr.Deref(crt.Status.NextPrivateKeySecretName, "") != secret.Name {
 		log.V(logf.DebugLevel).Info("Adopting existing private key Secret")
 		return c.setNextPrivateKeySecretName(ctx, crt, &secret.Name)
-	}
-	if *crt.Status.NextPrivateKeySecretName != secrets[0].Name {
-		log.V(logf.DebugLevel).Info("Deleting existing private key secret as name does not match status.nextPrivateKeySecretName")
-		return c.deleteSecretResources(ctx, secrets)
 	}
 
 	if secret.Data == nil || len(secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
@@ -268,7 +256,9 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 	violations := pki.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if len(violations) > 0 {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonCannotRegenerateKey, "User intervention required: existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v, but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) ", crt.Spec.SecretName, violations)
-		return nil
+		// There is no next private key, so do not leave a stale or untrusted
+		// name in the status field while we wait for the user.
+		return c.setNextPrivateKeySecretName(ctx, crt, nil)
 	}
 
 	nextPkSecret, err := c.createNewPrivateKeySecret(ctx, crt, pk)
@@ -347,26 +337,29 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 }
 
 func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (*corev1.Secret, error) {
-	// Since crt.Status.NextPrivateKeySecretName is set based on the name of the
-	// secret this function returns there is a possibility that this function
-	// reconciles twice before the cache is updated with the latest changes.
-	//
-	// In that case since we would not see the NextPrivateKeySecretName we just
-	// set and we would generate a new secret with a different name, updating
-	// NextPrivateKeySecretName once again.
-	//
-	// Given this code path is only hit in limited circumstances, it is not
-	// unreasonable to get the latest object via a real api call.
+	// We only get here when the Secret LIST found nothing we own. The lister
+	// can lag the API server, so before creating a Secret check whether one
+	// we created on an earlier reconcile already exists. Read the Certificate
+	// live too, because status.nextPrivateKeySecretName may have been written
+	// by that earlier reconcile and not yet reached the cache.
 	latestCrt, err := c.client.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-
-	// if the 'nextPrivateKeySecretName' field is already set, use this as the
-	// name of the Secret resource.
-	name := ""
-	if latestCrt.Status.NextPrivateKeySecretName != nil {
-		name = *latestCrt.Status.NextPrivateKeySecretName
+	if name := ptr.Deref(latestCrt.Status.NextPrivateKeySecretName, ""); name != "" {
+		existing, err := c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+		switch {
+		case err == nil && certificates.IsNextPrivateKeySecret(existing, crt):
+			return existing, nil
+		case err == nil:
+			// Anyone able to write the certificates/status subresource can put
+			// an arbitrary name there. Never adopt that Secret. The consumers of
+			// the field reject it too, so issuance only recovers once the field
+			// is repointed at a Secret we create below.
+			c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonNotOwned, "Ignoring status.nextPrivateKeySecretName %q: the Secret is not owned by this Certificate", name)
+		case !apierrors.IsNotFound(err):
+			return nil, err
+		}
 	}
 
 	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
@@ -374,10 +367,15 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 		return nil, err
 	}
 
+	// Always let the API server pick the name. A name taken from the status
+	// field cannot be trusted: it could be the spec.secretName of a Certificate
+	// that has not issued yet, and creating it here would let this Certificate
+	// later delete that one's Secret, or sign with its key.
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       crt.Namespace,
-			Name:            name,
+			Namespace: crt.Namespace,
+			// TODO: handle certificate resources that have especially long names
+			GenerateName:    crt.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 			Labels: map[string]string{
 				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
@@ -388,25 +386,7 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 			corev1.TLSPrivateKeyKey: pkData,
 		},
 	}
-	if s.Name == "" {
-		// TODO: handle certificate resources that have especially long names
-		s.GenerateName = crt.Name + "-"
-	}
-
-	s, err = c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
-
-	// We only get to this code path if both NextPrivateKeySecretName is set AND
-	// we counted zero secrets. If we get an IsAlreadyExists error it means our
-	// cache was outdated and there _is_ a secret.
-	if apierrors.IsAlreadyExists(err) && name != "" {
-		return c.coreClient.CoreV1().Secrets(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return c.coreClient.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
