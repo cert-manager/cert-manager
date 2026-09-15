@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -34,6 +35,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	pubcmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	unitcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
@@ -892,6 +894,82 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				}
 			}
 			assert.Equal(t, s.warnings, warnings)
+		})
+	}
+}
+
+func TestValidateACMEIssuerAccountPrivateKey(t *testing.T) {
+	fldPath := field.NewPath("spec", "accountPrivateKey")
+
+	scenarios := map[string]struct {
+		apk  *cmacme.AccountPrivateKey
+		errs []*field.Error
+	}{
+		"no algorithm or size set": {
+			apk: &cmacme.AccountPrivateKey{},
+		},
+		"RSA algorithm with no size set": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.RSAAccountKeyAlgorithm},
+		},
+		"RSA algorithm with valid size": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.RSAAccountKeyAlgorithm, Size: 4096},
+		},
+		"no algorithm (defaults to RSA) with valid size": {
+			apk: &cmacme.AccountPrivateKey{Size: pki.MinRSAKeySize},
+		},
+		"RSA algorithm with size below minimum": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.RSAAccountKeyAlgorithm, Size: pki.MinRSAKeySize - 1},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("size"), pki.MinRSAKeySize-1,
+					fmt.Sprintf("must be between %d and %d for RSA algorithm", pki.MinRSAKeySize, pki.MaxRSAKeySize)),
+			},
+		},
+		"RSA algorithm with size above maximum": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.RSAAccountKeyAlgorithm, Size: pki.MaxRSAKeySize + 1},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("size"), pki.MaxRSAKeySize+1,
+					fmt.Sprintf("must be between %d and %d for RSA algorithm", pki.MinRSAKeySize, pki.MaxRSAKeySize)),
+			},
+		},
+		"ECDSA algorithm with no size set": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.ECDSAAccountKeyAlgorithm},
+		},
+		"ECDSA algorithm with valid size 256": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.ECDSAAccountKeyAlgorithm, Size: 256},
+		},
+		"ECDSA algorithm with valid size 384": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.ECDSAAccountKeyAlgorithm, Size: 384},
+		},
+		"ECDSA algorithm with valid size 521": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.ECDSAAccountKeyAlgorithm, Size: 521},
+		},
+		"ECDSA algorithm with invalid size": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: cmacme.ECDSAAccountKeyAlgorithm, Size: 224},
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("size"), 224, []string{"256", "384", "521"}),
+			},
+		},
+		"unsupported algorithm": {
+			apk: &cmacme.AccountPrivateKey{Algorithm: "Ed25519"},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("algorithm"), cmacme.AccountKeyAlgorithm("Ed25519"),
+					"must be either empty or one of RSA or ECDSA"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := validateACMEIssuerAccountPrivateKey(s.apk, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
 		})
 	}
 }
