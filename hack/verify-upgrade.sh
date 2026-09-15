@@ -20,17 +20,6 @@ set -o pipefail
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
-source "${REPO_ROOT}/hack/build/version.sh"
-
-# This script is copied from k8s and modified.
-# It helps to determine the latest published release with the given prefix
-# (if INITIAL_RELEASE is not explicitly set) and also provides the latest git
-# commit hash
-kube::version::last_published_release ${INITIAL_RELEASE_PREFIX:-"v*"}
-
-if [[ -z "${INITIAL_RELEASE:-}" ]]; then
-	INITIAL_RELEASE="${KUBE_LAST_RELEASE}"
-fi
 
 usage_and_exit() {
 	echo "usage: $0 <path-to-helm> <path-to-kind> <path-to-ytt> <path-to-kubectl> <path-to-cmctl> <host-architecture>" >&2
@@ -49,6 +38,60 @@ cmctl=$(realpath "$5")
 
 HOST_ARCH=$6
 
+# Passed by make/test.mk, which already computes it; only used in log lines
+GIT_COMMIT="${GIT_COMMIT:-unknown}"
+
+HELM_URL="oci://quay.io/jetstack/charts/cert-manager"
+
+manifest_url() {
+	echo "https://github.com/cert-manager/cert-manager/releases/download/$1/cert-manager.yaml"
+}
+
+die() {
+	echo "$1" >&2
+	echo "Set INITIAL_RELEASE=vX.Y.Z, or UPGRADE_TEST_INITIAL_RELEASE=vX.Y.Z via make, to choose a starting version explicitly." >&2
+	exit 1
+}
+
+# Resolve the release to upgrade from, unless the caller pinned one: the newest published one, which
+# is not always the newest one tagged
+if [[ -z "${INITIAL_RELEASE:-}" ]]; then
+	# Prow presubmits run on a merge commit, which can reach tags the base branch cannot
+	if ! nearest_tag=$(git -C "${REPO_ROOT}" describe --tags --match='v*' --abbrev=0 "${PULL_BASE_SHA:-HEAD}"); then
+		die "Could not find a reachable v* git tag to derive the starting version from."
+	fi
+
+	# Unanchored, as the nearest tag is often a prerelease, e.g. v1.22.0-alpha.0
+	if ! [[ "${nearest_tag}" =~ ^v([0-9]+)\.([0-9]+)\.[0-9]+ ]]; then
+		die "Nearest reachable git tag is not a cert-manager release tag: ${nearest_tag}"
+	fi
+
+	# Only bare "1.x.y" tags match, as Helm's parser rejects "v1.x.y", and a constraint with no
+	# prerelease part never matches a prerelease, so alpha and beta charts are skipped
+	ceiling="${BASH_REMATCH[1]}.$(( BASH_REMATCH[2] + 1 )).0"
+
+	INITIAL_RELEASE=$($helm show chart "${HELM_URL}" --version "<${ceiling}" | sed -n 's/^version: //p') \
+		|| die "Could not resolve a published chart below ${ceiling} from ${HELM_URL}."
+
+	# Guards against a prerelease slipping through the constraint, and against an empty result
+	if ! [[ "${INITIAL_RELEASE}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+		die "Resolved a prerelease or unexpected chart version below ${ceiling}: '${INITIAL_RELEASE}'"
+	fi
+
+	# The release process publishes the GitHub release before the chart, so a published chart implies
+	# its static manifests exist. Checked anyway because nothing enforces that order, and failing here
+	# beats failing ten minutes into the run. Retried so a transient error is not read as a missing
+	# release, and time-bounded because curl honours a long Retry-After header
+	status=$(curl --silent --head --location --retry 10 --retry-connrefused --retry-max-time 60 \
+		--output /dev/null --write-out '%{http_code}' "$(manifest_url "${INITIAL_RELEASE}")") || status="000"
+	if [[ "${status}" != "200" ]]; then
+		die "${INITIAL_RELEASE} has a published chart but its static manifests returned ${status}, so the release is only half published."
+	fi
+
+	echo "+++ Resolved the newest published release below ${ceiling} -> ${INITIAL_RELEASE}"
+	echo "+++ To reproduce this exact run: make test-upgrade UPGRADE_TEST_INITIAL_RELEASE=${INITIAL_RELEASE}"
+fi
+
 # Set up a fresh kind cluster
 
 $kind delete clusters kind || :
@@ -64,9 +107,7 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 
-HELM_URL="oci://quay.io/jetstack/charts/cert-manager"
-
-echo "+++ Testing upgrading from ${INITIAL_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm"
+echo "+++ Testing upgrading from ${INITIAL_RELEASE} to commit ${GIT_COMMIT} with Helm"
 
 # 1. INSTALL THE INITIAL RELEASE'S PUBLISHED HELM CHART
 
@@ -133,12 +174,12 @@ $kubectl delete "namespace/${NAMESPACE}" --wait
 
 # 1. INSTALL THE INITIAL RELEASE'S STATIC MANIFESTS
 
-echo "+++ Testing cert-manager upgrade from ${INITIAL_RELEASE} to commit ${KUBE_GIT_COMMIT} using static manifests"
+echo "+++ Testing cert-manager upgrade from ${INITIAL_RELEASE} to commit ${GIT_COMMIT} using static manifests"
 
 echo "+++ Installing cert-manager ${INITIAL_RELEASE} using static manifests"
 
 $kubectl apply \
-	-f "https://github.com/cert-manager/cert-manager/releases/download/${INITIAL_RELEASE}/cert-manager.yaml" \
+	-f "$(manifest_url "${INITIAL_RELEASE}")" \
 	--wait
 
 $kubectl wait \
@@ -159,7 +200,7 @@ $kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 MANIFEST_LOCATION=${REPO_ROOT}/_bin/yaml/cert-manager.yaml
 
-echo "+++ Installing cert-manager commit ${KUBE_GIT_COMMIT} using static manifests"
+echo "+++ Installing cert-manager commit ${GIT_COMMIT} using static manifests"
 
 # Build the static manifests
 make release-manifests
