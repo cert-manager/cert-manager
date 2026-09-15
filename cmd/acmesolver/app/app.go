@@ -82,7 +82,7 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
 	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
 
-	// TODO(@inteon): use flags to configure the log configuration (https://github.com/cert-manager/cert-manager/issues/6021)
+	logf.AddFlagsNonDeprecated(logOptions, cmd.Flags())
 
 	return cmd
 }
