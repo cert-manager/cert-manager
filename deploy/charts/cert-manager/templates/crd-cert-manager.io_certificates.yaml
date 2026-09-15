@@ -111,7 +111,9 @@ spec:
                     Cannot be set if the `literalSubject` field is set.
                   type: string
                 dnsNames:
-                  description: Requested DNS subject alternative names.
+                  description: |-
+                    Requested DNS subject alternative names.
+                    Values must be unique.
                   items:
                     type: string
                   type: array
@@ -140,7 +142,10 @@ spec:
                     issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
                   type: boolean
                 ipAddresses:
-                  description: Requested IP address subject alternative names.
+                  description: |-
+                    Requested IP address subject alternative names.
+                    Values must be unique. Addresses are compared by parsed value, so
+                    equivalent spellings of one address count as duplicates.
                   items:
                     type: string
                   type: array
