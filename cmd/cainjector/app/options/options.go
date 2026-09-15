@@ -115,6 +115,7 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.CAInjectorConfiguration) {
 	logf.AddFlags(&c.Logging, fs)
 
 	fs.StringVar(&c.MetricsListenAddress, "metrics-listen-address", c.MetricsListenAddress, "The host and port that the metrics endpoint should listen on. The value '0' disables the metrics server")
+	fs.StringVar(&c.HealthzListenAddress, "healthz-listen-address", c.HealthzListenAddress, "The host and port that the healthz endpoint should listen on. Serves /healthz (liveness) and /readyz (readiness) probes.")
 	fs.StringVar(&c.MetricsTLSConfig.Filesystem.CertFile, "metrics-tls-cert-file", c.MetricsTLSConfig.Filesystem.CertFile, "path to the file containing the TLS certificate to serve metrics with")
 	fs.StringVar(&c.MetricsTLSConfig.Filesystem.KeyFile, "metrics-tls-private-key-file", c.MetricsTLSConfig.Filesystem.KeyFile, "path to the file containing the TLS private key to serve metrics with")
 
