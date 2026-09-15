@@ -614,6 +614,24 @@ func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 			}),
 			violations: []string{"spec.commonName"},
 		},
+		"should not match if spec contains zoned IPv6 address": {
+			spec: cmapi.CertificateSpec{
+				IPAddresses: []string{"fe80::1%eth0"},
+			},
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			}),
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if spec contains invalid IP string": {
+			spec: cmapi.CertificateSpec{
+				IPAddresses: []string{"not-an-ip"},
+			},
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			}),
+			violations: []string{"spec.ipAddresses"},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -672,4 +690,110 @@ func mustBuildCertificateRequest(t *testing.T, crt *cmapi.Certificate) *cmapi.Ce
 	}
 
 	return cr
+}
+
+// TestRequestMatchesSpecIPAddresses verifies that RequestMatchesSpec correctly
+// detects IP address mismatches, including cases where the Certificate spec
+// contains addresses that net.ParseIP cannot parse (e.g. zoned IPv6 addresses
+// like "fe80::1%eth0" or invalid strings). These would cause ipSlicesMatch to
+// receive nil from net.ParseIP; the nil guard added to ipSlicesMatch ensures
+// such cases are reported as violations rather than potentially matching.
+func TestRequestMatchesSpecIPAddresses(t *testing.T) {
+	// CertificateRequest built with a single valid IPv4 address.
+	singleIPCR := mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+		CommonName:  "test.example.com",
+		IPAddresses: []string{"10.0.0.1"},
+	}})
+
+	// CertificateRequest built with mixed IPv4 and IPv6 addresses.
+	multiIPCR := mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+		CommonName:  "test.example.com",
+		IPAddresses: []string{"10.0.0.1", "2001:db8::1"},
+	}})
+
+	// CertificateRequest built with no IP addresses.
+	emptyIPCR := mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+		CommonName: "test.example.com",
+	}})
+
+	tests := map[string]struct {
+		crSpec     *cmapi.CertificateRequest
+		certSpec   cmapi.CertificateSpec
+		violations []string
+	}{
+		"should match if IPAddresses are equal": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"10.0.0.1"},
+			},
+		},
+		"should match if multiple IPAddresses are equal in different order": {
+			crSpec: multiIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"2001:db8::1", "10.0.0.1"},
+			},
+		},
+		"should match if both have no IPAddresses": {
+			crSpec: emptyIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "test.example.com",
+			},
+		},
+		"should not match if IPAddresses differ": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"10.0.0.2"},
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if spec has extra IPAddresses": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"10.0.0.1", "10.0.0.2"},
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if spec has fewer IPAddresses": {
+			crSpec: multiIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"10.0.0.1"},
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if spec contains zoned IPv6 address": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"fe80::1%eth0"},
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if spec contains invalid IP string": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName:  "test.example.com",
+				IPAddresses: []string{"not-an-ip"},
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if CSR has IPs but spec has none": {
+			crSpec: singleIPCR,
+			certSpec: cmapi.CertificateSpec{
+				CommonName: "test.example.com",
+			},
+			violations: []string{"spec.ipAddresses"},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			violations, err := pki.RequestMatchesSpec(test.crSpec, test.certSpec)
+			require.NoError(t, err)
+			assert.Equal(t, test.violations, violations)
+		})
+	}
 }
