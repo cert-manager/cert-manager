@@ -47,22 +47,47 @@ func TestParseObjectIdentifier(t *testing.T) {
 		{
 			oidString:   ".",
 			expectedOid: nil,
-			expectedErr: errors.New("strconv.Atoi: parsing \"\": invalid syntax"),
+			expectedErr: errors.New("strconv.ParseUint: parsing \"\": invalid syntax"),
 		},
 		{
 			oidString:   ".555",
 			expectedOid: nil,
-			expectedErr: errors.New("strconv.Atoi: parsing \"\": invalid syntax"),
+			expectedErr: errors.New("strconv.ParseUint: parsing \"\": invalid syntax"),
 		},
 		{
 			oidString:   "555.",
 			expectedOid: nil,
-			expectedErr: errors.New("strconv.Atoi: parsing \"\": invalid syntax"),
+			expectedErr: errors.New("strconv.ParseUint: parsing \"\": invalid syntax"),
 		},
 		{
 			oidString:   "test.5",
 			expectedOid: nil,
-			expectedErr: errors.New("strconv.Atoi: parsing \"test\": invalid syntax"),
+			expectedErr: errors.New("strconv.ParseUint: parsing \"test\": invalid syntax"),
+		},
+		{
+			oidString:   "1.2.-840.113549",
+			expectedOid: nil,
+			expectedErr: errors.New("strconv.ParseUint: parsing \"-840\": invalid syntax"),
+		},
+		{
+			oidString:   "-1.2.3",
+			expectedOid: nil,
+			expectedErr: errors.New("strconv.ParseUint: parsing \"-1\": invalid syntax"),
+		},
+		{
+			oidString:   "1.2.+840.113549",
+			expectedOid: nil,
+			expectedErr: errors.New("strconv.ParseUint: parsing \"+840\": invalid syntax"),
+		},
+		{
+			oidString:   "1.2.-0.5",
+			expectedOid: nil,
+			expectedErr: errors.New("strconv.ParseUint: parsing \"-0\": invalid syntax"),
+		},
+		{
+			oidString:   "2.9223372036854775800.1",
+			expectedOid: nil,
+			expectedErr: errors.New("strconv.ParseUint: parsing \"9223372036854775800\": value out of range"),
 		},
 	}
 
