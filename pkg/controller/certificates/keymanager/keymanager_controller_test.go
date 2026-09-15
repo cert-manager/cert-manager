@@ -112,6 +112,8 @@ func TestProcessItem(t *testing.T) {
 
 		// err is the expected error text returned by the controller, if any.
 		err string
+
+		apiCertificate *cmapi.Certificate
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
@@ -293,6 +295,11 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -324,6 +331,11 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-3", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -354,6 +366,11 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -442,6 +459,11 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -515,6 +537,84 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateRSA(t, 2048)}),
 			},
 		},
+		"preserve secret matching API status when informer cache is stale (single secret)": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("stale-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "current-name", "test", map[string][]byte{"tls.key": mustGenerateRSA(t, 2048)}),
+			},
+			apiCertificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("current-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
+			},
+		},
+		"preserve secret matching API status when informer cache is stale (multiple secrets)": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("stale-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "stale-name", "test", nil),
+				ownedSecretWithName("testns", "keep-name", "test", nil),
+			},
+			apiCertificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("keep-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"stale-name",
+				)),
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -535,6 +635,12 @@ func TestProcessItem(t *testing.T) {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, req)
 			}
 			builder.Init()
+
+			if test.apiCertificate != nil {
+				builder.FakeCMClient().PrependReactor("get", "certificates", func(action coretesting.Action) (bool, runtime.Object, error) {
+					return true, test.apiCertificate, nil
+				})
+			}
 
 			// Register informers used by the controller using the registration wrapper
 			w := &controllerWrapper{}
