@@ -175,7 +175,7 @@ func certificateRequestsToDelete(log logr.Logger, limit int, requests []*cmapi.C
 	// Prune and sort all CertificateRequests by their revision number.
 	var revisions []revision
 	for _, req := range requests {
-		log = logf.WithRelatedResource(log, req)
+		log := logf.WithRelatedResource(log, req)
 
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
 			log.Error(errors.New("skipping processing request with missing revision"), "")

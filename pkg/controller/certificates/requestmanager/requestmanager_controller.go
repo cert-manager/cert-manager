@@ -256,7 +256,7 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 	log := logf.FromContext(ctx).WithValues("Certificate", crt.Name)
 	var remaining []*cmapi.CertificateRequest
 	for _, req := range reqs {
-		log = logf.WithRelatedResource(log, req)
+		log := logf.WithRelatedResource(log, req)
 
 		// Check if there are any 'current' CertificateRequests that
 		// failed during the previous issuance cycle. Those should be
