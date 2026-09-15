@@ -533,6 +533,57 @@ networkPolicy:
 
   # Egress rule for the cert-manager network policy. By default, it allows all
   # outbound traffic to ports 80 and 443, as well as DNS ports.
+  #
+  # If using HTTP01 challenges, you must also allow egress to the dynamically
+  # created solver pods. For more detailed examples, see the best practice docs:
+  # https://cert-manager.io/docs/installation/best-practice/#networkpolicy-examples-for-http01-challenges
+  # The solver pods are labelled with
+  # `acme.cert-manager.io/http01-solver: "true"` and run in the same namespace
+  # as the Issuer or the namespace of the Ingress challenge. For example:
+  # +docs:example
+  # egress:
+  # - to:
+  #   - podSelector:
+  #       matchLabels:
+  #         acme.cert-manager.io/http01-solver: "true"
+  #   ports:
+  #   - port: 8080
+  #     protocol: TCP
+  # - ports:
+  #     - port: 80
+  #       protocol: TCP
+  #     - port: 443
+  #       protocol: TCP
+  #     - port: 53
+  #       protocol: TCP
+  #     - port: 53
+  #       protocol: UDP
+  #     - port: 6443
+  #       protocol: TCP
+  #
+  # Note: port 6443 (Kubernetes API server) is required because cert-manager
+  # must create, watch, and delete the HTTP01 solver pod via the API server.
+  #
+  # You must also create a NetworkPolicy in the solver's namespace to allow
+  # ingress from cert-manager. For example:
+  # +docs:example
+  # apiVersion: networking.k8s.io/v1
+  # kind: NetworkPolicy
+  # metadata:
+  #   name: allow-cert-manager-resolver
+  #   namespace: <solver-namespace>
+  # spec:
+  #   podSelector:
+  #     matchLabels:
+  #       acme.cert-manager.io/http01-solver: "true"
+  #   ingress:
+  #   - from:
+  #     - namespaceSelector:
+  #         matchLabels:
+  #           kubernetes.io/metadata.name: cert-manager
+  #     ports:
+  #     - port: 8080
+  #       protocol: TCP
   # +docs:property
   egress:
   - ports:
