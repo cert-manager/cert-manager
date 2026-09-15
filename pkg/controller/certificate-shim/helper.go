@@ -77,6 +77,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if altNames, found := ingLikeAnnotations[cmapi.AltNamesAnnotationKey]; found && altNames != "" {
 		addDnsNames := strings.Split(altNames, ",")
+		for i, name := range addDnsNames {
+			addDnsNames[i] = strings.TrimSpace(name)
+		}
 		crt.Spec.DNSNames = append(crt.Spec.DNSNames, addDnsNames...)
 	}
 
