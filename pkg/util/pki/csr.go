@@ -114,20 +114,21 @@ func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool
 }
 
 type generateCSROptions struct {
-	EncodeBasicConstraintsInRequest bool
-	EncodeNameConstraints           bool
-	EncodeOtherNames                bool
-	UseLiteralSubject               bool
+	EncodeBasicConstraintsInRequestByDefault bool
+	EncodeNameConstraints                    bool
+	EncodeOtherNames                         bool
+	UseLiteralSubject                        bool
 }
 
 type GenerateCSROption func(*generateCSROptions)
 
-// WithEncodeBasicConstraintsInRequest determines whether the BasicConstraints
-// extension should be encoded in the CSR.
-// NOTE: this is a temporary option that will be removed in a future release.
-func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
+// WithEncodeBasicConstraintsInRequestByDefault will set the default value for
+// whether the basic constraints extension should be encoded in the CSR.
+// NOTE: we default to true and plan to remove the false option in a future
+// release.
+func WithEncodeBasicConstraintsInRequestByDefault(encode bool) GenerateCSROption {
 	return func(o *generateCSROptions) {
-		o.EncodeBasicConstraintsInRequest = encode
+		o.EncodeBasicConstraintsInRequestByDefault = encode
 	}
 }
 
@@ -155,10 +156,10 @@ func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
 // to the x509.CreateCertificateRequest function.
 func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.CertificateRequest, error) {
 	opts := &generateCSROptions{
-		EncodeBasicConstraintsInRequest: false,
-		EncodeNameConstraints:           false,
-		EncodeOtherNames:                false,
-		UseLiteralSubject:               false,
+		EncodeBasicConstraintsInRequestByDefault: false,
+		EncodeNameConstraints:                    false,
+		EncodeOtherNames:                         false,
+		UseLiteralSubject:                        false,
 	}
 	for _, opt := range optFuncs {
 		opt(opts)
@@ -279,10 +280,11 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		}
 	}
 
-	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequest is a temporary solution and will
-	// be removed/ replaced in a future release.
-	if opts.EncodeBasicConstraintsInRequest {
-		basicExtension, err := MarshalBasicConstraints(crt.Spec.IsCA, nil)
+	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequestByDefault is a temporary solution and will default to true
+	// in the future. Currently, we use a feature flag to allow users to opt-in to the new behavior.
+	if (crt.Spec.EncodeBasicConstraintsInRequest == nil && opts.EncodeBasicConstraintsInRequestByDefault) ||
+		(crt.Spec.EncodeBasicConstraintsInRequest != nil && *crt.Spec.EncodeBasicConstraintsInRequest) {
+		basicExtension, err := MarshalBasicConstraints(crt.Spec.IsCA, convertPointerInt32ToPointerInt(crt.Spec.MaxPathLen))
 		if err != nil {
 			return nil, err
 		}
