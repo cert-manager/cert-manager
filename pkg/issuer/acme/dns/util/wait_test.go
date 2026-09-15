@@ -14,8 +14,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -207,11 +205,7 @@ func TestResolveConfServers(t *testing.T) {
 	for _, tt := range checkResolvConfServersTests {
 		result := getNameservers(tt.fixture, tt.defaults)
 
-		sort.Strings(result)
-		sort.Strings(tt.expected)
-		if !reflect.DeepEqual(result, tt.expected) {
-			t.Errorf("#%s: expected %q; got %q", tt.fixture, tt.expected, result)
-		}
+		assert.ElementsMatch(t, tt.expected, result, "#%s", tt.fixture)
 	}
 }
 

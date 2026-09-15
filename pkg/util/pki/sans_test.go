@@ -20,10 +20,10 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
 
 	"github.com/cert-manager/cert-manager/internal/pem"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 func extractSANsFromCertificate(t *testing.T, certDER string) pkix.Extension {
@@ -382,9 +382,7 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s MarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(extension, tc.sanExtension) {
-				t.Errorf("test: %s Expected extension: %v, got: %v", testName, tc.sanExtension, extension)
-			}
+			testutil.AssertEqual(t, tc.sanExtension, extension)
 		}
 
 		{
@@ -393,9 +391,7 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s UnmarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(gns, tc.gns) {
-				t.Errorf("test: %s Expected GeneralNames: %v, got: %v", testName, tc.gns, gns)
-			}
+			testutil.AssertEqual(t, tc.gns, gns)
 		}
 	}
 }
@@ -425,9 +421,7 @@ func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalSANs returned an error: %v", err)
 	}
-	if !reflect.DeepEqual(ext.Value, conformantValue) {
-		t.Errorf("MarshalSANs directoryName is not RFC 5280 conformant:\n got: % x\nwant: % x", ext.Value, conformantValue)
-	}
+	testutil.AssertEqual(t, conformantValue, ext.Value)
 
 	// Parse side: UnmarshalSANs must accept a conformant, explicitly tagged
 	// directoryName SAN (before the fix it failed with "sequence tag mismatch").
@@ -436,7 +430,5 @@ func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
 		t.Fatalf("UnmarshalSANs failed on a conformant directoryName SAN: %v", err)
 	}
 	want := GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}
-	if !reflect.DeepEqual(gns, want) {
-		t.Errorf("UnmarshalSANs round trip mismatch:\n got: %v\nwant: %v", gns, want)
-	}
+	testutil.AssertEqual(t, want, gns)
 }

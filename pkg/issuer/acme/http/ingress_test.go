@@ -18,10 +18,8 @@ package http
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -33,6 +31,7 @@ import (
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
 	internalfeature "github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -69,9 +68,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 			},
 		},
 		"should return one ingress with pathType Exact": {
@@ -103,9 +100,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeExact {
 					t.Errorf("Expected pathType to be Exact, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
 				}
@@ -140,9 +135,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeImplementationSpecific {
 					t.Errorf("Expected pathType to be ImplementationSpecific, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
 				}
@@ -176,9 +169,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 			},
 		},
 		"should not return an ingress for the same certificate but different domain": {
@@ -371,9 +362,7 @@ func TestCleanupIngresses(t *testing.T) {
 					t.Errorf("error getting ingress resource: %v", err)
 				}
 
-				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
-					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIng, actualIng)
 			},
 		},
 		"should clean up an ingress with a single challenge path inserted without removing second HTTP rule": {
@@ -472,9 +461,7 @@ func TestCleanupIngresses(t *testing.T) {
 
 				expectedIng.ManagedFields = actualIng.ManagedFields
 
-				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
-					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIng, actualIng)
 			},
 		},
 		"should not return an error if the ingress is already gone": {
@@ -691,9 +678,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
@@ -744,9 +729,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				expectedIngress.OwnerReferences = resp.OwnerReferences
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 		"should allow ingress template to override extra labels from HTTP01SolverExtraLabels": {
@@ -797,9 +780,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				expectedIngress.OwnerReferences = resp.OwnerReferences
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 	}
@@ -878,9 +859,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 	}

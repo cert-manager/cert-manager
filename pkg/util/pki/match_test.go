@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/asn1"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,9 +108,7 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 					},
 				},
 			)
-			if !reflect.DeepEqual(violations, test.violations) {
-				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
-			}
+			assert.Equal(t, test.violations, violations, "violations did not match")
 		})
 	}
 }
@@ -209,9 +206,7 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 				}
 			}
 
-			if !reflect.DeepEqual(violations, test.violations) {
-				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
-			}
+			assert.Equal(t, test.violations, violations, "violations did not match")
 		})
 	}
 }
@@ -286,9 +281,7 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 				}
 			}
 
-			if !reflect.DeepEqual(violations, test.violations) {
-				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
-			}
+			assert.Equal(t, test.violations, violations, "violations did not match")
 		})
 	}
 }
@@ -618,9 +611,7 @@ func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			violations := pki.FuzzyX509AltNamesMatchSpec(test.x509, test.spec)
-			if !reflect.DeepEqual(violations, test.violations) {
-				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
-			}
+			assert.Equal(t, test.violations, violations, "violations")
 		})
 	}
 }

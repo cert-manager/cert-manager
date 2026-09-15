@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -56,4 +57,16 @@ func Diff(a any, b any, opts ...cmp.Option) error {
 	}
 
 	return nil
+}
+
+// AssertEqual is a test helper built around "github.com/google/go-cmp/cmp".Diff
+// with the main goal of getting better error messages when comparing complex structs
+// in test. It handles metav1.Time a bit special. See Diff for details.
+// Diff already includes the full (-want +got) output.
+func AssertEqual(t testing.TB, want, got any, opts ...cmp.Option) {
+	t.Helper()
+
+	if err := Diff(want, got, opts...); err != nil {
+		t.Error(err)
+	}
 }
