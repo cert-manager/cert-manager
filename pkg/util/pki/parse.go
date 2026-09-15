@@ -33,6 +33,14 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
 	}
+	// OpenSSL can generate keys with a leading "EC PARAMETERS" block holding information about the curve (like OID).
+	// If it is an "EC PARAMETERS" block, skip over it and read next block. Multiple "EC PARAMETERS" blocks are not valid.
+	if block.Type == "EC PARAMETERS" {
+		block, _, err = pem.SafeDecodePrivateKey(rest)
+		if err != nil {
+			return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
+		}
+	}
 
 	switch block.Type {
 	case "PRIVATE KEY":
@@ -63,13 +71,6 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
-		return key, nil
-	case "EC PARAMETERS":
-		key, err := DecodePrivateKeyBytes(rest)
-		if err != nil {
-			return nil, err
-		}
-
 		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
