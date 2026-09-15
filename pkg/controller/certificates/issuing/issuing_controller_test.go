@@ -257,6 +257,46 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		"if certificate is in Issuing state, one CertificateRequest that has failed during previous issuance with no failureTime, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					// #9327: no in-tree issuer can produce this state
+					// (Reporter.Failed sets the failureTime and the Ready
+					// condition in one update), but an external issuer
+					// writing the Ready condition alone can. The Ready
+					// condition's lastTransitionTime dates the failure.
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:               cmapi.CertificateRequestConditionReady,
+							Status:             cmmeta.ConditionFalse,
+							Reason:             cmapi.CertificateRequestReasonFailed,
+							Message:            "The certificate request failed because of reasons",
+							LastTransitionTime: &metav1.Time{Time: metaFixedClockStart.Time.Add(time.Hour * -1)},
+						}),
+						func(cr *cmapi.CertificateRequest) {
+							cr.CreationTimestamp = metav1.Time{Time: metaFixedClockStart.Time.Add(time.Hour * -2)}
+						},
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+			},
+			expectedErr: false,
+		},
 		"if certificate is in Issuing state, one CertificateRequest, and has failed for the first time during this series of attempts, set failed state with one issuance attempt and log event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
