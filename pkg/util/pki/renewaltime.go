@@ -162,13 +162,13 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 				loc = tz
 			} else {
 				// This shouldn't get triggered as we validate timezones in the validation webhook.
-				return nil, fmt.Errorf("error parsing timezone in window %s", err.Error())
+				return nil, fmt.Errorf("error parsing timezone in window: %w", err)
 			}
 		}
 
 		cronSched, err := util.CronParse(w.Cron, loc.String())
 		if err != nil {
-			return nil, fmt.Errorf("error parsing cron in window %s", err.Error())
+			return nil, fmt.Errorf("error parsing cron in window: %w", err)
 		}
 
 		if w.WindowDuration == nil || w.WindowDuration.Duration <= 0 {

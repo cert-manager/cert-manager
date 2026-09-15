@@ -34,15 +34,15 @@ func handleGenericIssuerFunc(
 	orderLister cmacmelisters.OrderLister,
 ) func(cmapi.GenericIssuer) {
 	return func(iss cmapi.GenericIssuer) {
-		certs, err := ordersForGenericIssuer(iss, orderLister)
+		orders, err := ordersForGenericIssuer(iss, orderLister)
 		if err != nil {
-			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetNamespace(), iss.GetName()))
+			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s: %w", iss.GetNamespace(), iss.GetName(), err))
 			return
 		}
-		for _, crt := range certs {
+		for _, order := range orders {
 			queue.Add(types.NamespacedName{
-				Namespace: crt.Namespace,
-				Name:      crt.Name,
+				Namespace: order.Namespace,
+				Name:      order.Name,
 			})
 		}
 	}
@@ -52,7 +52,7 @@ func ordersForGenericIssuer(iss cmapi.GenericIssuer, orderLister cmacmelisters.O
 	orders, err := orderLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
+		return nil, fmt.Errorf("error listing orders: %w", err)
 	}
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)

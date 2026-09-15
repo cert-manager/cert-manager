@@ -247,7 +247,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		if providerConfig.CloudDNS.ServiceAccount != nil {
 			saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 			if err != nil {
-				return nil, nil, fmt.Errorf("error getting clouddns service account: %s", err)
+				return nil, nil, fmt.Errorf("error getting clouddns service account: %w", err)
 			}
 
 			saKey := providerConfig.CloudDNS.ServiceAccount.Key
@@ -267,7 +267,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			clouddns.Resolver(s.DNSResolver))
 
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %w", err)
 		}
 	case providerConfig.Cloudflare != nil:
 		dbg.Info("preparing to create Cloudflare provider")
@@ -286,7 +286,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 
 		saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(saSecretName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error getting cloudflare secret: %s", err)
+			return nil, nil, fmt.Errorf("error getting cloudflare secret: %w", err)
 		}
 
 		keyData, ok := saSecret.Data[saSecretKey]
@@ -308,13 +308,13 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			cloudflare.APIToken(apiToken),
 			cloudflare.UserAgent(s.RESTConfig.UserAgent))
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %w", err)
 		}
 	case providerConfig.DigitalOcean != nil:
 		dbg.Info("preparing to create DigitalOcean provider")
 		apiTokenSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DigitalOcean.Token.Name)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error getting digitalocean token: %s", err)
+			return nil, nil, fmt.Errorf("error getting digitalocean token: %w", err)
 		}
 
 		apiToken := strings.TrimSpace(string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key]))
@@ -326,7 +326,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			digitalocean.Resolver(s.DNSResolver))
 
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
+			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %w", err)
 		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
@@ -355,7 +355,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 
 			secretAccessKeyIDSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKeyID.Name)
 			if err != nil {
-				return nil, nil, fmt.Errorf("error getting route53 secret access key id: %s", err)
+				return nil, nil, fmt.Errorf("error getting route53 secret access key id: %w", err)
 			}
 
 			secretAccessKeyIDBytes, ok := secretAccessKeyIDSecret.Data[providerConfig.Route53.SecretAccessKeyID.Key]
@@ -372,7 +372,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
 			secretAccessKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
 			if err != nil {
-				return nil, nil, fmt.Errorf("error getting route53 secret access key: %s", err)
+				return nil, nil, fmt.Errorf("error getting route53 secret access key: %w", err)
 			}
 
 			secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
@@ -424,7 +424,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 		if providerConfig.AzureDNS.ClientID != "" {
 			clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
 			if err != nil {
-				return nil, nil, fmt.Errorf("error getting azuredns client secret: %s", err)
+				return nil, nil, fmt.Errorf("error getting azuredns client secret: %w", err)
 			}
 
 			clientSecretBytes, ok := clientSecret.Data[providerConfig.AzureDNS.ClientSecret.Key]
@@ -449,13 +449,13 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			azuredns.Resolver(s.DNSResolver))
 
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %w", err)
 		}
 	case providerConfig.AcmeDNS != nil:
 		dbg.Info("preparing to create ACMEDNS provider")
 		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error getting acmedns accounts secret: %s", err)
+			return nil, nil, fmt.Errorf("error getting acmedns accounts secret: %w", err)
 		}
 
 		accountSecretBytes, ok := accountSecret.Data[providerConfig.AcmeDNS.AccountSecret.Key]
@@ -468,7 +468,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			acmedns.AccountJSON(accountSecretBytes))
 
 		if err != nil {
-			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
+			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %w", err)
 		}
 	default:
 		return nil, providerConfig, fmt.Errorf("no dns provider config specified for challenge")
