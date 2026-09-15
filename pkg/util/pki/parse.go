@@ -29,9 +29,17 @@ import (
 // It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
-	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
+	block, rest, err := pem.SafeDecodePrivateKey(keyBytes)
 	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
+	}
+	// OpenSSL can generate keys with a leading "EC PARAMETERS" block holding information about the curve (like OID).
+	// If it is an "EC PARAMETERS" block, skip over it and read next block. Multiple "EC PARAMETERS" blocks are not valid.
+	if block.Type == "EC PARAMETERS" {
+		block, _, err = pem.SafeDecodePrivateKey(rest)
+		if err != nil {
+			return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
+		}
 	}
 
 	switch block.Type {
