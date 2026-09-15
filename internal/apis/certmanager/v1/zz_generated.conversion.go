@@ -593,6 +593,7 @@ func autoConvert_v1_CertificateACMEARIStatus_To_certmanager_CertificateACMEARISt
 	out.LastChecked = (*metav1.Time)(unsafe.Pointer(in.LastChecked))
 	out.NextCheck = (*metav1.Time)(unsafe.Pointer(in.NextCheck))
 	out.LastError = in.LastError
+	out.CertID = in.CertID
 	return nil
 }
 
@@ -607,6 +608,7 @@ func autoConvert_certmanager_CertificateACMEARIStatus_To_v1_CertificateACMEARISt
 	out.LastChecked = (*metav1.Time)(unsafe.Pointer(in.LastChecked))
 	out.NextCheck = (*metav1.Time)(unsafe.Pointer(in.NextCheck))
 	out.LastError = in.LastError
+	out.CertID = in.CertID
 	return nil
 }
 

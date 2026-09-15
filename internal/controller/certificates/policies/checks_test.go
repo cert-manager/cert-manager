@@ -32,6 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // Runs a full set of tests against the trigger 'policy chain' once it is
@@ -42,11 +43,56 @@ import (
 func Test_NewTriggerPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
 	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
+
+	// ariCert and ariSecret build the fixtures shared by the ARI gate cases
+	// below: a certificate/secret pair whose X509 cert was issued 30 minutes
+	// ago, matches the spec, and would not renew through the plain renewBefore
+	// calculation unless it is close to the given notAfter.
+	ariCert := func(renewalTime *metav1.Time) *cmapi.Certificate {
+		return &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				CommonName: "example.com",
+				IssuerRef: cmmeta.IssuerReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				},
+				RenewBefore: &metav1.Duration{Duration: time.Minute * 5},
+			},
+			Status: cmapi.CertificateStatus{
+				RenewalTime: renewalTime,
+			},
+		}
+	}
+	ariSecret := func(notAfter time.Time) *corev1.Secret {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "something",
+				Annotations: map[string]string{
+					cmapi.IssuerNameAnnotationKey:  "testissuer",
+					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+					cmapi.IssuerGroupAnnotationKey: "group.example.com",
+				},
+			},
+			Data: map[string][]byte{
+				corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+				corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+					clock.Now().Add(time.Minute*-30),
+					notAfter,
+				),
+			},
+		}
+	}
+
 	tests := map[string]struct {
 		// policy inputs
 		certificate *cmapi.Certificate
 		request     *cmapi.CertificateRequest
 		secret      *corev1.Secret
+
+		// ariRenewalInfo is the ARI window the gatherer surfaced for the
+		// certificate currently in the Secret, if any.
+		ariRenewalInfo *acmeapi.RenewalInfoResponse
 
 		// expected outputs
 		reason, message string
@@ -543,6 +589,75 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 		},
+		"trigger renewal at the ARI window start when no jittered renewal time has been recorded": {
+			certificate: ariCert(nil),
+			secret:      ariSecret(clock.Now().Add(time.Hour * 24)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: clock.Now().Add(-time.Hour),
+					End:   clock.Now().Add(time.Hour),
+				},
+			},
+			reason:  Renewing,
+			message: "Renewing certificate as renewal was scheduled at <nil>",
+			reissue: true,
+		},
+		"trigger renewal at the ARI window start when the stored renewal time lies outside the window": {
+			// Status.RenewalTime still holds a renewBefore-derived value far
+			// beyond the window, so it must not defer the CA's instruction.
+			certificate: ariCert(&metav1.Time{Time: clock.Now().Add(time.Hour * 72)}),
+			secret:      ariSecret(clock.Now().Add(time.Hour * 24)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: clock.Now().Add(-time.Hour),
+					End:   clock.Now().Add(time.Hour),
+				},
+			},
+			reason:  Renewing,
+			message: "Renewing certificate as renewal was scheduled at 0001-01-04 00:00:00 +0000 UTC",
+			reissue: true,
+		},
+		"does not trigger renewal before the jittered renewal time inside an open ARI window": {
+			certificate: ariCert(&metav1.Time{Time: clock.Now().Add(time.Hour)}),
+			secret:      ariSecret(clock.Now().Add(time.Hour * 24)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: clock.Now().Add(-time.Hour),
+					End:   clock.Now().Add(time.Hour * 2),
+				},
+			},
+		},
+		"trigger renewal once the jittered renewal time inside the ARI window has passed": {
+			certificate: ariCert(&metav1.Time{Time: clock.Now().Add(time.Minute * -10)}),
+			secret:      ariSecret(clock.Now().Add(time.Hour * 24)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: clock.Now().Add(-time.Hour * 2),
+					End:   clock.Now().Add(time.Hour * 2),
+				},
+			},
+			reason:  Renewing,
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:50:00 +0000 UTC",
+			reissue: true,
+		},
+		"does not trigger renewal before the ARI window opens even if the renewBefore point has been reached": {
+			// The certificate expires in 1 minute with renewBefore of 5
+			// minutes, so the plain calculation would renew immediately; the
+			// ACME server's window must win.
+			certificate: ariCert(&metav1.Time{Time: clock.Now().Add(-time.Minute)}),
+			secret:      ariSecret(clock.Now().Add(time.Minute)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: clock.Now().Add(time.Minute * 30),
+					End:   clock.Now().Add(time.Hour),
+				},
+			},
+		},
+		"falls back to the renewBefore schedule when ARI information carries no window": {
+			certificate:    ariCert(nil),
+			secret:         ariSecret(clock.Now().Add(time.Hour * 24)),
+			ariRenewalInfo: &acmeapi.RenewalInfoResponse{},
+		},
 		"does not trigger renewal if renewal policy is disabled": {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
@@ -587,6 +702,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				Certificate:            test.certificate,
 				CurrentRevisionRequest: test.request,
 				Secret:                 test.secret,
+				ARIRenewalInfo:         test.ariRenewalInfo,
 			})
 
 			if test.reason != reason {
