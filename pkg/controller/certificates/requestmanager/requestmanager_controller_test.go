@@ -125,6 +125,24 @@ func TestProcessItem(t *testing.T) {
 		Reason:             cmapi.CertificateRequestReasonFailed,
 		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)},
 	}
+	// incompleteRequest builds a CertificateRequest for the revision being
+	// issued that has a failureTime and no Ready condition. The creationTimestamp
+	// is pinned because it decides which issuance the request belongs to.
+	incompleteRequest := func(failureTime, creation time.Time, mods ...gen.CertificateRequestModifier) *cmapi.CertificateRequest {
+		return gen.CertificateRequestFrom(bundle1.certificateRequest, append([]gen.CertificateRequestModifier{
+			gen.SetCertificateRequestName("test-6"),
+			gen.SetCertificateRequestAnnotations(map[string]string{
+				cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+				cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+			}),
+			gen.SetCertificateRequestFailureTime(metav1.Time{Time: failureTime}),
+			func(cr *cmapi.CertificateRequest) {
+				cr.Status.Conditions = nil
+				cr.CreationTimestamp = metav1.NewTime(creation)
+			},
+		}, mods...)...)
+	}
+
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
@@ -735,6 +753,119 @@ func TestProcessItem(t *testing.T) {
 					}),
 					gen.AddCertificateRequestStatusCondition(failedCRConditionThisIssuance),
 					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)}),
+				),
+			},
+		},
+		// A CertificateRequest that failed without saying so is recycled on the
+		// same terms as a Ready=False/Failed one: only once the issuing
+		// controller has counted the failure, which the Issuing transition
+		// records.
+		"should recreate the CertificateRequest if the current 'next' CertificateRequest is an incomplete failure from a previous issuance cycle": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				incompleteRequest(fixedNow.Time.Add(-time.Hour), fixedNow.Time.Add(-2*time.Hour)),
+			},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		// Kept, so that the issuing controller records the failure and the
+		// trigger controller's backoff paces the retry.
+		"should do nothing if the incomplete CertificateRequest failed during this issuance cycle": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				incompleteRequest(fixedNow.Time.Add(time.Minute), fixedNow.Time.Add(time.Second)),
+			},
+		},
+		// creationTimestamp comes from the API server and failureTime from the
+		// issuer, so an issuer whose clock is behind stamps a request it has
+		// just created with a time before the transition. Recycling on
+		// failureTime alone would recreate it every round with no failure
+		// recorded to pace it.
+		"should do nothing if the incomplete CertificateRequest was created during this issuance but stamped with an older failureTime": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				incompleteRequest(fixedNow.Time.Add(-time.Hour), fixedNow.Time.Add(2*time.Second)),
+			},
+		},
+		// Denied and InvalidRequest are decisions of their own: a replacement
+		// only gets the same answer, so they are not recycled here.
+		"should do nothing if the CertificateRequest with no Ready condition and an older failureTime is denied": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				incompleteRequest(fixedNow.Time.Add(-time.Hour), fixedNow.Time.Add(-2*time.Hour),
+					gen.AddCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type: cmapi.CertificateRequestConditionDenied, Status: cmmeta.ConditionTrue, Reason: "DeniedReason",
+					}),
+				),
+			},
+		},
+		"should do nothing if the CertificateRequest with no Ready condition and an older failureTime is invalid": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				incompleteRequest(fixedNow.Time.Add(-time.Hour), fixedNow.Time.Add(-2*time.Hour),
+					gen.AddCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type: cmapi.CertificateRequestConditionInvalidRequest, Status: cmmeta.ConditionTrue, Reason: "InvalidRequest",
+					}),
 				),
 			},
 		},

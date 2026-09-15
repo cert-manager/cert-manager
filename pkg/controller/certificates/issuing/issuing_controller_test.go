@@ -94,6 +94,28 @@ func TestIssuingController(t *testing.T) {
 		}),
 	)
 
+	// incompleteRequest builds the state this fix is about: a
+	// CertificateRequest for the revision being issued that has a failureTime
+	// and no Ready condition. The UID is pinned because it reaches the message,
+	// and the creationTimestamp because it decides which issuance it belongs to.
+	const incompleteRequestUID = "incomplete-request-uid"
+	incompleteRequest := func(failureTime, creation time.Time, mods ...gen.CertificateRequestModifier) *cmapi.CertificateRequest {
+		return gen.CertificateRequestFrom(exampleBundle.CertificateRequest, append([]gen.CertificateRequestModifier{
+			gen.AddCertificateRequestAnnotations(map[string]string{
+				cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+			}),
+			gen.SetCertificateRequestFailureTime(metav1.Time{Time: failureTime}),
+			func(cr *cmapi.CertificateRequest) {
+				cr.Status.Conditions = nil
+				cr.UID = incompleteRequestUID
+				cr.CreationTimestamp = metav1.NewTime(creation)
+			},
+		}, mods...)...)
+	}
+	incompleteFailureMessage := fmt.Sprintf(
+		"The certificate request has failed to complete and will be retried: CertificateRequest %s/%s (UID %s) has a failureTime but no Ready condition",
+		exampleBundle.CertificateRequest.Namespace, exampleBundle.CertificateRequest.Name, incompleteRequestUID)
+
 	tests := map[string]testT{
 		"if certificate is not in Issuing state, then do nothing": {
 			certificate: exampleBundle.Certificate,
@@ -481,6 +503,33 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		// #9116's ordering: a request whose CSR no longer matches the next
+		// private key is the request manager's to replace, and this issuance
+		// must not be failed for it.
+		"if certificate is in Issuing state, one incomplete CertificateRequest, but the private key stored in the Secret does not match that creating the CSR, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					incompleteRequest(metaFixedClockStart.Time.Add(time.Second), metaFixedClockStart.Time.Add(time.Second)),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							// Replaced after this request's CSR was built.
+							corev1.TLSPrivateKeyKey: exampleBundleAlt.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+			expectedErr: false,
+		},
 		"if certificate is in Issuing state, one CertificateRequest that was denied, but the private key stored in the Secret does not match that creating the CSR, do nothing": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
@@ -514,22 +563,62 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, emit a Stalled event": {
+		// #9128 made this state visible with an Event. Failing the issuance is
+		// what hands it to the existing backoff and recycling.
+		"if certificate is in Issuing state, one CertificateRequest with a failure time but no Ready condition, fail the issuance": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.CertificateRequest,
-						// Explicit, so the case keeps covering the missing condition.
-						func(cr *cmapi.CertificateRequest) { cr.Status.Conditions = nil },
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
-						}),
-						// After the Issuing transition, so this is the "stalled
-						// during the current attempt" case, not the earlier
-						// "failed during a previous issuance" case handled above.
-						gen.SetCertificateRequestFailureTime(metav1.Time{Time: metaFixedClockStart.Time.Add(time.Second)}),
-					)},
+					// Stamped after the Issuing transition, so it belongs to
+					// the attempt in progress.
+					incompleteRequest(metaFixedClockStart.Time.Add(time.Second), metaFixedClockStart.Time.Add(time.Second)),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Stalled",
+								Message:            incompleteFailureMessage,
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(new(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning Stalled " + incompleteFailureMessage,
+				},
+			},
+			expectedErr: false,
+		},
+		// The retry the trigger controller has just started must not count the
+		// previous issuance's failure again; the request manager recycles it.
+		"if certificate is in Issuing state, one incomplete CertificateRequest from a previous issuance, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					incompleteRequest(metaFixedClockStart.Time.Add(-time.Hour), metaFixedClockStart.Time.Add(-2*time.Hour)),
+				},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -542,8 +631,155 @@ func TestIssuingController(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{},
+			},
+			expectedErr: false,
+		},
+		// creationTimestamp comes from the API server and failureTime from the
+		// issuer, so an issuer whose clock is behind stamps a request it has
+		// just created with a time before the transition. Counting it here is
+		// what stops the request manager recycling it every round unpaced.
+		"if certificate is in Issuing state, one incomplete CertificateRequest created during this issuance but stamped with an older failureTime, fail the issuance": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					incompleteRequest(metaFixedClockStart.Time.Add(-time.Hour), metaFixedClockStart.Time.Add(2*time.Second)),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Stalled",
+								Message:            incompleteFailureMessage,
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(new(1)),
+						),
+					)),
+				},
 				ExpectedEvents: []string{
-					fmt.Sprintf("Warning Stalled CertificateRequest %q has a failureTime set but no Ready condition; issuance is stalled. Delete the CertificateRequest to retry.", exampleBundle.CertificateRequest.Name),
+					"Warning Stalled " + incompleteFailureMessage,
+				},
+			},
+			expectedErr: false,
+		},
+		// Denied and InvalidRequest are decisions of their own. Recycling a
+		// request that carries one only gets the same answer again, so they
+		// keep their priority over the incomplete-failure handling above.
+		"if certificate is in Issuing state, one denied CertificateRequest with no Ready condition and an older failureTime, report denial": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					incompleteRequest(metaFixedClockStart.Time.Add(-time.Hour), metaFixedClockStart.Time.Add(-2*time.Hour),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionDenied,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "DeniedReason",
+							Message: "The certificate request has been denied",
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "DeniedReason",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request has been denied",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(new(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning DeniedReason The certificate request has failed to complete and will be retried: The certificate request has been denied",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one invalid CertificateRequest with no Ready condition and an older failureTime, report the invalid request": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					incompleteRequest(metaFixedClockStart.Time.Add(-time.Hour), metaFixedClockStart.Time.Add(-2*time.Hour),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionInvalidRequest,
+							Status:  cmmeta.ConditionTrue,
+							Reason:  "InvalidRequest",
+							Message: "The certificate request is invalid",
+						}),
+					),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "InvalidRequest",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request is invalid",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(new(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning InvalidRequest The certificate request has failed to complete and will be retried: The certificate request is invalid",
 				},
 			},
 			expectedErr: false,

@@ -308,6 +308,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	// The same for a request that failed without saying so. Waiting rather than
+	// failing is what stops the previous issuance's failure being counted a
+	// second time on the retry the trigger controller has just started.
+	if internalcertificates.IsIncompleteFailure(req) &&
+		internalcertificates.IncompleteFailureIsFromPreviousIssuance(req, certIssuingCond) {
+		log.V(logf.InfoLevel).Info("Found an incomplete CertificateRequest from previous issuance, waiting for it to be deleted...")
+		return nil
+	}
+
 	// Now check if CertificateRequest is in any of the final states so that
 	// this issuance can be completed as either succeeded or failed. Failed
 	// issuance will be retried with a delay (the logic for that lives in
@@ -340,19 +349,18 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	if crReadyCond == nil {
 		if req.Status.FailureTime != nil {
-			// The CertificateRequest has a failureTime but no Ready condition.
-			// This is not reachable via the in-tree issuers, which always set
-			// both in the same update, but can happen with an external issuer
-			// writing failureTime and the Ready condition in separate updates,
-			// or with a partially applied status. Neither this controller nor
-			// the requestmanager controller can make progress from this state
-			// (the requestmanager only cleans up a CertificateRequest whose
-			// Ready condition reason is Failed), so surface it loudly rather
-			// than waiting silently forever.
-			message := fmt.Sprintf("CertificateRequest %q has a failureTime set but no Ready condition; issuance is stalled. Delete the CertificateRequest to retry.", req.Name)
-			log.V(logf.ErrorLevel).Info(message)
-			c.recorder.Event(crt, corev1.EventTypeWarning, reasonStalled, message)
-			return nil
+			// A failureTime with no Ready condition. The in-tree issuers set
+			// both in one update, but an external issuer writing them
+			// separately can stop between them. #9128 made this visible;
+			// failing the issuance is what hands it to the trigger
+			// controller's backoff, after which the requestmanager controller
+			// replaces the request.
+			return c.failIssueCertificate(ctx, log, crt, &cmapi.CertificateRequestCondition{
+				Type:    cmapi.CertificateRequestConditionReady,
+				Status:  cmmeta.ConditionFalse,
+				Reason:  reasonStalled,
+				Message: fmt.Sprintf("CertificateRequest %s/%s (UID %s) has a failureTime but no Ready condition", req.Namespace, req.Name, req.UID),
+			})
 		}
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
