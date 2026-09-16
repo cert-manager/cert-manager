@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
@@ -326,9 +326,7 @@ func TestScheduleN(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("expected to get an error, but got none")
 			}
-			if diff := cmp.Diff(test.expected, chs); diff != "" {
-				t.Errorf("expected did not match actual (-want +got):\n%s", diff)
-			}
+			testutil.AssertEqual(t, test.expected, chs)
 		})
 	}
 }

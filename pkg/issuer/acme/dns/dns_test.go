@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -436,8 +437,8 @@ func TestSolveForDigitalOcean(t *testing.T) {
 
 	expectedDOCall := []fakeDNSProviderCall{
 		{
-			name: "digitalocean",
-			args: []any{digitalocean.DNSProviderOptions{
+			Name: "digitalocean",
+			Args: []any{digitalocean.DNSProviderOptions{
 				Token:       "FAKE-TOKEN",
 				Nameservers: s.DNS01Nameservers,
 				UserAgent:   s.RESTConfig.UserAgent,
@@ -446,10 +447,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
-	}
-
+	assertProviderCalls(t, expectedDOCall, f.dnsProviders.calls)
 }
 
 func TestRoute53TrimCreds(t *testing.T) {
@@ -500,8 +498,8 @@ func TestRoute53TrimCreds(t *testing.T) {
 
 	expectedR53Call := []fakeDNSProviderCall{
 		{
-			name: "route53",
-			args: []any{route53.DNSProviderOptions{
+			Name: "route53",
+			Args: []any{route53.DNSProviderOptions{
 				AccessKeyID:     "test_with_spaces",
 				SecretAccessKey: "AKIENDINNEWLINE",
 				Region:          "us-west-2",
@@ -513,9 +511,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	assertProviderCalls(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53SecretAccessKey(t *testing.T) {
@@ -572,8 +568,8 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 
 	expectedR53Call := []fakeDNSProviderCall{
 		{
-			name: "route53",
-			args: []any{route53.DNSProviderOptions{
+			Name: "route53",
+			Args: []any{route53.DNSProviderOptions{
 				AccessKeyID:     "AWSACCESSKEYID",
 				SecretAccessKey: "AKIENDINNEWLINE",
 				Region:          "us-west-2",
@@ -585,9 +581,7 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	assertProviderCalls(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53AmbientCreds(t *testing.T) {
@@ -628,8 +622,8 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
 					return &fakeDNSProviderCall{
-						name: "route53",
-						args: []any{route53.DNSProviderOptions{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
 							Region:      "us-west-2",
 							Nameservers: f.Solver.DNS01Nameservers,
 							UserAgent:   f.Solver.RESTConfig.UserAgent,
@@ -675,8 +669,8 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
 					return &fakeDNSProviderCall{
-						name: "route53",
-						args: []any{route53.DNSProviderOptions{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
 							Region:      "us-west-2",
 							Nameservers: util.RecursiveNameservers,
 							UserAgent:   f.Solver.RESTConfig.UserAgent,
@@ -703,9 +697,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 
 			if tt.out.expectedCall != nil {
 				expectedCall := *tt.out.expectedCall(&f)
-				if !reflect.DeepEqual([]fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls) {
-					t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
-				}
+				assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
 			}
 		})
 	}
@@ -736,8 +728,8 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			},
 			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
 				return fakeDNSProviderCall{
-					name: "route53",
-					args: []any{route53.DNSProviderOptions{
+					Name: "route53",
+					Args: []any{route53.DNSProviderOptions{
 						Region:      "us-west-2",
 						Nameservers: perSolverNameservers,
 						Ambient:     new(false),
@@ -775,8 +767,8 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			},
 			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
 				return fakeDNSProviderCall{
-					name: "digitalocean",
-					args: []any{digitalocean.DNSProviderOptions{
+					Name: "digitalocean",
+					Args: []any{digitalocean.DNSProviderOptions{
 						Token:       "FAKE-TOKEN",
 						Nameservers: perSolverNameservers,
 						UserAgent:   f.Solver.RESTConfig.UserAgent,
@@ -802,8 +794,8 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			},
 			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
 				return fakeDNSProviderCall{
-					name: "route53",
-					args: []any{route53.DNSProviderOptions{
+					Name: "route53",
+					Args: []any{route53.DNSProviderOptions{
 						Region:      "us-west-2",
 						Nameservers: util.RecursiveNameservers,
 						Ambient:     new(false),
@@ -826,9 +818,7 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			}
 
 			expectedCall := tt.expectedCall(tt.fixture)
-			if !reflect.DeepEqual([]fakeDNSProviderCall{expectedCall}, tt.fixture.dnsProviders.calls) {
-				t.Errorf("constructor call: got %+v, want %+v", tt.fixture.dnsProviders.calls, []fakeDNSProviderCall{expectedCall})
-			}
+			assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, tt.fixture.dnsProviders.calls)
 		})
 	}
 }
@@ -915,9 +905,7 @@ func TestNameserversForProviderConfig(t *testing.T) {
 			}
 
 			gotNameservers, gotCheckAuth := f.Solver.nameserversForProviderConfig(providerConfig)
-			if !reflect.DeepEqual(tt.wantNameservers, gotNameservers) {
-				t.Errorf("nameservers: got %v, want %v", gotNameservers, tt.wantNameservers)
-			}
+			assert.Equal(t, tt.wantNameservers, gotNameservers, "nameservers")
 			if tt.wantCheckAuth != gotCheckAuth {
 				t.Errorf("checkAuthoritative: got %v, want %v", gotCheckAuth, tt.wantCheckAuth)
 			}
@@ -964,8 +952,8 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
 					return &fakeDNSProviderCall{
-						name: "route53",
-						args: []any{route53.DNSProviderOptions{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
 							Region:      "us-west-2",
 							Role:        "my-role",
 							Nameservers: f.Solver.DNS01Nameservers,
@@ -1013,8 +1001,8 @@ func TestRoute53AssumeRole(t *testing.T) {
 			result{
 				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
 					return &fakeDNSProviderCall{
-						name: "route53",
-						args: []any{
+						Name: "route53",
+						Args: []any{
 							route53.DNSProviderOptions{
 								Region:      "us-west-2",
 								Role:        "my-other-role",
@@ -1044,9 +1032,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 
 			if tt.out.expectedCall != nil {
 				expectedCall := *tt.out.expectedCall(&f)
-				if !reflect.DeepEqual([]fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls) {
-					t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
-				}
+				assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
 			}
 		})
 	}

@@ -22,7 +22,6 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"net/url"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -719,10 +718,7 @@ func TestAcme_Setup(t *testing.T) {
 
 			// Verify that the expected account value was passed when the
 			// account was registered.
-			if !reflect.DeepEqual(gotAcc, test.expectedRegisteredAcc) {
-				t.Errorf("Expected account value passed to register: %#+v\ngot: %+#v",
-					test.expectedRegisteredAcc, gotAcc)
-			}
+			testutil.AssertEqual(t, test.expectedRegisteredAcc, gotAcc)
 
 			// Verify issuer's state after Setup was called.
 			gotConditions := test.issuer.GetStatus().Conditions

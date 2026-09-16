@@ -17,11 +17,11 @@ limitations under the License.
 package solverpicker
 
 import (
-	"reflect"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -981,13 +981,8 @@ func TestPick(t *testing.T) {
 
 			solver, ch := Pick(t.Context(), domainToFind, test.authz.Challenges, test.issuer.GetSpec().ACME.Solvers, test.order)
 
-			if !reflect.DeepEqual(test.expectedSolver, solver) {
-				t.Errorf("expected solver %v, got %v", test.expectedSolver, solver)
-			}
-
-			if !reflect.DeepEqual(test.expectedChallenge, ch) {
-				t.Errorf("expected challenge token %v, got %v", test.expectedChallenge, ch)
-			}
+			testutil.AssertEqual(t, test.expectedSolver, solver)
+			testutil.AssertEqual(t, test.expectedChallenge, ch)
 		})
 	}
 }

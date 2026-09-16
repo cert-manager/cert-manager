@@ -18,9 +18,9 @@ package identity
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
@@ -300,9 +301,7 @@ func TestValidateCreate(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
 			gotW, gotE := p.Validate(t.Context(), *test.req, nil, test.cr)
 			compareErrors(t, test.wantE, gotE)
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateCreate() = %v, want %v", gotW, test.wantW)
-			}
+			assert.Equal(t, test.wantW, gotW)
 		})
 	}
 }
@@ -427,9 +426,7 @@ func TestValidateUpdate(t *testing.T) {
 			p := NewPlugin().(*certificateRequestIdentity)
 			gotW, gotE := p.Validate(t.Context(), *test.req, test.oldCR, test.newCR)
 			compareErrors(t, test.wantE, gotE)
-			if !reflect.DeepEqual(gotW, test.wantW) {
-				t.Errorf("warnings from ValidateUpdate() = %v, want %v", gotW, test.wantW)
-			}
+			assert.Equal(t, test.wantW, gotW)
 		})
 	}
 }
@@ -543,9 +540,7 @@ func TestMutateCreate(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
-			if !reflect.DeepEqual(test.expectedCR, cr) {
-				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
-			}
+			testutil.AssertEqual(t, test.expectedCR, cr)
 		})
 	}
 }
@@ -603,9 +598,7 @@ func TestMutateUpdate(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 			fromUnstructured(t, crUnstr, cr)
-			if !reflect.DeepEqual(test.expectedCR, cr) {
-				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
-			}
+			testutil.AssertEqual(t, test.expectedCR, cr)
 		})
 	}
 }

@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"math/big"
 	"net"
-	"reflect"
 	"testing"
 	"time"
 
@@ -101,14 +100,8 @@ func TestKeyUsagesForCertificate(t *testing.T) {
 				t.Errorf("got unexpected error generating cert: %q", err)
 				return
 			}
-			if !reflect.DeepEqual(ku, test.expectedKeyUsage) {
-				t.Errorf("keyUsages don't match, got %q, expected %q", ku, test.expectedKeyUsage)
-				return
-			}
-			if !reflect.DeepEqual(eku, test.expectedExtKeyUsage) {
-				t.Errorf("extKeyUsages don't match, got %q, expected %q", eku, test.expectedExtKeyUsage)
-				return
-			}
+			assert.Equal(t, test.expectedKeyUsage, ku, "keyUsages don't match")
+			assert.Equal(t, test.expectedExtKeyUsage, eku, "extKeyUsages don't match")
 		}
 	}
 	for _, test := range tests {
@@ -868,10 +861,7 @@ func TestGenerateCSR(t *testing.T) {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want)
-				return
-			}
+			assert.Equal(t, tt.want, got, "GenerateCSR()")
 
 			// TODO find a better way around the nil check
 			if got != nil {
@@ -1090,10 +1080,7 @@ func TestEncodeX509Chain(t *testing.T) {
 					test.expErr, err)
 			}
 
-			if !reflect.DeepEqual(chainOut, test.expChain) {
-				t.Errorf("unexpected output from EncodeX509Chain, exp=%+s got=%+s",
-					test.expChain, chainOut)
-			}
+			assert.Equal(t, test.expChain, chainOut, "unexpected output from EncodeX509Chain")
 		})
 	}
 }

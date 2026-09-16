@@ -18,7 +18,6 @@ package keymanager
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -67,8 +66,8 @@ func relaxedSecretMatcher(l coretesting.Action, r coretesting.Action) error {
 	for k := range objR.Data {
 		objR.Data[k] = []byte("something")
 	}
-	if !reflect.DeepEqual(objL, objR) {
-		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", cmp.Diff(objL, objR))
+	if diff := cmp.Diff(objL, objR); diff != "" {
+		return fmt.Errorf("unexpected difference between actions (-want +got):\n%s", diff)
 	}
 	return nil
 }
