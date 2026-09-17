@@ -162,14 +162,11 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
-	// Check for and fetch the 'status.nextPrivateKeySecretName' secret
-	if crt.Status.NextPrivateKeySecretName == nil {
-		log.V(logf.DebugLevel).Info("status.nextPrivateKeySecretName not yet set, waiting for keymanager before processing certificate")
-		return nil
-	}
-	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
+	// Check for and fetch the 'status.nextPrivateKeySecretName' secret. An unset
+	// name is reported as not found, the same as a Secret we must not use.
+	nextPrivateKeySecret, err := certificates.GetNextPrivateKeySecret(c.secretLister.Secrets(crt.Namespace), crt)
 	if apierrors.IsNotFound(err) {
-		log.V(logf.DebugLevel).Info("nextPrivateKeySecretName Secret resource does not exist, waiting for keymanager to create it before continuing")
+		log.V(logf.DebugLevel).Info("nextPrivateKeySecretName Secret resource does not exist or is not owned by this Certificate, waiting for keymanager to create it before continuing")
 		return nil
 	}
 	if err != nil {

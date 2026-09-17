@@ -76,6 +76,25 @@ func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action
 	return nil
 }
 
+// nextPrivateKeySecretMeta builds the ObjectMeta that the keymanager
+// controller gives to a next private key Secret: the labels it sets, and a
+// controller owner reference back to the Certificate. The requestmanager controller
+// only consumes Secrets carrying the next-private-key label and that owner
+// reference, so fixtures must set them.
+func nextPrivateKeySecretMeta(crt *cmapi.Certificate, name string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: crt.Namespace,
+		Name:      name,
+		Labels: map[string]string{
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
+		},
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(crt, certificateGvk),
+		},
+	}
+}
+
 func TestProcessItem(t *testing.T) {
 	bundle1 := mustCreateCryptoBundle(t, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -183,7 +202,7 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if status.nextPrivateKeySecretName contains no data": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists-but-empty"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists-but-empty"),
 				},
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
@@ -191,10 +210,29 @@ func TestProcessItem(t *testing.T) {
 				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
 			),
 		},
+		"do nothing if status.nextPrivateKeySecretName names a Secret not owned by the Certificate": {
+			// A principal with access only to the certificates/status
+			// subresource must not be able to make the controller read an
+			// unrelated Secret and copy its private key into spec.secretName.
+			//
+			// The Secret is labeled and has a controller owner reference, so
+			// only the owner UID comparison rejects it.
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(gen.CertificateFrom(bundle1.certificate, gen.SetCertificateUID("other-uid")), "not-ours"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateUID("cert-uid"),
+				gen.SetCertificateNextPrivateKeySecretName("not-ours"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+			),
+		},
 		"do nothing if status.nextPrivateKeySecretName contains invalid data": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists-but-invalid"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists-but-invalid"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: []byte("invalid")},
 				},
 			},
@@ -209,7 +247,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle1.certificate.Namespace, Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -233,7 +271,7 @@ func TestProcessItem(t *testing.T) {
 		"create a CertificateRequest if none exists": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
 				},
 			},
@@ -256,7 +294,7 @@ func TestProcessItem(t *testing.T) {
 		"create a CertificateRequest if none exists (with long name)": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
 				},
 			},
@@ -282,7 +320,7 @@ func TestProcessItem(t *testing.T) {
 		"create a CertificateRequest if none exists (with long name and very large revision)": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
 				},
 			},
@@ -308,7 +346,7 @@ func TestProcessItem(t *testing.T) {
 		"delete the owned CertificateRequest and create a new one if existing one does not have the annotation": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
@@ -341,7 +379,7 @@ func TestProcessItem(t *testing.T) {
 		"delete the owned CertificateRequest and create a new one if existing one contains invalid annotation": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
@@ -374,7 +412,7 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if existing CertificateRequest is valid for the spec": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -395,7 +433,7 @@ func TestProcessItem(t *testing.T) {
 		"should delete requests that contain invalid CSR data": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -429,7 +467,7 @@ func TestProcessItem(t *testing.T) {
 		"should ignore requests that do not have a revision of 'current + 1' and create a new one": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
@@ -468,7 +506,7 @@ func TestProcessItem(t *testing.T) {
 		"should delete request for the current revision if public keys do not match": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
@@ -510,7 +548,7 @@ func TestProcessItem(t *testing.T) {
 		"should delete request for the current revision if public keys do not match (with explicit revision)": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle2.privateKeyBytes},
 				},
 			},
@@ -553,7 +591,7 @@ func TestProcessItem(t *testing.T) {
 		"should recreate the CertificateRequest if the CSR is not signed by the stored private key": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateRSA(t)},
 				},
 			},
@@ -587,7 +625,7 @@ func TestProcessItem(t *testing.T) {
 		"should recreate the CertificateRequest if the CSR does not match requirements on spec": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -622,7 +660,7 @@ func TestProcessItem(t *testing.T) {
 		"should do nothing if request has an up to date CSR and it is still pending": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -647,7 +685,7 @@ func TestProcessItem(t *testing.T) {
 		"should record a Warning event if multiple owned and up to date CertificateRequests for the current revision exist": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -679,7 +717,7 @@ func TestProcessItem(t *testing.T) {
 		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -715,7 +753,7 @@ func TestProcessItem(t *testing.T) {
 		"should do nothing if the CertificateRequest that is valid for spec has failed during this issuance cycle": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
 				},
 			},
@@ -742,7 +780,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists-for-nameconstraints-test"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists-for-nameconstraints-test"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
 				},
 			},
@@ -772,7 +810,7 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if the next private key does not match spec.privateKey.algorithm, waiting for the keymanager": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: bundle3.certificate.Namespace, Name: "exists-with-mismatched-key"},
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists-with-mismatched-key"),
 					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: mustGenerateECDSA(t)},
 				},
 			},
