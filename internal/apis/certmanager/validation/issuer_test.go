@@ -18,7 +18,6 @@ package validation
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -933,16 +932,7 @@ func TestValidateACMEIssuerAccountPrivateKey(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := validateACMEIssuerAccountPrivateKey(s.apk, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
