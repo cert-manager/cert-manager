@@ -50,6 +50,8 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: controller
       - exists:
           path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
 
@@ -60,6 +62,8 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: cainjector
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: cainjector
       - exists:
           path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
 
@@ -70,5 +74,7 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: webhook
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: webhook
       - exists:
           path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
