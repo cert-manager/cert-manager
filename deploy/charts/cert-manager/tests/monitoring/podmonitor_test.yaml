@@ -1,0 +1,92 @@
+suite: PodMonitor metrics relationship
+templates:
+  - templates/podmonitor.yaml
+  - templates/deployment.yaml
+  - templates/cainjector-deployment.yaml
+  - templates/webhook-deployment.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+set:
+  prometheus.enabled: true
+  prometheus.podmonitor.enabled: true
+tests:
+  - it: should select all three workloads and use the metrics port
+    template: templates/podmonitor.yaml
+    asserts:
+      - equal:
+          path: spec.podMetricsEndpoints[0].port
+          value: http-metrics
+      - contains:
+          path: spec.selector.matchExpressions
+          content:
+            key: app.kubernetes.io/name
+            operator: In
+            values:
+              - cainjector
+              - cert-manager
+              - webhook
+      - contains:
+          path: spec.selector.matchExpressions
+          content:
+            key: app.kubernetes.io/instance
+            operator: In
+            values:
+              - cert-manager
+      - contains:
+          path: spec.selector.matchExpressions
+          content:
+            key: app.kubernetes.io/component
+            operator: In
+            values:
+              - cainjector
+              - controller
+              - webhook
+
+  - it: should expose controller metrics
+    template: templates/deployment.yaml
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            app.kubernetes.io/name: cert-manager
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: controller
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http-metrics
+            containerPort: 9402
+            protocol: TCP
+
+  - it: should expose cainjector metrics
+    template: templates/cainjector-deployment.yaml
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            app.kubernetes.io/name: cainjector
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: cainjector
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http-metrics
+            containerPort: 9402
+            protocol: TCP
+
+  - it: should expose webhook metrics
+    template: templates/webhook-deployment.yaml
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            app.kubernetes.io/name: webhook
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: webhook
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http-metrics
+            containerPort: 9402
+            protocol: TCP
