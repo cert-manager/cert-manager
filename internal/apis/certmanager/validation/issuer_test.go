@@ -17,10 +17,14 @@ limitations under the License.
 package validation
 
 import (
+	"bytes"
+	"encoding/pem"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +37,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	pubcmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	unitcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 )
 
@@ -119,7 +124,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), "<snip>", "cert bundle didn't contain any valid certificates"),
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "error decoding certificate PEM block: no valid certificates found"),
 			},
 		},
 		"vault issuer define clientCertSecretRef but not clientKeySecretRef": {
@@ -510,7 +515,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("caBundle"), "", "cert bundle didn't contain any valid certificates"),
+				field.Invalid(fldPath.Child("caBundle"), "", "error decoding certificate PEM block: no valid certificates found"),
 			},
 		},
 		"acme issuer with both a CA bundle and SkipTLSVerify": {
@@ -2163,6 +2168,87 @@ func TestUpdateValidateIssuer(t *testing.T) {
 			gotE, gotW := ValidateUpdateIssuer(s.a, &baseIssuer, s.iss)
 			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
 			assert.Equal(t, s.expectedW, gotW)
+		})
+	}
+}
+
+func TestValidateCABundleNotEmpty(t *testing.T) {
+	validCertPEM := unitcrypto.MustCreateCryptoBundle(t,
+		&pubcmapi.Certificate{Spec: pubcmapi.CertificateSpec{CommonName: "test"}},
+		clock.RealClock{},
+	).CertBytes
+
+	privateKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
+	require.NoError(t, err)
+	privateKeyPEM := pki.EncodePKCS1PrivateKey(privateKey)
+
+	malformedCertPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: []byte("not-a-real-certificate"),
+	})
+
+	headeredCertPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE",
+		Headers: map[string]string{
+			"Proc-Type": "4,ENCRYPTED",
+		},
+		Bytes: func() []byte {
+			block, _ := pem.Decode(validCertPEM)
+			require.NotNil(t, block)
+			return block.Bytes
+		}(),
+	})
+
+	tests := map[string]struct {
+		bundle      []byte
+		expectError string
+	}{
+		"valid single certificate": {
+			bundle: validCertPEM,
+		},
+		"valid multi-certificate bundle": {
+			bundle: bytes.Join([][]byte{validCertPEM, validCertPEM}, nil),
+		},
+		"empty / non-PEM garbage": {
+			bundle:      []byte("invalid"),
+			expectError: "error decoding certificate PEM block: no valid certificates found",
+		},
+		"PRIVATE KEY block alone": {
+			bundle:      privateKeyPEM,
+			expectError: `error decoding certificate PEM block: expected a "CERTIFICATE" block, found "RSA PRIVATE KEY"`,
+		},
+		"valid cert mixed with PRIVATE KEY": {
+			bundle:      bytes.Join([][]byte{validCertPEM, privateKeyPEM}, nil),
+			expectError: `error decoding certificate PEM block: expected a "CERTIFICATE" block, found "RSA PRIVATE KEY"`,
+		},
+		"valid cert mixed with malformed CERTIFICATE": {
+			bundle:      bytes.Join([][]byte{validCertPEM, malformedCertPEM}, nil),
+			expectError: "error parsing X.509 certificate:",
+		},
+		"malformed CERTIFICATE alone": {
+			bundle:      malformedCertPEM,
+			expectError: "error parsing X.509 certificate:",
+		},
+		"CERTIFICATE block with PEM headers": {
+			bundle:      headeredCertPEM,
+			expectError: "invalid PEM block in bundle; blocks are not permitted to have PEM headers",
+		},
+		"valid cert mixed with headered CERTIFICATE": {
+			bundle:      bytes.Join([][]byte{validCertPEM, headeredCertPEM}, nil),
+			expectError: "invalid PEM block in bundle; blocks are not permitted to have PEM headers",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := validateCABundleNotEmpty(tc.bundle)
+			if tc.expectError == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.True(t, strings.Contains(err.Error(), tc.expectError),
+				"expected error containing %q, got %q", tc.expectError, err.Error())
 		})
 	}
 }

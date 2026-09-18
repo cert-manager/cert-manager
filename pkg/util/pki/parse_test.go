@@ -73,6 +73,25 @@ func TestDecodeX509CertificateSetBytes(t *testing.T) {
 	if len(certs) != 1 {
 		t.Errorf("expected 1 certificate, got %d", len(certs))
 	}
+
+	// A valid certificate PEM with non-standard headers must be rejected.
+	block, _ := pem.Decode(certBytes)
+	if block == nil {
+		t.Fatal("failed to decode test certificate PEM")
+	}
+	headeredBytes := pem.EncodeToMemory(&pem.Block{
+		Type:    block.Type,
+		Headers: map[string]string{"Proc-Type": "4,ENCRYPTED"},
+		Bytes:   block.Bytes,
+	})
+	_, err = DecodeX509CertificateSetBytes(headeredBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a certificate PEM block with headers, got none")
+	}
+	expectHeaderErr := "blocks are not permitted to have PEM headers"
+	if !strings.Contains(err.Error(), expectHeaderErr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectHeaderErr, err.Error())
+	}
 }
 
 func TestDecodeX509CertificateRequestBytes(t *testing.T) {

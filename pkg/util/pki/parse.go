@@ -105,6 +105,13 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 			return nil, errors.NewInvalidData("error decoding certificate PEM block: expected a \"CERTIFICATE\" block, found %q", block.Type)
 		}
 
+		// Reject PEM headers: they are non-standard (RFC 7468) and can carry
+		// accidental private material. crypto/x509.CertPool.AppendCertsFromPEM
+		// skips these blocks; we reject them so callers cannot silently lose certs.
+		if len(block.Headers) != 0 {
+			return nil, errors.NewInvalidData("invalid PEM block in bundle; blocks are not permitted to have PEM headers")
+		}
+
 		// parse the tls certificate
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
