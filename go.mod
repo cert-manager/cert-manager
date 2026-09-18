@@ -15,12 +15,12 @@ require (
 	github.com/Venafi/vcert/v5 v5.13.9
 	github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0
 	github.com/aws/aws-sdk-go-v2 v1.47.0
-	github.com/aws/aws-sdk-go-v2/config v1.33.4
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.4
+	github.com/aws/aws-sdk-go-v2/config v1.33.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.50.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0
 	github.com/aws/smithy-go v1.28.1
-	github.com/digitalocean/godo v1.206.0
+	github.com/digitalocean/godo v1.208.0
 	github.com/go-ldap/ldap/v3 v3.4.14
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonreference v1.0.2
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.57.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
-	google.golang.org/api v0.297.0
+	google.golang.org/api v0.298.0
 	k8s.io/api v0.37.0
 	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/apimachinery v0.37.0
