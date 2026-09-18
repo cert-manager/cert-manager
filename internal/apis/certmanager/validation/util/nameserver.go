@@ -51,7 +51,7 @@ func ValidNameserver(nameserver string) (string, error) {
 			// net.JoinHostPort expect IPv6 address to be unenclosed
 			host = strings.Trim(nameserver, "[]")
 		} else {
-			return "", fmt.Errorf("RFC2136 nameserver is invalid: %s", err.Error())
+			return "", fmt.Errorf("RFC2136 nameserver is invalid: %w", err)
 		}
 	}
 

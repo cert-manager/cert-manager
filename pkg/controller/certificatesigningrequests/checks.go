@@ -49,7 +49,7 @@ func (c *Controller) handleGenericIssuer(iss cmapi.GenericIssuer) {
 func (c *Controller) certificateSigningRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*certificatesv1.CertificateSigningRequest, error) {
 	csrs, err := c.csrLister.List(labels.NewSelector())
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificates signing requests: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates signing requests: %w", err)
 	}
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)
