@@ -35,7 +35,7 @@ set -eu -o pipefail
 
 # kgateway version is maintained by Renovate using a custom regex manager
 # renovate: datasource=docker packageName=cr.kgateway.dev/kgateway-dev/charts/kgateway
-kgateway_version=v2.4.4
+kgateway_version=v2.4.5
 
 image_repository=kgateway-dev/kgateway
 image=ghcr.io/${image_repository}
