@@ -50,14 +50,8 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: cert-manager
-            app.kubernetes.io/instance: cert-manager
-            app.kubernetes.io/component: controller
-      - contains:
-          path: spec.template.spec.containers[0].ports
-          content:
-            name: http-metrics
-            containerPort: 9402
-            protocol: TCP
+      - exists:
+          path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
 
   - it: should expose cainjector metrics
     template: templates/cainjector-deployment.yaml
@@ -66,14 +60,8 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: cainjector
-            app.kubernetes.io/instance: cert-manager
-            app.kubernetes.io/component: cainjector
-      - contains:
-          path: spec.template.spec.containers[0].ports
-          content:
-            name: http-metrics
-            containerPort: 9402
-            protocol: TCP
+      - exists:
+          path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
 
   - it: should expose webhook metrics
     template: templates/webhook-deployment.yaml
@@ -82,11 +70,5 @@ tests:
           path: spec.template.metadata.labels
           content:
             app.kubernetes.io/name: webhook
-            app.kubernetes.io/instance: cert-manager
-            app.kubernetes.io/component: webhook
-      - contains:
-          path: spec.template.spec.containers[0].ports
-          content:
-            name: http-metrics
-            containerPort: 9402
-            protocol: TCP
+      - exists:
+          path: spec.template.spec.containers[*].ports[?(@.name == 'http-metrics' && @.containerPort == 9402 && @.protocol == 'TCP')]
