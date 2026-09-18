@@ -61,8 +61,8 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // are not included in the chain because we are certain they are known and trusted by the
 // client already.
 //
-// This function removes duplicate certificate entries as well as comments and
-// unnecessary white space.
+// This function removes duplicate certificate entries as well as
+// unnecessary white space. Non-PEM data between certificates is rejected.
 //
 // An error is returned if the passed bundle is not a valid single chain,
 // the bundle is malformed, or the chain is broken.
