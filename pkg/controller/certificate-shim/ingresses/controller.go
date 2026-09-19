@@ -40,6 +40,8 @@ const (
 type controller struct {
 	ingressLister networkingv1listers.IngressLister
 	sync          shimhelper.SyncFn
+	//For testing purposes.
+	queue workqueue.TypedRateLimitingInterface[types.NamespacedName]
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLimitingInterface[types.NamespacedName], []cache.InformerSynced, error) {
@@ -51,12 +53,15 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions, ctx.FieldManager)
 
-	queue := workqueue.NewTypedRateLimitingQueueWithConfig(
+	queue := c.queue
+        if queue == nil {
+        queue = workqueue.NewTypedRateLimitingQueueWithConfig(
 		controllerpkg.DefaultItemBasedRateLimiter(),
 		workqueue.TypedRateLimitingQueueConfig[types.NamespacedName]{
 			Name: ControllerName,
 		},
-	)
+	    )
+        }
 
 	mustSync := []cache.InformerSynced{
 		ingressInformer.Informer().HasSynced,
