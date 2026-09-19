@@ -96,7 +96,7 @@ func FuzzProcessItem(f *testing.F) {
 				return
 			}
 			secret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: certificate.Namespace, Name: "secret"},
+				ObjectMeta: nextPrivateKeySecretMeta(certificate, "secret"),
 				Data:       map[string][]byte{corev1.TLSPrivateKeyKey: globalBundle.privateKeyBytes},
 			}
 		} else {
@@ -104,7 +104,7 @@ func FuzzProcessItem(f *testing.F) {
 				gen.SetCertificateNextPrivateKeySecretName("secret"),
 				gen.SetCertificateStatusCondition(cmapiv1.CertificateCondition{Type: cmapiv1.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}))
 			secret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: globalBundle.certificate.Namespace, Name: "secret"},
+				ObjectMeta: nextPrivateKeySecretMeta(certificate, "secret"),
 				Data:       map[string][]byte{corev1.TLSPrivateKeyKey: globalBundle.privateKeyBytes},
 			}
 		}
