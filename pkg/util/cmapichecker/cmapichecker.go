@@ -110,7 +110,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 				},
 			},
 		},
-		pki.WithEncodeBasicConstraintsInRequest(true),
+		pki.WithEncodeBasicConstraintsInRequestByDefault(true),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("while generating CSR: %w", err)
