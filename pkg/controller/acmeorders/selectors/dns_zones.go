@@ -37,9 +37,11 @@ func (s *dnsZonesSelector) Matches(meta metav1.ObjectMeta, dnsName string) (bool
 	if len(s.allowedDNSZones) == 0 {
 		return true, 0
 	}
+	dnsName = dns.Fqdn(dnsName)
 
 	maxMatchingLabels := 0
 	for _, zone := range s.allowedDNSZones {
+		zone = dns.Fqdn(zone)
 		numMatchingLabels := dns.CompareDomainName(zone, dnsName)
 		if numMatchingLabels != dns.CountLabel(zone) {
 			continue
