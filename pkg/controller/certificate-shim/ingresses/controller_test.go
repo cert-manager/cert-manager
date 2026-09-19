@@ -19,6 +19,7 @@ package controller
 import (
 	"testing"
 	"time"
+	"sync"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/workqueue"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -41,7 +43,7 @@ func Test_controller_Register(t *testing.T) {
 		existingKObjects  []runtime.Object
 		existingCMObjects []runtime.Object
 		givenCall         func(*testing.T, cmclient.Interface, kclient.Interface)
-		expectRequeueKey  types.NamespacedName
+		expectAddCalls    []types.NamespacedName
 	}{
 		{
 			name: "ingress is re-queued when an 'Added' event is received for this ingress",
@@ -51,9 +53,11 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-1",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-1",
+				},
 			},
 		},
 		{
@@ -67,9 +71,11 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-1",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-1",
+				},
 			},
 		},
 		{
@@ -81,9 +87,15 @@ func Test_controller_Register(t *testing.T) {
 				err := c.NetworkingV1().Ingresses("namespace-1").Delete(t.Context(), "ingress-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-1",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-1",
+				},
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-1",
+				},
 			},
 		},
 		{
@@ -97,9 +109,11 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-2",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-2",
+				},
 			},
 		},
 		{
@@ -108,7 +122,7 @@ func Test_controller_Register(t *testing.T) {
 				Namespace: "namespace-1", Name: "cert-1",
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&networkingv1.Ingress{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "ingress-2",
-				}}, ingressGVK)},
+					}}, ingressGVK)},
 			}}},
 			givenCall: func(t *testing.T, c cmclient.Interface, _ kclient.Interface) {
 				_, err := c.CertmanagerV1().Certificates("namespace-1").Update(t.Context(), &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
@@ -119,9 +133,11 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-2",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-2",
+				},
 			},
 		},
 		{
@@ -136,23 +152,34 @@ func Test_controller_Register(t *testing.T) {
 				err := c.CertmanagerV1().Certificates("namespace-1").Delete(t.Context(), "cert-1", metav1.DeleteOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: types.NamespacedName{
-				Namespace: "namespace-1",
-				Name:      "ingress-2",
+			expectAddCalls: []types.NamespacedName{
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-2",
+				},
+				{
+					Namespace: "namespace-1",
+					Name:      "ingress-2",
+				},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			b := &testpkg.Builder{T: t, CertManagerObjects: test.existingCMObjects, KubeObjects: test.existingKObjects}
+			b := &testpkg.Builder{
+				T:                  t,
+				CertManagerObjects: test.existingCMObjects,
+				KubeObjects:        test.existingKObjects,
+			}
 			b.Init()
 
 			// We don't care about the HasSynced functions since we already know
 			// whether they have been properly "used": if no Gateway or
 			// Certificate event is received then HasSynced has not been setup
 			// properly.
-			queue, _, err := (&controller{}).Register(b.Context)
+			mock := &mockWorkqueue{t: t}
+			_, _, err := (&controller{queue: mock}).Register(b.Context)
 			require.NoError(t, err)
 
 			b.Start()
@@ -160,31 +187,76 @@ func Test_controller_Register(t *testing.T) {
 
 			test.givenCall(t, b.CMClient, b.Client)
 
-			// We have no way of knowing when the informers will be done adding
-			// items to the queue due to the "shared informer" architecture:
-			// Start(stop) does not allow you to wait for the informers to be
-			// done. To work around that, we do a second queue.Get and expect it
-			// to be nil.
-			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
+			time.Sleep(50 * time.Millisecond)
 
-			var gotKeys []types.NamespacedName
-			for {
-				// Get blocks until either (1) a key is returned, or (2) the
-				// queue is shut down.
-				gotKey, done := queue.Get()
-				if done {
-					break
-				}
-				gotKeys = append(gotKeys, gotKey)
-			}
-			assert.Equal(t, 0, queue.Len(), "queue should be empty")
-
-			// We only expect 0 or 1 keys received in the queue.
-			if test.expectRequeueKey != (types.NamespacedName{}) {
-				assert.Equal(t, []types.NamespacedName{test.expectRequeueKey}, gotKeys)
-			} else {
-				assert.Nil(t, gotKeys)
-			}
+			// We only expect 0 or 1 keys received in the queue, or 2 keys when
+			// we have to create an Ingress before deleting or updating it.
+			assert.Equal(t, test.expectAddCalls, mock.getCallsToAdd())
 		})
 	}
+}
+
+type mockWorkqueue struct {
+	lock       sync.Mutex
+	t          *testing.T
+	callsToAdd []types.NamespacedName
+}
+
+var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
+
+func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+func (m *mockWorkqueue) getCallsToAdd() []types.NamespacedName {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return append([]types.NamespacedName(nil), m.callsToAdd...)
+}
+
+func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
+	m.t.Error("workqueue.AddAfter was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) AddRateLimited(arg0 types.NamespacedName) {
+	m.t.Error("workqueue.AddRateLimited was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) Done(arg0 types.NamespacedName) {
+	m.t.Error("workqueue.Done was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) Forget(arg0 types.NamespacedName) {
+	m.t.Error("workqueue.Forget was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) Get() (types.NamespacedName, bool) {
+	m.t.Error("workqueue.Get was called but was not expected to be called")
+	return types.NamespacedName{}, false
+}
+
+func (m *mockWorkqueue) Len() int {
+	m.t.Error("workqueue.Len was called but was not expected to be called")
+	return 0
+}
+
+func (m *mockWorkqueue) NumRequeues(arg0 types.NamespacedName) int {
+	m.t.Error("workqueue.NumRequeues was called but was not expected to be called")
+	return 0
+}
+
+func (m *mockWorkqueue) ShutDown() {
+	m.t.Error("workqueue.ShutDown was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) ShutDownWithDrain() {
+	m.t.Error("workqueue.ShutDownWithDrain was called but was not expected to be called")
+
+}
+
+func (m *mockWorkqueue) ShuttingDown() bool {
+	m.t.Error("workqueue.ShuttingDown was called but was not expected to be called")
+	return false
 }
