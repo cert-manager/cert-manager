@@ -68,6 +68,32 @@ spec:
                     ACME configures this issuer to communicate with a RFC8555 (ACME) server
                     to obtain signed x509 certificates.
                   properties:
+                    accountPrivateKey:
+                      description: |-
+                        AccountPrivateKey contains the configuration for the ACME account private key.
+                        If not specified, defaults to RSA with 2048 bit key size.
+                      properties:
+                        algorithm:
+                          description: |-
+                            Algorithm is the algorithm used for the ACME account private key.
+                            Supported values are "RSA" and "ECDSA".
+                            If not specified, defaults to "RSA".
+                          enum:
+                            - RSA
+                            - ECDSA
+                          type: string
+                        size:
+                          description: |-
+                            Size is the key bit size of the account private key.
+                            If `algorithm` is set to `RSA`, valid values are any integer between 2048 and 8192 (inclusive),
+                            and will default to 2048 if not specified.
+                            If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, corresponding to the
+                            P-256, P-384 and P-521 curves respectively, and will default to 256 if not specified.
+                          type: integer
+                      type: object
+                      x-kubernetes-validations:
+                        - message: size must be between 2048 and 8192 for RSA, or one of 256, 384 or 521 for ECDSA
+                          rule: '!has(self.algorithm) || self.algorithm == ''RSA'' ? (!has(self.size) || (self.size >= 2048 && self.size <= 8192)) : (!has(self.size) || self.size in [256, 384, 521])'
                     caBundle:
                       description: |-
                         Base64-encoded bundle of PEM CAs which can be used to validate the certificate
