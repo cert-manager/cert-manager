@@ -155,6 +155,57 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:   "return a single Certificate for an ingress with alt-names and ip-sans annotations duplicating TLS hosts",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.AltNamesAnnotationKey:                 "example.com",
+						cmapi.IPSANAnnotationKey:                    "10.112.234.34",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "10.112.234.34"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:    []string{"example.com"},
+						IPAddresses: []string{"10.112.234.34"},
+						SecretName:  "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "return a single Certificate for an ingress with dnsNames and ipv4 addresses",
 			Issuer: acmeClusterIssuer,
 			IngressLike: &networkingv1.Ingress{
@@ -5869,6 +5920,44 @@ func Test_splitHosts(t *testing.T) {
 			gotDNSNames, gotIPAddresses := splitHosts(tt.hosts)
 			assert.Equal(t, tt.wantDNSNames, gotDNSNames, "dnsNames")
 			assert.Equal(t, tt.wantIPAddresses, gotIPAddresses, "ipAddresses")
+		})
+	}
+}
+
+func Test_deduplicateSANs(t *testing.T) {
+	tests := map[string]struct {
+		dnsNames    []string
+		ipAddresses []string
+		expectedDNS []string
+		expectedIPs []string
+	}{
+		"dedupe duplicate dns name": {
+			dnsNames:    []string{"example.com", "example.com"},
+			expectedDNS: []string{"example.com"},
+		},
+		"dedupe duplicate ip": {
+			ipAddresses: []string{"10.0.0.1", "10.0.0.1"},
+			expectedIPs: []string{"10.0.0.1"},
+		},
+		"dedupe equivalent ipv6 spellings": {
+			ipAddresses: []string{"2001:db8::1", "2001:0db8::1"},
+			expectedIPs: []string{"2001:db8::1"},
+		},
+		"preserve distinct values and order": {
+			dnsNames:    []string{"a.example.com", "b.example.com", "a.example.com"},
+			ipAddresses: []string{"10.0.0.1", "10.0.0.2", "10.0.0.1"},
+			expectedDNS: []string{"a.example.com", "b.example.com"},
+			expectedIPs: []string{"10.0.0.1", "10.0.0.2"},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			crt := &cmapi.Certificate{}
+			crt.Spec.DNSNames = tc.dnsNames
+			crt.Spec.IPAddresses = tc.ipAddresses
+			deduplicateSANs(crt)
+			assert.Equal(t, tc.expectedDNS, crt.Spec.DNSNames)
+			assert.Equal(t, tc.expectedIPs, crt.Spec.IPAddresses)
 		})
 	}
 }

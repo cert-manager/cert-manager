@@ -439,6 +439,7 @@ func buildCertificates(
 		if err := translateAnnotations(crt, ingLike.GetAnnotations()); err != nil {
 			return nil, nil, err
 		}
+		deduplicateSANs(crt)
 
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
@@ -545,6 +546,62 @@ func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
 		}
 	}
 	return dnsNames, ipAddresses
+}
+
+// deduplicateSANs removes duplicate DNS names and IP addresses from the
+// assembled Certificate spec. It is called after all host sources (Ingress
+// hosts, Gateway listeners and the alt-names / ip-sans annotations) have
+// been merged, so a value that appears in more than one source is emitted
+// once. DNS names are compared by their exact string value; IP addresses
+// are compared by their parsed value so that two spellings of the same
+// address (for example "2001:db8::1" and "2001:0db8::1") are treated as
+// equal.
+func deduplicateSANs(crt *cmapi.Certificate) {
+	crt.Spec.DNSNames = deduplicateDNSNames(crt.Spec.DNSNames)
+	crt.Spec.IPAddresses = deduplicateIPAddresses(crt.Spec.IPAddresses)
+}
+
+// deduplicateDNSNames removes duplicate entries from names, preserving
+// their first-occurrence order.
+func deduplicateDNSNames(names []string) []string {
+	if len(names) == 0 {
+		return names
+	}
+	seen := sets.New[string]()
+	out := make([]string, 0, len(names))
+	for _, name := range names {
+		if seen.Has(name) {
+			continue
+		}
+		seen.Insert(name)
+		out = append(out, name)
+	}
+	return out
+}
+
+// deduplicateIPAddresses removes duplicate entries from ips, preserving
+// their first-occurrence order. IP addresses are compared by their parsed
+// value so that different spellings of the same address are treated as
+// equal. Values that do not parse as an IP address are compared by their
+// raw string.
+func deduplicateIPAddresses(ips []string) []string {
+	if len(ips) == 0 {
+		return ips
+	}
+	seen := sets.New[string]()
+	out := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		key := ip
+		if parsed := net.ParseIP(ip); parsed != nil {
+			key = parsed.String()
+		}
+		if seen.Has(key) {
+			continue
+		}
+		seen.Insert(key)
+		out = append(out, ip)
+	}
+	return out
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
