@@ -50,6 +50,27 @@ func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 	}
 }
 
+const nextPrivateKeySecretName = "next-private-key"
+
+// nextPrivateKeySecretMeta builds the ObjectMeta that the keymanager
+// controller gives to a next private key Secret: the labels it sets, and a
+// controller owner reference back to the Certificate. The issuing controller
+// only consumes Secrets carrying the next-private-key label and that owner
+// reference, so fixtures must set them.
+func nextPrivateKeySecretMeta(crt *cmapi.Certificate) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: crt.Namespace,
+		Name:      nextPrivateKeySecretName,
+		Labels: map[string]string{
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
+		},
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
+		},
+	}
+}
+
 func TestIssuingController(t *testing.T) {
 	type testT struct {
 		builder *testpkg.Builder
@@ -59,8 +80,6 @@ func TestIssuingController(t *testing.T) {
 
 		expectedErr bool
 	}
-
-	nextPrivateKeySecretName := "next-private-key"
 
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
@@ -112,6 +131,47 @@ func TestIssuingController(t *testing.T) {
 				KubeObjects:     []runtime.Object{},
 				ExpectedActions: []testpkg.Action{},
 			},
+			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state but NextPrivateKeySecretName names a Secret it does not own, do nothing": {
+			// A principal with access only to the certificates/status
+			// subresource must not be able to make the controller read an
+			// unrelated Secret and copy its private key into spec.secretName.
+			//
+			// Everything else here matches the successful issuance case below,
+			// so the only reason nothing happens is that the Secret named by
+			// status.nextPrivateKeySecretName, although it carries the
+			// cert-manager.io/next-private-key label and a controller owner
+			// reference, is owned by a Certificate with a different UID. Only
+			// the owner UID comparison rejects it.
+			//
+			// The Certificate keeps its empty fixture UID on purpose: the
+			// CertificateRequest fixture's owner reference has that UID too, and
+			// changing it would orphan the request and make this case pass for
+			// the wrong reason.
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					issuingCert.DeepCopy(),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: nextPrivateKeySecretMeta(gen.CertificateFrom(issuingCert, gen.SetCertificateUID("other-uid"))),
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+			// No expSecretUpdateDataCall: the private key must not be copied
+			// into spec.secretName.
 			expectedErr: false,
 		},
 
@@ -203,10 +263,7 @@ func TestIssuingController(t *testing.T) {
 				},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -235,10 +292,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -266,10 +320,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -318,10 +369,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -402,10 +450,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: []byte("bad key"),
 						},
@@ -428,10 +473,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundleAlt.PrivateKeyBytes,
 						},
@@ -457,10 +499,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -484,10 +523,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -511,10 +547,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -558,10 +591,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -615,10 +645,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -673,10 +700,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -735,10 +759,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -773,10 +794,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -822,10 +840,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -868,10 +883,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -920,10 +932,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -965,10 +974,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1024,10 +1030,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1079,10 +1082,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1137,10 +1137,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1195,10 +1192,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1247,10 +1241,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1305,10 +1296,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1363,10 +1351,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1410,10 +1395,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
@@ -1460,10 +1442,7 @@ func TestIssuingController(t *testing.T) {
 					)},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
