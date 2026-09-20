@@ -228,7 +228,7 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 	}
 
 	if crt.Renewal != nil {
-		el = append(el, validateCertificateRenewal(crt, fldPath)...)
+		el = append(el, validateCertificateRenewal(crt, oldCrt, fldPath)...)
 	}
 
 	return el
@@ -509,7 +509,7 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 	return el
 }
 
-func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func validateCertificateRenewal(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 	switch crt.Renewal.Policy {
 	case internalcmapi.RenewBefore:
@@ -523,20 +523,30 @@ func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *fie
 	}
 
 	if crt.Renewal.Windows != nil {
+		allowLegacyWindowDuration := allowLegacyWindowDurationOnUpdate(crt, oldCrt)
 		for i, window := range crt.Renewal.Windows {
-			el = append(el, validateCertificateRenewalWindows(window, fldPath.Child("renewal", "windows").Index(i))...)
+			el = append(el, validateCertificateRenewalWindows(window, allowLegacyWindowDuration, fldPath.Child("renewal", "windows").Index(i))...)
 		}
 	}
 
 	return el
 }
 
-func validateCertificateRenewalWindows(window internalcmapi.CertificateRenewalWindows, fldPath *field.Path) field.ErrorList {
+// allowLegacyWindowDurationOnUpdate reports whether the windowDuration > 0
+// rule should be skipped. Certificates created before the webhook enforced
+// the rule may carry windowDuration: 0s. Rejecting every update to those
+// Certificates would also reject the controllers' own status updates, so the
+// rule is enforced only when the renewal configuration changes.
+func allowLegacyWindowDurationOnUpdate(crt, oldCrt *internalcmapi.CertificateSpec) bool {
+	return oldCrt != nil && reflect.DeepEqual(oldCrt.Renewal, crt.Renewal)
+}
+
+func validateCertificateRenewalWindows(window internalcmapi.CertificateRenewalWindows, allowLegacyWindowDuration bool, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 
 	if window.WindowDuration == nil {
 		el = append(el, field.Required(fldPath.Child("windowDuration"), "windowDuration must be specified and should be greater than 0"))
-	} else if window.WindowDuration.Duration <= 0 {
+	} else if window.WindowDuration.Duration <= 0 && !allowLegacyWindowDuration {
 		el = append(el, field.Invalid(fldPath.Child("windowDuration"), window.WindowDuration.Duration.String(), "windowDuration must be greater than 0"))
 	}
 

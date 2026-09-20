@@ -1095,6 +1095,77 @@ func TestValidateUpdateCertificateRejectsChangedRenewBeforePercentageBelowMinimu
 	assert.Empty(t, warnings)
 }
 
+func TestValidateUpdateCertificateAllowsLegacyZeroWindowDurationOnUnchangedUpdate(t *testing.T) {
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "* * * * *",
+					},
+				},
+			},
+		},
+	}
+	newCert := &internalcmapi.Certificate{Spec: oldCert.Spec}
+
+	errs, warnings := ValidateUpdateCertificate(&admissionv1.AdmissionRequest{
+		Operation:   admissionv1.Update,
+		SubResource: "status",
+	}, oldCert, newCert)
+
+	assert.Empty(t, errs)
+	assert.Empty(t, warnings)
+}
+
+func TestValidateUpdateCertificateRejectsChangedRenewalWithZeroWindowDuration(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "* * * * *",
+					},
+				},
+			},
+		},
+	}
+	newCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "*/5 * * * *",
+					},
+				},
+			},
+		},
+	}
+
+	errs, warnings := ValidateUpdateCertificate(someAdmissionRequest, oldCert, newCert)
+
+	assert.ElementsMatch(t, []*field.Error{
+		field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), "0s", "windowDuration must be greater than 0"),
+	}, errs)
+	assert.Empty(t, warnings)
+}
+
 func TestValidateDuration(t *testing.T) {
 	usefulDurations := map[string]*metav1.Duration{
 		"one second":  {Duration: time.Second},
