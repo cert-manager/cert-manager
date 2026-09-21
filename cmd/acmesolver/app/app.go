@@ -84,5 +84,9 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 
 	logf.AddFlagsNonDeprecated(logOptions, cmd.Flags())
 
+	// TODO: the controller hard-codes the solver container args, so nothing can
+	// set these on a solver Pod yet. Part of
+	// https://github.com/cert-manager/cert-manager/issues/6021
+
 	return cmd
 }
