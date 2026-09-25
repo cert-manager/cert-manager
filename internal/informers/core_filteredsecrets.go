@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	kubeinformers "k8s.io/client-go/informers"
 	certificatesv1 "k8s.io/client-go/informers/certificates/v1"
 	corev1informers "k8s.io/client-go/informers/core/v1"
@@ -308,28 +309,37 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 	}
 
 	if len(metadataSecrets) > 0 {
-		// We currently do not LIST unlabelled Secrets. This log line is
-		// here in case we do it sometime in the future at which point
-		// we can see whether the metadata functionality is performant
-		// enough.
-		log.V(logf.InfoLevel).Info("unexpected behaviour: secrets LISTed from metadata cache. Please open an issue")
-	}
-	// In practice this section will never be used. The only place
-	// where we LIST Secrets is in keymanager controller where we list
-	// temporary Certificate Secrets which are all labelled.
-	// It is unlikely that we will every list unlabelled Secrets.
-	for _, secretMeta := range metadataSecrets {
-		key := types.NamespacedName{Namespace: secretMeta.Namespace, Name: secretMeta.Name}
-		if _, ok := matchingSecretsMap[key]; ok {
-			log.Info(fmt.Sprintf("warning: possible internal error: stale cache: secret found both in typed cache and in partial cache: %s", pleaseOpenIssue), "secret name", secretMeta.Name)
-			// in case of duplicates, return the version from kube apiserver
+		// Secrets LISTed from the metadata cache are not usable as
+		// corev1.Secrets, so each of them used to be fetched live with
+		// one GET per Secret
+		// (https://github.com/cert-manager/cert-manager/issues/9347): a
+		// selector matching unlabelled Secrets turned every List into
+		// one API request per Secret in the namespace. Fetch all of
+		// them with a single live LIST instead, and re-filter it by
+		// the selector: a metadata LIST returns every non-cert-manager
+		// Secret in the namespace, while the caller asked for a
+		// specific selector.
+		metadataSecretNames := sets.New[string]()
+		for _, secretMeta := range metadataSecrets {
+			metadataSecretNames.Insert(secretMeta.Name)
 		}
-		secret, err := snl.typedClient.Secrets(snl.namespace).Get(snl.ctx, secretMeta.Name, metav1.GetOptions{})
+
+		apiserverSecrets, err := snl.typedClient.Secrets(snl.namespace).List(snl.ctx, metav1.ListOptions{})
 		if err != nil {
-			log.Error(err, "error retrieving secret from kube apiserver", "secret name", secretMeta.Name)
-			return nil, fmt.Errorf("error retrieving Secret from kube apiserver: %w", err)
+			log.Error(err, "error listing Secrets from kube apiserver")
+			return nil, fmt.Errorf("error listing Secrets from kube apiserver: %w", err)
 		}
-		matchingSecretsMap[key] = secret
+		for i := range apiserverSecrets.Items {
+			secret := &apiserverSecrets.Items[i]
+			if !selector.Matches(labels.Set(secret.Labels)) {
+				continue
+			}
+			key := types.NamespacedName{Namespace: secret.Namespace, Name: secret.Name}
+			if metadataSecretNames.Has(secret.Name) {
+				// in case of duplicates, return the version from kube apiserver
+				matchingSecretsMap[key] = secret
+			}
+		}
 	}
 
 	matchingSecrets := make([]*corev1.Secret, 0)
