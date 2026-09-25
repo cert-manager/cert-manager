@@ -1,0 +1,43 @@
+{{- if .Values.cainjector.enabled }}
+{{- if .Values.cainjector.verticalPodAutoscaler.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "cainjector.fullname" . }}-vpa
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "cainjector"
+    {{- include "labels" . | nindent 4 }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: {{ .Chart.Name }}-cainjector
+      {{- if .Values.cainjector.verticalPodAutoscaler.controlledValues }}
+      controlledValues: {{ .Values.cainjector.verticalPodAutoscaler.controlledValues }}
+      {{- end }}
+      {{- if .Values.cainjector.verticalPodAutoscaler.mode }}
+      mode: {{ .Values.cainjector.verticalPodAutoscaler.mode }}
+      {{- end }}
+      minAllowed:
+        {{- if .Values.cainjector.verticalPodAutoscaler.minAllowed }}
+        {{- toYaml .Values.cainjector.verticalPodAutoscaler.minAllowed | nindent 8 }}
+        {{- else if .Values.cainjector.resources.requests }}
+        {{- toYaml .Values.cainjector.resources.requests | nindent 8 }}
+        {{- end }}
+      {{- if and .Values.cainjector.verticalPodAutoscaler.maxAllowed (not (empty .Values.cainjector.verticalPodAutoscaler.maxAllowed)) }}
+      maxAllowed:
+        {{- toYaml .Values.cainjector.verticalPodAutoscaler.maxAllowed | nindent 8 }}
+      {{- end }}
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "cainjector.fullname" . }}
+  {{- if .Values.cainjector.verticalPodAutoscaler.updatePolicy }}
+  updatePolicy:
+    {{- toYaml .Values.cainjector.verticalPodAutoscaler.updatePolicy | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
