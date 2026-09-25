@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -49,32 +50,7 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	result := cl.Post().Resource(solverName).Body(pl).Do(pl.Request.Context())
-	// we will check this error after parsing the response
-	resErr := result.Error()
-
-	// TODO: handle metav1.Status response type and print better error messages
-	var respPayload v1alpha1.ChallengePayload
-	if err := result.Into(&respPayload); err != nil {
-		return utilerrors.NewAggregate([]error{resErr, err})
-	}
-
-	if respPayload.Response.Success && resErr == nil {
-		logf.Log.V(logf.DebugLevel).Info("Present call succeeded")
-		return nil
-	}
-
-	if respPayload.Response.Result == nil {
-		return utilerrors.NewAggregate([]error{
-			resErr,
-			fmt.Errorf("invalid payload response, did not succeed but no result provided"),
-		})
-	}
-
-	if respPayload.Response.Result.Message != "" {
-		return errors.New(respPayload.Response.Result.Message)
-	}
-
-	return resErr
+	return handleResponse(result, "Present")
 }
 
 // CleanUp removes the TXT record matching the specified parameters
@@ -85,17 +61,23 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	result := cl.Post().Resource(solverName).Body(pl).Do(pl.Request.Context())
-	// we will check this error after parsing the response
-	resErr := result.Error()
+	return handleResponse(result, "CleanUp")
+}
 
-	// TODO: handle metav1.Status response type and print better error messages
+func handleResponse(result rest.Result, action string) error {
+	resErr := result.Error()
+	body, _ := result.Raw()
+	if statusErr := statusResponseError(decodeStatusResponse(body), resErr); statusErr != nil {
+		return statusErr
+	}
+
 	var respPayload v1alpha1.ChallengePayload
 	if err := result.Into(&respPayload); err != nil {
 		return utilerrors.NewAggregate([]error{resErr, err})
 	}
 
 	if respPayload.Response.Success && resErr == nil {
-		logf.Log.V(logf.DebugLevel).Info("CleanUp call succeeded")
+		logf.Log.V(logf.DebugLevel).Info(action + " call succeeded")
 		return nil
 	}
 
@@ -106,11 +88,65 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		})
 	}
 
-	if respPayload.Response.Result.Message != "" {
-		return errors.New(respPayload.Response.Result.Message)
+	if statusErr := formatStatusError(respPayload.Response.Result); statusErr != nil {
+		return statusErr
 	}
 
 	return resErr
+}
+
+func decodeStatusResponse(body []byte) *metav1.Status {
+	if len(body) == 0 {
+		return nil
+	}
+
+	var status metav1.Status
+	if err := json.Unmarshal(body, &status); err != nil {
+		return nil
+	}
+
+	// Require the Status kind or its failure marker so arbitrary or malformed
+	// webhook payloads are not mistaken for Kubernetes Status responses.
+	if status.Kind != "Status" && (status.Status != metav1.StatusFailure || (status.Reason == "" && status.Message == "")) {
+		return nil
+	}
+
+	return &status
+}
+
+func statusResponseError(status *metav1.Status, requestErr error) error {
+	if status == nil {
+		return nil
+	}
+
+	statusErr := formatStatusError(status)
+	if statusErr == nil {
+		statusErr = fmt.Errorf("webhook returned a Status response without a reason or message")
+	}
+
+	if requestErr == nil || requestErr.Error() == "" || requestErr.Error() == statusErr.Error() || (status.Message != "" && requestErr.Error() == status.Message) {
+		return statusErr
+	}
+
+	return utilerrors.NewAggregate([]error{statusErr, requestErr})
+}
+
+func formatStatusError(status *metav1.Status) error {
+	if status == nil {
+		return nil
+	}
+
+	if status.Reason != "" && status.Message != "" {
+		return fmt.Errorf("%s: %s", status.Reason, status.Message)
+	}
+	if status.Reason != "" {
+		return errors.New(string(status.Reason))
+	}
+	if status.Message != "" {
+		return errors.New(status.Message)
+	}
+
+	return nil
 }
 
 func (r *Webhook) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct{}) error {
