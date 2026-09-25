@@ -396,14 +396,29 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 				cmmeta.TLSCAKey:         certBytes,
 			},
 		}, metav1.CreateOptions{})
-		if err != nil && apierrors.IsAlreadyExists(err) {
-			// another controller has created the secret, we expect a watch event
-			// to trigger another call to ensureCA
-			d.log.V(logf.DebugLevel).Info("Failed to create new root CA Secret, another controller has created it, waiting for watch event")
+		if err != nil {
+			if !apierrors.IsAlreadyExists(err) {
+				return err
+			}
+			// Another controller created the Secret before we did. Our informer
+			// cache does not have it yet, so read the Secret back directly
+			// instead of waiting for the informer event: this makes us ready
+			// immediately and recovers even if the event is delayed or missed.
+			d.log.V(logf.DebugLevel).Info("Another controller has created the root CA Secret, reading it back")
+			s, err := d.client.Get(ctx, d.SecretName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if required, reason := caRequiresRegeneration(s); required {
+				d.log.V(logf.InfoLevel).Info("Will regenerate CA", "reason", reason)
+				return d.regenerateCA(ctx, s)
+			}
+			d.notifyWatches(s.Data[corev1.TLSCertKey], s.Data[corev1.TLSPrivateKeyKey])
 			return nil
 		}
 		d.log.V(logf.InfoLevel).Info("Created new root CA Secret")
-		return err
+		d.notifyWatches(certBytes, pkBytes)
+		return nil
 	}
 
 	if s.Data == nil {
@@ -416,6 +431,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 	d.log.V(logf.InfoLevel).Info("Updated existing root CA Secret")
+	d.notifyWatches(certBytes, pkBytes)
 	return nil
 }
 
