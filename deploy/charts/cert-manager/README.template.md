@@ -453,14 +453,16 @@ config:
   numberOfConcurrentWorkers: 200
   gatewayAPI:
     enabled: true
-  # Feature gates as of v1.20.0. Listed with their default values.
+  # Feature gates as of v1.21.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
     ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
+    ACMEUseARI: false # ALPHA - default=false
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
+    ListenerSets: false # ALPHA - default=false
     LiteralCertificateSubject: true # BETA - default=true
     NameConstraints: true # BETA - default=true
     OtherNames: true # BETA - default=true
