@@ -109,7 +109,7 @@ tools += ytt=v0.55.2
 tools += rclone=v1.75.1
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.31.0
+tools += istioctl=1.31.1
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -756,10 +756,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=79fda9a16d0e718677cd8a1c01eb859dc90e18adf7fcd2a7c18cfb8819ab4903
-istioctl_linux_arm64_SHA256SUM=1ebedd17ae4d49c56887d0d7c264486d6cf2d0e43d5fefcad78afdf922fee112
-istioctl_darwin_amd64_SHA256SUM=afff9ca5a07c7ea3aad81276ee5eb47b5f87bc386f5dae6eb54c57e50629ab33
-istioctl_darwin_arm64_SHA256SUM=263844544567c2137576a24c19c087a48f3b9b8188d76176efdd5eacc23f553c
+istioctl_linux_amd64_SHA256SUM=cb4af2e8a099acfc51368c1d15d4deab8321ae628554d4ee5c74f62ebe775857
+istioctl_linux_arm64_SHA256SUM=59b8b350bc82299476e83544a9fff8dfabb59f10d5b7334d5fc32036c76753f7
+istioctl_darwin_amd64_SHA256SUM=ee4629e16afe5ef924a38cb01cddb1517d9765af6db0b751f0411ea2ffa395a9
+istioctl_darwin_arm64_SHA256SUM=e4ab5c1400d6cc07eeb83978b4febc89b22627fd1778cc1db9b8036c187f1b80
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
