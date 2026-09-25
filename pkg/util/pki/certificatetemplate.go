@@ -275,6 +275,7 @@ func CertificateTemplateFromCSRPEM(csrPEM []byte, validatorMutators ...Certifica
 		return nil, err
 	}
 
+	// Check signature - special handling for ML-DSA CSRs
 	if err := csr.CheckSignature(); err != nil {
 		return nil, err
 	}

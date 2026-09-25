@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -53,6 +54,10 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []s
 		return ed25519PrivateKeyMatchesSpec(pk)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
+	case cmapi.MLDSA44KeyAlgorithm:
+		return mldsaPrivateKeyMatchesSpec(pk, mldsa.MLDSA44())
+	case cmapi.MLDSA65KeyAlgorithm:
+		return mldsaPrivateKeyMatchesSpec(pk, mldsa.MLDSA65())
 	default:
 		// This should never happen as the CertificateSpec validation should
 		// catch this before it reaches this point.
@@ -105,6 +110,18 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) []string {
 	_, ok := pk.(ed25519.PrivateKey)
 	if !ok {
+		return []string{"spec.privateKey.algorithm"}
+	}
+
+	return nil
+}
+func mldsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, expectedParams mldsa.Parameters) []string {
+	mldsaKey, ok := pk.(*mldsa.PrivateKey)
+	if !ok {
+		return []string{"spec.privateKey.algorithm"}
+	}
+
+	if mldsaKey.PublicKey().Parameters() != expectedParams {
 		return []string{"spec.privateKey.algorithm"}
 	}
 
