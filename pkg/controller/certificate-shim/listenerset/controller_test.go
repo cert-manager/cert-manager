@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -206,7 +207,8 @@ func Test_controller_Register(t *testing.T) {
 			test.givenCall(t, b.CMClient, b.GWClient, b.Context.GWShared.Gateway().V1().ListenerSets().Lister())
 
 			require.Eventually(t, func() bool {
-				require.Subsetf(t, test.expectAddCalls, mock.callsToAdd, "unexpected calls to workqueue.Add: got %v, want subset of %v", mock.callsToAdd, test.expectAddCalls)
+				calls := mock.getCallsToAdd()
+				require.Subsetf(t, test.expectAddCalls, calls, "unexpected calls to workqueue.Add: got %v, want subset of %v", calls, test.expectAddCalls)
 				return true
 			}, 2*time.Second, 10*time.Millisecond)
 		})
@@ -290,6 +292,7 @@ func Test_inheritAnnotations(t *testing.T) {
 }
 
 type mockWorkqueue struct {
+	lock       sync.Mutex
 	t          *testing.T
 	callsToAdd []types.NamespacedName
 }
@@ -297,7 +300,15 @@ type mockWorkqueue struct {
 var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+func (m *mockWorkqueue) getCallsToAdd() []types.NamespacedName {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return append([]types.NamespacedName(nil), m.callsToAdd...)
 }
 
 func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
