@@ -581,7 +581,7 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 						&dns.NS{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns1.example.com."},
 					},
 				}},
-				// checkAuthoritativeNss querying the resolved authoritative server
+				// checkTXTRecord querying the resolved authoritative server
 				{"TXT example.com.", &dns.Msg{
 					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
 					Answer: []dns.RR{
