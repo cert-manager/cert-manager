@@ -116,6 +116,14 @@ func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
 
 	for i, s := range stringIPs {
 		parsedStringIPs[i] = net.ParseIP(s)
+		// net.ParseIP returns nil for invalid addresses, including
+		// zoned IPv6 addresses (e.g. "fe80::1%eth0"). A nil entry
+		// would cause EqualIPsUnsorted to compare nil.To16() against
+		// valid IPs, which can produce false matches when both sides
+		// contain nil. Return false to flag a mismatch instead.
+		if parsedStringIPs[i] == nil {
+			return false
+		}
 	}
 
 	return util.EqualIPsUnsorted(parsedStringIPs, parsedIPs)
