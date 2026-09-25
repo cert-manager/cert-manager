@@ -159,7 +159,8 @@ func (c *Client) get(ctx context.Context, url string, ok resOkay) (*http.Respons
 // It makes a POST request in KID form with zero JWS payload.
 // See nopayload doc comments in jws.go.
 func (c *Client) postAsGet(ctx context.Context, url string, ok resOkay) (*http.Response, error) {
-	return c.post(ctx, nil, url, noPayload, ok)
+	// All POST-as-GET requests required KID
+	return c.post(ctx, nil, true, url, noPayload, ok)
 }
 
 // post issues a signed POST request in JWS format using the provided key
@@ -169,10 +170,10 @@ func (c *Client) postAsGet(ctx context.Context, url string, ok resOkay) (*http.R
 // post retries unsuccessful attempts according to c.RetryBackoff
 // until the context is done or a non-retriable error is received.
 // It uses postNoRetry to make individual requests.
-func (c *Client) post(ctx context.Context, key crypto.Signer, url string, body interface{}, ok resOkay) (*http.Response, error) {
+func (c *Client) post(ctx context.Context, key crypto.Signer, requireKid bool, url string, body interface{}, ok resOkay) (*http.Response, error) {
 	retry := c.retryTimer()
 	for {
-		res, req, err := c.postNoRetry(ctx, key, url, body)
+		res, req, err := c.postNoRetry(ctx, key, requireKid, url, body)
 		if err != nil {
 			return nil, err
 		}
@@ -211,14 +212,18 @@ func (c *Client) post(ctx context.Context, key crypto.Signer, url string, body i
 // and JWK is used only when KID is unavailable: new account endpoint and certificate
 // revocation requests authenticated by a cert key.
 // See jwsEncodeJSON for other details.
-func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, url string, body interface{}) (*http.Response, *http.Request, error) {
+func (c *Client) postNoRetry(ctx context.Context, key crypto.Signer, requireKid bool, url string, body interface{}) (*http.Response, *http.Request, error) {
 	kid := noKeyID
+	var err error
 	if key == nil {
 		if c.Key == nil {
 			return nil, nil, errors.New("acme: Client.Key must be populated to make POST requests")
 		}
 		key = c.Key
-		kid = c.accountKID(ctx)
+		kid, err = c.accountKID(ctx)
+		if requireKid && (kid == noKeyID || err != nil) {
+			return nil, nil, fmt.Errorf("acme: the operation requires account KID but the value is not provided and encountered error while retrieving it from the server: %w", err)
+		}
 	}
 	nonce, err := c.popNonce(ctx, url)
 	if err != nil {
