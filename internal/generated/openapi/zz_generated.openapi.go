@@ -3504,7 +3504,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Requested DNS subject alternative names.",
+							Description: "Requested DNS subject alternative names. Values must be unique.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -3523,7 +3523,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Requested IP address subject alternative names.",
+							Description: "Requested IP address subject alternative names. Values must be unique. Addresses are compared by parsed value, so equivalent spellings of one address count as duplicates.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
