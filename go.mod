@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0
 	github.com/aws/smithy-go v1.28.2
-	github.com/digitalocean/godo v1.211.0
+	github.com/digitalocean/godo v1.213.0
 	github.com/go-ldap/ldap/v3 v3.4.14
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonreference v1.0.2
