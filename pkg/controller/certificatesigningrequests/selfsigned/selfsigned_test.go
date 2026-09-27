@@ -667,10 +667,7 @@ func TestSign(t *testing.T) {
 				// NotBefore and NotAfter are set from a single time.Now
 				// call by the certificate template func (in the "pki"
 				// package), so the validity period of the signed
-				// certificate is exactly the requested duration. Comparing
-				// NotAfter against a fresh time.Now here instead would
-				// flake when the test runs slowly:
-				// https://github.com/cert-manager/cert-manager/issues/9246
+				// certificate is exactly the requested duration.
 				assert.Equal(t, 30*time.Minute, got.NotAfter.Sub(got.NotBefore))
 				assert.WithinRange(t, got.NotBefore, signStart, time.Now())
 			},
