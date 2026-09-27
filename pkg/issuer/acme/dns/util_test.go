@@ -21,9 +21,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/akamai"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -68,6 +72,12 @@ func (s *solverFixture) Setup(t *testing.T) {
 	if s.Builder.T == nil {
 		s.Builder.T = t
 	}
+	if s.Builder.Context == nil {
+		s.Builder.Context = &controller.Context{}
+	}
+	if len(s.Builder.Context.DNS01Nameservers) == 0 {
+		s.Builder.Context.DNS01Nameservers = util.RecursiveNameservers
+	}
 	if s.dnsProviders == nil {
 		s.dnsProviders = newFakeDNSProviders()
 	}
@@ -100,8 +110,17 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 }
 
 type fakeDNSProviderCall struct {
-	name string
-	args []any
+	Name string
+	Args []any
+}
+
+func assertProviderCalls(t *testing.T, want, got []fakeDNSProviderCall) {
+	t.Helper()
+	if diff := cmp.Diff(want, got,
+		cmp.Comparer(func(a, b *util.CachingResolver) bool { return a == b }),
+	); diff != "" {
+		t.Fatalf("unexpected DNS provider calls (-want +got):\n%s", diff)
+	}
 }
 
 type fakeDNSProviders struct {
@@ -110,7 +129,7 @@ type fakeDNSProviders struct {
 }
 
 func (f *fakeDNSProviders) call(name string, args ...any) {
-	f.calls = append(f.calls, fakeDNSProviderCall{name: name, args: args})
+	f.calls = append(f.calls, fakeDNSProviderCall{Name: name, Args: args})
 }
 
 func newFakeDNSProviders() *fakeDNSProviders {
@@ -118,31 +137,63 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
-		cloudDNS: func(ctx context.Context, project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient, hostedZoneName)
+		akamai: func(ctx context.Context, options ...akamai.DNSProviderOption) (*akamai.DNSProvider, error) {
+			var opt akamai.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("akamai", opt)
 			return nil, nil
 		},
-		cloudFlare: func(email, apikey, apiToken string, dns01Nameservers []string, userAgent string) (*cloudflare.DNSProvider, error) {
-			f.call("cloudflare", email, apikey, apiToken, util.RecursiveNameservers)
-			if email == "" || (apikey == "" && apiToken == "") {
+		cloudDNS: func(ctx context.Context, options ...clouddns.DNSProviderOption) (*clouddns.DNSProvider, error) {
+			var opt clouddns.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("clouddns", opt)
+			return nil, nil
+		},
+		cloudFlare: func(ctx context.Context, options ...cloudflare.DNSProviderOption) (*cloudflare.DNSProvider, error) {
+			var opt cloudflare.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("cloudflare", opt)
+			if opt.Email == "" || (opt.APIKey == "" && opt.APIToken == "") {
 				return nil, errors.New("invalid email or apikey or apitoken")
 			}
 			return nil, nil
 		},
-		route53: func(ctx context.Context, accessKey, secretKey, hostedZoneID, region, role, webIdentityToken string, ambient bool, dns01Nameservers []string, userAgent string) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region, role, webIdentityToken, ambient, util.RecursiveNameservers)
+		route53: func(ctx context.Context, options ...route53.DNSProviderOption) (*route53.DNSProvider, error) {
+			var opt route53.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("route53", opt)
 			return nil, nil
 		},
-		azureDNS: func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity, opts ...azuredns.ProviderOption) (*azuredns.DNSProvider, error) {
-			f.call("azuredns", clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName, util.RecursiveNameservers, ambient, managedIdentity)
+		azureDNS: func(ctx context.Context, options ...azuredns.DNSProviderOption) (*azuredns.DNSProvider, error) {
+			var opt azuredns.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("azuredns", opt)
 			return nil, nil
 		},
-		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
-			f.call("acmedns", host, accountJson, dns01Nameservers)
+		acmeDNS: func(ctx context.Context, options ...acmedns.DNSProviderOption) (*acmedns.DNSProvider, error) {
+			var opt acmedns.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("acmedns", opt)
 			return nil, nil
 		},
-		digitalOcean: func(token string, dns01Nameservers []string, userAgent string) (*digitalocean.DNSProvider, error) {
-			f.call("digitalocean", token, util.RecursiveNameservers)
+		digitalOcean: func(ctx context.Context, options ...digitalocean.DNSProviderOption) (*digitalocean.DNSProvider, error) {
+			var opt digitalocean.DNSProviderOptions
+			for _, o := range options {
+				o.ApplyToDNSProviderOptions(&opt)
+			}
+			f.call("digitalocean", opt)
 			return nil, nil
 		},
 	}

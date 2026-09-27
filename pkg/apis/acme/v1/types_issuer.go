@@ -19,6 +19,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -50,7 +51,7 @@ type ACMEIssuer struct {
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
 	// This value picks the first certificate bundle in the combined set of
 	// ACME default and alternative chains that has a root-most certificate with
-	// this value as its issuer's commonname.
+	// this value as its issuer's common name.
 	// +optional
 	// +kubebuilder:validation:MaxLength=64
 	PreferredChain string `json:"preferredChain,omitempty"`
@@ -93,7 +94,13 @@ type ACMEIssuer struct {
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
 	// Solver configurations must be provided in order to obtain certificates
-	// from an ACME server.
+	// from an ACME server, unless the ACME server pre-authorizes every
+	// identifier on every order, including renewals, out of band
+	// (e.g. pre-validated domains), in which case solvers may be omitted
+	// and no Challenge resources will be created. If any identifier on an
+	// order is not pre-authorized and no solver matches it, the order will
+	// remain pending indefinitely, with only a Warning event recorded
+	// against it.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	// +optional
 	// +listType=atomic
@@ -120,6 +127,12 @@ type ACMEIssuer struct {
 	// Supported profiles are listed by the server's ACME directory URL.
 	// +optional
 	Profile string `json:"profile,omitempty"`
+
+	// RenewalInformationSource allows fetching ACME Renewal Information from the ACME CA
+	// server. Default is `ARI`.
+	// +optional
+	// +kubebuilder:default=ARI
+	RenewalInformationSource ACMERenewalInformationSource `json:"renewalInformationSource,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -177,6 +190,24 @@ type ACMEChallengeSolver struct {
 	// performing the DNS01 challenge flow.
 	// +optional
 	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
+
+	// WaitInsteadOfSelfCheck, if set, skips cert-manager's self-check and
+	// instead waits this long after presentation before asking the ACME server
+	// to validate the challenge.
+	//
+	// This is an advanced escape hatch for environments where cert-manager's
+	// self-check cannot succeed from its own network or DNS viewpoint even
+	// though the ACME server can still validate successfully, for example due
+	// to split-horizon DNS or NAT hairpinning.
+	//
+	// A value of 0 skips the self-check and asks the ACME server to validate
+	// immediately after presentation, relying on the ACME server's own
+	// validation retries (RFC 8555 section 8.2) to succeed once the challenge
+	// has propagated. A negative duration is rejected.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+	// for example `30s` or `2m`.
+	// +optional
+	WaitInsteadOfSelfCheck *metav1.Duration `json:"waitInsteadOfSelfCheck,omitempty"`
 }
 
 // CertificateDNSNameSelector selects certificates using a label selector, and
@@ -401,6 +432,17 @@ type ACMEChallengeSolverDNS01 struct {
 	// records when found in DNS zones.
 	// +optional
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
+
+	// Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+	// checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+	// where host may be an IP address or hostname, or
+	// `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+	// the controller's configured global DNS01 recursive nameservers are used.
+	// When specified, this overrides the global nameservers for this solver
+	// only, and disables the authoritative nameserver check.
+	// +optional
+	// +listType=atomic
+	Nameservers []string `json:"nameservers,omitempty"`
 
 	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
 	// +optional
@@ -882,3 +924,15 @@ type ACMEIssuerStatus struct {
 	// +optional
 	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
 }
+
+// ACMERenewalInformationSource determines whether to fetch ACME Renewal Information
+// from the ACME CA server.
+// This field is used in conjunction with the `ACMEUseARI` feature gate i.e. if the feature gate is
+// disabled then ARI Information won't be fetched.
+// +kubebuilder:validation:Enum=ARI;None
+type ACMERenewalInformationSource string
+
+const (
+	ACMERenewalInformationSourceARI  ACMERenewalInformationSource = "ARI"
+	ACMERenewalInformationSourceNone ACMERenewalInformationSource = "None"
+)

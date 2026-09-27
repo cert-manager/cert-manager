@@ -1,0 +1,28 @@
+suite: Controller - Default Rendering
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render a Deployment matching the default snapshot
+    templates:
+      - templates/deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+      - matchSnapshot: {}
+
+  - it: should render a Service matching the default snapshot
+    templates:
+      - templates/service.yaml
+    asserts:
+      - isKind:
+          of: Service
+      - matchSnapshot: {}
+
+  - it: should render a ServiceAccount matching the default snapshot
+    templates:
+      - templates/serviceaccount.yaml
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - matchSnapshot: {}

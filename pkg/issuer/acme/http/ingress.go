@@ -130,7 +130,7 @@ func ingressServiceName(ing *networkingv1.Ingress) string {
 // createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
 func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
-	ing, err := buildIngressResource(ch, svcName)
+	ing, err := s.buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	return s.Client.NetworkingV1().Ingresses(ch.Namespace).Create(ctx, ing, metav1.CreateOptions{})
 }
 
-func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
+func (s *Solver) buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
 	http01IngressCfg, err := http01IngressCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	if net.ParseIP(httpHost) != nil {
 		httpHost = ""
 	}
-	return &networkingv1.Ingress{
+	ing := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
@@ -201,7 +201,11 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 				},
 			},
 		},
-	}, nil
+	}
+
+	maps.Copy(ing.Labels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
+
+	return ing, nil
 }
 
 // Merge object meta from the ingress template. Fall back to default values.
@@ -310,6 +314,12 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 			log.V(logf.DebugLevel).Info("deleting ingress resource")
 			err := s.Client.NetworkingV1().Ingresses(ingress.Namespace).Delete(ctx, ingress.Name, metav1.DeleteOptions{})
+			if k8sErrors.IsNotFound(err) {
+				// the lister can be behind the API server, so an ingress that
+				// is already gone is the state we wanted anyway
+				log.V(logf.DebugLevel).Info("ingress resource already deleted")
+				continue
+			}
 			if err != nil {
 				log.V(logf.WarnLevel).Info("failed to delete ingress resource", "error", err)
 				errs = append(errs, err)

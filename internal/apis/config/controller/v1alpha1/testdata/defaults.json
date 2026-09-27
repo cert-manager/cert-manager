@@ -17,6 +17,7 @@
 	"clusterIssuerAmbientCredentials": true,
 	"enableCertificateOwnerRef": false,
 	"enableGatewayAPI": false,
+	"enableGatewayAPIListenerSet": false,
 	"copiedAnnotationPrefixes": [
 		"*",
 		"-kubectl.kubernetes.io/",
@@ -73,5 +74,10 @@
 		"maxChainLength": 95000,
 		"maxBundleSize": 330000
 	},
-	"certificateRequestMinimumBackoffDuration": "1h0m0s"
+	"gatewayAPI": {
+		"enabled": false,
+		"enableListenerSet": false
+	},
+	"certificateRequestMinimumBackoffDuration": "1h0m0s",
+	"certificateRequestMaximumBackoffDuration": "32h0m0s"
 }

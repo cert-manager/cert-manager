@@ -30,6 +30,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	"github.com/cert-manager/cert-manager/pkg/controller"
+	clusterissuerscontroller "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers"
 	"github.com/cert-manager/cert-manager/pkg/healthz"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -121,7 +122,9 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.Metrics.SetupACMECollector(ctx.SharedInformerFactory.Acme().V1().Challenges().Lister())
 	ctx.Metrics.SetupCertificateCollector(ctx.SharedInformerFactory.Certmanager().V1().Certificates().Lister())
 	ctx.Metrics.SetupIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().Issuers().Lister())
-	ctx.Metrics.SetupClusterIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister())
+	if enabledControllers.Has(clusterissuerscontroller.ControllerName) {
+		ctx.Metrics.SetupClusterIssuerCollector(ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister())
+	}
 	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {
@@ -130,7 +133,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// nolint: contextcheck
+		//nolint: contextcheck
 		return metricsServer.Shutdown(shutdownCtx)
 	})
 	g.Go(func() error {
@@ -162,7 +165,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			// nolint: contextcheck
+			//nolint: contextcheck
 			return profilerServer.Shutdown(shutdownCtx)
 		})
 		g.Go(func() error {
@@ -262,7 +265,11 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
 	ctx.HTTP01ResourceMetadataInformersFactory.Start(rootCtx.Done())
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+	g.Go(func() error {
+		return ctx.DNSResolver.Start(rootCtx)
+	})
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.GatewayAPIConfig.Enabled {
 		ctx.GWShared.Start(rootCtx.Done())
 	}
 
@@ -272,7 +279,7 @@ func Run(rootCtx context.Context, opts *config.ControllerConfiguration) error {
 	}
 	log.V(logf.InfoLevel).Info("control loops exited")
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && opts.GatewayAPIConfig.Enabled {
 		ctx.GWShared.Shutdown()
 	}
 
@@ -335,7 +342,9 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
 			HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-			HTTP01SolverNameservers: opts.ACMEHTTP01Config.SolverNameservers,
+			HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
+			HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
+			HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
 
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
@@ -358,17 +367,19 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
 			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
+			GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
 		},
 
 		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
 			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
+			CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
 		},
 
 		ConfigOptions: controller.ConfigOptions{
-			EnableGatewayAPI:            opts.EnableGatewayAPI,
-			EnableGatewayAPIListenerSet: opts.EnableGatewayAPIListenerSet,
+			EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
+			EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
 		},
 	})
 	if err != nil {

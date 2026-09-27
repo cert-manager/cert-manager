@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +32,8 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -51,6 +54,7 @@ func newSecret(name string, data map[string][]byte, namespace string) *corev1.Se
 }
 
 func TestClusterIssuerNamespace(t *testing.T) {
+	t.Parallel()
 	f := &solverFixture{
 		Builder: &test.Builder{
 			KubeObjects: []runtime.Object{
@@ -109,6 +113,7 @@ func TestClusterIssuerNamespace(t *testing.T) {
 }
 
 func TestSolverFor(t *testing.T) {
+	t.Parallel()
 	type testT struct {
 		*solverFixture
 		domain             string
@@ -365,6 +370,7 @@ func TestSolverFor(t *testing.T) {
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Parallel()
 			test.Setup(t)
 			defer test.Finish(t)
 			s := test.Solver
@@ -386,6 +392,7 @@ func TestSolverFor(t *testing.T) {
 }
 
 func TestSolveForDigitalOcean(t *testing.T) {
+	t.Parallel()
 	f := &solverFixture{
 		Builder: &test.Builder{
 			KubeObjects: []runtime.Object{
@@ -430,18 +437,21 @@ func TestSolveForDigitalOcean(t *testing.T) {
 
 	expectedDOCall := []fakeDNSProviderCall{
 		{
-			name: "digitalocean",
-			args: []any{"FAKE-TOKEN", util.RecursiveNameservers},
+			Name: "digitalocean",
+			Args: []any{digitalocean.DNSProviderOptions{
+				Token:       "FAKE-TOKEN",
+				Nameservers: s.DNS01Nameservers,
+				UserAgent:   s.RESTConfig.UserAgent,
+				Resolver:    s.DNSResolver,
+			}},
 		},
 	}
 
-	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
-	}
-
+	assertProviderCalls(t, expectedDOCall, f.dnsProviders.calls)
 }
 
 func TestRoute53TrimCreds(t *testing.T) {
+	t.Parallel()
 	f := &solverFixture{
 		Builder: &test.Builder{
 			KubeObjects: []runtime.Object{
@@ -488,17 +498,24 @@ func TestRoute53TrimCreds(t *testing.T) {
 
 	expectedR53Call := []fakeDNSProviderCall{
 		{
-			name: "route53",
-			args: []any{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			Name: "route53",
+			Args: []any{route53.DNSProviderOptions{
+				AccessKeyID:     "test_with_spaces",
+				SecretAccessKey: "AKIENDINNEWLINE",
+				Region:          "us-west-2",
+				Nameservers:     util.RecursiveNameservers,
+				Ambient:         new(false),
+				UserAgent:       f.Solver.RESTConfig.UserAgent,
+				Resolver:        s.DNSResolver,
+			}},
 		},
 	}
 
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	assertProviderCalls(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53SecretAccessKey(t *testing.T) {
+	t.Parallel()
 	f := &solverFixture{
 		Builder: &test.Builder{
 			KubeObjects: []runtime.Object{
@@ -551,27 +568,36 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 
 	expectedR53Call := []fakeDNSProviderCall{
 		{
-			name: "route53",
-			args: []any{"AWSACCESSKEYID", "AKIENDINNEWLINE", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+			Name: "route53",
+			Args: []any{route53.DNSProviderOptions{
+				AccessKeyID:     "AWSACCESSKEYID",
+				SecretAccessKey: "AKIENDINNEWLINE",
+				Region:          "us-west-2",
+				Nameservers:     s.DNS01Nameservers,
+				UserAgent:       s.RESTConfig.UserAgent,
+				Ambient:         new(false),
+				Resolver:        s.DNSResolver,
+			}},
 		},
 	}
 
-	if !reflect.DeepEqual(expectedR53Call, f.dnsProviders.calls) {
-		t.Fatalf("expected %+v == %+v", expectedR53Call, f.dnsProviders.calls)
-	}
+	assertProviderCalls(t, expectedR53Call, f.dnsProviders.calls)
 }
 
 func TestRoute53AmbientCreds(t *testing.T) {
+	t.Parallel()
 	type result struct {
-		expectedCall *fakeDNSProviderCall
+		expectedCall func(*solverFixture) *fakeDNSProviderCall
 		expectedErr  error
 	}
 
 	tests := []struct {
-		in  solverFixture
-		out result
+		name string
+		in   solverFixture
+		out  result
 	}{
 		{
+			"ambient credentials enabled",
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
@@ -594,13 +620,22 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				),
 			},
 			result{
-				expectedCall: &fakeDNSProviderCall{
-					name: "route53",
-					args: []any{"", "", "", "us-west-2", "", "", true, util.RecursiveNameservers},
+				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
+					return &fakeDNSProviderCall{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
+							Region:      "us-west-2",
+							Nameservers: f.Solver.DNS01Nameservers,
+							UserAgent:   f.Solver.RESTConfig.UserAgent,
+							Ambient:     new(true),
+							Resolver:    f.Solver.DNSResolver,
+						}},
+					}
 				},
 			},
 		},
 		{
+			"ambient credentials disabled",
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
@@ -632,43 +667,266 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				},
 			},
 			result{
-				expectedCall: &fakeDNSProviderCall{
-					name: "route53",
-					args: []any{"", "", "", "us-west-2", "", "", false, util.RecursiveNameservers},
+				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
+					return &fakeDNSProviderCall{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
+							Region:      "us-west-2",
+							Nameservers: util.RecursiveNameservers,
+							UserAgent:   f.Solver.RESTConfig.UserAgent,
+							Ambient:     new(false),
+							Resolver:    f.Solver.DNSResolver,
+						}},
+					}
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		f := tt.in
-		f.Setup(t)
-		defer f.Finish(t)
-		s := f.Solver
-		_, _, err := s.solverForChallenge(t.Context(), f.Challenge)
-		if tt.out.expectedErr != err {
-			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
-		}
-
-		if tt.out.expectedCall != nil {
-			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls) {
-				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			f := tt.in
+			f.Setup(t)
+			defer f.Finish(t)
+			s := f.Solver
+			_, _, err := s.solverForChallenge(t.Context(), f.Challenge)
+			if tt.out.expectedErr != err {
+				t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 			}
-		}
+
+			if tt.out.expectedCall != nil {
+				expectedCall := *tt.out.expectedCall(&f)
+				assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
+			}
+		})
+	}
+}
+
+func TestSolverForChallengeNameservers(t *testing.T) {
+	perSolverNameservers := []string{"1.1.1.1:53"}
+
+	tests := map[string]struct {
+		fixture      *solverFixture
+		expectedCall func(*solverFixture) fakeDNSProviderCall
+	}{
+		"route53: per-solver nameservers passed to constructor": {
+			fixture: &solverFixture{
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Nameservers: perSolverNameservers,
+								Route53:     &cmacme.ACMEIssuerDNS01ProviderRoute53{Region: "us-west-2"},
+							},
+						},
+						IssuerRef: cmmeta.IssuerReference{Name: "test-issuer"},
+					},
+				},
+			},
+			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
+				return fakeDNSProviderCall{
+					Name: "route53",
+					Args: []any{route53.DNSProviderOptions{
+						Region:      "us-west-2",
+						Nameservers: perSolverNameservers,
+						Ambient:     new(false),
+						UserAgent:   f.Solver.RESTConfig.UserAgent,
+						Resolver:    f.Solver.DNSResolver,
+					}},
+				}
+			},
+		},
+		"digitalocean: per-solver nameservers passed to constructor": {
+			fixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("digitalocean", map[string][]byte{"token": []byte("FAKE-TOKEN")}, fakeIssuerNamespace),
+					},
+				},
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Nameservers: perSolverNameservers,
+								DigitalOcean: &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{
+									Token: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{Name: "digitalocean"},
+										Key:                  "token",
+									},
+								},
+							},
+						},
+						IssuerRef: cmmeta.IssuerReference{Name: "test-issuer"},
+					},
+				},
+			},
+			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
+				return fakeDNSProviderCall{
+					Name: "digitalocean",
+					Args: []any{digitalocean.DNSProviderOptions{
+						Token:       "FAKE-TOKEN",
+						Nameservers: perSolverNameservers,
+						UserAgent:   f.Solver.RESTConfig.UserAgent,
+						Resolver:    f.Solver.DNSResolver,
+					}},
+				}
+			},
+		},
+		"route53: falls back to global nameservers when none set on solver": {
+			fixture: &solverFixture{
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{Region: "us-west-2"},
+							},
+						},
+						IssuerRef: cmmeta.IssuerReference{Name: "test-issuer"},
+					},
+				},
+			},
+			expectedCall: func(f *solverFixture) fakeDNSProviderCall {
+				return fakeDNSProviderCall{
+					Name: "route53",
+					Args: []any{route53.DNSProviderOptions{
+						Region:      "us-west-2",
+						Nameservers: util.RecursiveNameservers,
+						Ambient:     new(false),
+						UserAgent:   f.Solver.RESTConfig.UserAgent,
+						Resolver:    f.Solver.DNSResolver,
+					}},
+				}
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			tt.fixture.Setup(t)
+			defer tt.fixture.Finish(t)
+
+			_, _, err := tt.fixture.Solver.solverForChallenge(t.Context(), tt.fixture.Challenge)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			expectedCall := tt.expectedCall(tt.fixture)
+			assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, tt.fixture.dnsProviders.calls)
+		})
+	}
+}
+
+func TestNameserversForProviderConfig(t *testing.T) {
+	globalNameservers := []string{"8.8.8.8:53", "8.8.4.4:53"}
+	perSolverNameservers := []string{"1.1.1.1:53", "1.0.0.1:53"}
+
+	tests := []struct {
+		name               string
+		globalNameservers  []string
+		checkAuthoritative bool
+		solverNameservers  []string
+		wantNameservers    []string
+		wantCheckAuth      bool
+	}{
+		{
+			name:               "empty solver nameservers falls back to global with authoritative check",
+			globalNameservers:  globalNameservers,
+			checkAuthoritative: true,
+			solverNameservers:  nil,
+			wantNameservers:    globalNameservers,
+			wantCheckAuth:      true,
+		},
+		{
+			name:               "empty solver nameservers falls back to global without authoritative check",
+			globalNameservers:  globalNameservers,
+			checkAuthoritative: false,
+			solverNameservers:  nil,
+			wantNameservers:    globalNameservers,
+			wantCheckAuth:      false,
+		},
+		{
+			name:               "per-solver nameservers override global and disable authoritative check",
+			globalNameservers:  globalNameservers,
+			checkAuthoritative: true,
+			solverNameservers:  perSolverNameservers,
+			wantNameservers:    perSolverNameservers,
+			wantCheckAuth:      false,
+		},
+		{
+			name:               "per-solver nameservers always disable authoritative check",
+			globalNameservers:  globalNameservers,
+			checkAuthoritative: false,
+			solverNameservers:  perSolverNameservers,
+			wantNameservers:    perSolverNameservers,
+			wantCheckAuth:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &solverFixture{
+				Builder: &test.Builder{
+					Context: &controller.Context{
+						ContextOptions: controller.ContextOptions{
+							ACMEOptions: controller.ACMEOptions{
+								DNS01Nameservers:        tt.globalNameservers,
+								DNS01CheckAuthoritative: tt.checkAuthoritative,
+							},
+						},
+					},
+				},
+				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: fakeIssuerNamespace,
+					},
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Nameservers: tt.solverNameservers,
+								Cloudflare:  &cmacme.ACMEIssuerDNS01ProviderCloudflare{},
+							},
+						},
+					},
+				},
+			}
+			f.Setup(t)
+			defer f.Finish(t)
+
+			providerConfig, err := extractChallengeSolverConfig(f.Challenge)
+			if err != nil {
+				t.Fatalf("unexpected error extracting config: %v", err)
+			}
+
+			gotNameservers, gotCheckAuth := f.Solver.nameserversForProviderConfig(providerConfig)
+			assert.Equal(t, tt.wantNameservers, gotNameservers, "nameservers")
+			if tt.wantCheckAuth != gotCheckAuth {
+				t.Errorf("checkAuthoritative: got %v, want %v", gotCheckAuth, tt.wantCheckAuth)
+			}
+		})
 	}
 }
 
 func TestRoute53AssumeRole(t *testing.T) {
+	t.Parallel()
 	type result struct {
-		expectedCall *fakeDNSProviderCall
+		expectedCall func(*solverFixture) *fakeDNSProviderCall
 		expectedErr  error
 	}
 
 	tests := []struct {
-		in  solverFixture
-		out result
+		name string
+		in   solverFixture
+		out  result
 	}{
 		{
+			"assumes role with ambient credentials",
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
@@ -692,13 +950,23 @@ func TestRoute53AssumeRole(t *testing.T) {
 				),
 			},
 			result{
-				expectedCall: &fakeDNSProviderCall{
-					name: "route53",
-					args: []any{"", "", "", "us-west-2", "my-role", "", true, util.RecursiveNameservers},
+				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
+					return &fakeDNSProviderCall{
+						Name: "route53",
+						Args: []any{route53.DNSProviderOptions{
+							Region:      "us-west-2",
+							Role:        "my-role",
+							Nameservers: f.Solver.DNS01Nameservers,
+							UserAgent:   f.Solver.RESTConfig.UserAgent,
+							Ambient:     new(true),
+							Resolver:    f.Solver.DNSResolver,
+						}},
+					}
 				},
 			},
 		},
 		{
+			"assumes role without ambient credentials",
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
@@ -731,28 +999,41 @@ func TestRoute53AssumeRole(t *testing.T) {
 				},
 			},
 			result{
-				expectedCall: &fakeDNSProviderCall{
-					name: "route53",
-					args: []any{"", "", "", "us-west-2", "my-other-role", "", false, util.RecursiveNameservers},
+				expectedCall: func(f *solverFixture) *fakeDNSProviderCall {
+					return &fakeDNSProviderCall{
+						Name: "route53",
+						Args: []any{
+							route53.DNSProviderOptions{
+								Region:      "us-west-2",
+								Role:        "my-other-role",
+								Nameservers: f.Solver.DNS01Nameservers,
+								UserAgent:   f.Solver.RESTConfig.UserAgent,
+								Ambient:     new(false),
+								Resolver:    f.Solver.DNSResolver,
+							},
+						},
+					}
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		f := tt.in
-		f.Setup(t)
-		defer f.Finish(t)
-		s := f.Solver
-		_, _, err := s.solverForChallenge(t.Context(), f.Challenge)
-		if tt.out.expectedErr != err {
-			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
-		}
-
-		if tt.out.expectedCall != nil {
-			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls) {
-				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			f := tt.in
+			f.Setup(t)
+			defer f.Finish(t)
+			s := f.Solver
+			_, _, err := s.solverForChallenge(t.Context(), f.Challenge)
+			if tt.out.expectedErr != err {
+				t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 			}
-		}
+
+			if tt.out.expectedCall != nil {
+				expectedCall := *tt.out.expectedCall(&f)
+				assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
+			}
+		})
 	}
 }

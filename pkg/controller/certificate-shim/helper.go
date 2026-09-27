@@ -20,14 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/mail"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -69,11 +69,47 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	if commonName, found := ingLikeAnnotations[cmapi.CommonNameAnnotationKey]; found {
+		if len(commonName) > 64 {
+			return fmt.Errorf("%w %q: common name may not be more than 64 bytes", errInvalidIngressAnnotation, cmapi.CommonNameAnnotationKey)
+		}
 		crt.Spec.CommonName = commonName
 	}
 
-	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
-		crt.Spec.EmailAddresses = strings.Split(emailAddresses, ",")
+	if altNames, found := ingLikeAnnotations[cmapi.AltNamesAnnotationKey]; found && altNames != "" {
+		addDnsNames := strings.Split(altNames, ",")
+		crt.Spec.DNSNames = append(crt.Spec.DNSNames, addDnsNames...)
+	}
+
+	if ipSANs, found := ingLikeAnnotations[cmapi.IPSANAnnotationKey]; found && ipSANs != "" {
+		ipAddresses := strings.Split(ipSANs, ",")
+		trimmedIPs := make([]string, 0, len(ipAddresses))
+		for _, ipStr := range ipAddresses {
+			ipStr = strings.TrimSpace(ipStr)
+			if net.ParseIP(ipStr) == nil {
+				return fmt.Errorf("%w %q: %q is not a valid IP address", errInvalidIngressAnnotation, cmapi.IPSANAnnotationKey, ipStr)
+			}
+			trimmedIPs = append(trimmedIPs, ipStr)
+		}
+		crt.Spec.IPAddresses = append(crt.Spec.IPAddresses, trimmedIPs...)
+	}
+
+	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found && emailAddresses != "" {
+		emails := strings.Split(emailAddresses, ",")
+		trimmedEmails := make([]string, 0, len(emails))
+		for _, email := range emails {
+			email = strings.TrimSpace(email)
+			e, err := mail.ParseAddress(email)
+			if err != nil {
+				return fmt.Errorf("%w %q: %q is not a valid email address", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
+			}
+			// Mirror the cert-manager webhook: reject display-name forms
+			// (e.g. "Name <a@b.com>") so the stored value is exactly the address.
+			if e.Address != email {
+				return fmt.Errorf("%w %q: %q must only contain the email address itself", errInvalidIngressAnnotation, cmapi.EmailsAnnotationKey, email)
+			}
+			trimmedEmails = append(trimmedEmails, email)
+		}
+		crt.Spec.EmailAddresses = trimmedEmails
 	}
 
 	subject := &cmapi.X509Subject{}
@@ -154,6 +190,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
+		if duration < cmapi.MinimumCertificateDuration {
+			return fmt.Errorf("%w %q: duration must be greater than or equal to %s", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, cmapi.MinimumCertificateDuration)
+		}
 		crt.Spec.Duration = &metav1.Duration{Duration: duration}
 	}
 
@@ -161,6 +200,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		duration, err := time.ParseDuration(renewBefore)
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
+		}
+		if duration < cmapi.MinimumRenewBefore {
+			return fmt.Errorf("%w %q: renewBefore must be greater than or equal to %s", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, cmapi.MinimumRenewBefore)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
@@ -170,7 +212,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforePercentageAnnotationKey, err)
 		}
-		crt.Spec.RenewBeforePercentage = ptr.To(int32(pct))
+		crt.Spec.RenewBeforePercentage = new(int32(pct))
 	}
 
 	if usages, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; found {
@@ -197,7 +239,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			return fmt.Errorf("%w %q: revision history limit must be a positive number %q", errInvalidIngressAnnotation, cmapi.RevisionHistoryLimitAnnotationKey, revisionHistoryLimit)
 		}
 
-		crt.Spec.RevisionHistoryLimit = ptr.To(int32(limit))
+		crt.Spec.RevisionHistoryLimit = new(int32(limit))
 	}
 
 	if privateKeyAlgorithm, found := ingLikeAnnotations[cmapi.PrivateKeyAlgorithmAnnotationKey]; found {
@@ -300,12 +342,4 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	return nil
-}
-
-// translateListenerToGWAPIV1Listener adapts a ListenerEntry to a Listener by casting.
-// In gwapi v1, ListenerEntry and Listener currently share the same underlying structure,
-// so this cast is a no-op and is safe. This helper exists to allow code that expects a
-// gwapi.Listener (for example, shared validation logic) to also work with ListenerEntry.
-func translateListenerToGWAPIV1Listener(l gwapi.ListenerEntry) gwapi.Listener {
-	return gwapi.Listener(l)
 }

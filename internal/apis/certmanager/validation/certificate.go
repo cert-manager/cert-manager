@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -62,6 +63,10 @@ var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcma
 // Validation functions for cert-manager Certificate types
 
 func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	return validateCertificateSpec(crt, nil, fldPath)
+}
+
+func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
@@ -193,8 +198,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 	}
 
-	if crt.Duration != nil || crt.RenewBefore != nil {
-		el = append(el, ValidateDuration(crt, fldPath)...)
+	if crt.Duration != nil || crt.RenewBefore != nil || crt.RenewBeforePercentage != nil {
+		el = append(el, validateDuration(crt, oldCrt, fldPath)...)
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
@@ -213,17 +218,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	}
 
 	if crt.NameConstraints != nil {
-		if !utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints) {
-			el = append(el, field.Forbidden(fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"))
-		} else {
-			if !crt.IsCA {
-				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "isCa should be true when nameConstraints is set"))
-			}
-
-			if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
-				el = append(el, field.Invalid(fldPath.Child("nameConstraints"), crt.NameConstraints, "either permitted or excluded must be set"))
-			}
-		}
+		el = append(el, validateNameConstraints(crt, fldPath)...)
 	}
 
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
@@ -246,8 +241,9 @@ func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (a
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldCrt := oldObj.(*internalcmapi.Certificate)
 	crt := obj.(*internalcmapi.Certificate)
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	allErrs := validateCertificateSpec(&crt.Spec, &oldCrt.Spec, field.NewPath("spec"))
 	return allErrs, nil
 }
 
@@ -356,6 +352,10 @@ func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPa
 }
 
 func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	return validateDuration(crt, nil, fldPath)
+}
+
+func validateDuration(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
@@ -381,15 +381,73 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	// If spec.renewBeforePercentage is set, check that it's within the allowed
 	// range.
 	if crt.RenewBeforePercentage != nil {
-		renewBefore := duration * time.Duration(100-*crt.RenewBeforePercentage) / 100
-		if renewBefore < cmapi.MinimumRenewBefore {
-			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore)))
+		if *crt.RenewBeforePercentage <= 0 || *crt.RenewBeforePercentage >= 100 {
+			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "must be an integer in the range (0,100)"))
+			return el
+		}
+
+		renewBefore := pki.RenewBeforeFromPercentage(duration, *crt.RenewBeforePercentage)
+		if renewBefore < cmapi.MinimumRenewBefore && !allowLegacyRenewBeforePercentageOnUpdate(crt, oldCrt) {
+			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; %d%% of %s is %s", cmapi.MinimumRenewBefore, *crt.RenewBeforePercentage, duration, renewBefore)))
 		}
 		if renewBefore >= duration {
 			el = append(el, field.Invalid(fldPath.Child("renewBeforePercentage"), *crt.RenewBeforePercentage, "certificate renewBeforePercentage must result in a renewBefore less than duration"))
 		}
 	}
 
+	return el
+}
+
+func allowLegacyRenewBeforePercentageOnUpdate(crt, oldCrt *internalcmapi.CertificateSpec) bool {
+	if oldCrt == nil ||
+		!reflect.DeepEqual(oldCrt.Duration, crt.Duration) ||
+		!reflect.DeepEqual(oldCrt.RenewBeforePercentage, crt.RenewBeforePercentage) {
+		return false
+	}
+	if crt.RenewBeforePercentage == nil || *crt.RenewBeforePercentage <= 0 || *crt.RenewBeforePercentage >= 100 {
+		return false
+	}
+
+	duration := util.DefaultCertDuration(crt.Duration)
+	// Before this validation was fixed, the webhook checked the complement of
+	// the effective renewBefore. Keep those unchanged specs updateable.
+	oldRenewBefore := duration - pki.RenewBeforeFromPercentage(duration, *crt.RenewBeforePercentage)
+	return oldRenewBefore >= cmapi.MinimumRenewBefore && oldRenewBefore < duration
+}
+
+func validateNameConstraints(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	nameConstraintsPath := fldPath.Child("nameConstraints")
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints) {
+		return field.ErrorList{field.Forbidden(nameConstraintsPath, "feature gate NameConstraints must be enabled")}
+	}
+
+	el := field.ErrorList{}
+
+	if !crt.IsCA {
+		el = append(el, field.Invalid(nameConstraintsPath, crt.NameConstraints, "isCA should be true when nameConstraints is set"))
+	}
+
+	if crt.NameConstraints.Permitted == nil && crt.NameConstraints.Excluded == nil {
+		el = append(el, field.Invalid(nameConstraintsPath, crt.NameConstraints, "either permitted or excluded must be set"))
+	}
+
+	el = append(el, validateNameConstraintItem(crt.NameConstraints.Permitted, nameConstraintsPath.Child("permitted"))...)
+	el = append(el, validateNameConstraintItem(crt.NameConstraints.Excluded, nameConstraintsPath.Child("excluded"))...)
+
+	return el
+}
+
+func validateNameConstraintItem(item *internalcmapi.NameConstraintItem, fldPath *field.Path) field.ErrorList {
+	if item == nil {
+		return nil
+	}
+
+	el := field.ErrorList{}
+	for i, cidr := range item.IPRanges {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("ipRanges").Index(i), cidr, "invalid CIDR address"))
+		}
+	}
 	return el
 }
 

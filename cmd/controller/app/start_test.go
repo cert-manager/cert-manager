@@ -22,10 +22,10 @@ import (
 	"io"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	"github.com/go-logr/logr"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
@@ -205,9 +205,7 @@ ingressShimConfig: {}
 				}
 			} else if !tc.expError {
 				expConfig := tc.expConfig(tempDir)
-				if !reflect.DeepEqual(config, expConfig) {
-					t.Errorf("expected config %v but got %v", expConfig, config)
-				}
+				testutil.AssertEqual(t, expConfig, config)
 			}
 		})
 	}

@@ -20,17 +20,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"path"
 	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	flowcontrolapi "k8s.io/api/flowcontrol/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -38,6 +44,7 @@ import (
 	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/transport"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -53,6 +60,7 @@ import (
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	utildns "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -122,6 +130,9 @@ type Context struct {
 	// gateway.networking.k8s.io types
 	GWShared             gwinformers.SharedInformerFactory
 	GatewaySolverEnabled bool
+
+	// DNSResolver is used to resolve ACME DNS challenges
+	DNSResolver *utildns.CachingResolver
 
 	ContextOptions
 }
@@ -196,9 +207,16 @@ type ACMEOptions struct {
 	// ACMEHTTP01SolverRunAsNonRoot sets the ACME pod's ability to run as root
 	ACMEHTTP01SolverRunAsNonRoot bool
 
+	// HTTP01SolverRuntimeClassName defines the ACME pod's runtimeClassName
+	HTTP01SolverRuntimeClassName string
+
 	// HTTP01SolverNameservers is a list of nameservers to use when performing self-checks
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string
+
+	// HTTP01SolverExtraLabels are additional labels to apply to ACME HTTP01
+	// solver resources.
+	HTTP01SolverExtraLabels map[string]string
 
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
 	// for checking propagation of an RR. This is the ideal scenario
@@ -221,6 +239,7 @@ type IngressShimOptions struct {
 	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
 	ExtraCertificateAnnotations       []string
+	GatewayAPIExtraProtocols          sets.Set[string]
 }
 
 type CertificateOptions struct {
@@ -230,10 +249,16 @@ type CertificateOptions struct {
 	// CopiedAnnotationPrefixes defines which annotations should be copied
 	// Certificate -> CertificateRequest, CertificateRequest -> Order.
 	CopiedAnnotationPrefixes []string
-	// CertificateRequestMinimumBackoffDuration defines the initial backoff duration
-	// when a certificate request fails. This duration is exponentially increased
-	// based on the number of consecutive failures.
+	// CertificateRequestMinimumBackoffDuration defines the minimum backoff duration
+	// when a certificate request fails (default 1h). The backoff delay starts at
+	// this duration and is exponentially increased with each consecutive failure,
+	// up to the configured maximum backoff duration.
 	CertificateRequestMinimumBackoffDuration time.Duration
+	// CertificateRequestMaximumBackoffDuration defines the maximum backoff duration
+	// when a certificate request fails. The backoff delay starts at
+	// the minimum backoff duration and is exponentially increased with
+	// each consecutive failure, but will never exceed this maximum (default 32h).
+	CertificateRequestMaximumBackoffDuration time.Duration
 }
 
 type SchedulerOptions struct {
@@ -267,19 +292,39 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		return nil, fmt.Errorf("error creating rest config: %w", err)
 	}
 	restConfig = util.RestConfigWithUserAgent(restConfig)
-	restConfig.QPS = opts.KubernetesAPIQPS
-	restConfig.Burst = opts.KubernetesAPIBurst
+	log := logf.FromContext(ctx)
 
-	// Construct a single RateLimiter used across all built Context's clients. A
-	// single rate limiter (with corresponding QPS and Burst buckets) are
-	// preserved for all Contexts.
-	// Adapted from
-	// https://github.com/kubernetes/client-go/blob/v0.23.3/kubernetes/clientset.go#L431-L435
-	if restConfig.RateLimiter == nil && restConfig.QPS > 0 {
-		if restConfig.Burst <= 0 {
-			return nil, errors.New("burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+	const apfProbeTimeout = 5 * time.Second
+	apfProbeCtx, cancel := context.WithTimeout(ctx, apfProbeTimeout)
+	defer cancel()
+
+	apfEnabled, err := isAPFEnabled(apfProbeCtx, restConfig)
+	if err != nil {
+		log.Error(err, "Failed to determine whether API Priority and Fairness is enabled, falling back to client-side rate limiting")
+		apfEnabled = false
+	}
+
+	if apfEnabled {
+		restConfig.QPS = -1
+		restConfig.Burst = -1
+	} else {
+		restConfig.QPS = opts.KubernetesAPIQPS
+		restConfig.Burst = opts.KubernetesAPIBurst
+		// Construct a single RateLimiter used across all built Context's clients.
+		// Adapted from
+		// https://github.com/kubernetes/client-go/blob/v0.23.3/kubernetes/clientset.go#L431-L435
+		if restConfig.RateLimiter == nil && restConfig.QPS >= 0 {
+			if restConfig.QPS == 0 {
+				restConfig.QPS = rest.DefaultQPS // 5
+			}
+			if restConfig.Burst == 0 {
+				restConfig.Burst = rest.DefaultBurst // 10
+			}
+			if restConfig.Burst <= 0 {
+				return nil, errors.New("burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+			}
+			restConfig.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(restConfig.QPS, restConfig.Burst)
 		}
-		restConfig.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(restConfig.QPS, restConfig.Burst)
 	}
 
 	clients, err := buildClients(restConfig, opts)
@@ -312,7 +357,6 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(clients.gwClient, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
 	clock := clock.RealClock{}
-	log := logf.FromContext(ctx)
 	metrics := metrics.New(log, clock)
 
 	return &ContextFactory{
@@ -331,6 +375,7 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 			ACMEAccountRegistry: accounts.NewDefaultRegistry(
 				accounts.NewClient(metrics, restConfig.UserAgent),
 			),
+			DNSResolver: utildns.NewCachingResolver(),
 		},
 	}, nil
 }
@@ -450,4 +495,66 @@ func buildClients(restConfig *rest.Config, opts ContextOptions) (contextClients,
 	}
 
 	return contextClients{kubeClient, cmClient, gwClient, metadataOnlyClient, gatewayAvailable}, nil
+}
+
+// serverUrl returns the base URL for the cluster based on the supplied config.
+// Host and Version are required. GroupVersion is ignored.
+// Based on `serverURL` from kubernetes-sigs/cli-utils
+func serverURL(config *rest.Config) (*url.URL, error) {
+	// TODO: move the default to secure when the apiserver supports TLS by default
+	// config.Insecure is taken to mean "I want HTTPS but don't bother checking the certs against a CA."
+	hasCA := len(config.CAFile) != 0 || len(config.CAData) != 0
+	hasCert := len(config.CertFile) != 0 || len(config.CertData) != 0
+	defaultTLS := hasCA || hasCert || config.Insecure
+	host := config.Host
+	if host == "" {
+		host = "localhost"
+	}
+
+	hostURL, _, err := rest.DefaultServerURL(host, config.APIPath, schema.GroupVersion{}, defaultTLS)
+	return hostURL, err
+}
+
+// Based on `IsEnabled` from kubernetes-sigs/cli-utils
+func isAPFEnabled(ctx context.Context, config *rest.Config) (bool, error) {
+	tcfg, err := config.TransportConfig()
+	if err != nil {
+		return false, fmt.Errorf("building transport config: %w", err)
+	}
+	rt, err := transport.New(tcfg)
+	if err != nil {
+		return false, fmt.Errorf("building round tripper: %w", err)
+	}
+
+	u, err := serverURL(config)
+	if err != nil {
+		return false, fmt.Errorf("parsing API server host URL: %w", err)
+	}
+
+	u.Path = path.Join(u.Path, "livez/ping")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
+	if err != nil {
+		return false, fmt.Errorf("building request: %w", err)
+	}
+
+	if config.UserAgent != "" {
+		req.Header.Set("User-Agent", config.UserAgent)
+	}
+
+	resp, err := rt.RoundTrip(req)
+	if err != nil {
+		return false, fmt.Errorf("making %s request: %w", u.Path, err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	// If the flowcontrol header is present, AP&F is enabled.
+	if value := resp.Header.Get(flowcontrolapi.ResponseHeaderMatchedFlowSchemaUID); value != "" {
+		return true, nil
+	}
+
+	return false, nil
 }

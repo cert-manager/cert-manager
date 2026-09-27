@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
@@ -92,6 +91,7 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 
 func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge, svcName string) (*gwapi.HTTPRoute, error) {
 	labels := podLabels(ch)
+	maps.Copy(labels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 	maps.Copy(labels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	httpRoute := &gwapi.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -114,6 +114,7 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	expectedSpec := generateHTTPRouteSpec(ch, svcName)
 	actualSpec := httpRoute.Spec
 	expectedLabels := podLabels(ch)
+	maps.Copy(expectedLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 	maps.Copy(expectedLabels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	actualLabels := httpRoute.Labels
 	if reflect.DeepEqual(expectedSpec, actualSpec) && reflect.DeepEqual(expectedLabels, actualLabels) {
@@ -160,7 +161,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 					{
 						Path: &gwapi.HTTPPathMatch{
 							Type:  func() *gwapi.PathMatchType { p := gwapi.PathMatchExact; return &p }(),
-							Value: ptr.To(fmt.Sprintf("/.well-known/acme-challenge/%s", ch.Spec.Token)),
+							Value: new(fmt.Sprintf("/.well-known/acme-challenge/%s", ch.Spec.Token)),
 						},
 					},
 				},
@@ -174,7 +175,7 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
 								Port:      func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
 							},
-							Weight: ptr.To(int32(1)),
+							Weight: new(int32(1)),
 						},
 					},
 				},

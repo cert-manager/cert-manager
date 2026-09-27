@@ -32,6 +32,14 @@ type ACMEChallengeSolverDNS01ApplyConfiguration struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	CNAMEStrategy *acmev1.CNAMEStrategy `json:"cnameStrategy,omitempty"`
+	// Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+	// checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+	// where host may be an IP address or hostname, or
+	// `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+	// the controller's configured global DNS01 recursive nameservers are used.
+	// When specified, this overrides the global nameservers for this solver
+	// only, and disables the authoritative nameserver check.
+	Nameservers []string `json:"nameservers,omitempty"`
 	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
 	Akamai *ACMEIssuerDNS01ProviderAkamaiApplyConfiguration `json:"akamai,omitempty"`
 	// Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -66,6 +74,16 @@ func ACMEChallengeSolverDNS01() *ACMEChallengeSolverDNS01ApplyConfiguration {
 // If called multiple times, the CNAMEStrategy field is set to the value of the last call.
 func (b *ACMEChallengeSolverDNS01ApplyConfiguration) WithCNAMEStrategy(value acmev1.CNAMEStrategy) *ACMEChallengeSolverDNS01ApplyConfiguration {
 	b.CNAMEStrategy = &value
+	return b
+}
+
+// WithNameservers adds the given value to the Nameservers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Nameservers field.
+func (b *ACMEChallengeSolverDNS01ApplyConfiguration) WithNameservers(values ...string) *ACMEChallengeSolverDNS01ApplyConfiguration {
+	for i := range values {
+		b.Nameservers = append(b.Nameservers, values[i])
+	}
 	return b
 }
 

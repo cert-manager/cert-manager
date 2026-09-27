@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Literal newline so the $(foreach)es below emit one $(MAKE) per recipe line.
+# Without this the dirty list expands to "make a make b make c" on a single
+# line, which under -j builds every goal in one parallel invocation.
+define _generate_verify_newline
+
+
+endef
+
 .PHONY: generate
 ## Generate all generate targets.
 ## @category [shared] Generate/ Verify
 generate: $$(shared_generate_targets)
 	@echo "The following targets cannot be run simultaneously with each other or other generate scripts:"
-	$(foreach TARGET,$(shared_generate_targets_dirty), $(MAKE) $(TARGET))
+	$(foreach TARGET,$(shared_generate_targets_dirty),$(MAKE) $(TARGET)$(_generate_verify_newline))
 
 verify_script := $(dir $(lastword $(MAKEFILE_LIST)))/util/verify.sh
 
@@ -36,4 +44,4 @@ verify_targets_dirty = $(sort $(verify_generated_targets_dirty) $(shared_verify_
 ## @category [shared] Generate/ Verify
 verify: $$(verify_targets)
 	@echo "The following targets create temporary files in the current directory, that is why they have to be run last:"
-	$(foreach TARGET,$(verify_targets_dirty), $(MAKE) $(TARGET))
+	$(foreach TARGET,$(verify_targets_dirty),$(MAKE) $(TARGET)$(_generate_verify_newline))

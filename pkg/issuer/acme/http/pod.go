@@ -23,11 +23,11 @@ import (
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -46,6 +46,30 @@ func podLabels(ch *cmacme.Challenge) map[string]string {
 		cmacme.TokenLabelKey:                tokenHash,
 		cmacme.SolverIdentificationLabelKey: solverIdent,
 	}
+}
+
+// acmeIdentityLabelKeys defines the set of label keys reserved for ACME
+// challenge resource discovery. These cannot be overridden by global solver
+// extra labels.
+var acmeIdentityLabelKeys = map[string]bool{
+	cmacme.DomainLabelKey:               true,
+	cmacme.TokenLabelKey:                true,
+	cmacme.SolverIdentificationLabelKey: true,
+}
+
+// filterACMEIdentityLabels returns a copy of labels with ACME identity
+// labels removed. Does not mutate the input map.
+func filterACMEIdentityLabels(labels map[string]string) map[string]string {
+	if labels == nil {
+		return nil
+	}
+	result := make(map[string]string, len(labels))
+	for key, val := range labels {
+		if !acmeIdentityLabelKeys[key] {
+			result[key] = val
+		}
+	}
+	return result
 }
 
 func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
@@ -125,6 +149,12 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 		log.V(logf.InfoLevel).Info("deleting pod resource")
 
 		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		if k8sErrors.IsNotFound(err) {
+			// the lister can be behind the API server, so a pod that is
+			// already gone is the state we wanted anyway
+			log.V(logf.DebugLevel).Info("pod resource already deleted")
+			continue
+		}
 		if err != nil {
 			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
 			errs = append(errs, fmt.Errorf("error deleting pod: %w", err))
@@ -173,6 +203,11 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 // https://github.com/cert-manager/cert-manager/blob/f1d7c432763100c3fb6eb6a1654d29060b479b3c/pkg/apis/acme/v1/types_issuer.go#L270
 func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
+	maps.Copy(podLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
+	var runtimeClassName *string
+	if s.ACMEOptions.HTTP01SolverRuntimeClassName != "" {
+		runtimeClassName = new(s.ACMEOptions.HTTP01SolverRuntimeClassName)
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,14 +225,15 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			// Kubernetes API server, so we turn off automounting of
 			// the Kubernetes ServiceAccount token.
 			// See https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting
-			AutomountServiceAccountToken: ptr.To(false),
+			AutomountServiceAccountToken: new(false),
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
 			RestartPolicy:      corev1.RestartPolicyOnFailure,
-			EnableServiceLinks: ptr.To(false),
+			EnableServiceLinks: new(false),
+			RuntimeClassName:   runtimeClassName,
 			SecurityContext: &corev1.PodSecurityContext{
-				RunAsNonRoot: ptr.To(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
+				RunAsNonRoot: new(s.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot),
 				SeccompProfile: &corev1.SeccompProfile{
 					Type: corev1.SeccompProfileTypeRuntimeDefault,
 				},
@@ -231,8 +267,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 						},
 					},
 					SecurityContext: &corev1.SecurityContext{
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						AllowPrivilegeEscalation: ptr.To(false),
+						ReadOnlyRootFilesystem:   new(true),
+						AllowPrivilegeEscalation: new(false),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
 						},

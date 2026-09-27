@@ -18,10 +18,8 @@ package http
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -33,6 +31,7 @@ import (
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
 	internalfeature "github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -69,9 +68,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 			},
 		},
 		"should return one ingress with pathType Exact": {
@@ -103,9 +100,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeExact {
 					t.Errorf("Expected pathType to be Exact, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
 				}
@@ -140,9 +135,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 				if *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType != networkingv1.PathTypeImplementationSpecific {
 					t.Errorf("Expected pathType to be ImplementationSpecific, but got %s", *resp[0].Spec.Rules[0].HTTP.Paths[0].PathType)
 				}
@@ -176,9 +169,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 					t.Fail()
 					return
 				}
-				if !reflect.DeepEqual(resp[0], createdIngress) {
-					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
-				}
+				testutil.AssertEqual(t, createdIngress, resp[0])
 			},
 		},
 		"should not return an ingress for the same certificate but different domain": {
@@ -238,7 +229,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -271,7 +262,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -371,9 +362,7 @@ func TestCleanupIngresses(t *testing.T) {
 					t.Errorf("error getting ingress resource: %v", err)
 				}
 
-				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
-					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIng, actualIng)
 			},
 		},
 		"should clean up an ingress with a single challenge path inserted without removing second HTTP rule": {
@@ -472,9 +461,33 @@ func TestCleanupIngresses(t *testing.T) {
 
 				expectedIng.ManagedFields = actualIng.ManagedFields
 
-				if diff := cmp.Diff(expectedIng, actualIng); diff != "" {
-					t.Errorf("expected did not match actual (-want +got):\n%s", diff)
+				testutil.AssertEqual(t, expectedIng, actualIng)
+			},
+		},
+		"should not return an error if the ingress is already gone": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "abcd",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								Class: new("nginx"),
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				ing, err := s.Solver.createIngress(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
 				}
+
+				// the lister still has the ingress, the API server no longer does
+				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, apierrors.NewNotFound(networkingv1.Resource("ingresses"), ing.Name)
+				})
 			},
 		},
 		"should return an error if a delete fails": {
@@ -485,7 +498,7 @@ func TestCleanupIngresses(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 							},
 						},
 					},
@@ -556,7 +569,7 @@ func TestEnsureIngress(t *testing.T) {
 		"class field is passed to ingress as the annotation kubernetes.io/ingress.class": {
 			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class: strPtr("nginx"),
+					Class: new("nginx"),
 				}}}},
 			},
 			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
@@ -567,12 +580,12 @@ func TestEnsureIngress(t *testing.T) {
 		"ingressClassName field is passed to the ingress": {
 			Challenge: &cmacme.Challenge{Spec: cmacme.ChallengeSpec{Solver: cmacme.ACMEChallengeSolver{HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: strPtr("nginx"),
+					IngressClassName: new("nginx"),
 				}}}},
 			},
 			CheckFn: checkOneIngress(func(t *testing.T, ingress *networkingv1.Ingress) {
 				assert.Empty(t, ingress.Annotations["kubernetes.io/ingress.class"])
-				assert.Equal(t, strPtr("nginx"), ingress.Spec.IngressClassName)
+				assert.Equal(t, new("nginx"), ingress.Spec.IngressClassName)
 			}),
 		},
 	}
@@ -610,7 +623,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
 									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
 										Labels: map[string]string{
@@ -630,7 +643,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -665,9 +678,109 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
+				testutil.AssertEqual(t, expectedIngress, resp)
+			},
+		},
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
 				}
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error building ingress: %v", err)
+				}
+				s.testResources[createdIngressKey] = expectedIngress
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
+				resp, ok := args[0].(*networkingv1.Ingress)
+				if !ok {
+					t.Errorf("expected ingress to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
+				}
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
+				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
+				expectedIngress.Name = resp.Name
+				testutil.AssertEqual(t, expectedIngress, resp)
+			},
+		},
+		"should allow ingress template to override extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
+									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
+										Labels: map[string]string{
+											"custom-extra-label": "overridden-by-template",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+					"extra-only-label":   "extra-only-value",
+				}
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error building ingress: %v", err)
+				}
+				// Apply ingress template (same as createIngress does)
+				expectedIngress = s.Solver.mergeIngressObjectMetaWithIngressResourceTemplate(expectedIngress, s.Challenge.Spec.Solver.HTTP01.Ingress.IngressTemplate)
+				s.testResources[createdIngressKey] = expectedIngress
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedIngress := s.testResources[createdIngressKey].(*networkingv1.Ingress)
+				resp, ok := args[0].(*networkingv1.Ingress)
+				if !ok {
+					t.Errorf("expected ingress to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedIngress.APIVersion = resp.APIVersion
+				expectedIngress.Kind = resp.Kind
+				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.ManagedFields = resp.ManagedFields
+				expectedIngress.Name = resp.Name
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 	}
@@ -691,7 +804,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								Class: strPtr("nginx"),
+								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
 									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
 										Labels: map[string]string{
@@ -711,7 +824,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				expectedIngress, err := s.Solver.buildIngressResource(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -746,9 +859,7 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				expectedIngress.ManagedFields = resp.ManagedFields
 				expectedIngress.Name = resp.Name
 
-				if diff := cmp.Diff(expectedIngress, resp); diff != "" {
-					t.Errorf("unexpected ingress generated from merge (-want +got):\n%s", diff)
-				}
+				testutil.AssertEqual(t, expectedIngress, resp)
 			},
 		},
 	}

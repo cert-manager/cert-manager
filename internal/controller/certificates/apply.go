@@ -23,7 +23,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
@@ -36,6 +35,16 @@ import (
 // call.
 // Always sets Force Apply to true.
 func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) error {
+	return apply(ctx, cl, fieldManager, crt, true)
+}
+
+// ApplyNonForced is Apply without Force: a field owned by another field manager
+// fails the call with a 409 Conflict instead of being taken over.
+func ApplyNonForced(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) error {
+	return apply(ctx, cl, fieldManager, crt, false)
+}
+
+func apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate, force bool) error {
 	crtData, err := serializeApply(crt)
 	if err != nil {
 		return err
@@ -43,7 +52,7 @@ func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, crt 
 
 	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
 		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager},
+		metav1.PatchOptions{Force: &force, FieldManager: fieldManager},
 	)
 
 	return err
@@ -62,7 +71,7 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 
 	_, err = cl.CertmanagerV1().Certificates(crt.Namespace).Patch(
 		ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-		metav1.PatchOptions{Force: ptr.To(true), FieldManager: fieldManager}, "status",
+		metav1.PatchOptions{Force: new(true), FieldManager: fieldManager}, "status",
 	)
 
 	return err
@@ -79,6 +88,7 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 		Spec:       *crt.Spec.DeepCopy(),
 		Status:     cmapi.CertificateStatus{},
 	}
+	crt.ObjectMeta.ManagedFields = nil
 	crtData, err := json.Marshal(crt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal certificate object: %w", err)

@@ -490,3 +490,113 @@ func TestVault_Setup(t *testing.T) {
 		})
 	}
 }
+
+// TestVault_SetupDoesNotLeakResponseBody checks that a non-2xx response which
+// is not a Vault error response never reaches the Issuer status. spec.vault.server
+// is not restricted, so the endpoint being dialled is not necessarily Vault, and
+// the Ready condition is readable by anyone who can read the Issuer.
+func TestVault_SetupDoesNotLeakResponseBody(t *testing.T) {
+	// A body which is not valid JSON, so that the Vault client cannot decode it
+	// as an error response and hands it back to us verbatim.
+	const sentinelBody = "SENSITIVE-RESPONSE-BODY"
+
+	// 403 rather than a 5xx so that the Vault client does not retry, which would
+	// make this test needlessly slow.
+	notVaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		if _, err := w.Write([]byte(sentinelBody)); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer notVaultServer.Close()
+
+	tests := []struct {
+		name        string
+		givenAuth   v1.VaultAuth
+		expectCond  string
+		expectedErr string
+	}{
+		{
+			// The AppRole login happens while the client is being built, so this
+			// fails before IsVaultInitializedAndUnsealed is reached.
+			name: "the client initialization path",
+			givenAuth: v1.VaultAuth{
+				AppRole: &v1.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "cert-manager"},
+						Key:                  "token",
+					},
+				},
+			},
+			expectCond:  "Ready False: VaultError: Failed to initialize Vault client: the Vault server returned an HTTP 403 response which is not a Vault error response; the response body has been omitted and can be found in the cert-manager logs",
+			expectedErr: "the Vault server returned an HTTP 403 response which is not a Vault error response; the response body has been omitted and can be found in the cert-manager logs",
+		},
+		{
+			// Token auth needs no login request, so the client is built and the
+			// health check is the first thing to talk to the server.
+			name: "the health check path",
+			givenAuth: v1.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{Name: "cert-manager"},
+					Key:                  "token",
+				},
+			},
+			expectCond:  "Ready False: VaultError: Failed to verify Vault is initialized and unsealed: the Vault server returned an HTTP 403 response which is not a Vault error response; the response body has been omitted and can be found in the cert-manager logs",
+			expectedErr: "the Vault server returned an HTTP 403 response which is not a Vault error response; the response body has been omitted and can be found in the cert-manager logs",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			givenIssuer := &v1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-issuer",
+					Namespace: "test-namespace",
+				},
+				Spec: v1.IssuerSpec{
+					IssuerConfig: v1.IssuerConfig{
+						Vault: &v1.VaultIssuer{
+							Path:   "pki_int",
+							Server: notVaultServer.URL,
+							Auth:   tt.givenAuth,
+						},
+					},
+				},
+			}
+
+			v := &Vault{
+				Context: &controller.Context{CMClient: cmfake.NewClientset(givenIssuer)},
+				createTokenFn: func(ns string) vaultinternal.CreateToken {
+					return func(ctx context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error) {
+						return &authv1.TokenRequest{Status: authv1.TokenRequestStatus{Token: "token"}}, nil
+					}
+				},
+				secretsLister: &testlisters.FakeSecretLister{
+					SecretsFn: func(namespace string) corelisters.SecretNamespaceLister {
+						return &testlisters.FakeSecretNamespaceLister{
+							GetFn: func(name string) (*corev1.Secret, error) {
+								return &corev1.Secret{
+									ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+									Data:       map[string][]byte{"token": []byte("root")},
+								}, nil
+							},
+						}
+					},
+				},
+			}
+
+			err := v.Setup(t.Context(), givenIssuer)
+
+			// The Issuer controllers copy the returned error into a Kubernetes
+			// Event, so it has to be sanitised too.
+			require.Error(t, err)
+			assert.EqualError(t, err, tt.expectedErr)
+
+			require.Len(t, givenIssuer.Status.Conditions, 1)
+			assert.Equal(t, tt.expectCond, fmt.Sprintf("%s %s: %s: %s", givenIssuer.Status.Conditions[0].Type, givenIssuer.Status.Conditions[0].Status, givenIssuer.Status.Conditions[0].Reason, givenIssuer.Status.Conditions[0].Message))
+
+			assert.NotContains(t, givenIssuer.Status.Conditions[0].Message, sentinelBody)
+			assert.NotContains(t, err.Error(), sentinelBody)
+		})
+	}
+}

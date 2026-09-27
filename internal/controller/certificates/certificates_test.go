@@ -56,9 +56,10 @@ func TestCertificateOwnsSecret(t *testing.T) {
 		secrets             []runtime.Object
 		certificates        []runtime.Object
 
-		expectedResult      bool
-		expectedOtherOwners []string
-		expectedError       error
+		expectedResult            bool
+		expectedOtherOwners       []string
+		expectedError             error
+		ignoreSelectedCertificate bool
 	}{
 		{
 			name: "Certificate is only cert referencing the secret",
@@ -129,6 +130,18 @@ func TestCertificateOwnsSecret(t *testing.T) {
 			expectedError:       nil,
 		},
 		{
+			name: "Certificate is not present in the lister cache (e.g. deleted mid-reconcile)",
+
+			selectedCertificate: "certificate-missing",
+			secrets:             []runtime.Object{},
+			certificates:        []runtime.Object{},
+
+			expectedResult:            false,
+			expectedOtherOwners:       nil,
+			expectedError:             nil,
+			ignoreSelectedCertificate: true,
+		},
+		{
 			name: "Certificate has conflict, is the oldest, but annotation marks another as the owner",
 
 			selectedCertificate: "certificate-3",
@@ -188,7 +201,10 @@ func TestCertificateOwnsSecret(t *testing.T) {
 				}
 			}
 			if selectedCrt == nil {
-				t.Fatal("failed to find selected Certificate")
+				if !tt.ignoreSelectedCertificate {
+					t.Fatal("failed to find selected Certificate")
+				}
+				selectedCrt = certificate(tt.selectedCertificate, testCreationTimestamp)
 			}
 
 			// Call the function under test

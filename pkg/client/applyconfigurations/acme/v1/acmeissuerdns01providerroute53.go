@@ -75,6 +75,7 @@ type ACMEIssuerDNS01ProviderRoute53ApplyConfiguration struct {
 	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
 	// [Amazon EKS Pod Identity Agent](https://github.com/aws/eks-pod-identity-agent),
 	// In this case this `region` field value is ignored.
+	//
 	Region *string `json:"region,omitempty"`
 }
 

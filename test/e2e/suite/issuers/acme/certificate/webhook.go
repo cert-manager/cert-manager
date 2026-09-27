@@ -111,7 +111,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should call the dummy webhook provider and mark the challenges as presented=true", func(testingCtx context.Context) {
+		It("should call the dummy webhook provider and mark the challenges as presented=true with presentedAt set", func(testingCtx context.Context) {
 			By("Creating a Certificate")
 
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
@@ -163,6 +163,10 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 					if !ch.Status.Presented {
 						logf("Challenge %q has not been 'Presented'", ch.Name)
+						allPresented = false
+					}
+					if ch.Status.PresentedAt == nil {
+						logf("Challenge %q does not have PresentedAt set", ch.Name)
 						allPresented = false
 					}
 				}

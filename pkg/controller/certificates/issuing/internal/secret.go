@@ -41,6 +41,11 @@ import (
 // DefaultPassword is the string "changeit", a commonly-used password for keystore files.
 const DefaultKeystorePassword = "changeit"
 
+const (
+	reasonKeystorePasswordSecretNotFound = "KeystorePasswordSecretNotFound"
+	reasonSecretDataFailed               = "SecretDataFailed"
+)
+
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
@@ -101,6 +106,11 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	log = logf.WithResource(log, secret)
 
 	if err := s.setValues(crt, secret, data); err != nil {
+		// setValues is the single choke point for every failure to build the
+		// Secret contents. These are typically a misconfiguration of the
+		// Certificate that repeats on every reconcile, so record them rather
+		// than leaving them visible only in the controller logs.
+		s.recorder.Eventf(crt, corev1.EventTypeWarning, reasonSecretDataFailed, "Failed to build Secret data: %s", err.Error())
 		return err
 	}
 
@@ -180,10 +190,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		}
 	}
 
-	certificateDetailsAnnotations, err := certificates.AnnotationsForCertificate(certificate)
-	if err != nil {
-		return err
-	}
+	certificateDetailsAnnotations := certificates.AnnotationsForCertificate(certificate)
 	maps.Copy(secret.Annotations, certificateDetailsAnnotations)
 
 	// Add the certificate name and issuer details to the secret annotations.
@@ -260,7 +267,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
 
 			if apierrors.IsNotFound(err) {
-				s.recorder.Eventf(crt, corev1.EventTypeWarning, "KeystorePasswordSecretNotFound", "PKCS12 keystore password Secret %q not found", ref.Name)
+				s.recorder.Eventf(crt, corev1.EventTypeWarning, reasonKeystorePasswordSecretNotFound, "PKCS12 keystore password Secret %q not found", ref.Name)
 			}
 
 			if err != nil {
@@ -315,7 +322,7 @@ func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Sec
 			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
 
 			if apierrors.IsNotFound(err) {
-				s.recorder.Eventf(crt, corev1.EventTypeWarning, "KeystorePasswordSecretNotFound", "JKS keystore password Secret %q not found", ref.Name)
+				s.recorder.Eventf(crt, corev1.EventTypeWarning, reasonKeystorePasswordSecretNotFound, "JKS keystore password Secret %q not found", ref.Name)
 			}
 
 			if err != nil {

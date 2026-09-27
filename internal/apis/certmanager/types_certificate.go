@@ -192,7 +192,7 @@ type CertificateSpec struct {
 	// `otherName` is "1.3.6.1.4.1.311.20.2.3".
 	// No validation is performed on the given UTF-8 string, so users must ensure that the value is correct before use
 	// +optional
-	OtherNames []OtherName `json:"otherNames,omitempty"`
+	OtherNames []OtherName
 
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
@@ -239,7 +239,7 @@ type CertificateSpec struct {
 	// encoding and the rotation policy.
 	PrivateKey *CertificatePrivateKey
 
-	// Signature algorith to use.
+	// Signature algorithm to use.
 	SignatureAlgorithm SignatureAlgorithm
 
 	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
@@ -276,11 +276,11 @@ type OtherName struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
 	// example, "1.2.840.113556.1.4.221".
-	OID string `json:"oid,omitempty"`
+	OID string
 
 	// utf8Value is the string value of the otherName SAN. Any UTF-8 string can be used, but no
 	// validation is performed.
-	UTF8Value string `json:"utf8Value,omitempty"`
+	UTF8Value string
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -427,7 +427,7 @@ type JKSKeystore struct {
 	// Alias specifies the alias of the key in the keystore, required by the JKS format.
 	// If not provided, the default alias `certificate` will be used.
 	// +optional
-	Alias *string `json:"alias,omitempty"`
+	Alias *string
 
 	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
 	// containing the password used to encrypt the JKS keystore.
@@ -467,6 +467,11 @@ type PKCS12Keystore struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	// `Modern2026`: Encodes PKCS#12 files using algorithms that are considered modern as of 2026.
+	// Private keys and certificates are encrypted using PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC.
+	// The MAC algorithm is PBMAC1 with PBKDF2-HMAC-SHA-256 and HMAC-SHA256.
+	// Files produced with this profile can be read by OpenSSL 3.4.0 and higher, Java 26 and higher,
+	// or with Java using compatible versions of Bouncy Castle. Meets FIPS 140-3 requirements.
 	Profile PKCS12Profile
 
 	// containing the password used to encrypt the PKCS#12 keystore.
@@ -493,6 +498,9 @@ const (
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2026
+	Modern2026PKCS12Profile PKCS12Profile = "Modern2026"
 )
 
 type CertificateRenewal struct {
@@ -579,6 +587,10 @@ type CertificateStatus struct {
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	FailedIssuanceAttempts *int
+
+	// ACME stores information that is fetched from the ACME CA server.
+	// +optional
+	ACME *CertificateACMEStatus
 }
 
 // CertificateCondition contains condition information for a Certificate.
@@ -688,4 +700,53 @@ type NameConstraintItem struct {
 	//
 	// +optional
 	URIDomains []string
+}
+
+type CertificateACMEStatus struct {
+	// ARI stores the ACME Renewal Information that is fetched from the ACME server
+	// in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
+	//
+	// +optional
+	ARI *CertificateACMEARIStatus
+}
+
+type CertificateACMEARIStatus struct {
+	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+	//
+	// +optional
+	SuggestedWindow *ACMERenewalWindow
+	// ExplanationURL is a human-readable URL that may explain why the suggested window
+	// has its current value.
+	//
+	// +optional
+	ExplanationURL string
+	// LastChecked is the time at which the ACME server was last checked for renewal information.
+	//
+	// +optional
+	LastChecked *metav1.Time
+	// NextCheck is the time at which the ACME server will next be checked for renewal information.
+	//
+	// +optional
+	NextCheck *metav1.Time
+	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
+	//
+	// +optional
+	LastError string
+	// CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was
+	// fetched for. This is used to determine if we need to re-fetch the renewal information
+	// as changed cert id means that ARI fetched before is stale.
+	//
+	// +optional
+	CertID string
+}
+
+type ACMERenewalWindow struct {
+	// Start is the start of the suggested renewal window.
+	//
+	// +required
+	Start *metav1.Time
+	// End is the end of the suggested renewal window.
+	//
+	// +required
+	End *metav1.Time
 }

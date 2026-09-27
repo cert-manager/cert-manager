@@ -25,13 +25,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/util/csaupgrade"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/cert-manager/cert-manager/internal/cainjector/feature"
 	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // This file contains logic to create reconcilers. By default a
@@ -56,6 +56,9 @@ type reconciler struct {
 
 	// if set, the reconciler is namespace scoped
 	namespace string
+
+	// a set of namespaces the reconciler should ignore when reconciling.
+	ignoreNamespaces sets.Set[string]
 
 	// fieldManager is the manager name used for the Apply operations.
 	fieldManager string
@@ -96,7 +99,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
-	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace)
+	caData, err := dataSource.ReadCA(ctx, log, obj, r.namespace, r.ignoreNamespaces)
 	if apierrors.IsForbidden(err) {
 		log.V(logf.InfoLevel).Info("cainjector was forbidden to retrieve the ca data source")
 		return ctrl.Result{}, nil
@@ -114,15 +117,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// actually do the injection
 	target.SetCA(caData)
 
-	// actually update with injected CA data
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		err = r.Client.Apply(ctx, target.AsApplyObject(), client.ForceOwnership, client.FieldOwner(r.fieldManager))
-	} else {
-		err = r.Client.Update(ctx, obj)
+	// upgrade managed fields from CSA to SSA if required
+	upgradePatch, err := csaupgrade.UpgradeManagedFieldsPatch(obj, sets.New(r.fieldManager), r.fieldManager)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("when creating managed fields patch: %w", err)
+	}
+	if len(upgradePatch) > 0 {
+		if err := r.Client.Patch(ctx, obj, client.RawPatch(types.JSONPatchType, upgradePatch)); err != nil {
+			return ctrl.Result{}, fmt.Errorf("when patching managed fields: %w", err)
+		}
 	}
 
-	if err != nil {
-		log.Error(err, "unable to update target object with new CA data")
+	// actually update with injected CA data
+	if err := r.Client.Apply(ctx, target.AsApplyObject(), client.ForceOwnership, client.FieldOwner(r.fieldManager)); err != nil {
+		log.Error(err, "unable to apply target object with CA data")
 		return ctrl.Result{}, err
 	}
 

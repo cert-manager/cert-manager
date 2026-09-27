@@ -22,9 +22,11 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -201,6 +203,77 @@ beE8ft41eEFS8AnSJd5hE9Ym
 `
 )
 
+// testChain is a certificate chain generated for a test: a self-signed root, an
+// intermediate signed by that root, and two leaves signed by the intermediate.
+type testChain struct {
+	rootPEM         string
+	intermediatePEM string
+	// leafPEM carries the key that was passed to newTestChain.
+	leafPEM string
+	// otherKeyLeafPEM carries a different key, which is what Vault returns
+	// when the path points at the "issue" endpoint.
+	otherKeyLeafPEM string
+}
+
+// newTestChain builds a root, an intermediate, and two leaves. Vault returns a
+// chain that cert-manager verifies link by link, so a leaf has to be signed by
+// a CA that the bundle also carries. A self-signed leaf fails to parse before
+// any key check runs.
+func newTestChain(t *testing.T, leafKey crypto.Signer) testChain {
+	t.Helper()
+
+	caTemplate := func(serial int64, cn string) *x509.Certificate {
+		return &x509.Certificate{
+			SerialNumber:          big.NewInt(serial),
+			Subject:               pkix.Name{CommonName: cn},
+			NotBefore:             time.Now().Add(-time.Hour),
+			NotAfter:              time.Now().Add(24 * time.Hour),
+			IsCA:                  true,
+			BasicConstraintsValid: true,
+			KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		}
+	}
+	leafTemplate := func(serial int64, cn string) *x509.Certificate {
+		return &x509.Certificate{
+			SerialNumber: big.NewInt(serial),
+			Subject:      pkix.Name{CommonName: cn},
+			NotBefore:    time.Now().Add(-time.Hour),
+			NotAfter:     time.Now().Add(24 * time.Hour),
+			KeyUsage:     x509.KeyUsageDigitalSignature,
+		}
+	}
+
+	rootKey := generateRSAPrivateKey(t)
+	rootTmpl := caTemplate(1, "test-root")
+	rootPEM, rootCert, err := pki.SignCertificate(rootTmpl, rootTmpl, rootKey.Public(), rootKey)
+	if err != nil {
+		t.Fatalf("failed to sign root certificate: %v", err)
+	}
+
+	intKey := generateRSAPrivateKey(t)
+	intPEM, intCert, err := pki.SignCertificate(caTemplate(2, "test-intermediate"), rootCert, intKey.Public(), rootKey)
+	if err != nil {
+		t.Fatalf("failed to sign intermediate certificate: %v", err)
+	}
+
+	leafPEM, _, err := pki.SignCertificate(leafTemplate(3, "test"), intCert, leafKey.Public(), intKey)
+	if err != nil {
+		t.Fatalf("failed to sign leaf certificate: %v", err)
+	}
+
+	otherLeafPEM, _, err := pki.SignCertificate(leafTemplate(4, "test"), intCert, generateRSAPrivateKey(t).Public(), intKey)
+	if err != nil {
+		t.Fatalf("failed to sign leaf certificate with a different key: %v", err)
+	}
+
+	return testChain{
+		rootPEM:         string(rootPEM),
+		intermediatePEM: string(intPEM),
+		leafPEM:         string(leafPEM),
+		otherKeyLeafPEM: string(otherLeafPEM),
+	}
+}
+
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -232,10 +305,10 @@ type testSignT struct {
 	expectedCA   string
 }
 
-func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Secret {
+func signedCertificateSecret(certPEM, issuingCaPEM string, caPEM ...string) *certutil.Secret {
 	secret := &certutil.Secret{
 		Data: map[string]any{
-			"certificate": testLeafCertificate,
+			"certificate": certPEM,
 		},
 	}
 
@@ -253,8 +326,8 @@ func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Sec
 	return secret
 }
 
-func bundlePEM(issuingCaPEM string, caPEM ...string) ([]byte, error) {
-	secret := signedCertificateSecret(issuingCaPEM, caPEM...)
+func bundlePEM(certPEM, issuingCaPEM string, caPEM ...string) ([]byte, error) {
+	secret := signedCertificateSecret(certPEM, issuingCaPEM, caPEM...)
 	return jsonutil.EncodeJSON(&secret)
 }
 
@@ -262,15 +335,27 @@ func TestSign(t *testing.T) {
 	privatekey := generateRSAPrivateKey(t)
 	csrPEM := generateCSR(t, privatekey)
 
-	bundleData, err := bundlePEM(testIntermediateCa)
+	// The leaf carries the CSR key and is signed by the intermediate, so the
+	// chain verifies and the key check passes.
+	chain := newTestChain(t, privatekey)
+
+	bundleData, err := bundlePEM(chain.leafPEM, chain.intermediatePEM)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
 	}
 
-	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	rootBundleData, err := bundlePEM(chain.leafPEM, chain.intermediatePEM, chain.rootPEM)
 	if err != nil {
 		t.Errorf("failed to encode root bundle for testing: %s", err)
+		t.FailNow()
+	}
+
+	// The chain still verifies here, but the leaf carries a different key,
+	// which is what Vault returns from the "issue" endpoint.
+	mismatchBundleData, err := bundlePEM(chain.otherKeyLeafPEM, chain.intermediatePEM)
+	if err != nil {
+		t.Errorf("failed to encode mismatch bundle for testing: %s", err)
 		t.FailNow()
 	}
 
@@ -303,8 +388,8 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
-			expectedCA:   testIntermediateCa,
+			expectedCert: chain.leafPEM + chain.intermediatePEM,
+			expectedCA:   chain.intermediatePEM,
 		},
 
 		"a good csr and good response with a root should return a certificate without the root in the chain but with the root as the CA": {
@@ -317,8 +402,8 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(rootBundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
-			expectedCA:   testRootCa,
+			expectedCert: chain.leafPEM + chain.intermediatePEM,
+			expectedCA:   chain.rootPEM,
 		},
 
 		"vault issuer with namespace specified": {
@@ -331,49 +416,53 @@ func TestSign(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate + testIntermediateCa,
-			expectedCA:   testIntermediateCa,
+			expectedCert: chain.leafPEM + chain.intermediatePEM,
+			expectedCA:   chain.intermediatePEM,
+		},
+
+		"should return an error when Vault returns a certificate with a different public key than the CSR": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: io.NopCloser(bytes.NewReader(mismatchBundleData))},
+			}, nil),
+			expectedErr:  errors.New("public key in the certificate returned by Vault does not match the public key in the CSR"),
+			expectedCert: "",
+			expectedCA:   "",
 		},
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        test.issuer,
-			client:        test.fakeClient,
-		}
-
-		cert, ca, err := v.Sign(test.csrPEM, time.Minute)
-		if ((test.expectedErr == nil) != (err == nil)) &&
-			test.expectedErr != nil &&
-			test.expectedErr.Error() != err.Error() {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if (test.expectedCert == "" || string(cert) == "") && test.expectedCert != string(cert) {
-			t.Errorf("unexpected certificate in response bundle, exp=%s got=%s",
-				test.expectedCert, cert)
-		} else if test.expectedCert != string(cert) {
-			parsedBundle, err := certutil.ParsePEMBundle(string(cert))
-			if err != nil {
-				t.Errorf("%s: failed to decode bundle: %s", name, err)
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        test.issuer,
+				client:        test.fakeClient,
 			}
-			bundle, err := parsedBundle.ToCertBundle()
-			if err != nil {
-				t.Errorf("%s: failed to convert bundle: %s", name, err)
-			}
-			if test.expectedCert != bundle.Certificate {
-				t.Errorf("%s: unexpected certificate in response bundle, exp=%s got=%s",
-					name, test.expectedCert, cert)
-			}
-		}
 
-		if test.expectedCA != string(ca) {
-			t.Errorf("unexpected ca in response bundle, exp=%s got=%s; %s",
-				test.expectedCA, ca, name)
-		}
+			cert, ca, err := v.Sign(test.csrPEM, time.Minute)
+			if test.expectedErr != nil {
+				if err == nil {
+					t.Errorf("expected error but got none, expected: %v", test.expectedErr)
+				} else if !strings.Contains(err.Error(), test.expectedErr.Error()) {
+					t.Errorf("unexpected error, exp=%v got=%v", test.expectedErr, err)
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if string(cert) != test.expectedCert {
+				t.Errorf("unexpected certificate in response bundle, exp=%s got=%s", test.expectedCert, cert)
+			}
+
+			if test.expectedCA != string(ca) {
+				t.Errorf("unexpected ca in response bundle, exp=%q got=%q", test.expectedCA, ca)
+			}
+		})
 	}
 }
 
@@ -383,27 +472,39 @@ type testExtractCertificatesFromVaultCertT struct {
 	expectedCA   string
 }
 
+func TestExtractCertificatesFromVaultCertificateSecretWithoutCertificate(t *testing.T) {
+	// A Vault response that carries a CA but no certificate parses without
+	// error, so the leaf must not reach the caller as nil.
+	secret := &certutil.Secret{Data: map[string]any{
+		"issuing_ca": testIntermediateCa,
+	}}
+
+	_, _, leaf, err := extractCertificatesFromVaultCertificateSecret(secret)
+	require.Error(t, err)
+	require.Nil(t, leaf)
+}
+
 func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 	tests := map[string]testExtractCertificatesFromVaultCertT{
 		"when a Vault engine is a root CA": {
-			secret:       signedCertificateSecret(testIntermediateCa),
+			secret:       signedCertificateSecret(testLeafCertificate, testIntermediateCa),
 			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
 		},
 		"when a Vault engine is an intermediate CA, and its parent is a root CA": {
-			secret:       signedCertificateSecret(testIntermediateCa, testRootCa),
+			secret:       signedCertificateSecret(testLeafCertificate, testIntermediateCa, testRootCa),
 			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testRootCa,
 		},
 		"when a Vault engine is an intermediate CA, and its parent is a intermediate CA": {
-			secret:       signedCertificateSecret(testIntermediateCa, testIntermediateCa, testRootCa),
+			secret:       signedCertificateSecret(testLeafCertificate, testIntermediateCa, testIntermediateCa, testRootCa),
 			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testRootCa,
 		},
 	}
 
 	for name, test := range tests {
-		cert, ca, err := extractCertificatesFromVaultCertificateSecret(test.secret)
+		cert, ca, _, err := extractCertificatesFromVaultCertificateSecret(test.secret)
 
 		if err != nil {
 			t.Errorf("%s: failed to extract certificate: %s", name, err)
@@ -439,9 +540,10 @@ func TestSetToken(t *testing.T) {
 		expectedToken string
 		expectedErr   error
 
-		issuer          cmapiv1.GenericIssuer
-		fakeLister      *listers.FakeSecretLister
-		mockCreateToken func(t *testing.T) CreateToken
+		issuer                   cmapiv1.GenericIssuer
+		canUseAmbientCredentials bool
+		fakeLister               *listers.FakeSecretLister
+		mockCreateToken          func(t *testing.T) CreateToken
 
 		fakeClient *vaultfake.FakeClient
 	}{
@@ -456,6 +558,25 @@ func TestSetToken(t *testing.T) {
 			expectedToken: "",
 			expectedErr: errors.New(
 				"error initializing Vault client: unable to load credentials. One of: tokenSecretRef, appRoleSecretRef, clientCertificate, Kubernetes, or AWS auth must be set",
+			),
+		},
+
+		"if aws auth omits serviceAccountRef and ambient credentials are not permitted, should error without using ambient credentials": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapiv1.VaultAuth{
+						AWS: &cmapiv1.VaultAWSAuth{
+							Role: "vault-aws-role",
+						},
+					},
+				}),
+			),
+			canUseAmbientCredentials: false,
+			fakeLister:               listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
+			expectedToken:            "",
+			expectedErr: errors.New(
+				"while requesting a Vault token using the AWS auth: cannot authenticate to Vault using ambient AWS credentials: set auth.aws.serviceAccountRef, or enable ambient credentials via --issuer-ambient-credentials / --cluster-issuer-ambient-credentials",
 			),
 		},
 
@@ -958,10 +1079,11 @@ func TestSetToken(t *testing.T) {
 			}
 
 			v := &Vault{
-				namespace:     "test-namespace",
-				secretsLister: test.fakeLister,
-				createToken:   mockCreateToken,
-				issuer:        test.issuer,
+				namespace:                "test-namespace",
+				secretsLister:            test.fakeLister,
+				createToken:              mockCreateToken,
+				issuer:                   test.issuer,
+				canUseAmbientCredentials: test.canUseAmbientCredentials,
 			}
 
 			err := v.setToken(t.Context(), test.fakeClient)
@@ -978,6 +1100,34 @@ func TestSetToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Verifies that the Vault AWS IAM auth path refuses to fall back to the controller's
+// ambient AWS credentials unless the issuer is permitted to use them.
+func TestRequestTokenWithAWSAuthAmbientCredentialsGate(t *testing.T) {
+	awsIssuer := gen.Issuer("vault-issuer",
+		gen.SetIssuerVault(cmapiv1.VaultIssuer{
+			CABundle: []byte(testLeafCertificate),
+			Auth: cmapiv1.VaultAuth{
+				AWS: &cmapiv1.VaultAWSAuth{
+					Role: "vault-aws-role",
+				},
+			},
+		}),
+	)
+
+	v := &Vault{
+		namespace:                "test-namespace",
+		issuer:                   awsIssuer,
+		canUseAmbientCredentials: false,
+	}
+
+	// The fake client errors on any Write call; the gate must fire before the
+	// login request is ever sent, so a Write error would indicate the gate was
+	// bypassed.
+	_, err := v.requestTokenWithAWSAuth(t.Context(), &vaultfake.FakeClient{T: t}, awsIssuer.GetSpec().Vault.Auth.AWS)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot authenticate to Vault using ambient AWS credentials")
 }
 
 type testAppRoleRefT struct {
@@ -1658,7 +1808,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, false)
 			require.NoError(t, err)
 			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vaultClientWrapper).Client.Namespace(),
 				"The vault client should have the namespace provided in the Issuer resource")
@@ -1715,7 +1865,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, false)
 	require.NoError(t, err)
 
 	err = v.IsVaultInitializedAndUnsealed()
@@ -1735,7 +1885,8 @@ func TestSignIntegration(t *testing.T) {
 	privatekey := generateRSAPrivateKey(t)
 	csrPEM := generateCSR(t, privatekey)
 
-	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	chain := newTestChain(t, privatekey)
+	rootBundleData, err := bundlePEM(chain.leafPEM, chain.intermediatePEM, chain.rootPEM)
 	require.NoError(t, err)
 
 	mux := http.NewServeMux()
@@ -1782,11 +1933,133 @@ func TestSignIntegration(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, false)
 	require.NoError(t, err)
 
 	certPEM, caPEM, err := v.Sign(csrPEM, time.Hour)
 	require.NoError(t, err)
 	require.NotEmpty(t, certPEM)
 	require.NotEmpty(t, caPEM)
+}
+
+// TestExportedFunctionsDoNotLeakResponseBodies pins the invariant that the
+// exported surface of this package never returns an error carrying a response
+// body chosen by whatever spec.vault.server points at. Callers render these
+// errors into Issuer, CertificateRequest and CertificateSigningRequest
+// conditions and into the Kubernetes Events raised alongside them, all of which
+// are persisted to the API server, so the sanitising has to happen here rather
+// than at each of those sinks.
+func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
+	const (
+		vaultToken = "token1"
+		vaultPath  = "my_pki_mount/sign/my-role-name"
+	)
+
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	// An endpoint which is not Vault, reflecting content of its own choosing.
+	// The body is not a Vault error response, so the Vault client hands it back
+	// verbatim.
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		response.WriteHeader(http.StatusInternalServerError)
+		_, err := fmt.Fprintf(response, "<html><body>%s</body></html>", sentinel)
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	secretsLister := listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+		listers.SetFakeSecretNamespaceListerGet(
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"key1": []byte(vaultToken),
+				},
+			}, nil),
+	)
+
+	secretRef := cmmeta.SecretKeySelector{
+		LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret1"},
+		Key:                  "key1",
+	}
+
+	newIssuer := func(auth cmapiv1.VaultAuth) *cmapiv1.Issuer {
+		return &cmapiv1.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "issuer1",
+				Namespace: "k8s-ns1",
+			},
+			Spec: cmapiv1.IssuerSpec{
+				IssuerConfig: cmapiv1.IssuerConfig{
+					Vault: &cmapiv1.VaultIssuer{
+						Server: server.URL,
+						Path:   vaultPath,
+						Auth:   auth,
+					},
+				},
+			},
+		}
+	}
+
+	newVaultForIssuer := func(t *testing.T, auth cmapiv1.VaultAuth) (Interface, error) {
+		t.Helper()
+
+		return New(t.Context(), "k8s-ns1", func(ns string) CreateToken { return nil },
+			secretsLister, newIssuer(auth), false)
+	}
+
+	// Token auth reads the token from a Secret without talking to the server, so
+	// it is what gets us a client for the calls whose own request must be the
+	// one that fails.
+	tokenAuth := cmapiv1.VaultAuth{TokenSecretRef: &secretRef}
+
+	newClient := func(t *testing.T) Interface {
+		t.Helper()
+
+		v, err := newVaultForIssuer(t, tokenAuth)
+		require.NoError(t, err)
+
+		return v
+	}
+
+	tests := map[string]func(t *testing.T) error{
+		"New": func(t *testing.T) error {
+			// AppRole auth logs in to the server, which makes New itself the
+			// call that sees the response.
+			_, err := newVaultForIssuer(t, cmapiv1.VaultAuth{
+				AppRole: &cmapiv1.VaultAppRole{
+					RoleId:    "role1",
+					SecretRef: secretRef,
+				},
+			})
+
+			return err
+		},
+		"Sign": func(t *testing.T) error {
+			_, _, err := newClient(t).Sign(csrPEM, time.Hour)
+
+			return err
+		},
+		"IsVaultInitializedAndUnsealed": func(t *testing.T) error {
+			return newClient(t).IsVaultInitializedAndUnsealed()
+		},
+	}
+
+	for name, call := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := call(t)
+			require.Error(t, err)
+
+			// Error is what the callers render into a condition and an Event,
+			// whether or not they remember to ask for a safe message.
+			assert.NotContains(t, err.Error(), sentinel,
+				"the error returned to the caller leaks the response body")
+			assert.LessOrEqual(t, len(err.Error()), maxVaultErrorMessageLength,
+				"the error returned to the caller is not bounded")
+
+			// The detail withheld from the API server is still available to
+			// whoever can read the controller logs.
+			assert.Contains(t, LoggableErrorMessage(err), sentinel,
+				"the response body should remain recoverable for the logs")
+		})
+	}
 }

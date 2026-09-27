@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,11 +55,9 @@ const (
 	reasonCreated = "Created"
 )
 
-var (
-	// RequeuePeriod is the default period after which an Order should be re-queued.
-	// It can be overridden in tests.
-	RequeuePeriod = time.Second * 5
-)
+// RequeuePeriod is the default period after which an Order should be re-queued.
+// It can be overridden in tests.
+var RequeuePeriod = time.Second * 5
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
@@ -98,7 +97,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return nil
 	case o.Status.URL == "":
 		log.V(logf.DebugLevel).Info("Creating new ACME order as status.url is not set")
-		return c.createOrder(ctx, cl, o)
+		return c.createOrder(ctx, cl, o, genericIssuer)
 	case o.Status.FinalizeURL == "":
 		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
 		_, err := c.updateOrderStatus(ctx, cl, o)
@@ -268,8 +267,7 @@ func isRetryableError(err error) bool {
 			return false
 		}
 	}
-	var acmeErr *acmeapi.Error
-	if errors.As(err, &acmeErr) {
+	if acmeErr, ok := errors.AsType[*acmeapi.Error](err); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			return false
 		}
@@ -277,7 +275,7 @@ func isRetryableError(err error) bool {
 	return true
 }
 
-func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
+func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order, genericIssuer cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx)
 
 	if o.Status.URL != "" {
@@ -309,7 +307,26 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
 	}
 
+	ariEnabled := acme.ARIEnabledForIssuer(genericIssuer)
+	// optsBeforeReplaces lets us cheaply retry the order without the replaces
+	// option if the server rejects it. It is only meaningful when replaces
+	// was actually appended.
+	optsBeforeReplaces := len(options)
+	replacesAppended := false
+	if ariEnabled && o.Spec.Replaces != "" {
+		options = append(options, acmeapi.WithOrderReplacesCertID(o.Spec.Replaces))
+		replacesAppended = true
+	}
+
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
+	if err != nil && replacesAppended && isARIReplacesRejection(err) {
+		// Per RFC 9773, a server may reject the replaces field (e.g. the
+		// predecessor has already been replaced, or is unknown). Retry the
+		// order without the replaces option so renewal still proceeds.
+		log.V(logf.InfoLevel).Info("ACME server rejected `replaces`; retrying newOrder without it", "error", err)
+		options = options[:optsBeforeReplaces]
+		acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
+	}
 	if err != nil {
 		if !isRetryableError(err) {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
@@ -822,4 +839,30 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Orde
 		_, err := c.cmClient.AcmeV1().Orders(order.Namespace).UpdateStatus(ctx, order, metav1.UpdateOptions{})
 		return err
 	}
+}
+
+// isARIReplacesRejection reports whether err returned from AuthorizeOrder
+// indicates the ACME server refused to honor the `replaces` field. Per
+// RFC 9773, servers signal this with the `alreadyReplaced` problem type.
+// We also treat ErrCADoesNotSupportARI as a rejection so renewal can fall
+// back gracefully if the directory changes between Discover and newOrder.
+func isARIReplacesRejection(err error) bool {
+	if errors.Is(err, acmeapi.ErrCADoesNotSupportARI) {
+		return true
+	}
+
+	var ae *acmeapi.Error
+
+	if !errors.As(err, &ae) {
+		return false
+	}
+
+	if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
+		return true
+	}
+
+	if ae.ProblemType == "urn:ietf:params:acme:error:malformed" && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
+		return true
+	}
+	return false
 }

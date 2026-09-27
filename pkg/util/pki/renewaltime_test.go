@@ -23,9 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 func TestRenewalTime(t *testing.T) {
@@ -35,6 +35,7 @@ func TestRenewalTime(t *testing.T) {
 		renewBefore         *metav1.Duration
 		renewBeforePct      *int32
 		expectedRenewalTime *metav1.Time
+		ariInfo             *acmeapi.RenewalInfoResponse
 	}
 	now := time.Now().Truncate(time.Second)
 	tests := map[string]scenario{
@@ -71,7 +72,7 @@ func TestRenewalTime(t *testing.T) {
 		"long lived cert, spec.renewBeforePercentage is set to renew 30% before expiry": {
 			notBefore:           now,
 			notAfter:            now.Add(time.Hour * 730), // 1 month
-			renewBeforePct:      ptr.To(int32(30)),
+			renewBeforePct:      new(int32(30)),
 			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 511)}, // 70% of 1 month
 		},
 		// This test case is here to show the scenario where users set
@@ -92,20 +93,37 @@ func TestRenewalTime(t *testing.T) {
 			notAfter:            now.Add(time.Hour * 24).Add(time.Second * -1),
 			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16).Add(time.Second * -1)},
 		},
+		"certificate passes in ariInfo, gets that as the desired renewal time": {
+			notBefore:   now,
+			notAfter:    now.Add(time.Hour * 24),
+			renewBefore: &metav1.Duration{Duration: time.Hour * 24},
+			ariInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: now.Add(time.Hour * 5),
+					End:   now.Add(time.Hour * 6),
+				},
+			},
+		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
-			renewalTime, err := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct, nil)
+			renewalTime, err := RenewalTime(s.notBefore, s.notAfter, s.renewBefore, s.renewBeforePct, nil, WithARIInfo(s.ariInfo))
 			assert.Nil(t, err)
-			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
+
+			if s.ariInfo != nil {
+				assert.WithinRangef(t, renewalTime.Time, s.ariInfo.SuggestedWindow.Start, s.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", s.ariInfo.SuggestedWindow.Start, s.ariInfo.SuggestedWindow.End, renewalTime))
+			} else {
+				assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
+			}
 		})
 	}
 }
 
 func TestRenewBefore(t *testing.T) {
-	const duration = time.Hour * 3
+	const defaultDuration = time.Hour * 3
 
 	type scenario struct {
+		duration            time.Duration // defaults to defaultDuration if zero
 		renewBefore         *metav1.Duration
 		renewBeforePct      *int32
 		expectedRenewBefore time.Duration
@@ -117,15 +135,15 @@ func TestRenewBefore(t *testing.T) {
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBeforePercentage is valid": {
-			renewBeforePct:      ptr.To(int32(25)),
+			renewBeforePct:      new(int32(25)),
 			expectedRenewBefore: 45 * time.Minute,
 		},
 		"spec.renewBeforePercentage is too large so default is used": {
-			renewBeforePct:      ptr.To(int32(100)),
+			renewBeforePct:      new(int32(100)),
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBeforePercentage is too small so default is used": {
-			renewBeforePct:      ptr.To(int32(0)),
+			renewBeforePct:      new(int32(0)),
 			expectedRenewBefore: time.Hour,
 		},
 		"spec.renewBefore is valid": {
@@ -136,11 +154,62 @@ func TestRenewBefore(t *testing.T) {
 			renewBefore:         &metav1.Duration{Duration: time.Hour * 4},
 			expectedRenewBefore: time.Hour,
 		},
+		// Regression tests: duration * pct can overflow int64 for large durations
+		// with a high renewBeforePercentage.
+		"spec.renewBeforePercentage=99 with 10-year duration does not overflow int64": {
+			duration:            time.Hour * 24 * 365 * 10,
+			renewBeforePct:      new(int32(99)),
+			expectedRenewBefore: time.Hour * 24 * 365 * 10 / 100 * 99,
+		},
+		"spec.renewBeforePercentage=99 with 3-year duration does not overflow int64": {
+			duration:            time.Hour * 24 * 365 * 3,
+			renewBeforePct:      new(int32(99)),
+			expectedRenewBefore: time.Hour * 24 * 365 * 3 / 100 * 99,
+		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
-			renewBefore := desiredRenewalTime(duration, s.renewBefore, s.renewBeforePct)
+			d := s.duration
+			if d == 0 {
+				d = defaultDuration
+			}
+			renewBefore := desiredRenewalTime(d, s.renewBefore, s.renewBeforePct)
 			assert.Equal(t, s.expectedRenewBefore, renewBefore, fmt.Sprintf("Expected renewBefore time: %v got: %v", s.expectedRenewBefore, renewBefore))
+		})
+	}
+}
+
+func TestRenewBeforeFromPercentage(t *testing.T) {
+	tests := map[string]struct {
+		duration   time.Duration
+		percentage int32
+		want       time.Duration
+	}{
+		"one percent is exactly five minutes": {
+			duration:   time.Hour*8 + time.Minute*20,
+			percentage: 1,
+			want:       time.Minute * 5,
+		},
+		"low percentage of ten years": {
+			duration:   time.Hour * 24 * 365 * 10,
+			percentage: 1,
+			want:       time.Hour * 24 * 365 * 10 / 100,
+		},
+		"high percentage of ten years": {
+			duration:   time.Hour * 24 * 365 * 10,
+			percentage: 99,
+			want:       time.Hour * 24 * 365 * 10 / 100 * 99,
+		},
+		"fractional nanoseconds are truncated": {
+			duration:   time.Duration(101),
+			percentage: 50,
+			want:       time.Duration(50),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.want, RenewBeforeFromPercentage(test.duration, test.percentage))
 		})
 	}
 }
@@ -179,6 +248,7 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 		expectedRenewalTime time.Time
 		wantErr             bool
 		renewalSpec         *apiv1.CertificateRenewal
+		ariInfo             *acmeapi.RenewalInfoResponse
 	}
 
 	now := time.Now().UTC().Truncate(time.Second)
@@ -311,23 +381,52 @@ func TestRenewalWithWindowsForRenewBefore(t *testing.T) {
 				},
 			},
 		},
+		"single window, renewal time within window and with ARI": {
+			notAfter:            future.Add(48 * time.Hour),
+			targetRenewalTime:   future.Add(10*time.Hour + 30*time.Minute),
+			notBefore:           midnightUTC(now.AddDate(0, 0, -10)),
+			expectedRenewalTime: future.Add(24 * time.Hour).Add(-(13*time.Hour + 30*time.Minute)),
+			renewalSpec: &apiv1.CertificateRenewal{
+				Policy: apiv1.CertificateRenewalPolicyRenewBefore,
+				Windows: []apiv1.CertificateRenewalWindows{
+					{
+						Timezone:       time.UTC.String(),
+						WindowDuration: &metav1.Duration{Duration: time.Hour * 2},
+						Cron:           "0 10 * * *",
+					},
+				},
+			},
+			ariInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: future.Add(10 * time.Hour),
+					End:   future.Add(11 * time.Hour),
+				},
+			},
+		},
 	}
 
 	for name, te := range tests {
-		renewBefore := te.notAfter.Sub(te.targetRenewalTime)
+		t.Run(name, func(t *testing.T) {
+			renewBefore := te.notAfter.Sub(te.targetRenewalTime)
 
-		res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec)
+			res, err := RenewalTime(te.notBefore, te.notAfter, &metav1.Duration{Duration: renewBefore}, nil, te.renewalSpec, WithARIInfo(te.ariInfo))
 
-		if te.wantErr {
-			assert.NotNil(t, err)
-			assert.ErrorContains(t, err, fmt.Sprintf("cannot find a time with the given windows between %s and %s", te.notBefore, te.notAfter))
+			if te.wantErr {
+				assert.NotNil(t, err)
+				assert.ErrorContains(t, err, fmt.Sprintf("cannot find a time with the given windows between %s and %s", te.notBefore, te.notAfter))
 
-			assert.Equal(t, te.expectedRenewalTime, res.Time, name)
-			return
-		}
+				assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+				return
+			}
 
-		assert.Nil(t, err)
-		assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+			assert.Nil(t, err)
+
+			if te.ariInfo != nil {
+				assert.WithinRangef(t, res.Time, te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, fmt.Sprintf("Expected renewal time to be within the suggested window of %v - %v, got: %v", te.ariInfo.SuggestedWindow.Start, te.ariInfo.SuggestedWindow.End, res))
+			} else {
+				assert.Equal(t, te.expectedRenewalTime, res.Time, name)
+			}
+		})
 	}
 }
 

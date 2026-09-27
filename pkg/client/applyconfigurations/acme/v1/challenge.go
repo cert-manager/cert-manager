@@ -32,7 +32,7 @@ import (
 //
 // Challenge is a type to represent a Challenge request with an ACME server
 type ChallengeApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	metav1.TypeMetaApplyConfiguration    `json:""`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                                 *ChallengeSpecApplyConfiguration   `json:"spec,omitempty"`
 	Status                               *ChallengeStatusApplyConfiguration `json:"status,omitempty"`

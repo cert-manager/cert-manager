@@ -24,12 +24,15 @@ package v1
 // NameConstraints is a type to represent x509 NameConstraints
 type NameConstraintsApplyConfiguration struct {
 	// if true then the name constraints are marked critical.
+	//
 	Critical *bool `json:"critical,omitempty"`
 	// Permitted contains the constraints in which the names must be located.
+	//
 	Permitted *NameConstraintItemApplyConfiguration `json:"permitted,omitempty"`
 	// Excluded contains the constraints which must be disallowed. Any name matching a
 	// restriction in the excluded field is invalid regardless
 	// of information appearing in the permitted
+	//
 	Excluded *NameConstraintItemApplyConfiguration `json:"excluded,omitempty"`
 }
 

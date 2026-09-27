@@ -20,10 +20,10 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
 	"testing"
 
 	"github.com/cert-manager/cert-manager/internal/pem"
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 func extractSANsFromCertificate(t *testing.T, certDER string) pkix.Extension {
@@ -96,6 +96,166 @@ func generateOtherName(t *testing.T, val UniversalValue) asn1.RawValue {
 	rv.FullBytes = fullBytes
 
 	return rv
+}
+
+// An OtherName value that is not wrapped in the explicit [0] tag RFC 5280
+// requires used to marshal without complaint, into an extension that
+// UnmarshalSANs could not read back.
+func TestMarshalSANsRejectsValuesItCannotReadBack(t *testing.T) {
+	oid := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 311, 20, 2, 3}
+
+	inner, err := MarshalUniversalValue(UniversalValue{UTF8String: "upn@example.com"})
+	if err != nil {
+		t.Fatalf("MarshalUniversalValue returned an error: %v", err)
+	}
+	wrapped := func(b []byte) asn1.RawValue {
+		return asn1.RawValue{Tag: 0, Class: asn1.ClassContextSpecific, IsCompound: true, Bytes: b}
+	}
+	oidValue, err := asn1.Marshal(asn1.ObjectIdentifier{1, 2, 3, 4})
+	if err != nil {
+		t.Fatalf("asn1.Marshal returned an error: %v", err)
+	}
+
+	tests := map[string]struct {
+		value  asn1.RawValue
+		expErr bool
+	}{
+		"wrapped in an explicit [0] tag, as csr.go builds it": {
+			value: wrapped(inner),
+		},
+		"wrapped, carrying FullBytes as well": {
+			value: generateOtherName(t, UniversalValue{UTF8String: "upn@example.com"}),
+		},
+		// value is ANY DEFINED BY type-id, so the inner element is not required
+		// to be a UTF8String.
+		"wrapped around a value that is not a UTF8String": {
+			value: wrapped(oidValue),
+		},
+		"unwrapped, the inner value given through FullBytes": {
+			value:  asn1.RawValue{FullBytes: inner},
+			expErr: true,
+		},
+		"unwrapped, the inner value given through Tag and Bytes": {
+			value: asn1.RawValue{
+				Tag:   asn1.TagUTF8String,
+				Class: asn1.ClassUniversal,
+				Bytes: []byte("upn@example.com"),
+			},
+			expErr: true,
+		},
+		"no value at all": {
+			value:  asn1.RawValue{},
+			expErr: true,
+		},
+		// The wrapper is the right shape but holds nothing. UnmarshalSANs fails
+		// on the result with "explicit tag has no child".
+		"an empty wrapper": {
+			value:  wrapped(nil),
+			expErr: true,
+		},
+		"an empty wrapper given through FullBytes": {
+			value:  asn1.RawValue{FullBytes: []byte{0xa0, 0x00}},
+			expErr: true,
+		},
+		// A correct wrapper is not enough on its own: encoding/asn1 does not
+		// descend into a RawValue under an explicit tag, so these survive both
+		// marshalling and UnmarshalSANs, and fail later in matchOtherNames.
+		"a wrapper holding bytes that are not an element": {
+			value:  wrapped([]byte{0xff}),
+			expErr: true,
+		},
+		"a wrapper holding two elements": {
+			value:  wrapped(append(append([]byte{}, inner...), inner...)),
+			expErr: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gns := GeneralNames{OtherNames: []OtherName{{TypeID: oid, Value: test.value}}}
+
+			extension, err := MarshalSANs(gns, true)
+			if test.expErr {
+				if err == nil {
+					t.Fatalf("expected MarshalSANs to reject the value, but it returned %v", extension)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("MarshalSANs returned an error: %v", err)
+			}
+
+			// Whatever MarshalSANs accepts, UnmarshalSANs must be able to read.
+			parsed, err := UnmarshalSANs(extension.Value)
+			if err != nil {
+				t.Fatalf("UnmarshalSANs could not read back a marshaled extension: %v", err)
+			}
+
+			// ...and so must the otherName path that matchOtherNames uses.
+			var innerValue asn1.RawValue
+			if _, err := asn1.Unmarshal(parsed.OtherNames[0].Value.Bytes, &innerValue); err != nil {
+				t.Fatalf("the value inside the wrapper could not be read back: %v", err)
+			}
+		})
+	}
+}
+
+// x400Address is [3] ORAddress, and the tag parameter is equally inert for the
+// asn1.RawValue that carries it. An unwrapped value whose own tag is one of the
+// universal tags 0-8 is not merely unreadable: UnmarshalSANs dispatches on that
+// tag, so it comes back as a different GeneralName choice entirely.
+func TestMarshalSANsRejectsUntaggedX400Address(t *testing.T) {
+	// [3] is implicit, so the ORAddress SEQUENCE tag is replaced by the [3] tag
+	// rather than nested inside it. Note this cannot be built with
+	// asn1.MarshalWithParams(..., "tag:3") - for a RawValue that parameter is
+	// exactly the one that does nothing.
+	tagged := asn1.RawValue{Tag: nameTypeX400Address, Class: asn1.ClassContextSpecific, IsCompound: true}
+	// universal tag 2 is INTEGER, and nameTypeDNSName is 2
+	misleading, err := asn1.Marshal(42)
+	if err != nil {
+		t.Fatalf("asn1.Marshal returned an error: %v", err)
+	}
+
+	tests := map[string]struct {
+		value  asn1.RawValue
+		expErr bool
+	}{
+		"carrying its [3] tag, as UnmarshalSANs returns it": {
+			value: tagged,
+		},
+		"the same value given through FullBytes": {
+			value: asn1.RawValue{FullBytes: []byte{0xa3, 0x00}},
+		},
+		"untagged, and read back as a dNSName instead": {
+			value:  asn1.RawValue{FullBytes: misleading},
+			expErr: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gns := GeneralNames{X400Addresses: []asn1.RawValue{test.value}}
+
+			extension, err := MarshalSANs(gns, true)
+			if test.expErr {
+				if err == nil {
+					t.Fatalf("expected MarshalSANs to reject the value, but it returned %v", extension)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("MarshalSANs returned an error: %v", err)
+			}
+
+			parsed, err := UnmarshalSANs(extension.Value)
+			if err != nil {
+				t.Fatalf("UnmarshalSANs could not read back a marshaled extension: %v", err)
+			}
+			if len(parsed.X400Addresses) != 1 {
+				t.Fatalf("expected the value to come back as an x400Address, got %+v", parsed)
+			}
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalSANs(t *testing.T) {
@@ -222,9 +382,7 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s MarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(extension, tc.sanExtension) {
-				t.Errorf("test: %s Expected extension: %v, got: %v", testName, tc.sanExtension, extension)
-			}
+			testutil.AssertEqual(t, tc.sanExtension, extension)
 		}
 
 		{
@@ -233,9 +391,44 @@ wWy44hfcegrvch51oNMscwQ5NCJRGYI6q3T9yexVug==
 				t.Errorf("test: %s UnmarshalSANs returned an error: %v", testName, err)
 			}
 
-			if !reflect.DeepEqual(gns, tc.gns) {
-				t.Errorf("test: %s Expected GeneralNames: %v, got: %v", testName, tc.gns, gns)
-			}
+			testutil.AssertEqual(t, tc.gns, gns)
 		}
 	}
+}
+
+func TestMarshalAndUnmarshalDirectoryNameSANs(t *testing.T) {
+	rdn := pkix.Name{
+		CommonName:   "dir.example.org",
+		Organization: []string{"ExampleOrg"},
+	}.ToRDNSequence()
+
+	// directoryName is [4] Name and Name is a CHOICE, so RFC 5280 section
+	// 4.2.1.6 (per X.680) requires the [4] tag to be explicit. Build a
+	// conformant SAN extension value directly with encoding/asn1 (an oracle
+	// independent of MarshalSANs) so the assertions below pin the wire format,
+	// not just self-consistency of the round trip.
+	dirNameElem, err := asn1.MarshalWithParams(rdn, "explicit,tag:4")
+	if err != nil {
+		t.Fatalf("marshalling oracle directoryName element: %v", err)
+	}
+	conformantValue, err := asn1.Marshal([]asn1.RawValue{{FullBytes: dirNameElem}})
+	if err != nil {
+		t.Fatalf("marshalling oracle SAN sequence: %v", err)
+	}
+
+	// Marshal side: MarshalSANs must emit the explicit form byte for byte.
+	ext, err := MarshalSANs(GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}, true)
+	if err != nil {
+		t.Fatalf("MarshalSANs returned an error: %v", err)
+	}
+	testutil.AssertEqual(t, conformantValue, ext.Value)
+
+	// Parse side: UnmarshalSANs must accept a conformant, explicitly tagged
+	// directoryName SAN (before the fix it failed with "sequence tag mismatch").
+	gns, err := UnmarshalSANs(conformantValue)
+	if err != nil {
+		t.Fatalf("UnmarshalSANs failed on a conformant directoryName SAN: %v", err)
+	}
+	want := GeneralNames{DirectoryNames: []pkix.RDNSequence{rdn}}
+	testutil.AssertEqual(t, want, gns)
 }

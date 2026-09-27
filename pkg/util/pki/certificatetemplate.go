@@ -253,7 +253,7 @@ func CertificateTemplateFromCSR(csr *x509.CertificateRequest, validatorMutators 
 		} else {
 			asn1Subject, err = asn1.Marshal(cert.Subject.ToRDNSequence())
 			if err != nil {
-				return nil, fmt.Errorf("failed to marshal subject to ASN.1 DER: %s", err.Error())
+				return nil, fmt.Errorf("failed to marshal subject to ASN.1 DER: %w", err)
 			}
 		}
 

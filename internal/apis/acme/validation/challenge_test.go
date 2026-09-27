@@ -17,9 +17,9 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -83,19 +83,8 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateChallengeUpdate(s.a, s.old, s.new)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected errors %v but got %v", expectedErr, e)
-				}
-			}
-			if !reflect.DeepEqual(warnings, s.warnings) {
-				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
+			assert.Equal(t, s.warnings, warnings)
 		})
 	}
 }
@@ -110,19 +99,8 @@ func TestValidateChallenge(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateChallenge(s.a, s.chal)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected errors %v but got %v", expectedErr, e)
-				}
-			}
-			if !reflect.DeepEqual(warnings, s.warnings) {
-				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
+			assert.Equal(t, s.warnings, warnings)
 		})
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 type Input struct {
@@ -40,6 +41,8 @@ type Input struct {
 	// Take a look at the gatherer package's documentation to see more about why
 	// we care about the "next" certificate request.
 	NextRevisionRequest *cmapi.CertificateRequest
+
+	ARIRenewalInfo *acmeapi.RenewalInfoResponse
 }
 
 // A Func evaluates the given input data and decides whether a check has passed

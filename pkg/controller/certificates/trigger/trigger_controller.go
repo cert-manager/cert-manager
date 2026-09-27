@@ -52,10 +52,6 @@ import (
 
 const (
 	ControllerName = "certificates-trigger"
-	// stopIncreaseBackoff is the number of issuance attempts after which the backoff period should stop to increase
-	stopIncreaseBackoff = 6 // 2 ^ (6 - 1) = 32 = maxDelay
-	// maxDelay is the maximum backoff period
-	maxDelay = 32 * time.Hour
 )
 
 // This controller observes the state of the certificate's currently
@@ -71,6 +67,7 @@ type controller struct {
 	recorder                                 record.EventRecorder
 	scheduledWorkQueue                       scheduler.ScheduledWorkQueue[types.NamespacedName]
 	certificateRequestMinimumBackoffDuration time.Duration
+	certificateRequestMaximumBackoffDuration time.Duration
 
 	// fieldManager is the string which will be used as the Field Manager on
 	// fields created or edited by the cert-manager Kubernetes client during
@@ -146,6 +143,7 @@ func NewController(
 		scheduledWorkQueue:                       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
 		fieldManager:                             ctx.FieldManager,
 		certificateRequestMinimumBackoffDuration: ctx.CertificateRequestMinimumBackoffDuration,
+		certificateRequestMaximumBackoffDuration: ctx.CertificateRequestMaximumBackoffDuration,
 
 		// The following are used for testing purposes.
 		clock:         ctx.Clock,
@@ -207,7 +205,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	// Don't trigger issuance if we need to back off due to previous failures and Certificate's spec has not changed.
-	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest, c.certificateRequestMinimumBackoffDuration)
+	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest, c.certificateRequestMinimumBackoffDuration, c.certificateRequestMaximumBackoffDuration)
 	if backoff {
 		nextIssuanceRetry := c.clock.Now().Add(delay)
 		message := fmt.Sprintf("Backing off from issuance due to previously failed issuance(s). Issuance will next be attempted at %v", nextIssuanceRetry)
@@ -270,13 +268,14 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 
 // shouldBackOffReissuingOnFailure returns true if an issuance needs to be
 // delayed and the required delay after calculating the exponential backoff.
-// The backoff period is configured through ControllerConfig using the certificateRequestMinimumBackoffDuration field.
-// In the scenario, where the field is not set the default duration is 1h.
+// The backoff period is configured through ControllerConfig using the certificateRequestMinimumBackoffDuration
+// and certificateRequestMaximumBackoffDuration fields.
+// In the scenario where the fields are not set the default minimum duration is 1h and the default maximum
+// duration is 32h.
 // The backoff periods are calculated exponentially based on the initialDelay counting from when the last
 // failure occurred,
 // so the returned delay will be backoff_period - (current_time - last_failure_time).
-// If the number of failure attempts crosses the stopIncreaseBackoff threshold, the maximum delay
-// is capped to maxDelay.
+// The delay is capped at the configured maximum backoff duration.
 //
 // Notably, it returns no back-off when the certificate doesn't
 // match the "next" certificate (since a mismatch means that this certificate
@@ -284,7 +283,7 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 //
 // Note that the request can be left nil: in that case, the returned back-off
 // will be 0 since it means the CR must be created immediately.
-func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest, initialDelay time.Duration) (bool, time.Duration) {
+func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest, initialDelay time.Duration, maxDelay time.Duration) (bool, time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
 	}
@@ -321,22 +320,23 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 		return false, 0
 	}
 	delay := initialDelay
-	failedIssuanceAttempts := 0
 	// It is possible that crt.Status.LastFailureTime != nil &&
 	// crt.Status.FailedIssuanceAttempts == nil (in case of the Certificate having
 	// failed for an installation of cert-manager before the issuance
 	// attempts were introduced). In such case delay = initialDelay.
 	if crt.Status.FailedIssuanceAttempts != nil {
-		failedIssuanceAttempts = *crt.Status.FailedIssuanceAttempts
-		delay = initialDelay * time.Duration(math.Pow(2, float64(failedIssuanceAttempts-1)))
-	}
-
-	// Ensure that maximum returned delay is 32 hours
-	// delay cannot be calculated for large issuance numbers, so we
-	// cannot reliably check if delay > maxDelay directly
-	// (see i.e the result of time.Duration(math.Pow(2, 99)))
-	if failedIssuanceAttempts > stopIncreaseBackoff {
-		delay = maxDelay
+		if *crt.Status.FailedIssuanceAttempts <= 0 {
+			// FailedIssuanceAttempts <= 0 can only arise from a manual kubectl patch;
+			// treat it the same as nil (use initialDelay).
+			delay = initialDelay
+		} else {
+			computed := initialDelay * time.Duration(math.Pow(2, float64(*crt.Status.FailedIssuanceAttempts-1)))
+			if computed < initialDelay || computed > maxDelay {
+				delay = maxDelay
+			} else {
+				delay = computed
+			}
+		}
 	}
 
 	// Ensure that minimum returned delay is initialDelay that is configured by the operator.

@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
-	"k8s.io/utils/ptr"
 
 	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -593,7 +592,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: ptr.To(int32(1)),
+					RevisionHistoryLimit: new(int32(1)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -604,7 +603,7 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName:           "abc",
 					SecretName:           "abc",
 					IssuerRef:            validIssuerRef,
-					RevisionHistoryLimit: ptr.To(int32(0)),
+					RevisionHistoryLimit: new(int32(0)),
 				},
 			},
 			a: someAdmissionRequest,
@@ -749,6 +748,10 @@ func TestValidateCertificate(t *testing.T) {
 					NameConstraints: &internalcmapi.NameConstraints{
 						Permitted: &internalcmapi.NameConstraintItem{
 							DNSDomains: []string{"example.com"},
+							// The invalid CIDR must not be reported: the feature
+							// gate check short-circuits all other nameConstraints
+							// validation.
+							IPRanges: []string{"10.0.0.0"},
 						},
 					},
 					IssuerRef: validIssuerRef,
@@ -759,6 +762,54 @@ func TestValidateCertificate(t *testing.T) {
 				field.Forbidden(
 					fldPath.Child("nameConstraints"), "feature gate NameConstraints must be enabled"),
 			},
+		},
+		"valid with name constraints ipRanges": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"10.0.0.0/8", "192.168.0.0/16", "2001:db8::/32"},
+						},
+						Excluded: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"172.16.0.0/12", "fd00::/8"},
+						},
+					},
+					IssuerRef: validIssuerRef,
+				},
+			},
+			a:                             someAdmissionRequest,
+			nameConstraintsFeatureEnabled: true,
+		},
+		"invalid with name constraints ipRanges": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IsCA:       true,
+					NameConstraints: &internalcmapi.NameConstraints{
+						Permitted: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"10.0.0.0", "10.0.0.0/8", "not-a-cidr"},
+						},
+						Excluded: &internalcmapi.NameConstraintItem{
+							IPRanges: []string{"2001:db8::/32", "192.168.0.1"},
+						},
+					},
+					IssuerRef: validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("nameConstraints", "permitted", "ipRanges").Index(0), "10.0.0.0", "invalid CIDR address"),
+				field.Invalid(
+					fldPath.Child("nameConstraints", "permitted", "ipRanges").Index(2), "not-a-cidr", "invalid CIDR address"),
+				field.Invalid(
+					fldPath.Child("nameConstraints", "excluded", "ipRanges").Index(1), "192.168.0.1", "invalid CIDR address"),
+			},
+			nameConstraintsFeatureEnabled: true,
 		},
 		"signature algorithm SHA+RSA allowed for empty key (RSA)": {
 			cfg: &internalcmapi.Certificate{
@@ -935,6 +986,30 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"invalid renewal cron with timezone prefix and no schedule": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+					Renewal: &internalcmapi.CertificateRenewal{
+						Policy: internalcmapi.RenewBefore,
+						Windows: []internalcmapi.CertificateRenewalWindows{
+							{
+								WindowDuration: &metav1.Duration{Duration: time.Hour * 2},
+								Cron:           "CRON_TZ=UTC",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("cron"), "CRON_TZ=UTC", "invalid cron syntax: failed to parse cron spec 'CRON_TZ=UTC': expected timezone prefix to be followed by a cron spec: CRON_TZ=UTC. cron needs to follow: cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -944,6 +1019,56 @@ func TestValidateCertificate(t *testing.T) {
 			assert.Empty(t, warnings)
 		})
 	}
+}
+
+func TestValidateUpdateCertificatePreservesLegacyRenewBeforePercentageOnUnchangedUpdate(t *testing.T) {
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			Duration:              &metav1.Duration{Duration: time.Hour},
+			RenewBeforePercentage: new(int32(5)),
+			CommonName:            "testcn",
+			SecretName:            "abc",
+			IssuerRef:             validIssuerRef,
+		},
+	}
+	newCert := &internalcmapi.Certificate{Spec: oldCert.Spec}
+
+	errs, warnings := ValidateUpdateCertificate(&admissionv1.AdmissionRequest{
+		Operation:   admissionv1.Update,
+		SubResource: "status",
+	}, oldCert, newCert)
+
+	assert.Empty(t, errs)
+	assert.Empty(t, warnings)
+}
+
+func TestValidateUpdateCertificateRejectsChangedRenewBeforePercentageBelowMinimum(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			Duration:              &metav1.Duration{Duration: time.Hour},
+			RenewBeforePercentage: new(int32(5)),
+			CommonName:            "testcn",
+			SecretName:            "abc",
+			IssuerRef:             validIssuerRef,
+		},
+	}
+	newCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			Duration:              &metav1.Duration{Duration: time.Hour},
+			RenewBeforePercentage: new(int32(6)),
+			CommonName:            "testcn",
+			SecretName:            "abc",
+			IssuerRef:             validIssuerRef,
+		},
+	}
+
+	errs, warnings := ValidateUpdateCertificate(someAdmissionRequest, oldCert, newCert)
+
+	assert.ElementsMatch(t, []*field.Error{
+		field.Invalid(fldPath.Child("renewBeforePercentage"), int32(6), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; 6%% of %s is %s", cmapi.MinimumRenewBefore, time.Hour, time.Minute*3+time.Second*36)),
+	}, errs)
+	assert.Empty(t, warnings)
 }
 
 func TestValidateDuration(t *testing.T) {
@@ -1041,7 +1166,7 @@ func TestValidateDuration(t *testing.T) {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					RenewBefore:           usefulDurations["one month"],
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1056,7 +1181,7 @@ func TestValidateDuration(t *testing.T) {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					Duration:              usefulDurations["one year"],
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
@@ -1066,34 +1191,96 @@ func TestValidateDuration(t *testing.T) {
 		"unset duration, valid renewBeforePercentage for default": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(95)),
+					RenewBeforePercentage: new(int32(95)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
 				},
 			},
 		},
-		"renewBeforePercentage is equal to duration": {
+		"renewBeforePercentage of zero is outside the allowed range": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(0)),
+					RenewBeforePercentage: new(int32(0)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(0), "certificate renewBeforePercentage must result in a renewBefore less than duration")},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(0), "must be an integer in the range (0,100)")},
 		},
-		"renewBeforePercentage results in less than the minimum permitted value": {
+		"renewBeforePercentage of one hundred is outside the allowed range": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					RenewBeforePercentage: ptr.To(int32(100)),
+					RenewBeforePercentage: new(int32(100)),
 					CommonName:            "testcn",
 					SecretName:            "abc",
 					IssuerRef:             validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(100), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore greater than %s", cmapi.MinimumRenewBefore))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(100), "must be an integer in the range (0,100)")},
+		},
+		"negative renewBeforePercentage is outside the allowed range": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBeforePercentage: new(int32(-5)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(-5), "must be an integer in the range (0,100)")},
+		},
+		"renewBeforePercentage over one hundred is outside the allowed range": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					RenewBeforePercentage: new(int32(150)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(150), "must be an integer in the range (0,100)")},
+		},
+		"renewBeforePercentage resulting in exactly the minimum renewBefore is accepted": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              &metav1.Duration{Duration: time.Hour*8 + time.Minute*20},
+					RenewBeforePercentage: new(int32(1)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		// The effective renewBefore is duration * percentage / 100. A small
+		// percentage that results in a renewBefore below the 5 minute minimum
+		// must be rejected: 1h * 5% = 3m < 5m.
+		"small renewBeforePercentage resulting in a renewBefore below the minimum is rejected": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              &metav1.Duration{Duration: time.Hour},
+					RenewBeforePercentage: new(int32(5)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBeforePercentage"), int32(5), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; 5%% of %s is %s", cmapi.MinimumRenewBefore, time.Hour, time.Minute*3))},
+		},
+		// A large percentage yields a large, valid renewBefore and must be
+		// accepted: 1h * 95% = 57m, which is above the minimum and below the
+		// duration.
+		"large renewBeforePercentage resulting in a valid renewBefore is accepted": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              &metav1.Duration{Duration: time.Hour},
+					RenewBeforePercentage: new(int32(95)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
 		},
 		"duration is less than the minimum permitted value": {
 			cfg: &internalcmapi.Certificate{
@@ -1106,6 +1293,41 @@ func TestValidateDuration(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapi.MinimumCertificateDuration))},
+		},
+		"renewBeforePercentage=1 with 10-year duration is accepted": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              usefulDurations["ten years"],
+					RenewBeforePercentage: new(int32(1)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		// Regression tests for int64 overflow: duration * pct can overflow int64
+		// for long durations with a large renewBeforePercentage.
+		"renewBeforePercentage=99 with 10-year duration does not overflow int64": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              usefulDurations["ten years"],
+					RenewBeforePercentage: new(int32(99)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
+		},
+		"renewBeforePercentage=99 with 3-year duration does not overflow int64": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					Duration:              &metav1.Duration{Duration: time.Hour * 24 * 365 * 3},
+					RenewBeforePercentage: new(int32(99)),
+					CommonName:            "testcn",
+					SecretName:            "abc",
+					IssuerRef:             validIssuerRef,
+				},
+			},
 		},
 	}
 	for n, s := range scenarios {

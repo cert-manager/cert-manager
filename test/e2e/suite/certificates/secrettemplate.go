@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"bytes"
 	"context"
 	"slices"
 	"strings"
@@ -30,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -321,18 +319,18 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 				}
 
 				var fieldset fieldpath.Set
-				if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 					Expect(err).NotTo(HaveOccurred())
 				}
 
 				metadata := fieldset.Children.Descend(fieldpath.PathElement{
-					FieldName: ptr.To("metadata"),
+					FieldName: new("metadata"),
 				})
 				labels := metadata.Children.Descend(fieldpath.PathElement{
-					FieldName: ptr.To("labels"),
+					FieldName: new("labels"),
 				})
 				annotations := metadata.Children.Descend(fieldpath.PathElement{
-					FieldName: ptr.To("annotations"),
+					FieldName: new("annotations"),
 				})
 
 				labels.Iterate(func(path fieldpath.Path) {

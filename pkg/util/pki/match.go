@@ -30,7 +30,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
@@ -244,49 +244,14 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	// and there will be a mis-match if the Certificate has the default
 	// group/kind set but the CertificateRequest does not.
 	if req.Spec.IssuerRef.Name != spec.IssuerRef.Name ||
-		!issuerKindsEqual(req.Spec.IssuerRef.Kind, spec.IssuerRef.Kind) ||
-		!issuerGroupsEqual(req.Spec.IssuerRef.Group, spec.IssuerRef.Group) {
+		!apiutil.IssuerKindsEqual(req.Spec.IssuerRef.Kind, spec.IssuerRef.Kind) ||
+		!apiutil.IssuerGroupsEqual(req.Spec.IssuerRef.Group, spec.IssuerRef.Group) {
 		violations = append(violations, "spec.issuerRef")
 	}
 
 	// TODO: check spec.EncodeBasicConstraintsInRequest and spec.EncodeUsagesInRequest
 
 	return violations, nil
-}
-
-// These defaults are also applied at runtime by the cert-manager
-// CertificateRequest controller.
-const (
-	// defaultIssuerKind is the default value for an IssuerRef's kind field
-	// if it is not specified.
-	defaultIssuerKind = cmapi.IssuerKind
-	// defaultIssuerGroup is the default value for an IssuerRef's group field
-	// if it is not specified.
-	defaultIssuerGroup = certmanager.GroupName
-)
-
-// issuerKindsEqual returns true if the two issuer reference kinds are equal,
-// taking into account the defaulting of the kind to "Issuer".
-func issuerKindsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerKind
-	}
-	if r == "" {
-		r = defaultIssuerKind
-	}
-	return l == r
-}
-
-// issuerGroupsEqual returns true if the two issuer reference groups are equal,
-// taking into account defaulting of the group to "cert-manager.io".
-func issuerGroupsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerGroup
-	}
-	if r == "" {
-		r = defaultIssuerGroup
-	}
-	return l == r
 }
 
 func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherName) (bool, error) {

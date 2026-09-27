@@ -17,12 +17,13 @@ limitations under the License.
 package validation
 
 import (
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
@@ -47,7 +48,7 @@ var (
 		Key: "validkey",
 	}
 	// TODO (JS): Missing test for validCloudflareProvider
-	// nolint: unused
+	//nolint: unused
 	validCloudflareProvider = cmacme.ACMEIssuerDNS01ProviderCloudflare{
 		APIKey: &validSecretKeyRef,
 		Email:  "valid",
@@ -169,20 +170,23 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("clientCertSecretRef"), "<snip>", "clientCertSecretRef must be provided when defining the clientKeySecretRef"),
 			},
 		},
+		"invalid vault issuer: path contains '..' segments": {
+			spec: &cmapi.VaultIssuer{
+				Server: "https://vault.example.com",
+				Path:   "pki/../sys/seal",
+				Auth: cmapi.VaultAuth{
+					TokenSecretRef: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("path"), "pki/../sys/seal", "must not contain '..' path segments"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVaultIssuerConfig(s.spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -386,6 +390,56 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 				field.Required(fldPath.Child("aws", "iamRoleArn"), "iamRoleArn is required when using serviceAccountRef for IRSA"),
 			},
 		},
+		"invalid auth.appRole: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					RoleId: "role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret"},
+						Key:                  "key",
+					},
+					Path: "../../sys/seal",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("appRole", "path"), "../../sys/seal", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.clientCertificate: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				ClientCertificate: &cmapi.VaultClientCertificateAuth{
+					Path: "../other",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("clientCertificate", "path"), "../other", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.kubernetes: path contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: "../other",
+					Role: "role",
+					ServiceAccountRef: &cmapi.ServiceAccountRef{
+						Name: "service-account",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("kubernetes", "path"), "../other", "must not contain '..' path segments"),
+			},
+		},
+		"invalid auth.aws: mountPath contains '..' segments": {
+			auth: &cmapi.VaultAuth{
+				AWS: &cmapi.VaultAWSAuth{
+					Role:      "my-role",
+					MountPath: "../other",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("aws", "mountPath"), "../other", "must not contain '..' path segments"),
+			},
+		},
 		"valid auth: all five auth types can be set simultaneously": {
 			auth: &cmapi.VaultAuth{
 				AppRole: &cmapi.VaultAppRole{
@@ -413,16 +467,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVaultIssuerAuth(s.auth, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -515,6 +560,57 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
+		"acme solver with a valid waitInsteadOfSelfCheck duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 30 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a zero waitInsteadOfSelfCheck duration": {
+			// A zero duration is a valid "skip the self-check and accept
+			// immediately" configuration that relies on the ACME server's own
+			// validation retries; only negative durations are rejected.
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 0},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a negative waitInsteadOfSelfCheck duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: -5 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("solvers").Index(0).Child("waitInsteadOfSelfCheck"), -5*time.Second, "waitInsteadOfSelfCheck must not be negative"),
+			},
+		},
 		"acme solver with external account binding missing required fields": {
 			spec: &cmacme.ACMEIssuer{
 				Email:                  "valid-email",
@@ -559,8 +655,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
 				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
-					KeyID:        "test",
-					Key:          validSecretKeyRef,
+					KeyID: "test",
+					Key:   validSecretKeyRef,
+					//nolint:staticcheck // SA1019 setting the deprecated eab.KeyAlgorithm field is intentional: this test asserts the deprecation warning.
 					KeyAlgorithm: cmacme.HS384,
 				},
 				Solvers: []cmacme.ACMEChallengeSolver{
@@ -614,7 +711,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -634,7 +731,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								ParentRefs: []gwapi.ParentReference{
 									{
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -665,7 +762,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 								ParentRefs: []gwapi.ParentReference{
 									{
 										Name: "blah",
-										Kind: (*gwapi.Kind)(ptr.To("Gateway")),
+										Kind: (*gwapi.Kind)(new("Gateway")),
 									},
 								},
 							},
@@ -765,16 +862,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateACMEIssuerConfig(s.spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 			assert.Equal(t, s.warnings, warnings)
 		})
 	}
@@ -1013,12 +1101,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		},
 		"ingress class field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: ptr.To("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: new("abc")},
 			},
 		},
 		"ingressClassName field specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
-				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: ptr.To("abc")},
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{IngressClassName: new("abc")},
 			},
 		},
 		"neither field specified": {
@@ -1035,8 +1123,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingress class and ingressClassName specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class:            ptr.To("abc"),
-					IngressClassName: ptr.To("abc"),
+					Class:            new("abc"),
+					IngressClassName: new("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -1046,7 +1134,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingress class and ingress name specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					Class: ptr.To("abc"),
+					Class: new("abc"),
 					Name:  "abc",
 				},
 			},
@@ -1057,7 +1145,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"both ingressClassName and ingress name specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: ptr.To("abc"),
+					IngressClassName: new("abc"),
 					Name:             "abc",
 				},
 			},
@@ -1069,8 +1157,8 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					Name:             "abc",
-					Class:            ptr.To("abc"),
-					IngressClassName: ptr.To("abc"),
+					Class:            new("abc"),
+					IngressClassName: new("abc"),
 				},
 			},
 			errs: []*field.Error{
@@ -1080,7 +1168,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"ingressClassName is invalid": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{
 				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-					IngressClassName: ptr.To("azure/application-gateway"),
+					IngressClassName: new("azure/application-gateway"),
 				},
 			},
 			errs: []*field.Error{
@@ -1122,16 +1210,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateACMEIssuerChallengeSolverHTTP01Config(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -1728,20 +1807,50 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
 			},
 		},
+		"valid nameservers with ip:port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"8.8.8.8:53", "1.1.1.1:53"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"valid nameservers with hostname:port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"ns.example.com:53"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"valid nameservers with doh url": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"https://cloudflare-dns.com/dns-query"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid nameserver missing port": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"8.8.8.8"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("nameservers").Index(0), "8.8.8.8", "must be in the format <ip address>:<port>"),
+			},
+		},
+		"invalid nameserver doh url missing host": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Nameservers: []string{"https://"},
+				CloudDNS:    &cmacme.ACMEIssuerDNS01ProviderCloudDNS{Project: "valid"},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("nameservers").Index(0), "https://", "must be in the format https://<DoH RFC 8484 server address>"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			errs, _ := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -1798,16 +1907,7 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateSecretKeySelector(s.selector, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -1842,7 +1942,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				Zone: "a\\b\\c",
 			},
 			errs: []*field.Error{
-				field.Required(fldPath, "please supply one of: tpp, cloud"),
+				field.Required(fldPath, "please supply one of: tpp, cloud, ngts"),
 			},
 		},
 		"multiple configuration": {
@@ -1854,7 +1954,56 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 				Cloud: &cmapi.VenafiCloud{},
 			},
 			errs: []*field.Error{
-				field.Forbidden(fldPath, "please supply one of: tpp, cloud"),
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
+			},
+		},
+		"valid NGTS configuration": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "TestApp\\Default",
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+		},
+		"NGTS and TPP both set": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "TestApp\\Default",
+				TPP: &cmapi.VenafiTPP{
+					URL: "https://tpp.example.com/vedsdk",
+				},
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
+			},
+		},
+		"NGTS and Cloud both set": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone:  "TestApp\\Default",
+				Cloud: &cmapi.VenafiCloud{},
+				NGTS: &cmapi.VenafiNGTS{
+					URL:           "https://api.example.paloaltonetworks.com/ngts",
+					TokenEndpoint: "https://auth.example.com/oauth2/token",
+					TSGID:         "123456789",
+					CredentialsRef: cmmeta.LocalObjectReference{
+						Name: "ngts-secret",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud, ngts"),
 			},
 		},
 	}
@@ -1862,15 +2011,7 @@ func TestValidateVenafiIssuerConfig(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiIssuerConfig(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Fatalf("Expected %v but got %v", s.errs, errs)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -1916,15 +2057,71 @@ func TestValidateVenafiTPP(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateVenafiTPP(s.cfg, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Fatalf("Expected %v but got %v", s.errs, errs)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
+		})
+	}
+}
+
+func TestValidateVenafiNGTS(t *testing.T) {
+	fldPath := field.NewPath("test")
+	scenarios := map[string]struct {
+		cfg  *cmapi.VenafiNGTS
+		errs []*field.Error
+	}{
+		"valid NGTS config": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:           "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint: "https://auth.example.com/oauth2/token",
+				TSGID:         "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+		},
+		"valid NGTS config without optional fields": {
+			cfg: &cmapi.VenafiNGTS{
+				TSGID: "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+		},
+		"missing tsgID": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:           "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint: "https://auth.example.com/oauth2/token",
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: "ngts-secret",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("tsgID"), ""),
+			},
+		},
+		"missing credentialsRef name": {
+			cfg: &cmapi.VenafiNGTS{
+				URL:            "https://api.example.paloaltonetworks.com/ngts",
+				TokenEndpoint:  "https://auth.example.com/oauth2/token",
+				TSGID:          "123456789",
+				CredentialsRef: cmmeta.LocalObjectReference{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("credentialsRef", "name"), ""),
+			},
+		},
+		"missing all required fields": {
+			cfg: &cmapi.VenafiNGTS{},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("tsgID"), ""),
+				field.Required(fldPath.Child("credentialsRef", "name"), ""),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateVenafiNGTS(s.cfg, fldPath)
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, errs)
 		})
 	}
 }
@@ -1940,24 +2137,8 @@ func TestValidateIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateIssuer(s.a, s.cfg)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
-			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
+			assert.Equal(t, s.expectedW, gotW)
 		})
 	}
 }
@@ -1980,24 +2161,8 @@ func TestUpdateValidateIssuer(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			gotE, gotW := ValidateUpdateIssuer(s.a, &baseIssuer, s.iss)
-			if len(gotE) != len(s.expectedE) {
-				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
-			}
-			if len(gotW) != len(s.expectedW) {
-				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
-			}
-			for i, e := range gotE {
-				expectedErr := s.expectedE[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range gotW {
-				expectedWarning := s.expectedW[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
-			}
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
+			assert.Equal(t, s.expectedW, gotW)
 		})
 	}
 }

@@ -36,6 +36,10 @@ type CAInjectorConfiguration struct {
 	// watched
 	Namespace string
 
+	// Comma-separated list of namespaces to ignore secrets from.
+	// Should not be used with --namespace.
+	IgnoreNamespaces []string
+
 	// LeaderElectionConfig configures the behaviour of the leader election
 	LeaderElectionConfig shared.LeaderElectionConfig
 

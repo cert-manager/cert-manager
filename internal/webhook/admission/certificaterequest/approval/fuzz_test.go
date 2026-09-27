@@ -40,9 +40,9 @@ func FuzzValidate(f *testing.F) {
 		if err != nil {
 			return
 		}
-		req.RequestResource.Group = "cert-manager.io"
-		req.RequestResource.Resource = "certificaterequests"
-		req.RequestSubResource = "status"
+		req.Resource.Group = "cert-manager.io"
+		req.Resource.Resource = "certificaterequests"
+		req.SubResource = "status"
 
 		// Add random values to the CR
 		cr := &certmanager.CertificateRequest{}

@@ -39,7 +39,6 @@ var (
 )
 
 func init() {
-	nextPrivateKeySecretName := "next-private-key"
 	baseCert = gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateGeneration(3),

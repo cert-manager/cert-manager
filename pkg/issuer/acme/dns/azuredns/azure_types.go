@@ -22,7 +22,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
-	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 )
 
 type ClientOptions struct {
@@ -227,7 +227,7 @@ func (ps *PublicTXTRecordSet) SetTXTRecords(records [][]*string) {
 				TTL:        to.Ptr[int64](60),
 				TxtRecords: []*dns.TxtRecord{},
 			},
-			Etag: to.Ptr(""),
+			Etag: new(""),
 		}
 	}
 
@@ -272,7 +272,7 @@ func (ps *PrivateTXTRecordSet) SetTXTRecords(records [][]*string) {
 				TTL:        to.Ptr[int64](60),
 				TxtRecords: []*privatedns.TxtRecord{},
 			},
-			Etag: to.Ptr(""),
+			Etag: new(""),
 		}
 	}
 

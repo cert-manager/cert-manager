@@ -73,6 +73,15 @@ type DynamicSource struct {
 
 var _ CertificateSource = &DynamicSource{}
 
+// renewalStaleAfter is the grace period after the scheduled renewal moment
+// beyond which the renewal is considered to have been missed, e.g. because
+// the container was paused during the renewal window.
+const renewalStaleAfter = 5 * time.Second
+
+// renewalCheckInterval is how often the renewal watcher polls time.Now() to
+// detect a missed renewal moment.
+const renewalCheckInterval = 1 * time.Minute
+
 // Implements Runnable (https://github.com/kubernetes-sigs/controller-runtime/blob/56159419231e985c091ef3e7a8a3dee40ddf1d73/pkg/manager/manager.go#L287)
 func (f *DynamicSource) Start(ctx context.Context) error {
 	f.log = logf.FromContext(ctx)
@@ -125,22 +134,18 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 
 		for {
 			if done := func() bool {
-				var timerChannel <-chan time.Time
-				if !renewMoment.IsZero() {
-					timer := time.NewTimer(time.Until(renewMoment))
-					defer timer.Stop()
+				watcherContext, cancel := context.WithCancel(ctx)
+				defer cancel()
+				needsRenewalChan := f.startRenewalWatcher(watcherContext, renewMoment, renewMoment.Add(renewalStaleAfter), renewalCheckInterval)
 
-					renewMoment = time.Time{}
-					timerChannel = timer.C
-				}
-
-				// Wait for the timer to expire, or for a new renewal moment to be received
+				// Wait for the renewal watcher to signal, or for a new renewal moment to be received
 				select {
 				case <-ctx.Done():
 					// context was cancelled, return nil
 					return true
-				case <-timerChannel:
-					// Continue to the next select to try to send a message on renewalChan
+				case reason := <-needsRenewalChan:
+					f.log.V(logf.InfoLevel).Info("Certificate needs renewal", "reason", reason)
+					renewMoment = time.Time{}
 				case renewMoment = <-nextRenewCh:
 					// We received a renew moment, next loop iteration will update the timer
 					return false
@@ -151,7 +156,6 @@ func (f *DynamicSource) Start(ctx context.Context) error {
 				case renewalChan <- struct{}{}:
 				default:
 				}
-
 				return false
 			}(); done {
 				return nil
@@ -295,4 +299,69 @@ func (f *DynamicSource) updateCertificate(ctx context.Context, pk crypto.Signer,
 	f.log.V(logf.InfoLevel).Info("Updated cert-manager TLS certificate", "DNSNames", f.DNSNames)
 
 	return nil
+}
+
+type renewalReason string
+
+const (
+	certificateAboutToExpire       renewalReason = "certificateAboutToExpire"
+	certificateRenewalMomentMissed renewalReason = "certificateRenewalMomentMissed"
+)
+
+// startRenewalWatcher monitors whether the serving certificate needs renewal.
+//
+// System suspend (S3/S4) or VM live migration stops CLOCK_MONOTONIC, so the
+// one-shot renewal timer (which uses Go's monotonic clock) never fires. When
+// the system resumes, the timer deadline has not yet been reached — even though
+// wall-clock time has advanced past the renewal moment. To cover this case,
+// startRenewalWatcher runs a periodic ticker that polls time.Now() against the
+// wall-clock deadline (renewalAfter). Because time.Now() uses CLOCK_REALTIME
+// for comparisons with wall-clock timestamps, the ticker detects the missed
+// renewal regardless of whether CLOCK_MONOTONIC advanced.
+//
+// If renewalAt is the zero time (no renewal scheduled yet), no goroutine is
+// started and the returned channel never sends — the caller's select blocks on
+// other cases until a renewal moment is received.
+//
+// Otherwise the watcher sends exactly one renewalReason on the returned channel
+// and then exits. The caller reads one value per invocation and cancels the
+// context to clean up the goroutine.
+func (f *DynamicSource) startRenewalWatcher(ctx context.Context, renewalAt time.Time, renewalAfter time.Time, retryPeriod time.Duration) <-chan renewalReason {
+	var renewalChan = make(chan renewalReason, 1)
+
+	if renewalAt.IsZero() {
+		return renewalChan
+	}
+
+	go func() {
+		timer := time.NewTimer(time.Until(renewalAt))
+		defer timer.Stop()
+
+		ticker := time.NewTicker(retryPeriod)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-timer.C:
+				select {
+				case renewalChan <- certificateAboutToExpire:
+				case <-ctx.Done():
+				}
+				return
+			case <-ticker.C:
+				if !time.Now().After(renewalAfter) {
+					continue
+				}
+				select {
+				case renewalChan <- certificateRenewalMomentMissed:
+				case <-ctx.Done():
+				}
+				return
+			}
+		}
+	}()
+
+	return renewalChan
 }

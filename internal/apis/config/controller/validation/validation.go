@@ -18,13 +18,14 @@ package validation
 
 import (
 	"net"
-	"net/url"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
+	issuervalidationutil "github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	config "github.com/cert-manager/cert-manager/internal/apis/config/controller"
 	defaults "github.com/cert-manager/cert-manager/internal/apis/config/controller/v1alpha1"
 	sharedvalidation "github.com/cert-manager/cert-manager/internal/apis/config/shared/validation"
@@ -45,12 +46,12 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 		allErrors = append(allErrors, field.Required(fldPath.Child("ingressShimConfig").Child("defaultIssuerKind"), "must not be empty"))
 	}
 
-	if cfg.KubernetesAPIBurst <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be greater than 0"))
+	if cfg.KubernetesAPIBurst < -1 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIBurst"), cfg.KubernetesAPIBurst, "must be greater than or equal to -1"))
 	}
 
-	if cfg.KubernetesAPIQPS <= 0 {
-		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be greater than 0"))
+	if cfg.KubernetesAPIQPS < -1 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("kubernetesAPIQPS"), cfg.KubernetesAPIQPS, "must be greater than or equal to -1"))
 	}
 
 	if float32(cfg.KubernetesAPIBurst) < cfg.KubernetesAPIQPS {
@@ -66,18 +67,8 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 	}
 
 	for i, server := range cfg.ACMEDNS01Config.RecursiveNameservers {
-		// ensure all servers follow one of the following formats:
-		// - <ip address>:<port>
-		// - https://<DoH RFC 8484 server address>
-
-		if strings.HasPrefix(server, "https://") {
-			if u, err := url.ParseRequestURI(server); err != nil || u.Scheme != "https" || u.Host == "" {
-				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format https://<DoH RFC 8484 server address>"))
-			}
-		} else {
-			if _, _, err := net.SplitHostPort(server); err != nil {
-				allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, "must be in the format <ip address>:<port>"))
-			}
+		if err := issuervalidationutil.ValidDNS01Nameserver(server); err != nil {
+			allErrors = append(allErrors, field.Invalid(fldPath.Child("acmeDNS01Config").Child("recursiveNameservers").Index(i), server, err.Error()))
 		}
 	}
 
@@ -94,6 +85,8 @@ func ValidateControllerConfiguration(cfg *config.ControllerConfiguration, fldPat
 	}
 
 	allErrors = append(allErrors, validatePEMSizeLimitsConfig(&cfg.PEMSizeLimitsConfig, fldPath.Child("pemSizeLimitsConfig"))...)
+
+	allErrors = append(allErrors, validateCertificateRequestBackoffConfig(&cfg.CertificateRequestMinimumBackoffDuration, &cfg.CertificateRequestMaximumBackoffDuration, fldPath)...)
 
 	return allErrors
 }
@@ -125,6 +118,41 @@ func validatePEMSizeLimitsConfig(cfg *config.PEMSizeLimitsConfig, fldPath *field
 	// Validate that MaxChainLength is not larger than MaxBundleSize
 	if cfg.MaxChainLength > cfg.MaxBundleSize {
 		allErrors = append(allErrors, field.Invalid(fldPath.Child("maxChainLength"), cfg.MaxChainLength, "must not exceed maxBundleSize"))
+	}
+
+	return allErrors
+}
+
+func validateCertificateRequestBackoffConfig(minBackoff, maxBackoff *time.Duration, fldPath *field.Path) field.ErrorList {
+	var allErrors field.ErrorList
+
+	// Validate minimum backoff. Negative values are rejected; zero is
+	// handled by SetDefaults_ControllerConfiguration before validation runs.
+	if *minBackoff < 0 {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMinimumBackoffDuration"),
+			minBackoff.String(),
+			"must not be negative",
+		))
+	}
+
+	// Validate maximum backoff. Negative values are rejected; zero is
+	// handled by SetDefaults_ControllerConfiguration before validation runs.
+	if *maxBackoff < 0 {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMaximumBackoffDuration"),
+			maxBackoff.String(),
+			"must not be negative",
+		))
+	}
+
+	// Validate max >= min (only if both are individually valid)
+	if *minBackoff > 0 && *maxBackoff > 0 && *maxBackoff < *minBackoff {
+		allErrors = append(allErrors, field.Invalid(
+			fldPath.Child("certificateRequestMaximumBackoffDuration"),
+			maxBackoff.String(),
+			"must be greater than or equal to certificateRequestMinimumBackoffDuration",
+		))
 	}
 
 	return allErrors

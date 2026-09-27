@@ -70,7 +70,7 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should set Ready=False with a bad access token", func(testingCtx context.Context) {
+	It("should set Ready=False with reason AuthFailed when a bad access token is supplied", func(testingCtx context.Context) {
 		var err error
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
@@ -87,6 +87,8 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 		By("Changing the Access Token to something bad")
 		err = tppAddon.SetAccessToken(testingCtx, "this_is_a_bad_token")
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Issuer to transition to Ready=False")
 		err = util.WaitForIssuerCondition(testingCtx, f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuer.Name,
 			cmapi.IssuerCondition{
@@ -94,5 +96,19 @@ var _ = TPPDescribe("properly configured Venafi TPP Issuer", func() {
 				Status: cmmeta.ConditionFalse,
 			})
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Asserting that the condition reason is AuthFailed")
+		updatedIssuer, getErr := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Get(testingCtx, issuer.Name, metav1.GetOptions{})
+		Expect(getErr).NotTo(HaveOccurred())
+		var authFailedCondition *cmapi.IssuerCondition
+		for i := range updatedIssuer.Status.Conditions {
+			if updatedIssuer.Status.Conditions[i].Type == cmapi.IssuerConditionReady {
+				authFailedCondition = &updatedIssuer.Status.Conditions[i]
+				break
+			}
+		}
+		Expect(authFailedCondition).NotTo(BeNil(), "expected a Ready condition")
+		Expect(authFailedCondition.Reason).To(Equal("AuthFailed"),
+			"expected reason AuthFailed, got %q (message: %s)", authFailedCondition.Reason, authFailedCondition.Message)
 	})
 })

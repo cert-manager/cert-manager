@@ -18,5 +18,6 @@ package venafi
 
 import (
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/cloud"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/ngts"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/issuers/venafi/tpp"
 )

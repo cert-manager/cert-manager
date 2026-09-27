@@ -198,6 +198,15 @@ const (
 	// self-service TLS configuration through the use of ListenerSet resources supported
 	// by GatewayAPI. This featuregate also requires GatewayAPI feature gate to be enabled.
 	ListenerSets featuregate.Feature = "ListenerSets"
+
+	// Owner: @hjoshi123
+	// Alpha: v1.21.0
+
+	// ACMEUseARI enables cert-manager to fetch renewal information as specified in RFC 9773.
+	// If the CA server doesn't support ARI or doesn't return renewalInfo in the response, this
+	// falls back to the existing renewal logic. This featuregate also respects the existing
+	// renewal windows configurations if specified.
+	ACMEUseARI featuregate.Feature = "ACMEUseARI"
 )
 
 func init() {
@@ -224,6 +233,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	UseDomainQualifiedFinalizer:                      {Default: true, PreRelease: featuregate.GA},
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.GA},
 	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
+	ACMEUseARI:                                       {Default: false, PreRelease: featuregate.Alpha},
 
 	// NB: Deprecated + removed feature gates are kept here.
 	// `featuregate.Deprecated` exists, but will cause the featuregate library

@@ -36,7 +36,7 @@ import (
 // be referenced by resources that exist in *any* namespace, not just the same
 // namespace as the referent.
 type ClusterIssuerApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	metav1.TypeMetaApplyConfiguration    `json:""`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Desired state of the ClusterIssuer resource.
 	Spec *IssuerSpecApplyConfiguration `json:"spec,omitempty"`

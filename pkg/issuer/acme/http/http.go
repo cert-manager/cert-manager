@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -176,8 +177,12 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 		log.V(logf.DebugLevel).Info("reachability test passed, re-checking in 2s time")
 
 		if i != s.requiredPasses-1 {
-			// sleep for 2s between checks
-			time.Sleep(time.Second * 2)
+			// sleep for 2s between checks, but respect context cancellation
+			select {
+			case <-time.After(time.Second * 2):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 
@@ -266,15 +271,17 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 			// > When redirected to an HTTPS URL, it does not validate certificates (since
 			// > this challenge is intended to bootstrap valid certificates, it may encounter
 			// > self-signed or expired certificates along the way).
-			InsecureSkipVerify: true, // #nosec G402 -- false positive
+			InsecureSkipVerify: true, // #nosec G402 -- ACME HTTP-01 self-check follows redirects to HTTPS where certs may be invalid (see comment above)
 		},
 	}
 
 	if len(dnsServers) != 0 {
 		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
-			// we need to increment a counter to iterate through the dns servers as the dialer will not
-			// return an error if the dns server is not responding.
-			counter := 0
+			// This Dial ignores the resolv.conf address that the resolver passes
+			// in, so we rotate through dnsServers ourselves. Without this, every
+			// resolver retry would hit the same server. The counter is atomic
+			// because the resolver dials from parallel A and AAAA goroutines.
+			var counter atomic.Uint32
 			dialer := &net.Dialer{
 				Timeout: 3 * time.Second,
 				Resolver: &net.Resolver{
@@ -283,8 +290,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 						d := net.Dialer{
 							Timeout: 3 * time.Second,
 						}
-						s := dnsServers[counter%len(dnsServers)]
-						counter++
+						s := dnsServers[int(counter.Add(1)-1)%len(dnsServers)]
 						return d.DialContext(ctx, network, s)
 					},
 				},
@@ -297,7 +303,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 		Timeout:   time.Second * 10,
 	}
 
-	response, err := client.Do(req) // #nosec G704 -- TODO(erikgb): This is probably not a false positive. Investigate!
+	response, err := client.Do(req) // #nosec G704 -- intentional ACME HTTP-01 self-check request; URL is provided by caller (typically Challenge DNSName + token via buildChallengeUrl)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to perform self check GET request", "error", err)
 		return fmt.Errorf("failed to perform self check GET request '%s': %v", url, err)
@@ -316,15 +322,16 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	}
 
 	if string(presentedKey) != key {
-		// truncate the response before displaying it to avoid extra long strings
-		// being displayed to users
+		// truncate the response before logging it to avoid extra long strings
+		// being displayed to operators
 		keyToPrint := string(presentedKey)
 		if len(keyToPrint) > 24 {
 			// trim spaces to make output look right if it ends with whitespace
 			keyToPrint = strings.TrimSpace(keyToPrint[:24]) + "... (truncated)"
 		}
 		log.V(logf.DebugLevel).Info("key returned by server did not match expected", "actual", keyToPrint, "expected", key)
-		return fmt.Errorf("did not get expected response when querying endpoint, expected %q but got: %s", key, keyToPrint)
+		// The response body is deliberately kept out of the returned error
+		return fmt.Errorf("did not get expected response %q when querying endpoint", key)
 	}
 
 	log.V(logf.DebugLevel).Info("reachability test succeeded")

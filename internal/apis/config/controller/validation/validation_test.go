@@ -188,13 +188,13 @@ func TestValidateControllerConfiguration(t *testing.T) {
 				IngressShimConfig: config.IngressShimConfig{
 					DefaultIssuerKind: "Issuer",
 				},
-				KubernetesAPIBurst:  -1, // Must be positive
+				KubernetesAPIBurst:  -2,
 				KubernetesAPIQPS:    1,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be greater than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be greater than or equal to -1"),
 					field.Invalid(field.NewPath("kubernetesAPIBurst"), cc.KubernetesAPIBurst, "must be higher or equal to kubernetesAPIQPS"),
 				}
 			},
@@ -228,12 +228,12 @@ func TestValidateControllerConfiguration(t *testing.T) {
 					DefaultIssuerKind: "Issuer",
 				},
 				KubernetesAPIBurst:  1,
-				KubernetesAPIQPS:    -1, // Must be positive
+				KubernetesAPIQPS:    -2,
 				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
 			},
 			func(cc *config.ControllerConfiguration) field.ErrorList {
 				return field.ErrorList{
-					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be greater than 0"),
+					field.Invalid(field.NewPath("kubernetesAPIQPS"), cc.KubernetesAPIQPS, "must be greater than or equal to -1"),
 				}
 			},
 		},
@@ -530,6 +530,59 @@ func TestValidatePEMSizeLimitsConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			errs := validatePEMSizeLimitsConfig(test.config, field.NewPath(""))
+			assert.ElementsMatch(t, test.errs, errs)
+		})
+	}
+}
+
+func TestValidateCertificateRequestBackoffConfig(t *testing.T) {
+	tests := []struct {
+		name       string
+		minBackoff time.Duration
+		maxBackoff time.Duration
+		errs       field.ErrorList
+	}{
+		{
+			"with valid backoff config (min < max)",
+			1 * time.Hour,
+			32 * time.Hour,
+			nil,
+		},
+		{
+			"with valid backoff config (min == max)",
+			1 * time.Hour,
+			1 * time.Hour,
+			nil,
+		},
+		{
+			"with negative minimum backoff",
+			-1 * time.Hour,
+			4 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMinimumBackoffDuration"), "-1h0m0s", "must not be negative"),
+			},
+		},
+		{
+			"with negative maximum backoff",
+			1 * time.Hour,
+			-1 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMaximumBackoffDuration"), "-1h0m0s", "must not be negative"),
+			},
+		},
+		{
+			"with maximum less than minimum",
+			4 * time.Hour,
+			1 * time.Hour,
+			field.ErrorList{
+				field.Invalid(field.NewPath("").Child("certificateRequestMaximumBackoffDuration"), "1h0m0s", "must be greater than or equal to certificateRequestMinimumBackoffDuration"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			errs := validateCertificateRequestBackoffConfig(&test.minBackoff, &test.maxBackoff, field.NewPath(""))
 			assert.ElementsMatch(t, test.errs, errs)
 		})
 	}

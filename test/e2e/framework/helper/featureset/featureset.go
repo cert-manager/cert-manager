@@ -114,4 +114,7 @@ const (
 	// a certificate containing otherName SAN values in the CSR, without
 	// imposing requirements on form or structure.
 	OtherNamesFeature Feature = "OtherNames"
+
+	// ACMEUseARI denotes whether the ACME CA supports the use of ARI.
+	ACMEUseARI Feature = "ACMEUseARI"
 )

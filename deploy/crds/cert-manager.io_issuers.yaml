@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: issuers.cert-manager.io
 spec:
   group: cert-manager.io
@@ -160,7 +160,7 @@ spec:
                       "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
                       This value picks the first certificate bundle in the combined set of
                       ACME default and alternative chains that has a root-most certificate with
-                      this value as its issuer's commonname.
+                      this value as its issuer's common name.
                     maxLength: 64
                     type: string
                   privateKeySecretRef:
@@ -190,6 +190,15 @@ spec:
                       Profile allows requesting a certificate profile from the ACME server.
                       Supported profiles are listed by the server's ACME directory URL.
                     type: string
+                  renewalInformationSource:
+                    default: ARI
+                    description: |-
+                      RenewalInformationSource allows fetching ACME Renewal Information from the ACME CA
+                      server. Default is `ARI`.
+                    enum:
+                    - ARI
+                    - None
+                    type: string
                   server:
                     description: |-
                       Server is the URL used to access the ACME server's 'directory' endpoint.
@@ -214,7 +223,13 @@ spec:
                       Solvers is a list of challenge solvers that will be used to solve
                       ACME challenges for the matching domains.
                       Solver configurations must be provided in order to obtain certificates
-                      from an ACME server.
+                      from an ACME server, unless the ACME server pre-authorizes every
+                      identifier on every order, including renewals, out of band
+                      (e.g. pre-validated domains), in which case solvers may be omitted
+                      and no Challenge resources will be created. If any identifier on an
+                      order is not pre-authorized and no solver matches it, the order will
+                      remain pending indefinitely, with only a Warning event recorded
+                      against it.
                       For more information, see: https://cert-manager.io/docs/configuration/acme/
                     items:
                       description: |-
@@ -537,6 +552,19 @@ spec:
                               required:
                               - tokenSecretRef
                               type: object
+                            nameservers:
+                              description: |-
+                                Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+                                checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+                                where host may be an IP address or hostname, or
+                                `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+                                the controller's configured global DNS01 recursive nameservers are used.
+                                When specified, this overrides the global nameservers for this solver
+                                only, and disables the authoritative nameserver check.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: atomic
                             rfc2136:
                               description: |-
                                 Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
@@ -3574,6 +3602,24 @@ spec:
                                 this challenge solver will apply to.
                               type: object
                           type: object
+                        waitInsteadOfSelfCheck:
+                          description: |-
+                            WaitInsteadOfSelfCheck, if set, skips cert-manager's self-check and
+                            instead waits this long after presentation before asking the ACME server
+                            to validate the challenge.
+
+                            This is an advanced escape hatch for environments where cert-manager's
+                            self-check cannot succeed from its own network or DNS viewpoint even
+                            though the ACME server can still validate successfully, for example due
+                            to split-horizon DNS or NAT hairpinning.
+
+                            A value of 0 skips the self-check and asks the ACME server to validate
+                            immediately after presentation, relying on the ACME server's own
+                            validation retries (RFC 8555 section 8.2) to succeed once the challenge
+                            has propagated. A negative duration is rejected.
+                            Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+                            for example `30s` or `2m`.
+                          type: string
                       type: object
                     type: array
                     x-kubernetes-list-type: atomic
@@ -3985,6 +4031,46 @@ spec:
                     required:
                     - apiTokenSecretRef
                     type: object
+                  ngts:
+                    description: |-
+                      NGTS specifies Palo Alto Networks Next Generation Trust Services (NGTS) configuration
+                      using OAuth 2.0 Client Credentials. Only one of tpp, cloud, or ngts may be specified.
+                    properties:
+                      credentialsRef:
+                        description: |-
+                          CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0
+                          Client ID and Client Secret. The secret must contain the keys 'client-id' and
+                          'client-secret'.
+                        properties:
+                          name:
+                            description: |-
+                              Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      tokenEndpoint:
+                        description: |-
+                          TokenEndpoint is the OAuth 2.0 token endpoint URL used to obtain access tokens,
+                          for example "https://auth.apps.paloaltonetworks.com/oauth2/access_token".
+                          Defaults to "https://auth.apps.paloaltonetworks.com/oauth2/access_token" if not set.
+                        type: string
+                      tsgID:
+                        description: |-
+                          TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token,
+                          for example "1234567890". The tsg_id: prefix is added automatically.
+                          This field is required.
+                        type: string
+                      url:
+                        description: |-
+                          URL is the base URL for the NGTS API endpoint.
+                          Defaults to "https://api.strata.paloaltonetworks.com/ngts" if not set.
+                        type: string
+                    required:
+                    - credentialsRef
+                    - tsgID
+                    type: object
                   tpp:
                     description: |-
                       TPP specifies CyberArk Certificate Manager Self-Hosted configuration settings.
@@ -4053,6 +4139,10 @@ spec:
                 required:
                 - zone
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of tpp, cloud, or ngts must be configured
+                  rule: '(has(self.tpp) ? 1 : 0) + (has(self.cloud) ? 1 : 0) + (has(self.ngts)
+                    ? 1 : 0) == 1'
             type: object
           status:
             description: Status of the Issuer. This is set and managed automatically.

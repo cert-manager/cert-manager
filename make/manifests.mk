@@ -83,7 +83,7 @@ $(bin_dir)/metadata/cert-manager-manifests.tar.gz.metadata.json: $(bin_dir)/rele
 
 # These targets provide for building and signing the cert-manager helm chart.
 
-$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(bin_dir)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
+$(bin_dir)/cert-manager-$(VERSION).tgz: $(bin_dir)/helm/cert-manager/README.md $(bin_dir)/helm/cert-manager/Chart.yaml $(bin_dir)/helm/cert-manager/values.yaml $(bin_dir)/helm/cert-manager/values.schema.json $(HELM_TEMPLATE_TARGETS) $(bin_dir)/helm/cert-manager/templates/NOTES.txt $(bin_dir)/helm/cert-manager/templates/_helpers.tpl $(bin_dir)/helm/cert-manager/.helmignore | $(NEEDS_HELM) $(bin_dir)/helm/cert-manager
 	$(HELM) package --app-version=$(VERSION) --version=$(VERSION) --destination "$(dir $@)" ./$(bin_dir)/helm/cert-manager
 
 $(bin_dir)/cert-manager-$(VERSION).tgz.prov: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_CMREL) $(bin_dir)/helm/cert-manager
@@ -110,7 +110,7 @@ $(bin_dir)/helm/cert-manager/values.schema.json: deploy/charts/cert-manager/valu
 $(bin_dir)/helm/cert-manager/README.md: deploy/charts/cert-manager/README.template.md | $(bin_dir)/helm/cert-manager
 	sed -e "s:{{RELEASE_VERSION}}:$(VERSION):g" < $< > $@
 
-$(bin_dir)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.template.yaml deploy/charts/cert-manager/signkey_annotation.txt | $(NEEDS_YQ) $(bin_dir)/helm/cert-manager
+$(bin_dir)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.yaml deploy/charts/cert-manager/signkey_annotation.txt | $(NEEDS_YQ) $(bin_dir)/helm/cert-manager
 	@# this horrible mess is taken from the YQ manual's example of multiline string blocks from a file:
 	@# https://mikefarah.gitbook.io/yq/operators/string-operators#string-blocks-bash-and-newlines
 	@# we set a bash variable called SIGNKEY_ANNOTATION using read, and then use that bash variable in yq
@@ -118,6 +118,9 @@ $(bin_dir)/helm/cert-manager/Chart.yaml: deploy/charts/cert-manager/Chart.templa
 		SIGNKEY_ANNOTATION=$$SIGNKEY_ANNOTATION $(YQ) eval \
 		'.annotations."artifacthub.io/signKey" = strenv(SIGNKEY_ANNOTATION) | .annotations."artifacthub.io/prerelease" = "$(IS_PRERELEASE)" | .version = "$(VERSION)" | .appVersion = "$(VERSION)"' \
 		$< > $@
+
+$(bin_dir)/helm/cert-manager/.helmignore: deploy/charts/cert-manager/.helmignore | $(bin_dir)/helm/cert-manager
+	cp $< $@
 
 ############################################################
 # Targets for cert-manager.yaml and cert-manager.crds.yaml #

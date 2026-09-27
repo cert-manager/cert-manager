@@ -6,7 +6,7 @@
   baseBranchPatterns: [
     'master',
     'release-1.20',
-    'release-1.19',
+    'release-1.21',
   ],
   addLabels: [
     'kind/cleanup',
@@ -28,6 +28,7 @@
     {
       customType: 'regex',
       managerFilePatterns: [
+        'hack/latest-kgateway-images.sh',
         'hack/latest-kind-images.sh',
         'make/02_mod.mk',
       ],
@@ -38,9 +39,22 @@
   ],
   packageRules: [
     {
+      description: 'Ungroup all updates on release branches',
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      groupName: null,
+    },
+    {
       groupName: 'Base Images',
       matchManagers: [
         'custom.regex',
+      ],
+      matchFileNames: [
+        'make/base_images.mk',
+      ],
+      addLabels: [
+        'skip-review', // Adding label to allow PRs to automerge
       ],
     },
     {
@@ -58,20 +72,33 @@
       },
     },
     {
+      groupName: null,
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'cr.kgateway.dev/kgateway-dev/charts/kgateway',
+      ],
+      postUpgradeTasks: {
+        commands: [
+          'hack/latest-kgateway-images.sh',
+        ],
+      },
+    },
+    {
+      description: 'Ignore updates in general on release branches',
       matchBaseBranches: [
         '/^release-.*/',
       ],
       enabled: false,
     },
     {
+      description: 'Enable base image updates on release branches',
       matchBaseBranches: [
         '/^release-.*/',
       ],
-      matchUpdateTypes: [
-        'patch',
-        'pin',
-        'pinDigest',
-        'digest',
+      matchFileNames: [
+        'make/base_images.mk',
       ],
       enabled: true,
     },

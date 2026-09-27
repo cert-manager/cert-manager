@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/pem"
@@ -200,8 +199,7 @@ func Test_ensureSecretData(t *testing.T) {
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
-						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`{"f:metadata": {
+						FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:cert-manager.io/common-name": {},
 								"f:cert-manager.io/alt-names": {},
@@ -216,7 +214,6 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:another-label": {}
 							}
 						}}`),
-						},
 					}},
 				},
 				Data: map[string][]byte{
@@ -243,8 +240,7 @@ func Test_ensureSecretData(t *testing.T) {
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: "not-cert-manager",
-						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`{"f:metadata": {
+						FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:cert-manager.io/common-name": {},
 								"f:cert-manager.io/alt-names": {},
@@ -256,8 +252,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:controller.cert-manager.io/fao": {},
 								"f:abc": {}
 							}
-						}}`),
-						}},
+						}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -286,8 +281,7 @@ func Test_ensureSecretData(t *testing.T) {
 					Labels:      map[string]string{"abc": "123", cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
-						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`{"f:metadata": {
+						FieldsV1: metav1.NewFieldsV1(`{"f:metadata": {
 							"f:annotations": {
 								"f:cert-manager.io/common-name": {},
 								"f:cert-manager.io/alt-names": {},
@@ -299,8 +293,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:controller.cert-manager.io/fao": {},
 								"f:abc": {}
 							}
-						}}`),
-						}},
+						}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -458,8 +451,7 @@ func Test_ensureSecretData(t *testing.T) {
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
-						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						FieldsV1: metav1.NewFieldsV1(`
 							{
 								"f:metadata": {
 									"f:labels": {
@@ -480,7 +472,6 @@ func Test_ensureSecretData(t *testing.T) {
 									"f:key.der": {}
 								}
 							}`),
-						},
 					}},
 				},
 				Data: map[string][]byte{
@@ -505,8 +496,7 @@ func Test_ensureSecretData(t *testing.T) {
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{{
 						Manager: fieldManager,
-						FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						FieldsV1: metav1.NewFieldsV1(`
 							{
 								"f:metadata": {
 									"f:labels": {
@@ -527,7 +517,6 @@ func Test_ensureSecretData(t *testing.T) {
 									"f:key.der": {}
 								}
 							}`),
-						},
 					}},
 				},
 				Data: map[string][]byte{
@@ -550,8 +539,7 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -565,8 +553,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
@@ -583,11 +570,10 @@ func Test_ensureSecretData(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -601,8 +587,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
@@ -631,11 +616,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-234"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-234"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -649,8 +633,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -690,11 +673,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -708,8 +690,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -748,11 +729,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -766,8 +746,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -805,11 +784,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -823,8 +801,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -864,11 +841,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -882,8 +858,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -922,11 +897,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -940,8 +914,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -980,11 +953,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -998,8 +970,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -1037,11 +1008,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -1055,8 +1025,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{
@@ -1096,11 +1065,10 @@ func Test_ensureSecretData(t *testing.T) {
 					},
 					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 					OwnerReferences: []metav1.OwnerReference{
-						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true)},
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 					},
 					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
-							Raw: []byte(`
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
 								"f:labels": {
 									"f:controller.cert-manager.io/fao": {}
@@ -1114,8 +1082,7 @@ func Test_ensureSecretData(t *testing.T) {
 								"f:ownerReferences": {
 									"k:{\"uid\":\"uid-123\"}": {}
 								}
-							}}`),
-						}},
+							}}`)},
 					},
 				},
 				Data: map[string][]byte{

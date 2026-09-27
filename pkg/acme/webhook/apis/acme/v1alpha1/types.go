@@ -17,10 +17,36 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"time"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
+
+// challengeRequestContext is an alias type of context.Context
+// because the deepcopy generator does not work well with interfaces
+// this type have been created to allow embedding the context within ChallengeRequest
+// without breaking deepcopy-gen
+// +k8s:openapi-gen=false
+type challengeRequestContext struct {
+	ctx context.Context
+}
+
+func (c *challengeRequestContext) Deadline() (deadline time.Time, ok bool)   { return c.ctx.Deadline() }
+func (c *challengeRequestContext) Done() <-chan struct{}                     { return c.ctx.Done() }
+func (c *challengeRequestContext) Err() error                                { return c.ctx.Err() }
+func (c *challengeRequestContext) Value(key any) any                         { return c.ctx.Value(key) }
+func (c *challengeRequestContext) DeepCopyInto(out *challengeRequestContext) { *out = *c }
+func (c *challengeRequestContext) DeepCopy() *challengeRequestContext {
+	if c == nil {
+		return nil
+	}
+	out := new(challengeRequestContext)
+	c.DeepCopyInto(out)
+	return out
+}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -109,6 +135,12 @@ type ChallengeRequest struct {
 	// references to Kubernetes Secret resources that the webhook can fetch.
 	// +optional
 	Config *apiextensionsv1.JSON `json:"config,omitempty"`
+
+	// ctx is the request context. It should only
+	// be modified using WithContext.
+	// It is unexported to prevent people from using Context wrong
+	// and mutating the contexts held by callers of the same request.
+	ctx *challengeRequestContext `json:"-"`
 }
 
 // ChallengeAction represents an action associated with a challenge such as
@@ -136,4 +168,21 @@ type ChallengeResponse struct {
 	// This field will be completely ignored if 'success' is true.
 	// +optional
 	Result *metav1.Status `json:"status,omitempty"`
+}
+
+func (c *ChallengeRequest) WithContext(ctx context.Context) *ChallengeRequest {
+	if ctx == nil {
+		panic("nil context")
+	}
+	c2 := new(ChallengeRequest)
+	*c2 = *c
+	c2.ctx = &challengeRequestContext{ctx: ctx}
+	return c2
+}
+
+func (c *ChallengeRequest) Context() context.Context {
+	if c.ctx != nil {
+		return c.ctx
+	}
+	return context.Background()
 }

@@ -20,12 +20,8 @@ functionality in cert-manager can be found in the [installation docs](https://ce
 To install the chart with the release name `cert-manager`:
 
 ```console
-# Add the Jetstack Helm repository
-helm repo add jetstack https://charts.jetstack.io --force-update
-
-# Install the cert-manager helm chart
 helm install \
-  cert-manager jetstack/cert-manager \
+  cert-manager oci://quay.io/jetstack/charts/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version {{RELEASE_VERSION}} \
@@ -114,9 +110,9 @@ If a component-specific nodeSelector is also set, it will be merged and take pre
 > ```
 
 Labels to apply to all resources.  
-Please note that this does not add labels to the resources created dynamically by the controllers. For these resources, you have to add the labels in the template in the cert-manager custom resource: For example, podTemplate/ ingressTemplate in ACMEChallengeSolverHTTP01Ingress. For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#acme.cert-manager.io/v1.ACMEChallengeSolverHTTP01Ingress).  
-For example, secretTemplate in CertificateSpec  
-For more information, see the [cert-manager documentation](https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.CertificateSpec).
+These labels are also applied to dynamically-created ACME HTTP01 solver resources  
+(pods, services, ingresses, or Gateway API HTTPRoutes).  
+The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.
 #### **global.revisionHistoryLimit** ~ `number`
 
 The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).
@@ -153,7 +149,7 @@ Create required ClusterRoles and ClusterRoleBindings for cert-manager.
 > true
 > ```
 
-Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles)
+Aggregate ClusterRoles to Kubernetes default user-facing roles. For more information, see [User-facing roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles).
 #### **global.podSecurityPolicy.enabled** ~ `bool`
 > Default value:
 > ```yaml
@@ -195,6 +191,20 @@ The interval between attempts by the acting master to renew a leadership slot be
 #### **global.leaderElection.retryPeriod** ~ `string`
 
 The duration the clients should wait between attempting acquisition and renewal of a leadership.
+
+#### **global.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
 
 #### **installCRDs** ~ `bool`
 > Default value:
@@ -441,7 +451,8 @@ config:
   kubernetesAPIQPS: 9000
   kubernetesAPIBurst: 9000
   numberOfConcurrentWorkers: 200
-  enableGatewayAPI: true
+  gatewayAPI:
+    enabled: true
   # Feature gates as of v1.20.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
@@ -472,6 +483,9 @@ config:
     maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
     maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
     maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
+  # Configure certificate request backoff durations
+  certificateRequestMinimumBackoffDuration: 1h
+  certificateRequestMaximumBackoffDuration: 32h
 ```
 #### **dns01RecursiveNameservers** ~ `string`
 > Default value:
@@ -751,7 +765,7 @@ Configures the NO_PROXY environment variable where a HTTP proxy is required, but
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -766,13 +780,27 @@ affinity:
          values:
          - master
 ```
+#### **runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **tolerations** ~ `array`
 > Default value:
 > ```yaml
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -789,7 +817,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -817,7 +845,7 @@ topologySpreadConstraints:
 LivenessProbe settings for the controller container of the controller Pod.  
   
 This is enabled by default, in order to enable the clock-skew liveness probe that restarts the controller in case of a skew between the system clock and the monotonic clock. LivenessProbe durations and thresholds are based on those used for the Kubernetes controller-manager. For more information see the following on the  
-[Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245)
+[Kubernetes GitHub repository](https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245).
 
 #### **enableServiceLinks** ~ `bool`
 > Default value:
@@ -855,21 +883,6 @@ The namespace that the service monitor should live in, defaults to the cert-mana
 > ```
 
 Specifies the `prometheus` label on the created ServiceMonitor. This is used when different Prometheus instances have label selectors matching different ServiceMonitors.
-#### **prometheus.servicemonitor.targetPort** ~ `string,integer`
-> Default value:
-> ```yaml
-> http-metrics
-> ```
-
-The target port to set on the ServiceMonitor. This must match the port that the cert-manager controller is listening on for metrics.
-
-#### **prometheus.servicemonitor.path** ~ `string`
-> Default value:
-> ```yaml
-> /metrics
-> ```
-
-The path to scrape for metrics.
 #### **prometheus.servicemonitor.interval** ~ `string`
 > Default value:
 > ```yaml
@@ -944,13 +957,6 @@ The namespace that the pod monitor should live in, defaults to the cert-manager 
 > ```
 
 Specifies the `prometheus` label on the created PodMonitor. This is used when different Prometheus instances have label selectors matching different PodMonitors.
-#### **prometheus.podmonitor.path** ~ `string`
-> Default value:
-> ```yaml
-> /metrics
-> ```
-
-The path to scrape for metrics.
 #### **prometheus.podmonitor.interval** ~ `string`
 > Default value:
 > ```yaml
@@ -1070,6 +1076,13 @@ metricsTLSConfig:
     secretName: "cert-manager-metrics-ca"
     dnsNames:
     - cert-manager-metrics
+# Configure PEM size limits for certificate validation
+# Useful for certificates with many DNS names (e.g., Istio gateways with 100+ DNS names)
+pemSizeLimitsConfig:
+  maxCertificateSize: 36500     # Maximum size in bytes for individual certificates (default: 36500)
+  maxPrivateKeySize: 13000      # Maximum size in bytes for private keys (default: 13000)
+  maxChainLength: 95000         # Maximum size in bytes for certificate chains (default: 95000)
+  maxBundleSize: 330000         # Maximum size in bytes for certificate bundles (default: 330000)
 ```
 #### **webhook.strategy** ~ `object`
 > Default value:
@@ -1077,7 +1090,7 @@ metricsTLSConfig:
 > {}
 > ```
 
-The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)  
+The update strategy for the cert-manager webhook deployment. For more information, see the [Kubernetes documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).  
   
 For example:
 
@@ -1264,7 +1277,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -1279,13 +1292,27 @@ affinity:
          values:
          - master
 ```
+#### **webhook.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **webhook.tolerations** ~ `array`
 > Default value:
 > ```yaml
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -1302,7 +1329,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -1763,7 +1790,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
   
 For example:
 
@@ -1778,13 +1805,27 @@ affinity:
          values:
          - master
 ```
+#### **cainjector.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **cainjector.tolerations** ~ `array`
 > Default value:
 > ```yaml
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -1801,7 +1842,7 @@ tolerations:
 > []
 > ```
 
-A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology spread constraint v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#topologyspreadconstraint-v1-core).  
+A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).  
   
 For example:
 
@@ -1963,6 +2004,20 @@ Setting a digest pins the image. If a tag is also set, the rendered reference wi
 > ```
 
 Kubernetes imagePullPolicy on Deployment.
+#### **acmesolver.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 ### Startup API Check
 
 
@@ -2059,7 +2114,7 @@ extraEnv:
 > {}
 > ```
 
-Resources to provide to the cert-manager controller pod.  
+Resources to provide to the cert-manager startupapicheck pod.  
   
 For example:
 
@@ -2086,7 +2141,7 @@ This default ensures that Pods are only scheduled to Linux nodes. It prevents Po
 > {}
 > ```
 
-A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).  
+A Kubernetes Affinity, if required. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
 For example:
 
 ```yaml
@@ -2100,13 +2155,27 @@ affinity:
          values:
          - master
 ```
+#### **startupapicheck.runtimeClassName** ~ `string`
+> Default value:
+> ```yaml
+> ""
+> ```
+
+A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).  
+  
+For example:
+
+```yaml
+runtimeClassName: gvisor
+```
+
 #### **startupapicheck.tolerations** ~ `array`
 > Default value:
 > ```yaml
 > []
 > ```
 
-A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).  
+A list of Kubernetes Tolerations, if required. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
   
 For example:
 
@@ -2281,7 +2350,7 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm install my-release -f values.yaml .
 ```
-> **Tip**: You can use the default [values.yaml](https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
+> **Tip**: You can use the default [values.yaml](https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml).
 
 ## Contributing
 

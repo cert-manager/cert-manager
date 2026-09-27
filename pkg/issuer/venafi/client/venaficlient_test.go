@@ -18,9 +18,14 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"net"
+	"net/url"
 	"testing"
 
 	vcert "github.com/Venafi/vcert/v5"
+	"github.com/Venafi/vcert/v5/pkg/endpoint"
+	"github.com/Venafi/vcert/v5/pkg/verror"
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
@@ -379,6 +384,90 @@ func TestConfigForIssuerT(t *testing.T) {
 	}
 }
 
+func TestConfigForIssuerNGTS(t *testing.T) {
+	zone := "TestApp\\Default"
+	tsgID := "123456789"
+	ngtsURL := "https://api.example.paloaltonetworks.com/ngts"
+	tokenEndpoint := "https://auth.example.com/oauth2/token"
+	clientID := "test-client-id"
+	clientSecret := "test-client-secret"
+	ngtsSecretName := "ngts-secret"
+
+	baseIssuer := gen.Issuer("venafi-ngts-issuer",
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
+	)
+
+	ngtsIssuer := gen.IssuerFrom(baseIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			Zone: zone,
+			NGTS: &cmapi.VenafiNGTS{
+				URL:           ngtsURL,
+				TokenEndpoint: tokenEndpoint,
+				TSGID:         tsgID,
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: ngtsSecretName,
+				},
+			},
+		}),
+	)
+
+	tests := map[string]testConfigForIssuerT{
+		"if NGTS but getting secret fails, should error": {
+			iss:           ngtsIssuer,
+			secretsLister: generateSecretLister(nil, errors.New("secret not found")),
+			CheckFn:       checkNoConfigReturned,
+			expectedErr:   true,
+		},
+		"if NGTS and secret returns client credentials, should return NGTS config": {
+			iss: ngtsIssuer,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					ngtsClientIDKey:     []byte(clientID),
+					ngtsClientSecretKey: []byte(clientSecret),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if cnf == nil {
+					t.Fatal("expected config but got nil")
+					return
+				}
+				if cnf.ConnectorType != endpoint.ConnectorTypeNGTS {
+					t.Errorf("expected ConnectorTypeNGTS, got %v", cnf.ConnectorType)
+				}
+				if cnf.BaseUrl != ngtsURL {
+					t.Errorf("expected BaseUrl %q, got %q", ngtsURL, cnf.BaseUrl)
+				}
+				if cnf.Zone != zone {
+					t.Errorf("expected zone %q, got %q", zone, cnf.Zone)
+				}
+				if cnf.Credentials == nil {
+					t.Fatal("expected credentials but got nil")
+					return
+				}
+				if cnf.Credentials.ClientId != clientID {
+					t.Errorf("expected clientId %q, got %q", clientID, cnf.Credentials.ClientId)
+				}
+				if cnf.Credentials.ClientSecret != clientSecret {
+					t.Errorf("expected clientSecret %q, got %q", clientSecret, cnf.Credentials.ClientSecret)
+				}
+				if cnf.Credentials.Scope != "tsg_id:"+tsgID {
+					t.Errorf("expected scope %q, got %q", "tsg_id:"+tsgID, cnf.Credentials.Scope)
+				}
+				if cnf.Credentials.TokenURL != tokenEndpoint {
+					t.Errorf("expected TokenURL %q, got %q", tokenEndpoint, cnf.Credentials.TokenURL)
+				}
+			},
+			expectedErr: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.runTest(t)
+		})
+	}
+}
+
 func TestCaBundleForVcertTPP(t *testing.T) {
 	baseIssuer := gen.Issuer("non-venafi-issue",
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
@@ -474,6 +563,88 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.runTppCaTest(t)
 		})
+	}
+}
+
+func TestIsNetworkError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil is not a network error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "plain error is not a network error",
+			err:  fmt.Errorf("401 Unauthorized"),
+			want: false,
+		},
+		{
+			name: "AuthFailedError is not a network error",
+			err:  AuthFailedError{Err: fmt.Errorf("bad creds")},
+			want: false,
+		},
+		{
+			name: "net.OpError is a network error",
+			err:  &net.OpError{Op: "dial", Err: fmt.Errorf("connection refused")},
+			want: true,
+		},
+		{
+			name: "url.Error is a network error",
+			err:  &url.Error{Op: "Get", URL: "https://tpp.example.com", Err: fmt.Errorf("no such host")},
+			want: true,
+		},
+		{
+			name: "wrapped net.OpError is a network error",
+			err:  fmt.Errorf("outer: %w", &net.OpError{Op: "dial", Err: fmt.Errorf("timeout")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError with underlying net.OpError (simulates vcert bug with %v formatting)",
+			// This simulates current vcert behavior where ServerUnavailableError is used but
+			// the underlying transport error isn't preserved for errors.As (see https://github.com/Venafi/vcert/issues/664).
+			err:  fmt.Errorf("%w: %v", verror.ServerUnavailableError, &net.OpError{Op: "dial", Err: fmt.Errorf("connection refused")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError with underlying url.Error (DNS failure case)",
+			// This simulates a DNS lookup failure wrapped by vcert's ServerUnavailableError
+			err:  fmt.Errorf("%w: %v", verror.ServerUnavailableError, &url.Error{Op: "Post", URL: "https://auth.apps.paloaltonetworks.com/oauth2/access_token", Err: fmt.Errorf("lookup auth.apps.paloaltonetworks.com: server misbehaving")}),
+			want: true,
+		},
+		{
+			name: "verror.ServerUnavailableError alone (no underlying network error)",
+			err:  verror.ServerUnavailableError,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isNetworkError(tt.err); got != tt.want {
+				t.Errorf("isNetworkError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAuthFailedError_ErrorAndUnwrap(t *testing.T) {
+	underlying := fmt.Errorf("401 Unauthorized")
+	err := AuthFailedError{Err: underlying}
+
+	if err.Error() != "OAuth token request failed: 401 Unauthorized" {
+		t.Errorf("Error() = %q", err.Error())
+	}
+	if !errors.Is(err, underlying) {
+		t.Error("errors.Is should find underlying error through Unwrap chain")
+	}
+
+	wrapped := fmt.Errorf("client.VerifyCredentials: %w", err)
+	if _, ok := errors.AsType[AuthFailedError](wrapped); !ok {
+		t.Error("errors.As should find AuthFailedError through wrapping chain")
 	}
 }
 

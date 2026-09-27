@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/digitalocean/godo"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -112,6 +114,11 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 
 		ch.Status.Presented = false
 		ch.Status.Processing = false
+		// PresentedAt is intentionally left untouched. It records when the
+		// solver resources were first presented, which remains accurate for a
+		// finished challenge, and clearing it here would diverge between the
+		// legacy UpdateStatus path (which would set it to nil) and the SSA path
+		// (which omits nil fields and so would leave it set on the server).
 
 		return nil
 	}
@@ -179,19 +186,32 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		}
 
 		ch.Status.Presented = true
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
 		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	err = solver.Check(ctx, genericIssuer, ch)
-	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+	// Backfill PresentedAt for already-presented challenges when
+	// WaitInsteadOfSelfCheck is configured. This covers upgrade or
+	// pre-existing-object cases where Presented was recorded before the
+	// controller started writing PresentedAt.
+	if ch.Status.Presented && ch.Status.PresentedAt == nil && ch.Spec.Solver.WaitInsteadOfSelfCheck != nil {
+		now := metav1.NewTime(c.clock.Now())
+		ch.Status.PresentedAt = &now
+	}
 
+	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now())
+	result, err := readiness.evaluate(ctx, solver, genericIssuer, ch)
+	if err != nil {
+		return err
+	}
+	if !result.ready {
+		log.V(logf.DebugLevel).Info("challenge not ready to accept yet", "retry_after", result.retryAfter)
+		ch.Status.Reason = result.reason
 		c.queue.AddAfter(types.NamespacedName{
 			Namespace: ch.Namespace,
 			Name:      ch.Name,
-		}, c.DNS01CheckRetryPeriod)
-
+		}, result.retryAfter)
 		return nil
 	}
 
@@ -227,8 +247,7 @@ func stabilizeSolverErrorMessage(err error) string {
 	}
 	fullMessage := err.Error()
 	{
-		var target *awshttp.ResponseError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*awshttp.ResponseError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -237,8 +256,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *azidentity.AuthenticationFailedError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*azidentity.AuthenticationFailedError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -247,8 +265,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *azcore.ResponseError
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*azcore.ResponseError](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -257,8 +274,7 @@ func stabilizeSolverErrorMessage(err error) string {
 		}
 	}
 	{
-		var target *godo.ErrorResponse
-		if errors.As(err, &target) {
+		if target, ok := errors.AsType[*godo.ErrorResponse](err); ok {
 			fullMessage = strings.ReplaceAll(
 				fullMessage,
 				target.Error(),
@@ -280,9 +296,21 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	var acmeErr *acmeapi.Error
 	var ok bool
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		// Transient network errors (TLS handshake timeouts, DNS failures,
+		// connection resets) and context cancellation/deadline errors are
+		// not protocol-level rejections from the ACME server. Returning them
+		// without setting Status.State leaves the challenge in its current
+		// state and lets the workqueue retry with backoff. Without this, a
+		// single transient network blip marks the challenge terminally
+		// Errored, after which IsFinalState() makes the controller stop
+		// reconciling it (see issues #8696 and #8747).
+		if isTransientACMEError(err) {
+			logf.FromContext(ctx).Error(err, "transient non-ACME API error, will retry")
+			return err
+		}
 		ch.Status.State = cmacme.Errored
 		ch.Status.Reason = fmt.Sprintf("unexpected non-ACME API error: %v", err)
-		logf.FromContext(ctx).V(logf.ErrorLevel).Error(err, "unexpected non-ACME API error")
+		logf.FromContext(ctx).Error(err, "unexpected non-ACME API error")
 		return err
 	}
 
@@ -307,6 +335,19 @@ func handleError(ctx context.Context, ch *cmacme.Challenge, err error) error {
 	return err
 }
 
+// isTransientACMEError reports whether err is a transient network-layer
+// failure (timeout, DNS resolution failure, connection reset, TLS handshake
+// failure, etc.) or a context cancellation / deadline error. Such errors are
+// not ACME-protocol rejections and should be retried via the workqueue rather
+// than terminally failing the challenge.
+func isTransientACMEError(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
+}
+
 // finalize will attempt to 'finalize' the Challenge resource by calling CleanUp
 func (c *controller) finalize(ctx context.Context, ch *cmacme.Challenge) (err error) {
 	log := logf.FromContext(ctx, "finalizer")
@@ -320,7 +361,7 @@ func (c *controller) finalize(ctx context.Context, ch *cmacme.Challenge) (err er
 	err = solver.CleanUp(ctx, ch)
 	if err != nil {
 		err := fmt.Errorf("Error cleaning up challenge: %v", err)
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, err.Error())
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "%s", err.Error())
 		// stabilize the error message to avoid spurious updates which would
 		// cause repeated reconciles
 		ch.Status.Reason = stabilizeSolverErrorMessage(err)

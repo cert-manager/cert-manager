@@ -19,7 +19,6 @@ package informers
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +30,8 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
+
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 func Test_secretNamespaceLister_Get(t *testing.T) {
@@ -231,9 +232,7 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 				t.Errorf("secretNamespaceLister.Get() error = %v, wantErr %v", err, scenario.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, scenario.want) {
-				t.Errorf("secretNamespaceLister.Get() = %v, want %v", got, scenario.want)
-			}
+			testutil.AssertEqual(t, scenario.want, got)
 		})
 	}
 }

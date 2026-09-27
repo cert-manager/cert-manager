@@ -173,7 +173,7 @@ func FuzzVaultCRController(f *testing.F) {
 
 			fakeVault := fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil)
 			vault.vaultClientBuilder = func(_ context.Context, ns string, _ func(ns string) internalvault.CreateToken, sl internalinformers.SecretLister,
-				iss cmapi.GenericIssuer) (internalvault.Interface, error) {
+				iss cmapi.GenericIssuer, _ bool) (internalvault.Interface, error) {
 				return fakeVault.New(ns, sl, iss)
 			}
 		}

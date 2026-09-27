@@ -30,9 +30,7 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	"k8s.io/client-go/tools/record"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -99,6 +97,22 @@ func Test_SecretsManager(t *testing.T) {
 		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true, Password: &keystorePassword}}),
 	)
 
+	// PKCS#12 passwords are encoded as UCS-2, so a password containing a rune
+	// outside the Basic Multilingual Plane can never be encoded. The webhook
+	// only checks that the password is non-empty, so such a Certificate is
+	// accepted and then fails on every reconcile.
+	nonBMPKeystorePassword := "password🔐"
+	baseCertWithNonBMPPKCS12Password := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{PKCS12: &cmapi.PKCS12Keystore{Create: true, Password: &nonBMPKeystorePassword}}),
+	)
+
+	baseCertWithJKSPasswordSecretRef := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateKeystore(&cmapi.CertificateKeystores{JKS: &cmapi.JKSKeystore{
+			Create:            true,
+			PasswordSecretRef: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "jks-password"}},
+		}}),
+	)
+
 	block, _, _ := pem.SafeDecodePrivateKey(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
 
@@ -111,6 +125,10 @@ func Test_SecretsManager(t *testing.T) {
 		applyFn    func(t *testing.T) testcoreclients.ApplyFn
 
 		expectedErr bool
+
+		// expectedEvents are the events expected to be recorded against the
+		// Certificate, in order.
+		expectedEvents []string
 	}{
 		"if secret does not exists and unable to decode certificate, then error": {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
@@ -127,6 +145,9 @@ func Test_SecretsManager(t *testing.T) {
 				}
 			},
 			expectedErr: true,
+			expectedEvents: []string{
+				"Warning SecretDataFailed Failed to build Secret data: error decoding certificate PEM block: no valid certificates found",
+			},
 		},
 
 		"if secret does not exist, create new Secret, with owner disabled": {
@@ -191,9 +212,9 @@ func Test_SecretsManager(t *testing.T) {
 						WithData(map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes, corev1.TLSPrivateKeyKey: []byte("test-key"), cmmeta.TLSCAKey: []byte("test-ca")}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
-							Name: ptr.To("test"), UID: &expUID,
-							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
+							APIVersion: new("cert-manager.io/v1"), Kind: new("Certificate"),
+							Name: new("test"), UID: &expUID,
+							Controller: new(true), BlockOwnerDeletion: new(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -292,9 +313,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
-							Name: ptr.To("test"), UID: &expUID,
-							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
+							APIVersion: new("cert-manager.io/v1"), Kind: new("Certificate"),
+							Name: new("test"), UID: &expUID,
+							Controller: new(true), BlockOwnerDeletion: new(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -439,9 +460,9 @@ func Test_SecretsManager(t *testing.T) {
 						}).
 						WithType(corev1.SecretTypeTLS).
 						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
-							APIVersion: ptr.To("cert-manager.io/v1"), Kind: ptr.To("Certificate"),
-							Name: ptr.To("test"), UID: &expUID,
-							Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
+							APIVersion: new("cert-manager.io/v1"), Kind: new("Certificate"),
+							Name: new("test"), UID: &expUID,
+							Controller: new(true), BlockOwnerDeletion: new(true),
 						})
 					assert.Equal(t, expCnf, gotCnf)
 
@@ -802,6 +823,53 @@ func Test_SecretsManager(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+
+		"if the PKCS12 keystore password cannot be encoded, record a Warning event": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithNonBMPPKCS12Password,
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					t.Error("unexpected apply call")
+					return nil, nil
+				}
+			},
+			expectedErr: true,
+			expectedEvents: []string{
+				"Warning SecretDataFailed Failed to build Secret data: failed to add keystores to Secret: error encoding PKCS12 bundle: pkcs12: string contains characters that cannot be encoded in UCS-2",
+			},
+		},
+
+		"if the JKS keystore password Secret has no data for the referenced key, record a Warning event": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithJKSPasswordSecretRef,
+			// The fake Secret lister returns this Secret for every name, so it
+			// stands in both for the target Secret and for the password Secret.
+			// passwordSecretRef.key is unset and never defaulted, so the lookup
+			// is for the empty key, which this Secret has no data for.
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: gen.DefaultTestNamespace, Name: "output"},
+				Data:       map[string][]byte{"not-the-password-key": []byte("foo")},
+			},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					t.Error("unexpected apply call")
+					return nil, nil
+				}
+			},
+			expectedErr: true,
+			expectedEvents: []string{
+				`Warning SecretDataFailed Failed to build Secret data: failed to add keystores to Secret: JKS keystore password Secret contains no data for key ""`,
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -816,9 +884,10 @@ func Test_SecretsManager(t *testing.T) {
 			}
 			secretLister := testcorelisters.NewFakeSecretLister(mod)
 
+			recorder := new(testpkg.FakeRecorder)
 			testManager := NewSecretsManager(
 				secretClient, secretLister,
-				record.NewFakeRecorder(10),
+				recorder,
 				testpkg.FieldManager,
 				test.certificateOptions.EnableOwnerRef,
 			)
@@ -830,6 +899,8 @@ func Test_SecretsManager(t *testing.T) {
 			if err == nil && test.expectedErr {
 				t.Errorf("expected to get an error but did not get one")
 			}
+
+			assert.Equal(t, test.expectedEvents, recorder.Events)
 		})
 	}
 }

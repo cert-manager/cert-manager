@@ -81,7 +81,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-webhook
-          image: "{{ template "image" (tuple .Values.webhook.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
+          image: "{{ template "cert-manager.image" (tuple .Values.webhook.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
@@ -203,6 +203,11 @@ spec:
       {{- with .Values.webhook.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webhook.runtimeClassName }}
+      runtimeClassName: {{ .Values.webhook.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
       {{- with .Values.webhook.tolerations }}
       tolerations:

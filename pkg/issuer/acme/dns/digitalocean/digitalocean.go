@@ -20,13 +20,13 @@ package digitalocean
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
-	"strings"
 
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -34,47 +34,89 @@ import (
 type DNSProvider struct {
 	dns01Nameservers []string
 	client           *godo.Client
+	resolver         util.Resolver
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for digitalocean.
-// The access token must be passed in the environment variable DIGITALOCEAN_TOKEN
-func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
-	token := os.Getenv("DIGITALOCEAN_TOKEN")
-	return NewDNSProviderCredentials(token, dns01Nameservers, userAgent)
-}
-
-// NewDNSProviderCredentials uses the supplied credentials to return a
-// DNSProvider instance configured for digitalocean.
-func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
-	if token == "" {
-		return nil, fmt.Errorf("DigitalOcean token missing")
+// NewDNSProviderFromOptions constructs an ACME DNS provider for DigitalOcean.
+//
+// All options are passed via the variadic options parameter.
+//
+// Required options:
+// - Token
+// - Nameservers
+// - Resolver
+func NewDNSProviderFromOptions(ctx context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
 	}
 
-	unusedCtx := context.Background() // context is not actually used
-	c := oauth2.NewClient(unusedCtx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+	err := errors.Join(
+		utiloptions.Required(&opt.Token, "DigitalOcean token missing"),
+		utiloptions.Required(&opt.Resolver, "resolver is required"),
+		utiloptions.NotEmpty(&opt.Nameservers, "nameservers is required"),
+	)
 
-	clientOpts := []godo.ClientOpt{godo.SetUserAgent(userAgent)}
+	if err != nil {
+		return nil, err
+	}
+
+	c := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: opt.Token}))
+
+	var clientOpts []godo.ClientOpt
+
+	if opt.UserAgent != "" {
+		clientOpts = append(clientOpts, godo.SetUserAgent(opt.UserAgent))
+	}
+
 	client, err := godo.New(c, clientOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	return &DNSProvider{
-		dns01Nameservers: dns01Nameservers,
+		dns01Nameservers: opt.Nameservers,
 		client:           client,
+		resolver:         opt.Resolver,
 	}, nil
+}
+
+// NewDNSProvider returns a DNSProvider instance configured for digitalocean.
+// The access token must be passed in the environment variable DIGITALOCEAN_TOKEN
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(context.Background(),
+		Token(os.Getenv("DIGITALOCEAN_TOKEN")),
+		Nameservers(dns01Nameservers),
+		UserAgent(userAgent),
+		Resolver(util.LegacyCachedResolver()),
+	)
+}
+
+// NewDNSProviderCredentials uses the supplied credentials to return a
+// DNSProvider instance configured for digitalocean.
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProviderCredentials(token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(context.Background(),
+		Token(token),
+		Nameservers(dns01Nameservers),
+		UserAgent(userAgent),
+		Resolver(util.LegacyCachedResolver()),
+	)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error {
 	// if DigitalOcean does not have this zone then we will find out later
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
+	zoneName, err := c.resolver.FindZoneByFQDN(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
@@ -107,19 +149,27 @@ func (c *DNSProvider) Present(ctx context.Context, _, fqdn, value string) error 
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
+	zoneName, err := c.resolver.FindZoneByFQDN(ctx, fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
 
-	records, err := c.findTxtRecord(ctx, fqdn)
+	records, err := c.findTxtRecord(ctx, zoneName, fqdn)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
-		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
+		// Only delete the record holding this challenge's value. Multiple
+		// TXT records can share the same name (e.g. concurrent orders for
+		// example.com and *.example.com, or racing renewals), and deleting
+		// every name-matching record regardless of value would remove a
+		// sibling challenge's record out from under it mid-validation.
+		if record.Data != value {
+			continue
+		}
 
+		_, err = c.client.Domains.DeleteRecord(ctx, util.UnFqdn(zoneName), record.ID)
 		if err != nil {
 			return err
 		}
@@ -128,30 +178,52 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(ctx context.Context, fqdn string) ([]godo.DomainRecord, error) {
-	zoneName, err := util.FindZoneByFqdn(ctx, fqdn, c.dns01Nameservers)
-	if err != nil {
-		return nil, err
-	}
+// recordsPerPage is the page size requested when listing TXT records from
+// the DigitalOcean API. The API defaults to a page size of 20 when no
+// per_page value is supplied. findTxtRecord filters by name server-side
+// (see below), so in practice a single page is virtually always enough;
+// per_page combined with the pagination loop is only a safety net for the
+// pathological case of many records sharing the same name.
+const recordsPerPage = 200
 
-	allRecords, _, err := c.client.Domains.RecordsByType(
-		ctx,
-		util.UnFqdn(zoneName),
-		"TXT",
-		nil,
-	)
-
+// findTxtRecord returns every TXT record in zoneName named fqdn.
+//
+// It uses DigitalOcean's server-side type+name filter (RecordsByTypeAndName)
+// rather than listing every TXT record in the zone and filtering client
+// side. Besides needing far fewer requests against large zones, this also
+// avoids a race: walking multiple pages of an unfiltered, unsnapshotted
+// listing while another challenge concurrently creates/deletes records in
+// the same zone can shift later pages and skip a record entirely. With a
+// name filter, only records that actually share this name are ever
+// returned, which shrinks that window to near zero.
+//
+// The pagination loop is kept as a defensive fallback in case a name is
+// ever shared by more than recordsPerPage records; it is not expected to
+// run more than once in practice.
+// See https://github.com/cert-manager/cert-manager/issues/9099.
+func (c *DNSProvider) findTxtRecord(ctx context.Context, zoneName, fqdn string) ([]godo.DomainRecord, error) {
 	var records []godo.DomainRecord
 
-	// The record Name doesn't contain the zoneName, so
-	// lets remove it before filtering the array of record
-	targetName := strings.TrimSuffix(fqdn, zoneName)
-
-	for _, record := range allRecords {
-		if util.ToFqdn(record.Name) == targetName {
-			records = append(records, record)
+	opt := &godo.ListOptions{Page: 1, PerPage: recordsPerPage}
+	for {
+		pageRecords, resp, err := c.client.Domains.RecordsByTypeAndName(
+			ctx,
+			util.UnFqdn(zoneName),
+			"TXT",
+			util.UnFqdn(fqdn),
+			opt,
+		)
+		if err != nil {
+			return nil, err
 		}
+
+		records = append(records, pageRecords...)
+
+		if resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+		opt.Page++
 	}
 
-	return records, err
+	return records, nil
 }

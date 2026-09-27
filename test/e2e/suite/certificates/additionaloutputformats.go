@@ -17,7 +17,6 @@ limitations under the License.
 package certificates
 
 import (
-	"bytes"
 	"context"
 	"encoding/pem"
 	"time"
@@ -30,7 +29,6 @@ import (
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -367,13 +365,13 @@ var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", fun
 					continue
 				}
 				var fieldset fieldpath.Set
-				Expect(fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw))).NotTo(HaveOccurred())
+				Expect(fieldset.FromJSON(managedField.FieldsV1.GetRawReader())).NotTo(HaveOccurred())
 				if fieldset.Has(fieldpath.Path{
-					{FieldName: ptr.To("data")},
-					{FieldName: ptr.To("tls-combined.pem")},
+					{FieldName: new("data")},
+					{FieldName: new("tls-combined.pem")},
 				}) && fieldset.Has(fieldpath.Path{
-					{FieldName: ptr.To("data")},
-					{FieldName: ptr.To("key.der")},
+					{FieldName: new("data")},
+					{FieldName: new("key.der")},
 				}) {
 					return true
 				}

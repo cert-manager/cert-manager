@@ -39,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
@@ -278,6 +277,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	}
 
 	controllerContext.CertificateRequestMinimumBackoffDuration = 1 * time.Hour
+	controllerContext.CertificateRequestMaximumBackoffDuration = 32 * time.Hour
 
 	// Start the trigger controller
 	ctrl, queue, mustSync, err := trigger.NewController(logf.Log, controllerContext, shouldReissue)
@@ -443,7 +443,7 @@ func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certifica
 		t.Errorf("failed to marshal cert data: %v", err)
 	}
 	_, err = client.CertmanagerV1().Certificates(cert.Namespace).Patch(
-		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: ptr.To(true)},
+		ctx, cert.Name, types.ApplyPatchType, statusUpdateJson, metav1.PatchOptions{FieldManager: "test", Force: new(true)},
 		"status",
 	)
 	if err != nil {

@@ -147,7 +147,6 @@ gen-deepcopy() {
   "$deepcopygen" \
     --go-header-file hack/boilerplate-go.txt \
     --output-file zz_generated.deepcopy.go \
-    --bounding-dirs "${module_name}" \
     "${prefixed_inputs[@]}"
 }
 

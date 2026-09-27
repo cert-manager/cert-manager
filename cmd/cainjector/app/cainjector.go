@@ -24,6 +24,7 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/cainjector/validation"
+	"github.com/cert-manager/cert-manager/internal/cainjector/feature"
 	cainjectorconfigfile "github.com/cert-manager/cert-manager/pkg/cainjector/configfile"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -107,8 +108,13 @@ servers and webhook servers.`,
 
 			return nil
 		},
-		// nolint:contextcheck // False positive
+		//nolint:contextcheck // False positive
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+				log := logf.FromContext(cmd.Context())
+				log.Info("the ServerSideApply feature flag has been deprecated and cainjector will always use server-side apply")
+			}
+
 			return run(cmd.Context(), cainjectorConfig)
 		},
 	}

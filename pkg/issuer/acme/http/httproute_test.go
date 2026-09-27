@@ -17,13 +17,13 @@ limitations under the License.
 package http
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/utils/diff"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
@@ -53,9 +53,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
-				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
-					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
-				}
+				testutil.AssertEqual(t, createdHTTPRoute, gotHttpRoute)
 			},
 		},
 		"should return one httproute for IP that matches": {
@@ -81,9 +79,7 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
 				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
 				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
-				if !reflect.DeepEqual(gotHttpRoute, createdHTTPRoute) {
-					t.Errorf("Expected %v to equal %v", gotHttpRoute, createdHTTPRoute)
-				}
+				testutil.AssertEqual(t, createdHTTPRoute, gotHttpRoute)
 			},
 		},
 		"should not return an httproute for the same certificate but different domain": {
@@ -151,6 +147,44 @@ func TestGetGatewayHTTPRouteForChallenge(t *testing.T) {
 				}
 			},
 		},
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
+				}
+				httpRoute, err := s.Solver.createGatewayHTTPRoute(t.Context(), s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				s.testResources[createdHTTPRouteKey] = httpRoute
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				createdHTTPRoute := s.testResources[createdHTTPRouteKey].(*gwapi.HTTPRoute)
+				gotHttpRoute := args[0].(*gwapi.HTTPRoute)
+				// ACME identity label should not be overridden by extra labels
+				if gotHttpRoute.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, gotHttpRoute.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if gotHttpRoute.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected HTTPRoute to have extra label 'custom-extra-label=custom-extra-value', but got %v", gotHttpRoute.Labels)
+				}
+				testutil.AssertEqual(t, createdHTTPRoute, gotHttpRoute)
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -201,10 +235,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 
 				gotHTTPRouteSpec := httpRoutes[0].Spec
 				expectedHTTPRoute := generateHTTPRouteSpec(s.Challenge, "fakeservice")
-				if !reflect.DeepEqual(gotHTTPRouteSpec, expectedHTTPRoute) {
-					t.Errorf("Expected HTTPRoute specs to match, but got diff:\n%v",
-						diff.ObjectDiff(gotHTTPRouteSpec, expectedHTTPRoute))
-				}
+				testutil.AssertEqual(t, expectedHTTPRoute, gotHTTPRouteSpec)
 			},
 		},
 		"should update challenge httproute if service changes": {
@@ -239,10 +270,7 @@ func TestEnsureGatewayHTTPRoute(t *testing.T) {
 
 				gotHTTPRouteSpec := httpRoutes[0].Spec
 				expectedHTTPRoute := generateHTTPRouteSpec(s.Challenge, "fakeservice")
-				if !reflect.DeepEqual(gotHTTPRouteSpec, expectedHTTPRoute) {
-					t.Errorf("Expected HTTPRoute specs to match, but got diff:\n%v",
-						diff.ObjectDiff(gotHTTPRouteSpec, expectedHTTPRoute))
-				}
+				testutil.AssertEqual(t, expectedHTTPRoute, gotHTTPRouteSpec)
 			},
 		},
 	}
@@ -305,9 +333,7 @@ func TestGenerateHTTPRouteSpec(t *testing.T) {
 
 			spec := generateHTTPRouteSpec(ch, "fakeservice")
 
-			if !reflect.DeepEqual(spec.Hostnames, tt.expectedHostnames) {
-				t.Errorf("Expected hostnames %v, but got %v", tt.expectedHostnames, spec.Hostnames)
-			}
+			assert.Equal(t, tt.expectedHostnames, spec.Hostnames, "hostnames")
 		})
 	}
 }

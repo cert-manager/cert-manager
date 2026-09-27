@@ -118,6 +118,41 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 				"cert-manager.io/uri-sans":    "",
 			},
 		},
+		"a subject value containing a CRLF costs its own annotation and nothing else": {
+			certificate: &x509.Certificate{
+				Subject: pkix.Name{
+					CommonName:   "cert-manager",
+					Organization: []string{"Example\r\nOrganization"},
+					Locality:     []string{"City 1", "City 2"},
+				},
+				DNSNames: []string{"example.com"},
+			},
+			// The organizations annotation is dropped, because SplitWithEscapeCSV
+			// would hand ingress-shim back "Example\nOrganization". Every other
+			// annotation, and the issuance itself, is unaffected.
+			expAnnotations: map[string]string{
+				"cert-manager.io/common-name":        "cert-manager",
+				"cert-manager.io/subject-localities": "City 1,City 2",
+				"cert-manager.io/alt-names":          "example.com",
+				"cert-manager.io/ip-sans":            "",
+				"cert-manager.io/uri-sans":           "",
+			},
+		},
+		"a single empty subject value round-trips as an explicitly quoted empty field": {
+			certificate: &x509.Certificate{
+				Subject: pkix.Name{
+					CommonName:   "cert-manager",
+					Organization: []string{""},
+				},
+			},
+			expAnnotations: map[string]string{
+				"cert-manager.io/common-name":           "cert-manager",
+				"cert-manager.io/subject-organizations": `""`,
+				"cert-manager.io/alt-names":             "",
+				"cert-manager.io/ip-sans":               "",
+				"cert-manager.io/uri-sans":              "",
+			},
+		},
 		"if no certificate data, then expect no X.509 related annotations": {
 			certificate:    nil,
 			expAnnotations: map[string]string{},
@@ -126,9 +161,8 @@ func Test_AnnotationsForCertificateSecret(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotAnnotations, err := AnnotationsForCertificate(test.certificate)
+			gotAnnotations := AnnotationsForCertificate(test.certificate)
 			assert.Equal(t, test.expAnnotations, gotAnnotations)
-			assert.Equal(t, nil, err)
 		})
 	}
 }

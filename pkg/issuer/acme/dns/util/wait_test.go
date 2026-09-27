@@ -12,133 +12,34 @@ package util
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"reflect"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupNameserversOK(t *testing.T) {
-	tests := []struct {
-		givenFQDN string
-		expectNSs []string
-		mockDNS   []interaction // Key example: "SOA en.wikipedia.org."
-	}{
-		{
-			givenFQDN: "en.wikipedia.org.",
-			mockDNS: []interaction{
-				{"SOA en.wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.CNAME{Hdr: dns.RR_Header{Name: "en.wikipedia.org.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 13213}, Target: "dyna.wikimedia.org."},
-					},
-					Ns: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "wikimedia.org.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 400}, Ns: "ns0.wikimedia.org.", Mbox: "hostmaster.wikimedia.org.", Serial: 2025050119, Refresh: 43200, Retry: 7200, Expire: 1209600, Minttl: 600},
-					},
-				}},
-				{"SOA wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 2920}, Ns: "ns0.wikimedia.org.", Mbox: "hostmaster.wikimedia.org.", Serial: 2025032815, Refresh: 43200, Retry: 7200, Expire: 1209600, Minttl: 3600},
-					},
-				}},
-				{"NS wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.NS{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 86297}, Ns: "ns1.wikimedia.org."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 86297}, Ns: "ns2.wikimedia.org."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 86297}, Ns: "ns0.wikimedia.org."},
-					},
-				}},
-			},
-			expectNSs: []string{"ns0.wikimedia.org.", "ns1.wikimedia.org.", "ns2.wikimedia.org."},
-		},
-		{
-			givenFQDN: "www.google.com.",
-			mockDNS: []interaction{
-				{"SOA www.google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Ns: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 6}, Ns: "ns1.google.com.", Mbox: "dns-admin.google.com.", Serial: 754576681, Refresh: 900, Retry: 900, Expire: 1800, Minttl: 60},
-					},
-				}},
-				{"SOA google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 60}, Ns: "ns1.google.com.", Mbox: "dns-admin.google.com.", Serial: 754576681, Refresh: 900, Retry: 900, Expire: 1800, Minttl: 60},
-					},
-				}},
-				{"NS google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 73176}, Ns: "ns4.google.com."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 73176}, Ns: "ns2.google.com."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 73176}, Ns: "ns1.google.com."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 73176}, Ns: "ns3.google.com."},
-					},
-				}},
-			},
-			expectNSs: []string{"ns1.google.com.", "ns2.google.com.", "ns3.google.com.", "ns4.google.com."},
-		},
-		{
-			givenFQDN: "physics.georgetown.edu.",
-			mockDNS: []interaction{
-				{"SOA physics.georgetown.edu.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.SOA{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}, Ns: "ns.b1ddi.physics.georgetown.edu.", Mbox: "ncs-sm.georgetown.edu.", Serial: 2011022637, Refresh: 10800, Retry: 3600, Expire: 2419200, Minttl: 300},
-					},
-				}},
-				{"NS physics.georgetown.edu.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-					Answer: []dns.RR{
-						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 196}, Ns: "ns4.georgetown.edu."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 196}, Ns: "ns.b1ddi.physics.georgetown.edu."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 196}, Ns: "ns6.georgetown.edu."},
-						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 196}, Ns: "ns5.georgetown.edu."},
-					},
-				}},
-			},
-			expectNSs: []string{"ns.b1ddi.physics.georgetown.edu.", "ns4.georgetown.edu.", "ns5.georgetown.edu.", "ns6.georgetown.edu."},
-		},
-	}
+func TestWaitForStopsWhenContextIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
 
-	for _, tc := range tests {
-		t.Run(tc.givenFQDN, func(t *testing.T) {
-			withMockDNSQuery(t, tc.mockDNS)
-			nss, err := lookupNameservers(t.Context(), tc.givenFQDN, []string{"not-used"})
-			require.NoError(t, err)
-			assert.ElementsMatch(t, tc.expectNSs, nss, "Expected nameservers do not match")
-		})
-	}
-}
-
-func TestLookupNameserversErr(t *testing.T) {
-	t.Run("no SOA record can be found", func(t *testing.T) {
-		withMockDNSQuery(t, []interaction{
-			{"SOA _null.n0n0.", &dns.Msg{
-				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-				Ns: []dns.RR{
-					&dns.SOA{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 2655}, Ns: "a.root-servers.net.", Mbox: "nstld.verisign-grs.com.", Serial: 2025050500, Refresh: 1800, Retry: 900, Expire: 604800, Minttl: 86400},
-				},
-			}},
-			{"SOA n0n0.", &dns.Msg{
-				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
-				Ns: []dns.RR{
-					&dns.SOA{Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 2664}, Ns: "a.root-servers.net.", Mbox: "nstld.verisign-grs.com.", Serial: 2025050500, Refresh: 1800, Retry: 900, Expire: 604800, Minttl: 86400},
-				},
-			}},
-		})
-		_, err := lookupNameservers(t.Context(), "_null.n0n0.", []string{"not-used"})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "Could not determine the zone")
+	start := time.Now()
+	err := WaitFor(ctx, time.Minute, 2*time.Second, func() (bool, error) {
+		cancel()
+		return false, nil
 	})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if elapsed := time.Since(start); elapsed >= 2*time.Second {
+		t.Errorf("WaitFor did not stop promptly after cancellation: %s", elapsed)
+	}
 }
 
 func TestFindZoneByFqdn(t *testing.T) {
@@ -304,11 +205,7 @@ func TestResolveConfServers(t *testing.T) {
 	for _, tt := range checkResolvConfServersTests {
 		result := getNameservers(tt.fixture, tt.defaults)
 
-		sort.Strings(result)
-		sort.Strings(tt.expected)
-		if !reflect.DeepEqual(result, tt.expected) {
-			t.Errorf("#%s: expected %q; got %q", tt.fixture, tt.expected, result)
-		}
+		assert.ElementsMatch(t, tt.expected, result, "#%s", tt.fixture)
 	}
 }
 
@@ -366,6 +263,43 @@ func Test_followCNAMEs(t *testing.T) {
 			},
 		},
 		{
+			name: "Return fqdn unchanged on NXDOMAIN",
+			args: args{
+				fqdn: "missing.example.com.",
+			},
+			want:    "missing.example.com.",
+			wantErr: false,
+			mock: []interaction{
+				{"CNAME missing.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				}},
+			},
+		},
+		{
+			name: "Error on SERVFAIL",
+			args: args{
+				fqdn: "broken.example.com.",
+			},
+			wantErr: true,
+			mock: []interaction{
+				{"CNAME broken.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+				}},
+			},
+		},
+		{
+			name: "Error on REFUSED",
+			args: args{
+				fqdn: "refused.example.com.",
+			},
+			wantErr: true,
+			mock: []interaction{
+				{"CNAME refused.example.com.", &dns.Msg{
+					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeRefused},
+				}},
+			},
+		},
+		{
 			name: "Error on recursive CNAME",
 			args: args{
 				fqdn: "recursive.example.com.",
@@ -410,6 +344,12 @@ type interaction struct {
 var mu = &sync.Mutex{} // Protects the global dnsQuery variable.
 
 func withMockDNSQuery(t *testing.T, mockDNS []interaction) {
+	withMockDNSQueryFailing(t, mockDNS, "", nil)
+}
+
+// Same as above, except that any query equal to failQuery returns failErr
+// instead of consuming a mocked interaction.
+func withMockDNSQueryFailing(t *testing.T, mockDNS []interaction, failQuery string, failErr error) {
 	mu.Lock()
 	t.Cleanup(func() {
 		mu.Unlock()
@@ -427,6 +367,10 @@ func withMockDNSQuery(t *testing.T, mockDNS []interaction) {
 
 	dnsQuery = func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 		got := dns.TypeToString[rtype] + " " + fqdn
+
+		if failQuery != "" && got == failQuery {
+			return nil, failErr
+		}
 
 		count.Add(1)
 		if int(count.Load()) > len(mockDNS) {

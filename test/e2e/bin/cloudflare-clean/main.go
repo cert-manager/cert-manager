@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/internal/cmd/util"
-	cf "github.com/cloudflare/cloudflare-go/v6"
-	"github.com/cloudflare/cloudflare-go/v6/dns"
-	"github.com/cloudflare/cloudflare-go/v6/option"
-	"github.com/cloudflare/cloudflare-go/v6/packages/pagination"
-	cfz "github.com/cloudflare/cloudflare-go/v6/zones"
+	cf "github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
+	"github.com/cloudflare/cloudflare-go/v7/option"
+	"github.com/cloudflare/cloudflare-go/v7/packages/pagination"
+	cfz "github.com/cloudflare/cloudflare-go/v7/zones"
 )
 
 var (

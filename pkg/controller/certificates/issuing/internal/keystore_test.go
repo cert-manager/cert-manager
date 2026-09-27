@@ -420,7 +420,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile, cmapi.Modern2026PKCS12Profile} {
 				out, err := encodePKCS12Keystore(profile, test.password, test.rawKey, test.certPEM, test.caPEM)
 				test.verify(t, out, err)
 			}
@@ -431,7 +431,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		var emptyCAChain []byte = nil
 
 		chain := mustLeafWithChain(t)
-		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile, cmapi.Modern2026PKCS12Profile} {
 			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
 			require.NoError(t, err)
 
@@ -452,7 +452,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		require.NoError(t, err)
 
 		chain := mustLeafWithChain(t)
-		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+		for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile, cmapi.Modern2026PKCS12Profile} {
 			out, err := encodePKCS12Keystore(profile, password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
 			require.NoError(t, err)
 
@@ -521,7 +521,7 @@ func TestEncodePKCS12Truststore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile} {
+			for _, profile := range []cmapi.PKCS12Profile{"", cmapi.LegacyRC2PKCS12Profile, cmapi.LegacyDESPKCS12Profile, cmapi.Modern2023PKCS12Profile, cmapi.Modern2026PKCS12Profile} {
 				out, err := encodePKCS12Truststore(profile, test.password, test.caPEM)
 				test.verify(t, test.caPEM, out, err)
 			}

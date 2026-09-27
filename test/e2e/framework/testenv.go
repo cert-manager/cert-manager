@@ -22,8 +22,10 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Defines methods that help provision test environments
@@ -33,7 +35,17 @@ const (
 	Poll = 2 * time.Second
 )
 
-// CreateKubeNamespace creates a new Kubernetes Namespace for a test.
+// CreateKubeNamespace creates a new Kubernetes Namespace for a test and waits
+// for the namespace's "default" ServiceAccount to be provisioned, since
+// Kubernetes creates it asynchronously after the Namespace itself. Pods
+// created without an explicit ServiceAccount (e.g. cert-manager's ACME HTTP01
+// solver pods) are admitted against this "default" ServiceAccount, so tests
+// that create such a Pod immediately after the Namespace can otherwise race
+// its creation and fail with "serviceaccount \"default\" not found". This
+// mirrors the equivalent wait in Kubernetes' own e2e framework
+// (WaitForDefaultServiceAccountInNamespace, called from CreateTestingNS),
+// which exists for the same reason: this race can occur on any sufficiently
+// slow or loaded cluster, not just this repo's CI.
 func (f *Framework) CreateKubeNamespace(ctx context.Context, baseName string) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -41,7 +53,23 @@ func (f *Framework) CreateKubeNamespace(ctx context.Context, baseName string) (*
 		},
 	}
 
-	return f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	ns, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	pollErr := wait.PollUntilContextTimeout(ctx, time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := f.KubeClientSet.CoreV1().ServiceAccounts(ns.Name).Get(ctx, "default", metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return err == nil, err
+	})
+	if pollErr != nil {
+		return nil, fmt.Errorf("waiting for default ServiceAccount in namespace %q: %w", ns.Name, pollErr)
+	}
+
+	return ns, nil
 }
 
 // CreateKubeResourceQuota provisions a ResourceQuota resource in the target

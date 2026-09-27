@@ -56,6 +56,9 @@ const (
 	// WindowError is a policy violation for a scenario where a time couldn't be
 	// found due to a cron misconfiguration or validation.
 	WindowError string = "WindowError"
+	// ARIError is a policy violation for a scenario where ACME Renewal Information
+	// couldn't be fetched.
+	ARIError string = "ARIError"
 	// SecretTemplateMismatch is a policy violation whereby the Certificate's
 	// SecretTemplate is not reflected on the target Secret, either by having
 	// extra, missing, or wrong Annotations or Labels.
@@ -63,6 +66,9 @@ const (
 	// SecretManagedMetadataMismatch is a policy violation whereby the Secret is
 	// missing labels that should have been added by cert-manager
 	SecretManagedMetadataMismatch string = "SecretManagedMetadataMismatch"
+	// RenewalDisabled is a policy violation whereby the Certificate's
+	// Renewal Policy is set to Disabled.
+	RenewalDisabled string = "Disabled"
 
 	// AdditionalOutputFormatsMismatch is a policy violation whereby the
 	// Certificate's AdditionalOutputFormats is not reflected on the target

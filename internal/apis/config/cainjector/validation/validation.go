@@ -30,5 +30,12 @@ func ValidateCAInjectorConfiguration(cfg *config.CAInjectorConfiguration, fldPat
 	allErrors = append(allErrors, logsapi.Validate(&cfg.Logging, nil, fldPath.Child("logging"))...)
 	allErrors = append(allErrors, sharedvalidation.ValidateLeaderElectionConfig(&cfg.LeaderElectionConfig, fldPath.Child("leaderElectionConfig"))...)
 
+	if cfg.Namespace != "" && len(cfg.IgnoreNamespaces) > 0 {
+		allErrors = append(allErrors, field.Forbidden(
+			fldPath.Child("ignoreNamespaces"),
+			"should not be used with --namespace.",
+		))
+	}
+
 	return allErrors
 }

@@ -19,9 +19,9 @@ package admission_test
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -95,9 +95,8 @@ func TestChainValidate(t *testing.T) {
 	if !validateCalled {
 		t.Errorf("validation function was not called")
 	}
-	if !reflect.DeepEqual(warnings, []string{"warning1", "warning2", "warning5"}) {
-		t.Errorf("got unexpected list of warnings: %v", warnings)
-	}
+	assert.Equal(t, []string{"warning1", "warning2", "warning5"},
+		warnings, "got unexpected list of warnings")
 }
 
 func TestChainValidate_Fails(t *testing.T) {
@@ -121,9 +120,8 @@ func TestChainValidate_Fails(t *testing.T) {
 	if err == nil {
 		t.Errorf("didn't get an error when one was expected")
 	}
-	if !reflect.DeepEqual(warnings, []string{"warning1", "warning2", "warning5"}) {
-		t.Errorf("got unexpected list of warnings: %v", warnings)
-	}
+	assert.Equal(t, []string{"warning1", "warning2", "warning5"},
+		warnings, "got unexpected list of warnings")
 }
 
 func TestChainMutate(t *testing.T) {

@@ -86,7 +86,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-controller
-          image: "{{ template "image" (tuple .Values.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
+          image: "{{ template "cert-manager.image" (tuple .Values.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
           {{- /* The if statement below is equivalent to {{- if $value }} but will also return true for 0. */ -}}
@@ -114,7 +114,7 @@ spec:
           - --leader-election-retry-period={{ .retryPeriod }}
           {{- end }}
           {{- end }}
-          - --acme-http01-solver-image={{ template "image" (tuple .Values.acmesolver.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}
+          - --acme-http01-solver-image={{ template "cert-manager.image" (tuple .Values.acmesolver.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}
           {{- with .Values.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
@@ -132,6 +132,11 @@ spec:
           {{- if .Values.featureGates }}
           - --feature-gates={{ .Values.featureGates }}
           {{- end }}
+          {{- if .Values.global.commonLabels }}
+          {{- range $key, $value := .Values.global.commonLabels }}
+          - --acme-http01-solver-extra-labels={{ $key }}={{ $value }}
+          {{- end }}
+          {{- end }}
           {{- if .Values.maxConcurrentChallenges }}
           - --max-concurrent-challenges={{ .Values.maxConcurrentChallenges }}
           {{- end }}
@@ -146,6 +151,9 @@ spec:
           {{- end }}
           {{- if .Values.disableAutoApproval }}
           - --controllers=-certificaterequests-approver
+          {{- end }}
+          {{- with .Values.acmesolver.runtimeClassName }}
+          - --acme-http01-solver-runtime-class-name={{ . | quote }}
           {{- end }}
           ports:
           - containerPort: 9402
@@ -212,6 +220,11 @@ spec:
           {{- end }}
       {{- if .Values.extraContainers }}
         {{- toYaml .Values.extraContainers | nindent 8 }}
+      {{- end }}
+      {{- if .Values.runtimeClassName }}
+      runtimeClassName: {{ .Values.runtimeClassName | quote }}
+      {{- else if .Values.global.runtimeClassName }}
+      runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
       {{- $nodeSelector := .Values.global.nodeSelector | default dict }}
       {{- $nodeSelector = merge $nodeSelector (.Values.nodeSelector | default dict) }}

@@ -24,3 +24,14 @@ import (
 func (m *Metrics) ObserveVenafiRequestDuration(duration time.Duration, labels ...string) {
 	m.venafiClientRequestDurationSeconds.WithLabelValues(labels...).Observe(duration.Seconds())
 }
+
+// IncrementVenafiOAuthTokenRequestsTotal increments the OAuth token request counter with the given status.
+// status must be either "success" or "failure".
+func (m *Metrics) IncrementVenafiOAuthTokenRequestsTotal(status string) {
+	m.venafiOAuthTokenRequestsTotal.WithLabelValues(status).Inc()
+}
+
+// ObserveVenafiOAuthTokenRequestDuration records the duration of an OAuth token request.
+func (m *Metrics) ObserveVenafiOAuthTokenRequestDuration(duration time.Duration) {
+	m.venafiOAuthTokenRequestDurationSecs.Observe(duration.Seconds())
+}

@@ -31,6 +31,7 @@ import (
 // +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=`.spec.secretName`
 // +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=`.spec.issuerRef.name`,priority=1
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].message`,priority=1
+// +kubebuilder:printcolumn:name="Expiration",type="string",JSONPath=`.status.notAfter`,priority=1
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
 // +kubebuilder:resource:scope=Namespaced,shortName={cert,certs},categories=cert-manager
 // +kubebuilder:selectablefield:JSONPath=.spec.issuerRef.group
@@ -203,6 +204,8 @@ type CertificateSpec struct {
 	// `renewBefore` derived from the `renewBeforePercentage` and `duration` fields is 5
 	// minutes.
 	// Cannot be set if the `renewBefore` field is set.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=99
 	// +optional
 	RenewBeforePercentage *int32 `json:"renewBeforePercentage,omitempty"`
 
@@ -557,6 +560,11 @@ type PKCS12Keystore struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	// `Modern2026`: Encodes PKCS#12 files using algorithms that are considered modern as of 2026.
+	// Private keys and certificates are encrypted using PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC.
+	// The MAC algorithm is PBMAC1 with PBKDF2-HMAC-SHA-256 and HMAC-SHA256.
+	// Files produced with this profile can be read by OpenSSL 3.4.0 and higher, Java 26 and higher,
+	// or with Java using compatible versions of Bouncy Castle. Meets FIPS 140-3 requirements.
 	// +optional
 	Profile PKCS12Profile `json:"profile,omitempty"`
 
@@ -574,7 +582,7 @@ type PKCS12Keystore struct {
 	Password *string `json:"password,omitempty"` // #nosec G117 -- field is part of API spec and may contain a secret; not hardcoded
 }
 
-// +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023
+// +kubebuilder:validation:Enum=LegacyRC2;LegacyDES;Modern2023;Modern2026
 type PKCS12Profile string
 
 const (
@@ -586,6 +594,9 @@ const (
 
 	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2023
 	Modern2023PKCS12Profile PKCS12Profile = "Modern2023"
+
+	// see: https://pkg.go.dev/software.sslmate.com/src/go-pkcs12#Modern2026
+	Modern2026PKCS12Profile PKCS12Profile = "Modern2026"
 )
 
 type CertificateRenewal struct {
@@ -700,6 +711,10 @@ type CertificateStatus struct {
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
 	// +optional
 	FailedIssuanceAttempts *int `json:"failedIssuanceAttempts,omitempty"`
+
+	// ACME stores information that is fetched from the ACME CA server.
+	// +optional
+	ACME *CertificateACMEStatus `json:"acme,omitempty"`
 }
 
 // CertificateCondition contains condition information for a Certificate.
@@ -817,4 +832,54 @@ type NameConstraintItem struct {
 	// +optional
 	// +listType=atomic
 	URIDomains []string `json:"uriDomains,omitempty"`
+}
+
+type CertificateACMEStatus struct {
+	// ARI stores the ACME Renewal Information that is fetched from the ACME server
+	// in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
+	//
+	// +optional
+	ARI *CertificateACMEARIStatus `json:"ari,omitempty"`
+}
+
+type CertificateACMEARIStatus struct {
+	// SuggestedWindow is the suggested renewal window as returned by the ACME server in accordance with RFC 9773.
+	//
+	// +optional
+	SuggestedWindow *ACMERenewalWindow `json:"suggestedWindow,omitempty"`
+	// ExplanationURL is a human-readable URL that may explain why the suggested window
+	// has its current value.
+	//
+	// +optional
+	ExplanationURL string `json:"explanationURL,omitempty"`
+	// LastChecked is the time at which the ACME server was last checked for renewal information.
+	//
+	// +optional
+	LastChecked *metav1.Time `json:"lastChecked,omitempty"`
+	// NextCheck is the time at which the ACME server will next be checked for renewal information.
+	//
+	// +optional
+	NextCheck *metav1.Time `json:"nextCheck,omitempty"`
+	// LastError is the last error encountered when checking the ACME server for renewal information, if any.
+	//
+	// +optional
+	LastError string `json:"lastError,omitempty"`
+
+	// CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was
+	// fetched for. This is used to determine if we need to re-fetch the renewal information
+	// as changed cert id means that ARI fetched before is stale.
+	//
+	// +optional
+	CertID string `json:"certID,omitempty"`
+}
+
+type ACMERenewalWindow struct {
+	// Start is the start of the suggested renewal window.
+	//
+	// +required
+	Start *metav1.Time `json:"start"`
+	// End is the end of the suggested renewal window.
+	//
+	// +required
+	End *metav1.Time `json:"end"`
 }

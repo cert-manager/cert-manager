@@ -40,7 +40,7 @@ func Test_FindZoneByFqdn_NoPanic(t *testing.T) {
 		t.Fatalf("first call too FindZoneByFqdn failed: %v", err)
 	}
 
-	// We want to test that the second call does not panic; catch a panic here for prettier log output
+	// We want to test that the second call does not panic; catch a panic here for prettier log output
 
 	defer func() {
 		r := recover()

@@ -19,6 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -84,7 +85,13 @@ type ACMEIssuer struct {
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
 	// Solver configurations must be provided in order to obtain certificates
-	// from an ACME server.
+	// from an ACME server, unless the ACME server pre-authorizes every
+	// identifier on every order, including renewals, out of band
+	// (e.g. pre-validated domains), in which case solvers may be omitted
+	// and no Challenge resources will be created. If any identifier on an
+	// order is not pre-authorized and no solver matches it, the order will
+	// remain pending indefinitely, with only a Warning event recorded
+	// against it.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	Solvers []ACMEChallengeSolver
 
@@ -106,6 +113,10 @@ type ACMEIssuer struct {
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
 	Profile string `json:"profile,omitempty"`
+
+	// RenewalInformationSource allows fetching ACME Renewal Information from the ACME CA
+	// server. Default is `ARI`.
+	RenewalInformationSource ACMERenewalInformationSource
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
@@ -158,6 +169,18 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01
+
+	// WaitInsteadOfSelfCheck, if set, skips cert-manager's self-check and
+	// instead waits this long after presentation before asking the ACME server
+	// to validate the challenge.
+	//
+	// A value of 0 skips the self-check and asks the ACME server to validate
+	// immediately after presentation, relying on the ACME server's own
+	// validation retries (RFC 8555 section 8.2) to succeed once the challenge
+	// has propagated. A negative duration is rejected.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+	// for example `30s` or `2m`.
+	WaitInsteadOfSelfCheck *metav1.Duration
 }
 
 // CertificateDNSNameSelector selects certificates using a label selector, and
@@ -351,6 +374,15 @@ type ACMEChallengeSolverDNS01 struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	CNAMEStrategy CNAMEStrategy
+
+	// Nameservers defines a list of DNS nameservers to use for DNS01 propagation
+	// checks. Each entry must be in the format `<host>:<port>` for plain DNS,
+	// where host may be an IP address or hostname, or
+	// `https://<DoH RFC 8484 server address>` for DNS over HTTPS. If not set,
+	// the controller's configured global DNS01 recursive nameservers are used.
+	// When specified, this overrides the global nameservers for this solver
+	// only, and disables the authoritative nameserver check.
+	Nameservers []string
 
 	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
 	Akamai *ACMEIssuerDNS01ProviderAkamai
@@ -658,7 +690,7 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The IP address or hostname of an authoritative DNS server supporting
 	// RFC2136 in the form host:port. If the host is an IPv6 address it must be
-	// enclosed in square brackets (e.g [2001:db8::1]) port is optional.
+	// enclosed in square brackets (e.g [2001:db8::1]) port is optional.
 	// This field is required.
 	Nameserver string
 
@@ -728,3 +760,13 @@ type ACMEIssuerStatus struct {
 	// associated with the Issuer
 	LastPrivateKeyHash string
 }
+
+// ACMERenewalInformationSource determines whether to enable fetching ACME Renewal Information
+// from the ACME CA server. This is independent of the feature gate `ACMEUseARI`
+// and can be used to enable or disable the feature on a per-issuer basis.
+type ACMERenewalInformationSource string
+
+const (
+	ACMERenewalInformationSourceARI  ACMERenewalInformationSource = "ARI"
+	ACMERenewalInformationSourceNone ACMERenewalInformationSource = "None"
+)

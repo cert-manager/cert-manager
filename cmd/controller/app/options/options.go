@@ -132,6 +132,16 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 			"ACME HTTP01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 
+	fs.Var(cliflag.NewMapStringString(&c.ACMEHTTP01Config.SolverExtraLabels),
+		"acme-http01-solver-extra-labels",
+		"A set of key=value pairs for additional labels to apply to dynamically-created "+
+			"ACME HTTP01 solver resources (pods, services, ingresses, or Gateway API HTTPRoutes). "+
+			"The following ACME identity label keys are reserved and will be silently "+
+			"ignored: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, "+
+			"acme.cert-manager.io/http01-solver. These labels can be overridden by per-Issuer "+
+			"podTemplate/ingressTemplate/GatewayHTTPRoute.Labels.")
+
+	fs.StringVar(&c.ACMEHTTP01Config.SolverRuntimeClassName, "acme-http01-solver-runtime-class-name", c.ACMEHTTP01Config.SolverRuntimeClassName, "RuntimeClassName to apply to ACME HTTP01 solver pods")
 	fs.BoolVar(&c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", c.ClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
@@ -171,12 +181,16 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 	fs.BoolVar(&c.EnableCertificateOwnerRef, "enable-certificate-owner-ref", c.EnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
-	fs.BoolVar(&c.EnableGatewayAPI, "enable-gateway-api", c.EnableGatewayAPI, ""+
+	fs.BoolVar(&c.GatewayAPIConfig.Enabled, "enable-gateway-api", c.GatewayAPIConfig.Enabled, ""+
 		"Whether gateway API integration is enabled within cert-manager. The ExperimentalGatewayAPISupport "+
 		"feature gate must also be enabled (default as of 1.15).")
-	fs.BoolVar(&c.EnableGatewayAPIListenerSet, "enable-gateway-api-listenerset", c.EnableGatewayAPIListenerSet, ""+
+	fs.BoolVar(&c.GatewayAPIConfig.EnableListenerSet, "enable-gateway-api-listenerset", c.GatewayAPIConfig.EnableListenerSet, ""+
 		"Whether ListenerSets support is enabled within cert-manager. The ListenerSet "+
 		"feature gate must also be enabled.")
+	fs.StringSliceVar(&c.GatewayAPIConfig.ExtraProtocols, "gateway-api-extra-protocols", c.GatewayAPIConfig.ExtraProtocols, ""+
+		"A comma-separated list of additional Gateway Listener protocol types that the Gateway API shim should treat as TLS-capable. "+
+		"By default, only HTTPS and TLS protocol types are processed. Each entry must exactly match the protocol string as it appears "+
+		"on the Gateway Listener, e.g. 'DTLS'.")
 	fs.StringSliceVar(&c.CopiedAnnotationPrefixes, "copied-annotation-prefixes", c.CopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
 		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kubernetes.io/'- all annotations"+
@@ -242,8 +256,13 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 		"Maximum size in bytes for PEM-encoded certificate bundles.")
 
 	fs.DurationVar(&c.CertificateRequestMinimumBackoffDuration, "certificate-request-minimum-backoff-duration", c.CertificateRequestMinimumBackoffDuration, ""+
-		"Duration of the initial certificate request backoff when a certificate request fails. "+
-		"The backoff duration is exponentially increased based on consecutive failures, up to a maximum of 32 hours.")
+		"Minimum duration to back off when a certificate request fails (default 1h). "+
+		"The backoff delay starts at this value and is exponentially increased "+
+		"with each consecutive failure, up to the configured maximum backoff duration.")
+	fs.DurationVar(&c.CertificateRequestMaximumBackoffDuration, "certificate-request-maximum-backoff-duration", c.CertificateRequestMaximumBackoffDuration, ""+
+		"Maximum duration to back off when a certificate request fails. "+
+		"The backoff delay starts at the minimum backoff duration and is exponentially increased "+
+		"with each consecutive failure, but will never exceed this maximum (default 32h).")
 
 	logf.AddFlags(&c.Logging, fs)
 }
@@ -273,12 +292,12 @@ func EnabledControllers(o *config.ControllerConfiguration) sets.Set[string] {
 		enabled = enabled.Insert(defaults.ExperimentalCertificateSigningRequestControllers...)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.EnableGatewayAPI {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) && o.GatewayAPIConfig.Enabled {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && o.EnableGatewayAPI && o.EnableGatewayAPIListenerSet {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ListenerSets) && o.GatewayAPIConfig.Enabled && o.GatewayAPIConfig.EnableListenerSet {
 		logf.Log.Info("enabling the sig-network Gateway API ListenerSet certificate-shim")
 		enabled = enabled.Insert(listenersetcontroller.ControllerName)
 	}

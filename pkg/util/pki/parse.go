@@ -29,9 +29,17 @@ import (
 // It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
-	block, _, err := pem.SafeDecodePrivateKey(keyBytes)
+	block, rest, err := pem.SafeDecodePrivateKey(keyBytes)
 	if err != nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
+	}
+	// OpenSSL can generate keys with a leading "EC PARAMETERS" block holding information about the curve (like OID).
+	// If it is an "EC PARAMETERS" block, skip over it and read next block. Multiple "EC PARAMETERS" blocks are not valid.
+	if block.Type == "EC PARAMETERS" {
+		block, _, err = pem.SafeDecodePrivateKey(rest)
+		if err != nil {
+			return nil, errors.NewInvalidData("error decoding private key PEM block: %s", err.Error())
+		}
 	}
 
 	switch block.Type {
@@ -87,6 +95,16 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 			return nil, err
 		}
 
+		// Reject anything that isn't labelled as a certificate rather than
+		// passing it to x509.ParseCertificate, which would fail with a
+		// misleading "malformed certificate" error. "X509 CERTIFICATE" and
+		// "X.509 CERTIFICATE" are historic labels (RFC 7468 §5.1) still
+		// produced by some older OpenSSL and Java toolchains, and are
+		// accepted alongside the standard "CERTIFICATE" label.
+		if block.Type != "CERTIFICATE" && block.Type != "X509 CERTIFICATE" && block.Type != "X.509 CERTIFICATE" {
+			return nil, errors.NewInvalidData("error decoding certificate PEM block: expected a \"CERTIFICATE\" block, found %q", block.Type)
+		}
+
 		// parse the tls certificate
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
@@ -134,9 +152,19 @@ func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateReques
 		return nil, errors.NewInvalidData("error decoding certificate request PEM block: %s", err)
 	}
 
+	// Reject anything that isn't labelled as a certificate request rather
+	// than passing it to x509.ParseCertificateRequest, which would fail
+	// with a misleading error. "NEW CERTIFICATE REQUEST" is a historic
+	// label (RFC 7468 §7) still produced by some older OpenSSL
+	// toolchains, and is accepted alongside the standard "CERTIFICATE
+	// REQUEST" label.
+	if block.Type != "CERTIFICATE REQUEST" && block.Type != "NEW CERTIFICATE REQUEST" {
+		return nil, errors.NewInvalidData("error decoding certificate request PEM block: expected a \"CERTIFICATE REQUEST\" block, found %q", block.Type)
+	}
+
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewInvalidData("error parsing x509 certificate request: %s", err.Error())
 	}
 
 	return csr, nil

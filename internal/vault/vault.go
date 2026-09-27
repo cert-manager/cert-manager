@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -41,7 +40,6 @@ import (
 	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -55,7 +53,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer) (Interface, error)
+type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string) CreateToken, _ internalinformers.SecretLister, _ v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -89,10 +87,11 @@ type CreateToken func(ctx context.Context, saName string, req *authv1.TokenReque
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
 // Vault client.
 type Vault struct {
-	createToken   CreateToken // Uses the same namespace as below.
-	secretsLister internalinformers.SecretLister
-	issuer        v1.GenericIssuer
-	namespace     string
+	createToken              CreateToken // Uses the same namespace as below.
+	secretsLister            internalinformers.SecretLister
+	issuer                   v1.GenericIssuer
+	namespace                string
+	canUseAmbientCredentials bool
 
 	// The pattern below, of namespaced and non-namespaced Vault clients, is copied from Hashicorp Nomad:
 	// https://github.com/hashicorp/nomad/blob/6e4410a9b13ce167bc7ef53da97c621b5c9dcd12/nomad/vault.go#L180-L190
@@ -116,12 +115,22 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (Interface, error) {
+	v, err := newVault(ctx, namespace, createTokenFn, secretsLister, issuer, canUseAmbientCredentials)
+	if err != nil {
+		return nil, sanitizeError(err)
+	}
+
+	return v, nil
+}
+
+func newVault(ctx context.Context, namespace string, createTokenFn func(ns string) CreateToken, secretsLister internalinformers.SecretLister, issuer v1.GenericIssuer, canUseAmbientCredentials bool) (*Vault, error) {
 	v := &Vault{
-		createToken:   createTokenFn(namespace),
-		secretsLister: secretsLister,
-		namespace:     namespace,
-		issuer:        issuer,
+		createToken:              createTokenFn(namespace),
+		secretsLister:            secretsLister,
+		namespace:                namespace,
+		issuer:                   issuer,
+		canUseAmbientCredentials: canUseAmbientCredentials,
 	}
 
 	cfg, err := v.newConfig()
@@ -160,6 +169,12 @@ func New(ctx context.Context, namespace string, createTokenFn func(ns string) Cr
 
 // Sign will connect to a Vault instance to sign a certificate signing request.
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
+	cert, ca, err = v.sign(csrPEM, duration)
+
+	return cert, ca, sanitizeError(err)
+}
+
+func (v *Vault) sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to decode CSR for signing: %s", err)
@@ -186,11 +201,14 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	}
 
 	resp, err := v.client.RawRequest(request)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
+	if resp != nil {
+		defer resp.Body.Close()
 	}
-
-	defer resp.Body.Close()
+	if err != nil {
+		// Wrap rather than stringify so that the response error survives for
+		// sanitizeError to recognise on the way out.
+		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %w", err)
+	}
 
 	vaultResult := certutil.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
@@ -198,7 +216,28 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
-	return extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	certPEM, caPEM, leafCert, err := extractCertificatesFromVaultCertificateSecret(&vaultResult)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// When the path points at the "issue" endpoint, Vault returns its own key
+	// pair. The issuing controller rejects that too, but this names the cause.
+	// See https://github.com/cert-manager/cert-manager/issues/8234
+	matches, err := pki.PublicKeyMatchesCSR(leafCert.PublicKey, csr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to compare public keys: %s", err)
+	}
+
+	if !matches {
+		return nil, nil, fmt.Errorf(
+			"the public key in the certificate returned by Vault does not match the public key in the CSR; " +
+				"this usually means the Vault path is configured to use the 'issue' endpoint " +
+				"instead of the 'sign' endpoint (e.g., use 'pki/sign/role-name' instead of " +
+				"'pki/issue/role-name')")
+	}
+
+	return certPEM, caPEM, nil
 }
 
 func (v *Vault) setToken(ctx context.Context, client Client) error {
@@ -452,11 +491,12 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 	}
 
 	resp, err := client.RawRequest(request)
-	if err != nil {
-		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
+	if resp != nil {
+		defer resp.Body.Close()
 	}
-
-	defer resp.Body.Close()
+	if err != nil {
+		return "", fmt.Errorf("error logging in to Vault server: %w", err)
+	}
 
 	vaultResult := vault.Secret{}
 	if err := resp.DecodeJSON(&vaultResult); err != nil {
@@ -522,7 +562,7 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
 	}
 
-	url := filepath.Join(mountPath, "login")
+	url := path.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err := request.SetJSONBody(parameters)
 	if err != nil {
@@ -530,11 +570,13 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 	}
 
 	resp, err := client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
-	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
@@ -601,7 +643,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 				// immediately discarded, let's use the minimal duration
 				// possible. 10 minutes is the minimum allowed by the Kubernetes
 				// API.
-				ExpirationSeconds: ptr.To(int64(600)),
+				ExpirationSeconds: new(int64(600)),
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -623,7 +665,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 		mountPath = v1.DefaultVaultKubernetesAuthMountPath
 	}
 
-	url := filepath.Join(mountPath, "login")
+	url := path.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err := request.SetJSONBody(parameters)
 	if err != nil {
@@ -631,11 +673,13 @@ func (v *Vault) requestTokenWithKubernetesAuth(ctx context.Context, client Clien
 	}
 
 	resp, err := client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
-	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
@@ -660,6 +704,12 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	// When using ambient credentials and a region is found from environment
 	// variables, the environment region takes precedence.
 	useAmbientCredentials := awsAuth.ServiceAccountRef == nil
+
+	// An Issuer/ClusterIssuer must never borrow the controller's ambient AWS identity
+	// unless the operator has explicitly opted in via the appropriate ambient-credentials flag.
+	if useAmbientCredentials && !v.canUseAmbientCredentials {
+		return "", fmt.Errorf("cannot authenticate to Vault using ambient AWS credentials: set auth.aws.serviceAccountRef, or enable ambient credentials via --issuer-ambient-credentials / --cluster-issuer-ambient-credentials")
+	}
 
 	var envRegionFound bool
 	{
@@ -728,7 +778,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	loginPath := path.Join(mountPath, "login")
 	secret, err := client.Write(loginPath, loginData)
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
 
 	// Guard against empty secret
@@ -755,7 +805,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 	tokenrequest, err := v.createToken(ctx, awsAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
 			Audiences:         audiences,
-			ExpirationSeconds: ptr.To(int64(600)),
+			ExpirationSeconds: new(int64(600)),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -775,7 +825,7 @@ func (v *Vault) getAWSCredentialsFromIRSA(ctx context.Context, awsAuth *v1.Vault
 	stsClient := sts.NewFromConfig(cfg)
 	assumeResult, err := stsClient.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
 		RoleArn:          &awsAuth.IAMRoleARN,
-		RoleSessionName:  ptr.To("cert-manager"),
+		RoleSessionName:  new("cert-manager"),
 		WebIdentityToken: &tokenrequest.Status.Token,
 	})
 	if err != nil {
@@ -852,15 +902,18 @@ func generateAWSLoginData(ctx context.Context, creds aws.Credentials, headerValu
 	return loginData, nil
 }
 
-func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
+// extractCertificatesFromVaultCertificateSecret returns the certificate chain
+// and the CA of the Vault response, with the leaf that it already parsed.
+// Callers therefore do not parse the same bytes twice.
+func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, *x509.Certificate, error) {
 	parsedBundle, err := certutil.ParsePKIMap(secret.Data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
+		return nil, nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
 	vbundle, err := parsedBundle.ToCertBundle()
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+		return nil, nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
 	bundle, err := pki.ParseSingleCertificateChainPEM([]byte(
@@ -870,13 +923,23 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 			vbundle.Certificate,
 		), "\n")))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
 	}
 
-	return bundle.ChainPEM, bundle.CAPEM, nil
+	// A response with a CA and no certificate parses without an error and
+	// leaves Certificate nil. Reject it here, so no caller dereferences nil.
+	if parsedBundle.Certificate == nil {
+		return nil, nil, nil, fmt.Errorf("no certificate in the response returned by vault")
+	}
+
+	return bundle.ChainPEM, bundle.CAPEM, parsedBundle.Certificate, nil
 }
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
+	return sanitizeError(v.isVaultInitializedAndUnsealed())
+}
+
+func (v *Vault) isVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
 	healthRequest := v.clientSys.NewRequest("GET", healthURL)
 	healthResp, err := v.clientSys.RawRequest(healthRequest)
@@ -891,7 +954,7 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	// 473 = if performance standby
 	// 501 = if not initialized
 	// 503 = if sealed
-	// nolint: usestdlibvars // We use the numeric error codes here that we got from the Vault docs.
+	//nolint: usestdlibvars // We use the numeric error codes here that we got from the Vault docs.
 	if err != nil {
 		switch {
 		case healthResp == nil:

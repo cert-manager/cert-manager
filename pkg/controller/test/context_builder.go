@@ -44,6 +44,7 @@ import (
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	"github.com/cert-manager/cert-manager/pkg/controller"
+	utildns "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/metrics"
 	"github.com/cert-manager/cert-manager/pkg/util"
@@ -131,8 +132,10 @@ func (b *Builder) Init() {
 	b.ACMEOptions.ACMEHTTP01SolverRunAsNonRoot = true // default from cmd/controller/app/options/options.go
 	b.Client = kubefake.NewClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewClientset(b.CertManagerObjects...)
-	// FIXME: gwfake.NewClientset currently misbehaves in tests (resource guessing gateways vs. gatewaies) and is not usable as of Feb 2026.
-	//nolint:staticcheck // SA1019: gwfake.NewSimpleClientset is deprecated in favor of NewClientset, but we intentionally use it here because NewClientset does not work correctly in our tests.
+	// FIXME: gwfake.NewClientset lacks CRD support (kubernetes/kubernetes#126850), causing incorrect
+	// resource-name guessing ("gatewaies" instead of "gateways") that breaks these tests. Use
+	// NewSimpleClientset until that is fixed; it was intentionally un-deprecated in
+	// kubernetes/kubernetes#136455 for exactly this reason.
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
 	b.MetadataClient = metadatafake.NewSimpleMetadataClient(scheme, b.PartialMetadataObjects...)
 	b.Recorder = new(FakeRecorder)
@@ -147,6 +150,15 @@ func (b *Builder) Init() {
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log, clock.RealClock{})
 
+	if b.DNSResolver == nil {
+		b.DNSResolver = utildns.NewCachingResolver()
+	}
+
+	// Defaulted in buildControllerContextFactory for real contexts
+	if len(b.DNS01Nameservers) == 0 {
+		b.DNS01Nameservers = utildns.RecursiveNameservers
+	}
+
 	// set the Clock on the context
 	if b.Clock == nil {
 		b.Context.Clock = clock.RealClock{}
@@ -155,7 +167,9 @@ func (b *Builder) Init() {
 	}
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
-	apiutil.Clock = b.Context.Clock
+	if b.Clock != nil {
+		apiutil.Clock = b.Clock
+	}
 }
 
 // InitWithRESTConfig() will call builder.Init(), then assign an initialised
@@ -290,7 +304,9 @@ func (b *Builder) Stop() {
 	close(b.stopCh)
 	b.stopCh = nil
 	// Reset the clock back to the RealClock in apiutil
-	apiutil.Clock = clock.RealClock{}
+	if b.Clock != nil {
+		apiutil.Clock = clock.RealClock{}
+	}
 }
 
 func (b *Builder) Start() {

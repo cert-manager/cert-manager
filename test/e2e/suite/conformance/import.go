@@ -24,6 +24,7 @@ import (
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates/vault"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates/venafi"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates/venaficloud"
+	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificates/venafingts"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests/acme"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests/ca"
 	_ "github.com/cert-manager/cert-manager/e2e-tests/suite/conformance/certificatesigningrequests/selfsigned"

@@ -21,6 +21,7 @@ package akamai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/session"
 	"github.com/go-logr/logr"
 
+	utiloptions "github.com/cert-manager/cert-manager/internal/options"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
@@ -57,30 +59,56 @@ type DNSProvider struct {
 	log                    logr.Logger
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for Akamai.
-func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string, dns01Nameservers []string) (*DNSProvider, error) {
+// NewDNSProviderFromOptions constructs an ACME DNS provider for Akamai.
+//
+// All options are passed via the variadic options parameter.
+//
+// Required options:
+// - ServiceConsumerDomain
+// - ClientToken
+// - ClientSecret
+// - AccessToken
+// - Nameservers
+// - Resolver
+//
+// ctx is not used by this provider; it is accepted to standardize the constructor signature across all providers.
+func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) (*DNSProvider, error) {
+	var opt DNSProviderOptions
+	for _, o := range options {
+		o.ApplyToDNSProviderOptions(&opt)
+	}
 
-	// required Aka OpenEdgegrid creds + non empty dnsservers list
-	if serviceConsumerDomain == "" || clientToken == "" || clientSecret == "" || accessToken == "" || len(dns01Nameservers) < 1 {
-		return nil, fmt.Errorf("edgedns: Provider creation failed. Missing required arguments")
+	err := errors.Join(
+		utiloptions.Required(&opt.ServiceConsumerDomain, "service consumer domain is required"),
+		utiloptions.Required(&opt.ClientToken, "client token is required"),
+		utiloptions.Required(&opt.ClientSecret, "client secret is required"),
+		utiloptions.Required(&opt.AccessToken, "access token is required"),
+		utiloptions.NotEmpty(&opt.Nameservers, "nameservers is required"),
+		utiloptions.Required(&opt.Resolver, "resolver is required"),
+	)
+
+	if err != nil {
+		return nil, err
 	}
 
 	dnsp := &DNSProvider{
-		dns01Nameservers:       dns01Nameservers,
-		serviceConsumerDomain:  serviceConsumerDomain,
+		dns01Nameservers:       opt.Nameservers,
+		serviceConsumerDomain:  opt.ServiceConsumerDomain,
 		dnsclient:              &OpenDNSClient{},
-		findHostedDomainByFqdn: findHostedDomainByFqdn,
+		findHostedDomainByFqdn: findHostedDomainByFqdn(opt.Resolver),
 		isNotFound:             isNotFound,
 		log:                    logf.Log.WithName("akamai-dns"),
 		TTL:                    300,
 	}
+
 	cfg, err := edgegrid.New(func(c *edgegrid.Config) {
-		c.Host = serviceConsumerDomain
-		c.ClientToken = clientToken
-		c.ClientSecret = clientSecret
-		c.AccessToken = accessToken
+		c.Host = opt.ServiceConsumerDomain
+		c.ClientToken = opt.ClientToken
+		c.ClientSecret = opt.ClientSecret
+		c.AccessToken = opt.AccessToken
 		c.MaxBody = 131072
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("edgedns: Provider config creation failed: %w", err)
 	}
@@ -97,13 +125,29 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	return dnsp, nil
 }
 
-func findHostedDomainByFqdn(ctx context.Context, fqdn string, ns []string) (string, error) {
-	zone, err := util.FindZoneByFqdn(ctx, fqdn, ns)
-	if err != nil {
-		return "", err
-	}
+// NewDNSProvider returns a DNSProvider instance configured for Akamai.
+//
+// Deprecated: Use NewDNSProviderFromOptions
+func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string, dns01Nameservers []string) (*DNSProvider, error) {
+	return NewDNSProviderFromOptions(context.Background(),
+		ServiceConsumerDomain(serviceConsumerDomain),
+		ClientToken(clientToken),
+		ClientSecret(clientSecret),
+		AccessToken(accessToken),
+		Nameservers(dns01Nameservers),
+		Resolver(util.LegacyCachedResolver()),
+	)
+}
 
-	return util.UnFqdn(zone), nil
+func findHostedDomainByFqdn(resolver util.Resolver) func(context.Context, string, []string) (string, error) {
+	return func(ctx context.Context, fqdn string, nameservers []string) (string, error) {
+		zone, err := resolver.FindZoneByFQDN(ctx, fqdn, nameservers)
+		if err != nil {
+			return "", err
+		}
+
+		return util.UnFqdn(zone), nil
+	}
 }
 
 // Present creates/updates a TXT record to fulfill the dns-01 challenge.
@@ -263,8 +307,7 @@ func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
 	return recName, nil
 }
 
-// GetRecord gets a single Recordset as RecordBody. Sets Akamai OPEN Edgegrid API
-// global variable.
+// GetRecord gets a single Recordset as RecordBody.
 func (o OpenDNSClient) GetRecord(ctx context.Context, zone string, name string, recordType string) (*dns.RecordBody, error) {
 	recordResponse, err := o.client.GetRecord(ctx, dns.GetRecordRequest{
 		RecordType: recordType,

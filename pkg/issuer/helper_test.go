@@ -17,11 +17,11 @@ limitations under the License.
 package issuer
 
 import (
-	"reflect"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/test"
@@ -104,9 +104,7 @@ func TestGetGenericIssuer(t *testing.T) {
 			if err != nil && !row.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
-			if !reflect.DeepEqual(actual, row.Expected) {
-				t.Errorf("Expected %#v but got %#v", row.Expected, actual)
-			}
+			testutil.AssertEqual(t, row.Expected, actual)
 		})
 	}
 }

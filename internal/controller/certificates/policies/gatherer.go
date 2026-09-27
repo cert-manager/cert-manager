@@ -211,14 +211,19 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
+	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
 // Gatherer is used to gather data about a Certificate in order to evaluate
@@ -311,10 +316,41 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		log.V(logf.DebugLevel).Info("Found no CertificateRequest resources owned by this Certificate for the next revision", "revision", nextCRRevision)
 	}
 
-	return Input{
+	i := Input{
 		Certificate:            crt,
 		Secret:                 secret,
 		CurrentRevisionRequest: curCR,
 		NextRevisionRequest:    nextCR,
-	}, nil
+	}
+
+	// NB: We don't care if issuer has enabled/disabled the ARI feature because there is a null check here.
+	// We don't want to bring in issuer/clusterissuer lister here since it is not required.
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ACMEUseARI) {
+		if secret != nil &&
+			crt.Status.ACME != nil && crt.Status.ACME.ARI != nil &&
+			crt.Status.ACME.ARI.SuggestedWindow != nil &&
+			crt.Status.ACME.ARI.SuggestedWindow.Start != nil &&
+			crt.Status.ACME.ARI.SuggestedWindow.End != nil {
+			if leaf, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey]); err == nil {
+				if id, err := acmeapi.CertificateARIID(leaf); err == nil && id == crt.Status.ACME.ARI.CertID {
+					// The CertID match proves this window was fetched for the
+					// certificate currently in the Secret; a window belonging to a
+					// previous revision can never surface here because renewal changes
+					// the CertID. No issuance-time bound is applied on top: RFC 9773
+					// permits a CA to return an already-open window to request urgent
+					// replacement (e.g. after revocation), including for a certificate
+					// it has only just issued.
+					i.ARIRenewalInfo = &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: crt.Status.ACME.ARI.SuggestedWindow.Start.Time,
+							End:   crt.Status.ACME.ARI.SuggestedWindow.End.Time,
+						},
+						ExplanationURL: crt.Status.ACME.ARI.ExplanationURL,
+					}
+				}
+			}
+		}
+	}
+
+	return i, nil
 }

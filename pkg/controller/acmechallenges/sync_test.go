@@ -20,8 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -34,7 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -99,6 +102,8 @@ func TestSyncHappyPath(t *testing.T) {
 	)
 	deletedChallenge := gen.ChallengeFrom(baseChallenge,
 		gen.SetChallengeDeletionTimestamp(metav1.Now()))
+	oldPresentedAt := metav1.NewTime(time.Now().Add(-time.Minute))
+	presentedNow := metav1.NewTime(time.Date(2026, 5, 15, 12, 0, 0, 0, time.UTC))
 
 	simulatedCleanupError := errors.New("simulated-cleanup-error")
 	tests := map[string]testT{
@@ -128,7 +133,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -223,7 +228,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":"","finalizers":["acme.cert-manager.io/finalizer"]}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -342,6 +347,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			builder: &testpkg.Builder{
+				Clock: fakeclock.NewFakeClock(presentedNow.Time),
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
@@ -357,6 +363,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(presentedNow),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
 						))),
@@ -364,6 +371,105 @@ func TestSyncHappyPath(t *testing.T) {
 				ExpectedEvents: []string{
 					//nolint: dupword
 					"Normal Presented Presented challenge using HTTP-01 challenge mechanism",
+				},
+			},
+		},
+		// PresentedAt may be missing on challenges that were already in the
+		// presented state before the controller started recording it, for example
+		// during upgrade or version-skew scenarios.
+		"backfill presentedAt for an already presented challenge when waitInsteadOfSelfCheck is configured": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+				gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+			),
+			httpSolver: &fakeSolver{},
+			builder: &testpkg.Builder{
+				Clock: fakeclock.NewFakeClock(presentedNow.Time),
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+					gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Pending),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(presentedNow),
+							gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+							gen.SetChallengeReason("Waiting 30s before accepting HTTP-01 challenge without self-check"),
+						))),
+				},
+			},
+		},
+		"accept the challenge after waitInsteadOfSelfCheck elapses without running self-check": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeDNSName("test.com"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
+				gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return fmt.Errorf("some error")
+				},
+				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeDNSName("test.com"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
+					gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeDNSName("test.com"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(oldPresentedAt),
+							gen.SetChallengeWaitInsteadOfSelfCheck(metav1.Duration{Duration: 30 * time.Second}),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
+				},
+				ExpectedEvents: []string{
+					`Normal DomainVerified Domain "test.com" verified with "HTTP-01" validation`,
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
 				},
 			},
 		},
@@ -572,7 +678,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -585,6 +691,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Valid),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
 			),
 			httpSolver: &fakeSolver{
 				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
@@ -599,6 +706,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Valid),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -611,6 +719,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Valid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
+							gen.SetChallengePresentedAt(oldPresentedAt),
 						))),
 				},
 			},
@@ -642,7 +751,7 @@ func TestSyncHappyPath(t *testing.T) {
 						"testchal",
 						types.ApplyPatchType,
 						[]byte(`{"kind":"Challenge","apiVersion":"acme.cert-manager.io/v1","metadata":{"name":"testchal","namespace":"default-unit-test-ns","uid":""}}`),
-						metav1.PatchOptions{Force: ptr.To(true), FieldManager: testpkg.FieldManager},
+						metav1.PatchOptions{Force: new(true), FieldManager: testpkg.FieldManager},
 					)),
 				},
 			},
@@ -655,6 +764,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeState(cmacme.Invalid),
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(oldPresentedAt),
 			),
 			httpSolver: &fakeSolver{
 				fakeCleanUp: func(context.Context, *cmacme.Challenge) error {
@@ -669,6 +779,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeState(cmacme.Invalid),
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(oldPresentedAt),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -681,7 +792,82 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
+							gen.SetChallengePresentedAt(oldPresentedAt),
 						))),
+				},
+			},
+		},
+		// Transient ACME error paths: the challenge must remain in a non-final
+		// state so the workqueue retries with backoff rather than permanently
+		// marking it Errored (issues #8696 and #8747).
+		"transient net.Error from GetAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				// State is unchanged (still ""), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return nil, &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapperError{}}
+				},
+			},
+		},
+		"transient *net.DNSError from GetAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				// State is unchanged (still ""), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return nil, &net.DNSError{Name: "acme.example.com", IsTimeout: true}
+				},
+			},
+		},
+		"transient context.DeadlineExceeded from WaitAuthorization leaves challenge in non-final state": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+				), testIssuerHTTP01Enabled},
+				// State remains Pending (not Errored/Invalid), so no status update is issued.
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, context.DeadlineExceeded
 				},
 			},
 		},
@@ -781,3 +967,119 @@ func Test_StabilizeSolverErrorMessage(t *testing.T) {
 		})
 	}
 }
+
+func Test_HandleError(t *testing.T) {
+	// timeoutNetErr is a net.Error whose Timeout() reports true; mirrors what
+	// http.Client returns on a connect/read timeout.
+	timeoutNetErr := &net.OpError{Op: "dial", Net: "tcp", Err: &timeoutWrapperError{}}
+
+	wrappedNetErr := fmt.Errorf("wrapped: %w", &url.Error{
+		Op:  "Head",
+		URL: "https://acme-v02.api.letsencrypt.org/acme/new-nonce",
+		Err: timeoutNetErr,
+	})
+
+	tests := []struct {
+		name        string
+		err         error
+		wantState   cmacme.State
+		wantReason  string
+		wantErrBack bool
+	}{
+		{
+			name:        "nil error returns nil and leaves state untouched",
+			err:         nil,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: false,
+		},
+		{
+			name:        "context.Canceled is transient and does not set Errored",
+			err:         context.Canceled,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "context.DeadlineExceeded is transient and does not set Errored",
+			err:         context.DeadlineExceeded,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "wrapped context.DeadlineExceeded is transient (errors.Is)",
+			err:         fmt.Errorf("wrapper: %w", context.DeadlineExceeded),
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "net.OpError dial timeout is transient and does not set Errored",
+			err:         timeoutNetErr,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "url.Error wrapping a net.Error is transient (errors.As)",
+			err:         wrappedNetErr,
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+		{
+			name:        "plain non-ACME non-network error is treated as terminal Errored",
+			err:         errors.New("some unexpected non-network error"),
+			wantState:   cmacme.Errored,
+			wantReason:  "unexpected non-ACME API error: some unexpected non-network error",
+			wantErrBack: true,
+		},
+		{
+			name:        "ACME malformed protocol error marks the challenge Expired",
+			err:         &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:malformed"},
+			wantState:   cmacme.Expired,
+			wantReason:  "",
+			wantErrBack: false,
+		},
+		{
+			name:        "ACME 4xx response marks the challenge Errored",
+			err:         &acmeapi.Error{StatusCode: 404},
+			wantState:   cmacme.Errored,
+			wantReason:  "Failed to retrieve Order resource: 404 : ",
+			wantErrBack: false,
+		},
+		{
+			name:        "ACME 5xx response leaves state unchanged and returns the error for retry",
+			err:         &acmeapi.Error{StatusCode: 500},
+			wantState:   "",
+			wantReason:  "",
+			wantErrBack: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch := &cmacme.Challenge{}
+			gotErr := handleError(context.Background(), ch, tt.err)
+			if tt.wantErrBack {
+				assert.Error(t, gotErr)
+			} else {
+				assert.NoError(t, gotErr)
+			}
+			assert.Equal(t, tt.wantState, ch.Status.State, "Challenge.Status.State")
+			assert.Equal(t, tt.wantReason, ch.Status.Reason, "Challenge.Status.Reason")
+		})
+	}
+}
+
+// timeoutWrapperError is a minimal net.Error that reports Timeout() == true;
+// it stands in for the kind of inner error net/http surfaces on TLS/connect
+// timeouts in a way that does not depend on internal stdlib types.
+type timeoutWrapperError struct{}
+
+func (t *timeoutWrapperError) Error() string   { return "i/o timeout" }
+func (t *timeoutWrapperError) Timeout() bool   { return true }
+func (t *timeoutWrapperError) Temporary() bool { return true }
+
+var _ net.Error = (*timeoutWrapperError)(nil)

@@ -21,10 +21,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"reflect"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type testBundle struct {
@@ -246,10 +247,7 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 					test.expErrString, err.Error())
 			}
 
-			if !reflect.DeepEqual(bundle, test.expPEMBundle) {
-				t.Errorf("unexpected pem bundle, exp=%+s got=%+s",
-					test.expPEMBundle, bundle)
-			}
+			assert.Equal(t, test.expPEMBundle, bundle, "pem bundle")
 		})
 	}
 }

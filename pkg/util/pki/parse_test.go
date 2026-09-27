@@ -19,6 +19,9 @@ package pki
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"strings"
 	"testing"
@@ -42,6 +45,69 @@ func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 		return nil, err
 	}
 	return EncodePKCS8PrivateKey(privateKey)
+}
+
+func TestDecodeX509CertificateSetBytes(t *testing.T) {
+	certBytes := mustCreateBundle(t, nil, "test").pem
+
+	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: []byte("dummy")})
+
+	// A bundle containing a valid certificate followed by a non-certificate
+	// PEM block, e.g. a combined cert+key file.
+	certAndKeyBytes := append(append([]byte{}, certBytes...), keyBytes...)
+
+	_, err := DecodeX509CertificateSetBytes(certAndKeyBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a bundle containing a non-certificate PEM block, got none")
+	}
+
+	expectErrStr := `expected a "CERTIFICATE" block, found "RSA PRIVATE KEY"`
+	if !strings.Contains(err.Error(), expectErrStr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectErrStr, err.Error())
+	}
+
+	certs, err := DecodeX509CertificateSetBytes(certBytes)
+	if err != nil {
+		t.Fatalf("unexpected error decoding a valid certificate: %s", err)
+	}
+	if len(certs) != 1 {
+		t.Errorf("expected 1 certificate, got %d", len(certs))
+	}
+}
+
+func TestDecodeX509CertificateRequestBytes(t *testing.T) {
+	pk, err := GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrDER, err := EncodeCSR(&x509.CertificateRequest{Subject: pkix.Name{CommonName: "test"}}, pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	csrBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+	csr, err := DecodeX509CertificateRequestBytes(csrBytes)
+	if err != nil {
+		t.Fatalf("unexpected error decoding a valid CSR: %s", err)
+	}
+	if csr.Subject.CommonName != "test" {
+		t.Errorf("expected common name %q, got %q", "test", csr.Subject.CommonName)
+	}
+
+	// A PEM block that isn't labelled as a certificate request, e.g. a
+	// certificate mistakenly passed as spec.request.
+	nonCSRBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("dummy")})
+
+	_, err = DecodeX509CertificateRequestBytes(nonCSRBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a non-CSR PEM block, got none")
+	}
+
+	expectErrStr := `expected a "CERTIFICATE REQUEST" block, found "CERTIFICATE"`
+	if !strings.Contains(err.Error(), expectErrStr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectErrStr, err.Error())
+	}
 }
 
 func TestDecodePrivateKeyBytes(t *testing.T) {
@@ -76,6 +142,16 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
+
+	// openssl ecparams option writes a leading "EC PARAMETERS" block holding the OID for curve prime256v1 (OID is 1.2.840.10045.3.1.7)
+	ecParamsDER, err := asn1.Marshal(asn1.ObjectIdentifier{1, 2, 840, 10045, 3, 1, 7})
+	if err != nil {
+		t.Errorf("error marshalling EC parameters: %s", err)
+		return
+	}
+	ecParamsBytes := pem.EncodeToMemory(&pem.Block{Type: "EC PARAMETERS", Bytes: ecParamsDER})
+	// This will generate a copy of private key with EC PARAMS
+	ecdsaKeyWithParamsBytes := append(append([]byte{}, ecParamsBytes...), ecdsaKeyBytes...)
 
 	block := &pem.Block{Type: "BLAHBLAHBLAH", Bytes: []byte("blahblahblah")}
 	blahKeyBytes := pem.EncodeToMemory(block)
@@ -125,6 +201,18 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		{
 			name:         "fail to decode unknown not pem encoded key bytes",
 			keyBytes:     invalidKeyBytes,
+			expectErr:    true,
+			expectErrStr: "error decoding private key PEM block",
+		},
+		{
+			name:      "decode ecdsa private key preceded by an EC PARAMETERS block",
+			keyBytes:  ecdsaKeyWithParamsBytes,
+			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			expectErr: false,
+		},
+		{
+			name:         "fail to decode an EC PARAMETERS block with no key following it",
+			keyBytes:     ecParamsBytes,
 			expectErr:    true,
 			expectErrStr: "error decoding private key PEM block",
 		},

@@ -18,6 +18,7 @@ package middleware
 
 import (
 	"context"
+	"crypto/x509"
 
 	"github.com/go-logr/logr"
 
@@ -151,4 +152,11 @@ func (l *Logger) UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account,
 	ctx = context.WithValue(ctx, client.AcmeActionLabel, "update_registration")
 
 	return l.baseCl.UpdateReg(ctx, a)
+}
+
+func (l *Logger) GetRenewalInfo(ctx context.Context, cert *x509.Certificate) (*acme.RenewalInfoResponse, error) {
+	l.log.V(logf.TraceLevel).Info("Calling GetRenewalInfo")
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "get_renewal_info")
+
+	return l.baseCl.GetRenewalInfo(ctx, cert)
 }

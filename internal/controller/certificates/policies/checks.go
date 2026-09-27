@@ -36,6 +36,7 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -159,15 +160,14 @@ func SecretKeystoreFormatMismatch(input Input) (string, string, bool) {
 // SecretIssuerAnnotationsMismatch - When the issuer annotations are defined,
 // it must match the issuer ref.
 func SecretIssuerAnnotationsMismatch(input Input) (string, string, bool) {
-	name, ok1 := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
-	kind, ok2 := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
-	group, ok3 := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
-	if (ok1 || ok2 || ok3) && // only check if an annotation is present
-		name != input.Certificate.Spec.IssuerRef.Name ||
-		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
-		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
+	if !apiutil.SecretIssuerAnnotationsMatch(input.Secret, input.Certificate.Spec.IssuerRef) {
+		name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
+		kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
+		group := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
+
 		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %q", formatIssuerRef(name, kind, group)), true
 	}
+
 	return "", "", false
 }
 
@@ -243,7 +243,7 @@ func currentSecretValidForSpec(input Input) (string, string, bool) {
 	if err != nil {
 		return InvalidCertificate, fmt.Sprintf("Issuing certificate as Secret contains an invalid certificate: %v", err), true
 	}
-	// nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
+	//nolint: staticcheck // FuzzyX509AltNamesMatchSpec is used here for backwards compatibility
 	violations := pki.FuzzyX509AltNamesMatchSpec(x509Cert, input.Certificate.Spec)
 	if len(violations) > 0 {
 		return SecretMismatch, fmt.Sprintf("Issuing certificate as Existing issued Secret is not up to date for spec: %v", violations), true
@@ -271,8 +271,36 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		notAfter := metav1.NewTime(x509Cert.NotAfter)
 		crt := input.Certificate
 
+		// If the certificate renewal policy is set to Disabled, do not renew.
+		if crt.Spec.Renewal != nil && crt.Spec.Renewal.Policy == cmapi.CertificateRenewalPolicyDisabled {
+			return "", "", false
+		}
+
 		reason := Renewing
 		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
+
+		if input.ARIRenewalInfo != nil &&
+			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() {
+			window := input.ARIRenewalInfo.SuggestedWindow
+			// RFC 9773 asks clients to select a uniform random time within the
+			// suggested window so the CA can spread renewal load. The readiness
+			// controller picks and persists that time in Status.RenewalTime; gate on
+			// it when it demonstrably falls inside the current window. If it does
+			// not (the window has moved, or the field still holds a renewBefore
+			// value), fall back to the window start so the CA's instruction is never
+			// deferred past the window itself.
+			gateTime := window.Start
+			if rt := crt.Status.RenewalTime; rt != nil &&
+				rt.Time.After(x509Cert.NotBefore) &&
+				!rt.Time.Before(window.Start) &&
+				!rt.Time.After(window.End) {
+				gateTime = rt.Time
+			}
+			if c.Now().Before(gateTime) {
+				return "", "", false
+			}
+			return reason, message, true
+		}
 
 		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 		if err != nil {
@@ -316,31 +344,6 @@ func formatIssuerRef(name, kind, group string) string {
 	return fmt.Sprintf("%s.%s/%s", kind, group, name)
 }
 
-const (
-	defaultIssuerKind  = "Issuer"
-	defaultIssuerGroup = "cert-manager.io"
-)
-
-func issuerKindsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerKind
-	}
-	if r == "" {
-		r = defaultIssuerKind
-	}
-	return l == r
-}
-
-func issuerGroupsEqual(l, r string) bool {
-	if l == "" {
-		l = defaultIssuerGroup
-	}
-	if r == "" {
-		r = defaultIssuerGroup
-	}
-	return l == r
-}
-
 // SecretSecretTemplateMismatch will inspect the given Secret's Annotations
 // and Labels, and compare these maps against those that appear on the given
 // Certificate's SecretTemplate.
@@ -373,12 +376,7 @@ func certificateDataAnnotationsForSecret(secret *corev1.Secret) (annotations map
 		}
 	}
 
-	certificateAnnotations, err := internalcertificates.AnnotationsForCertificate(certificate)
-	if err != nil {
-		return nil, err
-	}
-
-	return certificateAnnotations, nil
+	return internalcertificates.AnnotationsForCertificate(certificate), nil
 }
 
 func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager string) (labels, annotations sets.Set[string], err error) {
@@ -392,19 +390,19 @@ func secretLabelsAndAnnotationsManagedFields(secret *corev1.Secret, fieldManager
 
 		// Decode the managed field.
 		var fieldset fieldpath.Set
-		if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+		if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 			return nil, nil, err
 		}
 
 		// Extract the labels and annotations of the managed fields.
 		metadata := fieldset.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("metadata"),
+			FieldName: new("metadata"),
 		})
 		labels := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("labels"),
+			FieldName: new("labels"),
 		})
 		annotations := metadata.Children.Descend(fieldpath.PathElement{
-			FieldName: ptr.To("annotations"),
+			FieldName: new("annotations"),
 		})
 
 		// Gather the annotations and labels on the managed fields. Remove the '.'
@@ -672,19 +670,19 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 			}
 
 			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
+				{FieldName: new("data")},
 				{FieldName: ptr.To(cmapi.CertificateOutputFormatCombinedPEMKey)},
 			}) {
 				secretHasCombinedPEM = true
 			}
 
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("data")},
+				{FieldName: new("data")},
 				{FieldName: ptr.To(cmapi.CertificateOutputFormatDERKey)},
 			}) {
 				secretHasDER = true
@@ -718,12 +716,12 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 			}
 
 			var fieldset fieldpath.Set
-			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+			if err := fieldset.FromJSON(managedField.FieldsV1.GetRawReader()); err != nil {
 				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 			if fieldset.Has(fieldpath.Path{
-				{FieldName: ptr.To("metadata")},
-				{FieldName: ptr.To("ownerReferences")},
+				{FieldName: new("metadata")},
+				{FieldName: new("ownerReferences")},
 				{Key: &value.FieldList{{Name: "uid", Value: value.NewValueInterface(string(input.Certificate.UID))}}},
 			}) {
 				hasOwnerRefManagedField = true

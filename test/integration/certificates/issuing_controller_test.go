@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -43,8 +43,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
@@ -113,20 +113,6 @@ func TestIssuingController(t *testing.T) {
 	// Encode the private key as PKCS#1, the default format
 	skBytes := utilpki.EncodePKCS1PrivateKey(sk)
 
-	// Store new private key in secret
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: skBytes,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
@@ -144,6 +130,9 @@ func TestIssuingController(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Must come after the Certificate exists: the Secret needs it as owner.
+	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
@@ -319,22 +308,6 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Store new private key in secret
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			// store PKCS#1 bytes so we can ensure they are correctly converted to
-			// PKCS#8 later on
-			corev1.TLSPrivateKeyKey: skBytesPKCS1,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
@@ -353,6 +326,9 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Must come after the Certificate exists: the Secret needs it as owner.
+	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytesPKCS1)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
@@ -526,20 +502,6 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	// Encode the private key as PKCS#1, the default format
 	skBytes := utilpki.EncodePKCS1PrivateKey(sk)
 
-	// Store new private key in secret
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: skBytes,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
@@ -557,6 +519,9 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Must come after the Certificate exists: the Secret needs it as owner.
+	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, skBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, sk)
 	if err != nil {
@@ -759,20 +724,6 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	// Encode the private key as PKCS#1, the default format
 	pkBytes := utilpki.EncodePKCS1PrivateKey(pk)
 
-	// Store new private key in secret
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: pkBytes,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
@@ -790,6 +741,9 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Must come after the Certificate exists: the Secret needs it as owner.
+	createNextPrivateKeySecret(t, kubeClient, crt, nextPrivateKeySecretName, pkBytes)
 
 	csrPEM, err := gen.CSRWithSignerForCertificate(crt, pk)
 	if err != nil {
@@ -885,7 +839,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
 			return false, nil
 		}
-		return reflect.DeepEqual(map[string][]byte{
+		return cmp.Equal(map[string][]byte{
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 			"key.der": pkDER, "tls-combined.pem": combinedPEM,
 		}, secret.Data), nil
@@ -908,7 +862,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
 			return false, nil
 		}
-		return reflect.DeepEqual(map[string][]byte{
+		return cmp.Equal(map[string][]byte{
 			"ca.crt": certPEM, "tls.crt": certPEM, "tls.key": pkBytes,
 		}, secret.Data), nil
 	})
@@ -1014,7 +968,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 	t.Log("added owner reference to Secret for non Certificate UID with field manager should not get removed")
 	secret, err = kubeClient.CoreV1().Secrets(ns.Name).Get(t.Context(), secret.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: ptr.To(false), BlockOwnerDeletion: ptr.To(false)}
+	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: types.UID("not-cert"), Controller: new(false), BlockOwnerDeletion: new(false)}
 	applyCnf.OwnerReferences = []applymetav1.OwnerReferenceApplyConfiguration{{
 		APIVersion: &fooRef.APIVersion, Kind: &fooRef.Kind, Name: &fooRef.Name,
 		UID: &fooRef.UID, Controller: fooRef.Controller, BlockOwnerDeletion: fooRef.BlockOwnerDeletion,
@@ -1081,4 +1035,32 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		require.NoError(t, err)
 		return apiequality.Semantic.DeepEqual(secret.OwnerReferences, []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))})
 	}, time.Second*3, time.Millisecond*10, "expected Secret to have owner reference options to Certificate reverse: %#+v", secret.OwnerReferences)
+}
+
+// createNextPrivateKeySecret stores skBytes in a Secret that looks like one the
+// keymanager controller created for crt: it carries the labels the keymanager
+// sets and has crt as its controller. The issuing controller ignores any Secret
+// that is not labeled cert-manager.io/next-private-key and owned by crt.
+func createNextPrivateKeySecret(t *testing.T, kubeClient kubernetes.Interface, crt *cmapi.Certificate, name string, skBytes []byte) {
+	t.Helper()
+
+	_, err := kubeClient.CoreV1().Secrets(crt.Namespace).Create(t.Context(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: crt.Namespace,
+			Labels: map[string]string{
+				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+				cmapi.PartOfCertManagerControllerLabelKey: "true",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
+			},
+		},
+		Data: map[string][]byte{
+			corev1.TLSPrivateKeyKey: skBytes,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

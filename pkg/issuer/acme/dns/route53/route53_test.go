@@ -50,7 +50,7 @@ func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg.BaseEndpoint = aws.String(ts.URL)
 
 	client := route53.NewFromConfig(cfg)
-	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers}, nil
+	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers, resolver: util.NewCachingResolver()}, nil
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
@@ -59,13 +59,18 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	provider, err := NewDNSProvider(ctx, "", "", "", "", "", "", true, util.RecursiveNameservers, "cert-manager-test")
+	provider, err := NewDNSProviderFromOptions(ctx,
+		Ambient(true),
+		Nameservers(util.RecursiveNameservers),
+		UserAgent("cert-manager-test"),
+		Resolver(util.NewCachingResolver()))
+
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(ctx)
 	assert.NoError(t, err, "Expected credentials to be set from environment")
 
-	assert.Equal(t, provider.client.Options().Region, "us-east-1")
+	assert.Equal(t, "us-east-1", provider.client.Options().Region)
 }
 
 func TestNoCredentialsFromEnv(t *testing.T) {
@@ -74,7 +79,11 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", "us-east-1")
 
 	_, ctx := ktesting.NewTestContext(t)
-	_, err := NewDNSProvider(ctx, "", "", "", "", "", "", false, util.RecursiveNameservers, "cert-manager-test")
+	_, err := NewDNSProviderFromOptions(ctx,
+		Nameservers(util.RecursiveNameservers),
+		UserAgent("cert-manager-test"),
+		Resolver(util.NewCachingResolver()))
+
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -561,5 +570,84 @@ func makeMockSessionProvider(
 		Role:             role,
 		WebIdentityToken: webIdentityToken,
 		StsProvider:      defaultSTSProvider,
+	}
+}
+
+func TestNewDNSProviderFromOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(t *testing.T)
+		options     []DNSProviderOption
+		wantErr     bool
+		checkResult func(t *testing.T, ctx context.Context, p *DNSProvider)
+	}{
+		{
+			name: "ambient credentials from env",
+			setup: func(t *testing.T) {
+				t.Setenv("AWS_ACCESS_KEY_ID", "123")
+				t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+				t.Setenv("AWS_REGION", "us-east-1")
+			},
+			options: []DNSProviderOption{
+				Ambient(true),
+				Nameservers(util.RecursiveNameservers),
+				UserAgent("cert-manager-test"),
+				Resolver(util.NewCachingResolver()),
+			},
+			checkResult: func(t *testing.T, ctx context.Context, p *DNSProvider) {
+				_, err := p.client.Options().Credentials.Retrieve(ctx)
+				assert.NoError(t, err, "Expected credentials to be set from environment")
+				assert.Equal(t, "us-east-1", p.client.Options().Region)
+			},
+		},
+		{
+			name: "no credentials without ambient",
+			setup: func(t *testing.T) {
+				t.Setenv("AWS_ACCESS_KEY_ID", "123")
+				t.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+				t.Setenv("AWS_REGION", "us-east-1")
+			},
+			options: []DNSProviderOption{
+				Ambient(false),
+				Nameservers(util.RecursiveNameservers),
+				UserAgent("cert-manager-test"),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing resolver is rejected",
+			options: []DNSProviderOption{
+				Ambient(true),
+				Nameservers(util.RecursiveNameservers),
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing nameservers is rejected",
+			options: []DNSProviderOption{
+				Ambient(true),
+				Resolver(util.NewCachingResolver()),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup(t)
+			}
+			_, ctx := ktesting.NewTestContext(t)
+			p, err := NewDNSProviderFromOptions(ctx, tt.options...)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.checkResult != nil {
+				tt.checkResult(t, ctx, p)
+			}
+		})
 	}
 }

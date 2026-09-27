@@ -59,6 +59,10 @@ var (
 const (
 	// Set the top bit if a star was included in the expression.
 	starBit = 1 << 63
+
+	// nextSearchLimitYears is how far Next will search for a matching time.
+	// Must cover the 8-year gap between leap days around a non-leap century year.
+	nextSearchLimitYears = 9
 )
 
 // Next returns the next time this schedule is activated, greater than the given
@@ -94,8 +98,10 @@ func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// This flag indicates whether a field has been incremented.
 	added := false
 
-	// If no time is found within five years, return zero.
-	yearLimit := t.Year() + 5
+	// If no time is found within this horizon, return zero.
+	// Ordinary schedules resolve in well under five years, but Feb 29 can be
+	// eight years apart around a non-leap century year (2096-03-01 → 2104-02-29).
+	yearLimit := t.Year() + nextSearchLimitYears
 
 WRAP:
 	if t.Year() > yearLimit {
@@ -104,7 +110,6 @@ WRAP:
 
 	// Find the first applicable month.
 	// If it's this month, then do nothing.
-	//nolint:gosec
 	for 1<<uint(t.Month())&s.Month == 0 {
 		// If we have to add a month, reset the other parts to 0.
 		if !added {
@@ -146,7 +151,6 @@ WRAP:
 		}
 	}
 
-	//nolint:gosec
 	for 1<<uint(t.Hour())&s.Hour == 0 {
 		if !added {
 			added = true
@@ -159,7 +163,6 @@ WRAP:
 		}
 	}
 
-	//nolint:gosec
 	for 1<<uint(t.Minute())&s.Minute == 0 {
 		if !added {
 			added = true
@@ -172,7 +175,6 @@ WRAP:
 		}
 	}
 
-	//nolint:gosec
 	for 1<<uint(t.Second())&s.Second == 0 {
 		if !added {
 			added = true
@@ -192,9 +194,7 @@ WRAP:
 // restrictions are satisfied by the given time.
 func dayMatches(s *SpecSchedule, t time.Time) bool {
 	var (
-		//nolint:gosec
 		domMatch = 1<<uint(t.Day())&s.Dom > 0
-		//nolint:gosec
 		dowMatch = 1<<uint(t.Weekday())&s.Dow > 0
 	)
 	if s.Dom&starBit > 0 || s.Dow&starBit > 0 {

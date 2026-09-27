@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -241,5 +242,183 @@ func TestGetServicesForChallenge(t *testing.T) {
 			scenario.builder.CheckAndFinish()
 		})
 
+	}
+}
+
+func TestBuildServiceExtraLabels(t *testing.T) {
+	const createdServiceKey = "createdService"
+	tests := map[string]solverFixture{
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
+				}
+				svc, err := s.Solver.buildService(s.Challenge)
+				if err != nil {
+					t.Errorf("error building service: %v", err)
+				}
+				s.testResources[createdServiceKey] = svc
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				expectedSvc := s.testResources[createdServiceKey].(*corev1.Service)
+				resp, ok := args[0].(*corev1.Service)
+				if !ok {
+					t.Errorf("expected service to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
+				}
+				expectedSvc.OwnerReferences = resp.OwnerReferences
+				expectedSvc.Name = resp.Name
+				expectedSvc.ManagedFields = resp.ManagedFields
+				if resp.String() != expectedSvc.String() {
+					t.Errorf("unexpected service built\nexp=%s\ngot=%s",
+						expectedSvc, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should not include extra labels in service selector": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+				}
+				svc, err := s.Solver.buildService(s.Challenge)
+				if err != nil {
+					t.Errorf("error building service: %v", err)
+				}
+				// Selector should only contain ACME identity labels, NOT extra labels
+				expectedSelector := podLabels(s.Challenge)
+				if !assert.ObjectsAreEqual(expectedSelector, svc.Spec.Selector) {
+					t.Errorf("service selector should not include extra labels\nexp=%s\ngot=%s",
+						expectedSelector, svc.Spec.Selector)
+				}
+				s.testResources[createdServiceKey] = svc
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resp, ok := args[0].(*corev1.Service)
+				if !ok {
+					t.Errorf("expected service to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				expectedSelector := podLabels(s.Challenge)
+				if !assert.ObjectsAreEqual(expectedSelector, resp.Spec.Selector) {
+					t.Errorf("service selector should not include extra labels\nexp=%s\ngot=%s",
+						expectedSelector, resp.Spec.Selector)
+				}
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.Setup(t)
+			resp, err := test.Solver.createService(t.Context(), test.Challenge)
+			test.Finish(t, resp, err)
+		})
+	}
+}
+
+func TestCleanupServices(t *testing.T) {
+	testNamespace := "foo"
+	chal := &cmacme.Challenge{
+		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Token:   "token",
+			Key:     "key",
+			Solver: cmacme.ACMEChallengeSolver{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+				},
+			},
+		},
+	}
+	serviceMeta := &metav1.PartialObjectMetadata{
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cm-acme-http-solver-abcde",
+			Namespace:       testNamespace,
+			Labels:          podLabels(chal),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+		},
+	}
+
+	tests := map[string]struct {
+		deleteErr   error
+		expectedErr bool
+	}{
+		// The metadata lister has the service but the API server does not, which
+		// is what a delete that already happened looks like from here.
+		"should not return an error if the service is already gone": {},
+		"should return an error if a delete fails": {
+			deleteErr:   fmt.Errorf("simulated error"),
+			expectedErr: true,
+		},
+	}
+
+	for name, scenario := range tests {
+		t.Run(name, func(t *testing.T) {
+			builder := &testpkg.Builder{
+				T:                      t,
+				PartialMetadataObjects: []runtime.Object{serviceMeta},
+			}
+			builder.InitWithRESTConfig()
+			s := &Solver{
+				Context:       builder.Context,
+				serviceLister: builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("services")).Lister(),
+			}
+			if scenario.deleteErr != nil {
+				builder.FakeKubeClient().PrependReactor("delete", "services", func(action coretesting.Action) (bool, runtime.Object, error) {
+					return true, nil, scenario.deleteErr
+				})
+			}
+			builder.Start()
+			defer builder.Stop()
+
+			err := s.cleanupServices(t.Context(), chal)
+			if err != nil && !scenario.expectedErr {
+				t.Errorf("expected no error, got: %v", err)
+			}
+			if err == nil && scenario.expectedErr {
+				t.Error("expected an error, got none")
+			}
+		})
 	}
 }

@@ -17,10 +17,10 @@ limitations under the License.
 package revisionmanager
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/go-logr/logr/testr"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -392,10 +392,7 @@ func TestCertificateRequestsToDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			log := testr.New(t)
 			output := certificateRequestsToDelete(log, test.limit, test.input)
-			if !reflect.DeepEqual(test.exp, output) {
-				t.Errorf("unexpected prune sort response, exp=%v got=%v",
-					test.exp, output)
-			}
+			assert.Equal(t, test.exp, output, "prune sort response")
 		})
 	}
 }

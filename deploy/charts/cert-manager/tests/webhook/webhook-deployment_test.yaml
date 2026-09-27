@@ -1,0 +1,14 @@
+suite: webhook Deployment - Configuration
+templates:
+  - templates/webhook-deployment.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should set runtimeClassName when specified
+    set:
+      webhook.runtimeClassName: something
+    asserts:
+    - equal:
+        path: spec.template.spec.runtimeClassName
+        value: something

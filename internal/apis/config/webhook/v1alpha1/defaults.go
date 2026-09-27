@@ -19,12 +19,19 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	logsapi "k8s.io/component-base/logs/api/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 )
 
 const defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+
+var (
+	// PEM size limits based on existing constants in internal/pem/decode.go
+	defaultMaxCertificateSize int32 = 36500  // maxLeafCertificatePEMSize
+	defaultMaxPrivateKeySize  int32 = 13000  // maxPrivateKeyPEMSize
+	defaultMaxChainLength     int32 = 95000  // maxCertificateChainSize
+	defaultMaxBundleSize      int32 = 330000 // maxBundleSize
+)
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
@@ -32,10 +39,10 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	if obj.SecurePort == nil {
-		obj.SecurePort = ptr.To(int32(6443))
+		obj.SecurePort = new(int32(6443))
 	}
 	if obj.HealthzPort == nil {
-		obj.HealthzPort = ptr.To(int32(6080))
+		obj.HealthzPort = new(int32(6080))
 	}
 	if obj.PprofAddress == "" {
 		obj.PprofAddress = "localhost:6060"
@@ -46,4 +53,22 @@ func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
+}
+
+func SetDefaults_PEMSizeLimitsConfig(obj *v1alpha1.PEMSizeLimitsConfig) {
+	if obj.MaxCertificateSize == nil {
+		obj.MaxCertificateSize = &defaultMaxCertificateSize
+	}
+
+	if obj.MaxPrivateKeySize == nil {
+		obj.MaxPrivateKeySize = &defaultMaxPrivateKeySize
+	}
+
+	if obj.MaxChainLength == nil {
+		obj.MaxChainLength = &defaultMaxChainLength
+	}
+
+	if obj.MaxBundleSize == nil {
+		obj.MaxBundleSize = &defaultMaxBundleSize
+	}
 }

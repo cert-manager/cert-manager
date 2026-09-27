@@ -110,7 +110,7 @@ func TestSolver(t *testing.T) {
 			solverDomain:         "2001:db8:3333:4444:5555:6666:7777:8888",
 			solverToken:          "secret",
 			solverKey:            "test-key",
-			requestTarget:        "http://2001:db8:3333:4444:5555:6666:7777:8888" + HTTPChallengePath + "/secret",
+			requestTarget:        "http://[2001:db8:3333:4444:5555:6666:7777:8888]" + HTTPChallengePath + "/secret",
 			expectedResponseCode: http.StatusOK,
 		},
 	}

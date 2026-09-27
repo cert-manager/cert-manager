@@ -48,6 +48,11 @@ type PKCS12KeystoreApplyConfiguration struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (e.g., because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	// `Modern2026`: Encodes PKCS#12 files using algorithms that are considered modern as of 2026.
+	// Private keys and certificates are encrypted using PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC.
+	// The MAC algorithm is PBMAC1 with PBKDF2-HMAC-SHA-256 and HMAC-SHA256.
+	// Files produced with this profile can be read by OpenSSL 3.4.0 and higher, Java 26 and higher,
+	// or with Java using compatible versions of Bouncy Castle. Meets FIPS 140-3 requirements.
 	Profile *certmanagerv1.PKCS12Profile `json:"profile,omitempty"`
 	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
 	// containing the password used to encrypt the PKCS#12 keystore.

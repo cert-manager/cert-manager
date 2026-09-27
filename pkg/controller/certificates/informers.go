@@ -40,12 +40,16 @@ func EnqueueCertificatesForResourceUsingPredicates[U metav1.Object](
 	log logr.Logger, queue workqueue.TypedInterface[types.NamespacedName],
 	lister cmlisters.CertificateLister,
 	predicateBuilders ...predicate.ExtractorFunc[*cmapi.Certificate, U],
-) func(U) {
-	return func(s U) {
-		// 'Construct' the predicate functions using the given Secret
+) func(metav1.Object) {
+	return func(s metav1.Object) {
+		u, ok := s.(U)
+		if !ok {
+			return
+		}
+
 		predicates := make(predicate.Funcs[*cmapi.Certificate], len(predicateBuilders))
 		for i, b := range predicateBuilders {
-			predicates[i] = b(s)
+			predicates[i] = b(u)
 		}
 
 		certs, err := ListCertificatesMatchingPredicates(lister.Certificates(s.GetNamespace()), labels.Everything(), predicates...)

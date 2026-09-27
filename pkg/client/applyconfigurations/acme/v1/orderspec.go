@@ -54,6 +54,13 @@ type OrderSpecApplyConfiguration struct {
 	// Profile allows requesting a certificate profile from the ACME server.
 	// Supported profiles are listed by the server's ACME directory URL.
 	Profile *string `json:"profile,omitempty"`
+	// Replaces is the ARI CertID (RFC 9773 §4.1) of the certificate that this
+	// Order is intended to replace. When set, cert-manager will include the
+	// "replaces" field on the newOrder request to the ACME server if and only
+	// if the server advertises ARI support in its directory. The CertID has
+	// the form "base64url(AKI).base64url(serial)" and is derived locally from
+	// the currently issued leaf certificate.
+	Replaces *string `json:"replaces,omitempty"`
 }
 
 // OrderSpecApplyConfiguration constructs a declarative configuration of the OrderSpec type for use with
@@ -121,5 +128,13 @@ func (b *OrderSpecApplyConfiguration) WithDuration(value apismetav1.Duration) *O
 // If called multiple times, the Profile field is set to the value of the last call.
 func (b *OrderSpecApplyConfiguration) WithProfile(value string) *OrderSpecApplyConfiguration {
 	b.Profile = &value
+	return b
+}
+
+// WithReplaces sets the Replaces field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Replaces field is set to the value of the last call.
+func (b *OrderSpecApplyConfiguration) WithReplaces(value string) *OrderSpecApplyConfiguration {
+	b.Replaces = &value
 	return b
 }

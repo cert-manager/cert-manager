@@ -42,8 +42,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -150,7 +150,10 @@ func (s *Suite) Define() {
 						},
 					),
 					gen.SetCertificateEmails("email@domain.test"),
-					gen.SetCertificateCommonName("someCN"),
+					// Some issuers use the CN to define the cert's "ID"
+					// if one cert manages to be in an error state in the issuer it might throw an error
+					// this makes the CN more unique
+					gen.SetCertificateCommonName("someCN-" + rand.String(10)),
 				},
 				extraValidations: []certificates.ValidationFunc{
 					func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
@@ -451,6 +454,66 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			defineTest(test)
 		}
 
+		s.it(f, "should issue a certificate and populate ACME Renewal Information (ARI) in the Certificate status", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ACMEUseARI)
+
+			randomTestID := rand.String(10)
+			certificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "e2e-conformance-ari-" + randomTestID,
+					Namespace: f.Namespace.Name,
+					Annotations: map[string]string{
+						"conformance.cert-manager.io/test-name": s.Name + " ARI",
+					},
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "e2e-conformance-ari-tls-" + randomTestID,
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+				},
+			}
+
+			By("Creating a Certificate")
+			Expect(f.CRClient.Create(ctx, certificate)).To(Succeed())
+
+			By("Waiting for the Certificate to be issued...")
+			certificate, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(ctx, certificate, time.Minute*8)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for ACME Renewal Information (ARI) to be populated on the Certificate status")
+			crtClient := f.CertManagerClientSet.CertmanagerV1().Certificates(certificate.Namespace)
+			pollErr := wait.PollUntilContextTimeout(ctx, 2*time.Second, time.Minute*5, true, func(ctx context.Context) (bool, error) {
+				got, err := crtClient.Get(ctx, certificate.Name, metav1.GetOptions{})
+				if err != nil {
+					return false, err
+				}
+				certificate = got
+				if got.Status.ACME == nil || got.Status.ACME.ARI == nil {
+					return false, nil
+				}
+				ari := got.Status.ACME.ARI
+				return ari.SuggestedWindow != nil &&
+					ari.SuggestedWindow.Start != nil &&
+					ari.SuggestedWindow.End != nil &&
+					ari.LastChecked != nil &&
+					ari.NextCheck != nil, nil
+			})
+			Expect(pollErr).NotTo(HaveOccurred(), "timed out waiting for ARI to populate on Certificate status")
+
+			By("Validating the populated ARI status fields")
+			ari := certificate.Status.ACME.ARI
+			Expect(ari.SuggestedWindow).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.Start).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.End).NotTo(BeNil())
+			Expect(ari.SuggestedWindow.End.Time.After(ari.SuggestedWindow.Start.Time)).To(BeTrue(),
+				"ARI suggested window End (%s) must be after Start (%s)", ari.SuggestedWindow.End, ari.SuggestedWindow.Start)
+			Expect(ari.LastChecked).NotTo(BeNil())
+			Expect(ari.NextCheck).NotTo(BeNil())
+			Expect(ari.NextCheck.Time.After(ari.LastChecked.Time)).To(BeTrue(),
+				"ARI NextCheck (%s) must be after LastChecked (%s)", ari.NextCheck, ari.LastChecked)
+			Expect(ari.LastError).To(BeEmpty(), "expected no ARI fetch error, got: %s", ari.LastError)
+		}, featureset.OnlySAN, featureset.ACMEUseARI)
+
 		/////////////////////////////////////
 		////// Gateway/ Ingress Tests ///////
 		/////////////////////////////////////
@@ -517,7 +580,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
-			revisionHistoryLimit := ptr.To(int32(7))
+			revisionHistoryLimit := new(int32(7))
 			privateKeyAlgorithm := cmapi.RSAKeyAlgorithm
 			privateKeyEncoding := cmapi.PKCS1
 			privateKeySize := 4096
@@ -656,6 +719,67 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			Expect(cert.Spec.CommonName).To(Equal(domain))
 			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
 			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+		})
+
+		s.it(f, "Creating a Gateway with a custom extra protocol generates a Certificate", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			if len(f.Config.Addons.Gateway.ExtraProtocols) == 0 {
+				Skip("skipping test as no extra protocols are configured (--gateway-api-extra-protocols is empty)")
+				return
+			}
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
+			name := "testcert-gateway-extra-protocol"
+			secretName := "testcert-gateway-extra-protocol-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+
+			By("Creating a Gateway with a custom extra protocol")
+			gw := e2eutil.NewGatewayWithProtocol(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+			}, gwapi.ProtocolType(f.Config.Addons.Gateway.ExtraProtocols[0]), domain)
+
+			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.SecretName).To(Equal(secretName))
+		})
+
+		s.it(f, "Creating a Gateway with ignore annotation should not affect existing listeners", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.ExperimentalGatewayAPISupport)
+
+			name := "testcert-gateway-listener-ignore"
+			secretName := "testcert-gateway-listener-ignore-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+
+			By("Creating a Gateway with ignore annotations")
+			gw := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":               issuerRef.Name,
+				"cert-manager.io/issuer-kind":          issuerRef.Kind,
+				"cert-manager.io/issuer-group":         issuerRef.Group,
+				"cert-manager.io/ignore-tls-listeners": "custom-tls-listener",
+			}, domain)
+
+			gw, err := f.GWClientSet.GatewayV1().Gateways(f.Namespace.Name).Create(ctx, gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := string(gw.Spec.Listeners[0].TLS.CertificateRefs[0].Name)
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(ctx, f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.SecretName).To(Equal(secretName))
 		})
 
 		s.it(f, "Creating a ListenerSet with annotations for issuer ref and other related fields", func(ctx context.Context, ir cmmeta.IssuerReference) {

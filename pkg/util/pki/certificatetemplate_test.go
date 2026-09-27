@@ -20,8 +20,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"reflect"
+	"math/big"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
 
 func TestCertificateTemplateFromCSR(t *testing.T) {
@@ -149,12 +153,16 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := CertificateTemplateFromCSR(tc.csr)
 			if err != nil {
-				t.Errorf("unexpected error: %v", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if !reflect.DeepEqual(result, tc.expected) {
-				t.Errorf("unexpected result: %v", result)
-			}
+			// We compare the dereferenced structs here to avoid cmp.Diff
+			// using the Equal function implemented by x509.Certificate.
+			// Using this function would only compare the Raw field, which
+			// will always be nil in this case.
+			testutil.AssertEqual(t, *tc.expected, *result, cmp.Comparer(func(a, b *big.Int) bool {
+				return (a == nil && b == nil) || (a != nil && b != nil && a.Cmp(b) == 0)
+			}))
 		})
 	}
 }

@@ -25,9 +25,9 @@ import (
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	// Challenges returns a ChallengeInformer.
-	Challenges() ChallengeInformer
+	Challenges() TypedChallengeInformer
 	// Orders returns a OrderInformer.
-	Orders() OrderInformer
+	Orders() TypedOrderInformer
 }
 
 type version struct {
@@ -41,12 +41,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Challenges returns a ChallengeInformer.
-func (v *version) Challenges() ChallengeInformer {
+// Challenges returns a TypedChallengeInformer.
+func (v *version) Challenges() TypedChallengeInformer {
 	return &challengeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Orders returns a OrderInformer.
-func (v *version) Orders() OrderInformer {
+// Orders returns a TypedOrderInformer.
+func (v *version) Orders() TypedOrderInformer {
 	return &orderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

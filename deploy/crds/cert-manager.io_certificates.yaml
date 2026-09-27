@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: certificates.cert-manager.io
 spec:
   group: cert-manager.io
@@ -32,6 +32,10 @@ spec:
       type: string
     - jsonPath: .status.conditions[?(@.type == "Ready")].message
       name: Status
+      priority: 1
+      type: string
+    - jsonPath: .status.notAfter
+      name: Expiration
       priority: 1
       type: string
     - description: CreationTimestamp is a timestamp representing the server time when
@@ -286,10 +290,16 @@ spec:
                           `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
                           (e.g., because of company policy). Please note that the security of the algorithm is not that important
                           in reality, because the unencrypted certificate and private key are also stored in the Secret.
+                          `Modern2026`: Encodes PKCS#12 files using algorithms that are considered modern as of 2026.
+                          Private keys and certificates are encrypted using PBES2 with PBKDF2-HMAC-SHA-256 and AES-256-CBC.
+                          The MAC algorithm is PBMAC1 with PBKDF2-HMAC-SHA-256 and HMAC-SHA256.
+                          Files produced with this profile can be read by OpenSSL 3.4.0 and higher, Java 26 and higher,
+                          or with Java using compatible versions of Bouncy Castle. Meets FIPS 140-3 requirements.
                         enum:
                         - LegacyRC2
                         - LegacyDES
                         - Modern2023
+                        - Modern2026
                         type: string
                     required:
                     - create
@@ -508,6 +518,8 @@ spec:
                   minutes.
                   Cannot be set if the `renewBefore` field is set.
                 format: int32
+                maximum: 99
+                minimum: 1
                 type: integer
               renewal:
                 description: |-
@@ -750,6 +762,59 @@ spec:
               Read-only.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
+              acme:
+                description: ACME stores information that is fetched from the ACME
+                  CA server.
+                properties:
+                  ari:
+                    description: |-
+                      ARI stores the ACME Renewal Information that is fetched from the ACME server
+                      in accordance with RFC 9773. This is only populated if the ARI feature gate is enabled.
+                    properties:
+                      certID:
+                        description: |-
+                          CertID is the ARI CertID (RFC 9773) of the certificate this renewal information was
+                          fetched for. This is used to determine if we need to re-fetch the renewal information
+                          as changed cert id means that ARI fetched before is stale.
+                        type: string
+                      explanationURL:
+                        description: |-
+                          ExplanationURL is a human-readable URL that may explain why the suggested window
+                          has its current value.
+                        type: string
+                      lastChecked:
+                        description: LastChecked is the time at which the ACME server
+                          was last checked for renewal information.
+                        format: date-time
+                        type: string
+                      lastError:
+                        description: LastError is the last error encountered when
+                          checking the ACME server for renewal information, if any.
+                        type: string
+                      nextCheck:
+                        description: NextCheck is the time at which the ACME server
+                          will next be checked for renewal information.
+                        format: date-time
+                        type: string
+                      suggestedWindow:
+                        description: SuggestedWindow is the suggested renewal window
+                          as returned by the ACME server in accordance with RFC 9773.
+                        properties:
+                          end:
+                            description: End is the end of the suggested renewal window.
+                            format: date-time
+                            type: string
+                          start:
+                            description: Start is the start of the suggested renewal
+                              window.
+                            format: date-time
+                            type: string
+                        required:
+                        - end
+                        - start
+                        type: object
+                    type: object
+                type: object
               conditions:
                 description: |-
                   List of status conditions to indicate the status of certificates.

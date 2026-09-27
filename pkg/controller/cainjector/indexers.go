@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -45,8 +46,13 @@ const (
 // Certificate that is configured as a CA source for an injectable via
 // inject-ca-from annotation, a reconcile loop will be triggered for this
 // injectable
-func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup) handler.MapFunc {
+func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config setup, ignoreNamespaces sets.Set[string]) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []ctrl.Request {
+
+		if ignoreNamespaces.Has(obj.GetNamespace()) {
+			return nil
+		}
+
 		secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 		certName := owningCertForSecret(obj.(*metav1.PartialObjectMetadata))
 		if certName == nil {

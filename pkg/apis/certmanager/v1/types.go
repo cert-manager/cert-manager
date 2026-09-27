@@ -130,6 +130,15 @@ const (
 	// Annotation key used to set the PrivateKeyRotationPolicy for a Certificate.
 	// If unset a policy `Never` will be used.
 	PrivateKeyRotationPolicyAnnotationKey = "cert-manager.io/private-key-rotation-policy"
+
+	// CertificateIgnoreTLSListeners is an annotation that specifies which
+	// Gateway API listeners in a ListenerSet or Gateway cert-manager should
+	// ignore while creating Certificate objects through the certificate-shim
+	// controller.
+	// The value of this annotation should be a comma-separated list of listener names.
+	// This is useful for users who want to use cert-manager to manage
+	// certificates for some, but not all, of the listeners for a given parent.
+	CertificateIgnoreTLSListeners = "cert-manager.io/ignore-tls-listeners"
 )
 
 const (

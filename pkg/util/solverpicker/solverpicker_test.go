@@ -17,12 +17,11 @@ limitations under the License.
 package solverpicker
 
 import (
-	"reflect"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -542,7 +541,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -654,7 +653,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -707,7 +706,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -760,7 +759,7 @@ func TestPick(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   ptr.To(true),
+				Wildcard:   new(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedSolver: &cmacme.ACMEChallengeSolver{
@@ -982,13 +981,8 @@ func TestPick(t *testing.T) {
 
 			solver, ch := Pick(t.Context(), domainToFind, test.authz.Challenges, test.issuer.GetSpec().ACME.Solvers, test.order)
 
-			if !reflect.DeepEqual(test.expectedSolver, solver) {
-				t.Errorf("expected solver %v, got %v", test.expectedSolver, solver)
-			}
-
-			if !reflect.DeepEqual(test.expectedChallenge, ch) {
-				t.Errorf("expected challenge token %v, got %v", test.expectedChallenge, ch)
-			}
+			testutil.AssertEqual(t, test.expectedSolver, solver)
+			testutil.AssertEqual(t, test.expectedChallenge, ch)
 		})
 	}
 }

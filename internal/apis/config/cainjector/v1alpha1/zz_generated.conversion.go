@@ -75,6 +75,7 @@ func RegisterConversions(s *runtime.Scheme) error {
 func autoConvert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfiguration(in *cainjectorv1alpha1.CAInjectorConfiguration, out *cainjector.CAInjectorConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.Namespace = in.Namespace
+	out.IgnoreNamespaces = *(*[]string)(unsafe.Pointer(&in.IgnoreNamespaces))
 	if err := sharedv1alpha1.Convert_v1alpha1_LeaderElectionConfig_To_shared_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}
@@ -103,6 +104,7 @@ func Convert_v1alpha1_CAInjectorConfiguration_To_cainjector_CAInjectorConfigurat
 func autoConvert_cainjector_CAInjectorConfiguration_To_v1alpha1_CAInjectorConfiguration(in *cainjector.CAInjectorConfiguration, out *cainjectorv1alpha1.CAInjectorConfiguration, s conversion.Scope) error {
 	out.KubeConfig = in.KubeConfig
 	out.Namespace = in.Namespace
+	out.IgnoreNamespaces = *(*[]string)(unsafe.Pointer(&in.IgnoreNamespaces))
 	if err := sharedv1alpha1.Convert_shared_LeaderElectionConfig_To_v1alpha1_LeaderElectionConfig(&in.LeaderElectionConfig, &out.LeaderElectionConfig, s); err != nil {
 		return err
 	}

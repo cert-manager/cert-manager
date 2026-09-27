@@ -18,7 +18,6 @@ package acme
 
 import (
 	"crypto/x509"
-	"reflect"
 	"testing"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -1017,9 +1017,7 @@ func Test_buildOrder(t *testing.T) {
 			}
 
 			// for the current purpose we only test the spec
-			if !reflect.DeepEqual(got.Spec, test.want.Spec) {
-				t.Errorf("buildOrder() got = %v, want %v", got.Spec, test.want.Spec)
-			}
+			testutil.AssertEqual(t, test.want.Spec, got.Spec)
 		})
 	}
 

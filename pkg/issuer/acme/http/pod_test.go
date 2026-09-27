@@ -26,12 +26,62 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/utils/ptr"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 )
+
+func TestFilterACMEIdentityLabels(t *testing.T) {
+	tests := map[string]struct {
+		input    map[string]string
+		expected map[string]string
+	}{
+		"should filter out all ACME identity labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+			},
+			expected: map[string]string{},
+		},
+		"should preserve non-ACME labels": {
+			input: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+				"app":          "my-app",
+			},
+		},
+		"should filter ACME identity labels while preserving non-ACME labels": {
+			input: map[string]string{
+				cmacme.DomainLabelKey:               "hash",
+				cmacme.TokenLabelKey:                "hash",
+				cmacme.SolverIdentificationLabelKey: "true",
+				"custom-label":                      "custom-value",
+			},
+			expected: map[string]string{
+				"custom-label": "custom-value",
+			},
+		},
+		"should handle nil input without panicking": {
+			input:    nil,
+			expected: nil,
+		},
+		"should handle empty map": {
+			input:    map[string]string{},
+			expected: map[string]string{},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := filterACMEIdentityLabels(tt.input)
+			assert.Equal(t, tt.expected, got, "filterACMEIdentityLabels returned unexpected result")
+		})
+	}
+}
 
 func TestEnsurePod(t *testing.T) {
 	type testT struct {
@@ -76,14 +126,14 @@ func TestEnsurePod(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			},
 			Spec: corev1.PodSpec{
-				AutomountServiceAccountToken: ptr.To(false),
-				EnableServiceLinks:           ptr.To(false),
+				AutomountServiceAccountToken: new(false),
+				EnableServiceLinks:           new(false),
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
 				RestartPolicy: corev1.RestartPolicyOnFailure,
 				SecurityContext: &corev1.PodSecurityContext{
-					RunAsNonRoot: ptr.To(true),
+					RunAsNonRoot: new(true),
 					SeccompProfile: &corev1.SeccompProfile{
 						Type: corev1.SeccompProfileTypeRuntimeDefault,
 					},
@@ -115,8 +165,8 @@ func TestEnsurePod(t *testing.T) {
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							ReadOnlyRootFilesystem:   ptr.To(true),
-							AllowPrivilegeEscalation: ptr.To(false),
+							ReadOnlyRootFilesystem:   new(true),
+							AllowPrivilegeEscalation: new(false),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
@@ -134,7 +184,7 @@ func TestEnsurePod(t *testing.T) {
 		}
 	)
 	scPod := pod.DeepCopy()
-	scPod.Spec.SecurityContext.RunAsUser = ptr.To(int64(1020))
+	scPod.Spec.SecurityContext.RunAsUser = new(int64(1020))
 	scPod.Spec.SecurityContext.RunAsNonRoot = nil
 	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 	scPod.Spec.Tolerations = []corev1.Toleration{}
@@ -189,7 +239,7 @@ func TestEnsurePod(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
-											RunAsUser: ptr.To(int64(1020)),
+											RunAsUser: new(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,
 											},
@@ -221,7 +271,7 @@ func TestEnsurePod(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										SecurityContext: &cmacme.ACMEChallengeSolverHTTP01IngressPodSecurityContext{
-											RunAsUser: ptr.To(int64(1020)),
+											RunAsUser: new(int64(1020)),
 											SeccompProfile: &corev1.SeccompProfile{
 												Type: corev1.SeccompProfileTypeRuntimeDefault,
 											},
@@ -323,8 +373,16 @@ func TestGetPodsForChallenge(t *testing.T) {
 			},
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
+		podMetaWithExtraLabels = &metav1.PartialObjectMetadata{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
+		}
 	)
 	podMeta2.Labels[cmacme.DomainLabelKey] = "foo"
+	podMetaWithExtraLabels.Labels["custom-extra"] = "value"
 	tests := map[string]testT{
 		"should return one pod that matches": {
 			chal: chal,
@@ -338,6 +396,13 @@ func TestGetPodsForChallenge(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{&metav1.PartialObjectMetadata{}},
 			},
+		},
+		"should not be affected by extra labels on solver": {
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{podMetaWithExtraLabels},
+			},
+			wantedPodMetas: []*metav1.PartialObjectMetadata{podMetaWithExtraLabels},
 		},
 	}
 	for name, scenario := range tests {
@@ -704,6 +769,104 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				validateContainerResources(t, container, expectedRequests, expectedLimits)
 			},
 		},
+		"should apply extra labels from HTTP01SolverExtraLabels and filter ACME identity labels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					cmacme.DomainLabelKey: "badvalue",
+					"custom-extra-label":  "custom-extra-value",
+				}
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				s.testResources[createdPodKey] = resultingPod
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				// ACME identity label should not be overridden by extra labels
+				if resp.Labels[cmacme.DomainLabelKey] == "badvalue" {
+					t.Errorf("ACME identity label %s should not be overridden by extra labels, got %q",
+						cmacme.DomainLabelKey, resp.Labels[cmacme.DomainLabelKey])
+				}
+				// Non-ACME label should be present
+				if resp.Labels["custom-extra-label"] != "custom-extra-value" {
+					t.Errorf("expected non-ACME extra label %s=%s, got %q",
+						"custom-extra-label", "custom-extra-value", resp.Labels["custom-extra-label"])
+				}
+				resultingPod.OwnerReferences = resp.OwnerReferences
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should allow pod template to override extra labels from HTTP01SolverExtraLabels": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "token",
+					Key:     "key",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
+										Labels: map[string]string{
+											"custom-extra-label": "overridden-by-template",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				s.Solver.Context.ACMEOptions.HTTP01SolverExtraLabels = map[string]string{
+					"custom-extra-label": "custom-extra-value",
+					"extra-only-label":   "extra-only-value",
+				}
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				expectedLabels := podLabels(s.Challenge)
+				expectedLabels["custom-extra-label"] = "overridden-by-template"
+				expectedLabels["extra-only-label"] = "extra-only-value"
+				resultingPod.Labels = expectedLabels
+				s.testResources[createdPodKey] = resultingPod
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...any) {
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+				resultingPod.OwnerReferences = resp.OwnerReferences
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
 		"should handle partial resources in podTemplate by merging with ACMEOptions values": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
@@ -774,5 +937,73 @@ func validateContainerResources(t *testing.T, container corev1.Container, expect
 		if !actualQuantity.Equal(expectedQuantity) {
 			t.Errorf("%s limit mismatch: got %v, expected %v", resourceType, actualQuantity, expectedQuantity)
 		}
+	}
+}
+
+func TestCleanupPods(t *testing.T) {
+	testNamespace := "foo"
+	chal := &cmacme.Challenge{
+		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Token:   "token",
+			Key:     "key",
+			Solver: cmacme.ACMEChallengeSolver{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+				},
+			},
+		},
+	}
+	podMeta := &metav1.PartialObjectMetadata{
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cm-acme-http-solver-fghij",
+			Namespace:       testNamespace,
+			Labels:          podLabels(chal),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+		},
+	}
+
+	tests := map[string]struct {
+		deleteErr   error
+		expectedErr bool
+	}{
+		// The metadata lister has the pod but the API server does not, which
+		// is what a delete that already happened looks like from here.
+		"should not return an error if the pod is already gone": {},
+		"should return an error if a delete fails": {
+			deleteErr:   fmt.Errorf("simulated error"),
+			expectedErr: true,
+		},
+	}
+
+	for name, scenario := range tests {
+		t.Run(name, func(t *testing.T) {
+			builder := &testpkg.Builder{
+				T:                      t,
+				PartialMetadataObjects: []runtime.Object{podMeta},
+			}
+			builder.InitWithRESTConfig()
+			s := &Solver{
+				Context:   builder.Context,
+				podLister: builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
+			}
+			if scenario.deleteErr != nil {
+				builder.FakeKubeClient().PrependReactor("delete", "pods", func(action coretesting.Action) (bool, runtime.Object, error) {
+					return true, nil, scenario.deleteErr
+				})
+			}
+			builder.Start()
+			defer builder.Stop()
+
+			err := s.cleanupPods(t.Context(), chal)
+			if err != nil && !scenario.expectedErr {
+				t.Errorf("expected no error, got: %v", err)
+			}
+			if err == nil && scenario.expectedErr {
+				t.Error("expected an error, got none")
+			}
+		})
 	}
 }

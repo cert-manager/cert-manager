@@ -83,6 +83,17 @@ func TestSetup(t *testing.T) {
 		}, nil
 	}
 
+	authFailedVerifyCredentialsClient := func(string, internalinformers.SecretLister, cmapi.GenericIssuer, *metrics.Metrics, logr.Logger, string) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			PingFn: func() error {
+				return nil
+			},
+			VerifyCredentialsFn: func() error {
+				return client.AuthFailedError{Err: fmt.Errorf("401 Unauthorized — invalid client credentials")}
+			},
+		}, nil
+	}
+
 	tests := map[string]testSetupT{
 		"if client builder fails then should error": {
 			clientBuilder: failingClientBuilder,
@@ -140,6 +151,17 @@ func TestSetup(t *testing.T) {
 			expectedCondition: &cmapi.IssuerCondition{
 				Reason:  "ErrorSetup",
 				Message: "Failed to setup Certificate Manager issuer: client.VerifyCredentials: 401 Unauthorized",
+				Status:  "False",
+			},
+		},
+
+		"if verifyCredentials returns AuthFailedError we should set condition to False with AuthFailed": {
+			clientBuilder: authFailedVerifyCredentialsClient,
+			iss:           baseIssuer.DeepCopy(),
+			expectedErr:   true,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  "AuthFailed",
+				Message: "OAuth token request failed: 401 Unauthorized — invalid client credentials",
 				Status:  "False",
 			},
 		},

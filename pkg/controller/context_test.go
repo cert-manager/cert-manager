@@ -17,9 +17,15 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	flowcontrolapi "k8s.io/api/flowcontrol/v1"
+	"k8s.io/client-go/rest"
 )
 
 func Test_NewContextFactory(t *testing.T) {
@@ -38,4 +44,70 @@ func Test_NewContextFactory(t *testing.T) {
 
 	assert.NotNil(t, ctx1.RESTConfig.RateLimiter)
 	assert.Same(t, ctx1.RESTConfig.RateLimiter, ctx2.RESTConfig.RateLimiter)
+}
+
+func Test_isAPFEnabled(t *testing.T) {
+	testCases := []struct {
+		name            string
+		responseHeaders map[string]string
+		statusCode      int
+		expectedEnabled bool
+	}{
+		{
+			name: "APF header present indicates enabled",
+			responseHeaders: map[string]string{
+				flowcontrolapi.ResponseHeaderMatchedFlowSchemaUID: "unused-uuid",
+			},
+			statusCode:      http.StatusOK,
+			expectedEnabled: true,
+		},
+		{
+			name:            "no APF header indicates disabled",
+			statusCode:      http.StatusOK,
+			expectedEnabled: false,
+		},
+		{
+			name: "APF header present with non-200 status still indicates enabled",
+			responseHeaders: map[string]string{
+				flowcontrolapi.ResponseHeaderMatchedFlowSchemaUID: "unused-uuid",
+			},
+			statusCode:      http.StatusInternalServerError,
+			expectedEnabled: true,
+		},
+		{
+			name:            "no APF header with non-200 status indicates disabled",
+			statusCode:      http.StatusNotFound,
+			expectedEnabled: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				assert.Equal(t, "/livez/ping", req.URL.Path)
+				assert.Equal(t, http.MethodHead, req.Method)
+				for k, v := range tc.responseHeaders {
+					w.Header().Set(k, v)
+				}
+				w.WriteHeader(tc.statusCode)
+			}))
+			defer server.Close()
+
+			enabled, err := isAPFEnabled(ctx, &rest.Config{Host: server.URL})
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedEnabled, enabled)
+		})
+	}
+}
+
+func Test_isAPFEnabled_invalidHost(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	enabled, err := isAPFEnabled(ctx, &rest.Config{Host: "://invalid"})
+	assert.Error(t, err)
+	assert.False(t, enabled)
 }

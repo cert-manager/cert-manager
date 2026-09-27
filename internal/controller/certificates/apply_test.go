@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/randfill"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -44,16 +45,24 @@ func Test_serializeApply(t *testing.T) {
 				t.Run("fuzz_"+strconv.Itoa(j), func(t *testing.T) {
 					var crt cmapi.Certificate
 					randfill.New().NilChance(0.5).Fill(&crt)
-					crt.ManagedFields = nil
+
+					// Seed a non-empty ManagedFields to verify serializeApply
+					// strips it — the API server rejects patches containing
+					// metadata.managedFields.
+					crt.ManagedFields = []metav1.ManagedFieldsEntry{
+						{Manager: "test", Operation: metav1.ManagedFieldsOperationUpdate},
+					}
 
 					crtData, err := serializeApply(&crt)
 					assert.NoError(t, err)
 					assert.Regexp(t, expReg, string(crtData))
 
-					// Test round trip serializing Certificate preserved the spec.
+					// Test round trip serializing Certificate preserved the spec
+					// and stripped ManagedFields.
 					var rtCrt cmapi.Certificate
 					assert.NoError(t, json.Unmarshal(crtData, &rtCrt))
 					assert.Equal(t, rtCrt.Spec, crt.Spec)
+					assert.Nil(t, rtCrt.ManagedFields)
 
 					wg.Done()
 				})

@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -93,7 +92,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 	cl, err := client.New(restcfg, client.Options{
 		HTTPClient: httpClient,
 		Scheme:     scheme,
-		DryRun:     ptr.To(true),
+		DryRun:     new(true),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("while creating client: %w", err)
