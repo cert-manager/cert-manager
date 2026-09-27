@@ -669,6 +669,8 @@ func TestSign(t *testing.T) {
 				// package), so the validity period of the signed
 				// certificate is exactly the requested duration.
 				assert.Equal(t, 30*time.Minute, got.NotAfter.Sub(got.NotBefore))
+				// And the validity period starts at the time of signing, not
+				// at some fixed time.
 				assert.WithinRange(t, got.NotBefore, signStart, time.Now())
 			},
 		},
@@ -686,6 +688,8 @@ func TestSign(t *testing.T) {
 				// See the duration test above for why this assertion is
 				// exact.
 				assert.Equal(t, 444*time.Second, got.NotAfter.Sub(got.NotBefore))
+				// And the validity period starts at the time of signing, not
+				// at some fixed time.
 				assert.WithinRange(t, got.NotBefore, signStart, time.Now())
 			},
 		},
