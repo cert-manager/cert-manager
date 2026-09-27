@@ -32,7 +32,7 @@ func TestObserveVaultRequestDuration(t *testing.T) {
 		name             string
 		apiCall          string
 		duration         time.Duration
-		observationCount int
+		observationCount uint64
 		expectedSum      float64
 	}{
 		{
@@ -62,7 +62,7 @@ func TestObserveVaultRequestDuration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := New(testr.New(t), fakeclock.NewFakeClock(time.Now()))
 
-			for i := 0; i < tt.observationCount; i++ {
+			for range tt.observationCount {
 				m.ObserveVaultRequestDuration(tt.duration, tt.apiCall)
 			}
 
@@ -74,10 +74,10 @@ func TestObserveVaultRequestDuration(t *testing.T) {
 				Write(*dto.Metric) error
 			}).Write(pb))
 
-			require.NotNil(t, pb.Summary)
-			assert.Equal(t, uint64(tt.observationCount), pb.Summary.GetSampleCount(),
+			require.NotNil(t, pb.GetSummary())
+			assert.Equal(t, tt.observationCount, pb.GetSummary().GetSampleCount(),
 				"expected %d observations for api_call=%q", tt.observationCount, tt.apiCall)
-			assert.InDelta(t, tt.expectedSum, pb.Summary.GetSampleSum(), 0.001,
+			assert.InDelta(t, tt.expectedSum, pb.GetSummary().GetSampleSum(), 0.001,
 				"expected sum=%v for api_call=%q", tt.expectedSum, tt.apiCall)
 		})
 	}
