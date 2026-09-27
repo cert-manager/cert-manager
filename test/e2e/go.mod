@@ -13,7 +13,7 @@ require (
 	github.com/cloudflare/cloudflare-go/v7 v7.10.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/onsi/ginkgo/v2 v2.33.0
-	github.com/onsi/gomega v1.43.1
+	github.com/onsi/gomega v1.44.0
 	github.com/spf13/pflag v1.0.10
 	k8s.io/api v0.37.1
 	k8s.io/apiextensions-apiserver v0.37.1
