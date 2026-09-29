@@ -269,14 +269,14 @@ tests:
 
   - it: should render proxy env vars as strings when they need YAML quoting
     set:
-      http_proxy: proxy.example.com:8080
+      http_proxy: "*.example.com,1.2.3.4/8"
       no_proxy: "*.example.com"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: HTTP_PROXY
-            value: proxy.example.com:8080
+            value: "*.example.com,1.2.3.4/8"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
