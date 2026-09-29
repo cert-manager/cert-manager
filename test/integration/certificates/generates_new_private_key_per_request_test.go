@@ -139,16 +139,19 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	t.Logf("Issuance acknowledged as failed as expected")
 	t.Logf("Triggering new issuance")
 
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get certificate: %v", err)
-	}
-
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManualTrigger", "triggered by test case manually")
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatalf("failed to update certificate: %v", err)
-	}
+	// Trigger a new issuance using a server-side apply patch, which cannot
+	// conflict with the concurrent status updates made by the controllers
+	// under test. The Conditions field is a list map keyed by Type, so this
+	// only takes ownership of the Issuing condition.
+	applyCertificateStatus(t, cmCl, "test-trigger", namespace, crt.Name, cmapi.CertificateStatus{
+		Conditions: []cmapi.CertificateCondition{{
+			Type:               cmapi.CertificateConditionIssuing,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "ManualTrigger",
+			Message:            "triggered by test case manually",
+			ObservedGeneration: crt.Generation,
+		}},
+	})
 
 	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
@@ -286,16 +289,19 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	t.Logf("Issuance acknowledged as failed as expected")
 	t.Logf("Triggering new issuance")
 
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get certificate: %v", err)
-	}
-
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManualTrigger", "triggered by test case manually")
-	crt, err = cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(t.Context(), crt, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatalf("failed to update certificate: %v", err)
-	}
+	// Trigger a new issuance using a server-side apply patch, which cannot
+	// conflict with the concurrent status updates made by the controllers
+	// under test. The Conditions field is a list map keyed by Type, so this
+	// only takes ownership of the Issuing condition.
+	applyCertificateStatus(t, cmCl, "test-trigger", namespace, crt.Name, cmapi.CertificateStatus{
+		Conditions: []cmapi.CertificateCondition{{
+			Type:               cmapi.CertificateConditionIssuing,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "ManualTrigger",
+			Message:            "triggered by test case manually",
+			ObservedGeneration: crt.Generation,
+		}},
+	})
 
 	var secondReq cmapi.CertificateRequest
 	if err := wait.PollUntilContextTimeout(t.Context(), time.Millisecond*500, time.Second*10, true, func(ctx context.Context) (bool, error) {
