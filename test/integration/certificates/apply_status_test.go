@@ -19,12 +19,11 @@ package certificates
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // applyCertificateStatus server-side applies the given status fields to the
