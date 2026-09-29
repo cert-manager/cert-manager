@@ -1443,7 +1443,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuer(ref common.ReferenceCallback) common.Ope
 					},
 					"enableDurationFeature": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enables requesting a Not After date on certificates that matches the duration of the certificate. This is not supported by all ACME servers like Let's Encrypt. If set to true when the ACME server does not support it, it will create an error on the Order. Defaults to false.",
+							Description: "Enables requesting a Not After date on certificates that matches the duration of the certificate. This is not supported by all ACME servers like Let's Encrypt. If set to true when the ACME server does not support it, it will create an error on the Order. Conversely, some ACME servers such as DigiCert require a Not After date and derive the certificate validity from it; without this feature enabled they reject order finalization (for example with an \"invalid_value:validity_years\" error). If you use such a server, set this to true so the Certificate's duration is sent to the ACME server. Defaults to false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
