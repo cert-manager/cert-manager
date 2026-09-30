@@ -267,6 +267,22 @@ tests:
             name: NO_PROXY
             value: localhost,127.0.0.1
 
+  - it: should render proxy env vars as strings when they need YAML quoting
+    set:
+      http_proxy: "*.example.com,1.2.3.4/8"
+      no_proxy: "*.example.com"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HTTP_PROXY
+            value: "*.example.com,1.2.3.4/8"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NO_PROXY
+            value: "*.example.com"
+
   - it: should merge global and component node selectors
     set:
       global:
