@@ -421,11 +421,12 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		Labels:          crt.Labels,
 		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		Spec: cmapi.CertificateRequestSpec{
-			Duration:  crt.Spec.Duration,
-			IssuerRef: crt.Spec.IssuerRef,
-			Request:   csrPEM,
-			IsCA:      crt.Spec.IsCA,
-			Usages:    crt.Spec.Usages,
+			Duration:   crt.Spec.Duration,
+			IssuerRef:  crt.Spec.IssuerRef,
+			Request:    csrPEM,
+			IsCA:       crt.Spec.IsCA,
+			MaxPathLen: crt.Spec.MaxPathLen,
+			Usages:     crt.Spec.Usages,
 		},
 	}
 

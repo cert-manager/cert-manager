@@ -67,6 +67,12 @@ func SetCertificateRequestIsCA(isCA bool) CertificateRequestModifier {
 	}
 }
 
+func SetCertificateRequestMaxPathLen(maxPathLen *int) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Spec.MaxPathLen = maxPathLen
+	}
+}
+
 func SetCertificateRequestDuration(duration *metav1.Duration) CertificateRequestModifier {
 	return func(cr *v1.CertificateRequest) {
 		cr.Spec.Duration = duration
