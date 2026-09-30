@@ -847,6 +847,62 @@ func TestValidateCertificateRequest(t *testing.T) {
 				field.Forbidden(fldPathConditions, `multiple "Denied" conditions present`),
 			},
 		},
+		"valid maxPathLen on CA CertificateRequest": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					Usages:     []cminternal.KeyUsage{cminternal.UsageAny},
+					MaxPathLen: new(2),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"valid maxPathLen zero on CA CertificateRequest": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					Usages:     []cminternal.KeyUsage{cminternal.UsageAny},
+					MaxPathLen: new(0),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"invalid maxPathLen on non-CA CertificateRequest": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       false,
+					Usages:     []cminternal.KeyUsage{cminternal.UsageAny},
+					MaxPathLen: new(1),
+				},
+			},
+			a: someAdmissionRequest,
+			wantE: []*field.Error{
+				field.Invalid(fldPath.Child("maxPathLen"), 1, "maxPathLen may only be set when isCA is true"),
+			},
+		},
+		"invalid negative maxPathLen on CertificateRequest": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					Usages:     []cminternal.KeyUsage{cminternal.UsageAny},
+					MaxPathLen: new(-1),
+				},
+			},
+			a: someAdmissionRequest,
+			wantE: []*field.Error{
+				field.Invalid(fldPath.Child("maxPathLen"), -1, "maxPathLen must be a non-negative integer"),
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
