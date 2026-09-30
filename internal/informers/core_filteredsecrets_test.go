@@ -239,192 +239,65 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 
 func Test_secretNamespaceLister_List(t *testing.T) {
 
+	mustParse := func(s string) labels.Selector {
+		selector, err := labels.Parse(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return selector
+	}
+
 	var (
-		someData     = []byte("foobar")
-		someSelector = labels.Everything()
-		secretFoo    = corev1.Secret{
+		someData  = []byte("foobar")
+		secretFoo = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "foo",
 			},
 			Data: map[string][]byte{"someKey": someData},
-		}
-		secretFoo2 = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
-			Data: map[string][]byte{"someOtherKey": someData},
-		}
-		secretBar = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "bar",
-				Namespace: "bar",
-			},
-			Data: map[string][]byte{"someKey": someData},
-		}
-		secretFooMeta = metav1.PartialObjectMetadata{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
 		}
 	)
+	refuseToList := FakeSecretLister{
+		FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
+			t.Error("List reached the typed cache; the guard must refuse first")
+			return nil, nil
+		},
+	}
 	tests := map[string]struct {
-		namespace             string
-		partialMetadataLister metadatalister.Lister
-		typedLister           corev1listers.SecretLister
-		typedClient           typedcorev1.SecretsGetter
-		want                  []*corev1.Secret
-		wantErr               bool
+		namespace   string
+		selector    labels.Selector
+		typedLister corev1listers.SecretLister
+		want        []*corev1.Secret
+		wantErr     bool
 	}{
+		"if the selector matches everything, refuse to list": {
+			namespace:   "foo",
+			selector:    labels.Everything(),
+			typedLister: refuseToList,
+			wantErr:     true,
+		},
+		"if the selector only excludes a label value, refuse to list": {
+			namespace:   "foo",
+			selector:    mustParse("foo!=bar"),
+			typedLister: refuseToList,
+			wantErr:     true,
+		},
+		"if the selector pairs a label requirement with a negative requirement, list from the typed cache": {
+			namespace: "foo",
+			selector:  mustParse("foo in (a,b),!bar"),
+			typedLister: FakeSecretLister{
+				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
+					return []*corev1.Secret{&secretFoo}, nil
+				},
+			},
+			want: []*corev1.Secret{&secretFoo},
+		},
 		"if listing Secrets from typed cache errors out then return the error": {
-
 			namespace: "foo",
+			selector:  mustParse("foo=bar"),
 			typedLister: FakeSecretLister{
 				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
 					return nil, errors.New("some error")
-				},
-			},
-			wantErr: true,
-		},
-		"if listing Secrets from metadata cache errors out then return the error": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return nil, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return nil, errors.New("some error")
-				},
-			},
-			wantErr: true,
-		},
-		"if no Secrets are found within either cache, don't return any": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return nil, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return nil, nil
-				},
-			},
-			want: make([]*corev1.Secret, 0),
-		},
-		"if some Secrets are found in typed cache, return those": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return []*corev1.Secret{&secretBar, &secretFoo}, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return nil, nil
-				},
-			},
-			want: []*corev1.Secret{&secretBar, &secretFoo},
-		},
-		"if a Secret is found in metadata only cache, return it from kube apiserver": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return nil, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return []*metav1.PartialObjectMetadata{&secretFooMeta}, nil
-				},
-			},
-			typedClient: FakeSecretsGetter{
-				FakeSecrets: func(string) typedcorev1.SecretInterface {
-					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
-						},
-					}
-				},
-			},
-			want: []*corev1.Secret{&secretFoo},
-		},
-		"if matching non-duplicate Secrets are found in both caches, return them": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return []*corev1.Secret{&secretBar}, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return []*metav1.PartialObjectMetadata{&secretFooMeta}, nil
-				},
-			},
-			typedClient: FakeSecretsGetter{
-				FakeSecrets: func(string) typedcorev1.SecretInterface {
-					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
-						},
-					}
-				},
-			},
-			want: []*corev1.Secret{&secretFoo, &secretBar},
-		},
-		"if matching Secrets are found in both caches with some duplicates, then returned the duplicates from kube apiserver": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return []*corev1.Secret{&secretFoo2}, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return []*metav1.PartialObjectMetadata{&secretFooMeta}, nil
-				},
-			},
-			typedClient: FakeSecretsGetter{
-				FakeSecrets: func(string) typedcorev1.SecretInterface {
-					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
-						},
-					}
-				},
-			},
-			want: []*corev1.Secret{&secretFoo},
-		},
-		"if a Secret is found in metadata only cache, but querying kube apiserver errors, return the error": {
-
-			namespace: "foo",
-			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return nil, nil
-				},
-			},
-			partialMetadataLister: FakeMetadataLister{
-				FakeList: func(labels.Selector) ([]*metav1.PartialObjectMetadata, error) {
-					return []*metav1.PartialObjectMetadata{&secretFooMeta}, nil
-				},
-			},
-			typedClient: FakeSecretsGetter{
-				FakeSecrets: func(string) typedcorev1.SecretInterface {
-					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return nil, errors.New("some error")
-						},
-					}
 				},
 			},
 			wantErr: true,
@@ -433,18 +306,23 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 	for name, scenario := range tests {
 		t.Run(name, func(t *testing.T) {
 			snl := &secretNamespaceLister{
-				namespace:             scenario.namespace,
-				partialMetadataLister: scenario.partialMetadataLister,
-				typedLister:           scenario.typedLister,
-				typedClient:           scenario.typedClient,
-				ctx:                   t.Context(),
+				namespace:   scenario.namespace,
+				typedLister: scenario.typedLister,
 			}
-			got, err := snl.List(someSelector)
+			got, err := snl.List(scenario.selector)
 			if (err != nil) != scenario.wantErr {
 				t.Errorf("secretNamespaceLister.List() error = %v, wantErr %v", err, scenario.wantErr)
 				return
 			}
 			assert.ElementsMatch(t, got, scenario.want)
 		})
+	}
+}
+
+func Test_secretNamespaceLister_List_refusalWrapsErrUnlabeledSelector(t *testing.T) {
+	snl := &secretNamespaceLister{namespace: "foo"}
+	_, err := snl.List(labels.Everything())
+	if !errors.Is(err, ErrUnlabeledSelector) {
+		t.Errorf("secretNamespaceLister.List() error = %v, want it to wrap ErrUnlabeledSelector", err)
 	}
 }
