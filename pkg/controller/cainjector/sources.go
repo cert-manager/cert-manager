@@ -118,11 +118,11 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 		return nil, dropNotFound(err)
 	}
 
-	secretName := &types.NamespacedName{Namespace: cert.Namespace, Name: cert.Spec.SecretName}
+	secretName := types.NamespacedName{Namespace: cert.Namespace, Name: cert.Spec.SecretName}
 	// grab the associated secret, and ensure it's owned by the cert
 	log = log.WithValues("secret", secretName)
 	var secret corev1.Secret
-	if err := c.client.Get(ctx, *secretName, &secret); err != nil {
+	if err := c.client.Get(ctx, secretName, &secret); err != nil {
 		log.Error(err, "unable to fetch associated secret")
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
