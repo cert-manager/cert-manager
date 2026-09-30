@@ -30,6 +30,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/metadata/metadatalister"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
 )
@@ -247,6 +248,17 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 		return selector
 	}
 
+	// FakeSecretLister.Secrets ignores its namespace, so scoping needs a real indexer.
+	indexedSecretLister := func(secrets ...*corev1.Secret) corev1listers.SecretLister {
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+		for _, secret := range secrets {
+			if err := indexer.Add(secret); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return corev1listers.NewSecretLister(indexer)
+	}
+
 	var (
 		someData  = []byte("foobar")
 		secretFoo = corev1.Secret{
@@ -256,11 +268,29 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			},
 			Data: map[string][]byte{"someKey": someData},
 		}
+		secretNsA = corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "shared-name",
+				Namespace: "ns-a",
+				Labels:    map[string]string{"foo": "bar"},
+			},
+			Data: map[string][]byte{"someKey": someData},
+		}
+		secretNsB = corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "shared-name",
+				Namespace: "ns-b",
+				Labels:    map[string]string{"foo": "bar"},
+			},
+			Data: map[string][]byte{"someKey": someData},
+		}
 	)
 	refuseToList := FakeSecretLister{
-		FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-			t.Error("List reached the typed cache; the guard must refuse first")
-			return nil, nil
+		NamespaceLister: FakeSecretNamespaceLister{
+			FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
+				t.Error("List reached the typed cache; the guard must refuse first")
+				return nil, nil
+			},
 		},
 	}
 	tests := map[string]struct {
@@ -286,8 +316,10 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			namespace: "foo",
 			selector:  mustParse("foo in (a,b),!bar"),
 			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return []*corev1.Secret{&secretFoo}, nil
+				NamespaceLister: FakeSecretNamespaceLister{
+					FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
+						return []*corev1.Secret{&secretFoo}, nil
+					},
 				},
 			},
 			want: []*corev1.Secret{&secretFoo},
@@ -296,11 +328,19 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			namespace: "foo",
 			selector:  mustParse("foo=bar"),
 			typedLister: FakeSecretLister{
-				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
-					return nil, errors.New("some error")
+				NamespaceLister: FakeSecretNamespaceLister{
+					FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
+						return nil, errors.New("some error")
+					},
 				},
 			},
 			wantErr: true,
+		},
+		"if matching Secrets exist in another namespace, list only this lister's namespace": {
+			namespace:   "ns-a",
+			selector:    mustParse("foo=bar"),
+			typedLister: indexedSecretLister(&secretNsA, &secretNsB),
+			want:        []*corev1.Secret{&secretNsA},
 		},
 	}
 	for name, scenario := range tests {

@@ -299,7 +299,7 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 			selector, ErrUnlabeledSelector, cmapi.PartOfCertManagerControllerLabelKey, pleaseOpenIssue)
 	}
 
-	secrets, err := snl.typedLister.List(selector)
+	secrets, err := snl.typedLister.Secrets(snl.namespace).List(selector)
 	if err != nil {
 		return nil, fmt.Errorf("error listing Secrets from the typed cache: %w", err)
 	}
