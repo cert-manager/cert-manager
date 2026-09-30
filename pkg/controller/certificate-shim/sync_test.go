@@ -6188,12 +6188,8 @@ func Test_dedupeSANs(t *testing.T) {
 				},
 			}
 			dedupeSANs(crt)
-			if !reflect.DeepEqual(crt.Spec.DNSNames, tt.wantDNSNames) {
-				t.Errorf("dnsNames = %#v, want %#v", crt.Spec.DNSNames, tt.wantDNSNames)
-			}
-			if !reflect.DeepEqual(crt.Spec.IPAddresses, tt.wantIPAddresses) {
-				t.Errorf("ipAddresses = %#v, want %#v", crt.Spec.IPAddresses, tt.wantIPAddresses)
-			}
+			assert.Equal(t, tt.wantDNSNames, crt.Spec.DNSNames, "dnsNames")
+			assert.Equal(t, tt.wantIPAddresses, crt.Spec.IPAddresses, "ipAddresses")
 		})
 	}
 }

@@ -566,8 +566,7 @@ func uniqBy(in []string, key func(string) string) []string {
 // dedupeSANs removes duplicate values from crt.Spec.DNSNames and
 // crt.Spec.IPAddresses in place, preserving first-seen order. IP addresses
 // are compared by parsed value, so two different spellings of the same
-// address (e.g. "2001:db8::1" and "2001:0db8::1") are treated as duplicates
-// even though splitHosts, which only compares strings, would not catch them.
+// address (e.g. "2001:db8::1" and "2001:0db8::1") are treated as duplicates.
 func dedupeSANs(crt *cmapi.Certificate) {
 	crt.Spec.DNSNames = uniqBy(crt.Spec.DNSNames, func(name string) string { return name })
 	crt.Spec.IPAddresses = uniqBy(crt.Spec.IPAddresses, func(ipStr string) string { return net.ParseIP(ipStr).String() })
