@@ -67,6 +67,19 @@ func TestFailedRequestIsFromPreviousIssuance(t *testing.T) {
 			issuing: issuing,
 			want:    false,
 		},
+		// Reporter.Failed stamps failureTime from the issuer's clock, so the
+		// creationTimestamp guard is not specific to the fallback path: an
+		// issuer whose clock is behind can stamp a request it has just
+		// created with a failureTime before the current issuance.
+		"failureTime before the Issuing transition, but request created after it": {
+			mods: []gen.CertificateRequestModifier{
+				gen.SetCertificateRequestFailureTime(metav1.NewTime(transition.Add(-time.Hour))),
+				failedReadyCond(nil),
+				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(time.Second)) },
+			},
+			issuing: issuing,
+			want:    false,
+		},
 		// #9327: a failed request with no failureTime. The Ready condition's
 		// lastTransitionTime dates the failure instead.
 		"no failureTime, Ready condition transitioned before the Issuing transition": {
@@ -95,10 +108,33 @@ func TestFailedRequestIsFromPreviousIssuance(t *testing.T) {
 			issuing: issuing,
 			want:    false,
 		},
-		"no failureTime and a Ready condition with no lastTransitionTime": {
+		// An external issuer can leave both status fields empty: both are
+		// optional in the API. creationTimestamp is then the only date
+		// left, and returning false here is the #9327 loop -- the
+		// requestmanager keeps the request and the issuing controller
+		// counts it on every issuance.
+		"no failureTime and no Ready lastTransitionTime, request created before the Issuing transition": {
 			mods: []gen.CertificateRequestModifier{
 				failedReadyCond(nil),
 				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour)) },
+			},
+			issuing: issuing,
+			want:    true,
+		},
+		"no failureTime and no Ready lastTransitionTime, request created after the Issuing transition": {
+			mods: []gen.CertificateRequestModifier{
+				failedReadyCond(nil),
+				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(time.Second)) },
+			},
+			issuing: issuing,
+			want:    false,
+		},
+		// No date at all. The API server always stamps creationTimestamp,
+		// but an object without one must not be read as older than every
+		// issuance: keep it, so the failure is counted and retried.
+		"no failureTime, no Ready lastTransitionTime and no creationTimestamp": {
+			mods: []gen.CertificateRequestModifier{
+				failedReadyCond(nil),
 			},
 			issuing: issuing,
 			want:    false,

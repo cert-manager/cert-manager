@@ -17,6 +17,8 @@ limitations under the License.
 package certificates
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -28,18 +30,32 @@ import (
 // request is a leftover from the previous issuance of the same revision and
 // must be replaced rather than re-counted.
 //
-// The failure is dated by status.failureTime. No in-tree issuer can leave that
-// field unset on a failed request (Reporter.Failed writes it together with the
-// Ready condition), but an external issuer can, so when it is unset the Ready
-// condition's lastTransitionTime is used as the fallback.
+// The failure is dated by the first of these fields the issuer left set:
 //
-// In the fallback case only, the request's creationTimestamp must also predate
-// the Issuing condition's lastTransitionTime. creationTimestamp comes from the
-// API server while lastTransitionTime comes from the issuer, so an issuer
-// whose clock is behind can stamp a request it has just created with a
-// transition time before the current issuance; recycling on that alone would
-// delete and recreate the request on every sync with no failure ever counted
-// to pace it.
+//  1. status.failureTime, which Reporter.Failed stamps with the issuer's own
+//     clock;
+//  2. the Ready condition's lastTransitionTime. Note this dates when Ready
+//     first became False rather than the failure itself:
+//     apiutil.SetCertificateRequestCondition keeps the previous
+//     lastTransitionTime when the status is unchanged, and Pending and Failed
+//     both carry Status=False, so an issuer that went Pending then Failed has
+//     a stamp from the Pending transition;
+//  3. the request's creationTimestamp when an external issuer left both status
+//     fields empty. Both fields are optional in the API, and without this
+//     fallback such a request would be counted on every issuance and never
+//     deleted. The API server always stamps creationTimestamp; an object
+//     without one carries no date at all, and a missing date is not evidence
+//     of an older issuance, so that case returns false below.
+//
+// Whichever field dates the failure, the request's creationTimestamp must also
+// predate the Issuing condition's lastTransitionTime. The first two come from
+// the issuer's clock while creationTimestamp comes from the API server, so an
+// issuer whose clock is behind can stamp a request it has just created before
+// the current issuance; recycling on that alone would delete and recreate the
+// request on every sync with no failure ever counted to pace it. The cost of
+// this guard is that a request created during an earlier issuance but failed
+// during the current one is replaced without being counted; its replacement's
+// failure is counted as normal.
 func FailedRequestIsFromPreviousIssuance(req *cmapi.CertificateRequest, issuing *cmapi.CertificateCondition) bool {
 	readyCond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if readyCond == nil || readyCond.Status != cmmeta.ConditionFalse || readyCond.Reason != cmapi.CertificateRequestReasonFailed {
@@ -49,15 +65,22 @@ func FailedRequestIsFromPreviousIssuance(req *cmapi.CertificateRequest, issuing 
 		return false
 	}
 
-	if req.Status.FailureTime != nil {
-		return req.Status.FailureTime.Before(issuing.LastTransitionTime)
+	failedAt := req.Status.FailureTime
+	if failedAt == nil {
+		// External issuers may set the Ready condition without failureTime.
+		failedAt = readyCond.LastTransitionTime
+	}
+	if failedAt == nil {
+		// External issuers may set neither. The API server stamps
+		// creationTimestamp on every object; if it is absent too then this
+		// request carries no date, and dating it to the zero time would
+		// classify it as older than every issuance rather than unknown.
+		if req.CreationTimestamp.IsZero() {
+			return false
+		}
+		failedAt = &metav1.Time{Time: req.CreationTimestamp.Time}
 	}
 
-	// A failed request with no failureTime: date the failure by the Ready
-	// condition's lastTransitionTime instead.
-	if readyCond.LastTransitionTime == nil {
-		return false
-	}
-	return readyCond.LastTransitionTime.Time.Before(issuing.LastTransitionTime.Time) &&
-		req.CreationTimestamp.Time.Before(issuing.LastTransitionTime.Time)
+	return failedAt.Before(issuing.LastTransitionTime) &&
+		req.CreationTimestamp.Before(issuing.LastTransitionTime)
 }

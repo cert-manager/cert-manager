@@ -252,6 +252,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi.Certificate, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
 	log := logf.FromContext(ctx).WithValues("Certificate", crt.Name)
+
 	certIssuingCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 	if certIssuingCond == nil {
 		// This should never happen
@@ -274,9 +275,9 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 		// CertificateRequest failed during the previous issuance (for the
 		// same revision). If it is a CertificateRequest that failed
 		// during the previous issuance, then it should be deleted so
-		// that we create a new one for this issuance. Both branches
-		// classify the shape themselves, so the loop needs no separate
-		// Ready check.
+		// that we create a new one for this issuance. Both classifiers
+		// return false for every other shape (not Ready, Ready=Unknown,
+		// issued, denied), so the loop body needs no separate Ready check.
 		previousIssuance := internalcertificates.FailedRequestIsFromPreviousIssuance(req, certIssuingCond)
 		if internalcertificates.IsIncompleteFailure(req) {
 			// An external issuer can leave a request with a failureTime and
