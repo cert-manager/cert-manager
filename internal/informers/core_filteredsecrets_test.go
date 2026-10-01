@@ -263,15 +263,6 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			},
 			Data: map[string][]byte{"someKey": someData},
 		}
-		// secretFooVal is a value copy of secretFoo for fakes that return
-		// whole SecretList items.
-		secretFooVal = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
-			Data: map[string][]byte{"someKey": someData},
-		}
 		secretFooMeta = metav1.PartialObjectMetadata{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -359,7 +350,7 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
 						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
-							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
+							return &corev1.SecretList{Items: []corev1.Secret{secretFoo}}, nil
 						},
 					}
 				},
@@ -383,7 +374,7 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
 						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
-							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
+							return &corev1.SecretList{Items: []corev1.Secret{secretFoo}}, nil
 						},
 					}
 				},
@@ -407,7 +398,7 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
 						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
-							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
+							return &corev1.SecretList{Items: []corev1.Secret{secretFoo}}, nil
 						},
 					}
 				},

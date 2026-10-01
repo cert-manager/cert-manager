@@ -309,6 +309,16 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 	}
 
 	if len(metadataSecrets) > 0 {
+		// Only selectors that match the empty label set reach this branch: the
+		// metadata cache's transform strips labels, so a selector matching a
+		// positive requirement never returns a non-cert-manager Secret. On
+		// master nothing here was reachable at all (the keymanager lists with
+		// isNextPrivateKeyLabelSelector), and the warning below is the only
+		// thing that would surface a future caller, so it stays.
+		log.V(logf.WarnLevel).Info("unexpected behaviour: Secrets LISTed from the metadata cache. Please open an issue",
+			"secrets namespace", snl.namespace, "secrets selector", selector.String(),
+			"metadata cache matches", len(metadataSecrets))
+
 		// Secrets LISTed from the metadata cache are not usable as
 		// corev1.Secrets, so each of them used to be fetched live with
 		// one GET per Secret
@@ -319,26 +329,45 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 		// the selector: a metadata LIST returns every non-cert-manager
 		// Secret in the namespace, while the caller asked for a
 		// specific selector.
-		metadataSecretNames := sets.New[string]()
+		//
+		// Both cache lookups above are cluster-wide, so key the set by
+		// NamespacedName: a name-only set lets a metadata match in another
+		// namespace pull in the same-named Secret from this namespace.
+		metadataSecretsSet := sets.New[types.NamespacedName]()
 		for _, secretMeta := range metadataSecrets {
-			metadataSecretNames.Insert(secretMeta.Name)
+			metadataSecretsSet.Insert(types.NamespacedName{Namespace: secretMeta.Namespace, Name: secretMeta.Name})
 		}
 
-		apiserverSecrets, err := snl.typedClient.Secrets(snl.namespace).List(snl.ctx, metav1.ListOptions{})
+		// Push the selector to the apiserver: an empty ListOptions is a
+		// quorum read of every Secret in the namespace with full data,
+		// including the cert-manager-labelled ones already served from the
+		// typed cache, and all of it would be thrown away client-side. The
+		// client-side re-filter below stays as a guard.
+		apiserverSecrets, err := snl.typedClient.Secrets(snl.namespace).List(snl.ctx, metav1.ListOptions{LabelSelector: selector.String()})
 		if err != nil {
 			log.Error(err, "error listing Secrets from kube apiserver")
 			return nil, fmt.Errorf("error listing Secrets from kube apiserver: %w", err)
 		}
 		for i := range apiserverSecrets.Items {
-			secret := &apiserverSecrets.Items[i]
+			secret := apiserverSecrets.Items[i]
 			if !selector.Matches(labels.Set(secret.Labels)) {
 				continue
 			}
 			key := types.NamespacedName{Namespace: secret.Namespace, Name: secret.Name}
-			if metadataSecretNames.Has(secret.Name) {
-				// in case of duplicates, return the version from kube apiserver
-				matchingSecretsMap[key] = secret
+			if !metadataSecretsSet.Has(key) {
+				continue
 			}
+			if _, ok := matchingSecretsMap[key]; ok {
+				// A Secret in both caches is the internal error the user is
+				// asked to report; the typed-cache copy is overwritten below
+				// with the apiserver one.
+				log.Info(fmt.Sprintf("warning: possible internal error: stale cache: secret found both in typed cache and in partial cache: %s", pleaseOpenIssue), "secret", key)
+			}
+			// Copy the match rather than pointing into apiserverSecrets.Items:
+			// a caller holding one Secret would otherwise keep every Secret in
+			// the namespace, with data, reachable.
+			secretCopy := secret.DeepCopy()
+			matchingSecretsMap[key] = secretCopy
 		}
 	}
 
