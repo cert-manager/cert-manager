@@ -263,6 +263,15 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			},
 			Data: map[string][]byte{"someKey": someData},
 		}
+		// secretFooVal is a value copy of secretFoo for fakes that return
+		// whole SecretList items.
+		secretFooVal = corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "foo",
+			},
+			Data: map[string][]byte{"someKey": someData},
+		}
 		secretFooMeta = metav1.PartialObjectMetadata{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -349,8 +358,8 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			typedClient: FakeSecretsGetter{
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
+						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
+							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
 						},
 					}
 				},
@@ -373,8 +382,8 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			typedClient: FakeSecretsGetter{
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
+						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
+							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
 						},
 					}
 				},
@@ -397,8 +406,8 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			typedClient: FakeSecretsGetter{
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
-							return &secretFoo, nil
+						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
+							return &corev1.SecretList{Items: []corev1.Secret{secretFooVal}}, nil
 						},
 					}
 				},
@@ -406,7 +415,8 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			want: []*corev1.Secret{&secretFoo},
 		},
 		"if a Secret is found in metadata only cache, but querying kube apiserver errors, return the error": {
-
+			// List fetches metadata-cache matches with a single live
+			// LIST, so this scenario injects the error there.
 			namespace: "foo",
 			typedLister: FakeSecretLister{
 				FakeList: func(labels.Selector) ([]*corev1.Secret, error) {
@@ -421,7 +431,7 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 			typedClient: FakeSecretsGetter{
 				FakeSecrets: func(string) typedcorev1.SecretInterface {
 					return FakeSecretInterface{
-						FakeGet: func(context.Context, string, metav1.GetOptions) (*corev1.Secret, error) {
+						FakeList: func(context.Context, metav1.ListOptions) (*corev1.SecretList, error) {
 							return nil, errors.New("some error")
 						},
 					}
