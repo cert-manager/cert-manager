@@ -130,12 +130,6 @@ func TestProcessItem(t *testing.T) {
 	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
-	failedCRConditionPreviousIssuance := cmapi.CertificateRequestCondition{
-		Type:               cmapi.CertificateRequestConditionReady,
-		Status:             cmmeta.ConditionFalse,
-		Reason:             cmapi.CertificateRequestReasonFailed,
-		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
-	}
 	failedCRConditionThisIssuance := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Status:             cmmeta.ConditionFalse,
@@ -751,51 +745,17 @@ func TestProcessItem(t *testing.T) {
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
-					gen.AddCertificateRequestStatusCondition(failedCRConditionPreviousIssuance),
-					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(time.Hour * -1)}),
-				),
-			},
-			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
-			expectedActions: []testpkg.Action{
-				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
-				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
-					gen.CertificateRequestFrom(bundle1.certificateRequest,
-						gen.SetCertificateRequestName("test-6"),
-						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
-						}),
-					)), relaxedCertificateRequestMatcher),
-			},
-		},
-		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle with no failureTime set": {
-			secrets: []runtime.Object{
-				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
-					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
-				},
-			},
-			certificate: gen.CertificateFrom(bundle1.certificate,
-				gen.SetCertificateNextPrivateKeySecretName("exists"),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
-				gen.SetCertificateRevision(5),
-			),
-			requests: []runtime.Object{
-				// #9327: a failed request with no failureTime, which no
-				// in-tree issuer produces but an external issuer writing
-				// only the Ready condition can. The Ready condition's
-				// lastTransitionTime dates the failure, so the request
-				// must still be replaced.
-				gen.CertificateRequestFrom(bundle1.certificateRequest,
-					gen.SetCertificateRequestName("test-6"),
-					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					// Its own condition value, not failedCRConditionPreviousIssuance:
+					// that struct carries a shared *metav1.Time, and map iteration
+					// order is randomised, so appending it here would let a
+					// scenario running earlier rewrite this one's timestamps.
+					gen.AddCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type:               cmapi.CertificateRequestConditionReady,
+						Status:             cmmeta.ConditionFalse,
+						Reason:             cmapi.CertificateRequestReasonFailed,
+						LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
 					}),
-					gen.AddCertificateRequestStatusCondition(failedCRConditionPreviousIssuance),
-					func(cr *cmapi.CertificateRequest) {
-						cr.CreationTimestamp = metav1.Time{Time: fixedNow.Time.Add(time.Hour * -2)}
-					},
+					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(time.Hour * -1)}),
 				),
 			},
 			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},

@@ -85,7 +85,9 @@ func TestFailedRequestIsFromPreviousIssuance(t *testing.T) {
 		"no failureTime, Ready condition transitioned before the Issuing transition": {
 			mods: []gen.CertificateRequestModifier{
 				failedReadyCond(&metav1.Time{Time: transition.Add(-time.Hour)}),
-				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour)) },
+				func(cr *cmapi.CertificateRequest) {
+					cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour))
+				},
 			},
 			issuing: issuing,
 			want:    true,
@@ -93,7 +95,9 @@ func TestFailedRequestIsFromPreviousIssuance(t *testing.T) {
 		"no failureTime, Ready condition transitioned after the Issuing transition": {
 			mods: []gen.CertificateRequestModifier{
 				failedReadyCond(&metav1.Time{Time: transition.Add(time.Minute)}),
-				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour)) },
+				func(cr *cmapi.CertificateRequest) {
+					cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour))
+				},
 			},
 			issuing: issuing,
 			want:    false,
@@ -116,7 +120,9 @@ func TestFailedRequestIsFromPreviousIssuance(t *testing.T) {
 		"no failureTime and no Ready lastTransitionTime, request created before the Issuing transition": {
 			mods: []gen.CertificateRequestModifier{
 				failedReadyCond(nil),
-				func(cr *cmapi.CertificateRequest) { cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour)) },
+				func(cr *cmapi.CertificateRequest) {
+					cr.CreationTimestamp = metav1.NewTime(transition.Add(-2 * time.Hour))
+				},
 			},
 			issuing: issuing,
 			want:    true,

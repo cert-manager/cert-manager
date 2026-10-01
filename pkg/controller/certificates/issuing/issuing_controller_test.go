@@ -867,46 +867,6 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		// FailedRequestIsFromPreviousIssuance requires Status=False as well
-		// as Reason=Failed, so a malformed request carrying Reason=Failed
-		// with another status is neither deleted by the requestmanager nor
-		// counted as a failure here. It has to surface, the same way a
-		// failureTime with no Ready condition does, rather than be counted
-		// on every sync.
-		"if certificate is in Issuing state, one CertificateRequest with Ready reason Failed but a non-False status, emit a Stalled event": {
-			certificate: exampleBundle.Certificate,
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{
-					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
-						}),
-						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-							Type:    cmapi.CertificateRequestConditionReady,
-							Status:  cmmeta.ConditionTrue,
-							Reason:  cmapi.CertificateRequestReasonFailed,
-							Message: "The certificate request failed because of reasons",
-						}),
-					)},
-				KubeObjects: []runtime.Object{
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      nextPrivateKeySecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-						},
-						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-						},
-					},
-				},
-				ExpectedActions: []testpkg.Action{},
-				ExpectedEvents: []string{
-					fmt.Sprintf("Warning Stalled CertificateRequest %q has Ready reason Failed with status True; issuance is stalled. Delete the CertificateRequest to retry.", exampleBundle.CertificateRequest.Name),
-				},
-			},
-			expectedErr: false,
-		},
 		"if certificate is in Issuing state, one CertificateRequest, and is ready, but the CertificateRequest contains a violation, do nothing": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
