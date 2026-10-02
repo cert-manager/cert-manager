@@ -698,6 +698,12 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolver(ref common.ReferenceCallback) c
 							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
 						},
 					},
+					"delayBeforeAccept": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DelayBeforeAccept, if set, waits this long after presentation (recorded in Challenge status.presentedAt) before running the self-check and asking the ACME server to validate the challenge.\n\nUnlike WaitInsteadOfSelfCheck, the self-check is still performed. This mitigates race conditions where cert-manager's self-check succeeds from its own network/DNS viewpoint while the ACME server's viewpoint still lags behind (for example, anycast or externally-propagated DNS records as in https://github.com/cert-manager/cert-manager/issues/7834). The challenge is only accepted once both the delay has elapsed and the self-check passes.\n\nA negative duration is rejected. Mutually exclusive with WaitInsteadOfSelfCheck. Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration, for example `30s` or `2m`.",
+							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
+						},
+					},
 				},
 			},
 		},
