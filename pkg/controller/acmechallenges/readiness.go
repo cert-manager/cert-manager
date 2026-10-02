@@ -89,15 +89,65 @@ func (e waitInsteadOfSelfCheckReadinessEvaluator) evaluate(_ context.Context, _ 
 	}, nil
 }
 
+// delayBeforeAcceptReadinessEvaluator enforces a configurable propagation
+// delay after presentation before running the normal self-check.
+// It mitigates race conditions where cert-manager's self-check succeeds from
+// its own network/DNS viewpoint while the ACME server's viewpoint still lags
+// behind (see https://github.com/cert-manager/cert-manager/issues/7834).
+// The challenge only becomes ready once both the delay has elapsed and the
+// self-check passes.
+type delayBeforeAcceptReadinessEvaluator struct {
+	defaultRetryPeriod time.Duration
+	now                time.Time
+	delay              time.Duration
+}
+
+func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solver solver, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) (readinessEvaluation, error) {
+	if ch.Status.PresentedAt == nil {
+		return readinessEvaluation{
+			ready:      false,
+			retryAfter: e.defaultRetryPeriod,
+			reason:     fmt.Sprintf("Waiting %s before accepting %s challenge", e.delay, ch.Spec.Type),
+		}, nil
+	}
+
+	deadline := ch.Status.PresentedAt.Add(e.delay)
+	if e.now.Before(deadline) {
+		remaining := deadline.Sub(e.now)
+		return readinessEvaluation{
+			ready:      false,
+			retryAfter: min(remaining, e.defaultRetryPeriod),
+			reason:     fmt.Sprintf("Waiting %s before accepting %s challenge", remaining, ch.Spec.Type),
+		}, nil
+	}
+
+	err := solver.Check(ctx, issuer, ch)
+	if err == nil {
+		return readinessEvaluation{ready: true}, nil
+	}
+	return readinessEvaluation{
+		ready:      false,
+		retryAfter: e.defaultRetryPeriod,
+		reason:     fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err),
+	}, nil
+}
+
 // buildChallengeReadinessEvaluator constructs the readiness policy for a
 // challenge from its solver configuration.
 func buildChallengeReadinessEvaluator(ch *cmacme.Challenge, defaultRetryPeriod time.Duration, now time.Time) challengeReadinessEvaluator {
-	if ch.Spec.Solver.WaitInsteadOfSelfCheck == nil {
-		return selfCheckReadinessEvaluator{defaultRetryPeriod: defaultRetryPeriod}
+	if ch.Spec.Solver.WaitInsteadOfSelfCheck != nil {
+		return waitInsteadOfSelfCheckReadinessEvaluator{
+			defaultRetryPeriod: defaultRetryPeriod,
+			now:                now,
+			wait:               ch.Spec.Solver.WaitInsteadOfSelfCheck.Duration,
+		}
 	}
-	return waitInsteadOfSelfCheckReadinessEvaluator{
-		defaultRetryPeriod: defaultRetryPeriod,
-		now:                now,
-		wait:               ch.Spec.Solver.WaitInsteadOfSelfCheck.Duration,
+	if ch.Spec.Solver.DelayBeforeAccept != nil {
+		return delayBeforeAcceptReadinessEvaluator{
+			defaultRetryPeriod: defaultRetryPeriod,
+			now:                now,
+			delay:              ch.Spec.Solver.DelayBeforeAccept.Duration,
+		}
 	}
+	return selfCheckReadinessEvaluator{defaultRetryPeriod: defaultRetryPeriod}
 }

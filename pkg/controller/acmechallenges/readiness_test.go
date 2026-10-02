@@ -84,6 +84,60 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			wantReady:          true,
 			wantCheckCalls:     0,
 		},
+		// Regression test for https://github.com/cert-manager/cert-manager/issues/7834:
+		// delayBeforeAccept must hold back acceptance even when the self-check
+		// would pass, giving external DNS views time to propagate to the ACME
+		// server before it validates.
+		"delayBeforeAccept holds back acceptance while delay has not elapsed even if self-check passes": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-5*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting 25s before accepting HTTP-01 challenge",
+			wantCheckCalls:     0,
+		},
+		// After the delay elapses, a passing self-check allows acceptance.
+		"delayBeforeAccept proceeds after delay when self-check passes": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-31*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          true,
+			wantCheckCalls:     1,
+		},
+		// After the delay elapses, a failing self-check still blocks acceptance.
+		"delayBeforeAccept still requires self-check after delay": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-31*time.Second))),
+			),
+			checkErr:           errors.New("some error"),
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting for HTTP-01 challenge propagation: some error",
+			wantCheckCalls:     1,
+		},
+		// Remaining delay is capped by the controller retry period so the
+		// challenge is requeued promptly.
+		"delayBeforeAccept caps retryAfter at default retry period": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 60 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-5*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting 55s before accepting HTTP-01 challenge",
+			wantCheckCalls:     0,
+		},
 	}
 
 	for name, tc := range tests {

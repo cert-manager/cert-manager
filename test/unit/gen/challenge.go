@@ -154,3 +154,9 @@ func SetChallengeWaitInsteadOfSelfCheck(duration metav1.Duration) ChallengeModif
 		ch.Spec.Solver.WaitInsteadOfSelfCheck = &duration
 	}
 }
+
+func SetChallengeDelayBeforeAccept(duration metav1.Duration) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver.DelayBeforeAccept = &duration
+	}
+}
