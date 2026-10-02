@@ -175,6 +175,14 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
 	}
 
+	if sol.DelayBeforeAccept != nil && sol.DelayBeforeAccept.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("delayBeforeAccept"), sol.DelayBeforeAccept.Duration, "delayBeforeAccept must not be negative"))
+	}
+
+	if sol.WaitInsteadOfSelfCheck != nil && sol.DelayBeforeAccept != nil {
+		el = append(el, field.Forbidden(fldPath, "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"))
+	}
+
 	return el
 }
 
