@@ -42,11 +42,13 @@ IMAGE_bind_arm64 := europe-west1-docker.pkg.dev/cert-manager-tests-trusted/cert-
 IMAGE_sampleexternalissuer_arm64 := ghcr.io/cert-manager/sample-external-issuer/controller:v0.4.0@sha256:bdff00089ec7581c0d12414ce5ad1c6ccf5b6cacbfb0b0804fefe5043a1cb849
 IMAGE_kgateway_arm64 := ghcr.io/kgateway-dev/kgateway:v2.1.2@sha256:acdaa7669ac9b1be6be0581d7c2c3d8b294c89ea03a32c1b6201e1f5d73e70af
 
-# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
-# Ed25519 keys:
-# - https://github.com/letsencrypt/pebble/pull/468
-# - https://github.com/cert-manager/pebble/tree/add_Ed25519_support
-PEBBLE_COMMIT = b2a726c05272b9a89115fbd1b5f048da5b0124a8
+# We use cert-manager's fork of Pebble, which carries two patches:
+# - Signing CSRs with Ed25519 keys, which upstream declined:
+#   https://github.com/letsencrypt/pebble/pull/468
+# - A deadlock fix, not yet merged upstream:
+#   https://github.com/letsencrypt/pebble/pull/564
+# Branch: https://github.com/cert-manager/pebble/tree/ed25519-and-deadlock-fixes
+PEBBLE_COMMIT = 9fc4fcab47cf6156a785cea8f7c4de977c5a7009
 
 LOCALIMAGE_pebble := local/pebble:local
 LOCALIMAGE_vaultretagged := local/vault:local
@@ -429,10 +431,12 @@ e2e-setup-kyverno: $(call image-tar,kyverno) $(call image-tar,kyvernopre) load-$
 $(bin_dir)/downloaded:
 	@mkdir -p $@
 
-# We are using @inteon's fork of Pebble, which adds support for signing CSRs with
-# Ed25519 keys:
-# - https://github.com/letsencrypt/pebble/pull/468
-# - https://github.com/cert-manager/pebble/tree/add_Ed25519_support
+# We use cert-manager's fork of Pebble, which carries two patches:
+# - Signing CSRs with Ed25519 keys, which upstream declined:
+#   https://github.com/letsencrypt/pebble/pull/468
+# - A deadlock fix, not yet merged upstream:
+#   https://github.com/letsencrypt/pebble/pull/564
+# Branch: https://github.com/cert-manager/pebble/tree/ed25519-and-deadlock-fixes
 $(bin_dir)/downloaded/pebble-$(PEBBLE_COMMIT).tar.gz: | $(bin_dir)/downloaded
 	$(CURL) https://github.com/cert-manager/pebble/archive/$(PEBBLE_COMMIT).tar.gz -o $@
 
