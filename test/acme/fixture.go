@@ -91,20 +91,36 @@ type fixture struct {
 func (f *fixture) RunConformance(t *testing.T) {
 	defer f.setup(t)()
 	t.Run("Conformance", func(t *testing.T) {
-		f.RunBasic(t)
-		f.RunExtended(t)
+		f.runBasic(t)
+		f.runExtended(t)
 	})
 }
 
+// RunBasic runs the Basic suite against a dedicated control plane and DNS
+// solver, which are stopped when the suite completes.
 func (f *fixture) RunBasic(t *testing.T) {
 	defer f.setup(t)()
+	f.runBasic(t)
+}
+
+// runBasic runs the Basic suite. The caller is responsible for calling setup
+// first.
+func (f *fixture) runBasic(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
 		t.Run("PresentRecord", f.TestBasicPresentRecord)
 	})
 }
 
+// RunExtended runs the Extended suite against a dedicated control plane and
+// DNS solver, which are stopped when the suite completes.
 func (f *fixture) RunExtended(t *testing.T) {
 	defer f.setup(t)()
+	f.runExtended(t)
+}
+
+// runExtended runs the Extended suite. The caller is responsible for calling
+// setup first.
+func (f *fixture) runExtended(t *testing.T) {
 	t.Run("Extended", func(t *testing.T) {
 		t.Run("DeletingOneRecordRetainsOthers", f.TestExtendedDeletingOneRecordRetainsOthers)
 	})
