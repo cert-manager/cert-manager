@@ -232,9 +232,10 @@ var _ corev1listers.SecretNamespaceLister = &secretNamespaceLister{}
 // secretNamespaceLister is an implementation of
 // corelisters.SecretNamespaceLister
 // https://github.com/kubernetes/client-go/blob/0382bf0f53b2294d4ac448203718f0ba774a477d/listers/core/v1/secret.go#L62-L72.
-// It knows how to get and list Secrets using typed and partial metadata caches
+// It knows how to get Secrets using typed and partial metadata caches
 // and kube apiserver. It looks for Secrets in both caches, if the Secret is
 // found in metadata cache, it will retrieve it from kube apiserver.
+// It lists Secrets from the typed cache only.
 type secretNamespaceLister struct {
 	namespace             string
 	partialMetadataLister metadatalister.Lister
@@ -289,52 +290,18 @@ func (snl *secretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 }
 
 func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secret, error) {
-	log := logf.FromContext(snl.ctx)
-	log = log.WithValues("secrets namespace", snl.namespace, "secrets selector", selector.String())
-	matchingSecretsMap := make(map[types.NamespacedName]*corev1.Secret)
-	typedSecrets, err := snl.typedLister.List(selector)
-	if err != nil {
-		log.Error(err, "error listing Secrets from typed cache")
-		return nil, fmt.Errorf("error listing Secrets from typed cache: %w", err)
-	}
-	for _, secret := range typedSecrets {
-		key := types.NamespacedName{Namespace: secret.Namespace, Name: secret.Name}
-		matchingSecretsMap[key] = secret
-	}
-	metadataSecrets, err := snl.partialMetadataLister.List(selector)
-	if err != nil {
-		log.Error(err, "error listing Secrets from metadata only cache")
-		return nil, fmt.Errorf("error listing Secrets from metadata only cache: %w", err)
+	// The typed cache holds only fao-labeled Secrets; the rest are in the partial
+	// metadata cache with their labels stripped (partialMetadataRemoveAll), so a
+	// selector matching the empty label set cannot be evaluated against them.
+	if selector.Matches(labels.Set{}) {
+		return nil, fmt.Errorf("internal error: refusing to list Secrets with selector %q: %w, but this "+
+			"lister can only list Secrets labeled %s=true. %s",
+			selector, ErrUnlabeledSelector, cmapi.PartOfCertManagerControllerLabelKey, pleaseOpenIssue)
 	}
 
-	if len(metadataSecrets) > 0 {
-		// We currently do not LIST unlabelled Secrets. This log line is
-		// here in case we do it sometime in the future at which point
-		// we can see whether the metadata functionality is performant
-		// enough.
-		log.V(logf.InfoLevel).Info("unexpected behaviour: secrets LISTed from metadata cache. Please open an issue")
+	secrets, err := snl.typedLister.Secrets(snl.namespace).List(selector)
+	if err != nil {
+		return nil, fmt.Errorf("error listing Secrets from the typed cache: %w", err)
 	}
-	// In practice this section will never be used. The only place
-	// where we LIST Secrets is in keymanager controller where we list
-	// temporary Certificate Secrets which are all labelled.
-	// It is unlikely that we will every list unlabelled Secrets.
-	for _, secretMeta := range metadataSecrets {
-		key := types.NamespacedName{Namespace: secretMeta.Namespace, Name: secretMeta.Name}
-		if _, ok := matchingSecretsMap[key]; ok {
-			log.Info(fmt.Sprintf("warning: possible internal error: stale cache: secret found both in typed cache and in partial cache: %s", pleaseOpenIssue), "secret name", secretMeta.Name)
-			// in case of duplicates, return the version from kube apiserver
-		}
-		secret, err := snl.typedClient.Secrets(snl.namespace).Get(snl.ctx, secretMeta.Name, metav1.GetOptions{})
-		if err != nil {
-			log.Error(err, "error retrieving secret from kube apiserver", "secret name", secretMeta.Name)
-			return nil, fmt.Errorf("error retrieving Secret from kube apiserver: %w", err)
-		}
-		matchingSecretsMap[key] = secret
-	}
-
-	matchingSecrets := make([]*corev1.Secret, 0)
-	for _, val := range matchingSecretsMap {
-		matchingSecrets = append(matchingSecrets, val)
-	}
-	return matchingSecrets, nil
+	return secrets, nil
 }

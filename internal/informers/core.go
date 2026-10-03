@@ -17,6 +17,8 @@ limitations under the License.
 package informers
 
 import (
+	"errors"
+
 	corev1 "k8s.io/api/core/v1"
 	certificatesv1 "k8s.io/client-go/informers/certificates/v1"
 	networkingv1informers "k8s.io/client-go/informers/networking/v1"
@@ -33,6 +35,10 @@ import (
 var secretsGVR = corev1.SchemeGroupVersion.WithResource("secrets")
 
 const pleaseOpenIssue = "Please report this by opening an issue with this error and cert-manager controller logs and stack trace https://github.com/cert-manager/cert-manager/issues/new/choose"
+
+// ErrUnlabeledSelector is returned by SecretLister List implementations that
+// cannot evaluate a selector matching a Secret with no labels.
+var ErrUnlabeledSelector = errors.New("selector matches Secrets that have no labels")
 
 // KubeSharedInformerFactory represents a subset of methods in
 // informers.sharedInformerFactory. It allows us to use a wrapper around
