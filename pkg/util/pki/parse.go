@@ -17,6 +17,7 @@ limitations under the License.
 package pki
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/x509"
 	stdpem "encoding/pem"
@@ -77,18 +78,34 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	}
 }
 
+const pemBeginMarker = "-----BEGIN "
+
 func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block, []byte, error)) ([]*x509.Certificate, error) {
 	certs := []*x509.Certificate{}
 
 	var block *stdpem.Block
 
 	for {
+		// encoding/pem.Decode scans forward to the next PEM block and silently
+		// skips any preceding bytes. Reject non-whitespace data before BEGIN so
+		// leading or interstitial garbage cannot hide beside valid certificates.
+		if begin := bytes.Index(certBytes, []byte(pemBeginMarker)); begin >= 0 {
+			if len(bytes.TrimSpace(certBytes[:begin])) > 0 {
+				return nil, errors.NewInvalidData("error decoding certificate PEM block: unexpected non-PEM data in input")
+			}
+		}
+
 		var err error
 
 		// decode the tls certificate pem
 		block, certBytes, err = decodeFn(certBytes)
 		if err != nil {
 			if err == pem.ErrNoPEMData {
+				// ErrNoPEMData is normal when only whitespace remains after the
+				// last block. Non-whitespace leftover means trailing garbage.
+				if len(bytes.TrimSpace(certBytes)) > 0 {
+					return nil, errors.NewInvalidData("error decoding certificate PEM block: unexpected non-PEM data in input")
+				}
 				break
 			}
 
@@ -103,6 +120,13 @@ func decodeMultipleCerts(certBytes []byte, decodeFn func([]byte) (*stdpem.Block,
 		// accepted alongside the standard "CERTIFICATE" label.
 		if block.Type != "CERTIFICATE" && block.Type != "X509 CERTIFICATE" && block.Type != "X.509 CERTIFICATE" {
 			return nil, errors.NewInvalidData("error decoding certificate PEM block: expected a \"CERTIFICATE\" block, found %q", block.Type)
+		}
+
+		// Reject PEM headers: they are non-standard (RFC 7468) and can carry
+		// accidental private material. crypto/x509.CertPool.AppendCertsFromPEM
+		// skips these blocks; we reject them so callers cannot silently lose certs.
+		if len(block.Headers) != 0 {
+			return nil, errors.NewInvalidData("invalid PEM block in bundle; blocks are not permitted to have PEM headers")
 		}
 
 		// parse the tls certificate
