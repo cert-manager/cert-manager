@@ -130,12 +130,6 @@ func TestProcessItem(t *testing.T) {
 	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
-	failedCRConditionPreviousIssuance := cmapi.CertificateRequestCondition{
-		Type:               cmapi.CertificateRequestConditionReady,
-		Status:             cmmeta.ConditionFalse,
-		Reason:             cmapi.CertificateRequestReasonFailed,
-		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
-	}
 	failedCRConditionThisIssuance := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Status:             cmmeta.ConditionFalse,
@@ -751,7 +745,16 @@ func TestProcessItem(t *testing.T) {
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
-					gen.AddCertificateRequestStatusCondition(failedCRConditionPreviousIssuance),
+					// Its own condition value, not failedCRConditionPreviousIssuance:
+					// that struct carries a shared *metav1.Time, and map iteration
+					// order is randomised, so appending it here would let a
+					// scenario running earlier rewrite this one's timestamps.
+					gen.AddCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type:               cmapi.CertificateRequestConditionReady,
+						Status:             cmmeta.ConditionFalse,
+						Reason:             cmapi.CertificateRequestReasonFailed,
+						LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
+					}),
 					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(time.Hour * -1)}),
 				),
 			},

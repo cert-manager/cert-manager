@@ -297,8 +297,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// failed CertificateRequest from the previous issuance for the same
 	// revision. Leave it to the certificate-requests controller to delete the
 	// CertificateRequest and create a new one.
-	if req.Status.FailureTime != nil && crReadyCond != nil &&
-		req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
+	if internalcertificates.FailedRequestIsFromPreviousIssuance(req, certIssuingCond) {
 		log.V(logf.InfoLevel).Info("Found a failed CertificateRequest from previous issuance, waiting for it to be deleted...")
 		return nil
 	}
@@ -363,9 +362,19 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// If the certificate request has failed, set the last failure time to
 	// now, bump the issuance attempts and set the Issuing status condition
-	// to False.
-	if crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
+	// to False. The status is checked as well as the reason so that this
+	// branch agrees with FailedRequestIsFromPreviousIssuance above: a
+	// malformed request carrying Reason=Failed with any other status is
+	// neither counted here nor deleted by the requestmanager, so it needs
+	// to surface the way a failureTime with no Ready condition does below.
+	if crReadyCond.Status == cmmeta.ConditionFalse && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
 		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady))
+	}
+	if crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
+		message := fmt.Sprintf("CertificateRequest %q has Ready reason Failed with status %s; issuance is stalled. Delete the CertificateRequest to retry.", req.Name, crReadyCond.Status)
+		log.V(logf.ErrorLevel).Info(message)
+		c.recorder.Event(crt, corev1.EventTypeWarning, reasonStalled, message)
+		return nil
 	}
 
 	// If the CertificateRequest is valid and ready, verify its status and issue
