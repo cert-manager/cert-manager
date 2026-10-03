@@ -192,10 +192,10 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 	}
 
 	// Backfill PresentedAt for already-presented challenges when
-	// WaitInsteadOfSelfCheck is configured. This covers upgrade or
-	// pre-existing-object cases where Presented was recorded before the
-	// controller started writing PresentedAt.
-	if ch.Status.Presented && ch.Status.PresentedAt == nil && ch.Spec.Solver.WaitInsteadOfSelfCheck != nil {
+	// WaitInsteadOfSelfCheck or DelayBeforeAccept is configured. This covers
+	// upgrade or pre-existing-object cases where Presented was recorded before
+	// the controller started writing PresentedAt.
+	if ch.Status.Presented && ch.Status.PresentedAt == nil && (ch.Spec.Solver.WaitInsteadOfSelfCheck != nil || ch.Spec.Solver.DelayBeforeAccept != nil) {
 		now := metav1.NewTime(c.clock.Now())
 		ch.Status.PresentedAt = &now
 	}

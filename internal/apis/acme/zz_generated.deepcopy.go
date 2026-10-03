@@ -95,6 +95,11 @@ func (in *ACMEChallengeSolver) DeepCopyInto(out *ACMEChallengeSolver) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.DelayBeforeAccept != nil {
+		in, out := &in.DelayBeforeAccept, &out.DelayBeforeAccept
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	return
 }
 
