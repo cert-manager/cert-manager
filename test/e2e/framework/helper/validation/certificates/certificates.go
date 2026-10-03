@@ -371,7 +371,13 @@ func ExpectValidBasicConstraints(certificate *cmapi.Certificate, secret *corev1.
 		return fmt.Errorf("Expected CA basicConstraint to be %v, but got %v", certificate.Spec.IsCA, cert.IsCA)
 	}
 
-	// TODO: also validate pathLen
+	if certificate.Spec.MaxPathLen != nil {
+		want := *certificate.Spec.MaxPathLen
+		if cert.MaxPathLen != want || (want == 0 && !cert.MaxPathLenZero) {
+			return fmt.Errorf("expected MaxPathLen=%d (MaxPathLenZero=%v) but got MaxPathLen=%d MaxPathLenZero=%v",
+				want, want == 0, cert.MaxPathLen, cert.MaxPathLenZero)
+		}
+	}
 
 	return nil
 }
