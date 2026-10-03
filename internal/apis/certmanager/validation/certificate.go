@@ -58,6 +58,12 @@ var keyAlgToAllowedSigAlgs = map[internalcmapi.PrivateKeyAlgorithm][]internalcma
 	internalcmapi.Ed25519KeyAlgorithm: {
 		internalcmapi.PureEd25519,
 	},
+	internalcmapi.MLDSA44KeyAlgorithm: {
+		internalcmapi.PureMLDSA44,
+	},
+	internalcmapi.MLDSA65KeyAlgorithm: {
+		internalcmapi.PureMLDSA65,
+	},
 }
 
 // Validation functions for cert-manager Certificate types
@@ -181,8 +187,12 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 			}
 		case internalcmapi.Ed25519KeyAlgorithm:
 			break
+		case internalcmapi.MLDSA44KeyAlgorithm:
+			break
+		case internalcmapi.MLDSA65KeyAlgorithm:
+			break
 		default:
-			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa or ed25519"))
+			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa, ed25519, mldsa44, or mldsa65"))
 		}
 	}
 

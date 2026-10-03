@@ -22,6 +22,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -351,15 +352,9 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	var pubKeyAlgo x509.PublicKeyAlgorithm
 	var sigAlgoArg any
 
-	// NB: can't rely on issuerCert.Public or issuercert.PublicKeyAlgorithm being set reliably;
-	// but we know that signerKey.Public() will work!
 	switch pubKey := typedSigner.Public().(type) {
 	case *rsa.PublicKey:
 		pubKeyAlgo = x509.RSA
-
-		// Size is in bytes so multiply by 8 to get bits because they're more familiar
-		// This is technically not portable but if you're using cert-manager on a platform
-		// with bytes that don't have 8 bits, you've got bigger problems than this!
 		sigAlgoArg = pubKey.Size() * 8
 
 	case *ecdsa.PublicKey:
@@ -368,7 +363,11 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 
 	case ed25519.PublicKey:
 		pubKeyAlgo = x509.Ed25519
-		sigAlgoArg = nil // ignored by signatureAlgorithmFromPublicKey
+		sigAlgoArg = nil
+
+	case *mldsa.PublicKey:
+		pubKeyAlgo = x509.MLDSA
+		sigAlgoArg = pubKey.Parameters()
 
 	default:
 		return nil, nil, fmt.Errorf("unknown public key type on signing certificate: %T", issuerCert.PublicKey)
@@ -476,6 +475,8 @@ var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
 	v1.RSAKeyAlgorithm:     x509.RSA,
 	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
 	v1.Ed25519KeyAlgorithm: x509.Ed25519,
+	v1.MLDSA44KeyAlgorithm: x509.MLDSA,
+	v1.MLDSA65KeyAlgorithm: x509.MLDSA,
 }
 var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.SHA256WithRSA:   x509.SHA256WithRSA,
@@ -485,6 +486,8 @@ var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.ECDSAWithSHA384: x509.ECDSAWithSHA384,
 	v1.ECDSAWithSHA512: x509.ECDSAWithSHA512,
 	v1.PureEd25519:     x509.PureEd25519,
+	v1.PureMLDSA44:     x509.MLDSA44,
+	v1.PureMLDSA65:     x509.MLDSA65,
 }
 
 // SignatureAlgorithm will determine the appropriate signature algorithm for
@@ -508,7 +511,7 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 	} else {
 		pubKeyAlgo, ok = keyAlgorithms[specAlgorithm]
 		if !ok {
-			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519' or 'rsa", crt.Spec.PrivateKey.Algorithm)
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'rsa', 'ecdsa', 'ed25519', 'mldsa44', or 'mldsa65'", crt.Spec.PrivateKey.Algorithm)
 		}
 	}
 
@@ -539,6 +542,13 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
+	case x509.MLDSA:
+		switch specAlgorithm {
+		case v1.MLDSA44KeyAlgorithm:
+			sigAlgoArg = mldsa.MLDSA44()
+		case v1.MLDSA65KeyAlgorithm:
+			sigAlgoArg = mldsa.MLDSA65()
+		}
 	default:
 		// ok
 	}
@@ -556,9 +566,8 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 // If alg is x509.RSA, arg must be an integer key size in bits
 // If alg is x509.ECDSA, arg must be an elliptic.Curve
 // If alg is x509.Ed25519, arg is ignored
+// If alg is x509.MLDSA, arg must be mldsa.Parameters
 // All other algorithms and args cause an error
-// The signature algorithms returned by this function are to some degree a matter of preference. The
-// choices here are motivated by what is common and what is required by bodies such as the US DoD.
 func signatureAlgorithmFromPublicKey(alg x509.PublicKeyAlgorithm, arg any) (x509.SignatureAlgorithm, error) {
 	var signatureAlgorithm x509.SignatureAlgorithm
 
@@ -605,6 +614,20 @@ func signatureAlgorithmFromPublicKey(alg x509.PublicKeyAlgorithm, arg any) (x509
 
 	case x509.Ed25519:
 		signatureAlgorithm = x509.PureEd25519
+
+	case x509.MLDSA:
+		params, ok := arg.(mldsa.Parameters)
+		if !ok {
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("expected ML-DSA parameters but got %T", arg)
+		}
+		switch params {
+		case mldsa.MLDSA44():
+			signatureAlgorithm = x509.MLDSA44
+		case mldsa.MLDSA65():
+			signatureAlgorithm = x509.MLDSA65
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ML-DSA parameter set: %s", params)
+		}
 
 	default:
 		return x509.UnknownSignatureAlgorithm, fmt.Errorf("got unsupported public key type when trying to calculate signature algorithm")

@@ -18,6 +18,7 @@ package pki
 
 import (
 	"crypto/ecdsa"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -260,5 +261,43 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, testFn(test))
+	}
+}
+
+func TestDecodeMLDSAPrivateKeyPEM(t *testing.T) {
+	tests := []struct {
+		name   string
+		params mldsa.Parameters
+	}{
+		{name: "MLDSA44", params: mldsa.MLDSA44()},
+		{name: "MLDSA65", params: mldsa.MLDSA65()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sk, err := mldsa.GenerateKey(tt.params)
+			if err != nil {
+				t.Fatalf("failed to generate %s key: %v", tt.name, err)
+			}
+
+			pemBytes, err := EncodePKCS8PrivateKey(sk)
+			if err != nil {
+				t.Fatalf("failed to encode %s key: %v", tt.name, err)
+			}
+
+			decoded, err := DecodePrivateKeyBytes(pemBytes)
+			if err != nil {
+				t.Fatalf("failed to decode %s key: %v", tt.name, err)
+			}
+
+			mldsaKey, ok := decoded.(*mldsa.PrivateKey)
+			if !ok {
+				t.Fatalf("decoded key is not *mldsa.PrivateKey, got %T", decoded)
+			}
+
+			if mldsaKey.PublicKey().Parameters() != tt.params {
+				t.Fatalf("decoded key parameters mismatch: got %s, want %s", mldsaKey.PublicKey().Parameters(), tt.params)
+			}
+		})
 	}
 }

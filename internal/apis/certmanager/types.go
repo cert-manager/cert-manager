@@ -226,4 +226,6 @@ const (
 	ECDSAWithSHA384 SignatureAlgorithm = "ECDSAWithSHA384"
 	ECDSAWithSHA512 SignatureAlgorithm = "ECDSAWithSHA512"
 	PureEd25519     SignatureAlgorithm = "PureEd25519"
+	PureMLDSA44     SignatureAlgorithm = "PureMLDSA44"
+	PureMLDSA65     SignatureAlgorithm = "PureMLDSA65"
 )
