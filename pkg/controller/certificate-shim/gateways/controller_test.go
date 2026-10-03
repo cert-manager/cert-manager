@@ -17,6 +17,8 @@ limitations under the License.
 package controller
 
 import (
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -214,25 +217,41 @@ func Test_controller_Register(t *testing.T) {
 			// We have no way of knowing when the informers will be done adding
 			// items to the queue due to the "shared informer" architecture:
 			// Start(stop) does not allow you to wait for the informers to be
-			// done.
+			// done. So wait generously for the expected Add calls to arrive,
+			// then allow a short grace period for unexpected extra calls
+			// before the final comparison.
+			assert.Eventually(t, func() bool {
+				return len(mock.addCalls()) >= len(test.expectAddCalls)
+			}, wait.ForeverTestTimeout, 10*time.Millisecond)
 			time.Sleep(50 * time.Millisecond)
 
 			// We only expect 0 or 1 keys received in the queue, or 2 keys when
 			// we have to create a Gateway before deleting or updating it.
-			assert.Equal(t, test.expectAddCalls, mock.callsToAdd)
+			assert.Equal(t, test.expectAddCalls, mock.addCalls())
 		})
 	}
 }
 
 type mockWorkqueue struct {
 	t          *testing.T
+	mu         sync.Mutex
 	callsToAdd []types.NamespacedName
 }
 
 var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+// addCalls returns a snapshot of the Add calls received so far. The informers
+// call Add from their own goroutines, so the mutex is required.
+func (m *mockWorkqueue) addCalls() []types.NamespacedName {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.Clone(m.callsToAdd)
 }
 
 func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
