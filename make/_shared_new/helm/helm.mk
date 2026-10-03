@@ -128,8 +128,25 @@ shared_verify_targets += verify-helm-unittest
 $(bin_dir)/scratch/kyverno:
 	@mkdir -p $@
 
-$(bin_dir)/scratch/kyverno/pod-security-policy.yaml: | $(NEEDS_KUSTOMIZE) $(bin_dir)/scratch/kyverno
-	@$(KUSTOMIZE) build https://github.com/kyverno/policies/pod-security/enforce > $@
+# The commit of kyverno/policies to build the pod-security policies from.
+# Pinned because https://github.com/kyverno/policies/pull/1544 deleted pod-security/
+# from main; it was superseded by the CEL policies in pod-security-vpol/, see
+# https://github.com/kyverno/policies/issues/1543.
+#
+# This is the tip of the release-1.19 branch, one of the last commits that still
+# has pod-security/. The branch name does not matter: the pod-security/ bundle is
+# identical on every release branch from release-1.12 to release-1.19, and each
+# policy declares kyverno 1.6.0 as its minimum version. The release branches are
+# snapshots for the kyverno.io website, not compatibility boundaries. So this
+# does not need to change when the kyverno tool in modules/tools is bumped.
+kyverno_policies_version := ef9843f08d25b3555fe69616f8612c9f915af5d4
+
+# The version is part of the file name, so a change to it builds a new file
+# instead of reusing a stale cached one.
+kyverno_policy_file := $(bin_dir)/scratch/kyverno/pod-security-policy-$(kyverno_policies_version).yaml
+
+$(kyverno_policy_file): | $(NEEDS_KUSTOMIZE) $(bin_dir)/scratch/kyverno
+	@$(KUSTOMIZE) build "https://github.com/kyverno/policies/pod-security/enforce?ref=$(kyverno_policies_version)" > $@
 
 # Extra arguments for kyverno apply.
 kyverno_apply_extra_args :=
@@ -168,9 +185,9 @@ endif
 ## security policy rules.
 ##
 ## @category [shared] Generate/ Verify
-verify-pod-security-standards: $(helm_chart_archive) $(bin_dir)/scratch/kyverno/pod-security-policy.yaml | $(NEEDS_KYVERNO) $(NEEDS_HELM)
+verify-pod-security-standards: $(helm_chart_archive) $(kyverno_policy_file) | $(NEEDS_KYVERNO) $(NEEDS_HELM)
 	@$(HELM) template $(helm_chart_archive) $(INSTALL_OPTIONS) \
-	| $(KYVERNO) apply $(bin_dir)/scratch/kyverno/pod-security-policy.yaml \
+	| $(KYVERNO) apply $(kyverno_policy_file) \
 		$(kyverno_apply_extra_args) \
 		--resource - \
 		--table
