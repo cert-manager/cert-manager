@@ -635,6 +635,19 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		}
 	}
 
+	// Compare IPAddresses the same way we compare DNSNames, so IP SAN changes
+	// reach existing Certificates and #8978 de-duplication propagates upgrades.
+	// Issue: https://github.com/cert-manager/cert-manager/issues/9296
+	if len(a.Spec.IPAddresses) != len(b.Spec.IPAddresses) {
+		return true
+	}
+
+	for i := range a.Spec.IPAddresses {
+		if a.Spec.IPAddresses[i] != b.Spec.IPAddresses[i] {
+			return true
+		}
+	}
+
 	if a.Spec.SecretName != b.Spec.SecretName {
 		return true
 	}
