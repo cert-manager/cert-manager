@@ -345,6 +345,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
 			HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
 			HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
+			HTTP01SolverLoggingFormat:    opts.Logging.Format,
 
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
