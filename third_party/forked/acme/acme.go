@@ -185,11 +185,11 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 		Nonce     string `json:"newNonce"`
 		KeyChange string `json:"keyChange"`
 		Meta      struct {
-			Terms        string            `json:"termsOfService"`
-			Website      string            `json:"website"`
-			CAA          []string          `json:"caaIdentities"`
-			ExternalAcct bool              `json:"externalAccountRequired"`
-			Profiles     map[string]string `json:"profiles"`
+			Terms        string                 `json:"termsOfService"`
+			Website      string                 `json:"website"`
+			CAA          []string               `json:"caaIdentities"`
+			ExternalAcct bool                   `json:"externalAccountRequired"`
+			Profiles     map[ProfileName]string `json:"profiles"`
 		}
 		RenewalInfo string `json:"renewalInfo"`
 	}

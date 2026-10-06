@@ -734,7 +734,7 @@ func TestTLSALPN01ChallengeCert(t *testing.T) {
 	if !acmeExts[0].Critical {
 		t.Errorf("acmeExt.Critical = %v; want true", acmeExts[0].Critical)
 	}
-	if bytes.Compare(acmeExts[0].Value, extValue) != 0 {
+	if !bytes.Equal(acmeExts[0].Value, extValue) {
 		t.Errorf("acmeExt.Value = %v; want %v", acmeExts[0].Value, extValue)
 	}
 

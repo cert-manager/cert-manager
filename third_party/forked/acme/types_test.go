@@ -29,7 +29,7 @@ func TestExternalAccountBindingString(t *testing.T) {
 }
 
 func TestRateLimit(t *testing.T) {
-	now := time.Date(2017, 0o4, 27, 10, 0, 0, 0, time.UTC)
+	now := time.Date(2017, 04, 27, 10, 0, 0, 0, time.UTC)
 	f := timeNow
 	defer func() { timeNow = f }()
 	timeNow = func() time.Time { return now }
