@@ -698,7 +698,11 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, order *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
+					if order.URI != testOrderReady.Status.URL || order.FinalizeURL != testOrderReady.Status.FinalizeURL {
+						return nil, "", fmt.Errorf("Invalid order: expected URI %q and FinalizeURL %q, got %q and %q",
+							testOrderReady.Status.URL, testOrderReady.Status.FinalizeURL, order.URI, order.FinalizeURL)
+					}
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -721,7 +725,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError429
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -740,7 +744,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", errors.New("some error")
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -767,7 +771,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -803,7 +807,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -848,7 +852,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
@@ -892,7 +896,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
@@ -1143,7 +1147,7 @@ func TestFinalizeOrder(t *testing.T) {
 	}{
 		"CreateOrderRequest - Succeed, UpdateOrderStatus - Succeed": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", nil
 				},
 				FakeGetOrder: func(ctx context.Context, url string) (*acmeapi.Order, error) {
@@ -1164,7 +1168,7 @@ func TestFinalizeOrder(t *testing.T) {
 		},
 		"CreateOrderRequest - Fail, UpdateOrderStatus - Succeed": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", &acmeapi.Error{
 						StatusCode: 500,
 						Header: http.Header{
@@ -1188,7 +1192,7 @@ func TestFinalizeOrder(t *testing.T) {
 		},
 		"CreateOrderRequest - Fail, UpdateOrderStatus - Fail": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", &acmeapi.Error{
 						StatusCode: 501,
 						Header: http.Header{

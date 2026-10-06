@@ -99,7 +99,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		FakeDNS01ChallengeRecord: func(_ string) (string, error) {
 			return testName, nil
 		},
-		FakeCreateOrderCert: func(_ context.Context, _ string, _ []byte, _ bool) ([][]byte, string, error) {
+		FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, _ []byte, _ bool) ([][]byte, string, error) {
 			// A hack to ensure the status of the _ACME_ order gets set to valid
 			// when we're finalizing the order.
 			acmeOrder.Status = acmeapi.StatusValid
