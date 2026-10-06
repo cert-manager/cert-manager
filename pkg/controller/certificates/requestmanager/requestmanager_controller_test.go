@@ -732,6 +732,92 @@ func TestProcessItem(t *testing.T) {
 				`Warning RequestConflict Multiple matching CertificateRequest resources exist (random-value-1, random-value-2), delete all but one of them to allow issuance to continue`,
 			},
 		},
+		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle with no failureTime set": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				// An external issuer can write the Ready condition
+				// without failureTime; the condition's
+				// lastTransitionTime dates the failure.
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+					gen.AddCertificateRequestStatusCondition(failedCRConditionPreviousIssuance),
+					func(cr *cmapi.CertificateRequest) {
+						cr.CreationTimestamp = metav1.Time{Time: fixedNow.Time.Add(time.Hour * -2)}
+					},
+				),
+			},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"should recreate the CertificateRequest if the current 'next' CertificateRequest was created before the Issuing transition but has no failureTime and no Ready lastTransitionTime": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				// Neither failureTime nor a Ready lastTransitionTime:
+				// creationTimestamp is the only date left.
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+					gen.AddCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type:    cmapi.CertificateRequestConditionReady,
+						Status:  cmmeta.ConditionFalse,
+						Reason:  cmapi.CertificateRequestReasonFailed,
+						Message: "The certificate request failed because of reasons",
+					}),
+					func(cr *cmapi.CertificateRequest) {
+						cr.CreationTimestamp = metav1.Time{Time: fixedNow.Time.Add(time.Hour * -2)}
+					},
+				),
+			},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
 		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
