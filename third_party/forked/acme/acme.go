@@ -225,7 +225,7 @@ func (c *Client) directoryURL() string {
 
 // CreateCert was part of the old version of ACME. It is incompatible with RFC 8555.
 //
-// Deprecated: this was for the pre-RFC 8555 version of ACME. Callers should use CreateOrderCert.
+// Deprecated: this was for the pre-RFC 8555 version of ACME. Callers should use CreateCertFromOrder.
 func (c *Client) CreateCert(ctx context.Context, csr []byte, exp time.Duration, bundle bool) (der [][]byte, certURL string, err error) {
 	return nil, "", errPreRFC
 }

@@ -1100,6 +1100,80 @@ func TestRFC_CreateOrderCert(t *testing.T) {
 	}
 }
 
+// TestRFC_CreateCertFromOrder tests that finalization responses work even when
+// they omit a Location header. Such a header isn't required by RFC 8555 in this
+// context and we should be able to complete an order without needing it.
+func TestRFC_CreateCertFromOrder(t *testing.T) {
+	q := &x509.CertificateRequest{
+		Subject: pkix.Name{CommonName: "example.org"},
+	}
+	csr, err := x509.CreateCertificateRequest(rand.Reader, q, testKeyEC)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpl := &x509.Certificate{SerialNumber: big.NewInt(1)}
+	leaf, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &testKeyEC.PublicKey, testKeyEC)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := newACMEServer()
+	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", s.url("/accounts/1"))
+		w.Write([]byte(`{"status": "valid"}`))
+	})
+	s.handle("/finalize", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"status":"processing"}`)
+	})
+	s.handle("/orders/1", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"status":"valid", "certificate":%q}`, s.url("/crt"))
+	})
+	s.handle("/crt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/pem-certificate-chain")
+		pem.Encode(w, &pem.Block{Type: "CERTIFICATE", Bytes: leaf})
+	})
+	s.start()
+	defer s.close()
+
+	cl := &Client{Key: testKeyEC, DirectoryURL: s.url("/")}
+	order := &Order{URI: s.url("/orders/1"), FinalizeURL: s.url("/finalize")}
+	cert, curl, err := cl.CreateCertFromOrder(context.Background(), order, csr, true)
+	if err != nil {
+		t.Fatalf("CreateCertFromOrder: %v", err)
+	}
+	if _, err := x509.ParseCertificate(cert[0]); err != nil {
+		t.Errorf("ParseCertificate: %v", err)
+	}
+	if !reflect.DeepEqual(cert[0], leaf) {
+		t.Errorf("cert and leaf bytes don't match")
+	}
+	if u := s.url("/crt"); curl != u {
+		t.Errorf("curl = %q; want %q", curl, u)
+	}
+}
+
+// TestRFC_CreateCertFromOrderInvalidOrder tests that invalid CreateCertFromOrder
+// calls fail before making a request.
+func TestRFC_CreateCertFromOrderInvalidOrder(t *testing.T) {
+	cl := new(Client)
+	tests := []struct {
+		name  string
+		order *Order
+	}{
+		{"nil", nil},
+		{"empty URI", &Order{FinalizeURL: "https://example.com/finalize"}},
+		{"empty finalize URL", &Order{URI: "https://example.com/order/1"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, _, err := cl.CreateCertFromOrder(context.Background(), tt.order, nil, false); err == nil {
+				t.Fatal("CreateCertFromOrder returned nil error")
+			}
+		})
+	}
+}
+
 func TestRFC_AlreadyRevokedCert(t *testing.T) {
 	s := newACMEServer()
 	s.handle("/acme/revoke-cert", func(w http.ResponseWriter, r *http.Request) {
