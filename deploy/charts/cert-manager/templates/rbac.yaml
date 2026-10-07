@@ -440,7 +440,7 @@ metadata:
     {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
-    resources: ["certificates", "certificaterequests", "issuers"]
+    resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["challenges", "orders"]
@@ -465,7 +465,7 @@ metadata:
     {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
-    resources: ["certificates", "certificaterequests", "issuers"]
+    resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates/status"]
