@@ -1,0 +1,88 @@
+suite: startupapicheck NetworkPolicy
+templates:
+  - templates/networkpolicy-startupapicheck.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should not render a NetworkPolicy by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render the default egress rules when enabled
+    set:
+      startupapicheck.networkPolicy.enabled: true
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.egress
+          value:
+            - ports:
+                - port: 80
+                  protocol: TCP
+                - port: 443
+                  protocol: TCP
+                - port: 53
+                  protocol: TCP
+                - port: 53
+                  protocol: UDP
+                - port: 6443
+                  protocol: TCP
+            - to:
+                - namespaceSelector:
+                    matchLabels:
+                      kubernetes.io/metadata.name: openshift-dns
+              ports:
+                - port: 5353
+                  protocol: TCP
+                - port: 5353
+                  protocol: UDP
+      - equal:
+          path: spec.policyTypes
+          value:
+            - Egress
+
+  - it: should render custom egress rules for the startupapicheck pods
+    set:
+      startupapicheck.networkPolicy.enabled: true
+      startupapicheck.networkPolicy.egress:
+        - to:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: control-plane
+          ports:
+            - port: 8443
+              protocol: TCP
+    asserts:
+      - equal:
+          path: metadata.name
+          value: cert-manager-startupapicheck-allow-egress
+      - equal:
+          path: metadata.namespace
+          value: cert-manager
+      - equal:
+          path: spec.podSelector.matchLabels
+          value:
+            app.kubernetes.io/name: startupapicheck
+            app.kubernetes.io/instance: cert-manager
+            app.kubernetes.io/component: startupapicheck
+      - equal:
+          path: spec.egress
+          value:
+            - to:
+                - namespaceSelector:
+                    matchLabels:
+                      kubernetes.io/metadata.name: control-plane
+              ports:
+                - port: 8443
+                  protocol: TCP
+
+  - it: should not render a NetworkPolicy when the Job is disabled
+    set:
+      startupapicheck.enabled: false
+      startupapicheck.networkPolicy.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
