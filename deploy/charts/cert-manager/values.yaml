@@ -1542,6 +1542,30 @@ startupapicheck:
   # Enables the startup api check.
   enabled: true
 
+  # Enables a network policy for the startupapicheck Job.
+  # This policy restricts the Job's outbound traffic to the configured egress rules.
+  # For more information, see [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/).
+  # NOTE: an incorrect networkPolicy will cause traffic to be dropped
+  networkPolicy:
+    # Create a network policy for the startupapicheck Job.
+    enabled: false
+
+    # Egress rule for the startupapicheck network policy. By default, it only
+    # allows outbound traffic to the Kubernetes API server, on port 443 and on
+    # port 6443.
+    # The startupapicheck uses the in-cluster API server address, so it does not
+    # need DNS. If you point it at a hostname (for example via `extraArgs` or a
+    # proxy in `extraEnv`), add egress rules for DNS and that destination.
+    # +docs:property
+    egress:
+    - ports:
+      - port: 443
+        protocol: TCP
+      # On OpenShift and OKD, the Kubernetes API server listens on
+      # port 6443.
+      - port: 6443
+        protocol: TCP
+
   # Pod Security Context to be set on the startupapicheck component Pod.
   # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
   # +docs:property
