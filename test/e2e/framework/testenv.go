@@ -48,9 +48,7 @@ const (
 // slow or loaded cluster, not just this repo's CI.
 func (f *Framework) CreateKubeNamespace(ctx context.Context, baseName string) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("e2e-tests-%v-", baseName),
-		},
+		GenerateName: fmt.Sprintf("e2e-tests-%v-", baseName),
 	}
 
 	ns, err := f.KubeClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
@@ -76,10 +74,8 @@ func (f *Framework) CreateKubeNamespace(ctx context.Context, baseName string) (*
 // namespace.
 func (f *Framework) CreateKubeResourceQuota(ctx context.Context) (*v1.ResourceQuota, error) {
 	quota := &v1.ResourceQuota{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "default-e2e-quota",
-			Namespace: f.Namespace.Name,
-		},
+		Name:      "default-e2e-quota",
+		Namespace: f.Namespace.Name,
 		Spec: v1.ResourceQuotaSpec{
 			Hard: v1.ResourceList{
 				"cpu":             resource.MustParse("16"),

@@ -364,10 +364,8 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 							Email: f.Config.Addons.ACMEServer.TestingACMEEmail,
 							APIToken: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "non-existent-secret",
-								},
-								Key: "test",
+								Name: "non-existent-secret",
+								Key:  "test",
 							},
 						},
 					},
@@ -411,10 +409,8 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 						Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 							Email: f.Config.Addons.ACMEServer.TestingACMEEmail,
 							APIToken: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: secretName,
-								},
-								Key: "test",
+								Name: secretName,
+								Key:  "test",
 							},
 						},
 					},

@@ -56,10 +56,8 @@ func createSelfSignedIssuer(ctx context.Context, f *framework.Framework) cmmeta.
 	By("Creating a SelfSigned Issuer")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "selfsigned-issuer-",
-		},
-		Spec: createSelfSignedIssuerSpec(),
+		GenerateName: "selfsigned-issuer-",
+		Spec:         createSelfSignedIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self-signed issuer")
 
@@ -84,10 +82,8 @@ func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) 
 	By("Creating a SelfSigned ClusterIssuer")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "selfsigned-cluster-issuer-",
-		},
-		Spec: createSelfSignedIssuerSpec(),
+		GenerateName: "selfsigned-cluster-issuer-",
+		Spec:         createSelfSignedIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self-signed issuer")
 
@@ -105,8 +101,6 @@ func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) 
 
 func createSelfSignedIssuerSpec() cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			SelfSigned: &cmapi.SelfSignedIssuer{},
-		},
+		SelfSigned: &cmapi.SelfSignedIssuer{},
 	}
 }

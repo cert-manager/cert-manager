@@ -45,11 +45,9 @@ const (
 
 func newSecret(name string, data map[string][]byte, namespace string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
+		Name:      name,
+		Namespace: namespace,
+		Data:      data,
 	}
 }
 
@@ -67,11 +65,7 @@ func TestClusterIssuerNamespace(t *testing.T) {
 				),
 			},
 			Context: &controller.Context{
-				ContextOptions: controller.ContextOptions{
-					IssuerOptions: controller.IssuerOptions{
-						ClusterResourceNamespace: fakeClusterIssuerResourceNamespace,
-					},
-				},
+				ClusterResourceNamespace: fakeClusterIssuerResourceNamespace,
 			},
 		},
 		Challenge: &cmacme.Challenge{
@@ -131,19 +125,15 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIKey: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-key",
-										},
-										Key: "api-key",
+										Name: "cloudflare-key",
+										Key:  "api-key",
 									},
 								},
 							},
@@ -167,19 +157,15 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIToken: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-token",
-										},
-										Key: "api-token",
+										Name: "cloudflare-token",
+										Key:  "api-token",
 									},
 								},
 							},
@@ -197,19 +183,15 @@ func TestSolverFor(t *testing.T) {
 			solverFixture: &solverFixture{
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIToken: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-token",
-										},
-										Key: "api-token",
+										Name: "cloudflare-token",
+										Key:  "api-token",
 									},
 								},
 							},
@@ -227,25 +209,19 @@ func TestSolverFor(t *testing.T) {
 			solverFixture: &solverFixture{
 				// don't include any secrets in the lister
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIToken: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-token",
-										},
-										Key: "api-token",
+										Name: "cloudflare-token",
+										Key:  "api-token",
 									},
 									APIKey: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-key",
-										},
-										Key: "api-key",
+										Name: "cloudflare-key",
+										Key:  "api-key",
 									},
 								},
 							},
@@ -269,19 +245,15 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIKey: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-key",
-										},
-										Key: "api-key",
+										Name: "cloudflare-key",
+										Key:  "api-key",
 									},
 								},
 							},
@@ -305,19 +277,15 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIToken: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "cloudflare-token",
-										},
-										Key: "api-token",
+										Name: "cloudflare-token",
+										Key:  "api-token",
 									},
 								},
 							},
@@ -341,9 +309,7 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -402,9 +368,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 			},
 		},
 		Challenge: &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: fakeIssuerNamespace,
-			},
+			Namespace: fakeIssuerNamespace,
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -461,9 +425,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 			},
 		},
 		Challenge: &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: fakeIssuerNamespace,
-			},
+			Namespace: fakeIssuerNamespace,
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -526,18 +488,14 @@ func TestRoute53SecretAccessKey(t *testing.T) {
 			},
 		},
 		Challenge: &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: fakeIssuerNamespace,
-			},
+			Namespace: fakeIssuerNamespace,
 			Spec: cmacme.ChallengeSpec{
 				Solver: cmacme.ACMEChallengeSolver{
 					DNS01: &cmacme.ACMEChallengeSolverDNS01{
 						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 							SecretAccessKeyID: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "route53",
-								},
-								Key: "accessKeyID",
+								Name: "route53",
+								Key:  "accessKeyID",
 							},
 							Region: "us-west-2",
 							SecretAccessKey: cmmeta.SecretKeySelector{
@@ -601,12 +559,8 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						RESTConfig: new(rest.Config),
-						ContextOptions: controller.ContextOptions{
-							IssuerOptions: controller.IssuerOptions{
-								IssuerAmbientCredentials: true,
-							},
-						},
+						RESTConfig:               new(rest.Config),
+						IssuerAmbientCredentials: true,
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
@@ -639,19 +593,13 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						RESTConfig: new(rest.Config),
-						ContextOptions: controller.ContextOptions{
-							IssuerOptions: controller.IssuerOptions{
-								IssuerAmbientCredentials: false,
-							},
-						},
+						RESTConfig:               new(rest.Config),
+						IssuerAmbientCredentials: false,
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -714,7 +662,7 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			fixture: &solverFixture{
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -748,7 +696,7 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 				},
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -781,7 +729,7 @@ func TestSolverForChallengeNameservers(t *testing.T) {
 			fixture: &solverFixture{
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{Namespace: fakeIssuerNamespace},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -874,18 +822,12 @@ func TestNameserversForProviderConfig(t *testing.T) {
 			f := &solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						ContextOptions: controller.ContextOptions{
-							ACMEOptions: controller.ACMEOptions{
-								DNS01Nameservers:        tt.globalNameservers,
-								DNS01CheckAuthoritative: tt.checkAuthoritative,
-							},
-						},
+						DNS01Nameservers:        tt.globalNameservers,
+						DNS01CheckAuthoritative: tt.checkAuthoritative,
 					},
 				},
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
@@ -930,12 +872,8 @@ func TestRoute53AssumeRole(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						RESTConfig: new(rest.Config),
-						ContextOptions: controller.ContextOptions{
-							IssuerOptions: controller.IssuerOptions{
-								IssuerAmbientCredentials: true,
-							},
-						},
+						RESTConfig:               new(rest.Config),
+						IssuerAmbientCredentials: true,
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
@@ -970,19 +908,13 @@ func TestRoute53AssumeRole(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						RESTConfig: new(rest.Config),
-						ContextOptions: controller.ContextOptions{
-							IssuerOptions: controller.IssuerOptions{
-								IssuerAmbientCredentials: false,
-							},
-						},
+						RESTConfig:               new(rest.Config),
+						IssuerAmbientCredentials: false,
 					},
 				},
 				dnsProviders: newFakeDNSProviders(),
 				Challenge: &cmacme.Challenge{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: fakeIssuerNamespace,
-					},
+					Namespace: fakeIssuerNamespace,
 					Spec: cmacme.ChallengeSpec{
 						Solver: cmacme.ACMEChallengeSolver{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{

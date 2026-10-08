@@ -542,7 +542,7 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 		}
 
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
+			Namespace: crt.Namespace, Name: crt.Name,
 			Status: cmapi.CertificateStatus{
 				Revision:               crt.Status.Revision,
 				LastFailureTime:        crt.Status.LastFailureTime,

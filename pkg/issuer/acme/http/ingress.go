@@ -179,23 +179,19 @@ func (s *Solver) buildIngressResource(ch *cmacme.Challenge, svcName string) (*ne
 		httpHost = ""
 	}
 	ing := &networkingv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver-",
-			Namespace:       ch.Namespace,
-			Labels:          podLabels,
-			Annotations:     ingAnnotations,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
-		},
+		GenerateName:    "cm-acme-http-solver-",
+		Namespace:       ch.Namespace,
+		Labels:          podLabels,
+		Annotations:     ingAnnotations,
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ingressClassName,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,
-					IngressRuleValue: networkingv1.IngressRuleValue{
-						HTTP: &networkingv1.HTTPIngressRuleValue{
-							Paths: []networkingv1.HTTPIngressPath{
-								ingPathToAdd,
-							},
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							ingPathToAdd,
 						},
 					},
 				},
@@ -276,10 +272,8 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 	// if one doesn't exist, create a new IngressRule
 	ing.Spec.Rules = append(ing.Spec.Rules, networkingv1.IngressRule{
 		Host: ch.Spec.DNSName,
-		IngressRuleValue: networkingv1.IngressRuleValue{
-			HTTP: &networkingv1.HTTPIngressRuleValue{
-				Paths: []networkingv1.HTTPIngressPath{ingPathToAdd},
-			},
+		HTTP: &networkingv1.HTTPIngressRuleValue{
+			Paths: []networkingv1.HTTPIngressPath{ingPathToAdd},
 		},
 	})
 	return s.Client.NetworkingV1().Ingresses(ing.Namespace).Update(ctx, ing, metav1.UpdateOptions{})

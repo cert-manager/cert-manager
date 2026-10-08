@@ -100,9 +100,7 @@ func TestEnsurePod(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -115,16 +113,14 @@ func TestEnsurePod(t *testing.T) {
 			},
 		}
 		pod = &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cm-acme-http-solver-",
-				Namespace:    testNamespace,
-				Labels:       podLabels(chal),
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject":                        "false",
-					"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
-				},
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    testNamespace,
+			Labels:       podLabels(chal),
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject":                        "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 			},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			Spec: corev1.PodSpec{
 				AutomountServiceAccountToken: new(false),
 				EnableServiceLinks:           new(false),
@@ -176,10 +172,8 @@ func TestEnsurePod(t *testing.T) {
 			},
 		}
 		podMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: pod.ObjectMeta,
 		}
 	)
@@ -205,9 +199,7 @@ func TestEnsurePod(t *testing.T) {
 		},
 		"should have the correct default security context": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -226,9 +218,7 @@ func TestEnsurePod(t *testing.T) {
 		},
 		"security context should be configurable": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -258,9 +248,7 @@ func TestEnsurePod(t *testing.T) {
 		},
 		"security context should be configurable using gateway-api": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -337,9 +325,7 @@ func TestGetPodsForChallenge(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -352,32 +338,24 @@ func TestGetPodsForChallenge(t *testing.T) {
 			},
 		}
 		pod = &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    "cm-acme-http-solver-",
-				Namespace:       testNamespace,
-				Labels:          podLabels(chal),
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
-			},
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       testNamespace,
+			Labels:          podLabels(chal),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 		}
 		podMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: pod.ObjectMeta,
 		}
 		podMeta2 = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
 		podMetaWithExtraLabels = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
 	)
@@ -452,16 +430,14 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"sidecar.istio.io/inject":                        "true",
-											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
-											"foo": "bar",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"sidecar.istio.io/inject":                        "true",
+										"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+										"foo": "bar",
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										PriorityClassName: "high",
@@ -543,16 +519,14 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"sidecar.istio.io/inject":                        "true",
-											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
-											"foo": "bar",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"sidecar.istio.io/inject":                        "true",
+										"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+										"foo": "bar",
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										PriorityClassName: "high",
@@ -827,10 +801,8 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"custom-extra-label": "overridden-by-template",
-										},
+									Labels: map[string]string{
+										"custom-extra-label": "overridden-by-template",
 									},
 								},
 							},
@@ -943,7 +915,7 @@ func validateContainerResources(t *testing.T, container corev1.Container, expect
 func TestCleanupPods(t *testing.T) {
 	testNamespace := "foo"
 	chal := &cmacme.Challenge{
-		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Namespace: testNamespace,
 		Spec: cmacme.ChallengeSpec{
 			DNSName: "example.com",
 			Token:   "token",
@@ -956,13 +928,11 @@ func TestCleanupPods(t *testing.T) {
 		},
 	}
 	podMeta := &metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Pod"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "cm-acme-http-solver-fghij",
-			Namespace:       testNamespace,
-			Labels:          podLabels(chal),
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
-		},
+		APIVersion: "v1", Kind: "Pod",
+		Name:            "cm-acme-http-solver-fghij",
+		Namespace:       testNamespace,
+		Labels:          podLabels(chal),
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 	}
 
 	tests := map[string]struct {

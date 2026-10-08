@@ -83,7 +83,7 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 // "cert-manager.io/v1" respectively.
 func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
 		ObjectMeta: *crt.ObjectMeta.DeepCopy(),
 		Spec:       *crt.Spec.DeepCopy(),
 		Status:     cmapi.CertificateStatus{},
@@ -103,9 +103,9 @@ func serializeApply(crt *cmapi.Certificate) ([]byte, error) {
 // "cert-manager.io/v1" respectively.
 func serializeApplyStatus(crt *cmapi.Certificate) ([]byte, error) {
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
-		Status:     crt.Status,
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: crt.Namespace, Name: crt.Name,
+		Status: crt.Status,
 	}
 	crtData, err := json.Marshal(crt)
 	if err != nil {

@@ -54,13 +54,13 @@ func Test_ConditionsListType(t *testing.T) {
 	_, _, bobCMClient, _, _ := framework.NewClients(t, bobRestConfig)
 
 	t.Log("creating test Namespace")
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := aliceKubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Log("creating empty Certificate")
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Namespace: namespace, Name: name,
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test", SecretName: "test", IssuerRef: cmmeta.IssuerReference{Name: "test"},
 		},
@@ -70,8 +70,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("ensuring alice can set Ready condition")
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
@@ -86,8 +86,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("ensuring bob can set a district issuing condition, without changing the ready condition")
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
@@ -109,8 +109,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
 		},
@@ -131,8 +131,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("bob can re-add a Ready condition and not change Issuing condition")
 	crt = &cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
 		},

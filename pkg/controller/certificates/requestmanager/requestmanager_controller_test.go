@@ -97,36 +97,28 @@ func nextPrivateKeySecretMeta(crt *cmapi.Certificate, name string) metav1.Object
 
 func TestProcessItem(t *testing.T) {
 	bundle1 := mustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test",
-			UID:       "test",
-		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-1"}},
+		Namespace: "testns",
+		Name:      "test",
+		UID:       "test",
+		Spec:      cmapi.CertificateSpec{CommonName: "test-bundle-1"}},
 	)
 	bundle2 := mustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test",
-			UID:       "test",
-		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-2"}},
+		Namespace: "testns",
+		Name:      "test",
+		UID:       "test",
+		Spec:      cmapi.CertificateSpec{CommonName: "test-bundle-2"}},
 	)
 	bundle3 := mustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test",
-			UID:       "test",
-		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-3"}},
+		Namespace: "testns",
+		Name:      "test",
+		UID:       "test",
+		Spec:      cmapi.CertificateSpec{CommonName: "test-bundle-3"}},
 	)
 	bundle4 := mustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      strings.Repeat("a", 167) + "b" + strings.Repeat("c", 85),
-			UID:       "test",
-		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-4"}},
+		Namespace: "testns",
+		Name:      strings.Repeat("a", 167) + "b" + strings.Repeat("c", 85),
+		UID:       "test",
+		Spec:      cmapi.CertificateSpec{CommonName: "test-bundle-4"}},
 	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
@@ -1029,8 +1021,8 @@ func TestCreateNewCertificateRequestWaitTimeout(t *testing.T) {
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.StableCertificateRequestName, false)
 
 	bundle := mustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: "test"},
-		Spec:       cmapi.CertificateSpec{CommonName: "test-wait-timeout"},
+		Namespace: "testns", Name: "test", UID: "test",
+		Spec: cmapi.CertificateSpec{CommonName: "test-wait-timeout"},
 	})
 	pk, err := pki.DecodePrivateKeyBytes(bundle.privateKeyBytes)
 	if err != nil {

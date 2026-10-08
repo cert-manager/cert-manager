@@ -55,12 +55,12 @@ func Test_ConditionsListType(t *testing.T) {
 	_, _, bobCMClient, _, _ := framework.NewClients(t, bobRestConfig)
 
 	t.Log("creating test Namespace")
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := aliceKubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	bundle := testcrypto.MustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Namespace: namespace, Name: name,
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test-bundle-1",
 			IssuerRef:  cmmeta.IssuerReference{Name: "test-bundle-1"},
@@ -77,8 +77,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("ensuring alice can set Ready condition")
 	assert.NoError(t, internalcertificaterequests.ApplyStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateRequestStatus{
 			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
@@ -86,8 +86,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("ensuring bob can set a district random condition, without changing the ready condition")
 	assert.NoError(t, internalcertificaterequests.ApplyStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateRequestStatus{
 			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 		},
@@ -102,8 +102,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
 	assert.NoError(t, internalcertificaterequests.ApplyStatus(t.Context(), aliceCMClient, aliceFieldManager, &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateRequestStatus{
 			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
 		},
@@ -117,8 +117,8 @@ func Test_ConditionsListType(t *testing.T) {
 
 	t.Log("bob can re-add a Ready condition and not change Random condition")
 	assert.NoError(t, internalcertificaterequests.ApplyStatus(t.Context(), bobCMClient, bobFieldManager, &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: namespace, Name: name,
 		Status: cmapi.CertificateRequestStatus{
 			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
 		},

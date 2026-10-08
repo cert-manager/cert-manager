@@ -59,7 +59,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 
 	kCl, _, cmCl, _, _ := framework.NewClients(t, config)
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt"},
+		Name: "testcrt",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
@@ -79,9 +79,7 @@ func TestGeneratesNewPrivateKeyIfMarkedInvalidRequest(t *testing.T) {
 	pkBytes, err := pki.EncodePrivateKey(pk, cmapi.PKCS1)
 	require.NoError(t, err)
 	_, err = kCl.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crt.Spec.SecretName,
-		},
+		Name: crt.Spec.SecretName,
 		Data: map[string][]byte{
 			"tls.key": pkBytes,
 		},
@@ -208,7 +206,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 
 	kCl, _, cmCl, _, _ := framework.NewClients(t, config)
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt"},
+		Name: "testcrt",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "testsecret",
 			DNSNames:   []string{"something"},
@@ -229,9 +227,7 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = kCl.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crt.Spec.SecretName,
-		},
+		Name: crt.Spec.SecretName,
 		Data: map[string][]byte{
 			"tls.key": pkBytes,
 		},

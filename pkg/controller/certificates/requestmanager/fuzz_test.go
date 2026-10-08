@@ -43,12 +43,10 @@ var (
 func init() {
 	var err error
 	globalBundle, err = createCryptoBundle(&cmapiv1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test",
-			UID:       "test",
-		},
-		Spec: cmapiv1.CertificateSpec{CommonName: "test-bundle-1"}},
+		Namespace: "testns",
+		Name:      "test",
+		UID:       "test",
+		Spec:      cmapiv1.CertificateSpec{CommonName: "test-bundle-1"}},
 	)
 	if err != nil {
 		panic(err)

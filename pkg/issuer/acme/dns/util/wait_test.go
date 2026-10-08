@@ -57,7 +57,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 			expectZone: "google.com.",
 			mockDNS: []interaction{
 				{"SOA mail.google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "mail.google.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 604800}, Target: "googlemail.l.google.com."},
 					},
@@ -66,7 +66,7 @@ func TestFindZoneByFqdn(t *testing.T) {
 					},
 				}},
 				{"SOA google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 32}, Ns: "ns1.google.com.", Mbox: "dns-admin.google.com.", Serial: 754990191, Refresh: 900, Retry: 900, Expire: 1800, Minttl: 60},
 					},
@@ -84,14 +84,14 @@ func TestFindZoneByFqdn(t *testing.T) {
 			expectZone: "assets.sh.",
 			mockDNS: []interaction{
 				{"SOA cross-zone-example.assets.sh.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "cross-zone-example.assets.sh.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "example.com."},
 						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 2633}, Ns: "ns.icann.org.", Mbox: "noc.dns.icann.org.", Serial: 2025011636, Refresh: 7200, Retry: 3600, Expire: 1209600, Minttl: 3600},
 					},
 				}},
 				{"SOA assets.sh.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "assets.sh.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 979}, Ns: "gina.ns.cloudflare.com.", Mbox: "dns.cloudflare.com.", Serial: 2371821451, Refresh: 10000, Retry: 2400, Expire: 604800, Minttl: 1800},
 					},
@@ -107,13 +107,13 @@ func TestFindZoneByFqdn(t *testing.T) {
 			expectZone: "cert-manager.io.",
 			mockDNS: []interaction{
 				{"SOA nonexistent.cert-manager.io.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}, // NXDOMAIN
+					Rcode: dns.RcodeNameError, // NXDOMAIN
 					Ns: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "cert-manager.io.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 21}, Ns: "ns-cloud-a1.googledomains.com.", Mbox: "cloud-dns-hostmaster.google.com.", Serial: 2, Refresh: 21600, Retry: 3600, Expire: 259200, Minttl: 300},
 					},
 				}},
 				{"SOA cert-manager.io.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "cert-manager.io.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 31}, Ns: "ns-cloud-a1.googledomains.com.", Mbox: "cloud-dns-hostmaster.google.com.", Serial: 2, Refresh: 21600, Retry: 3600, Expire: 259200, Minttl: 300},
 					},
@@ -127,19 +127,19 @@ func TestFindZoneByFqdn(t *testing.T) {
 			expectZone: "ac.",
 			mockDNS: []interaction{
 				{"SOA example.com.ac.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}, // NXDOMAIN
+					Rcode: dns.RcodeNameError, // NXDOMAIN
 					Ns: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "ac.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 3500}, Ns: "a0.nic.ac", Mbox: "hostmaster.donuts.email", Serial: 1746448794, Refresh: 7200, Retry: 900, Expire: 1209600, Minttl: 3600},
 					},
 				}},
 				{"SOA com.ac.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}, // NXDOMAIN
+					Rcode: dns.RcodeNameError, // NXDOMAIN
 					Ns: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "ac.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 3496}, Ns: "a0.nic.ac", Mbox: "hostmaster.donuts.email", Serial: 1746448794, Refresh: 7200, Retry: 900, Expire: 1209600, Minttl: 3600},
 					},
 				}},
 				{"SOA ac.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "ac.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 3486}, Ns: "a0.nic.ac", Mbox: "hostmaster.donuts.email", Serial: 1746448794, Refresh: 7200, Retry: 900, Expire: 1209600, Minttl: 3600},
 					},
@@ -161,7 +161,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		withMockDNSQuery(t, []interaction{
 			{"TXT 8.8.8.8.asn.routeviews.org.", &dns.Msg{
-				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+				Rcode: dns.RcodeSuccess,
 				Answer: []dns.RR{
 					&dns.TXT{Hdr: dns.RR_Header{Name: "8.8.8.8.asn.routeviews.org.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300}, Txt: []string{"fe01="}},
 				},
@@ -175,7 +175,7 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 	t.Run("TXT not found", func(t *testing.T) {
 		withMockDNSQuery(t, []interaction{
 			{"TXT 8.8.8.8.asn.routeviews.org.", &dns.Msg{
-				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+				Rcode: dns.RcodeNameError,
 			}},
 		})
 		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
@@ -231,19 +231,19 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: false,
 			mock: []interaction{
 				{"CNAME test1.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "test1.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "test2.example.com."},
 					},
 				}},
 				{"CNAME test2.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "test2.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "test3.example.com."},
 					},
 				}},
 				{"CNAME test3.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -257,7 +257,7 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: false,
 			mock: []interaction{
 				{"CNAME test3.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -271,7 +271,7 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: false,
 			mock: []interaction{
 				{"CNAME missing.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+					Rcode: dns.RcodeNameError,
 				}},
 			},
 		},
@@ -283,7 +283,7 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: true,
 			mock: []interaction{
 				{"CNAME broken.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+					Rcode: dns.RcodeServerFailure,
 				}},
 			},
 		},
@@ -295,7 +295,7 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: true,
 			mock: []interaction{
 				{"CNAME refused.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeRefused},
+					Rcode: dns.RcodeRefused,
 				}},
 			},
 		},
@@ -307,13 +307,13 @@ func Test_followCNAMEs(t *testing.T) {
 			wantErr: true,
 			mock: []interaction{
 				{"CNAME recursive.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "recursive.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "recursive1.example.com."},
 					},
 				}},
 				{"CNAME recursive1.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "recursive1.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "recursive.example.com."},
 					},

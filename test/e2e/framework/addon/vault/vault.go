@@ -317,9 +317,7 @@ func (v *Vault) Provision(ctx context.Context) error {
 
 	// If the namespace doesn't exist, create it
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: v.Namespace,
-		},
+		Name: v.Namespace,
 	}, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
@@ -327,14 +325,10 @@ func (v *Vault) Provision(ctx context.Context) error {
 
 	// Create the TLS secret
 	tlsSecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "vault-tls",
-			Namespace: v.Namespace,
-		},
+		Kind:       "secret",
+		APIVersion: "v1",
+		Name:       "vault-tls",
+		Namespace:  v.Namespace,
 		StringData: map[string]string{
 			"ca.crt":     string(v.details.VaultCA),
 			"server.crt": string(v.vaultCert),

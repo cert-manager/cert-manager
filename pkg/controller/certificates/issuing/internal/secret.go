@@ -220,12 +220,10 @@ func (s *SecretsManager) getCertificateSecret(crt *cmapi.Certificate) (*corev1.S
 	// created.
 	if apierrors.IsNotFound(err) {
 		return &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      crt.Spec.SecretName,
-				Namespace: crt.Namespace,
-			},
-			Data: make(map[string][]byte),
-			Type: corev1.SecretTypeTLS,
+			Name:      crt.Spec.SecretName,
+			Namespace: crt.Namespace,
+			Data:      make(map[string][]byte),
+			Type:      corev1.SecretTypeTLS,
 		}, nil
 	}
 
@@ -237,11 +235,9 @@ func (s *SecretsManager) getCertificateSecret(crt *cmapi.Certificate) (*corev1.S
 	// Only copy Secret Type to not take ownership of annotations or labels on
 	// Apply.
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      crt.Spec.SecretName,
-			Namespace: crt.Namespace,
-		},
-		Data: make(map[string][]byte),
+		Name:      crt.Spec.SecretName,
+		Namespace: crt.Namespace,
+		Data:      make(map[string][]byte),
 		// Use the existing Secret's type since this may not be of type
 		// `kubernetes.io/tls`, if for example it was created beforehand. Type is
 		// immutable, so we must keep it to its original value.

@@ -75,17 +75,15 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, &cmapi.Issuer{
-			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-", Namespace: f.Namespace.Name},
-			Spec:       cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
+			GenerateName: "selfsigned-", Namespace: f.Namespace.Name,
+			Spec: cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating request")
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
-			},
+			GenerateName: "selfsigned-",
+			Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
 				SignerName: fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.GetName()),
@@ -119,7 +117,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 
 		By("creating Secret with private key should result in the request to be signed")
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
+			Name: "selfsigned-test", Namespace: f.Namespace.Name,
 			Data: map[string][]byte{
 				"tls.key": bundle.PrivateKeyBytes,
 			},
@@ -139,23 +137,21 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		var err error
 		By("creating Secret with missing private key")
 		secret, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "selfsigned-test", Namespace: f.Namespace.Name},
-			Data:       map[string][]byte{},
+			Name: "selfsigned-test", Namespace: f.Namespace.Name,
+			Data: map[string][]byte{},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(testingCtx, &cmapi.Issuer{
-			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-", Namespace: f.Namespace.Name},
-			Spec:       cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
+			GenerateName: "selfsigned-", Namespace: f.Namespace.Name,
+			Spec: cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating request")
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
-			},
+			GenerateName: "selfsigned-",
+			Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": "selfsigned-test"},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
 				SignerName: fmt.Sprintf("issuers.cert-manager.io/%s.%s", f.Namespace.Name, issuer.GetName()),
@@ -203,17 +199,15 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 
 		var err error
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(testingCtx, &cmapi.ClusterIssuer{
-			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-"},
-			Spec:       cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
+			GenerateName: "selfsigned-",
+			Spec:         cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating request")
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
-			},
+			GenerateName: "selfsigned-",
+			Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
 				SignerName: "clusterissuers.cert-manager.io/" + issuer.GetName(),
@@ -247,7 +241,7 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 
 		By("creating Secret with private key should result in the request to be signed")
 		secret, err = f.KubeClientSet.CoreV1().Secrets("cert-manager").Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "cert-manager"},
+			Name: secretName, Namespace: "cert-manager",
 			Data: map[string][]byte{
 				"tls.key": bundle.PrivateKeyBytes,
 			},
@@ -267,23 +261,21 @@ var _ = framework.CertManagerDescribe("CertificateSigningRequests SelfSigned Sec
 		var err error
 		By("creating Secret with missing private key")
 		secret, err = f.KubeClientSet.CoreV1().Secrets("cert-manager").Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: "cert-manager"},
-			Data:       map[string][]byte{},
+			Name: secretName, Namespace: "cert-manager",
+			Data: map[string][]byte{},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(testingCtx, &cmapi.ClusterIssuer{
-			ObjectMeta: metav1.ObjectMeta{GenerateName: "selfsigned-"},
-			Spec:       cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
+			GenerateName: "selfsigned-",
+			Spec:         cmapi.IssuerSpec{IssuerConfig: cmapi.IssuerConfig{SelfSigned: new(cmapi.SelfSignedIssuer)}},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("creating request")
 		request, err = f.KubeClientSet.CertificatesV1().CertificateSigningRequests().Create(testingCtx, &certificatesv1.CertificateSigningRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "selfsigned-",
-				Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
-			},
+			GenerateName: "selfsigned-",
+			Annotations:  map[string]string{"experimental.cert-manager.io/private-key-secret-name": secretName},
 			Spec: certificatesv1.CertificateSigningRequestSpec{
 				Request:    bundle.CSRBytes,
 				SignerName: "clusterissuers.cert-manager.io/" + issuer.GetName(),

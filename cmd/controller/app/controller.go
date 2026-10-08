@@ -334,53 +334,41 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 		Namespace: opts.Namespace,
 
-		ACMEOptions: controller.ACMEOptions{
-			HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
-			HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
-			HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
-			HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
-			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
-			HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
-			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-			HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
-			HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
-			HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
+		HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
+		HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
+		HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
+		HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
+		ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
+		HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
+		// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
+		HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
+		HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
+		HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
 
-			DNS01Nameservers:        nameservers,
-			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
-			DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
-		},
+		DNS01Nameservers:        nameservers,
+		DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
+		DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
 
-		SchedulerOptions: controller.SchedulerOptions{
-			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
-		},
+		MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
 
-		IssuerOptions: controller.IssuerOptions{
-			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
-			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
-			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
-		},
+		ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
+		IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
+		ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 
-		IngressShimOptions: controller.IngressShimOptions{
-			DefaultIssuerName:                 opts.IngressShimConfig.DefaultIssuerName,
-			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
-			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
-			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
-			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
-			GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
-		},
+		DefaultIssuerName:                 opts.IngressShimConfig.DefaultIssuerName,
+		DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
+		DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
+		DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
+		ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
+		GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
 
-		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
-			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
-			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
-			CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
-		},
+		EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
+		CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
+		CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
+		CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
 
-		ConfigOptions: controller.ConfigOptions{
-			EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
-			EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
-		},
+		EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
+		EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
 	})
 	if err != nil {
 		return nil, err

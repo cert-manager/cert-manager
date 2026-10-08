@@ -42,10 +42,8 @@ var (
 		Project:        "valid",
 	}
 	validSecretKeyRef = cmmeta.SecretKeySelector{
-		LocalObjectReference: cmmeta.LocalObjectReference{
-			Name: "valid",
-		},
-		Key: "validkey",
+		Name: "valid",
+		Key:  "validkey",
 	}
 	// TODO (JS): Missing test for validCloudflareProvider
 	//nolint: unused
@@ -84,10 +82,8 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				Path:     "secret/path",
 				CABundle: caBundle,
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: "ca.crt",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "ca.crt",
+					Name: "test-secret",
 				},
 				Auth: cmapi.VaultAuth{
 					TokenSecretRef: &validSecretKeyRef,
@@ -127,16 +123,12 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				Server: "https://vault.example.com",
 				Path:   "secret/path",
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: "ca.crt",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "ca.crt",
+					Name: "test-secret",
 				},
 				ClientCertSecretRef: &cmmeta.SecretKeySelector{
-					Key: "tls.crt",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "tls.crt",
+					Name: "test-secret",
 				},
 				Auth: cmapi.VaultAuth{
 					TokenSecretRef: &validSecretKeyRef,
@@ -151,16 +143,12 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				Server: "https://vault.example.com",
 				Path:   "secret/path",
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: "ca.crt",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "ca.crt",
+					Name: "test-secret",
 				},
 				ClientKeySecretRef: &cmmeta.SecretKeySelector{
-					Key: "tls.key",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "tls.key",
+					Name: "test-secret",
 				},
 				Auth: cmapi.VaultAuth{
 					TokenSecretRef: &validSecretKeyRef,
@@ -222,10 +210,8 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 		"valid auth.tokenSecretRef": {
 			auth: &cmapi.VaultAuth{
 				TokenSecretRef: &cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "secret",
-					},
-					Key: "key",
+					Name: "secret",
+					Key:  "key",
 				},
 			},
 		},
@@ -235,9 +221,7 @@ func TestValidateVaultIssuerAuth(t *testing.T) {
 		"invalid auth.tokenSecretRef: key can be omitted": {
 			auth: &cmapi.VaultAuth{
 				TokenSecretRef: &cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "secret",
-					},
+					Name: "secret",
 				},
 			},
 		},
@@ -787,13 +771,11 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"valid_to_contain": "labels",
-										},
-										Annotations: map[string]string{
-											"valid_to_contain": "annotations",
-										},
+									Labels: map[string]string{
+										"valid_to_contain": "labels",
+									},
+									Annotations: map[string]string{
+										"valid_to_contain": "annotations",
 									},
 								},
 							},
@@ -841,10 +823,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"valid_to_contain": "labels",
-										},
+									Labels: map[string]string{
+										"valid_to_contain": "labels",
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
@@ -967,43 +947,33 @@ func TestValidateIssuerSpec(t *testing.T) {
 	}{
 		"valid ca issuer": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{
-						SecretName: "valid",
-					},
+				CA: &cmapi.CAIssuer{
+					SecretName: "valid",
 				},
 			},
 			errs: []*field.Error{},
 		},
 		"ca issuer without secret name specified": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{},
-				},
+				CA: &cmapi.CAIssuer{},
 			},
 			errs: []*field.Error{field.Required(fldPath.Child("ca", "secretName"), "")},
 		},
 		"valid self-signed issuer": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					SelfSigned: &cmapi.SelfSignedIssuer{},
-				},
+				SelfSigned: &cmapi.SelfSignedIssuer{},
 			},
 			errs: []*field.Error{},
 		},
 		"valid acme issuer": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					ACME: &validACMEIssuer,
-				},
+				ACME: &validACMEIssuer,
 			},
 			errs: []*field.Error{},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					Vault: &validVaultIssuer,
-				},
+				Vault: &validVaultIssuer,
 			},
 			errs: []*field.Error{},
 		},
@@ -1017,11 +987,9 @@ func TestValidateIssuerSpec(t *testing.T) {
 		},
 		"multiple issuers configured": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					SelfSigned: &cmapi.SelfSignedIssuer{},
-					CA: &cmapi.CAIssuer{
-						SecretName: "valid",
-					},
+				SelfSigned: &cmapi.SelfSignedIssuer{},
+				CA: &cmapi.CAIssuer{
+					SecretName: "valid",
 				},
 			},
 			errs: []*field.Error{
@@ -1030,22 +998,18 @@ func TestValidateIssuerSpec(t *testing.T) {
 		},
 		"valid ocsp url": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{
-						SecretName:  "valid",
-						OCSPServers: []string{"http://ocsp.int-x3.letsencrypt.org"},
-					},
+				CA: &cmapi.CAIssuer{
+					SecretName:  "valid",
+					OCSPServers: []string{"http://ocsp.int-x3.letsencrypt.org"},
 				},
 			},
 			errs: []*field.Error{},
 		},
 		"invalid ocsp url": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{
-						SecretName:  "valid",
-						OCSPServers: []string{""},
-					},
+				CA: &cmapi.CAIssuer{
+					SecretName:  "valid",
+					OCSPServers: []string{""},
 				},
 			},
 			errs: []*field.Error{
@@ -1054,22 +1018,18 @@ func TestValidateIssuerSpec(t *testing.T) {
 		},
 		"valid IssuingCertificateURLs": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{
-						SecretName:             "valid",
-						IssuingCertificateURLs: []string{"http://ca.example.com/ca.crt"},
-					},
+				CA: &cmapi.CAIssuer{
+					SecretName:             "valid",
+					IssuingCertificateURLs: []string{"http://ca.example.com/ca.crt"},
 				},
 			},
 			errs: []*field.Error{},
 		},
 		"invalid IssuingCertificateURLs": {
 			spec: &cmapi.IssuerSpec{
-				IssuerConfig: cmapi.IssuerConfig{
-					CA: &cmapi.CAIssuer{
-						SecretName:             "valid",
-						IssuingCertificateURLs: []string{""},
-					},
+				CA: &cmapi.CAIssuer{
+					SecretName:             "valid",
+					IssuingCertificateURLs: []string{""},
 				},
 			},
 			errs: []*field.Error{
@@ -1236,8 +1196,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
 					ServiceAccount: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{Name: "something"},
-						Key:                  "",
+						Name: "something",
+						Key:  "",
 					},
 				},
 			},
@@ -1250,8 +1210,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
 					ServiceAccount: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{Name: ""},
-						Key:                  "something",
+						Name: "",
+						Key:  "something",
 					},
 				},
 			},
@@ -1359,8 +1319,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 					Region: "valid",
 					SecretAccessKeyID: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{Name: "name"},
-						Key:                  "",
+						Name: "name",
+						Key:  "",
 					},
 				},
 			},
@@ -1413,10 +1373,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					ClientSecret: &cmmeta.SecretKeySelector{
-						Key: "some-key",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "some-secret-name",
-						},
+						Key:  "some-key",
+						Name: "some-secret-name",
 					},
 				},
 			},
@@ -1444,10 +1402,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					ClientSecret: &cmmeta.SecretKeySelector{
-						Key: "some-key",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "some-secret-name",
-						},
+						Key:  "some-key",
+						Name: "some-secret-name",
 					},
 					TenantID: "some-tenant-id",
 				},
@@ -1477,9 +1433,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					TenantID: "some-tenant-id",
 					ClientID: "some-client-id",
 					ClientSecret: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "some-secret-name",
-						},
+						Name: "some-secret-name",
 					},
 				},
 			},
@@ -1510,10 +1464,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					ClientID: "some-client-id",
 					ClientSecret: &cmmeta.SecretKeySelector{
-						Key: "some-key",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "some-secret-name",
-						},
+						Key:  "some-key",
+						Name: "some-secret-name",
 					},
 				},
 			},
@@ -1592,10 +1544,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					ClientSecret: &cmmeta.SecretKeySelector{
-						Key: "some-key",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "some-secret-name",
-						},
+						Key:  "some-key",
+						Name: "some-secret-name",
 					},
 					ManagedIdentity: &cmacme.AzureManagedIdentity{
 						ClientID: "test",
@@ -2042,10 +1992,8 @@ func TestValidateVenafiTPP(t *testing.T) {
 				URL:      "https://tpp.example.com/vedsdk",
 				CABundle: caBundle,
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: "ca.crt",
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "test-secret",
-					},
+					Key:  "ca.crt",
+					Name: "test-secret",
 				},
 			},
 			errs: []*field.Error{
@@ -2145,9 +2093,7 @@ func TestValidateIssuer(t *testing.T) {
 
 func TestUpdateValidateIssuer(t *testing.T) {
 	baseIssuerConfig := cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			SelfSigned: &cmapi.SelfSignedIssuer{},
-		}}
+		SelfSigned: &cmapi.SelfSignedIssuer{}}
 	baseIssuer := cmapi.Issuer{
 		Spec: baseIssuerConfig,
 	}

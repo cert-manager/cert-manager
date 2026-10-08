@@ -213,9 +213,7 @@ func getValidatingWebhookConfig(url string, caPEM []byte) client.Object {
 	sideEffects := admissionregistrationv1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/validate", url)
 	webhook := admissionregistrationv1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cert-manager-webhook",
-		},
+		Name: "cert-manager-webhook",
 		Webhooks: []admissionregistrationv1.ValidatingWebhook{
 			{
 				Name: "webhook.cert-manager.io",
@@ -229,11 +227,9 @@ func getValidatingWebhookConfig(url string, caPEM []byte) client.Object {
 							admissionregistrationv1.Create,
 							admissionregistrationv1.Update,
 						},
-						Rule: admissionregistrationv1.Rule{
-							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
-							APIVersions: []string{"*"},
-							Resources:   []string{"*/*"},
-						},
+						APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
+						APIVersions: []string{"*"},
+						Resources:   []string{"*/*"},
 					},
 				},
 				FailurePolicy:           &failurePolicy,
@@ -251,9 +247,7 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 	sideEffects := admissionregistrationv1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/mutate", url)
 	webhook := admissionregistrationv1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cert-manager-webhook",
-		},
+		Name: "cert-manager-webhook",
 		Webhooks: []admissionregistrationv1.MutatingWebhook{
 			{
 				Name: "webhook.cert-manager.io",
@@ -267,11 +261,9 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 							admissionregistrationv1.Create,
 							admissionregistrationv1.Update,
 						},
-						Rule: admissionregistrationv1.Rule{
-							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
-							APIVersions: []string{"*"},
-							Resources:   []string{"*/*"},
-						},
+						APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
+						APIVersions: []string{"*"},
+						Resources:   []string{"*/*"},
 					},
 				},
 				FailurePolicy:           &failurePolicy,

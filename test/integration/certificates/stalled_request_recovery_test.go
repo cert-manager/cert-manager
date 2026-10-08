@@ -126,20 +126,16 @@ func testStalledRequestRecovery(t *testing.T, reuseKey bool) {
 	// exactly the server-side apply ownership this test is here to exercise.
 	newContext := func(name string) *controllerpkg.Context {
 		return &controllerpkg.Context{
-			Scheme:                    scheme,
-			Client:                    kubeClient,
-			KubeSharedInformerFactory: factory,
-			CMClient:                  cmCl,
-			SharedInformerFactory:     cmFactory,
-			Clock:                     fakeClock,
-			ContextOptions: controllerpkg.ContextOptions{
-				CertificateOptions: controllerpkg.CertificateOptions{
-					CertificateRequestMinimumBackoffDuration: backoff,
-					CertificateRequestMaximumBackoffDuration: maxBackoff,
-				},
-			},
-			Recorder:     framework.NewEventRecorder(t, scheme),
-			FieldManager: "cert-manager-certificates-" + name + "-test",
+			Scheme:                                   scheme,
+			Client:                                   kubeClient,
+			KubeSharedInformerFactory:                factory,
+			CMClient:                                 cmCl,
+			SharedInformerFactory:                    cmFactory,
+			Clock:                                    fakeClock,
+			CertificateRequestMinimumBackoffDuration: backoff,
+			CertificateRequestMaximumBackoffDuration: maxBackoff,
+			Recorder:                                 framework.NewEventRecorder(t, scheme),
+			FieldManager:                             "cert-manager-certificates-" + name + "-test",
 		}
 	}
 
@@ -183,7 +179,7 @@ func testStalledRequestRecovery(t *testing.T, reuseKey bool) {
 	t.Cleanup(stopControllers)
 
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: namespace},
+		Name: namespace,
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -201,8 +197,8 @@ func testStalledRequestRecovery(t *testing.T, reuseKey bool) {
 		sk, err := utilpki.GenerateRSAPrivateKey(2048)
 		require.NoError(t, err)
 		_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: secretName},
-			Data:       map[string][]byte{corev1.TLSPrivateKeyKey: utilpki.EncodePKCS1PrivateKey(sk)},
+			Namespace: namespace, Name: secretName,
+			Data: map[string][]byte{corev1.TLSPrivateKeyKey: utilpki.EncodePKCS1PrivateKey(sk)},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 

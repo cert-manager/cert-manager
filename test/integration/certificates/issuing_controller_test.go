@@ -70,11 +70,9 @@ func TestIssuingController(t *testing.T) {
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-issuing-test",
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 
 	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
@@ -99,7 +97,7 @@ func TestIssuingController(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -261,11 +259,9 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-issuing-test",
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 
 	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
@@ -290,7 +286,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -459,11 +455,9 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-issuing-test",
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 
 	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
@@ -488,7 +482,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -681,11 +675,9 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 		CMClient:                  cmCl,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: "cert-manager-certificates-issuing-test",
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 
 	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
@@ -710,7 +702,7 @@ func Test_IssuingController_AdditionalOutputFormats(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -895,11 +887,9 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: fieldManager,
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              fieldManager,
 	}
 	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
 	require.NoError(t, err)
@@ -912,7 +902,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 	}()
 
 	t.Log("creating a Secret and Certificate which does not need issuance")
-	ns, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "owner-reference-test"}}, metav1.CreateOptions{})
+	ns, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{Name: "owner-reference-test"}, metav1.CreateOptions{})
 	require.NoError(t, err)
 	crt := gen.Certificate("owner-reference-test",
 		gen.SetCertificateNamespace(ns.Name),
@@ -927,7 +917,7 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 	)
 	bundle := testcrypto.MustCreateCryptoBundle(t, crt, &clock.RealClock{})
 	secret, err := kubeClient.CoreV1().Secrets(ns.Name).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: crt.Spec.SecretName},
+		Namespace: ns.Name, Name: crt.Spec.SecretName,
 		Data: map[string][]byte{
 			"ca.crt":  bundle.CertBytes,
 			"tls.crt": bundle.CertBytes,
@@ -993,11 +983,9 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 		CMClient:                  cmClient,
 		SharedInformerFactory:     cmFactory,
 		Clock:                     clock.RealClock{},
-		ContextOptions: controllerpkg.ContextOptions{
-			CertificateOptions: controllerOptions,
-		},
-		Recorder:     framework.NewEventRecorder(t, scheme),
-		FieldManager: fieldManager,
+		CertificateOptions:        controllerOptions,
+		Recorder:                  framework.NewEventRecorder(t, scheme),
+		FieldManager:              fieldManager,
 	}
 	ctrl, queue, mustSync, err = issuing.NewController(logf.Log, &controllerContext)
 	require.NoError(t, err)
@@ -1045,16 +1033,14 @@ func createNextPrivateKeySecret(t *testing.T, kubeClient kubernetes.Interface, c
 	t.Helper()
 
 	_, err := kubeClient.CoreV1().Secrets(crt.Namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: crt.Namespace,
-			Labels: map[string]string{
-				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
-				cmapi.PartOfCertManagerControllerLabelKey: "true",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
-			},
+		Name:      name,
+		Namespace: crt.Namespace,
+		Labels: map[string]string{
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
+		},
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
 		},
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: skBytes,

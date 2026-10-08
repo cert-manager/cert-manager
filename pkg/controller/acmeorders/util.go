@@ -76,12 +76,10 @@ func buildPartialChallenge(ctx context.Context, issuer cmapi.GenericIssuer, o *c
 	}
 
 	return &cmacme.Challenge{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      chName,
-			Namespace: o.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(o, orderGvk),
-			},
+		Name:      chName,
+		Namespace: o.Namespace,
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(o, orderGvk),
 		},
 		Spec: *chSpec,
 	}, nil

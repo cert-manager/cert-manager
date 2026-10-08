@@ -17,8 +17,6 @@ limitations under the License.
 package gen
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -48,9 +46,7 @@ func ClusterIssuerFrom(iss *v1.ClusterIssuer, mods ...IssuerModifier) *v1.Cluste
 // with the specified modifications.
 func ClusterIssuerWithRandomName(prefix string, mods ...IssuerModifier) *v1.ClusterIssuer {
 	iss := &v1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: prefix,
-		},
+		GenerateName: prefix,
 	}
 	for _, mod := range mods {
 		mod(iss)
@@ -80,9 +76,7 @@ func IssuerFrom(iss *v1.Issuer, mods ...IssuerModifier) *v1.Issuer {
 // with the provided modifications.
 func IssuerWithRandomName(prefix string, mods ...IssuerModifier) *v1.Issuer {
 	iss := &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: prefix,
-		},
+		GenerateName: prefix,
 	}
 	for _, mod := range mods {
 		mod(iss)
@@ -143,9 +137,7 @@ func SetIssuerACMEPrivKeyRef(privateKeyName string) IssuerModifier {
 			spec.ACME = &cmacme.ACMEIssuer{}
 		}
 		spec.ACME.PrivateKey = cmmeta.SecretKeySelector{
-			LocalObjectReference: cmmeta.LocalObjectReference{
-				Name: privateKeyName,
-			},
+			Name: privateKeyName,
 		}
 	}
 }
@@ -318,10 +310,8 @@ func SetIssuerVaultCABundleSecretRef(name, namespace, key string) IssuerModifier
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.CABundleSecretRef = &cmmeta.SecretKeySelector{
-			LocalObjectReference: cmmeta.LocalObjectReference{
-				Name: name,
-			},
-			Key: key,
+			Name: name,
+			Key:  key,
 		}
 	}
 }
@@ -333,10 +323,8 @@ func SetIssuerVaultClientCertSecretRef(vaultClientCertificateSecretName, key str
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.ClientCertSecretRef = &cmmeta.SecretKeySelector{
-			LocalObjectReference: cmmeta.LocalObjectReference{
-				Name: vaultClientCertificateSecretName,
-			},
-			Key: key,
+			Name: vaultClientCertificateSecretName,
+			Key:  key,
 		}
 	}
 }
@@ -348,10 +336,8 @@ func SetIssuerVaultClientKeySecretRef(vaultClientCertificateSecretName, key stri
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.ClientKeySecretRef = &cmmeta.SecretKeySelector{
-			LocalObjectReference: cmmeta.LocalObjectReference{
-				Name: vaultClientCertificateSecretName,
-			},
-			Key: key,
+			Name: vaultClientCertificateSecretName,
+			Key:  key,
 		}
 	}
 }
@@ -363,10 +349,8 @@ func SetIssuerVaultTokenAuth(keyName, tokenName string) IssuerModifier {
 			spec.Vault = &v1.VaultIssuer{}
 		}
 		spec.Vault.Auth.TokenSecretRef = &cmmeta.SecretKeySelector{
-			Key: keyName,
-			LocalObjectReference: cmmeta.LocalObjectReference{
-				Name: tokenName,
-			},
+			Key:  keyName,
+			Name: tokenName,
 		}
 	}
 }

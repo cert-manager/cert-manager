@@ -312,15 +312,13 @@ func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enab
 	// hash (uint32) will be at most 10 digits long, and we account for
 	// the hyphen.
 	return &cmacme.Order{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: cr.Namespace,
-			Labels:    cr.Labels,
-			// Annotations include the filtered annotations copied from the Certificate.
-			Annotations: cr.Annotations,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)),
-			},
+		Name:      name,
+		Namespace: cr.Namespace,
+		Labels:    cr.Labels,
+		// Annotations include the filtered annotations copied from the Certificate.
+		Annotations: cr.Annotations,
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(cr, cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)),
 		},
 		Spec: spec,
 	}, nil

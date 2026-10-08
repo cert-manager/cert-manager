@@ -586,9 +586,7 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
+							Name: "secret-ref-name",
 						},
 					},
 				}),
@@ -606,10 +604,8 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
-							Key: "my-token-key",
+							Name: "secret-ref-name",
+							Key:  "my-token-key",
 						},
 					},
 				}),
@@ -884,10 +880,8 @@ func TestSetToken(t *testing.T) {
 							},
 						},
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
-							Key: "my-token-key",
+							Name: "secret-ref-name",
+							Key:  "my-token-key",
 						},
 					},
 				}),
@@ -1421,10 +1415,8 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						Key: "my-bundle.crt",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Key:  "my-bundle.crt",
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1451,9 +1443,7 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1480,10 +1470,8 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						Key: "my-bundle.crt",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Key:  "my-bundle.crt",
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1518,19 +1506,13 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientCertSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientKeySecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1560,19 +1542,13 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientCertSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientKeySecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1788,10 +1764,8 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 						}, nil),
 				),
 				&cmapiv1.Issuer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "issuer1",
-						Namespace: "k8s-ns1",
-					},
+					Name:      "issuer1",
+					Namespace: "k8s-ns1",
 					Spec: cmapiv1.IssuerSpec{
 						IssuerConfig: cmapiv1.IssuerConfig{
 							Vault: &cmapiv1.VaultIssuer{
@@ -1799,10 +1773,8 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 								Namespace: tc.vaultNS,
 								Auth: cmapiv1.VaultAuth{
 									TokenSecretRef: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "secret1",
-										},
-										Key: "key1",
+										Name: "secret1",
+										Key:  "key1",
 									},
 								},
 							},
@@ -1845,10 +1817,8 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 				}, nil),
 		),
 		&cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{
@@ -1856,10 +1826,8 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 						Namespace: "ns1",
 						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+								Name: "secret1",
+								Key:  "key1",
 							},
 						},
 					},
@@ -1912,10 +1880,8 @@ func TestSignIntegration(t *testing.T) {
 				}, nil),
 		),
 		&cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{
@@ -1924,10 +1890,8 @@ func TestSignIntegration(t *testing.T) {
 						Namespace: vaultNamespace,
 						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+								Name: "secret1",
+								Key:  "key1",
 							},
 						},
 					},
@@ -1978,16 +1942,14 @@ func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
 	)
 
 	secretRef := cmmeta.SecretKeySelector{
-		LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret1"},
-		Key:                  "key1",
+		Name: "secret1",
+		Key:  "key1",
 	}
 
 	newIssuer := func(auth cmapiv1.VaultAuth) *cmapiv1.Issuer {
 		return &cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{

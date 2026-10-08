@@ -140,20 +140,16 @@ func TestSign(t *testing.T) {
 	}
 
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: gen.DefaultTestNamespace,
-			Name:      "token-secret",
-		},
+		Namespace: gen.DefaultTestNamespace,
+		Name:      "token-secret",
 		Data: map[string][]byte{
 			"my-token-key": []byte("my-secret-token"),
 		},
 	}
 
 	roleSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: gen.DefaultTestNamespace,
-			Name:      "role-secret",
-		},
+		Namespace: gen.DefaultTestNamespace,
+		Name:      "role-secret",
 		Data: map[string][]byte{
 			"my-role-key": []byte("my-secret-role"),
 		},
@@ -229,10 +225,8 @@ func TestSign(t *testing.T) {
 					gen.IssuerFrom(baseIssuer, gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								Key: "secret-key",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "non-existing-secret",
-								},
+								Key:  "secret-key",
+								Name: "non-existing-secret",
 							},
 						},
 						Server: "https://example.vault.com",
@@ -337,10 +331,8 @@ func TestSign(t *testing.T) {
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								Key: "my-token-key",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "token-secret",
-								},
+								Key:  "my-token-key",
+								Name: "token-secret",
 							},
 						},
 					}),
@@ -378,10 +370,8 @@ func TestSign(t *testing.T) {
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								Key: "my-token-key",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "token-secret",
-								},
+								Key:  "my-token-key",
+								Name: "token-secret",
 							},
 						},
 					}),
@@ -459,10 +449,8 @@ func TestSign(t *testing.T) {
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								Key: "my-token-key",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "token-secret",
-								},
+								Key:  "my-token-key",
+								Name: "token-secret",
 							},
 						},
 					}),

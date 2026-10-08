@@ -54,9 +54,9 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 // "acme.cert-manager.io/v1" respectively.
 func serializeApplyStatus(order *cmacme.Order) ([]byte, error) {
 	order = &cmacme.Order{
-		TypeMeta:   metav1.TypeMeta{Kind: cmacme.OrderKind, APIVersion: cmacme.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: order.Namespace, Name: order.Name},
-		Status:     order.Status,
+		Kind: cmacme.OrderKind, APIVersion: cmacme.SchemeGroupVersion.Identifier(),
+		Namespace: order.Namespace, Name: order.Name,
+		Status: order.Status,
 	}
 	orderData, err := json.Marshal(order)
 	if err != nil {

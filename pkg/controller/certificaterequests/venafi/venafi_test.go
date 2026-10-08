@@ -99,9 +99,7 @@ func TestSign(t *testing.T) {
 	csrPEM := generateCSR(t, testPK)
 
 	tppSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-tpp-secret",
-		},
+		Name: "test-tpp-secret",
 		Data: map[string][]byte{
 			"username": []byte("test-username"),
 			"password": []byte("test-password"),
@@ -109,9 +107,7 @@ func TestSign(t *testing.T) {
 	}
 
 	cloudSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-cloud-secret",
-		},
+		Name: "test-cloud-secret",
 		Data: map[string][]byte{
 			"api-key": []byte("test-api-key"),
 		},

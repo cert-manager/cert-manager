@@ -32,9 +32,7 @@ import (
 
 func newFakeIssuerWithStatus(name string, status v1.IssuerStatus) *v1.ClusterIssuer {
 	return &v1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name:   name,
 		Status: status,
 	}
 }

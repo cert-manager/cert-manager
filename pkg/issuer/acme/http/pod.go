@@ -210,16 +210,14 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	}
 
 	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
-			Labels:       podLabels,
-			Annotations: map[string]string{
-				"sidecar.istio.io/inject":                        "false",
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
-			},
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
+		GenerateName: "cm-acme-http-solver-",
+		Namespace:    ch.Namespace,
+		Labels:       podLabels,
+		Annotations: map[string]string{
+			"sidecar.istio.io/inject":                        "false",
+			"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 		},
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		Spec: corev1.PodSpec{
 			// The HTTP01 solver process does not need access to the
 			// Kubernetes API server, so we turn off automounting of

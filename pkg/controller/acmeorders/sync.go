@@ -832,8 +832,8 @@ func getPreferredCertChain(
 func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Order) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		return internalorders.ApplyStatus(ctx, c.cmClient, c.fieldManager, &cmacme.Order{
-			ObjectMeta: metav1.ObjectMeta{Namespace: order.Namespace, Name: order.Name},
-			Status:     *order.Status.DeepCopy(),
+			Namespace: order.Namespace, Name: order.Name,
+			Status: *order.Status.DeepCopy(),
 		})
 	} else {
 		_, err := c.cmClient.AcmeV1().Orders(order.Namespace).UpdateStatus(ctx, order, metav1.UpdateOptions{})

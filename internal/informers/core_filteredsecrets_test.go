@@ -39,11 +39,9 @@ func Test_secretNamespaceLister_Get(t *testing.T) {
 	var (
 		data       = []byte("foo")
 		testSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
-			Data: map[string][]byte{"foo": data},
+			Name:      "foo",
+			Namespace: "foo",
+			Data:      map[string][]byte{"foo": data},
 		}
 	)
 	tests := map[string]struct {
@@ -243,31 +241,23 @@ func Test_secretNamespaceLister_List(t *testing.T) {
 		someData     = []byte("foobar")
 		someSelector = labels.Everything()
 		secretFoo    = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
-			Data: map[string][]byte{"someKey": someData},
+			Name:      "foo",
+			Namespace: "foo",
+			Data:      map[string][]byte{"someKey": someData},
 		}
 		secretFoo2 = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
-			Data: map[string][]byte{"someOtherKey": someData},
+			Name:      "foo",
+			Namespace: "foo",
+			Data:      map[string][]byte{"someOtherKey": someData},
 		}
 		secretBar = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "bar",
-				Namespace: "bar",
-			},
-			Data: map[string][]byte{"someKey": someData},
+			Name:      "bar",
+			Namespace: "bar",
+			Data:      map[string][]byte{"someKey": someData},
 		}
 		secretFooMeta = metav1.PartialObjectMetadata{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "foo",
-			},
+			Name:      "foo",
+			Namespace: "foo",
 		}
 	)
 	tests := map[string]struct {
