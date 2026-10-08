@@ -27,6 +27,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"net"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -143,7 +144,10 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.ipAddresses")
 	}
 
-	if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
+	if !util.EqualUnsorted(
+		func(us []string) []string { rs := make([]string, len(us)); for i,u:=range us{rs[i]=strings.ToLower(u)}; return rs }(URLsToString(x509req.URIs)),
+		func(us []string) []string { rs := make([]string, len(us)); for i,u:=range us{rs[i]=strings.ToLower(u)}; return rs }(spec.URIs),
+	) {
 		violations = append(violations, "spec.uris")
 	}
 

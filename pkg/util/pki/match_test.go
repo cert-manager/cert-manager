@@ -616,6 +616,20 @@ func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 	}
 }
 
+func TestRequestMatchesSpecURICaseInsensitive(t *testing.T) {
+	// A URI with uppercase scheme (e.g. SPIFFE://) should match when
+	// the CSR round-trips through crypto/x509 which lowercases it.
+	crt := &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
+			URIs: []string{"SPIFFE://cluster.local/ns/foo/sa/bar"},
+		},
+	}
+	cr := mustBuildCertificateRequest(t, crt)
+	violations, err := pki.RequestMatchesSpec(cr, crt.Spec)
+	require.NoError(t, err)
+	assert.Empty(t, violations, "URI case should not cause violation after x509 round-trip")
+}
+
 func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) *x509.Certificate {
 	template, err := pki.CertificateTemplateFromCertificate(&cmapi.Certificate{Spec: spec})
 	if err != nil {
