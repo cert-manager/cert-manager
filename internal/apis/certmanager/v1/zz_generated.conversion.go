@@ -916,6 +916,7 @@ func autoConvert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -936,6 +937,7 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1_CertificateRequestSpec
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanagerv1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -1023,6 +1025,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *certmanag
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.SignatureAlgorithm = certmanager.SignatureAlgorithm(in.SignatureAlgorithm)
@@ -1066,6 +1069,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanagerv1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanagerv1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.SignatureAlgorithm = certmanagerv1.SignatureAlgorithm(in.SignatureAlgorithm)
