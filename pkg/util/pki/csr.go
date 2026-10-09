@@ -52,8 +52,11 @@ func IPAddressesFromStrings(ipStrings []string) ([]net.IP, error) {
 	var ipAddresses []net.IP
 	for _, ipString := range ipStrings {
 		ip, err := netip.ParseAddr(ipString)
-		if err != nil || ip.Zone() != "" {
+		if err != nil {
 			return nil, err
+		}
+		if ip.Zone() != "" {
+			return nil, fmt.Errorf("IP address %q has a zone identifier %q which is not supported", ipString, ip.Zone())
 		}
 		addr := ip.AsSlice()
 		if len(addr) == 0 {
