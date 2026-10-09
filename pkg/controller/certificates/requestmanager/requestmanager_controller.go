@@ -392,6 +392,21 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 	return remaining, nil
 }
 
+// nameIsBeingReleased reports whether name is held by a terminating
+// CertificateRequest that crt controls. The API server is read directly,
+// because the lister need not have seen the delete yet.
+func (c *controller) nameIsBeingReleased(ctx context.Context, crt *cmapi.Certificate, name string) bool {
+	held, err := c.client.CertmanagerV1().CertificateRequests(crt.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		// NotFound is the name being freed between the create and this read.
+		if !apierrors.IsNotFound(err) {
+			logf.FromContext(ctx).Error(err, "Failed to read the CertificateRequest holding the name of the replacement")
+		}
+		return false
+	}
+	return held.DeletionTimestamp != nil && metav1.IsControlledBy(held, crt)
+}
+
 func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
 	log := logf.FromContext(ctx)
 
@@ -461,11 +476,22 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		cr.ObjectMeta.Name = fmt.Sprintf("%s-%d", crName, nextRevision)
 	}
 
-	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{FieldManager: c.fieldManager})
+	created, err := c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{FieldManager: c.fieldManager})
 	if err != nil {
+		// A deleted request keeps its name until its finalizers go, and only
+		// under stable names does the replacement need that same name. Dropping
+		// the error is only safe for a request this Certificate controls, since
+		// that is what the delete event enqueues once the name comes free.
+		if utilfeature.DefaultFeatureGate.Enabled(feature.StableCertificateRequestName) &&
+			apierrors.IsAlreadyExists(err) && c.nameIsBeingReleased(ctx, crt, cr.Name) {
+			logf.WithRelatedResource(log, cr).V(logf.InfoLevel).Info("Waiting for the CertificateRequest being replaced to be released by its finalizers")
+			return nil
+		}
+
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to create CertificateRequest: %s", err.Error())
 		return err
 	}
+	cr = created
 
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonRequested, "Created new CertificateRequest resource %q", cr.Name)
 
