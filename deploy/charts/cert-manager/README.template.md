@@ -2308,12 +2308,24 @@ enableServiceLinks indicates whether information about services should be inject
 > []
 > ```
 
-Create dynamic manifests via values.  
+Create dynamic manifests via values. Each item may be either a YAML object or a multiline string (both support templating).  
   
 For example:
 
 ```yaml
 extraObjects:
+  - apiVersion: cilium.io/v2
+    kind: CiliumNetworkPolicy
+    metadata:
+      name: '{{ template "cert-manager.fullname" . }}'
+      namespace: '{{ .Release.Namespace }}'
+    spec:
+      endpointSelector:
+        matchLabels:
+          io.cilium.k8s.policy.serviceaccount: cert-manager
+      egress:
+        - toEntities:
+            - kube-apiserver
   - |
     apiVersion: v1
     kind: ConfigMap
