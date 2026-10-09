@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
@@ -113,10 +112,8 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -151,10 +148,8 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -189,10 +184,8 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -227,11 +220,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
-						cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
+					cmacme.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -255,11 +246,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
-						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+					cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -283,11 +272,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
-						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+					cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -311,12 +298,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
-						cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
-						cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressNameOverride:      "test-name-to-override",
+					cmacme.ACMECertificateHTTP01IngressClassOverride:     "test-class-to-override",
+					cmacme.ACMECertificateHTTP01IngressClassNameOverride: "test-ingressclassname-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -340,10 +325,8 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -372,11 +355,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01ParentRefName: "test-parent-ref-name",
-						cmacme.ACMECertificateHTTP01ParentRefKind: "ListenerSet",
-					},
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01ParentRefName: "test-parent-ref-name",
+					cmacme.ACMECertificateHTTP01ParentRefKind: "ListenerSet",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -420,12 +401,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-ns",
-					Annotations: map[string]string{
-						cmacme.ACMECertificateHTTP01ParentRefName: "sample-gateway",
-						cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
-					},
+				Namespace: "test-ns",
+				Annotations: map[string]string{
+					cmacme.ACMECertificateHTTP01ParentRefName: "sample-gateway",
+					cmacme.ACMECertificateHTTP01ParentRefKind: "Gateway",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -682,10 +661,8 @@ func TestBuildChallengeSpecFromOrder_ParentRefAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			order := &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tt.orderNS,
-					Annotations: tt.orderAnnotations,
-				},
+				Namespace:   tt.orderNS,
+				Annotations: tt.orderAnnotations,
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},

@@ -128,7 +128,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 				// First query: CNAME lookup for the challenge subdomain.
 				// DNS returns the wildcard's target because *.monitoring.example.com exists.
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -139,7 +139,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 				// Second query: CNAME lookup for the wildcard on the parent domain.
 				// This confirms the CNAME is from a wildcard record.
 				{"CNAME *.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "*.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -158,7 +158,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "_acme-challenge.monitoring.example.com.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -167,7 +167,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME *.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "*.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -189,7 +189,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			mockDNS: []interaction{
 				// Query the CNAME for _acme-challenge.example.com.
 				{"CNAME _acme-challenge.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -200,11 +200,11 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 				// isWildcardCNAME: query CNAME for *.example.com.
 				// No wildcard exists, so this returns NXDOMAIN.
 				{"CNAME *.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+					Rcode: dns.RcodeNameError,
 				}},
 				// followCNAMEs: continues from the already resolved first hop.
 				{"CNAME _acme-challenge.delegated.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -220,7 +220,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "b.example.net.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						// Owned by another name; must be skipped even though it
 						// comes first in the answer section.
@@ -235,10 +235,10 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME *.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+					Rcode: dns.RcodeNameError,
 				}},
 				{"CNAME a.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "a.example.net.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -247,7 +247,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME b.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -263,7 +263,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "final.example.net.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -272,7 +272,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME *.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						// Chased by the resolver, and it happens to end at the
 						// same target as the explicit challenge CNAME. Comparing
@@ -290,7 +290,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME final.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -304,7 +304,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "_acme-challenge.example.com.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -316,7 +316,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "_acme-challenge.example.com.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError},
+					Rcode: dns.RcodeNameError,
 				}},
 			},
 		},
@@ -338,7 +338,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "_acme-challenge.dns-validation.example.net.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -349,7 +349,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 				// isWildcardCNAME: query CNAME for *.monitoring.example.com.
 				// Wildcard exists but points to a different target.
 				{"CNAME *.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "*.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -359,7 +359,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 				}},
 				// followCNAMEs: no further CNAME on the target.
 				{"CNAME _acme-challenge.dns-validation.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -376,7 +376,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN:  "_acme-challenge.dns-validation.example.net.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -385,7 +385,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME _acme-challenge.dns-validation.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},
@@ -401,7 +401,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantErr: true,
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+					Rcode: dns.RcodeServerFailure,
 				}},
 			},
 		},
@@ -414,7 +414,7 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 			wantFQDN: "_acme-challenge.dns-validation.example.net.",
 			mockDNS: []interaction{
 				{"CNAME _acme-challenge.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{
 							Hdr:    dns.RR_Header{Name: "_acme-challenge.monitoring.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300},
@@ -423,10 +423,10 @@ func TestDNS01LookupFQDN_WildcardCNAME(t *testing.T) {
 					},
 				}},
 				{"CNAME *.monitoring.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure},
+					Rcode: dns.RcodeServerFailure,
 				}},
 				{"CNAME _acme-challenge.dns-validation.example.net.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode:  dns.RcodeSuccess,
 					Answer: []dns.RR{},
 				}},
 			},

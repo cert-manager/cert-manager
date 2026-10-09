@@ -231,14 +231,12 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertBundle.Certificate,
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   gen.DefaultTestNamespace,
-					Name:        "output",
-					Annotations: map[string]string{"my-custom": "annotation"},
-					Labels:      map[string]string{"my-custom": "label"},
-				},
-				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
-				Type: corev1.SecretTypeTLS,
+				Namespace:   gen.DefaultTestNamespace,
+				Name:        "output",
+				Annotations: map[string]string{"my-custom": "annotation"},
+				Labels:      map[string]string{"my-custom": "label"},
+				Data:        map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type:        corev1.SecretTypeTLS,
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
@@ -278,14 +276,12 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
 			certificate:        baseCertBundle.Certificate,
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   gen.DefaultTestNamespace,
-					Name:        "output",
-					Annotations: map[string]string{"my-custom": "annotation"},
-					Labels:      map[string]string{"my-custom": "label"},
-				},
-				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
-				Type: corev1.SecretTypeTLS,
+				Namespace:   gen.DefaultTestNamespace,
+				Name:        "output",
+				Annotations: map[string]string{"my-custom": "annotation"},
+				Labels:      map[string]string{"my-custom": "label"},
+				Data:        map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type:        corev1.SecretTypeTLS,
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
@@ -332,14 +328,12 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithSecretTemplate,
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   gen.DefaultTestNamespace,
-					Name:        "output",
-					Annotations: map[string]string{"my-custom": "annotation"},
-					Labels:      map[string]string{"my-custom": "label"},
-				},
-				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
-				Type: corev1.SecretTypeTLS,
+				Namespace:   gen.DefaultTestNamespace,
+				Name:        "output",
+				Annotations: map[string]string{"my-custom": "annotation"},
+				Labels:      map[string]string{"my-custom": "label"},
+				Data:        map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type:        corev1.SecretTypeTLS,
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
@@ -382,14 +376,12 @@ func Test_SecretsManager(t *testing.T) {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithSecretTemplate,
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   gen.DefaultTestNamespace,
-					Name:        "output",
-					Annotations: map[string]string{"my-custom": "annotation"},
-					Labels:      map[string]string{"my-custom": "label"},
-				},
-				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
-				Type: corev1.SecretTypeTLS,
+				Namespace:   gen.DefaultTestNamespace,
+				Name:        "output",
+				Annotations: map[string]string{"my-custom": "annotation"},
+				Labels:      map[string]string{"my-custom": "label"},
+				Data:        map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type:        corev1.SecretTypeTLS,
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
@@ -604,15 +596,13 @@ func Test_SecretsManager(t *testing.T) {
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
 			},
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: gen.DefaultTestNamespace,
-					Name:      "output",
-					Annotations: map[string]string{
-						"my-custom": "annotation",
-					},
-					Labels: map[string]string{
-						"my-custom": "label",
-					},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "output",
+				Annotations: map[string]string{
+					"my-custom": "annotation",
+				},
+				Labels: map[string]string{
+					"my-custom": "label",
 				},
 				Data: map[string][]byte{
 					corev1.TLSCertKey:                           []byte("foo"),
@@ -663,15 +653,13 @@ func Test_SecretsManager(t *testing.T) {
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
 			},
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: gen.DefaultTestNamespace,
-					Name:      "output",
-					Annotations: map[string]string{
-						"my-custom": "annotation",
-					},
-					Labels: map[string]string{
-						"my-custom": "label",
-					},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "output",
+				Annotations: map[string]string{
+					"my-custom": "annotation",
+				},
+				Labels: map[string]string{
+					"my-custom": "label",
 				},
 				Data: map[string][]byte{
 					corev1.TLSCertKey:                           []byte("foo"),
@@ -723,15 +711,13 @@ func Test_SecretsManager(t *testing.T) {
 				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
 			},
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: gen.DefaultTestNamespace,
-					Name:      "output",
-					Annotations: map[string]string{
-						"my-custom": "annotation",
-					},
-					Labels: map[string]string{
-						"my-custom": "label",
-					},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "output",
+				Annotations: map[string]string{
+					"my-custom": "annotation",
+				},
+				Labels: map[string]string{
+					"my-custom": "label",
 				},
 				Data: map[string][]byte{
 					corev1.TLSCertKey:                           []byte("foo"),
@@ -852,8 +838,8 @@ func Test_SecretsManager(t *testing.T) {
 			// passwordSecretRef.key is unset and never defaulted, so the lookup
 			// is for the empty key, which this Secret has no data for.
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: gen.DefaultTestNamespace, Name: "output"},
-				Data:       map[string][]byte{"not-the-password-key": []byte("foo")},
+				Namespace: gen.DefaultTestNamespace, Name: "output",
+				Data: map[string][]byte{"not-the-password-key": []byte("foo")},
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
@@ -907,8 +893,8 @@ func Test_SecretsManager(t *testing.T) {
 
 func Test_getCertificateSecret(t *testing.T) {
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-certificate"},
-		Spec:       cmapi.CertificateSpec{SecretName: "test-secret"},
+		Namespace: "test-namespace", Name: "test-certificate",
+		Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
 	}
 
 	tests := map[string]struct {
@@ -918,41 +904,33 @@ func Test_getCertificateSecret(t *testing.T) {
 		"if secret doesn't exist, expect empty secret": {
 			existingSecret: nil,
 			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-				Data:       make(map[string][]byte),
-				Type:       corev1.SecretTypeTLS,
+				Namespace: "test-namespace", Name: "test-secret",
+				Data: make(map[string][]byte),
+				Type: corev1.SecretTypeTLS,
 			},
 		},
 		"if secret exists, expect only basic metadata to be retuned, but the Type set to tls": {
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
+				Namespace: "test-namespace", Name: "test-secret",
+				Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")},
 				Type: corev1.SecretTypeTLS,
 			},
 			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-				},
+				Namespace: "test-namespace", Name: "test-secret",
 				Data: make(map[string][]byte),
 				Type: corev1.SecretTypeTLS,
 			},
 		},
 		"if secret exists, expect only basic metadata returned, with original Type set": {
 			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
+				Namespace: "test-namespace", Name: "test-secret",
+				Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")},
 				Type: corev1.SecretTypeOpaque,
 			},
 			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-				},
+				Namespace: "test-namespace", Name: "test-secret",
 				Data: make(map[string][]byte),
 				Type: corev1.SecretTypeOpaque,
 			},

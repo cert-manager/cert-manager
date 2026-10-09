@@ -38,11 +38,9 @@ func TestCertificateOwnsSecret(t *testing.T) {
 
 	certificate := func(name string, creationTimestamp time.Time) *cmapi.Certificate {
 		return &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				Namespace:         testNamespace,
-				CreationTimestamp: metav1.Time{Time: creationTimestamp},
-			},
+			Name:              name,
+			Namespace:         testNamespace,
+			CreationTimestamp: metav1.Time{Time: creationTimestamp},
 			Spec: cmapi.CertificateSpec{
 				SecretName: testSecretName,
 			},
@@ -110,12 +108,10 @@ func TestCertificateOwnsSecret(t *testing.T) {
 			selectedCertificate: "certificate-3",
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testSecretName,
-						Namespace: testNamespace,
-						Annotations: map[string]string{
-							cmapi.CertificateNameKey: "certificate-3",
-						},
+					Name:      testSecretName,
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						cmapi.CertificateNameKey: "certificate-3",
 					},
 				},
 			},
@@ -147,12 +143,10 @@ func TestCertificateOwnsSecret(t *testing.T) {
 			selectedCertificate: "certificate-3",
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testSecretName,
-						Namespace: testNamespace,
-						Annotations: map[string]string{
-							cmapi.CertificateNameKey: "certificate-2",
-						},
+					Name:      testSecretName,
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						cmapi.CertificateNameKey: "certificate-2",
 					},
 				},
 			},

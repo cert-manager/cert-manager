@@ -18,7 +18,6 @@ package ca
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // These hardcoded certificates are generated using cert-manager.
@@ -86,9 +85,7 @@ CnC5P5hccNsXSdKcTpwrP8xFLtQxPD1qkA==
 
 func newSigningKeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       rootCert,
 			corev1.TLSPrivateKeyKey: rootKey,
@@ -159,9 +156,7 @@ AwEHoUQDQgAEEM5aoWdtVlCaT6XT/GoG3YAP31eT/OGjAcIyBWF9gqVhlqBCYa9v
 
 func newSigningIssuer1KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       issuer1Cert + rootCert,
 			corev1.TLSPrivateKeyKey: issuer1Key,
@@ -232,9 +227,7 @@ nRbhBk4mLAHg36z2yO8GclGeVYh98Q/U5w==
 
 func newSigningIssuer2KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       issuer2Cert + issuer1Cert + rootCert,
 			corev1.TLSPrivateKeyKey: issuer2Key,

@@ -80,25 +80,25 @@ func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
 		want   bool
 	}{
 		"different resource versions considered changed": {
-			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}},
-			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "2"}},
+			oldObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", ResourceVersion: "1"},
+			newObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", ResourceVersion: "2"},
 			want:   true,
 		},
 		"same resource versions considered unchanged": {
-			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}, Data: map[string]string{"a": "b"}},
+			oldObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", ResourceVersion: "1", Data: map[string]string{"a": "b"}},
 			// WARNING: this tests that we only compare the resource versions, not the full object.
 			// A real API server would never return two different objects with the same resource version.
-			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns", ResourceVersion: "1"}, Data: map[string]string{"a": "c"}},
+			newObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", ResourceVersion: "1", Data: map[string]string{"a": "c"}},
 			want:   false,
 		},
 		"empty resource versions fallback to DeepEqual - equal objects": {
-			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
-			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
+			oldObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", Data: map[string]string{"a": "b"}},
+			newObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", Data: map[string]string{"a": "b"}},
 			want:   false,
 		},
 		"empty resource versions fallback to DeepEqual - different objects": {
-			oldObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "b"}},
-			newObj: &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "obj", Namespace: "ns"}, Data: map[string]string{"a": "c"}},
+			oldObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", Data: map[string]string{"a": "b"}},
+			newObj: &corev1.ConfigMap{Name: "obj", Namespace: "ns", Data: map[string]string{"a": "c"}},
 			want:   true,
 		},
 	}
@@ -118,10 +118,10 @@ func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
 
 func TestBlockingEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		triggerEvent func(handler cache.ResourceEventHandler)
@@ -197,10 +197,10 @@ func TestBlockingEventHandler(t *testing.T) {
 
 func TestQueuingEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		triggerEvent func(handler cache.ResourceEventHandler)
@@ -264,10 +264,10 @@ func TestQueuingEventHandler(t *testing.T) {
 
 func TestFilterEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"}},
+		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		predicate    predicate.TypedPredicate[metav1.Object]

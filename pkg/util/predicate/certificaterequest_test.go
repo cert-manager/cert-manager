@@ -20,18 +20,14 @@ import (
 	"fmt"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestCertificateRequestRevision(t *testing.T) {
 	requestWithRevision := func(s int) *cmapi.CertificateRequest {
 		return &cmapi.CertificateRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", s),
-				},
+			Annotations: map[string]string{
+				cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", s),
 			},
 		}
 	}
@@ -58,10 +54,8 @@ func TestCertificateRequestRevision(t *testing.T) {
 		"returns false if revision is empty": {
 			revision: 0,
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						cmapi.CertificateRequestRevisionAnnotationKey: "",
-					},
+				Annotations: map[string]string{
+					cmapi.CertificateRequestRevisionAnnotationKey: "",
 				},
 			},
 			expected: false,

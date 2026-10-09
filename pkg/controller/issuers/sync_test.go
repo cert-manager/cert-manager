@@ -33,9 +33,7 @@ import (
 
 func newFakeIssuerWithStatus(name string, status v1.IssuerStatus) *v1.Issuer {
 	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name:   name,
 		Status: status,
 	}
 }

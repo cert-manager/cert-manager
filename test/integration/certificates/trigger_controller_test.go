@@ -59,7 +59,7 @@ func TestTriggerController(t *testing.T) {
 	namespace := "testns-trigger"
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +93,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
 	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: namespace},
+		Name: "testcrt", Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
@@ -129,7 +129,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	renewBefore := &metav1.Duration{Duration: time.Hour}
 
 	// Create namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +137,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 	// Create Certificate template
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: certName, Namespace: namespace},
+		Name: certName, Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName:  secretName,
 			CommonName:  "example.com",
@@ -156,10 +156,8 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	x509CertBytes := selfSignCertificateWithNotBeforeAfter(t, skBytes, cert, notBefore.Time, notAfter.Time)
 	// Create a Secret with the X.509 cert
 	_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
+		Name:      secretName,
+		Namespace: namespace,
 		Data: map[string][]byte{
 			corev1.TLSCertKey: x509CertBytes,
 		},
@@ -248,7 +246,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 	backoffPeriod := time.Hour * 32
 
 	// Create namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -256,7 +254,7 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 
 	// Create Certificate template
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: certName, Namespace: namespace},
+		Name: certName, Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName: secretName,
 			CommonName: "example.com",
@@ -432,8 +430,8 @@ func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certifica
 	// trigger controller picking up the cert and adding Issuing condition
 	// in between.
 	statusUpdate := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: cert.Name, Namespace: cert.Namespace},
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		Name: cert.Name, Namespace: cert.Namespace,
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{testCond},
 		},

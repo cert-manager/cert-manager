@@ -382,13 +382,11 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 
 	if s == nil {
 		_, err := d.client.Create(ctx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      d.SecretName,
-				Namespace: d.SecretNamespace,
-				Labels:    d.SecretLabels,
-				Annotations: map[string]string{
-					cmapi.AllowsInjectionFromSecretAnnotation: "true",
-				},
+			Name:      d.SecretName,
+			Namespace: d.SecretNamespace,
+			Labels:    d.SecretLabels,
+			Annotations: map[string]string{
+				cmapi.AllowsInjectionFromSecretAnnotation: "true",
 			},
 			Data: map[string][]byte{
 				corev1.TLSCertKey:       certBytes,

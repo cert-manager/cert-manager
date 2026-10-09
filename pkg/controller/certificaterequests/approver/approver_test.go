@@ -71,7 +71,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if CertificateRequest already has 'Approved' True condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
@@ -84,7 +84,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if CertificateRequest already has 'Denied' True condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
@@ -97,7 +97,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if CertificateRequest already has 'Ready' Failed condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
@@ -111,7 +111,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if CertificateRequest already has 'Ready' Issued condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
@@ -125,7 +125,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"approve CertificateRequest if no condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{},
 				},
@@ -143,7 +143,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		"approve CertificateRequest has 'Ready' Pending condition": {
 			request: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{

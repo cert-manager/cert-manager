@@ -914,15 +914,13 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: exampleBundle.Certificate.Namespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Namespace: exampleBundle.Certificate.Namespace,
+						Name:      "output",
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
-						Type: corev1.SecretTypeTLS,
+						Labels: map[string]string{},
+						Type:   corev1.SecretTypeTLS,
 					},
 				},
 				ExpectedActions: []testpkg.Action{
@@ -968,15 +966,13 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: exampleBundle.Certificate.Namespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Namespace: exampleBundle.Certificate.Namespace,
+						Name:      "output",
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
-						Type: corev1.SecretTypeTLS,
+						Labels: map[string]string{},
+						Type:   corev1.SecretTypeTLS,
 					},
 				},
 				ExpectedActions: []testpkg.Action{
@@ -1023,15 +1019,13 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: exampleBundle.Certificate.Namespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Namespace: exampleBundle.Certificate.Namespace,
+						Name:      "output",
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
-						Type: corev1.SecretTypeTLS,
+						Labels: map[string]string{},
+						Type:   corev1.SecretTypeTLS,
 					},
 				},
 				ExpectedActions: []testpkg.Action{
@@ -1152,12 +1146,10 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      exampleBundle.Certificate.Spec.SecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
+						Name:      exampleBundle.Certificate.Spec.SecretName,
+						Namespace: exampleBundle.Certificate.Namespace,
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
 						Data: nil,
 						Type: corev1.SecretTypeTLS,
@@ -1198,14 +1190,12 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      exampleBundle.Certificate.Spec.SecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Name:      exampleBundle.Certificate.Spec.SecretName,
+						Namespace: exampleBundle.Certificate.Namespace,
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
+						Labels: map[string]string{},
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleAlt.CertBytes,
 							corev1.TLSPrivateKeyKey: exampleBundleAlt.PrivateKeyBytes,
@@ -1241,14 +1231,12 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      exampleBundle.Certificate.Spec.SecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Name:      exampleBundle.Certificate.Spec.SecretName,
+						Namespace: exampleBundle.Certificate.Namespace,
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
+						Labels: map[string]string{},
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: []byte("abc"),
 						},
@@ -1290,14 +1278,12 @@ func TestIssuingController(t *testing.T) {
 						},
 					},
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      exampleBundle.Certificate.Spec.SecretName,
-							Namespace: exampleBundle.Certificate.Namespace,
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Name:      exampleBundle.Certificate.Spec.SecretName,
+						Namespace: exampleBundle.Certificate.Namespace,
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
+						Labels: map[string]string{},
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes, // Cert not valid but still matches private key
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
@@ -1933,15 +1919,13 @@ func TestIssuingController_ServerSideApplyFailedIssuanceAttempts(t *testing.T) {
 				KubeObjects: []runtime.Object{
 					nextPrivateKeySecret,
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: exampleBundle.Certificate.Namespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
+						Namespace: exampleBundle.Certificate.Namespace,
+						Name:      "output",
+						Annotations: map[string]string{
+							"my-custom": "annotation",
 						},
-						Type: corev1.SecretTypeTLS,
+						Labels: map[string]string{},
+						Type:   corev1.SecretTypeTLS,
 					},
 				},
 				ExpectedEvents: []string{
@@ -2139,9 +2123,9 @@ func failedIssuanceFixture(t *testing.T) failedIssuanceObjects {
 func mustSerializeApplyStatus(t *testing.T, crt *cmapi.Certificate, status cmapi.CertificateStatus) []byte {
 	t.Helper()
 	data, err := json.Marshal(&cmapi.Certificate{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
-		Status:     status,
+		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: crt.Namespace, Name: crt.Name,
+		Status: status,
 	})
 	require.NoError(t, err)
 	return data

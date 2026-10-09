@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"regexp"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -135,9 +134,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 	return &cmapiChecker{
 		client: cl,
 		testValidCR: &cmapi.CertificateRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cmapichecker-valid-",
-			},
+			GenerateName: "cmapichecker-valid-",
 			Spec: cmapi.CertificateRequestSpec{
 				Request: csrPEM.Bytes(),
 				IssuerRef: cmmeta.IssuerReference{
@@ -146,9 +143,7 @@ func NewForConfigAndClient(restcfg *rest.Config, httpClient *http.Client, namesp
 			},
 		},
 		testInvalidCR: &cmapi.CertificateRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cmapichecker-invalid-",
-			},
+			GenerateName: "cmapichecker-invalid-",
 			Spec: cmapi.CertificateRequestSpec{
 				Request: []byte("invalid-csr"),
 				IssuerRef: cmmeta.IssuerReference{

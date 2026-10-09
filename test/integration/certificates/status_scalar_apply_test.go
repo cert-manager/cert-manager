@@ -61,7 +61,7 @@ func Test_StatusScalarApply(t *testing.T) {
 
 		t.Log("creating test Namespace")
 		_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: namespace},
+			Name: namespace,
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -103,7 +103,7 @@ func Test_StatusScalarApply(t *testing.T) {
 
 		t.Log("creating test Namespace")
 		_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: namespace},
+			Name: namespace,
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -157,7 +157,7 @@ func Test_StatusScalarApply(t *testing.T) {
 
 		t.Log("creating test Namespace")
 		_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: namespace},
+			Name: namespace,
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -215,7 +215,7 @@ func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace
 	t.Helper()
 	t.Log("creating empty Certificate")
 	_, err := cmClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Namespace: namespace, Name: name,
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test",
 			SecretName: "test",
@@ -229,7 +229,7 @@ func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace
 func applyCertificateStatus(t *testing.T, cmClient cmclient.Interface, fieldManager, namespace, name string, status cmapi.CertificateStatus) {
 	t.Helper()
 	require.NoError(t, internalcertificates.ApplyStatus(t.Context(), cmClient, fieldManager, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
-		Status:     status,
+		Namespace: namespace, Name: name,
+		Status: status,
 	}))
 }

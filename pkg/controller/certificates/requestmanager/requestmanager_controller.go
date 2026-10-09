@@ -420,16 +420,14 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	annotations[cmapi.CertificateNameKey] = crt.Name
 
 	cr := &cmapi.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: crt.Namespace,
-			// We limit the GenerateName to 52 + 1 characters to stay within the 63 - 5 character limit that
-			// is used in Kubernetes when generating names.
-			// see https://github.com/kubernetes/apiserver/blob/696768606f546f71a1e90546613be37d1aa37f64/pkg/storage/names/generate.go
-			GenerateName:    apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-",
-			Annotations:     annotations,
-			Labels:          crt.Labels,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-		},
+		Namespace: crt.Namespace,
+		// We limit the GenerateName to 52 + 1 characters to stay within the 63 - 5 character limit that
+		// is used in Kubernetes when generating names.
+		// see https://github.com/kubernetes/apiserver/blob/696768606f546f71a1e90546613be37d1aa37f64/pkg/storage/names/generate.go
+		GenerateName:    apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-",
+		Annotations:     annotations,
+		Labels:          crt.Labels,
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		Spec: cmapi.CertificateRequestSpec{
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,

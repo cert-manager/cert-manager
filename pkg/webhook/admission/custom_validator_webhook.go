@@ -110,10 +110,8 @@ func (h *validator) Handle(ctx context.Context, req admission.Request) admission
 		if errors.As(err, &apiStatus) {
 			status := apiStatus.Status()
 			return admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					Allowed: false,
-					Result:  &status,
-				},
+				Allowed: false,
+				Result:  &status,
 			}.WithWarnings(warnings...)
 		}
 		return admission.Denied(err.Error()).WithWarnings(warnings...)

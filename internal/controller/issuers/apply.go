@@ -76,9 +76,9 @@ func ApplyClusterIssuerStatus(ctx context.Context, cl cmclient.Interface, fieldM
 // "cert-manager.io/v1" respectively.
 func serializeApplyIssuerStatus(issuer *cmapi.Issuer) ([]byte, error) {
 	issuer = &cmapi.Issuer{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.IssuerKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: issuer.Namespace, Name: issuer.Name},
-		Status:     *issuer.Status.DeepCopy(),
+		Kind: cmapi.IssuerKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace: issuer.Namespace, Name: issuer.Name,
+		Status: *issuer.Status.DeepCopy(),
 	}
 	issuerData, err := json.Marshal(issuer)
 	if err != nil {
@@ -94,9 +94,9 @@ func serializeApplyIssuerStatus(issuer *cmapi.Issuer) ([]byte, error) {
 // "cert-manager.io/v1" respectively.
 func serializeApplyClusterIssuerStatus(issuer *cmapi.ClusterIssuer) ([]byte, error) {
 	issuer = &cmapi.ClusterIssuer{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.ClusterIssuerKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Name: issuer.Name},
-		Status:     *issuer.Status.DeepCopy(),
+		Kind: cmapi.ClusterIssuerKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Name:   issuer.Name,
+		Status: *issuer.Status.DeepCopy(),
 	}
 	issuerData, err := json.Marshal(issuer)
 	if err != nil {

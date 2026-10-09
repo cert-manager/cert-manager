@@ -40,9 +40,7 @@ func TestEnsureService(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -55,15 +53,13 @@ func TestEnsureService(t *testing.T) {
 			},
 		}
 		service = &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cm-acme-http-solver-",
-				Namespace:    testNamespace,
-				Labels:       podLabels(chal),
-				Annotations: map[string]string{
-					"auth.istio.io/8089": "NONE",
-				},
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    testNamespace,
+			Labels:       podLabels(chal),
+			Annotations: map[string]string{
+				"auth.istio.io/8089": "NONE",
 			},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			Spec: corev1.ServiceSpec{
 				Type: corev1.ServiceTypeNodePort,
 				Ports: []corev1.ServicePort{
@@ -77,10 +73,8 @@ func TestEnsureService(t *testing.T) {
 			},
 		}
 		serviceMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Service",
-			},
+			APIVersion: "v1",
+			Kind:       "Service",
 			ObjectMeta: service.ObjectMeta,
 		}
 	)
@@ -170,9 +164,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -185,15 +177,13 @@ func TestGetServicesForChallenge(t *testing.T) {
 			},
 		}
 		service = &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cm-acme-http-solver-",
-				Namespace:    testNamespace,
-				Labels:       podLabels(chal),
-				Annotations: map[string]string{
-					"auth.istio.io/8089": "NONE",
-				},
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    testNamespace,
+			Labels:       podLabels(chal),
+			Annotations: map[string]string{
+				"auth.istio.io/8089": "NONE",
 			},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			Spec: corev1.ServiceSpec{
 				Type: corev1.ServiceTypeNodePort,
 				Ports: []corev1.ServicePort{
@@ -207,10 +197,8 @@ func TestGetServicesForChallenge(t *testing.T) {
 			},
 		}
 		serviceMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Service",
-			},
+			APIVersion: "v1",
+			Kind:       "Service",
 			ObjectMeta: service.ObjectMeta,
 		}
 	)
@@ -358,7 +346,7 @@ func TestBuildServiceExtraLabels(t *testing.T) {
 func TestCleanupServices(t *testing.T) {
 	testNamespace := "foo"
 	chal := &cmacme.Challenge{
-		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Namespace: testNamespace,
 		Spec: cmacme.ChallengeSpec{
 			DNSName: "example.com",
 			Token:   "token",
@@ -371,13 +359,11 @@ func TestCleanupServices(t *testing.T) {
 		},
 	}
 	serviceMeta := &metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "cm-acme-http-solver-abcde",
-			Namespace:       testNamespace,
-			Labels:          podLabels(chal),
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
-		},
+		APIVersion: "v1", Kind: "Service",
+		Name:            "cm-acme-http-solver-abcde",
+		Namespace:       testNamespace,
+		Labels:          podLabels(chal),
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 	}
 
 	tests := map[string]struct {

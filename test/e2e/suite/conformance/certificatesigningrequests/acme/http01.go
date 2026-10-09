@@ -37,10 +37,8 @@ func (a *acme) createHTTP01Issuer(ctx context.Context, f *framework.Framework) s
 
 	By("Creating an ACME HTTP01 Issuer")
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-http01-",
-		},
-		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
+		GenerateName: "acme-issuer-http01-",
+		Spec:         a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -59,10 +57,8 @@ func (a *acme) createHTTP01ClusterIssuer(ctx context.Context, f *framework.Frame
 
 	By("Creating an ACME HTTP01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-http01-",
-		},
-		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
+		GenerateName: "acme-cluster-issuer-http01-",
+		Spec:         a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
@@ -78,24 +74,22 @@ func (a *acme) createHTTP01ClusterIssuer(ctx context.Context, f *framework.Frame
 
 func (a *acme) createHTTP01IssuerSpec(serverURL string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key-http01",
-					},
+		ACME: &cmacme.ACMEIssuer{
+			Server:        serverURL,
+			SkipTLSVerify: true,
+			PrivateKey: cmmeta.SecretKeySelector{
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: "acme-private-key-http01",
 				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							// Not setting the Class or Name field will cause cert-manager to create
-							// new ingress resources that do not specify a class to solve challenges,
-							// which means all Ingress controllers should act on the ingresses.
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
+			},
+			ExternalAccountBinding: a.eab,
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						// Not setting the Class or Name field will cause cert-manager to create
+						// new ingress resources that do not specify a class to solve challenges,
+						// which means all Ingress controllers should act on the ingresses.
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 					},
 				},
 			},

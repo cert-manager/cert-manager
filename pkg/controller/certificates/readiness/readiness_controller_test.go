@@ -74,7 +74,7 @@ func TestProcessItem(t *testing.T) {
 	// private key to be used to generate X509 certificate
 	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Namespace: "testns", Name: "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -82,10 +82,8 @@ func TestProcessItem(t *testing.T) {
 	}
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test-secret",
-		},
+		Namespace: "testns",
+		Name:      "test-secret",
 	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -583,7 +581,7 @@ func TestReadinessForARI(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Namespace: "testns", Name: "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -597,10 +595,8 @@ func TestReadinessForARI(t *testing.T) {
 
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test-secret",
-		},
+		Namespace: "testns",
+		Name:      "test-secret",
 	}
 
 	tests := map[string]struct {
@@ -1141,7 +1137,7 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 			builder.Start()
 
 			crt := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns", Name: "test",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					DNSNames:   []string{"example.com"},
@@ -1297,7 +1293,7 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 
 	newCert := func(renewalTime *metav1.Time) *cmapi.Certificate {
 		return &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+			Namespace: "testns", Name: "test",
 			Spec: cmapi.CertificateSpec{
 				SecretName: "test-secret",
 				DNSNames:   []string{"example.com"},

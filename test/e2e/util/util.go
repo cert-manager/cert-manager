@@ -210,9 +210,7 @@ func NewCertManagerBasicCertificateRequest(
 
 func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration *metav1.Duration, renewBefore *metav1.Duration) *v1.Certificate {
 	return &v1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: v1.CertificateSpec{
 			CommonName:  "test.domain.com",
 			SecretName:  secretName,
@@ -228,10 +226,8 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 
 func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1.Ingress {
 	return &networkingv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Annotations: annotations,
-		},
+		Name:        name,
+		Annotations: annotations,
 		Spec: networkingv1.IngressSpec{
 			TLS: []networkingv1.IngressTLS{
 				{
@@ -242,18 +238,16 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: dnsNames[0],
-					IngressRuleValue: networkingv1.IngressRuleValue{
-						HTTP: &networkingv1.HTTPIngressRuleValue{
-							Paths: []networkingv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: pathTypePrefix(),
-									Backend: networkingv1.IngressBackend{
-										Service: &networkingv1.IngressServiceBackend{
-											Name: "somesvc",
-											Port: networkingv1.ServiceBackendPort{
-												Number: 80,
-											},
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path:     "/",
+								PathType: pathTypePrefix(),
+								Backend: networkingv1.IngressBackend{
+									Service: &networkingv1.IngressServiceBackend{
+										Name: "somesvc",
+										Port: networkingv1.ServiceBackendPort{
+											Number: 80,
 										},
 									},
 								},
@@ -268,10 +262,8 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 
 func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
 	return &networkingv1beta1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Annotations: annotations,
-		},
+		Name:        name,
+		Annotations: annotations,
 		Spec: networkingv1beta1.IngressSpec{
 			TLS: []networkingv1beta1.IngressTLS{
 				{
@@ -282,15 +274,13 @@ func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, d
 			Rules: []networkingv1beta1.IngressRule{
 				{
 					Host: dnsNames[0],
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
-								{
-									Path: "/",
-									Backend: networkingv1beta1.IngressBackend{
-										ServiceName: "somesvc",
-										ServicePort: intstr.FromInt32(80),
-									},
+					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+						Paths: []networkingv1beta1.HTTPIngressPath{
+							{
+								Path: "/",
+								Backend: networkingv1beta1.IngressBackend{
+									ServiceName: "somesvc",
+									ServicePort: intstr.FromInt32(80),
 								},
 							},
 						},
@@ -312,10 +302,8 @@ func pathTypePrefix() *networkingv1.PathType {
 // sync Gateways, such as gateway-shim.
 func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.Gateway {
 	return &gwapi.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        gatewayName,
-			Annotations: annotations,
-		},
+		Name:        gatewayName,
+		Annotations: annotations,
 		Spec: gwapi.GatewaySpec{
 			GatewayClassName: "foo",
 			Listeners: []gwapi.Listener{{
@@ -353,10 +341,8 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 // that gateway-shim correctly handles custom/extra protocol types.
 func NewGatewayWithProtocol(gatewayName, ns, secretName string, annotations map[string]string, protocol gwapi.ProtocolType, dnsNames ...string) *gwapi.Gateway {
 	return &gwapi.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        gatewayName,
-			Annotations: annotations,
-		},
+		Name:        gatewayName,
+		Annotations: annotations,
 		Spec: gwapi.GatewaySpec{
 			GatewayClassName: "foo",
 			Listeners: []gwapi.Listener{{
@@ -390,11 +376,9 @@ func NewGatewayWithProtocol(gatewayName, ns, secretName string, annotations map[
 
 func NewListenerSet(ls string, ns, secretName string, annotations map[string]string, dnsNames ...string) *gwapi.ListenerSet {
 	return &gwapi.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        ls,
-			Namespace:   ns,
-			Annotations: annotations,
-		},
+		Name:        ls,
+		Namespace:   ns,
+		Annotations: annotations,
 		Spec: gwapi.ListenerSetSpec{
 			ParentRef: gwapi.ParentGatewayReference{
 				Name:      gwapi.ObjectName(ls),

@@ -120,12 +120,10 @@ func CreateCryptoBundle(originalCert *cmapi.Certificate, clock clock.Clock) (*Cr
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 	certificateRequest := &cmapi.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            reqName,
-			Namespace:       crt.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Annotations:     annotations,
-		},
+		Name:            reqName,
+		Namespace:       crt.Namespace,
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+		Annotations:     annotations,
 		Spec: cmapi.CertificateRequestSpec{
 			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,

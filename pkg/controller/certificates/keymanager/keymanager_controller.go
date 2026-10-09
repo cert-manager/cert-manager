@@ -324,8 +324,8 @@ func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi
 func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
-			Status:     cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
+			Namespace: crt.Namespace, Name: crt.Name,
+			Status: cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
 		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, &cmapi.Certificate{
@@ -372,15 +372,13 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 	// that has not issued yet, and creating it here would let this Certificate
 	// later delete that one's Secret, or sign with its key.
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: crt.Namespace,
-			// TODO: handle certificate resources that have especially long names
-			GenerateName:    crt.Name + "-",
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Labels: map[string]string{
-				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
-				cmapi.PartOfCertManagerControllerLabelKey: "true",
-			},
+		Namespace: crt.Namespace,
+		// TODO: handle certificate resources that have especially long names
+		GenerateName:    crt.Name + "-",
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+		Labels: map[string]string{
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
 		},
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: pkData,

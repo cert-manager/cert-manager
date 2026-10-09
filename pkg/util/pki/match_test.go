@@ -25,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -648,11 +647,9 @@ func mustBuildCertificateRequest(t *testing.T, crt *cmapi.Certificate) *cmapi.Ce
 	}
 
 	cr := &cmapi.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        t.Name(),
-			Annotations: crt.Annotations,
-			Labels:      crt.Labels,
-		},
+		Name:        t.Name(),
+		Annotations: crt.Annotations,
+		Labels:      crt.Labels,
 		Spec: cmapi.CertificateRequestSpec{
 			Request:   pemData,
 			Duration:  crt.Spec.Duration,

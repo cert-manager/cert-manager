@@ -320,12 +320,10 @@ func Test_controller_ProcessItem(t *testing.T) {
 			},
 			existingKubeObjects: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret-1",
-						Namespace: "testns",
-						Annotations: map[string]string{
-							cmapi.CertificateNameKey: "cert-2",
-						},
+					Name:      "secret-1",
+					Namespace: "testns",
+					Annotations: map[string]string{
+						cmapi.CertificateNameKey: "cert-2",
 					},
 				},
 			},
@@ -365,12 +363,10 @@ func Test_controller_ProcessItem(t *testing.T) {
 			},
 			existingKubeObjects: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret-1",
-						Namespace: "testns",
-						Annotations: map[string]string{
-							cmapi.CertificateNameKey: "cert-2",
-						},
+					Name:      "secret-1",
+					Namespace: "testns",
+					Annotations: map[string]string{
+						cmapi.CertificateNameKey: "cert-2",
 					},
 				},
 			},

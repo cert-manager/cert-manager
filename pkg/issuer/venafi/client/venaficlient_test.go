@@ -173,10 +173,8 @@ func TestConfigForIssuerT(t *testing.T) {
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			TPP: &cmapi.VenafiTPP{
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: customCaKey,
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: customCaSecretName,
-					},
+					Key:  customCaKey,
+					Name: customCaSecretName,
 				},
 			},
 		}),
@@ -492,9 +490,7 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			TPP: &cmapi.VenafiTPP{
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: customCaSecretName,
-					},
+					Name: customCaSecretName,
 				},
 			},
 		}),
@@ -504,10 +500,8 @@ func TestCaBundleForVcertTPP(t *testing.T) {
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			TPP: &cmapi.VenafiTPP{
 				CABundleSecretRef: &cmmeta.SecretKeySelector{
-					Key: customCaKey,
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: customCaSecretName,
-					},
+					Key:  customCaKey,
+					Name: customCaSecretName,
 				},
 			},
 		}),

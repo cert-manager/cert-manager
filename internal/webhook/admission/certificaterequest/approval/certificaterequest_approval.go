@@ -244,10 +244,8 @@ func (c *certificateRequestApproval) cacheAPIResource(groupKind schema.GroupKind
 	defer c.mutex.Unlock()
 
 	info := resourceInfo{
-		GroupResource: schema.GroupResource{
-			Group:    groupKind.Group,
-			Resource: resourceName,
-		},
+		Group:      groupKind.Group,
+		Resource:   resourceName,
 		Namespaced: namespaced,
 	}
 

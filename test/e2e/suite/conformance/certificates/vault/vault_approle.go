@@ -101,10 +101,8 @@ func (v *vaultAppRoleProvisioner) createIssuer(ctx context.Context, f *framework
 	v.secretNamespace = sec.Namespace
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-issuer-",
-		},
-		Spec: v.createIssuerSpec(),
+		GenerateName: "vault-issuer-",
+		Spec:         v.createIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
@@ -133,10 +131,8 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(ctx context.Context, f *fr
 	v.secretNamespace = sec.Namespace
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-cluster-issuer-",
-		},
-		Spec: v.createIssuerSpec(),
+		GenerateName: "vault-cluster-issuer-",
+		Spec:         v.createIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
@@ -173,20 +169,18 @@ func (v *vaultAppRoleProvisioner) initVault(ctx context.Context) *vaultSecrets {
 
 func (v *vaultAppRoleProvisioner) createIssuerSpec() cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			Vault: &cmapi.VaultIssuer{
-				Server:   addon.Vault.Details().URL,
-				Path:     v.setup.IntermediateSignPath(),
-				CABundle: addon.Vault.Details().VaultCA,
-				Auth: cmapi.VaultAuth{
-					AppRole: &cmapi.VaultAppRole{
-						Path:   v.setup.AppRoleAuthPath(),
-						RoleId: v.roleID,
-						SecretRef: cmmeta.SecretKeySelector{
-							Key: "secretkey",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: v.secretName,
-							},
+		Vault: &cmapi.VaultIssuer{
+			Server:   addon.Vault.Details().URL,
+			Path:     v.setup.IntermediateSignPath(),
+			CABundle: addon.Vault.Details().VaultCA,
+			Auth: cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					Path:   v.setup.AppRoleAuthPath(),
+					RoleId: v.roleID,
+					SecretRef: cmmeta.SecretKeySelector{
+						Key: "secretkey",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: v.secretName,
 						},
 					},
 				},

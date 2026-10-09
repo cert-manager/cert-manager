@@ -116,10 +116,8 @@ func TestVault_Setup(t *testing.T) {
 							Role: "cert-manager",
 						},
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "cert-manager",
-							},
-							Key: "token",
+							Name: "cert-manager",
+							Key:  "token",
 						},
 					},
 				},
@@ -338,10 +336,8 @@ func TestVault_Setup(t *testing.T) {
 					Server: vaultServer.URL,
 					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "cert-manager",
-							},
-							Key: "token",
+							Name: "cert-manager",
+							Key:  "token",
 						},
 					},
 				},
@@ -359,10 +355,8 @@ func TestVault_Setup(t *testing.T) {
 					Server: vaultServer.URL,
 					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "cert-manager",
-							},
-							Key: "",
+							Name: "cert-manager",
+							Key:  "",
 						},
 					},
 				},
@@ -377,10 +371,8 @@ func TestVault_Setup(t *testing.T) {
 					Server: "https:/vault.example.com",
 					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "cert-manager",
-							},
-							Key: "",
+							Name: "cert-manager",
+							Key:  "",
 						},
 					},
 				},
@@ -395,10 +387,8 @@ func TestVault_Setup(t *testing.T) {
 					Server: " https://vault.example.com",
 					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "cert-manager",
-							},
-							Key: "",
+							Name: "cert-manager",
+							Key:  "",
 						},
 					},
 				},
@@ -422,10 +412,8 @@ func TestVault_Setup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			givenIssuer := &v1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-issuer",
-					Namespace: "test-namespace",
-				},
+				Name:      "test-issuer",
+				Namespace: "test-namespace",
 				Spec: v1.IssuerSpec{
 					IssuerConfig: tt.givenIssuer,
 				},
@@ -448,8 +436,8 @@ func TestVault_Setup(t *testing.T) {
 								assert.Equal(t, "cert-manager", name)
 								assert.Equal(t, "test-namespace", namespace)
 								return &corev1.Secret{
-									ObjectMeta: metav1.ObjectMeta{Name: "cert-manager", Namespace: "test-namespace"},
-									Data:       map[string][]byte{"token": []byte("root")},
+									Name: "cert-manager", Namespace: "test-namespace",
+									Data: map[string][]byte{"token": []byte("root")},
 								}, nil
 							},
 						}
@@ -538,8 +526,8 @@ func TestVault_SetupDoesNotLeakResponseBody(t *testing.T) {
 			name: "the health check path",
 			givenAuth: v1.VaultAuth{
 				TokenSecretRef: &cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{Name: "cert-manager"},
-					Key:                  "token",
+					Name: "cert-manager",
+					Key:  "token",
 				},
 			},
 			expectCond:  "Ready False: VaultError: Failed to verify Vault is initialized and unsealed: the Vault server returned an HTTP 403 response which is not a Vault error response; the response body has been omitted and can be found in the cert-manager logs",
@@ -549,10 +537,8 @@ func TestVault_SetupDoesNotLeakResponseBody(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			givenIssuer := &v1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-issuer",
-					Namespace: "test-namespace",
-				},
+				Name:      "test-issuer",
+				Namespace: "test-namespace",
 				Spec: v1.IssuerSpec{
 					IssuerConfig: v1.IssuerConfig{
 						Vault: &v1.VaultIssuer{
@@ -576,8 +562,8 @@ func TestVault_SetupDoesNotLeakResponseBody(t *testing.T) {
 						return &testlisters.FakeSecretNamespaceLister{
 							GetFn: func(name string) (*corev1.Secret, error) {
 								return &corev1.Secret{
-									ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-									Data:       map[string][]byte{"token": []byte("root")},
+									Name: name, Namespace: namespace,
+									Data: map[string][]byte{"token": []byte("root")},
 								}, nil
 							},
 						}

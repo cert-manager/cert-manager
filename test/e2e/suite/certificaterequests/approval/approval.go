@@ -114,18 +114,14 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		group = e2eutil.RandomSubdomain("example.io")
 
 		sa, err = f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(testingCtx, &corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-sa-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "test-sa-",
+			Namespace:    f.Namespace.Name,
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		role, err := f.KubeClientSet.RbacV1().Roles(f.Namespace.Name).Create(testingCtx, &rbacv1.Role{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "certificaterequest-creator-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "certificaterequest-creator-",
+			Namespace:    f.Namespace.Name,
 			Rules: []rbacv1.PolicyRule{
 				{
 					Verbs:     []string{"create"},
@@ -143,10 +139,8 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 
 		By("Creating certificaterequest-creator rolebinding for ServiceAccount")
 		_, err = f.KubeClientSet.RbacV1().RoleBindings(f.Namespace.Name).Create(testingCtx, &rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "certificaterequest-creator-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "certificaterequest-creator-",
+			Namespace:    f.Namespace.Name,
 			Subjects: []rbacv1.Subject{
 				{
 					Kind:      "ServiceAccount",
@@ -165,12 +159,10 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		// Manually create a Secret to be populated with Service Account token
 		// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "sa-secret-",
-				Name:         f.Namespace.Name,
-				Annotations: map[string]string{
-					"kubernetes.io/service-account.name": sa.Name,
-				},
+			GenerateName: "sa-secret-",
+			Name:         f.Namespace.Name,
+			Annotations: map[string]string{
+				"kubernetes.io/service-account.name": sa.Name,
 			},
 			Type: corev1.SecretTypeServiceAccountToken,
 		}, metav1.CreateOptions{})
@@ -448,9 +440,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 
 func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, discoveryClient discovery.DiscoveryInterface, group, plural, kind string, scope crdapi.ResourceScope) *crdapi.CustomResourceDefinition {
 	crd, err := crdclient.ApiextensionsV1().CustomResourceDefinitions().Create(testingCtx, &crdapi.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s.%s", plural, group),
-		},
+		Name: fmt.Sprintf("%s.%s", plural, group),
 		Spec: crdapi.CustomResourceDefinitionSpec{
 			Group: group,
 			Names: crdapi.CustomResourceDefinitionNames{
@@ -534,9 +524,7 @@ func createCRD(testingCtx context.Context, crdclient crdclientset.Interface, dis
 
 func bindServiceAccountToApprove(testingCtx context.Context, f *framework.Framework, sa *corev1.ServiceAccount, resourceName string) {
 	clusterrole, err := f.KubeClientSet.RbacV1().ClusterRoles().Create(testingCtx, &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "certificaterequest-approver-",
-		},
+		GenerateName: "certificaterequest-approver-",
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups:     []string{"cert-manager.io"},
@@ -549,9 +537,7 @@ func bindServiceAccountToApprove(testingCtx context.Context, f *framework.Framew
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = f.KubeClientSet.RbacV1().ClusterRoleBindings().Create(testingCtx, &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "certificaterequest-approver-",
-		},
+		GenerateName: "certificaterequest-approver-",
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
