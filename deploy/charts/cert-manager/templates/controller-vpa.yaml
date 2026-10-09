@@ -1,0 +1,41 @@
+{{- if .Values.verticalPodAutoscaler.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "cert-manager.fullname" . }}-vpa
+  namespace: {{ include "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: {{ .Chart.Name }}-controller
+      {{- if .Values.verticalPodAutoscaler.controlledValues }}
+      controlledValues: {{ .Values.verticalPodAutoscaler.controlledValues }}
+      {{- end }}
+      minAllowed:
+        {{- if .Values.verticalPodAutoscaler.minAllowed }}
+        {{- toYaml .Values.verticalPodAutoscaler.minAllowed | nindent 8 }}
+        {{- else if .Values.resources.requests }}
+        {{- toYaml .Values.resources.requests | nindent 8 }}
+        {{- end }}
+      {{- if and .Values.verticalPodAutoscaler.maxAllowed (not (empty .Values.verticalPodAutoscaler.maxAllowed)) }}
+      maxAllowed:
+        {{- toYaml .Values.verticalPodAutoscaler.maxAllowed | nindent 8 }}
+      {{- end }}
+  {{- if .Values.verticalPodAutoscaler.mode }}
+  mode: {{ .Values.verticalPodAutoscaler.mode }}
+  {{- end }}
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "cert-manager.fullname" . }}
+  {{- if .Values.verticalPodAutoscaler.updatePolicy }}
+  updatePolicy:
+    {{- toYaml .Values.verticalPodAutoscaler.updatePolicy | nindent 4 }}
+  {{- end }}
+{{- end }}
