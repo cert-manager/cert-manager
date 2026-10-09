@@ -89,8 +89,8 @@ func TestPreCheckDNSNonAuthoritative(t *testing.T) {
 	}
 }
 
-func TestCheckAuthoritativeNss(t *testing.T) {
-	checkAuthoritativeNssTests := []struct {
+func TestCheckTXTRecord(t *testing.T) {
+	checkTXTRecordTests := []struct {
 		fqdn, value string
 		ns          []string
 		ok          bool
@@ -109,12 +109,12 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 		},
 	}
 
-	for i, tt := range checkAuthoritativeNssTests {
+	for i, tt := range checkTXTRecordTests {
 		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), standardTimeout)
 			defer cancel()
 
-			ok, _ := checkAuthoritativeNss(ctx, tt.fqdn, tt.value, tt.ns)
+			ok, _ := checkTXTRecord(ctx, tt.fqdn, tt.value, tt.ns)
 			if ok != tt.ok {
 				t.Errorf("%s: got %t; want %t", tt.fqdn, ok, tt.ok)
 			}
