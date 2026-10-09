@@ -31,6 +31,7 @@
         'hack/latest-kgateway-images.sh',
         'hack/latest-kind-images.sh',
         'make/02_mod.mk',
+        'make/_shared/tools/00_mod.mk',
       ],
       matchStrings: [
         "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+packageName=(?<packageName>\\S+)\\s*\\n(?<varName>[A-Za-z0-9_]+)\\s*(?::=|\\?=|=)\\s*(?<currentValue>\\S+)"
@@ -102,5 +103,47 @@
       ],
       enabled: true,
     },
+    {
+      description: 'make/_shared is synced from makefile-modules by klone, so do not update it directly',
+      matchFileNames: [
+        'make/_shared/**',
+      ],
+      enabled: false,
+    },
+    {
+      description: 'Offer Go patch releases separately from minor releases',
+      matchDatasources: [
+        'golang-version',
+      ],
+      separateMinorPatch: true,
+    },
+    {
+      description: 'Enable Go patch updates on release branches, keeping the minor version of the branch',
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      matchFileNames: [
+        'make/_shared/tools/00_mod.mk',
+      ],
+      matchDatasources: [
+        'golang-version',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      enabled: true,
+      postUpgradeTasks: {
+        commands: [
+          'hack/learn-go-shas.sh',
+        ],
+        executionMode: 'branch',
+      },
+    },
+  ],
+  // The shared preset ignores make/_shared/**. Override it so that the Go
+  // version in the tools module can be updated on release branches.
+  ignorePaths: [
+    '**/vendor/**',
+    '.github/workflows/govulncheck.yaml',
   ],
 }
