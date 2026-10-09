@@ -111,14 +111,7 @@
       enabled: false,
     },
     {
-      description: 'Offer Go patch releases separately from minor releases',
-      matchDatasources: [
-        'golang-version',
-      ],
-      separateMinorPatch: true,
-    },
-    {
-      description: 'Enable Go patch updates on release branches, keeping the minor version of the branch',
+      description: 'Enable Go updates on release branches. A rule that matches an update type is applied after lookup, so it cannot re-enable a dependency; the minor and major updates are disabled by the next rule instead.',
       matchBaseBranches: [
         '/^release-.*/',
       ],
@@ -128,16 +121,28 @@
       matchDatasources: [
         'golang-version',
       ],
-      matchUpdateTypes: [
-        'patch',
-      ],
       enabled: true,
+      separateMinorPatch: true,
       postUpgradeTasks: {
         commands: [
           'hack/learn-go-shas.sh',
         ],
         executionMode: 'branch',
       },
+    },
+    {
+      description: 'Keep the Go minor version of each release branch',
+      matchBaseBranches: [
+        '/^release-.*/',
+      ],
+      matchDatasources: [
+        'golang-version',
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'major',
+      ],
+      enabled: false,
     },
   ],
   // The shared preset ignores make/_shared/**. Override it so that the Go
