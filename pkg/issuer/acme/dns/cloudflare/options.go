@@ -16,6 +16,8 @@ limitations under the License.
 
 package cloudflare
 
+import "time"
+
 // DNSProviderOptions holds the full configuration for the Cloudflare DNS provider.
 type DNSProviderOptions struct {
 	// Email is the Cloudflare account email address. Required when using API key authentication.
@@ -26,6 +28,8 @@ type DNSProviderOptions struct {
 	APIToken string
 	// UserAgent is the HTTP User-Agent string sent to the Cloudflare API.
 	UserAgent string
+	// Timeout is the maximum duration of a single Cloudflare API request. Defaults to 30s when unset.
+	Timeout time.Duration
 }
 
 // DNSProviderOption is a functional option for configuring a DNSProvider.
@@ -63,4 +67,12 @@ type UserAgent string
 // ApplyToDNSProviderOptions sets the UserAgent field.
 func (u UserAgent) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
 	o.UserAgent = string(u)
+}
+
+// Timeout sets the maximum duration of a single Cloudflare API request on DNSProviderOptions.
+type Timeout time.Duration
+
+// ApplyToDNSProviderOptions sets the Timeout field.
+func (t Timeout) ApplyToDNSProviderOptions(o *DNSProviderOptions) {
+	o.Timeout = time.Duration(t)
 }
