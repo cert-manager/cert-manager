@@ -32,6 +32,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // Validation functions for cert-manager Issuer types.
@@ -143,11 +144,36 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		}
 	}
 
+	if apk := iss.AccountPrivateKey; apk != nil {
+		el = append(el, validateACMEIssuerAccountPrivateKey(apk, fldPath.Child("accountPrivateKey"))...)
+	}
+
 	for i, sol := range iss.Solvers {
 		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
 	}
 
 	return el, warnings
+}
+
+func validateACMEIssuerAccountPrivateKey(apk *cmacme.AccountPrivateKey, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	switch apk.Algorithm {
+	case "", cmacme.RSAAccountKeyAlgorithm:
+		if apk.Size > 0 && (apk.Size < pki.MinRSAKeySize || apk.Size > pki.MaxRSAKeySize) {
+			el = append(el, field.Invalid(fldPath.Child("size"), apk.Size,
+				fmt.Sprintf("must be between %d and %d for RSA algorithm", pki.MinRSAKeySize, pki.MaxRSAKeySize)))
+		}
+	case cmacme.ECDSAAccountKeyAlgorithm:
+		if apk.Size > 0 && apk.Size != 256 && apk.Size != 384 && apk.Size != 521 {
+			el = append(el, field.NotSupported(fldPath.Child("size"), apk.Size, []string{"256", "384", "521"}))
+		}
+	default:
+		el = append(el, field.Invalid(fldPath.Child("algorithm"), apk.Algorithm,
+			"must be either empty or one of RSA or ECDSA"))
+	}
+
+	return el
 }
 
 func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
