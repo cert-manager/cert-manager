@@ -22,6 +22,7 @@ limitations under the License.
 // certificate_challenge_status{status, domain, reason, processing, id, type}
 // acme_client_request_count{"scheme", "host", "action", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "action", "method", "status"}
+// vault_client_request_duration_seconds{"api_call"}
 // venafi_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
 // controller_sync_call_count{"controller"}
 package metrics
@@ -61,6 +62,7 @@ type Metrics struct {
 	acmeClientRequestDurationSeconds    *prometheus.SummaryVec
 	acmeClientRequestCount              *prometheus.CounterVec
 	venafiClientRequestDurationSeconds  *prometheus.SummaryVec
+	vaultClientRequestDurationSeconds   *prometheus.SummaryVec
 	venafiOAuthTokenRequestsTotal       *prometheus.CounterVec
 	venafiOAuthTokenRequestDurationSecs prometheus.Histogram
 	controllerSyncCallCount             *prometheus.CounterVec
@@ -154,6 +156,21 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 			[]string{"api_call"},
 		)
 
+		// vaultClientRequestDurationSeconds is a Prometheus summary to
+		// collect api call latencies for the Vault client. This metric is in
+		// alpha and can be moved to GA once it has been shown to help measure
+		// Vault call latency.
+		vaultClientRequestDurationSeconds = prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Namespace:  namespace,
+				Name:       "vault_client_request_duration_seconds",
+				Help:       "ALPHA: The Vault API request latencies in seconds for the Certificate Manager client. This metric is currently alpha as we would like to understand whether it helps to measure Vault call latency. Please leave feedback if you have any.",
+				Subsystem:  "http",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"api_call"},
+		)
+
 		venafiOAuthTokenRequestsTotal = prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -211,6 +228,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		acmeClientRequestCount:              acmeClientRequestCount,
 		acmeClientRequestDurationSeconds:    acmeClientRequestDurationSeconds,
 		venafiClientRequestDurationSeconds:  venafiClientRequestDurationSeconds,
+		vaultClientRequestDurationSeconds:   vaultClientRequestDurationSeconds,
 		venafiOAuthTokenRequestsTotal:       venafiOAuthTokenRequestsTotal,
 		venafiOAuthTokenRequestDurationSecs: venafiOAuthTokenRequestDurationSecs,
 		controllerSyncCallCount:             controllerSyncCallCount,
@@ -246,6 +264,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSecondsGauge)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiClientRequestDurationSeconds)
+	m.registry.MustRegister(m.vaultClientRequestDurationSeconds)
 	m.registry.MustRegister(m.venafiOAuthTokenRequestsTotal)
 	m.registry.MustRegister(m.venafiOAuthTokenRequestDurationSecs)
 	m.registry.MustRegister(m.acmeClientRequestCount)
