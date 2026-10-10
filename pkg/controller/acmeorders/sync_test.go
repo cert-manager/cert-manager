@@ -100,6 +100,8 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
+	testOrderWithProfile := gen.OrderFrom(testOrder, gen.SetOrderProfile("shortlived"))
+
 	testOrderIP := gen.Order("testorder",
 		gen.SetOrderCommonName("10.0.0.2"),
 		gen.SetOrderIssuer(cmmeta.IssuerReference{
@@ -698,7 +700,11 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, order *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
+					if order.URI != testOrderReady.Status.URL || order.FinalizeURL != testOrderReady.Status.FinalizeURL {
+						return nil, "", fmt.Errorf("Invalid order: expected URI %q and FinalizeURL %q, got %q and %q",
+							testOrderReady.Status.URL, testOrderReady.Status.FinalizeURL, order.URI, order.FinalizeURL)
+					}
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -721,7 +727,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError429
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -740,7 +746,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", errors.New("some error")
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -767,7 +773,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -803,7 +809,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -848,7 +854,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
@@ -892,7 +898,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
 					return rawTestCert, testACMEOrderValid.CertURL, nil
 				},
 				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
@@ -969,50 +975,105 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 		"acme-profiles:profiles-not-implemented": {
 			// Simulate an attempt to create an order with a profile on an ACME
 			// server which does not support profiles.
-			order: testOrder,
+			order: testOrderWithProfile,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderWithProfile},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
 						coretesting.NewUpdateSubresourceAction(
 							cmacme.SchemeGroupVersion.WithResource("orders"),
 							"status",
-							testOrderPending.Namespace,
+							testOrderWithProfile.Namespace,
 							gen.OrderFrom(
 								testOrderErrored,
-								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not support profiles"),
+								gen.SetOrderProfile("shortlived"),
+								gen.SetOrderReason("Failed to create Order: ACME server does not advertise support for profiles"),
 							),
 						)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{}, nil
+				},
 				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
-					return nil, acmeapi.ErrCADoesNotSupportProfiles
+					return nil, errors.New("AuthorizeOrder must not be called when the profile is not supported")
 				},
 			},
 		},
 		"acme-profiles:profile-not-supported": {
 			// Simulate an attempt to create an order with a profile which the
 			// ACME server does not provide.
-			order: testOrder,
+			order: testOrderWithProfile,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderPending},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderWithProfile},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
 						coretesting.NewUpdateSubresourceAction(
 							cmacme.SchemeGroupVersion.WithResource("orders"),
 							"status",
-							testOrderPending.Namespace,
+							testOrderWithProfile.Namespace,
 							gen.OrderFrom(
 								testOrderErrored,
-								gen.SetOrderReason("Failed to create Order: acme: certificate authority does not advertise a profile with name"),
+								gen.SetOrderProfile("shortlived"),
+								gen.SetOrderReason(`Failed to create Order: ACME server does not advertise the requested profile: "shortlived" (supported profiles: classic, tlsserver)`),
 							),
 						)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{Profiles: map[acmeapi.ProfileName]string{
+						"tlsserver": "https://example.com/tlsserver",
+						"classic":   "https://example.com/classic",
+					}}, nil
+				},
 				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
-					return nil, acmeapi.ErrProfileNotInSetOfSupportedProfiles
+					return nil, errors.New("AuthorizeOrder must not be called when the profile is not supported")
+				},
+			},
+		},
+		"acme-profiles:profile-supported": {
+			// The profile is advertised, so the order is created with it.
+			order: testOrderWithProfile,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderWithProfile},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderWithProfile.Namespace,
+							gen.OrderFrom(testOrderWithProfile, gen.SetOrderStatus(cmacme.OrderStatus{
+								State:       cmacme.Pending,
+								URL:         "http://testurl.com/abcde",
+								FinalizeURL: "http://testurl.com/abcde/finalize",
+								Authorizations: []cmacme.ACMEAuthorization{
+									{
+										URL: "http://authzurl",
+									},
+								},
+							})),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{Profiles: map[acmeapi.ProfileName]string{
+						"shortlived": "https://example.com/shortlived",
+					}}, nil
+				},
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					for _, o := range opt {
+						v := reflect.ValueOf(o)
+						if v.Kind() == reflect.String && v.String() == "shortlived" {
+							return testACMEOrderPending, nil
+						}
+					}
+					return nil, errors.New("expected profile option to be set on AuthorizeOrder call")
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return testACMEAuthorizationPending, nil
 				},
 			},
 		},
@@ -1143,7 +1204,7 @@ func TestFinalizeOrder(t *testing.T) {
 	}{
 		"CreateOrderRequest - Succeed, UpdateOrderStatus - Succeed": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", nil
 				},
 				FakeGetOrder: func(ctx context.Context, url string) (*acmeapi.Order, error) {
@@ -1164,7 +1225,7 @@ func TestFinalizeOrder(t *testing.T) {
 		},
 		"CreateOrderRequest - Fail, UpdateOrderStatus - Succeed": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", &acmeapi.Error{
 						StatusCode: 500,
 						Header: http.Header{
@@ -1188,7 +1249,7 @@ func TestFinalizeOrder(t *testing.T) {
 		},
 		"CreateOrderRequest - Fail, UpdateOrderStatus - Fail": {
 			cl: &acmecl.FakeACME{
-				FakeCreateOrderCert: func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+				FakeCreateCertFromOrder: func(ctx context.Context, order *acmeapi.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 					return nil, "", &acmeapi.Error{
 						StatusCode: 501,
 						Header: http.Header{

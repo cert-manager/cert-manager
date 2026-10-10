@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -258,10 +259,37 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
+var (
+	errCADoesNotSupportProfiles = errors.New("ACME server does not advertise support for profiles")
+	errProfileNotSupported      = errors.New("ACME server does not advertise the requested profile")
+)
+
+// checkProfileSupported returns a non-retryable error if the ACME server's
+// directory does not offer the requested profile. AuthorizeOrder makes the
+// same check, but the errors it returns are unexported.
+func checkProfileSupported(ctx context.Context, cl acmecl.Interface, profile string) error {
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching ACME directory: %w", err)
+	}
+	if len(dir.Profiles) == 0 {
+		return errCADoesNotSupportProfiles
+	}
+	if _, ok := dir.Profiles[acmeapi.ProfileName(profile)]; !ok {
+		supported := make([]string, 0, len(dir.Profiles))
+		for name := range dir.Profiles {
+			supported = append(supported, string(name))
+		}
+		slices.Sort(supported)
+		return fmt.Errorf("%w: %q (supported profiles: %s)", errProfileNotSupported, profile, strings.Join(supported, ", "))
+	}
+	return nil
+}
+
 func isRetryableError(err error) bool {
 	for _, targetErr := range []error{
-		acmeapi.ErrCADoesNotSupportProfiles,
-		acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+		errCADoesNotSupportProfiles,
+		errProfileNotSupported,
 	} {
 		if errors.Is(err, targetErr) {
 			return false
@@ -304,7 +332,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 
 	if o.Spec.Profile != "" {
-		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+		options = append(options, acmeapi.WithOrderIssuanceProfile(acmeapi.ProfileName(o.Spec.Profile)))
 	}
 
 	ariEnabled := acme.ARIEnabledForIssuer(genericIssuer)
@@ -318,7 +346,14 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		replacesAppended = true
 	}
 
-	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
+	var acmeOrder *acmeapi.Order
+	var err error
+	if o.Spec.Profile != "" {
+		err = checkProfileSupported(ctx, cl, o.Spec.Profile)
+	}
+	if err == nil {
+		acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
+	}
 	if err != nil && replacesAppended && isARIReplacesRejection(err) {
 		// Per RFC 9773, a server may reject the replaces field (e.g. the
 		// predecessor has already been replaced, or is unknown). Retry the
@@ -356,12 +391,9 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 }
 
 func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *acmeapi.Order) (*acmeapi.Order, error) {
-	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
-	// order's URI field will be empty when calling GetOrder due to the
-	// 'Location' header not being set on the response from the ACME server.
-	//
-	// TODO(wallrj): We have vendored golang.org/x/crypto/acme so there's
-	// nothing stopping us fixing this bug.
+	// GetOrder falls back to the request URL when the server omits the
+	// Location header, so URI is only empty from Interface implementations
+	// that do not set it, such as test fakes.
 	if acmeOrder.URI != "" {
 		o.Status.URL = acmeOrder.URI
 	}
@@ -573,8 +605,10 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		derBytes = block.Bytes
 	}
 
-	// Call to CreateOrderCert finalizes the ACME order. This call can only be made once.
-	certSlice, certURL, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
+	// Call to CreateCertFromOrder finalizes the ACME order. This call can only be made once.
+	// The order URL is passed in because RFC 8555 does not require the finalize
+	// response to carry a Location header, and Pebble omits it.
+	certSlice, certURL, err := cl.CreateCertFromOrder(ctx, &acmeapi.Order{URI: o.Status.URL, FinalizeURL: o.Status.FinalizeURL}, derBytes, true)
 
 	acmeErr, ok := err.(*acmeapi.Error)
 
@@ -616,7 +650,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		log.Error(acmeErr, "acme server fatal error", "errorCode", acmeErr.StatusCode, "dnsNames", o.Spec.DNSNames, "ipAddresses", o.Spec.IPAddresses, "responseHeaders", acmeErr.Header)
 	}
 
-	// Before checking whether the call to CreateOrderCert returned a
+	// Before checking whether the call to CreateCertFromOrder returned a
 	// non-4xx error, ensure the order status is up-to-date.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
@@ -634,7 +668,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
 	}
-	// Check for non-4xx errors from CreateOrderCert
+	// Check for non-4xx errors from CreateCertFromOrder
 	if err != nil {
 		return fmt.Errorf("error finalizing order: %v", err)
 	}
