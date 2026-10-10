@@ -1,4 +1,4 @@
-{{- if .Values.cainjector.config -}}
+{{- if and .Values.cainjector.enabled .Values.cainjector.config -}}
 {{- $config := .Values.cainjector.config -}}
 {{- $_ := set $config "apiVersion" (default "cainjector.config.cert-manager.io/v1alpha1" $config.apiVersion) -}}
 {{- $_ := set $config "kind" (default "CAInjectorConfiguration" $config.kind) -}}
