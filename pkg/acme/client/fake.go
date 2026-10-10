@@ -34,7 +34,7 @@ type FakeACME struct {
 	FakeFetchCert               func(ctx context.Context, url string, bundle bool) ([][]byte, error)
 	FakeListCertAlternates      func(ctx context.Context, url string) ([]string, error)
 	FakeWaitOrder               func(ctx context.Context, url string) (*acme.Order, error)
-	FakeCreateOrderCert         func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
+	FakeCreateCertFromOrder     func(ctx context.Context, order *acme.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
 	FakeAccept                  func(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
 	FakeGetChallenge            func(ctx context.Context, url string) (*acme.Challenge, error)
 	FakeGetAuthorization        func(ctx context.Context, url string) (*acme.Authorization, error)
@@ -78,11 +78,11 @@ func (f *FakeACME) WaitOrder(ctx context.Context, url string) (*acme.Order, erro
 	return nil, fmt.Errorf("WaitOrder not implemented")
 }
 
-func (f *FakeACME) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
-	if f.FakeCreateOrderCert != nil {
-		return f.FakeCreateOrderCert(ctx, finalizeURL, csr, bundle)
+func (f *FakeACME) CreateCertFromOrder(ctx context.Context, order *acme.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+	if f.FakeCreateCertFromOrder != nil {
+		return f.FakeCreateCertFromOrder(ctx, order, csr, bundle)
 	}
-	return nil, "", fmt.Errorf("CreateOrderCert not implemented")
+	return nil, "", fmt.Errorf("CreateCertFromOrder not implemented")
 }
 
 func (f *FakeACME) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
