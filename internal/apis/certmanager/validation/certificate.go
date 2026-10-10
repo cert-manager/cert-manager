@@ -141,9 +141,8 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 		el = append(el, field.TooLong(fldPath.Child("commonName"), commonName, 64))
 	}
 
-	if len(crt.IPAddresses) > 0 {
-		el = append(el, validateIPAddresses(crt, fldPath)...)
-	}
+	el = append(el, validateDNSNames(crt, oldCrt, fldPath)...)
+	el = append(el, validateIPAddresses(crt, oldCrt, fldPath)...)
 
 	if len(crt.EmailAddresses) > 0 {
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
@@ -289,16 +288,49 @@ func validateIssuerRef(issuerRef cmmeta.IssuerReference, fldPath *field.Path) fi
 	return el
 }
 
-func validateIPAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if len(a.IPAddresses) == 0 {
+func validateDNSNames(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	// Existing Certificates with duplicate dnsNames must remain updateable
+	// (including controller ApplyStatus) while the field is unchanged.
+	if oldCrt != nil && reflect.DeepEqual(oldCrt.DNSNames, crt.DNSNames) {
 		return nil
 	}
+
 	el := field.ErrorList{}
-	for i, d := range a.IPAddresses {
+	dnsNameSet := sets.New[string]()
+	for i, name := range crt.DNSNames {
+		if dnsNameSet.Has(name) {
+			el = append(el, field.Duplicate(fldPath.Child("dnsNames").Index(i), name))
+			continue
+		}
+		dnsNameSet.Insert(name)
+	}
+	return el
+}
+
+func validateIPAddresses(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	// Existing Certificates with duplicate ipAddresses must remain updateable
+	// (including controller ApplyStatus) while the field is unchanged.
+	if oldCrt != nil && reflect.DeepEqual(oldCrt.IPAddresses, crt.IPAddresses) {
+		return nil
+	}
+
+	el := field.ErrorList{}
+	// Compare by parsed (canonical) value so equivalent IPv6 spellings collide.
+	// Track the first index so errors can name the earlier colliding entry when
+	// the two spellings differ.
+	firstIndex := map[string]int{}
+	for i, d := range crt.IPAddresses {
 		ip := net.ParseIP(d)
 		if ip == nil {
 			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
+			continue
 		}
+		key := ip.String()
+		if first, ok := firstIndex[key]; ok {
+			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, fmt.Sprintf("duplicates ipAddresses[%d]", first)))
+			continue
+		}
+		firstIndex[key] = i
 	}
 	return el
 }
