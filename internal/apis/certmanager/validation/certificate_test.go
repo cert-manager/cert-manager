@@ -410,7 +410,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa, ecdsa or ed25519"),
+				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa, ecdsa, ed25519, mldsa44, or mldsa65"),
 			},
 		},
 		"valid certificate with ipAddresses": {

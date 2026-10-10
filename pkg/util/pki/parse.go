@@ -26,7 +26,7 @@ import (
 )
 
 // DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.
-// It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
+// It supports ECDSA, RSA, EdDSA, and ML-DSA private keys. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
 	block, rest, err := pem.SafeDecodePrivateKey(keyBytes)
@@ -54,6 +54,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 			return nil, errors.NewInvalidData("error parsing pkcs#8 private key: invalid key type")
 		}
 		return signer, nil
+
 	case "EC PRIVATE KEY":
 		key, err := x509.ParseECPrivateKey(block.Bytes)
 		if err != nil {
@@ -152,12 +153,6 @@ func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateReques
 		return nil, errors.NewInvalidData("error decoding certificate request PEM block: %s", err)
 	}
 
-	// Reject anything that isn't labelled as a certificate request rather
-	// than passing it to x509.ParseCertificateRequest, which would fail
-	// with a misleading error. "NEW CERTIFICATE REQUEST" is a historic
-	// label (RFC 7468 §7) still produced by some older OpenSSL
-	// toolchains, and is accepted alongside the standard "CERTIFICATE
-	// REQUEST" label.
 	if block.Type != "CERTIFICATE REQUEST" && block.Type != "NEW CERTIFICATE REQUEST" {
 		return nil, errors.NewInvalidData("error decoding certificate request PEM block: expected a \"CERTIFICATE REQUEST\" block, found %q", block.Type)
 	}
