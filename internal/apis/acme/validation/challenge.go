@@ -42,5 +42,26 @@ func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj run
 }
 
 func ValidateChallenge(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
-	return nil, nil
+	ch, ok := obj.(*cmacme.Challenge)
+	if !ok || ch == nil {
+		return nil, nil
+	}
+
+	el := field.ErrorList{}
+	fldPath := field.NewPath("spec", "solver")
+	sol := ch.Spec.Solver
+
+	if sol.WaitInsteadOfSelfCheck != nil && sol.WaitInsteadOfSelfCheck.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
+	}
+
+	if sol.DelayBeforeAccept != nil && sol.DelayBeforeAccept.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("delayBeforeAccept"), sol.DelayBeforeAccept.Duration, "delayBeforeAccept must not be negative"))
+	}
+
+	if sol.WaitInsteadOfSelfCheck != nil && sol.DelayBeforeAccept != nil {
+		el = append(el, field.Forbidden(fldPath, "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"))
+	}
+
+	return el, nil
 }

@@ -905,6 +905,10 @@ func (in *ChallengeStatus) DeepCopyInto(out *ChallengeStatus) {
 		in, out := &in.PresentedAt, &out.PresentedAt
 		*out = (*in).DeepCopy()
 	}
+	if in.SelfCheckSucceededAt != nil {
+		in, out := &in.SelfCheckSucceededAt, &out.SelfCheckSucceededAt
+		*out = (*in).DeepCopy()
+	}
 	return
 }
 

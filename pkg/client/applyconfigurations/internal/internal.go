@@ -1035,6 +1035,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: reason
       type:
         scalar: string
+    - name: selfCheckSucceededAt
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: state
       type:
         scalar: string
