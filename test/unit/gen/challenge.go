@@ -95,6 +95,12 @@ func SetChallengePresentedAt(ts metav1.Time) ChallengeModifier {
 	}
 }
 
+func SetChallengeSelfCheckSucceededAt(ts metav1.Time) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Status.SelfCheckSucceededAt = &ts
+	}
+}
+
 func SetChallengeWildcard(p bool) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Spec.Wildcard = p

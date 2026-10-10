@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -90,12 +92,12 @@ func (e waitInsteadOfSelfCheckReadinessEvaluator) evaluate(_ context.Context, _ 
 }
 
 // delayBeforeAcceptReadinessEvaluator enforces a configurable propagation
-// delay after presentation before running the normal self-check.
+// delay after the self-check first succeeds before accepting the challenge.
 // It mitigates race conditions where cert-manager's self-check succeeds from
 // its own network/DNS viewpoint while the ACME server's viewpoint still lags
 // behind (see https://github.com/cert-manager/cert-manager/issues/7834).
-// The challenge only becomes ready once both the delay has elapsed and the
-// self-check passes.
+// The challenge only becomes ready once the self-check passes and the delay
+// has elapsed since the self-check first succeeded.
 type delayBeforeAcceptReadinessEvaluator struct {
 	defaultRetryPeriod time.Duration
 	now                time.Time
@@ -103,15 +105,25 @@ type delayBeforeAcceptReadinessEvaluator struct {
 }
 
 func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solver solver, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) (readinessEvaluation, error) {
-	if ch.Status.PresentedAt == nil {
+	err := solver.Check(ctx, issuer, ch)
+	if err != nil {
+		// Clear any previously recorded success so the delay is measured
+		// from the most recent successful self-check.
+		if ch.Status.SelfCheckSucceededAt != nil {
+			ch.Status.SelfCheckSucceededAt = nil
+		}
 		return readinessEvaluation{
 			ready:      false,
 			retryAfter: e.defaultRetryPeriod,
-			reason:     fmt.Sprintf("Waiting %s before accepting %s challenge", e.delay, ch.Spec.Type),
+			reason:     fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err),
 		}, nil
 	}
 
-	deadline := ch.Status.PresentedAt.Add(e.delay)
+	if ch.Status.SelfCheckSucceededAt == nil {
+		ch.Status.SelfCheckSucceededAt = &metav1.Time{Time: e.now}
+	}
+
+	deadline := ch.Status.SelfCheckSucceededAt.Add(e.delay)
 	if e.now.Before(deadline) {
 		remaining := deadline.Sub(e.now)
 		return readinessEvaluation{
@@ -121,15 +133,7 @@ func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solve
 		}, nil
 	}
 
-	err := solver.Check(ctx, issuer, ch)
-	if err == nil {
-		return readinessEvaluation{ready: true}, nil
-	}
-	return readinessEvaluation{
-		ready:      false,
-		retryAfter: e.defaultRetryPeriod,
-		reason:     fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err),
-	}, nil
+	return readinessEvaluation{ready: true}, nil
 }
 
 // buildChallengeReadinessEvaluator constructs the readiness policy for a

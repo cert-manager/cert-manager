@@ -474,8 +474,8 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		// Regression test for https://github.com/cert-manager/cert-manager/issues/7834:
-		// even when the self-check passes, acceptance must wait for
-		// delayBeforeAccept so external DNS views can propagate to the ACME server.
+		// the delay is measured from the first successful self-check, not from
+		// presentation. On first success the full delay must be waited.
 		"delay acceptance when delayBeforeAccept has not elapsed even though self-check passes": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
@@ -488,7 +488,6 @@ func TestSyncHappyPath(t *testing.T) {
 			),
 			httpSolver: &fakeSolver{
 				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
-					t.Errorf("self-check must not run before delayBeforeAccept elapses")
 					return nil
 				},
 			},
@@ -514,6 +513,53 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengePresentedAt(presentedNow),
+							gen.SetChallengeSelfCheckSucceededAt(presentedNow),
+							gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+							gen.SetChallengeReason("Waiting 30s before accepting HTTP-01 challenge"),
+						))),
+				},
+			},
+		},
+		// Even when the presentation-based delay has already elapsed, a first
+		// successful self-check must still wait the full delay.
+		"delay acceptance when self-check just succeeded even though presentation delay elapsed": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+				gen.SetChallengePresented(true),
+				gen.SetChallengePresentedAt(metav1.NewTime(presentedNow.Time.Add(-time.Minute))),
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				Clock: fakeclock.NewFakeClock(presentedNow.Time),
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+					gen.SetChallengePresented(true),
+					gen.SetChallengePresentedAt(metav1.NewTime(presentedNow.Time.Add(-time.Minute))),
+					gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Pending),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengePresented(true),
+							gen.SetChallengePresentedAt(metav1.NewTime(presentedNow.Time.Add(-time.Minute))),
+							gen.SetChallengeSelfCheckSucceededAt(presentedNow),
 							gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
 							gen.SetChallengeReason("Waiting 30s before accepting HTTP-01 challenge"),
 						))),
@@ -529,6 +575,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 				gen.SetChallengePresentedAt(oldPresentedAt),
+				gen.SetChallengeSelfCheckSucceededAt(oldPresentedAt),
 				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
 			),
 			httpSolver: &fakeSolver{
@@ -548,6 +595,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 					gen.SetChallengePresentedAt(oldPresentedAt),
+					gen.SetChallengeSelfCheckSucceededAt(oldPresentedAt),
 					gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -562,6 +610,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengePresentedAt(oldPresentedAt),
+							gen.SetChallengeSelfCheckSucceededAt(oldPresentedAt),
 							gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
 							gen.SetChallengeReason("Successfully authorized domain"),
 						))),

@@ -700,7 +700,7 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolver(ref common.ReferenceCallback) c
 					},
 					"delayBeforeAccept": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DelayBeforeAccept, if set, waits this long after presentation (recorded in Challenge status.presentedAt) before running the self-check and asking the ACME server to validate the challenge.\n\nUnlike WaitInsteadOfSelfCheck, the self-check is still performed. This mitigates race conditions where cert-manager's self-check succeeds from its own network/DNS viewpoint while the ACME server's viewpoint still lags behind (for example, anycast or externally-propagated DNS records as in https://github.com/cert-manager/cert-manager/issues/7834). The challenge is only accepted once both the delay has elapsed and the self-check passes.\n\nA negative duration is rejected. Mutually exclusive with WaitInsteadOfSelfCheck. Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration, for example `30s` or `2m`.",
+							Description: "DelayBeforeAccept, if set, waits this long after the self-check first succeeds (recorded in Challenge status.selfCheckSucceededAt) before asking the ACME server to validate the challenge.\n\nUnlike WaitInsteadOfSelfCheck, the self-check is still performed. This mitigates race conditions where cert-manager's self-check succeeds from its own network/DNS viewpoint while the ACME server's viewpoint still lags behind (for example, anycast or externally-propagated DNS records as in https://github.com/cert-manager/cert-manager/issues/7834). The challenge is only accepted once the self-check passes and the delay has elapsed since the self-check first succeeded.\n\nA negative duration is rejected. Mutually exclusive with WaitInsteadOfSelfCheck. Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration, for example `30s` or `2m`.",
 							Ref:         ref(metav1.Duration{}.OpenAPIModelName()),
 						},
 					},
@@ -2208,6 +2208,12 @@ func schema_pkg_apis_acme_v1_ChallengeStatus(ref common.ReferenceCallback) commo
 					"presentedAt": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PresentedAt records when cert-manager first configured the solver resources for this challenge. This is used by the optional delay-based readiness logic.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
+					"selfCheckSucceededAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SelfCheckSucceededAt records when cert-manager's self-check first succeeded for this challenge. This is used by the optional delayBeforeAccept readiness logic to delay acceptance until a configured duration after the self-check succeeds. It is cleared whenever the self-check fails so that the delay is measured from the most recent successful self-check.",
 							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
 						},
 					},

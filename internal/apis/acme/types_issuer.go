@@ -182,8 +182,8 @@ type ACMEChallengeSolver struct {
 	// for example `30s` or `2m`.
 	WaitInsteadOfSelfCheck *metav1.Duration
 
-	// DelayBeforeAccept, if set, waits this long after presentation (recorded
-	// in Challenge status.presentedAt) before running the self-check and
+	// DelayBeforeAccept, if set, waits this long after the self-check first
+	// succeeds (recorded in Challenge status.selfCheckSucceededAt) before
 	// asking the ACME server to validate the challenge.
 	//
 	// Unlike WaitInsteadOfSelfCheck, the self-check is still performed. This
@@ -191,8 +191,8 @@ type ACMEChallengeSolver struct {
 	// its own network/DNS viewpoint while the ACME server's viewpoint still
 	// lags behind (for example, anycast or externally-propagated DNS records
 	// as in https://github.com/cert-manager/cert-manager/issues/7834).
-	// The challenge is only accepted once both the delay has elapsed and the
-	// self-check passes.
+	// The challenge is only accepted once the self-check passes and the
+	// delay has elapsed since the self-check first succeeded.
 	//
 	// A negative duration is rejected. Mutually exclusive with
 	// WaitInsteadOfSelfCheck.

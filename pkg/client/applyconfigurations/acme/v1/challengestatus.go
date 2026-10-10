@@ -45,6 +45,13 @@ type ChallengeStatusApplyConfiguration struct {
 	// resources for this challenge. This is used by the optional delay-based
 	// readiness logic.
 	PresentedAt *metav1.Time `json:"presentedAt,omitempty"`
+	// SelfCheckSucceededAt records when cert-manager's self-check first
+	// succeeded for this challenge. This is used by the optional
+	// delayBeforeAccept readiness logic to delay acceptance until a
+	// configured duration after the self-check succeeds.
+	// It is cleared whenever the self-check fails so that the delay is
+	// measured from the most recent successful self-check.
+	SelfCheckSucceededAt *metav1.Time `json:"selfCheckSucceededAt,omitempty"`
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	Reason *string `json:"reason,omitempty"`
@@ -80,6 +87,14 @@ func (b *ChallengeStatusApplyConfiguration) WithPresented(value bool) *Challenge
 // If called multiple times, the PresentedAt field is set to the value of the last call.
 func (b *ChallengeStatusApplyConfiguration) WithPresentedAt(value metav1.Time) *ChallengeStatusApplyConfiguration {
 	b.PresentedAt = &value
+	return b
+}
+
+// WithSelfCheckSucceededAt sets the SelfCheckSucceededAt field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SelfCheckSucceededAt field is set to the value of the last call.
+func (b *ChallengeStatusApplyConfiguration) WithSelfCheckSucceededAt(value metav1.Time) *ChallengeStatusApplyConfiguration {
+	b.SelfCheckSucceededAt = &value
 	return b
 }
 
