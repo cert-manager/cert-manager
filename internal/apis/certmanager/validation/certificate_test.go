@@ -986,6 +986,30 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"invalid renewal window with zero windowDuration": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+					Renewal: &internalcmapi.CertificateRenewal{
+						Policy: internalcmapi.RenewBefore,
+						Windows: []internalcmapi.CertificateRenewalWindows{
+							{
+								WindowDuration: &metav1.Duration{Duration: 0},
+								Cron:           "0 12 * * *",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), "0s", "windowDuration must be greater than 0"),
+			},
+		},
 		"invalid renewal cron with timezone prefix and no schedule": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -1067,6 +1091,77 @@ func TestValidateUpdateCertificateRejectsChangedRenewBeforePercentageBelowMinimu
 
 	assert.ElementsMatch(t, []*field.Error{
 		field.Invalid(fldPath.Child("renewBeforePercentage"), int32(6), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; 6%% of %s is %s", cmapi.MinimumRenewBefore, time.Hour, time.Minute*3+time.Second*36)),
+	}, errs)
+	assert.Empty(t, warnings)
+}
+
+func TestValidateUpdateCertificateAllowsLegacyZeroWindowDurationOnUnchangedUpdate(t *testing.T) {
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "* * * * *",
+					},
+				},
+			},
+		},
+	}
+	newCert := &internalcmapi.Certificate{Spec: oldCert.Spec}
+
+	errs, warnings := ValidateUpdateCertificate(&admissionv1.AdmissionRequest{
+		Operation:   admissionv1.Update,
+		SubResource: "status",
+	}, oldCert, newCert)
+
+	assert.Empty(t, errs)
+	assert.Empty(t, warnings)
+}
+
+func TestValidateUpdateCertificateRejectsChangedRenewalWithZeroWindowDuration(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	oldCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "* * * * *",
+					},
+				},
+			},
+		},
+	}
+	newCert := &internalcmapi.Certificate{
+		Spec: internalcmapi.CertificateSpec{
+			CommonName: "testcn",
+			SecretName: "abc",
+			IssuerRef:  validIssuerRef,
+			Renewal: &internalcmapi.CertificateRenewal{
+				Policy: internalcmapi.RenewBefore,
+				Windows: []internalcmapi.CertificateRenewalWindows{
+					{
+						WindowDuration: &metav1.Duration{Duration: 0},
+						Cron:           "*/5 * * * *",
+					},
+				},
+			},
+		},
+	}
+
+	errs, warnings := ValidateUpdateCertificate(someAdmissionRequest, oldCert, newCert)
+
+	assert.ElementsMatch(t, []*field.Error{
+		field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), "0s", "windowDuration must be greater than 0"),
 	}, errs)
 	assert.Empty(t, warnings)
 }
