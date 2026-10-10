@@ -143,6 +143,15 @@ type ChallengeStatus struct {
 	// +optional
 	PresentedAt *metav1.Time `json:"presentedAt,omitempty"`
 
+	// SelfCheckSucceededAt records when cert-manager's self-check first
+	// succeeded for this challenge. This is used by the optional
+	// delayBeforeAccept readiness logic to delay acceptance until a
+	// configured duration after the self-check succeeds.
+	// It is cleared whenever the self-check fails so that the delay is
+	// measured from the most recent successful self-check.
+	// +optional
+	SelfCheckSucceededAt *metav1.Time `json:"selfCheckSucceededAt,omitempty"`
+
 	// Contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional

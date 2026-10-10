@@ -59,6 +59,23 @@ type ACMEChallengeSolverApplyConfiguration struct {
 	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
 	// for example `30s` or `2m`.
 	WaitInsteadOfSelfCheck *metav1.Duration `json:"waitInsteadOfSelfCheck,omitempty"`
+	// DelayBeforeAccept, if set, waits this long after the self-check first
+	// succeeds (recorded in Challenge status.selfCheckSucceededAt) before
+	// asking the ACME server to validate the challenge.
+	//
+	// Unlike WaitInsteadOfSelfCheck, the self-check is still performed. This
+	// mitigates race conditions where cert-manager's self-check succeeds from
+	// its own network/DNS viewpoint while the ACME server's viewpoint still
+	// lags behind (for example, anycast or externally-propagated DNS records
+	// as in https://github.com/cert-manager/cert-manager/issues/7834).
+	// The challenge is only accepted once the self-check passes and the
+	// delay has elapsed since the self-check first succeeded.
+	//
+	// A negative duration is rejected. Mutually exclusive with
+	// WaitInsteadOfSelfCheck.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+	// for example `30s` or `2m`.
+	DelayBeforeAccept *metav1.Duration `json:"delayBeforeAccept,omitempty"`
 }
 
 // ACMEChallengeSolverApplyConfiguration constructs a declarative configuration of the ACMEChallengeSolver type for use with
@@ -96,5 +113,13 @@ func (b *ACMEChallengeSolverApplyConfiguration) WithDNS01(value *ACMEChallengeSo
 // If called multiple times, the WaitInsteadOfSelfCheck field is set to the value of the last call.
 func (b *ACMEChallengeSolverApplyConfiguration) WithWaitInsteadOfSelfCheck(value metav1.Duration) *ACMEChallengeSolverApplyConfiguration {
 	b.WaitInsteadOfSelfCheck = &value
+	return b
+}
+
+// WithDelayBeforeAccept sets the DelayBeforeAccept field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DelayBeforeAccept field is set to the value of the last call.
+func (b *ACMEChallengeSolverApplyConfiguration) WithDelayBeforeAccept(value metav1.Duration) *ACMEChallengeSolverApplyConfiguration {
+	b.DelayBeforeAccept = &value
 	return b
 }

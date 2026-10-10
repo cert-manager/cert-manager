@@ -18,6 +18,7 @@ package validation
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -95,7 +96,65 @@ func TestValidateChallenge(t *testing.T) {
 		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings []string
-	}{}
+	}{
+		"allows challenge without delay options": {
+			chal: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					URL: "testurl",
+				},
+			},
+		},
+		"allows challenge with a valid delayBeforeAccept": {
+			chal: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					URL: "testurl",
+					Solver: cmacme.ACMEChallengeSolver{
+						DelayBeforeAccept: &metav1.Duration{Duration: 30 * time.Second},
+					},
+				},
+			},
+		},
+		"rejects challenge with a negative delayBeforeAccept": {
+			chal: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					URL: "testurl",
+					Solver: cmacme.ACMEChallengeSolver{
+						DelayBeforeAccept: &metav1.Duration{Duration: -5 * time.Second},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(field.NewPath("spec", "solver").Child("delayBeforeAccept"), -5*time.Second, "delayBeforeAccept must not be negative"),
+			},
+		},
+		"rejects challenge with a negative waitInsteadOfSelfCheck": {
+			chal: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					URL: "testurl",
+					Solver: cmacme.ACMEChallengeSolver{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: -5 * time.Second},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(field.NewPath("spec", "solver").Child("waitInsteadOfSelfCheck"), -5*time.Second, "waitInsteadOfSelfCheck must not be negative"),
+			},
+		},
+		"rejects challenge with both waitInsteadOfSelfCheck and delayBeforeAccept": {
+			chal: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					URL: "testurl",
+					Solver: cmacme.ACMEChallengeSolver{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 30 * time.Second},
+						DelayBeforeAccept:      &metav1.Duration{Duration: 30 * time.Second},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(field.NewPath("spec", "solver"), "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"),
+			},
+		},
+	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateChallenge(s.a, s.chal)

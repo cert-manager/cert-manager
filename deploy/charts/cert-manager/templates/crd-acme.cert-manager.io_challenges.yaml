@@ -110,6 +110,25 @@ spec:
                     Contains the domain solving configuration that should be used to
                     solve this challenge resource.
                   properties:
+                    delayBeforeAccept:
+                      description: |-
+                        DelayBeforeAccept, if set, waits this long after the self-check first
+                        succeeds (recorded in Challenge status.selfCheckSucceededAt) before
+                        asking the ACME server to validate the challenge.
+
+                        Unlike WaitInsteadOfSelfCheck, the self-check is still performed. This
+                        mitigates race conditions where cert-manager's self-check succeeds from
+                        its own network/DNS viewpoint while the ACME server's viewpoint still
+                        lags behind (for example, anycast or externally-propagated DNS records
+                        as in https://github.com/cert-manager/cert-manager/issues/7834).
+                        The challenge is only accepted once the self-check passes and the
+                        delay has elapsed since the self-check first succeeded.
+
+                        A negative duration is rejected. Mutually exclusive with
+                        WaitInsteadOfSelfCheck.
+                        Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
+                        for example `30s` or `2m`.
+                      type: string
                     dns01:
                       description: |-
                         Configures cert-manager to attempt to complete authorizations by
@@ -3297,6 +3316,16 @@ spec:
                     PresentedAt records when cert-manager first configured the solver
                     resources for this challenge. This is used by the optional delay-based
                     readiness logic.
+                  format: date-time
+                  type: string
+                selfCheckSucceededAt:
+                  description: |-
+                    SelfCheckSucceededAt records when cert-manager's self-check first
+                    succeeded for this challenge. This is used by the optional
+                    delayBeforeAccept readiness logic to delay acceptance until a
+                    configured duration after the self-check succeeds. It is cleared
+                    whenever the self-check fails so that the delay is measured from
+                    the most recent successful self-check.
                   format: date-time
                   type: string
                 processing:

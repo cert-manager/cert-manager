@@ -38,13 +38,14 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 	)
 
 	tests := map[string]struct {
-		challenge          *cmacme.Challenge
-		checkErr           error
-		defaultRetryPeriod time.Duration
-		wantReady          bool
-		wantRetry          time.Duration
-		wantReason         string
-		wantCheckCalls     int
+		challenge                *cmacme.Challenge
+		checkErr                 error
+		defaultRetryPeriod       time.Duration
+		wantReady                bool
+		wantRetry                time.Duration
+		wantReason               string
+		wantCheckCalls           int
+		wantSelfCheckSucceededAt *time.Time
 	}{
 		// Without waitInsteadOfSelfCheck, readiness should behave exactly like the
 		// existing strict self-check path.
@@ -84,6 +85,96 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			wantReady:          true,
 			wantCheckCalls:     0,
 		},
+		// Regression test for https://github.com/cert-manager/cert-manager/issues/7834:
+		// the delay is measured from the first successful self-check, not from
+		// presentation. On first success the full delay must be waited.
+		"delayBeforeAccept records first self-check success and waits full delay": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-5*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting 30s before accepting HTTP-01 challenge",
+			wantCheckCalls:     1,
+			wantSelfCheckSucceededAt: func() *time.Time {
+				ts := now
+				return &ts
+			}(),
+		},
+		// Even when the presentation-based delay has already elapsed, a first
+		// successful self-check must still wait the full delay. This is the
+		// core race from #7834: local DNS may take longer than delayBeforeAccept
+		// to propagate, so basing the deadline on presentation would accept
+		// immediately.
+		"delayBeforeAccept waits full delay even when presentation delay already elapsed": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-31*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting 30s before accepting HTTP-01 challenge",
+			wantCheckCalls:     1,
+			wantSelfCheckSucceededAt: func() *time.Time {
+				ts := now
+				return &ts
+			}(),
+		},
+		// Once the self-check has been succeeding long enough, acceptance proceeds.
+		"delayBeforeAccept proceeds after delay since self-check success when self-check passes": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-60*time.Second))),
+				gen.SetChallengeSelfCheckSucceededAt(metav1.NewTime(now.Add(-31*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          true,
+			wantCheckCalls:     1,
+			wantSelfCheckSucceededAt: func() *time.Time {
+				ts := now.Add(-31 * time.Second)
+				return &ts
+			}(),
+		},
+		// A failing self-check still blocks acceptance and clears any
+		// previously recorded success so the delay restarts on next success.
+		"delayBeforeAccept clears success timestamp when self-check fails": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 30 * time.Second}),
+				gen.SetChallengePresentedAt(metav1.NewTime(now.Add(-60*time.Second))),
+				gen.SetChallengeSelfCheckSucceededAt(metav1.NewTime(now.Add(-25*time.Second))),
+			),
+			checkErr:                 errors.New("some error"),
+			defaultRetryPeriod:       10 * time.Second,
+			wantReady:                false,
+			wantRetry:                10 * time.Second,
+			wantReason:               "Waiting for HTTP-01 challenge propagation: some error",
+			wantCheckCalls:           1,
+			wantSelfCheckSucceededAt: nil,
+		},
+		// Remaining delay is capped by the controller retry period so the
+		// challenge is requeued promptly.
+		"delayBeforeAccept caps retryAfter at default retry period": {
+			challenge: gen.ChallengeFrom(base,
+				gen.SetChallengeDelayBeforeAccept(metav1.Duration{Duration: 60 * time.Second}),
+				gen.SetChallengeSelfCheckSucceededAt(metav1.NewTime(now.Add(-5*time.Second))),
+			),
+			checkErr:           nil,
+			defaultRetryPeriod: 10 * time.Second,
+			wantReady:          false,
+			wantRetry:          10 * time.Second,
+			wantReason:         "Waiting 55s before accepting HTTP-01 challenge",
+			wantCheckCalls:     1,
+			wantSelfCheckSucceededAt: func() *time.Time {
+				ts := now.Add(-5 * time.Second)
+				return &ts
+			}(),
+		},
 	}
 
 	for name, tc := range tests {
@@ -110,6 +201,19 @@ func TestBuildChallengeReadinessEvaluator(t *testing.T) {
 			}
 			if checkCalls != tc.wantCheckCalls {
 				t.Fatalf("checkCalls = %d, want %d", checkCalls, tc.wantCheckCalls)
+			}
+			if tc.wantSelfCheckSucceededAt != nil {
+				if tc.challenge.Status.SelfCheckSucceededAt == nil {
+					t.Fatalf("SelfCheckSucceededAt = nil, want %v", *tc.wantSelfCheckSucceededAt)
+				}
+				if !tc.challenge.Status.SelfCheckSucceededAt.Time.Equal(*tc.wantSelfCheckSucceededAt) {
+					t.Fatalf("SelfCheckSucceededAt = %v, want %v", tc.challenge.Status.SelfCheckSucceededAt.Time, *tc.wantSelfCheckSucceededAt)
+				}
+			} else if tc.challenge.Spec.Solver.DelayBeforeAccept != nil && tc.checkErr != nil {
+				// On self-check failure the timestamp must be cleared.
+				if tc.challenge.Status.SelfCheckSucceededAt != nil {
+					t.Fatalf("SelfCheckSucceededAt = %v, want nil after self-check failure", tc.challenge.Status.SelfCheckSucceededAt.Time)
+				}
 			}
 		})
 	}

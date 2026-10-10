@@ -95,6 +95,12 @@ func SetChallengePresentedAt(ts metav1.Time) ChallengeModifier {
 	}
 }
 
+func SetChallengeSelfCheckSucceededAt(ts metav1.Time) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Status.SelfCheckSucceededAt = &ts
+	}
+}
+
 func SetChallengeWildcard(p bool) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Spec.Wildcard = p
@@ -152,5 +158,11 @@ func SetChallengeSolverDNS01(solver cmacme.ACMEChallengeSolverDNS01) ChallengeMo
 func SetChallengeWaitInsteadOfSelfCheck(duration metav1.Duration) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Spec.Solver.WaitInsteadOfSelfCheck = &duration
+	}
+}
+
+func SetChallengeDelayBeforeAccept(duration metav1.Duration) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver.DelayBeforeAccept = &duration
 	}
 }

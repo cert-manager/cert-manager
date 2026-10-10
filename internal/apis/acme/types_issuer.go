@@ -181,6 +181,22 @@ type ACMEChallengeSolver struct {
 	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration,
 	// for example `30s` or `2m`.
 	WaitInsteadOfSelfCheck *metav1.Duration
+
+	// DelayBeforeAccept, if set, waits this long after the self-check first
+	// succeeds (recorded in Challenge status.selfCheckSucceededAt) before
+	// asking the ACME server to validate the challenge.
+	//
+	// Unlike WaitInsteadOfSelfCheck, the self-check is still performed. This
+	// mitigates race conditions where cert-manager's self-check succeeds from
+	// its own network/DNS viewpoint while the ACME server's viewpoint still
+	// lags behind (for example, anycast or externally-propagated DNS records
+	// as in https://github.com/cert-manager/cert-manager/issues/7834).
+	// The challenge is only accepted once the self-check passes and the
+	// delay has elapsed since the self-check first succeeded.
+	//
+	// A negative duration is rejected. Mutually exclusive with
+	// WaitInsteadOfSelfCheck.
+	DelayBeforeAccept *metav1.Duration
 }
 
 // CertificateDNSNameSelector selects certificates using a label selector, and
