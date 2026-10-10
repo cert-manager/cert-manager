@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
@@ -80,6 +81,9 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	metricsServerOptions, err := buildMetricsServerOptions(opts, metricsServerCertificateSource)
 	if err != nil {
 		return err
+	}
+	if err := authority.RegisterMetrics(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering dynamic serving certificate metrics: %w", err)
 	}
 
 	scheme := runtime.NewScheme()
