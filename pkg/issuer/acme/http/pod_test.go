@@ -327,6 +327,47 @@ func TestEnsurePod(t *testing.T) {
 	}
 }
 
+func TestBuildDefaultPodLoggingFormat(t *testing.T) {
+	chal := &cmacme.Challenge{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "foo"},
+		Spec: cmacme.ChallengeSpec{
+			DNSName: "example.com",
+			Token:   "token",
+			Key:     "key",
+		},
+	}
+	baseArgs := []string{
+		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+		"--domain=example.com",
+		"--token=token",
+		"--key=key",
+	}
+	tests := map[string]struct {
+		loggingFormat string
+		expectedArgs  []string
+	}{
+		"no logging flag is passed when the format is not set": {
+			expectedArgs: baseArgs,
+		},
+		"no logging flag is passed for the default text format": {
+			loggingFormat: "text",
+			expectedArgs:  baseArgs,
+		},
+		"the controller's logging format is passed when it is not the default": {
+			loggingFormat: "json",
+			expectedArgs:  append(append([]string{}, baseArgs...), "--logging-format=json"),
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			s := &Solver{Context: &controller.Context{}}
+			s.Context.ACMEOptions = controller.ACMEOptions{HTTP01SolverLoggingFormat: test.loggingFormat}
+			pod := s.buildDefaultPod(chal)
+			assert.Equal(t, test.expectedArgs, pod.Spec.Containers[0].Args)
+		})
+	}
+}
+
 func TestGetPodsForChallenge(t *testing.T) {
 	type testT struct {
 		builder        *testpkg.Builder
