@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	acmevalidation "github.com/cert-manager/cert-manager/internal/apis/acme/validation"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -171,17 +172,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Required(fldPath, "no solver type configured"))
 	}
 
-	if sol.WaitInsteadOfSelfCheck != nil && sol.WaitInsteadOfSelfCheck.Duration < 0 {
-		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
-	}
-
-	if sol.DelayBeforeAccept != nil && sol.DelayBeforeAccept.Duration < 0 {
-		el = append(el, field.Invalid(fldPath.Child("delayBeforeAccept"), sol.DelayBeforeAccept.Duration, "delayBeforeAccept must not be negative"))
-	}
-
-	if sol.WaitInsteadOfSelfCheck != nil && sol.DelayBeforeAccept != nil {
-		el = append(el, field.Forbidden(fldPath, "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"))
-	}
+	el = append(el, acmevalidation.ValidateACMEChallengeSolverTiming(sol, fldPath)...)
 
 	return el
 }

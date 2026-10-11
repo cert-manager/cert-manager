@@ -249,8 +249,9 @@ spec:
                             its own network/DNS viewpoint while the ACME server's viewpoint still
                             lags behind (for example, anycast or externally-propagated DNS records
                             as in https://github.com/cert-manager/cert-manager/issues/7834).
-                            The challenge is only accepted once the self-check passes and the
-                            delay has elapsed since the self-check first succeeded.
+                            The challenge is only accepted once the latest self-check passes and the
+                            delay has elapsed since the self-check first succeeded. A transient
+                            self-check failure does not restart the delay.
 
                             A negative duration is rejected. Mutually exclusive with
                             WaitInsteadOfSelfCheck.

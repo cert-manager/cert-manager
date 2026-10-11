@@ -121,8 +121,9 @@ spec:
                       its own network/DNS viewpoint while the ACME server's viewpoint still
                       lags behind (for example, anycast or externally-propagated DNS records
                       as in https://github.com/cert-manager/cert-manager/issues/7834).
-                      The challenge is only accepted once the self-check passes and the
-                      delay has elapsed since the self-check first succeeded.
+                      The challenge is only accepted once the latest self-check passes and the
+                      delay has elapsed since the self-check first succeeded. A transient
+                      self-check failure does not restart the delay.
 
                       A negative duration is rejected. Mutually exclusive with
                       WaitInsteadOfSelfCheck.
@@ -3514,16 +3515,6 @@ spec:
                   readiness logic.
                 format: date-time
                 type: string
-              selfCheckSucceededAt:
-                description: |-
-                  SelfCheckSucceededAt records when cert-manager's self-check first
-                  succeeded for this challenge. This is used by the optional
-                  delayBeforeAccept readiness logic to delay acceptance until a
-                  configured duration after the self-check succeeds. It is cleared
-                  whenever the self-check fails so that the delay is measured from
-                  the most recent successful self-check.
-                format: date-time
-                type: string
               processing:
                 description: |-
                   Used to denote whether this challenge should be processed or not.
@@ -3537,6 +3528,17 @@ spec:
                 description: |-
                   Contains human readable information on why the Challenge is in the
                   current state.
+                type: string
+              selfCheckSucceededAt:
+                description: |-
+                  SelfCheckSucceededAt records when cert-manager's self-check first
+                  succeeded for this challenge. This is used by the optional
+                  delayBeforeAccept readiness logic to delay acceptance until a
+                  configured duration after the self-check succeeds.
+                  It is preserved across transient self-check failures; the delay is
+                  measured from the first success, while the most recent self-check must
+                  still pass before the challenge is accepted.
+                format: date-time
                 type: string
               state:
                 description: |-

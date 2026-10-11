@@ -64,7 +64,7 @@ func (e selfCheckReadinessEvaluator) evaluate(ctx context.Context, solver solver
 // running cert-manager's usual self-check.
 type waitInsteadOfSelfCheckReadinessEvaluator struct {
 	defaultRetryPeriod time.Duration
-	now                time.Time
+	now                func() time.Time
 	wait               time.Duration
 }
 
@@ -77,17 +77,18 @@ func (e waitInsteadOfSelfCheckReadinessEvaluator) evaluate(_ context.Context, _ 
 		}, nil
 	}
 
+	now := e.now()
 	deadline := ch.Status.PresentedAt.Add(e.wait)
-	if !e.now.Before(deadline) {
+	if !now.Before(deadline) {
 		return readinessEvaluation{ready: true}, nil
 	}
 
-	remaining := deadline.Sub(e.now)
+	remaining := deadline.Sub(now)
 
 	return readinessEvaluation{
 		ready:      false,
 		retryAfter: min(remaining, e.defaultRetryPeriod),
-		reason:     fmt.Sprintf("Waiting %s before accepting %s challenge without self-check", remaining, ch.Spec.Type),
+		reason:     fmt.Sprintf("Waiting until %s before accepting %s challenge without self-check", deadline.UTC().Format(time.RFC3339), ch.Spec.Type),
 	}, nil
 }
 
@@ -96,22 +97,19 @@ func (e waitInsteadOfSelfCheckReadinessEvaluator) evaluate(_ context.Context, _ 
 // It mitigates race conditions where cert-manager's self-check succeeds from
 // its own network/DNS viewpoint while the ACME server's viewpoint still lags
 // behind (see https://github.com/cert-manager/cert-manager/issues/7834).
-// The challenge only becomes ready once the self-check passes and the delay
-// has elapsed since the self-check first succeeded.
+// The challenge only becomes ready once the latest self-check passes and the
+// delay has elapsed since the self-check first succeeded. The recorded
+// timestamp is preserved across transient self-check failures so a single
+// flaky lookup does not restart the delay.
 type delayBeforeAcceptReadinessEvaluator struct {
 	defaultRetryPeriod time.Duration
-	now                time.Time
+	now                func() time.Time
 	delay              time.Duration
 }
 
 func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solver solver, issuer cmapi.GenericIssuer, ch *cmacme.Challenge) (readinessEvaluation, error) {
 	err := solver.Check(ctx, issuer, ch)
 	if err != nil {
-		// Clear any previously recorded success so the delay is measured
-		// from the most recent successful self-check.
-		if ch.Status.SelfCheckSucceededAt != nil {
-			ch.Status.SelfCheckSucceededAt = nil
-		}
 		return readinessEvaluation{
 			ready:      false,
 			retryAfter: e.defaultRetryPeriod,
@@ -119,17 +117,21 @@ func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solve
 		}, nil
 	}
 
+	// Read the clock after Check returns so the recorded timestamp reflects
+	// when the success was observed, not when the (potentially slow) check
+	// started.
+	now := e.now()
 	if ch.Status.SelfCheckSucceededAt == nil {
-		ch.Status.SelfCheckSucceededAt = &metav1.Time{Time: e.now}
+		ch.Status.SelfCheckSucceededAt = &metav1.Time{Time: now}
 	}
 
 	deadline := ch.Status.SelfCheckSucceededAt.Add(e.delay)
-	if e.now.Before(deadline) {
-		remaining := deadline.Sub(e.now)
+	if now.Before(deadline) {
+		remaining := deadline.Sub(now)
 		return readinessEvaluation{
 			ready:      false,
 			retryAfter: min(remaining, e.defaultRetryPeriod),
-			reason:     fmt.Sprintf("Waiting %s before accepting %s challenge", remaining, ch.Spec.Type),
+			reason:     fmt.Sprintf("Waiting until %s before accepting %s challenge", deadline.UTC().Format(time.RFC3339), ch.Spec.Type),
 		}, nil
 	}
 
@@ -137,8 +139,10 @@ func (e delayBeforeAcceptReadinessEvaluator) evaluate(ctx context.Context, solve
 }
 
 // buildChallengeReadinessEvaluator constructs the readiness policy for a
-// challenge from its solver configuration.
-func buildChallengeReadinessEvaluator(ch *cmacme.Challenge, defaultRetryPeriod time.Duration, now time.Time) challengeReadinessEvaluator {
+// challenge from its solver configuration. The now function is consulted
+// after any self-check completes, so the recorded timestamps reflect when a
+// success was observed rather than when the reconcile started.
+func buildChallengeReadinessEvaluator(ch *cmacme.Challenge, defaultRetryPeriod time.Duration, now func() time.Time) challengeReadinessEvaluator {
 	if ch.Spec.Solver.WaitInsteadOfSelfCheck != nil {
 		return waitInsteadOfSelfCheckReadinessEvaluator{
 			defaultRetryPeriod: defaultRetryPeriod,
