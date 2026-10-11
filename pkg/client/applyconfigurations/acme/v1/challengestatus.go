@@ -49,8 +49,9 @@ type ChallengeStatusApplyConfiguration struct {
 	// succeeded for this challenge. This is used by the optional
 	// delayBeforeAccept readiness logic to delay acceptance until a
 	// configured duration after the self-check succeeds.
-	// It is cleared whenever the self-check fails so that the delay is
-	// measured from the most recent successful self-check.
+	// It is preserved across transient self-check failures; the delay is
+	// measured from the first success, while the most recent self-check must
+	// still pass before the challenge is accepted.
 	SelfCheckSucceededAt *metav1.Time `json:"selfCheckSucceededAt,omitempty"`
 	// Contains human readable information on why the Challenge is in the
 	// current state.
