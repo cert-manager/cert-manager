@@ -252,47 +252,39 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi.Certificate, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
 	log := logf.FromContext(ctx).WithValues("Certificate", crt.Name)
+
+	certIssuingCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+	if certIssuingCond == nil {
+		// This should never happen
+		log.V(logf.ErrorLevel).Info("Certificate does not have Issuing condition")
+		return nil, nil
+	}
+
 	var remaining []*cmapi.CertificateRequest
 	for _, req := range reqs {
-		log = logf.WithRelatedResource(log, req)
+		log := logf.WithRelatedResource(log, req)
 
 		// Check if there are any 'current' CertificateRequests that
 		// failed during the previous issuance cycle. Those should be
 		// deleted so that a new one gets created and the issuance is
 		// re-tried. In practice no more than one CertificateRequest is
 		// expected at this point.
-		crReadyCond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
-		failed := crReadyCond != nil && crReadyCond.Status == cmmeta.ConditionFalse && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed
-		// An external issuer can leave a request with a failureTime and no
-		// Ready condition. It has failed as surely as a Ready=False/Failed
-		// one, so it is recycled on the same terms.
-		incomplete := internalcertificates.IsIncompleteFailure(req)
-		if !failed && !incomplete {
-			remaining = append(remaining, req)
-			continue
-		}
-
-		certIssuingCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
-		if certIssuingCond == nil {
-			// This should never happen
-			log.V(logf.ErrorLevel).Info("Certificate does not have Issuing condition")
-			return nil, nil
-		}
+		//
 		// If the Issuing condition on the Certificate is newer than the
-		// failure time on CertificateRequest, it means that the
+		// failure on the CertificateRequest, it means that the
 		// CertificateRequest failed during the previous issuance (for the
 		// same revision). If it is a CertificateRequest that failed
 		// during the previous issuance, then it should be deleted so
 		// that we create a new one for this issuance.
 		var previousIssuance bool
-		if incomplete {
-			// creationTimestamp has to predate the transition as well, so an
-			// issuer whose clock is behind cannot have a request it has just
-			// created recycled before its failure is counted.
+		if internalcertificates.IsIncompleteFailure(req) {
+			// An external issuer can leave a request with a failureTime
+			// and no Ready condition.
 			previousIssuance = internalcertificates.IncompleteFailureIsFromPreviousIssuance(req, certIssuingCond)
 		} else {
-			previousIssuance = req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime)
+			previousIssuance = internalcertificates.FailedRequestIsFromPreviousIssuance(req, certIssuingCond)
 		}
+
 		if previousIssuance {
 			log.V(logf.DebugLevel).Info("Found a failed CertificateRequest for previous issuance of this revision, deleting...")
 			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {

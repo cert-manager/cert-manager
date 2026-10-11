@@ -292,13 +292,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		log.V(logf.ErrorLevel).Info("Certificate does not have an issuing condition")
 		return nil
 	}
-	// If the CertificateRequest for this revision failed before the
-	// Issuing condition was last updated on the Certificate, then it must be a
-	// failed CertificateRequest from the previous issuance for the same
+	// If the CertificateRequest for this revision reports Reason=Failed before
+	// the Issuing condition was last updated on the Certificate, then it must
+	// be a failed CertificateRequest from the previous issuance for the same
 	// revision. Leave it to the certificate-requests controller to delete the
 	// CertificateRequest and create a new one.
-	if req.Status.FailureTime != nil && crReadyCond != nil &&
-		req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) && crReadyCond.Reason == cmapi.CertificateRequestReasonFailed {
+	if internalcertificates.FailedRequestIsFromPreviousIssuance(req, certIssuingCond) {
 		log.V(logf.InfoLevel).Info("Found a failed CertificateRequest from previous issuance, waiting for it to be deleted...")
 		return nil
 	}
