@@ -298,7 +298,7 @@ func (snl *secretNamespaceLister) List(selector labels.Selector) ([]*corev1.Secr
 			"Secrets with no labels, which this lister cannot list. %s", selector, pleaseOpenIssue)
 	}
 
-	secrets, err := snl.typedLister.List(selector)
+	secrets, err := snl.typedLister.Secrets(snl.namespace).List(selector)
 	if err != nil {
 		return nil, fmt.Errorf("error listing Secrets from the typed cache: %w", err)
 	}
