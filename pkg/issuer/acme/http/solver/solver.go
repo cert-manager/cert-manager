@@ -64,8 +64,6 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 
-	// return h.Server.ListenAndServe()
-
 	netListener, err := net.Listen("tcp", h.Server.Addr)
 	if err != nil {
 		return err
