@@ -28,6 +28,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,17 +49,11 @@ import (
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"software.sslmate.com/src/go-pkcs12"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
-	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
-	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/cert-manager/cert-manager/test/unit/gen"
-
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
 )
+
+// mldsaCertificateName is the name of the Certificate in each ML-DSA test.
+const mldsaCertificateName = "mldsa"
 
 // TestMLDSAPrivateKeys_IssuanceAndRenewal runs all Certificate controllers to
 // issue an ML-DSA Certificate, renew it, and then change its parameter set,
@@ -68,7 +70,6 @@ func TestMLDSAPrivateKeys_IssuanceAndRenewal(t *testing.T) {
 func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRotationPolicy) {
 	const (
 		namespace  = "test-mldsa-renewal"
-		crtName    = "mldsa"
 		secretName = "mldsa-tls"
 	)
 
@@ -81,7 +82,7 @@ func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRo
 
 	createNamespace(t, kubeClient, namespace)
 
-	_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), gen.Certificate(crtName,
+	_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), gen.Certificate(mldsaCertificateName,
 		gen.SetCertificateNamespace(namespace),
 		gen.SetCertificateDNSNames("mldsa.example.com"),
 		gen.SetCertificateSecretName(secretName),
@@ -95,12 +96,12 @@ func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRo
 	require.NoError(t, err)
 
 	t.Log("issuing the Certificate with an ML-DSA-65 private key")
-	secret := issueRevision(t, kubeClient, cmCl, namespace, crtName, 1)
+	secret := issueRevision(t, kubeClient, cmCl, namespace, 1)
 	firstKey := requireMLDSASecret(t, secret, utilpki.MLDSA65)
 
 	t.Log("renewing the Certificate, as cmctl renew does")
-	crt := mustGetCertificate(t, t.Context(), cmCl, namespace, crtName)
-	applyCertificateStatus(t, cmCl, "test-trigger", namespace, crtName, cmapi.CertificateStatus{
+	crt := mustGetCertificate(t, t.Context(), cmCl, namespace, mldsaCertificateName)
+	applyCertificateStatus(t, cmCl, "test-trigger", namespace, mldsaCertificateName, cmapi.CertificateStatus{
 		Conditions: []cmapi.CertificateCondition{{
 			Type:               cmapi.CertificateConditionIssuing,
 			Status:             cmmeta.ConditionTrue,
@@ -110,7 +111,7 @@ func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRo
 		}},
 	})
 
-	secret = issueRevision(t, kubeClient, cmCl, namespace, crtName, 2)
+	secret = issueRevision(t, kubeClient, cmCl, namespace, 2)
 	secondKey := requireMLDSASecret(t, secret, utilpki.MLDSA65)
 	if rotationPolicy == cmapi.RotationPolicyAlways {
 		assert.False(t, firstKey.Equal(secondKey), "expected the renewal to generate a new private key")
@@ -119,18 +120,18 @@ func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRo
 	}
 
 	t.Log("changing the parameter set to ML-DSA-87")
-	updateCertificate(t, cmCl, namespace, crtName, func(crt *cmapi.Certificate) {
+	updateCertificate(t, cmCl, namespace, mldsaCertificateName, func(crt *cmapi.Certificate) {
 		crt.Spec.PrivateKey.Size = utilpki.MLDSA87
 	})
 
 	if rotationPolicy == cmapi.RotationPolicyAlways {
-		secret = issueRevision(t, kubeClient, cmCl, namespace, crtName, 3)
+		secret = issueRevision(t, kubeClient, cmCl, namespace, 3)
 		requireMLDSASecret(t, secret, utilpki.MLDSA87)
 		return
 	}
 
 	t.Log("waiting for the key manager to refuse to replace the private key")
-	events.waitFor(t, "CannotRegenerateKey", crtName)
+	events.waitFor(t, "CannotRegenerateKey", mldsaCertificateName)
 	holdWhile(t, func(ctx context.Context) {
 		requireNoRequestForRevision(t, ctx, cmCl, namespace, 3)
 
@@ -147,7 +148,6 @@ func testMLDSAIssuanceAndRenewal(t *testing.T, rotationPolicy cmapi.PrivateKeyRo
 func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 	const (
 		namespace  = "test-mldsa-feature-gate"
-		crtName    = "mldsa"
 		secretName = "mldsa-tls"
 	)
 
@@ -173,11 +173,11 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 		)
 	}
 
-	_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), newCertificate(crtName), metav1.CreateOptions{})
+	_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), newCertificate(mldsaCertificateName), metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	t.Log("issuing the Certificate, which defaults to an ML-DSA-44 private key")
-	secret := issueRevision(t, kubeClient, cmCl, namespace, crtName, 1)
+	secret := issueRevision(t, kubeClient, cmCl, namespace, 1)
 	requireMLDSASecret(t, secret, utilpki.MLDSA44)
 
 	t.Log("restarting the controllers, which must reconcile the existing ML-DSA Secret without re-issuing")
@@ -188,7 +188,7 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	holdWhile(t, func(ctx context.Context) {
 		requireNoRequestForRevision(t, ctx, cmCl, namespace, 2)
-		crt := mustGetCertificate(t, ctx, cmCl, namespace, crtName)
+		crt := mustGetCertificate(t, ctx, cmCl, namespace, mldsaCertificateName)
 		assert.True(t, apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue,
@@ -204,13 +204,13 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 	assert.ErrorContains(t, err, "MLDSA requires the MLDSAPrivateKeys feature gate to be enabled", "the webhook must reject new ML-DSA Certificates")
 
 	t.Log("changing the DNS names, which the webhook must still allow for an existing ML-DSA Certificate")
-	updateCertificate(t, cmCl, namespace, crtName, func(crt *cmapi.Certificate) {
+	updateCertificate(t, cmCl, namespace, mldsaCertificateName, func(crt *cmapi.Certificate) {
 		crt.Spec.DNSNames = []string{"mldsa.example.com", "renamed.example.com"}
 	})
 
-	events.waitFor(t, "MLDSAPrivateKeysDisabled", crtName)
+	events.waitFor(t, "MLDSAPrivateKeysDisabled", mldsaCertificateName)
 	require.NoError(t, wait.PollUntilContextTimeout(t.Context(), 100*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
-		crt := mustGetCertificate(t, ctx, cmCl, namespace, crtName)
+		crt := mustGetCertificate(t, ctx, cmCl, namespace, mldsaCertificateName)
 		return apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionFalse,
@@ -219,7 +219,7 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 	holdWhile(t, func(ctx context.Context) {
 		requireNoRequestForRevision(t, ctx, cmCl, namespace, 2)
 
-		crt := mustGetCertificate(t, ctx, cmCl, namespace, crtName)
+		crt := mustGetCertificate(t, ctx, cmCl, namespace, mldsaCertificateName)
 		assert.False(t, apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 			Type:   cmapi.CertificateConditionIssuing,
 			Status: cmmeta.ConditionTrue,
@@ -235,7 +235,7 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys, true)
 	stopControllers = runAllControllersWithRecorder(t, config, recorder)
 
-	secret = issueRevision(t, kubeClient, cmCl, namespace, crtName, 2)
+	secret = issueRevision(t, kubeClient, cmCl, namespace, 2)
 	requireMLDSASecret(t, secret, utilpki.MLDSA44)
 	cert, err := utilpki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	require.NoError(t, err)
@@ -246,10 +246,7 @@ func TestMLDSAPrivateKeys_ControllerRestartAndFeatureGate(t *testing.T) {
 // additional output format and keystore, and checks that the private key and
 // certificate can be read back from each of them.
 func TestMLDSAPrivateKeys_OutputFormats(t *testing.T) {
-	const (
-		crtName  = "mldsa"
-		password = "password"
-	)
+	const password = "password"
 
 	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys, true)
 
@@ -269,7 +266,7 @@ func TestMLDSAPrivateKeys_OutputFormats(t *testing.T) {
 			namespace := "test-mldsa-output-formats-" + name
 			createNamespace(t, kubeClient, namespace)
 
-			_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), gen.Certificate(crtName,
+			_, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), gen.Certificate(mldsaCertificateName,
 				gen.SetCertificateNamespace(namespace),
 				gen.SetCertificateDNSNames("mldsa.example.com"),
 				gen.SetCertificateSecretName("mldsa-tls"),
@@ -287,7 +284,7 @@ func TestMLDSAPrivateKeys_OutputFormats(t *testing.T) {
 			), metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			secret := issueRevision(t, kubeClient, cmCl, namespace, crtName, 1)
+			secret := issueRevision(t, kubeClient, cmCl, namespace, 1)
 			requireMLDSASecret(t, secret, utilpki.MLDSA87)
 
 			keyPEM := secret.Data[corev1.TLSPrivateKeyKey]
@@ -392,7 +389,7 @@ func updateCertificate(t *testing.T, cmCl cmclient.Interface, namespace, name st
 // Certificate: it waits for the controllers to create the
 // CertificateRequest, signs it, and waits for the Certificate to be issued
 // and Ready. It returns the Certificate's Secret.
-func issueRevision(t *testing.T, kubeClient kubernetes.Interface, cmCl cmclient.Interface, namespace, crtName string, revision int) *corev1.Secret {
+func issueRevision(t *testing.T, kubeClient kubernetes.Interface, cmCl cmclient.Interface, namespace string, revision int) *corev1.Secret {
 	t.Helper()
 
 	var req *cmapi.CertificateRequest
@@ -401,11 +398,11 @@ func issueRevision(t *testing.T, kubeClient kubernetes.Interface, cmCl cmclient.
 		return req != nil, nil
 	}), "no CertificateRequest was created for revision %d", revision)
 
-	certPEM := signRequest(t, kubeClient, cmCl, namespace, crtName, req)
+	certPEM := signRequest(t, kubeClient, cmCl, namespace, mldsaCertificateName, req)
 
 	var secret *corev1.Secret
 	require.NoError(t, wait.PollUntilContextTimeout(t.Context(), 100*time.Millisecond, time.Minute, true, func(ctx context.Context) (bool, error) {
-		crt := mustGetCertificate(t, ctx, cmCl, namespace, crtName)
+		crt := mustGetCertificate(t, ctx, cmCl, namespace, mldsaCertificateName)
 
 		// With server-side apply the Issuing condition is set to False with
 		// reason Issued instead of being removed.
