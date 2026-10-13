@@ -207,6 +207,16 @@ const (
 	// falls back to the existing renewal logic. This featuregate also respects the existing
 	// renewal windows configurations if specified.
 	ACMEUseARI featuregate.Feature = "ACMEUseARI"
+
+	// Owner: @siddhibhor-56, @FelixPhipps
+	// Alpha: v1.22
+	//
+	// MLDSAPrivateKeys adds support for ML-DSA (FIPS 204) post-quantum private
+	// keys, using the `MLDSA` private key algorithm on Certificate resources.
+	// This feature gate must be enabled on both the controller and the webhook.
+	// Design: https://github.com/cert-manager/cert-manager/blob/master/design/20261007.mldsa-private-keys.md
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/8929
+	MLDSAPrivateKeys featuregate.Feature = "MLDSAPrivateKeys"
 )
 
 func init() {
@@ -234,6 +244,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.GA},
 	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
 	ACMEUseARI:                                       {Default: false, PreRelease: featuregate.Alpha},
+	MLDSAPrivateKeys:                                 {Default: false, PreRelease: featuregate.Alpha},
 
 	// NB: Deprecated + removed feature gates are kept here.
 	// `featuregate.Deprecated` exists, but will cause the featuregate library

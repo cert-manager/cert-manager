@@ -29,11 +29,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -80,6 +83,10 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 		// wantErr is the expected error text returned by the controller, if any.
 		wantErr string
+
+		// mldsaFeatureEnabled is the state of the MLDSAPrivateKeys feature
+		// gate during the test.
+		mldsaFeatureEnabled bool
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
@@ -167,6 +174,45 @@ func Test_controller_ProcessItem(t *testing.T) {
 				LastTransitionTime: &fixedNow,
 				ObservedGeneration: 42,
 			}},
+		},
+		"should set Issuing=True for an ML-DSA Certificate if the MLDSAPrivateKeys feature gate is enabled": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateGeneration(42),
+				gen.SetCertificateKeyAlgorithm(cmapi.MLDSAKeyAlgorithm),
+			),
+			mldsaFeatureEnabled:          true,
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: []string{"Normal Issuing Re-issuance forced by unit test case"},
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				Status:             "True",
+				Reason:             "ForceTriggered",
+				Message:            "Re-issuance forced by unit test case",
+				LastTransitionTime: &fixedNow,
+				ObservedGeneration: 42,
+			}},
+		},
+		"should not set Issuing=True for an ML-DSA Certificate if the MLDSAPrivateKeys feature gate is disabled": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateGeneration(42),
+				gen.SetCertificateKeyAlgorithm(cmapi.MLDSAKeyAlgorithm),
+			),
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: []string{"Warning MLDSAPrivateKeysDisabled Certificate must be re-issued (ForceTriggered), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled"},
 		},
 		// The combinations of number of failed issuances and last
 		// failed issuance time that do or do not result in re-issuance
@@ -413,6 +459,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.mldsaFeatureEnabled)
+
 			builder := &testpkg.Builder{
 				T:     t,
 				Clock: fixedClock,

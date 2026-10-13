@@ -38,10 +38,11 @@ import (
 
 // PrivateKeyMatchesSpec returns a list of violations for the provided private
 // key against the provided CertificateSpec. It will return an empty list/ nil
-// if there are no violations found. RSA, Ed25519 and ECDSA private keys are
-// supported.
-// The function panics if the CertificateSpec contains an unknown key algorithm,
-// since this should have been caught by the CertificateSpec validation already.
+// if there are no violations found. RSA, Ed25519, ECDSA and ML-DSA private keys
+// are supported.
+// An unknown key algorithm in the CertificateSpec is reported as a violation of
+// spec.privateKey.algorithm. This should have been caught by the CertificateSpec
+// validation already, but it can still happen, for example after a downgrade.
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []string {
 	spec = *spec.DeepCopy()
 	if spec.PrivateKey == nil {
@@ -54,14 +55,14 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []s
 		return ed25519PrivateKeyMatchesSpec(pk)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
-	case cmapi.MLDSA44KeyAlgorithm:
-		return mldsaPrivateKeyMatchesSpec(pk, mldsa.MLDSA44())
-	case cmapi.MLDSA65KeyAlgorithm:
-		return mldsaPrivateKeyMatchesSpec(pk, mldsa.MLDSA65())
+	case cmapi.MLDSAKeyAlgorithm:
+		return mldsaPrivateKeyMatchesSpec(pk, spec)
 	default:
 		// This should never happen as the CertificateSpec validation should
-		// catch this before it reaches this point.
-		panic(fmt.Sprintf("[PROGRAMMING ERROR] unrecognised key algorithm type %q", spec.PrivateKey.Algorithm))
+		// catch this before it reaches this point. We don't panic, because a
+		// single Certificate would then crash the controller for every
+		// Certificate.
+		return []string{"spec.privateKey.algorithm"}
 	}
 }
 
@@ -115,17 +116,24 @@ func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey) []string {
 
 	return nil
 }
-func mldsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, expectedParams mldsa.Parameters) []string {
-	mldsaKey, ok := pk.(*mldsa.PrivateKey)
+
+func mldsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) []string {
+	mldsaPk, ok := pk.(*mldsa.PrivateKey)
 	if !ok {
 		return []string{"spec.privateKey.algorithm"}
 	}
-
-	if mldsaKey.PublicKey().Parameters() != expectedParams {
-		return []string{"spec.privateKey.algorithm"}
+	var violations []string
+	// The default ML-DSA parameter set is ML-DSA-44. Like the RSA and ECDSA
+	// defaults, it is applied here rather than stored in the Certificate.
+	expectedKeySize := MLDSA44
+	if spec.PrivateKey.Size > 0 {
+		expectedKeySize = spec.PrivateKey.Size
 	}
-
-	return nil
+	expectedParams, err := MLDSAParametersForSize(expectedKeySize)
+	if err != nil || mldsaPk.PublicKey().Parameters() != expectedParams {
+		violations = append(violations, "spec.privateKey.size")
+	}
+	return violations
 }
 
 func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {

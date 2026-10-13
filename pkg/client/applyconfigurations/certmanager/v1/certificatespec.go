@@ -150,7 +150,8 @@ type CertificateSpecApplyConfiguration struct {
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	//
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` and `key encipherment`, or to
+	// `digital signature` alone for the `MLDSA` key algorithm.
 	Usages []certmanagerv1.KeyUsage `json:"usages,omitempty"`
 	// Private key options. These include the key algorithm and size, the used
 	// encoding and the rotation policy.
@@ -159,6 +160,8 @@ type CertificateSpecApplyConfiguration struct {
 	// Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA.
 	// Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512.
 	// Allowed values for Ed25519 keys: PureEd25519.
+	// Must be unset for MLDSA keys: the signature algorithm follows from the
+	// key's parameter set.
 	SignatureAlgorithm *certmanagerv1.SignatureAlgorithm `json:"signatureAlgorithm,omitempty"`
 	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
 	//

@@ -17,6 +17,7 @@ limitations under the License.
 package keymanager
 
 import (
+	"crypto/mldsa"
 	"fmt"
 	"testing"
 
@@ -26,10 +27,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -47,6 +51,18 @@ func mustGenerateRSA(t *testing.T, keySize int) []byte {
 
 func mustGenerateECDSA(t *testing.T, keySize int) []byte {
 	pk, err := pki.GenerateECPrivateKey(keySize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := pki.EncodePKCS8PrivateKey(pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
+func mustGenerateMLDSA(t *testing.T, params mldsa.Parameters) []byte {
+	pk, err := pki.GenerateMLDSAPrivateKey(params)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,6 +132,10 @@ func TestProcessItem(t *testing.T) {
 
 		// err is the expected error text returned by the controller, if any.
 		err string
+
+		// mldsaFeatureEnabled is the state of the MLDSAPrivateKeys feature
+		// gate during the test.
+		mldsaFeatureEnabled bool
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
@@ -201,6 +221,97 @@ func TestProcessItem(t *testing.T) {
 					},
 				), relaxedSecretMatcher),
 			},
+		},
+		"create a secret with an ML-DSA private key if issuing is true and the MLDSAPrivateKeys feature gate is enabled": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			mldsaFeatureEnabled: true,
+			expectedEvents:      []string{`Normal Generated Stored new private key in temporary Secret resource "test-notrandom"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"testns",
+					"test",
+				)),
+				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					cmapi.SchemeGroupVersion.WithResource("certificates"),
+					"status",
+					"testns",
+					&cmapi.Certificate{
+						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+						Status: cmapi.CertificateStatus{
+							NextPrivateKeySecretName: new("test-notrandom"),
+							Conditions: []cmapi.CertificateCondition{
+								{
+									Type:   cmapi.CertificateConditionIssuing,
+									Status: cmmeta.ConditionTrue,
+								},
+							},
+						},
+					},
+				)),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace:       "testns",
+							GenerateName:    "test-",
+							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
+						},
+						Data: map[string][]byte{"tls.key": nil},
+					},
+				), relaxedSecretMatcher),
+			},
+		},
+		"don't create a secret for an ML-DSA private key if the MLDSAPrivateKeys feature gate is disabled": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			expectedEvents: []string{"Warning MLDSAPrivateKeysDisabled Not generating an ML-DSA private key because the MLDSAPrivateKeys feature gate is disabled"},
+		},
+		"record an event and return an error if the private key can't be generated": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Spec: cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm, Size: 256},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			mldsaFeatureEnabled: true,
+			expectedEvents:      []string{"Warning GenerateFailed Failed to generate private key: unsupported ML-DSA key size specified: 256"},
+			err:                 "unsupported ML-DSA key size specified: 256",
 		},
 		"create a secret under a generated name if status.nextPrivateKeySecretName names a Secret that does not exist": {
 			// The name must not be reused. It could be the spec.secretName of
@@ -630,9 +741,57 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateRSA(t, 2048)}),
 			},
 		},
+		"if an owned secret exists and contains an ML-DSA key valid for the spec, do nothing'": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Spec: cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm, Size: pki.MLDSA65},
+				},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateMLDSA(t, mldsa.MLDSA65())}),
+			},
+			mldsaFeatureEnabled: true,
+		},
+		"if an owned secret exists but contains an ML-DSA key with the wrong parameter set, delete it'": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Spec: cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm, Size: pki.MLDSA87},
+				},
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "fixed-name", "test", map[string][]byte{"tls.key": mustGenerateMLDSA(t, mldsa.MLDSA65())}),
+			},
+			mldsaFeatureEnabled: true,
+			expectedEvents:      []string{"Normal Deleted Regenerating private key due to change in fields: [spec.privateKey.size]"},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("secrets"), "testns", "fixed-name")),
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.mldsaFeatureEnabled)
+
 			// Create and initialise a new unit test builder
 			builder := &testpkg.Builder{
 				T:               t,

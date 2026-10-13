@@ -70,11 +70,9 @@ const (
 	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
 
-	// MLDSA44 private key algorithm (ML-DSA-44 post-quantum signature scheme).
-	MLDSA44KeyAlgorithm PrivateKeyAlgorithm = "MLDSA44"
-
-	// MLDSA65 private key algorithm (ML-DSA-65 post-quantum signature scheme).
-	MLDSA65KeyAlgorithm PrivateKeyAlgorithm = "MLDSA65"
+	// ML-DSA (FIPS 204) private key algorithm.
+	// Requires the MLDSAPrivateKeys feature gate.
+	MLDSAKeyAlgorithm PrivateKeyAlgorithm = "MLDSA"
 )
 
 type PrivateKeyEncoding string
@@ -238,7 +236,8 @@ type CertificateSpec struct {
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	//
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` and `key encipherment`, or to
+	// `digital signature` alone for the `MLDSA` key algorithm.
 	Usages []KeyUsage
 
 	// Private key options. These include the key algorithm and size, the used
@@ -312,25 +311,32 @@ type CertificatePrivateKey struct {
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
+	// `MLDSA` keys are always encoded as PKCS#8, whatever this field says.
 	Encoding PrivateKeyEncoding
 
 	// Algorithm is the private key algorithm of the corresponding private key
 	// for this certificate.
 	//
-	// If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
+	// If provided, allowed values are either `RSA`, `ECDSA`, `Ed25519` or
+	// `MLDSA`. `MLDSA` requires the `MLDSAPrivateKeys` feature gate.
 	// If `algorithm` is specified and `size` is not provided,
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
+	// parameter set ML-DSA-44 will be used for `MLDSA` key algorithm.
 	Algorithm PrivateKeyAlgorithm
 
-	// Size is the key bit size of the corresponding private key for this certificate.
+	// Size is the key bit size of the corresponding private key for this certificate,
+	// or the parameter set for the `MLDSA` key algorithm.
 	//
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
 	// and will default to `2048` if not specified.
 	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// If `algorithm` is set to `Ed25519`, Size is ignored.
+	// If `algorithm` is set to `MLDSA`, valid values are `44`, `65` or `87`,
+	// selecting the ML-DSA-44, ML-DSA-65 or ML-DSA-87 parameter set, and will
+	// default to `44` if not specified.
 	// No other values are allowed.
 	Size int
 }

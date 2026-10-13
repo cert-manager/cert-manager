@@ -22,11 +22,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/pem"
 	"fmt"
 	"math/big"
 	"net"
@@ -106,6 +108,92 @@ func TestKeyUsagesForCertificate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, testFn(test))
+	}
+}
+
+func TestKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
+	tests := []struct {
+		name                string
+		usages              []cmapi.KeyUsage
+		isCA                bool
+		pubKeyAlgo          x509.PublicKeyAlgorithm
+		expectedKeyUsage    x509.KeyUsage
+		expectedExtKeyUsage []x509.ExtKeyUsage
+	}{
+		{
+			name:             "ML-DSA default",
+			pubKeyAlgo:       x509.MLDSA,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature,
+		},
+		{
+			name:             "ML-DSA default with isCA",
+			isCA:             true,
+			pubKeyAlgo:       x509.MLDSA,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		},
+		{
+			name:                "ML-DSA with explicit usages",
+			usages:              []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageServerAuth},
+			pubKeyAlgo:          x509.MLDSA,
+			expectedKeyUsage:    x509.KeyUsageDigitalSignature,
+			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		},
+		{
+			name:             "RSA default is unchanged",
+			pubKeyAlgo:       x509.RSA,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		},
+		{
+			name:             "ECDSA default is unchanged",
+			pubKeyAlgo:       x509.ECDSA,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		},
+		{
+			name:             "Ed25519 default is unchanged",
+			pubKeyAlgo:       x509.Ed25519,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		},
+		{
+			name:             "unknown public key algorithm default is unchanged",
+			isCA:             true,
+			pubKeyAlgo:       x509.UnknownPublicKeyAlgorithm,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ku, eku, err := KeyUsagesForPublicKeyAlgorithm(test.usages, test.isCA, test.pubKeyAlgo)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedKeyUsage, ku, "keyUsages don't match")
+			assert.Equal(t, test.expectedExtKeyUsage, eku, "extKeyUsages don't match")
+		})
+	}
+}
+
+func TestForbiddenKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
+	allowed := []cmapi.KeyUsage{
+		cmapi.UsageSigning,
+		cmapi.UsageDigitalSignature,
+		cmapi.UsageContentCommitment,
+		cmapi.UsageCertSign,
+		cmapi.UsageCRLSign,
+		cmapi.UsageServerAuth,
+		cmapi.UsageClientAuth,
+	}
+	forbidden := []cmapi.KeyUsage{
+		cmapi.UsageKeyEncipherment,
+		cmapi.UsageDataEncipherment,
+		cmapi.UsageKeyAgreement,
+		cmapi.UsageEncipherOnly,
+		cmapi.UsageDecipherOnly,
+	}
+
+	assert.Empty(t, ForbiddenKeyUsagesForPublicKeyAlgorithm(allowed, x509.MLDSA))
+	assert.Equal(t, forbidden, ForbiddenKeyUsagesForPublicKeyAlgorithm(append(allowed, forbidden...), x509.MLDSA))
+
+	for _, pubKeyAlgo := range []x509.PublicKeyAlgorithm{x509.RSA, x509.ECDSA, x509.Ed25519} {
+		assert.Empty(t, ForbiddenKeyUsagesForPublicKeyAlgorithm(forbidden, pubKeyAlgo), pubKeyAlgo.String())
 	}
 }
 
@@ -215,6 +303,51 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 		{
 			name:      "certificate with KeyAlgorithm set to unknown key algo",
 			keyAlgo:   cmapi.PrivateKeyAlgorithm("blah"),
+			expectErr: true,
+		},
+		{
+			name:            "certificate with KeyAlgorithm mldsa and no size set should default to ML-DSA-44",
+			keyAlgo:         cmapi.MLDSAKeyAlgorithm,
+			expectedSigAlgo: x509.MLDSA44,
+			expectedKeyType: x509.MLDSA,
+		},
+		{
+			name:            "certificate with KeyAlgorithm mldsa and size 44",
+			keyAlgo:         cmapi.MLDSAKeyAlgorithm,
+			keySize:         44,
+			expectedSigAlgo: x509.MLDSA44,
+			expectedKeyType: x509.MLDSA,
+		},
+		{
+			name:            "certificate with KeyAlgorithm mldsa and size 65",
+			keyAlgo:         cmapi.MLDSAKeyAlgorithm,
+			keySize:         65,
+			expectedSigAlgo: x509.MLDSA65,
+			expectedKeyType: x509.MLDSA,
+		},
+		{
+			name:            "certificate with KeyAlgorithm mldsa and size 87",
+			keyAlgo:         cmapi.MLDSAKeyAlgorithm,
+			keySize:         87,
+			expectedSigAlgo: x509.MLDSA87,
+			expectedKeyType: x509.MLDSA,
+		},
+		{
+			name:      "certificate with KeyAlgorithm mldsa and size 2048",
+			keyAlgo:   cmapi.MLDSAKeyAlgorithm,
+			keySize:   2048,
+			expectErr: true,
+		},
+		{
+			name:      "certificate with KeyAlgorithm mldsa and an RSA signature algorithm",
+			keyAlgo:   cmapi.MLDSAKeyAlgorithm,
+			sigAlg:    cmapi.SHA256WithRSA,
+			expectErr: true,
+		},
+		{
+			name:      "certificate with KeyAlgorithm mldsa and the Ed25519 signature algorithm",
+			keyAlgo:   cmapi.MLDSAKeyAlgorithm,
+			sigAlg:    cmapi.PureEd25519,
 			expectErr: true,
 		},
 	}
@@ -1118,6 +1251,17 @@ func ed25519Key(t *testing.T) crypto.Signer {
 	return priv
 }
 
+func mldsaKey(t *testing.T, params mldsa.Parameters) crypto.Signer {
+	t.Helper()
+
+	key, err := mldsa.GenerateKey(params)
+	if err != nil {
+		t.Fatalf("failed to generate %s key: %s", params, err)
+	}
+
+	return key
+}
+
 func Test_SignCertificate_Signatures(t *testing.T) {
 	specs := map[string]struct {
 		SignerKey                  crypto.Signer
@@ -1166,6 +1310,18 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 			SignerKey:                  ed25519Key(t),
 			ExpectedSignatureAlgorithm: x509.PureEd25519,
 		},
+		"ML-DSA-44": {
+			SignerKey:                  mldsaKey(t, mldsa.MLDSA44()),
+			ExpectedSignatureAlgorithm: x509.MLDSA44,
+		},
+		"ML-DSA-65": {
+			SignerKey:                  mldsaKey(t, mldsa.MLDSA65()),
+			ExpectedSignatureAlgorithm: x509.MLDSA65,
+		},
+		"ML-DSA-87": {
+			SignerKey:                  mldsaKey(t, mldsa.MLDSA87()),
+			ExpectedSignatureAlgorithm: x509.MLDSA87,
+		},
 	}
 
 	for name, spec := range specs {
@@ -1198,6 +1354,213 @@ func Test_SignCertificate_Signatures(t *testing.T) {
 				t.Errorf("wanted sigalg=%v but got %v", spec.ExpectedSignatureAlgorithm, cert.SignatureAlgorithm)
 				return
 			}
+		})
+	}
+}
+
+// Test_SignCertificate_MLDSAForbiddenKeyUsages checks that SignCertificate
+// refuses to sign certificates for ML-DSA keys with key usages that RFC 9881
+// forbids, whatever the signer's key type.
+func Test_SignCertificate_MLDSAForbiddenKeyUsages(t *testing.T) {
+	forbidden := []x509.KeyUsage{
+		x509.KeyUsageKeyEncipherment,
+		x509.KeyUsageDataEncipherment,
+		x509.KeyUsageKeyAgreement,
+		x509.KeyUsageEncipherOnly,
+		x509.KeyUsageDecipherOnly,
+	}
+
+	signerKey := ecdsaKey(t, elliptic.P256())
+	issuer := &x509.Certificate{
+		PublicKey: signerKey.Public(),
+		Subject:   pkix.Name{CommonName: "issuer"},
+	}
+
+	for _, usage := range forbidden {
+		t.Run(fmt.Sprintf("%#b", usage), func(t *testing.T) {
+			tmpl := &x509.Certificate{
+				SerialNumber: big.NewInt(1),
+				DNSNames:     []string{"example.com"},
+				KeyUsage:     x509.KeyUsageDigitalSignature | usage,
+			}
+
+			_, _, err := SignCertificate(tmpl, issuer, mldsaKey(t, mldsa.MLDSA44()).Public(), signerKey)
+			require.ErrorContains(t, err, "are not allowed for ML-DSA keys")
+
+			// The same key usages are still allowed for a classical key,
+			// even when the signer has an ML-DSA key.
+			mldsaSigner := mldsaKey(t, mldsa.MLDSA44())
+			mldsaIssuer := &x509.Certificate{
+				PublicKey: mldsaSigner.Public(),
+				Subject:   pkix.Name{CommonName: "issuer"},
+			}
+			_, _, err = SignCertificate(tmpl, mldsaIssuer, ecdsaKey(t, elliptic.P256()).Public(), mldsaSigner)
+			require.NoError(t, err)
+		})
+	}
+}
+
+// TestMLDSACertificateRoundTrip generates an ML-DSA key and CSR for a
+// Certificate with unset usages, turns the CSR into a certificate template via
+// a CertificateRequest and signs it, checking the ML-DSA default key usages
+// at each step.
+func TestMLDSACertificateRoundTrip(t *testing.T) {
+	for _, size := range []int{0, MLDSA44, MLDSA65, MLDSA87} {
+		for _, isCA := range []bool{false, true} {
+			t.Run(fmt.Sprintf("size %d isCA %v", size, isCA), func(t *testing.T) {
+				expectedSigAlg := map[int]x509.SignatureAlgorithm{
+					0:       x509.MLDSA44,
+					MLDSA44: x509.MLDSA44,
+					MLDSA65: x509.MLDSA65,
+					MLDSA87: x509.MLDSA87,
+				}[size]
+
+				expectedKeyUsage := x509.KeyUsageDigitalSignature
+				if isCA {
+					expectedKeyUsage |= x509.KeyUsageCertSign
+				}
+
+				crt := buildCertificateWithKeyParams(cmapi.MLDSAKeyAlgorithm, size)
+				crt.Spec.IsCA = isCA
+
+				key, err := GeneratePrivateKeyForCertificate(crt)
+				require.NoError(t, err)
+
+				csrTemplate, err := GenerateCSR(crt)
+				require.NoError(t, err)
+				assert.Equal(t, x509.MLDSA, csrTemplate.PublicKeyAlgorithm)
+				assert.Equal(t, expectedSigAlg, csrTemplate.SignatureAlgorithm)
+
+				csrDER, err := EncodeCSR(csrTemplate, key)
+				require.NoError(t, err)
+				csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+				csr, err := DecodeX509CertificateRequestBytes(csrPEM)
+				require.NoError(t, err)
+				require.NoError(t, csr.CheckSignature())
+
+				var csrKeyUsage x509.KeyUsage
+				for _, ext := range csr.Extensions {
+					if ext.Id.Equal(OIDExtensionKeyUsage) {
+						csrKeyUsage, err = UnmarshalKeyUsage(ext.Value)
+						require.NoError(t, err)
+					}
+				}
+				assert.Equal(t, expectedKeyUsage, csrKeyUsage, "CSR key usages don't match")
+
+				template, err := CertificateTemplateFromCertificateRequest(&cmapi.CertificateRequest{
+					Spec: cmapi.CertificateRequestSpec{
+						Request: csrPEM,
+						IsCA:    isCA,
+					},
+				})
+				require.NoError(t, err)
+				assert.Equal(t, expectedKeyUsage, template.KeyUsage, "template key usages don't match")
+
+				_, cert, err := SignCertificate(template, template, template.PublicKey, key)
+				require.NoError(t, err)
+				assert.Equal(t, expectedSigAlg, cert.SignatureAlgorithm)
+				assert.Equal(t, expectedKeyUsage, cert.KeyUsage, "certificate key usages don't match")
+				require.NoError(t, cert.CheckSignature(cert.SignatureAlgorithm, cert.RawTBSCertificate, cert.Signature))
+
+				matches, err := PublicKeyMatchesCertificate(key.Public(), cert)
+				require.NoError(t, err)
+				assert.True(t, matches)
+			})
+		}
+	}
+}
+
+// TestCertificateTemplateFromCertificateRequestBadSignature checks that a CSR
+// whose signature doesn't verify is rejected.
+func TestCertificateTemplateFromCertificateRequestBadSignature(t *testing.T) {
+	key := mldsaKey(t, mldsa.MLDSA44())
+
+	csrDER, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
+		Subject: pkix.Name{CommonName: "example.com"},
+	}, key)
+	require.NoError(t, err)
+
+	// The signature is at the end of the CSR, so flipping the last byte
+	// corrupts it while keeping the CSR parseable.
+	csrDER[len(csrDER)-1] ^= 0xff
+	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+	_, err = CertificateTemplateFromCertificateRequest(&cmapi.CertificateRequest{
+		Spec: cmapi.CertificateRequestSpec{
+			Request: csrPEM,
+		},
+	})
+	require.Error(t, err)
+}
+
+// TestMLDSAMixedChains checks that root -> intermediate -> leaf chains which
+// mix ML-DSA and classical keys in either direction verify.
+func TestMLDSAMixedChains(t *testing.T) {
+	type keyGen func(t *testing.T) crypto.Signer
+
+	mldsa44 := func(t *testing.T) crypto.Signer { return mldsaKey(t, mldsa.MLDSA44()) }
+	mldsa65 := func(t *testing.T) crypto.Signer { return mldsaKey(t, mldsa.MLDSA65()) }
+	mldsa87 := func(t *testing.T) crypto.Signer { return mldsaKey(t, mldsa.MLDSA87()) }
+	ecdsa256 := func(t *testing.T) crypto.Signer { return ecdsaKey(t, elliptic.P256()) }
+	rsa2048 := func(t *testing.T) crypto.Signer { return rsaKey(t, 2048) }
+
+	tests := map[string][3]keyGen{
+		"ML-DSA-87 -> ML-DSA-65 -> ML-DSA-44": {mldsa87, mldsa65, mldsa44},
+		"RSA -> ML-DSA-87 -> ML-DSA-44":       {rsa2048, mldsa87, mldsa44},
+		"ECDSA -> ECDSA -> ML-DSA-65":         {ecdsa256, ecdsa256, mldsa65},
+		"ML-DSA-87 -> ECDSA -> RSA":           {mldsa87, ecdsa256, rsa2048},
+		"ML-DSA-65 -> RSA -> ML-DSA-44":       {mldsa65, rsa2048, mldsa44},
+	}
+
+	for name, keyGens := range tests {
+		t.Run(name, func(t *testing.T) {
+			var certs []*x509.Certificate
+			var parent *x509.Certificate
+			var parentKey crypto.Signer
+
+			for i, keyGen := range keyGens {
+				key := keyGen(t)
+				isCA := i < len(keyGens)-1
+
+				template := &x509.Certificate{
+					SerialNumber:          big.NewInt(int64(i + 1)),
+					Subject:               pkix.Name{CommonName: fmt.Sprintf("cert %d", i)},
+					NotBefore:             time.Now().Add(-time.Minute),
+					NotAfter:              time.Now().Add(time.Hour),
+					BasicConstraintsValid: true,
+					IsCA:                  isCA,
+					KeyUsage:              x509.KeyUsageDigitalSignature,
+					ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+				}
+				if isCA {
+					template.KeyUsage |= x509.KeyUsageCertSign
+				} else {
+					template.DNSNames = []string{"example.com"}
+				}
+
+				if parent == nil {
+					parent, parentKey = template, key
+				}
+
+				_, cert, err := SignCertificate(template, parent, key.Public(), parentKey)
+				require.NoError(t, err)
+
+				certs = append(certs, cert)
+				parent, parentKey = cert, key
+			}
+
+			roots := x509.NewCertPool()
+			roots.AddCert(certs[0])
+			intermediates := x509.NewCertPool()
+			intermediates.AddCert(certs[1])
+
+			_, err := certs[2].Verify(x509.VerifyOptions{
+				DNSName:       "example.com",
+				Roots:         roots,
+				Intermediates: intermediates,
+			})
+			require.NoError(t, err)
 		})
 	}
 }

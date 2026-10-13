@@ -46,12 +46,19 @@ const (
 	ECCurve384 = 384
 	// ECCurve521 represents a secp521r1 / NIST P-521 ECDSA key.
 	ECCurve521 = 521
+
+	// MLDSA44 represents an ML-DSA-44 key.
+	MLDSA44 = 44
+	// MLDSA65 represents an ML-DSA-65 key.
+	MLDSA65 = 65
+	// MLDSA87 represents an ML-DSA-87 key.
+	MLDSA87 = 87
 )
 
 // GeneratePrivateKeyForCertificate will generate a private key suitable for
 // the provided cert-manager Certificate resource, taking into account the
 // parameters on the provided resource.
-// The returned key will either be RSA, ECDSA, Ed25519, ML-DSA-44, or ML-DSA-65.
+// The returned key will either be RSA, ECDSA, Ed25519 or ML-DSA.
 func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error) {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
@@ -76,10 +83,19 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 		return GenerateECPrivateKey(keySize)
 	case v1.Ed25519KeyAlgorithm:
 		return GenerateEd25519PrivateKey()
-	case v1.MLDSA44KeyAlgorithm:
-		return GenerateMLDSAPrivateKey(mldsa.MLDSA44())
-	case v1.MLDSA65KeyAlgorithm:
-		return GenerateMLDSAPrivateKey(mldsa.MLDSA65())
+	case v1.MLDSAKeyAlgorithm:
+		keySize := MLDSA44
+
+		if crt.Spec.PrivateKey.Size > 0 {
+			keySize = crt.Spec.PrivateKey.Size
+		}
+
+		params, err := MLDSAParametersForSize(keySize)
+		if err != nil {
+			return nil, err
+		}
+
+		return GenerateMLDSAPrivateKey(params)
 	default:
 		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.PrivateKey.Algorithm)
 	}
@@ -133,6 +149,21 @@ func GenerateMLDSAPrivateKey(params mldsa.Parameters) (*mldsa.PrivateKey, error)
 		return nil, fmt.Errorf("failed to generate %s key: %w", params, err)
 	}
 	return sk, nil
+}
+
+// MLDSAParametersForSize returns the ML-DSA parameter set for the given
+// `spec.privateKey.size` value. It can be used with 44, 65 and 87.
+func MLDSAParametersForSize(keySize int) (mldsa.Parameters, error) {
+	switch keySize {
+	case MLDSA44:
+		return mldsa.MLDSA44(), nil
+	case MLDSA65:
+		return mldsa.MLDSA65(), nil
+	case MLDSA87:
+		return mldsa.MLDSA87(), nil
+	default:
+		return mldsa.Parameters{}, fmt.Errorf("unsupported ML-DSA key size specified: %d", keySize)
+	}
 }
 
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
@@ -239,6 +270,6 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 	case *mldsa.PublicKey:
 		return pub.Equal(b), nil
 	default:
-		return true, fmt.Errorf("unrecognised public key type: %T", a)
+		return false, fmt.Errorf("unrecognised public key type: %T", a)
 	}
 }

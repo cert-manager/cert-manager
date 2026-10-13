@@ -109,6 +109,8 @@ const (
 	// key size of 256 will be used for `ECDSA` key algorithm and
 	// key size of 2048 will be used for `RSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
+	// The `MLDSA` key algorithm requires the MLDSAPrivateKeys feature gate, and
+	// defaults to the ML-DSA-44 parameter set and `digital signature` usage.
 	// If unset an algorithm `RSA` will be used.
 	PrivateKeyAlgorithmAnnotationKey = "cert-manager.io/private-key-algorithm"
 
@@ -124,6 +126,8 @@ const (
 	// If PrivateKeyAlgorithm is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// If PrivateKeyAlgorithm is set to `Ed25519`, Size is ignored.
+	// If PrivateKeyAlgorithm is set to `MLDSA`, valid values are `44`, `65` or `87`,
+	// and will default to `44` if not specified.
 	// No other values are allowed.
 	PrivateKeySizeAnnotationKey = "cert-manager.io/private-key-size"
 

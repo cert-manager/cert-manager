@@ -17,8 +17,13 @@ limitations under the License.
 package pem
 
 import (
+	"crypto/mldsa"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	stdpem "encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
 	"slices"
 	"testing"
@@ -355,5 +360,76 @@ func TestChainSizeCalculation(t *testing.T) {
 	_, _, err = limits.SafeDecodeCertificateChain(largeCert)
 	if err == nil {
 		t.Error("Expected SafeDecodeCertificateChain to fail due to size limits")
+	}
+}
+
+// TestMLDSA87CertificateChain checks that a root -> intermediate -> intermediate -> leaf
+// chain where every certificate uses an ML-DSA-87 key fits within the default size limits.
+func TestMLDSA87CertificateChain(t *testing.T) {
+	const depth = 4
+
+	var chain []byte
+	var parent *x509.Certificate
+	var parentKey *mldsa.PrivateKey
+
+	// Build the chain from the root down, then prepend each certificate so
+	// that the leaf comes first, as it does in a tls.crt.
+	for i := range depth {
+		key, err := mldsa.GenerateKey(mldsa.MLDSA87())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		isCA := i < depth-1
+		template := &x509.Certificate{
+			SerialNumber:          big.NewInt(int64(i + 1)),
+			Subject:               pkix.Name{CommonName: fmt.Sprintf("ML-DSA-87 test certificate %d", i)},
+			NotBefore:             time.Now(),
+			NotAfter:              time.Now().Add(time.Hour),
+			IsCA:                  isCA,
+			BasicConstraintsValid: true,
+			KeyUsage:              x509.KeyUsageDigitalSignature,
+		}
+		if isCA {
+			template.KeyUsage |= x509.KeyUsageCertSign
+		} else {
+			template.DNSNames = []string{"example.com"}
+		}
+
+		if parent == nil {
+			parent, parentKey = template, key
+		}
+
+		der, err := x509.CreateCertificate(rand.Reader, template, parent, key.Public(), parentKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		certPEM := stdpem.EncodeToMemory(&stdpem.Block{Type: "CERTIFICATE", Bytes: der})
+
+		if _, _, err := SafeDecodeSingleCertificate(certPEM); err != nil {
+			t.Fatalf("certificate %d (%d bytes): %v", i, len(certPEM), err)
+		}
+
+		chain = append(certPEM, chain...)
+
+		parent, err = x509.ParseCertificate(der)
+		if err != nil {
+			t.Fatal(err)
+		}
+		parentKey = key
+	}
+
+	rest := chain
+	for i := range depth {
+		var err error
+		_, rest, err = SafeDecodeCertificateChain(rest)
+		if err != nil {
+			t.Fatalf("decoding certificate %d of the %d byte chain: %v", i, len(chain), err)
+		}
+	}
+
+	if len(rest) != 0 {
+		t.Errorf("expected no data after the chain, got %d bytes", len(rest))
 	}
 }

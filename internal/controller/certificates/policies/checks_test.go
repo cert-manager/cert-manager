@@ -17,6 +17,7 @@ limitations under the License.
 package policies
 
 import (
+	"crypto/mldsa"
 	"testing"
 	"time"
 
@@ -714,6 +715,81 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			if test.reissue != reissue {
 				t.Errorf("unexpected 'reissue' exp=%v, got=%v", test.reissue, reissue)
 			}
+		})
+	}
+}
+
+func Test_SecretPrivateKeyMismatchesSpec(t *testing.T) {
+	mldsaPEMPrivateKey := func(t *testing.T, params mldsa.Parameters) []byte {
+		pk, err := pki.GenerateMLDSAPrivateKey(params)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pkData, err := pki.EncodePKCS8PrivateKey(pk)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkData
+	}
+	rsaKey := testcrypto.MustCreatePEMPrivateKey(t)
+	mldsa44Key := mldsaPEMPrivateKey(t, mldsa.MLDSA44())
+	mldsa65Key := mldsaPEMPrivateKey(t, mldsa.MLDSA65())
+
+	tests := map[string]struct {
+		key        []byte
+		privateKey *cmapi.CertificatePrivateKey
+		reason     string
+		message    string
+		reissue    bool
+	}{
+		"trigger issuance when the algorithm changes from RSA to MLDSA": {
+			key:        rsaKey,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm},
+			reason:     SecretMismatch,
+			message:    "Existing private key is not up to date for spec: [spec.privateKey.algorithm]",
+			reissue:    true,
+		},
+		"trigger issuance when the algorithm changes from MLDSA to ECDSA": {
+			key:        mldsa65Key,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.ECDSAKeyAlgorithm},
+			reason:     SecretMismatch,
+			message:    "Existing private key is not up to date for spec: [spec.privateKey.algorithm]",
+			reissue:    true,
+		},
+		"trigger issuance when the ML-DSA parameter set changes from 65 to 87": {
+			key:        mldsa65Key,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm, Size: 87},
+			reason:     SecretMismatch,
+			message:    "Existing private key is not up to date for spec: [spec.privateKey.size]",
+			reissue:    true,
+		},
+		"trigger issuance when an ML-DSA-65 key is stored and size is unset": {
+			key:        mldsa65Key,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm},
+			reason:     SecretMismatch,
+			message:    "Existing private key is not up to date for spec: [spec.privateKey.size]",
+			reissue:    true,
+		},
+		"do nothing if an ML-DSA-65 key matches size 65": {
+			key:        mldsa65Key,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm, Size: 65},
+		},
+		"do nothing if an ML-DSA-44 key is stored and size is unset": {
+			key:        mldsa44Key,
+			privateKey: &cmapi.CertificatePrivateKey{Algorithm: cmapi.MLDSAKeyAlgorithm},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			reason, message, reissue := SecretPrivateKeyMismatchesSpec(Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{PrivateKey: test.privateKey}},
+				Secret: &corev1.Secret{Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: test.key,
+				}},
+			})
+			assert.Equal(t, test.reason, reason)
+			assert.Equal(t, test.message, message)
+			assert.Equal(t, test.reissue, reissue)
 		})
 	}
 }

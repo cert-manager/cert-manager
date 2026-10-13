@@ -24,9 +24,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmutil "github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
@@ -311,6 +314,79 @@ func Test_translateAnnotations(t *testing.T) {
 				tc.mutate(&tc)
 			}
 			crt := tc.crt.DeepCopy()
+
+			err := translateAnnotations(crt, tc.annotations)
+
+			if tc.expectedError != nil {
+				assertErrorIs(t, err, tc.expectedError)
+			} else {
+				assert.NoError(t, err)
+			}
+			if tc.check != nil {
+				tc.check(assert.New(t), crt)
+			}
+		})
+	}
+}
+
+func Test_translateAnnotations_MLDSA(t *testing.T) {
+	tests := map[string]struct {
+		annotations    map[string]string
+		featureEnabled bool
+		check          func(*assert.Assertions, *cmapi.Certificate)
+		expectedError  error
+	}{
+		"ML-DSA with defaulted size and usages": {
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+			},
+			featureEnabled: true,
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.MLDSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal(0, crt.Spec.PrivateKey.Size)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageDigitalSignature}, crt.Spec.Usages)
+			},
+		},
+		"ML-DSA with size and allowed usages": {
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+				cmapi.PrivateKeySizeAnnotationKey:      "87",
+				cmapi.UsagesAnnotationKey:              "digital signature,server auth",
+			},
+			featureEnabled: true,
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.MLDSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal(87, crt.Spec.PrivateKey.Size)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageServerAuth}, crt.Spec.Usages)
+			},
+		},
+		"ML-DSA with feature gate disabled": {
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"ML-DSA with unsupported size": {
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+				cmapi.PrivateKeySizeAnnotationKey:      "256",
+			},
+			featureEnabled: true,
+			expectedError:  errInvalidIngressAnnotation,
+		},
+		"ML-DSA with forbidden usages": {
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+				cmapi.UsagesAnnotationKey:              "digital signature,key encipherment",
+			},
+			featureEnabled: true,
+			expectedError:  errInvalidIngressAnnotation,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, tc.featureEnabled)
+			crt := gen.Certificate("example-cert", gen.SetCertificateKeyUsages(cmapi.DefaultKeyUsages()...))
 
 			err := translateAnnotations(crt, tc.annotations)
 

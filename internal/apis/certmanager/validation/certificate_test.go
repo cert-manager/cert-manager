@@ -410,7 +410,7 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa, ecdsa, ed25519, mldsa44, or mldsa65"),
+				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa, ecdsa, ed25519 or mldsa"),
 			},
 		},
 		"valid certificate with ipAddresses": {
@@ -1069,6 +1069,167 @@ func TestValidateUpdateCertificateRejectsChangedRenewBeforePercentageBelowMinimu
 		field.Invalid(fldPath.Child("renewBeforePercentage"), int32(6), fmt.Sprintf("certificate renewBeforePercentage must result in a renewBefore of at least %s; 6%% of %s is %s", cmapi.MinimumRenewBefore, time.Hour, time.Minute*3+time.Second*36)),
 	}, errs)
 	assert.Empty(t, warnings)
+}
+
+func TestValidateCertificateMLDSA(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	mldsaCert := func(size int, sigAlg internalcmapi.SignatureAlgorithm, usages ...internalcmapi.KeyUsage) *internalcmapi.Certificate {
+		return &internalcmapi.Certificate{
+			Spec: internalcmapi.CertificateSpec{
+				CommonName:         "testcn",
+				SecretName:         "abc",
+				IssuerRef:          validIssuerRef,
+				SignatureAlgorithm: sigAlg,
+				Usages:             usages,
+				PrivateKey: &internalcmapi.CertificatePrivateKey{
+					Algorithm: internalcmapi.MLDSAKeyAlgorithm,
+					Size:      size,
+				},
+			},
+		}
+	}
+	gateErr := field.Forbidden(fldPath.Child("privateKey", "algorithm"), "MLDSA requires the MLDSAPrivateKeys feature gate to be enabled")
+
+	scenarios := map[string]struct {
+		cfg            *internalcmapi.Certificate
+		featureEnabled bool
+		errs           []*field.Error
+	}{
+		"valid ML-DSA certificate with defaulted size and usages": {
+			cfg:            mldsaCert(0, ""),
+			featureEnabled: true,
+		},
+		"valid ML-DSA-44 certificate": {
+			cfg:            mldsaCert(44, ""),
+			featureEnabled: true,
+		},
+		"valid ML-DSA-65 certificate": {
+			cfg:            mldsaCert(65, ""),
+			featureEnabled: true,
+		},
+		"valid ML-DSA-87 certificate with allowed usages": {
+			cfg:            mldsaCert(87, "", internalcmapi.UsageDigitalSignature, internalcmapi.UsageCertSign, internalcmapi.UsageServerAuth),
+			featureEnabled: true,
+		},
+		"ML-DSA certificate with feature gate disabled": {
+			cfg:  mldsaCert(0, ""),
+			errs: []*field.Error{gateErr},
+		},
+		"ML-DSA certificate with unsupported size": {
+			cfg:            mldsaCert(256, ""),
+			featureEnabled: true,
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("privateKey", "size"), 256, []string{"44", "65", "87"}),
+			},
+		},
+		"ML-DSA certificate with signature algorithm": {
+			cfg:            mldsaCert(0, internalcmapi.PureEd25519),
+			featureEnabled: true,
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("signatureAlgorithm"), internalcmapi.PureEd25519, "must not be set for key algorithm MLDSA: the signature algorithm follows from the key's parameter set"),
+			},
+		},
+		"ML-DSA certificate with forbidden usages": {
+			cfg: mldsaCert(0, "",
+				internalcmapi.UsageDigitalSignature,
+				internalcmapi.UsageKeyEncipherment,
+				internalcmapi.UsageDataEncipherment,
+				internalcmapi.UsageKeyAgreement,
+				internalcmapi.UsageEncipherOnly,
+				internalcmapi.UsageDecipherOnly,
+			),
+			featureEnabled: true,
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("usages").Index(1), internalcmapi.UsageKeyEncipherment, "not allowed for ML-DSA keys (RFC 9881)"),
+				field.Invalid(fldPath.Child("usages").Index(2), internalcmapi.UsageDataEncipherment, "not allowed for ML-DSA keys (RFC 9881)"),
+				field.Invalid(fldPath.Child("usages").Index(3), internalcmapi.UsageKeyAgreement, "not allowed for ML-DSA keys (RFC 9881)"),
+				field.Invalid(fldPath.Child("usages").Index(4), internalcmapi.UsageEncipherOnly, "not allowed for ML-DSA keys (RFC 9881)"),
+				field.Invalid(fldPath.Child("usages").Index(5), internalcmapi.UsageDecipherOnly, "not allowed for ML-DSA keys (RFC 9881)"),
+			},
+		},
+		"ML-DSA certificate with forbidden usages and feature gate disabled": {
+			cfg: mldsaCert(0, "", internalcmapi.UsageKeyEncipherment),
+			errs: []*field.Error{
+				gateErr,
+				field.Invalid(fldPath.Child("usages").Index(0), internalcmapi.UsageKeyEncipherment, "not allowed for ML-DSA keys (RFC 9881)"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, s.featureEnabled)
+			errs, warnings := ValidateCertificate(someAdmissionRequest, s.cfg)
+			assert.ElementsMatch(t, errs, s.errs)
+			assert.Empty(t, warnings)
+		})
+	}
+}
+
+func TestValidateUpdateCertificateMLDSA(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	certWithAlgorithm := func(algorithm internalcmapi.PrivateKeyAlgorithm) *internalcmapi.Certificate {
+		return &internalcmapi.Certificate{
+			Spec: internalcmapi.CertificateSpec{
+				CommonName: "testcn",
+				SecretName: "abc",
+				IssuerRef:  validIssuerRef,
+				PrivateKey: &internalcmapi.CertificatePrivateKey{
+					Algorithm: algorithm,
+				},
+			},
+		}
+	}
+	gateErr := field.Forbidden(fldPath.Child("privateKey", "algorithm"), "MLDSA requires the MLDSAPrivateKeys feature gate to be enabled")
+
+	scenarios := map[string]struct {
+		old, new       *internalcmapi.Certificate
+		a              *admissionv1.AdmissionRequest
+		featureEnabled bool
+		errs           []*field.Error
+	}{
+		"existing ML-DSA certificate can be updated with feature gate disabled": {
+			old: certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			new: func() *internalcmapi.Certificate {
+				crt := certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm)
+				crt.Spec.CommonName = "updated"
+				return crt
+			}(),
+			a: someAdmissionRequest,
+		},
+		"existing ML-DSA certificate status can be updated with feature gate disabled": {
+			old: certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			new: certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			a: &admissionv1.AdmissionRequest{
+				Operation:   admissionv1.Update,
+				SubResource: "status",
+			},
+		},
+		"certificate can't be changed to ML-DSA with feature gate disabled": {
+			old:  certWithAlgorithm(internalcmapi.ECDSAKeyAlgorithm),
+			new:  certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			a:    someAdmissionRequest,
+			errs: []*field.Error{gateErr},
+		},
+		"certificate can be changed to ML-DSA with feature gate enabled": {
+			old:            certWithAlgorithm(internalcmapi.ECDSAKeyAlgorithm),
+			new:            certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			a:              someAdmissionRequest,
+			featureEnabled: true,
+		},
+		"certificate can be changed from ML-DSA with feature gate disabled": {
+			old: certWithAlgorithm(internalcmapi.MLDSAKeyAlgorithm),
+			new: certWithAlgorithm(internalcmapi.ECDSAKeyAlgorithm),
+			a:   someAdmissionRequest,
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, s.featureEnabled)
+			errs, warnings := ValidateUpdateCertificate(s.a, s.old, s.new)
+			assert.ElementsMatch(t, errs, s.errs)
+			assert.Empty(t, warnings)
+		})
+	}
 }
 
 func TestValidateDuration(t *testing.T) {
