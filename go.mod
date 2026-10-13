@@ -21,7 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.2
 	github.com/aws/smithy-go v1.28.4
 	github.com/digitalocean/godo v1.217.0
-	github.com/go-ldap/ldap/v3 v3.4.14
+	github.com/go-ldap/ldap/v3 v3.4.15
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonreference v1.0.3
 	github.com/google/gnostic-models v0.7.1
@@ -31,7 +31,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/nrdcg/goacmedns v0.2.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_golang v1.25.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
@@ -145,9 +145,9 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.1 // indirect
-	github.com/prometheus/procfs v0.21.1 // indirect
+	github.com/prometheus/client_model v0.6.3 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
+	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sosodev/duration v1.4.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
