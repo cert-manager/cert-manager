@@ -448,6 +448,10 @@ func (s *Suite) Define() {
 			s.it(f, test.name, func(ctx context.Context, signerName string) {
 				if sets.New(test.requiredFeatures...).Has(featureset.MLDSAFeatureSet) {
 					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
+					// The API server checks the signature of a
+					// CertificateSigningRequest when it's created, and Go
+					// can only check ML-DSA signatures from Go 1.27.
+					framework.RequireServerGoVersion(f, "go1.27")
 				}
 
 				// Generate request CSR

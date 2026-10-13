@@ -19,6 +19,8 @@ package framework
 import (
 	"context"
 	"fmt"
+	"go/version"
+	"strings"
 	"time"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -53,6 +55,19 @@ func Skipf(format string, args ...any) {
 func RequireFeatureGate(featureSet featuregate.FeatureGate, gate featuregate.Feature) {
 	if !featureSet.Enabled(gate) {
 		Skipf("feature gate %q is not enabled, skipping test", gate)
+	}
+}
+
+// RequireServerGoVersion skips the test if the Kubernetes API server was built
+// with a Go release older than minimum, such as "go1.27". It doesn't skip if
+// the API server doesn't report a valid Go version.
+func RequireServerGoVersion(f *Framework, minimum string) {
+	info, err := f.KubeClientSet.Discovery().ServerVersion()
+	Expect(err).NotTo(HaveOccurred())
+	// Drop any GOEXPERIMENT suffix, as in "go1.26.3 X:boringcrypto".
+	goVersion, _, _ := strings.Cut(info.GoVersion, " ")
+	if version.IsValid(goVersion) && version.Compare(goVersion, minimum) < 0 {
+		Skipf("the Kubernetes API server was built with %s, which is older than %s, skipping test", info.GoVersion, minimum)
 	}
 }
 
