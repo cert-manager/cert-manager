@@ -928,7 +928,8 @@ func TestCleanupPods(t *testing.T) {
 		},
 	}
 	podMeta := &metav1.PartialObjectMetadata{
-		APIVersion: "v1", Kind: "Pod",
+		APIVersion:      "v1",
+		Kind:            "Pod",
 		Name:            "cm-acme-http-solver-fghij",
 		Namespace:       testNamespace,
 		Labels:          podLabels(chal),

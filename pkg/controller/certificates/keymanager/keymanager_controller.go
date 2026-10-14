@@ -324,8 +324,9 @@ func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi
 func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			Namespace: crt.Namespace, Name: crt.Name,
-			Status: cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
+			Namespace: crt.Namespace,
+			Name:      crt.Name,
+			Status:    cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
 		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, &cmapi.Certificate{

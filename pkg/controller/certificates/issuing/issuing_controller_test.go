@@ -2123,9 +2123,11 @@ func failedIssuanceFixture(t *testing.T) failedIssuanceObjects {
 func mustSerializeApplyStatus(t *testing.T, crt *cmapi.Certificate, status cmapi.CertificateStatus) []byte {
 	t.Helper()
 	data, err := json.Marshal(&cmapi.Certificate{
-		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
-		Namespace: crt.Namespace, Name: crt.Name,
-		Status: status,
+		Kind:       cmapi.CertificateKind,
+		APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace:  crt.Namespace,
+		Name:       crt.Name,
+		Status:     status,
 	})
 	require.NoError(t, err)
 	return data

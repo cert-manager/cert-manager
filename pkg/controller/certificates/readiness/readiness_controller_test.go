@@ -74,7 +74,8 @@ func TestProcessItem(t *testing.T) {
 	// private key to be used to generate X509 certificate
 	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
-		Namespace: "testns", Name: "test",
+		Namespace: "testns",
+		Name:      "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -581,7 +582,8 @@ func TestReadinessForARI(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
 	cert := &cmapi.Certificate{
-		Namespace: "testns", Name: "test",
+		Namespace: "testns",
+		Name:      "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -1137,7 +1139,8 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 			builder.Start()
 
 			crt := &cmapi.Certificate{
-				Namespace: "testns", Name: "test",
+				Namespace: "testns",
+				Name:      "test",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					DNSNames:   []string{"example.com"},
@@ -1293,7 +1296,8 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 
 	newCert := func(renewalTime *metav1.Time) *cmapi.Certificate {
 		return &cmapi.Certificate{
-			Namespace: "testns", Name: "test",
+			Namespace: "testns",
+			Name:      "test",
 			Spec: cmapi.CertificateSpec{
 				SecretName: "test-secret",
 				DNSNames:   []string{"example.com"},

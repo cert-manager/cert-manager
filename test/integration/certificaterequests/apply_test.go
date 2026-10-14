@@ -50,11 +50,13 @@ func Test_Apply(t *testing.T) {
 	assert.NoError(t, err)
 
 	bundle := testcrypto.MustCreateCryptoBundle(t, &cmapi.Certificate{
-		Namespace: namespace, Name: name,
+		Namespace: namespace,
+		Name:      name,
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test-bundle-1",
 			IssuerRef:  cmmeta.IssuerReference{Name: "test-bundle-1"},
-		}},
+		},
+	},
 		&fakeclock.FakeClock{},
 	)
 	req := bundle.CertificateRequest
@@ -81,7 +83,8 @@ func Test_Apply(t *testing.T) {
 	t.Log("ensuring apply will can status")
 	assert.NoError(t,
 		internalcertificaterequests.ApplyStatus(t.Context(), cmClient, "cert-manager-test", &cmapi.CertificateRequest{
-			Namespace: namespace, Name: name,
+			Namespace: namespace,
+			Name:      name,
 			Status: cmapi.CertificateRequestStatus{
 				Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
 			},

@@ -46,7 +46,8 @@ func init() {
 		Namespace: "testns",
 		Name:      "test",
 		UID:       "test",
-		Spec:      cmapiv1.CertificateSpec{CommonName: "test-bundle-1"}},
+		Spec:      cmapiv1.CertificateSpec{CommonName: "test-bundle-1"},
+	},
 	)
 	if err != nil {
 		panic(err)

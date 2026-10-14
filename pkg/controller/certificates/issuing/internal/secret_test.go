@@ -838,8 +838,9 @@ func Test_SecretsManager(t *testing.T) {
 			// passwordSecretRef.key is unset and never defaulted, so the lookup
 			// is for the empty key, which this Secret has no data for.
 			existingSecret: &corev1.Secret{
-				Namespace: gen.DefaultTestNamespace, Name: "output",
-				Data: map[string][]byte{"not-the-password-key": []byte("foo")},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "output",
+				Data:      map[string][]byte{"not-the-password-key": []byte("foo")},
 			},
 			secretData: SecretData{
 				Certificate: baseCertBundle.CertBytes, PrivateKey: baseCertBundle.PrivateKeyBytes,
@@ -893,8 +894,9 @@ func Test_SecretsManager(t *testing.T) {
 
 func Test_getCertificateSecret(t *testing.T) {
 	crt := &cmapi.Certificate{
-		Namespace: "test-namespace", Name: "test-certificate",
-		Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+		Namespace: "test-namespace",
+		Name:      "test-certificate",
+		Spec:      cmapi.CertificateSpec{SecretName: "test-secret"},
 	}
 
 	tests := map[string]struct {
@@ -904,9 +906,10 @@ func Test_getCertificateSecret(t *testing.T) {
 		"if secret doesn't exist, expect empty secret": {
 			existingSecret: nil,
 			expSecret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Data: make(map[string][]byte),
-				Type: corev1.SecretTypeTLS,
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Data:      make(map[string][]byte),
+				Type:      corev1.SecretTypeTLS,
 			},
 		},
 		"if secret exists, expect only basic metadata to be retuned, but the Type set to tls": {

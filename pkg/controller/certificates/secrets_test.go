@@ -92,7 +92,8 @@ func TestGetNextPrivateKeySecret(t *testing.T) {
 			// An unrelated Secret in the same namespace, named by a principal
 			// with access only to the certificates/status subresource.
 			secret: &corev1.Secret{
-				Name: "next-pk", Namespace: "testns",
+				Name:      "next-pk",
+				Namespace: "testns",
 			},
 			crt:          crt,
 			wantNotFound: true,

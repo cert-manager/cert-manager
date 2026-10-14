@@ -45,7 +45,8 @@ func TestValidateClusterIssuer(t *testing.T) {
 
 func TestUpdateValidateClusterIssuer(t *testing.T) {
 	baseIssuerConfig := cmapi.IssuerSpec{
-		SelfSigned: &cmapi.SelfSignedIssuer{}}
+		SelfSigned: &cmapi.SelfSignedIssuer{},
+	}
 	baseIssuer := cmapi.ClusterIssuer{
 		Spec: baseIssuerConfig,
 	}

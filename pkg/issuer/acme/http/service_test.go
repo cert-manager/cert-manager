@@ -359,7 +359,8 @@ func TestCleanupServices(t *testing.T) {
 		},
 	}
 	serviceMeta := &metav1.PartialObjectMetadata{
-		APIVersion: "v1", Kind: "Service",
+		APIVersion:      "v1",
+		Kind:            "Service",
 		Name:            "cm-acme-http-solver-abcde",
 		Namespace:       testNamespace,
 		Labels:          podLabels(chal),

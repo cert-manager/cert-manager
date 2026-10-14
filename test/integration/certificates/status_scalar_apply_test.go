@@ -215,7 +215,8 @@ func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace
 	t.Helper()
 	t.Log("creating empty Certificate")
 	_, err := cmClient.CertmanagerV1().Certificates(namespace).Create(t.Context(), &cmapi.Certificate{
-		Namespace: namespace, Name: name,
+		Namespace: namespace,
+		Name:      name,
 		Spec: cmapi.CertificateSpec{
 			CommonName: "test",
 			SecretName: "test",
@@ -229,7 +230,8 @@ func createEmptyCertificate(t *testing.T, cmClient cmclient.Interface, namespace
 func applyCertificateStatus(t *testing.T, cmClient cmclient.Interface, fieldManager, namespace, name string, status cmapi.CertificateStatus) {
 	t.Helper()
 	require.NoError(t, internalcertificates.ApplyStatus(t.Context(), cmClient, fieldManager, &cmapi.Certificate{
-		Namespace: namespace, Name: name,
-		Status: status,
+		Namespace: namespace,
+		Name:      name,
+		Status:    status,
 	}))
 }

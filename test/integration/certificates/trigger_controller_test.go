@@ -93,7 +93,8 @@ func TestTriggerController(t *testing.T) {
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
 	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(t.Context(), &cmapi.Certificate{
-		Name: "testcrt", Namespace: namespace,
+		Name:      "testcrt",
+		Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
@@ -137,7 +138,8 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 	// Create Certificate template
 	cert := &cmapi.Certificate{
-		Name: certName, Namespace: namespace,
+		Name:      certName,
+		Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName:  secretName,
 			CommonName:  "example.com",
@@ -254,7 +256,8 @@ func TestTriggerController_ExpBackoff(t *testing.T) {
 
 	// Create Certificate template
 	cert := &cmapi.Certificate{
-		Name: certName, Namespace: namespace,
+		Name:      certName,
+		Namespace: namespace,
 		Spec: cmapi.CertificateSpec{
 			SecretName: secretName,
 			CommonName: "example.com",
@@ -430,8 +433,10 @@ func applyTestCondition(t *testing.T, ctx context.Context, cert *cmapi.Certifica
 	// trigger controller picking up the cert and adding Issuing condition
 	// in between.
 	statusUpdate := &cmapi.Certificate{
-		Name: cert.Name, Namespace: cert.Namespace,
-		Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Name:       cert.Name,
+		Namespace:  cert.Namespace,
+		Kind:       cmapi.CertificateKind,
+		APIVersion: cmapi.SchemeGroupVersion.Identifier(),
 		Status: cmapi.CertificateStatus{
 			Conditions: []cmapi.CertificateCondition{testCond},
 		},

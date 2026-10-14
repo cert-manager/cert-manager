@@ -84,7 +84,8 @@ func certFromSecretToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger,
 			}
 			reqs = append(reqs, ctrl.Request{
 				Name:      metaInfo.GetName(),
-				Namespace: metaInfo.GetNamespace()})
+				Namespace: metaInfo.GetNamespace(),
+			})
 			return nil
 		}); err != nil {
 			log.Error(err, "unable get items from list")
@@ -119,7 +120,8 @@ func certToInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config se
 			}
 			reqs = append(reqs, ctrl.Request{
 				Name:      metaInfo.GetName(),
-				Namespace: metaInfo.GetNamespace()})
+				Namespace: metaInfo.GetNamespace(),
+			})
 			return nil
 		}); err != nil {
 			log.Error(err, "unable get items from list")
@@ -156,7 +158,8 @@ func secretForInjectableMapFuncBuilder(cl client.Reader, log logr.Logger, config
 			}
 			reqs = append(reqs, ctrl.Request{
 				Name:      metaInfo.GetName(),
-				Namespace: metaInfo.GetNamespace()})
+				Namespace: metaInfo.GetNamespace(),
+			})
 			return nil
 		}); err != nil {
 			log.Error(err, "unable get items from list")

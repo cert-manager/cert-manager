@@ -197,8 +197,9 @@ func testStalledRequestRecovery(t *testing.T, reuseKey bool) {
 		sk, err := utilpki.GenerateRSAPrivateKey(2048)
 		require.NoError(t, err)
 		_, err = kubeClient.CoreV1().Secrets(namespace).Create(t.Context(), &corev1.Secret{
-			Namespace: namespace, Name: secretName,
-			Data: map[string][]byte{corev1.TLSPrivateKeyKey: utilpki.EncodePKCS1PrivateKey(sk)},
+			Namespace: namespace,
+			Name:      secretName,
+			Data:      map[string][]byte{corev1.TLSPrivateKeyKey: utilpki.EncodePKCS1PrivateKey(sk)},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 

@@ -4988,14 +4988,17 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &networkingv1.Ingress{
-				Name: "ingress-2", Namespace: gen.DefaultTestNamespace, UID: "ingress-2",
-				Spec: networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
+				Name:      "ingress-2",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "ingress-2",
+				Spec:      networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
 			},
 			wantToBeRemoved: nil,
 		},
@@ -5005,14 +5008,17 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &networkingv1.Ingress{
-				Name: "ingress-1", Namespace: gen.DefaultTestNamespace, UID: "ingress-1",
-				Spec: networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
+				Name:      "ingress-1",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "ingress-1",
+				Spec:      networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
 			},
 			wantToBeRemoved: nil,
 		},
@@ -5022,13 +5028,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("ingress-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &networkingv1.Ingress{
-				Name: "ingress-1", Namespace: gen.DefaultTestNamespace, UID: "ingress-1",
+				Name:      "ingress-1",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "ingress-1",
 			},
 			wantToBeRemoved: []string{"cert-1"},
 		},
@@ -5038,13 +5047,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &gwapi.Gateway{
-				Name: "gw-2", Namespace: gen.DefaultTestNamespace, UID: "gw-2",
+				Name:      "gw-2",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "gw-2",
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{{
 					TLS: &gwapi.ListenerTLSConfig{CertificateRefs: []gwapi.SecretObjectReference{
 						{
@@ -5061,13 +5073,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &gwapi.Gateway{
-				Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1",
+				Name:      "gw-1",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "gw-1",
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 					{TLS: &gwapi.ListenerTLSConfig{CertificateRefs: []gwapi.SecretObjectReference{{Name: "not-secret-name"}}}},
 				}},
@@ -5080,13 +5095,16 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 				{
 					Name:            "cert-1",
 					Namespace:       gen.DefaultTestNamespace,
-					OwnerReferences: buildGatewayOwnerReferences("gw-1"), Spec: cmapi.CertificateSpec{
+					OwnerReferences: buildGatewayOwnerReferences("gw-1"),
+					Spec: cmapi.CertificateSpec{
 						SecretName: "secret-name",
 					},
 				},
 			},
 			ingLike: &gwapi.Gateway{
-				Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1",
+				Name:      "gw-1",
+				Namespace: gen.DefaultTestNamespace,
+				UID:       "gw-1",
 				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 					{TLS: &gwapi.ListenerTLSConfig{CertificateRefs: []gwapi.SecretObjectReference{{Name: "secret-name"}}}},
 				}},
@@ -5104,7 +5122,9 @@ func Test_findCertificatesToBeRemoved(t *testing.T) {
 
 func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 	got := secretNameUsedIn("secret-name", &gwapi.Gateway{
-		Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1",
+		Name:      "gw-1",
+		Namespace: gen.DefaultTestNamespace,
+		UID:       "gw-1",
 		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 			{TLS: nil},
 			{TLS: &gwapi.ListenerTLSConfig{CertificateRefs: nil}},
@@ -5114,7 +5134,9 @@ func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 	assert.Equal(t, true, got)
 
 	got = secretNameUsedIn("secret-name", &gwapi.Gateway{
-		Name: "gw-1", Namespace: gen.DefaultTestNamespace, UID: "gw-1",
+		Name:      "gw-1",
+		Namespace: gen.DefaultTestNamespace,
+		UID:       "gw-1",
 		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
 			{TLS: nil},
 			{TLS: &gwapi.ListenerTLSConfig{CertificateRefs: nil}},

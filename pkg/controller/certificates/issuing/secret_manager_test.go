@@ -83,28 +83,32 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate and Secret exists, but the Secret contains no certificate or private key data, do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Data: map[string][]byte{},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Data:      map[string][]byte{},
 			},
 			expectedAction: false,
 		},
 		"if Certificate and Secret exists, but the Secret contains no certificate data, do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
+				Namespace: "test-namespace",
+				Name:      "test-secret",
 				Data: map[string][]byte{
 					"tls.key": pk,
 				},
@@ -113,14 +117,16 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate and Secret exists, but the Secret contains no private key data, do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
+				Namespace: "test-namespace",
+				Name:      "test-secret",
 				Data: map[string][]byte{
 					"tls.cert": cert,
 				},
@@ -129,7 +135,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate and Secret exists, but the Certificate has a True Issuing condition, do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -139,7 +146,8 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
+				Namespace: "test-namespace",
+				Name:      "test-secret",
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -149,7 +157,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists without a Issuing condition, but Secret does not exist, do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -161,7 +170,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but no managed fields, should reconcile Secret": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -182,7 +192,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but the managed fields contains more than what is in the SecretTemplate, should reconcile Secret": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -221,7 +232,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but the managed fields are managed by another manager, should reconcile Secret": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -258,7 +270,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate with the correct managed fields and base labels, should do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"},
@@ -297,7 +310,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists but does not match SecretTemplate, should apply the Labels and Annotations": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -310,8 +324,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -321,7 +336,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists but is missing the required label, apply the label": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -334,8 +350,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{"foo": "bar"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{"foo": "bar"},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -345,7 +362,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate exists in a false Issuing condition, Secret exists with some labels, but is missing the required label, apply the label": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
@@ -358,7 +376,8 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
+				Namespace: "test-namespace",
+				Name:      "test-secret",
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -368,7 +387,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate with combined pem and Secret exists, but the Secret doesn't have combined pem, should apply the combined pem": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
@@ -377,8 +397,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -388,7 +409,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate with der and Secret exists, but the Secret doesn't have der, should apply the der": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
@@ -397,8 +419,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -408,7 +431,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate with combined pem and der, and Secret exists, but the Secret doesn't have combined pem or der, should apply the combined pem and der": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
@@ -418,8 +442,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				Data: map[string][]byte{
 					"tls.crt": cert,
 					"tls.key": pk,
@@ -429,7 +454,8 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate with combined pem and der, and Secret exists with combined pem and der with managed fields, should do nothing": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{
@@ -439,8 +465,9 @@ func Test_ensureSecretData(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				ManagedFields: []metav1.ManagedFieldsEntry{{
 					Manager: fieldManager,
 					FieldsV1: metav1.NewFieldsV1(`
@@ -476,15 +503,17 @@ func Test_ensureSecretData(t *testing.T) {
 		},
 		"if Certificate with no combined pem or der, and Secret exists with combined pem and der managed by field manager, should apply to remove them": {
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name",
+				Namespace: "test-namespace",
+				Name:      "test-name",
 				Spec: cmapi.CertificateSpec{
 					SecretName:              "test-secret",
 					AdditionalOutputFormats: []cmapi.CertificateAdditionalOutputFormat{},
 				},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				ManagedFields: []metav1.ManagedFieldsEntry{{
 					Manager: fieldManager,
 					FieldsV1: metav1.NewFieldsV1(`
@@ -522,12 +551,15 @@ func Test_ensureSecretData(t *testing.T) {
 		"enabledOwnerRef=false if Secret has owner reference to Certificate owned by field manager, expect action": {
 			enableOwnerRef: false,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
-				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
+				Spec:      cmapi.CertificateSpec{SecretName: "test-secret"},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				ManagedFields: []metav1.ManagedFieldsEntry{
 					{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
 							{"f:metadata": {
@@ -552,12 +584,15 @@ func Test_ensureSecretData(t *testing.T) {
 		"enabledOwnerRef=true if Secret has owner reference to Certificate owned by field manager, expect no action": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
-				Spec: cmapi.CertificateSpec{SecretName: "test-secret"},
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
+				Spec:      cmapi.CertificateSpec{SecretName: "test-secret"},
 			},
 			secret: &corev1.Secret{
-				Namespace: "test-namespace", Name: "test-secret",
-				Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+				Namespace: "test-namespace",
+				Name:      "test-secret",
+				Labels:    map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
 				OwnerReferences: []metav1.OwnerReference{
 					{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
 				},
@@ -585,7 +620,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secrets when keystore is not defined and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-234"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-234"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -594,9 +631,11 @@ func Test_ensureSecretData(t *testing.T) {
 						Group: "group.example.com",
 					},
 					SecretName: "test-secret",
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "test-secret", Namespace: "test-namespace",
+				Name:      "test-secret",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -636,7 +675,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secrets when JKS keystore is defined and the secret does not have keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -650,9 +691,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: true,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -691,7 +734,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secrets when JKS keystore is defined, create is disabled and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -705,9 +750,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: false,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -747,7 +794,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secrets when JKS keystore is null and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -759,9 +808,11 @@ func Test_ensureSecretData(t *testing.T) {
 					Keystores: &cmapi.CertificateKeystores{
 						JKS: nil,
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -801,7 +852,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"do nothing when JKS keystore is defined and create field is set to false": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -815,9 +868,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: false,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -856,7 +911,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secret when PKCS12 keystore is defined and the secret does not have keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -870,9 +927,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: true,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -911,7 +970,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secret when PKCS12 keystore is defined, create is disabled and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -925,9 +986,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: false,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -967,7 +1030,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"refresh secret when PKCS12 keystore is null and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -979,9 +1044,11 @@ func Test_ensureSecretData(t *testing.T) {
 					Keystores: &cmapi.CertificateKeystores{
 						PKCS12: nil,
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
@@ -1021,7 +1088,9 @@ func Test_ensureSecretData(t *testing.T) {
 		"do nothing when PKCS12 keystore is defined and the create is set to false": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
-				Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123"),
+				Namespace: "test-namespace",
+				Name:      "test-name",
+				UID:       types.UID("uid-123"),
 				Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 					IssuerRef: cmmeta.IssuerReference{
@@ -1035,9 +1104,11 @@ func Test_ensureSecretData(t *testing.T) {
 							Create: false,
 						},
 					},
-				}},
+				},
+			},
 			secret: &corev1.Secret{
-				Name: "something", Namespace: "test-namespace",
+				Name:      "something",
+				Namespace: "test-namespace",
 				Annotations: map[string]string{
 					cmapi.IssuerNameAnnotationKey:  "testissuer",
 					cmapi.IssuerKindAnnotationKey:  "IssuerKind",

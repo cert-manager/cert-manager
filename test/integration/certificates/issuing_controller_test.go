@@ -917,7 +917,8 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 	)
 	bundle := testcrypto.MustCreateCryptoBundle(t, crt, &clock.RealClock{})
 	secret, err := kubeClient.CoreV1().Secrets(ns.Name).Create(t.Context(), &corev1.Secret{
-		Namespace: ns.Name, Name: crt.Spec.SecretName,
+		Namespace: ns.Name,
+		Name:      crt.Spec.SecretName,
 		Data: map[string][]byte{
 			"ca.crt":  bundle.CertBytes,
 			"tls.crt": bundle.CertBytes,

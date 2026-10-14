@@ -436,8 +436,9 @@ func TestVault_Setup(t *testing.T) {
 								assert.Equal(t, "cert-manager", name)
 								assert.Equal(t, "test-namespace", namespace)
 								return &corev1.Secret{
-									Name: "cert-manager", Namespace: "test-namespace",
-									Data: map[string][]byte{"token": []byte("root")},
+									Name:      "cert-manager",
+									Namespace: "test-namespace",
+									Data:      map[string][]byte{"token": []byte("root")},
 								}, nil
 							},
 						}
@@ -562,8 +563,9 @@ func TestVault_SetupDoesNotLeakResponseBody(t *testing.T) {
 						return &testlisters.FakeSecretNamespaceLister{
 							GetFn: func(name string) (*corev1.Secret, error) {
 								return &corev1.Secret{
-									Name: name, Namespace: namespace,
-									Data: map[string][]byte{"token": []byte("root")},
+									Name:      name,
+									Namespace: namespace,
+									Data:      map[string][]byte{"token": []byte("root")},
 								}, nil
 							},
 						}

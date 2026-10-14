@@ -112,7 +112,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret is missing private key": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("test")},
 			},
 			reason:  MissingData,
@@ -121,7 +122,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret is missing certificate": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{corev1.TLSPrivateKeyKey: []byte("test")},
 			},
 			reason:  MissingData,
@@ -130,7 +132,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret contains corrupt private key and certificate data": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: []byte("test"),
 					corev1.TLSCertKey:       []byte("test"),
@@ -142,7 +145,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret contains corrupt certificate data": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: testcrypto.MustCreatePEMPrivateKey(t),
 					corev1.TLSCertKey:       []byte("test"),
@@ -154,7 +158,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret contains corrupt private key data": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: []byte("invalid"),
 					corev1.TLSCertKey: testcrypto.MustCreateCert(t, testcrypto.MustCreatePEMPrivateKey(t),
@@ -168,7 +173,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as Secret contains a non-matching key-pair": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: testcrypto.MustCreatePEMPrivateKey(t),
 					corev1.TLSCertKey: testcrypto.MustCreateCert(t, testcrypto.MustCreatePEMPrivateKey(t),
@@ -257,7 +263,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger issuance as private key properties do not meet the requested properties": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: func() map[string][]byte {
 					// generate a 521 bit EC private key, which is not the type of key
 					// configured in the Certificate resource
@@ -286,7 +293,8 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 		},
 		"trigger if the Secret contains a different private key than was used to sign the CSR": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			secret: &corev1.Secret{Name: "something",
+			secret: &corev1.Secret{
+				Name: "something",
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
 					corev1.TLSCertKey: testcrypto.MustCreateCert(
@@ -850,7 +858,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			tmpl: nil,
 			secret: &corev1.Secret{
 				Annotations: map[string]string{"foo": "bar"},
-				Labels:      map[string]string{"bar": "foo"}},
+				Labels:      map[string]string{"bar": "foo"},
+			},
 			expViolation: false,
 			expReason:    "",
 			expMessage:   "",
@@ -862,7 +871,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      nil},
+				Labels:      nil,
+			},
 			expViolation: false,
 			expReason:    "",
 			expMessage:   "",
@@ -874,7 +884,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				Annotations: nil,
-				Labels:      map[string]string{"abc": "123", "def": "456"}},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
 			expViolation: false,
 			expReason:    "",
 			expMessage:   "",
@@ -886,7 +897,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				Annotations: map[string]string{"foo1": "bar2", "foo2": "bar1"},
-				Labels:      map[string]string{"abc": "123", "def": "456"}},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
 			expViolation: true,
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
@@ -898,7 +910,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"abc": "456", "def": "123"}},
+				Labels:      map[string]string{"abc": "456", "def": "123"},
+			},
 			expViolation: true,
 			expReason:    SecretTemplateMismatch,
 			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
@@ -910,7 +923,8 @@ func Test_SecretSecretTemplateMismatch(t *testing.T) {
 			},
 			secret: &corev1.Secret{
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
-				Labels:      map[string]string{"abc": "123", "def": "456"}},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
 			expViolation: false,
 			expReason:    "",
 			expMessage:   "",

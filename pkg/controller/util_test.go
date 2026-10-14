@@ -118,10 +118,14 @@ func TestOnlyUpdateWhenResourceChanged(t *testing.T) {
 
 func TestBlockingEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		triggerEvent func(handler cache.ResourceEventHandler)
@@ -197,10 +201,14 @@ func TestBlockingEventHandler(t *testing.T) {
 
 func TestQueuingEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		triggerEvent func(handler cache.ResourceEventHandler)
@@ -264,10 +272,14 @@ func TestQueuingEventHandler(t *testing.T) {
 
 func TestFilterEventHandler(t *testing.T) {
 	obj1 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-1"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-1"},
 	}
 	obj2 := &corev1.ConfigMap{
-		Name: "obj-name", Namespace: "obj-namespace", Annotations: map[string]string{"test": "test-2"},
+		Name:        "obj-name",
+		Namespace:   "obj-namespace",
+		Annotations: map[string]string{"test": "test-2"},
 	}
 	tests := map[string]struct {
 		predicate    predicate.TypedPredicate[metav1.Object]

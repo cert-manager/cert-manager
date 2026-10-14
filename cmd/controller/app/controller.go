@@ -326,6 +326,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01Config.SolverRunAsNonRoot
 
+	//nolint:modernize // embedlit: the group names document which options struct each field belongs to
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
 		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
@@ -334,41 +335,53 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 		Namespace: opts.Namespace,
 
-		HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
-		HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
-		HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
-		HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
-		ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
-		HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
-		// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-		HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
-		HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
-		HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
+		ACMEOptions: controller.ACMEOptions{
+			HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
+			HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
+			HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
+			HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
+			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
+			HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
+			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
+			HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
+			HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
+			HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
 
-		DNS01Nameservers:        nameservers,
-		DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
-		DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
+			DNS01Nameservers:        nameservers,
+			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
+			DNS01CheckAuthoritative: !opts.ACMEDNS01Config.RecursiveNameserversOnly,
+		},
 
-		MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
+		SchedulerOptions: controller.SchedulerOptions{
+			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
+		},
 
-		ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
-		IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
-		ClusterResourceNamespace:        opts.ClusterResourceNamespace,
+		IssuerOptions: controller.IssuerOptions{
+			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
+			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
+			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
+		},
 
-		DefaultIssuerName:                 opts.IngressShimConfig.DefaultIssuerName,
-		DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
-		DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
-		DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
-		ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
-		GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
+		IngressShimOptions: controller.IngressShimOptions{
+			DefaultIssuerName:                 opts.IngressShimConfig.DefaultIssuerName,
+			DefaultIssuerKind:                 opts.IngressShimConfig.DefaultIssuerKind,
+			DefaultIssuerGroup:                opts.IngressShimConfig.DefaultIssuerGroup,
+			DefaultAutoCertificateAnnotations: opts.IngressShimConfig.DefaultAutoCertificateAnnotations,
+			ExtraCertificateAnnotations:       opts.IngressShimConfig.ExtraCertificateAnnotations,
+			GatewayAPIExtraProtocols:          sets.New[string](opts.GatewayAPIConfig.ExtraProtocols...),
+		},
 
-		EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
-		CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
-		CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
-		CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
+		CertificateOptions: controller.CertificateOptions{
+			EnableOwnerRef:                           opts.EnableCertificateOwnerRef,
+			CopiedAnnotationPrefixes:                 opts.CopiedAnnotationPrefixes,
+			CertificateRequestMinimumBackoffDuration: opts.CertificateRequestMinimumBackoffDuration,
+			CertificateRequestMaximumBackoffDuration: opts.CertificateRequestMaximumBackoffDuration,
+		},
 
-		EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
-		EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
+		ConfigOptions: controller.ConfigOptions{
+			EnableGatewayAPI:            opts.GatewayAPIConfig.Enabled,
+			EnableGatewayAPIListenerSet: opts.GatewayAPIConfig.EnableListenerSet,
+		},
 	})
 	if err != nil {
 		return nil, err

@@ -2093,7 +2093,8 @@ func TestValidateIssuer(t *testing.T) {
 
 func TestUpdateValidateIssuer(t *testing.T) {
 	baseIssuerConfig := cmapi.IssuerSpec{
-		SelfSigned: &cmapi.SelfSignedIssuer{}}
+		SelfSigned: &cmapi.SelfSignedIssuer{},
+	}
 	baseIssuer := cmapi.Issuer{
 		Spec: baseIssuerConfig,
 	}
