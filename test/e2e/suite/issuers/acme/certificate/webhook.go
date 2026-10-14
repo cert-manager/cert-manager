@@ -47,7 +47,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		dnsDomain := ""
 
 		BeforeEach(func(testingCtx context.Context) {
-			dnsDomain = "example.com"
+			dnsDomain = "dns01.example.com"
 
 			By("Creating an Issuer")
 			issuer := gen.Issuer(issuerName,
