@@ -1010,6 +1010,54 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("cron"), "CRON_TZ=UTC", "invalid cron syntax: failed to parse cron spec 'CRON_TZ=UTC': expected timezone prefix to be followed by a cron spec: CRON_TZ=UTC. cron needs to follow: cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow"),
 			},
 		},
+		"invalid renewal window with zero windowDuration": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+					Renewal: &internalcmapi.CertificateRenewal{
+						Policy: internalcmapi.RenewBefore,
+						Windows: []internalcmapi.CertificateRenewalWindows{
+							{
+								WindowDuration: &metav1.Duration{Duration: 0},
+								Cron:           "0 12 * * *",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), time.Duration(0), "windowDuration must be greater than 0"),
+			},
+		},
+		"invalid renewal window with negative windowDuration": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &internalcmapi.CertificatePrivateKey{
+						RotationPolicy: internalcmapi.RotationPolicyNever,
+					},
+					Renewal: &internalcmapi.CertificateRenewal{
+						Policy: internalcmapi.RenewBefore,
+						Windows: []internalcmapi.CertificateRenewalWindows{
+							{
+								WindowDuration: &metav1.Duration{Duration: -time.Hour},
+								Cron:           "0 12 * * *",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("windowDuration"), -time.Hour, "windowDuration must be greater than 0"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

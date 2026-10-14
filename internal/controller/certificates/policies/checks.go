@@ -304,8 +304,10 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 
 		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 		if err != nil {
-			reason = WindowError
-			message = err.Error()
+			return WindowError, err.Error(), true
+		}
+		if renewalTime == nil {
+			return WindowError, "nil renewal time returned by pki.RenewalTime", true
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())
