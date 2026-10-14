@@ -17,13 +17,10 @@ limitations under the License.
 package pem
 
 import (
-	"crypto/mldsa"
-	"crypto/rand"
+	"bytes"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	stdpem "encoding/pem"
 	"fmt"
-	"math/big"
 	"os"
 	"slices"
 	"testing"
@@ -363,73 +360,51 @@ func TestChainSizeCalculation(t *testing.T) {
 	}
 }
 
-// TestMLDSA87CertificateChain checks that a root -> intermediate -> intermediate -> leaf
-// chain where every certificate uses an ML-DSA-87 key fits within the default size limits.
+// TestMLDSA87CertificateChain checks that chains of ML-DSA-87 certificates, which are about 10kB each,
+// fit within the default chain size limit up to the point where the limit is reached.
 func TestMLDSA87CertificateChain(t *testing.T) {
-	const depth = 4
-
-	var chain []byte
-	var parent *x509.Certificate
-	var parentKey *mldsa.PrivateKey
-
-	// Build the chain from the root down, then prepend each certificate so
-	// that the leaf comes first, as it does in a tls.crt.
-	for i := range depth {
-		key, err := mldsa.GenerateKey(mldsa.MLDSA87())
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		isCA := i < depth-1
-		template := &x509.Certificate{
-			SerialNumber:          big.NewInt(int64(i + 1)),
-			Subject:               pkix.Name{CommonName: fmt.Sprintf("ML-DSA-87 test certificate %d", i)},
-			NotBefore:             time.Now(),
-			NotAfter:              time.Now().Add(time.Hour),
-			IsCA:                  isCA,
-			BasicConstraintsValid: true,
-			KeyUsage:              x509.KeyUsageDigitalSignature,
-		}
-		if isCA {
-			template.KeyUsage |= x509.KeyUsageCertSign
-		} else {
-			template.DNSNames = []string{"example.com"}
-		}
-
-		if parent == nil {
-			parent, parentKey = template, key
-		}
-
-		der, err := x509.CreateCertificate(rand.Reader, template, parent, key.Public(), parentKey)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		certPEM := stdpem.EncodeToMemory(&stdpem.Block{Type: "CERTIFICATE", Bytes: der})
-
-		if _, _, err := SafeDecodeSingleCertificate(certPEM); err != nil {
-			t.Fatalf("certificate %d (%d bytes): %v", i, len(certPEM), err)
-		}
-
-		chain = append(certPEM, chain...)
-
-		parent, err = x509.ParseCertificate(der)
-		if err != nil {
-			t.Fatal(err)
-		}
-		parentKey = key
+	// Generated with: openssl req -x509 -newkey ML-DSA-87 -nodes -keyout /dev/null -subj "/CN=cert-manager ML-DSA-87 test CA" -days 36500
+	certPEM, err := os.ReadFile("./testdata/mldsa87-ca.pem")
+	if err != nil {
+		t.Fatal(err)
 	}
 
+	block, _, err := SafeDecodeSingleCertificate(certPEM)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if cert.SignatureAlgorithm != x509.MLDSA87 {
+		t.Fatalf("invalid test: expected an ML-DSA-87 certificate, got %s", cert.SignatureAlgorithm)
+	}
+
+	// maxCerts is the largest number of these certificates which fit within maxCertificateChainSize.
+	maxCerts := maxCertificateChainSize / len(certPEM)
+	if maxCerts < 4 {
+		t.Fatalf("only %d ML-DSA-87 certificates fit within maxCertificateChainSize, but a root, two intermediates and a leaf should fit", maxCerts)
+	}
+
+	chain := bytes.Repeat(certPEM, maxCerts)
 	rest := chain
-	for i := range depth {
-		var err error
+	for i := range maxCerts {
 		_, rest, err = SafeDecodeCertificateChain(rest)
 		if err != nil {
-			t.Fatalf("decoding certificate %d of the %d byte chain: %v", i, len(chain), err)
+			t.Fatalf("decoding certificate %d of a %d-certificate (%d byte) chain: %v", i, maxCerts, len(chain), err)
 		}
 	}
 
 	if len(rest) != 0 {
 		t.Errorf("expected no data after the chain, got %d bytes", len(rest))
+	}
+
+	tooLong := bytes.Repeat(certPEM, maxCerts+1)
+	expErr := ErrPEMDataTooLarge(maxCertificateChainSize)
+	if _, _, err := SafeDecodeCertificateChain(tooLong); err != expErr {
+		t.Errorf("expected a %d-certificate (%d byte) chain to fail with %q, got %v", maxCerts+1, len(tooLong), expErr, err)
 	}
 }

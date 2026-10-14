@@ -241,7 +241,7 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 // public key in the given x509.Certificate.
 // Returns false and no error if the public key is *not* the same as the certificate's key
 // Returns true and no error if the public key *is* the same as the certificate's key
-// Returns an error if the certificate's key type cannot be determined (i.e. non RSA/ECDSA keys)
+// Returns an error if the certificate's key type cannot be determined (i.e. not an RSA, ECDSA, Ed25519 or ML-DSA key)
 func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) (bool, error) {
 	return PublicKeysEqual(crt.PublicKey, check)
 }
@@ -250,7 +250,7 @@ func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) 
 // public key in the given x509.CertificateRequest.
 // Returns false and no error if the given public key is *not* the same as the CSR's key
 // Returns true and no error if the given public key *is* the same as the CSR's key
-// Returns an error if the CSR's key type cannot be determined (i.e. non RSA/ECDSA keys)
+// Returns an error if the CSR's key type cannot be determined (i.e. not an RSA, ECDSA, Ed25519 or ML-DSA key)
 func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (bool, error) {
 	return PublicKeysEqual(csr.PublicKey, check)
 }

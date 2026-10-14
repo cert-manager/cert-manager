@@ -451,7 +451,7 @@ func (s *Suite) Define() {
 					// The API server checks the signature of a
 					// CertificateSigningRequest when it's created, and Go
 					// can only check ML-DSA signatures from Go 1.27.
-					framework.RequireServerGoVersion(f, "go1.27")
+					framework.RequireServerGoVersion(ctx, f, "go1.27")
 				}
 
 				// Generate request CSR

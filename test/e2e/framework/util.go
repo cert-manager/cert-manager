@@ -61,8 +61,8 @@ func RequireFeatureGate(featureSet featuregate.FeatureGate, gate featuregate.Fea
 // RequireServerGoVersion skips the test if the Kubernetes API server was built
 // with a Go release older than minimum, such as "go1.27". It doesn't skip if
 // the API server doesn't report a valid Go version.
-func RequireServerGoVersion(f *Framework, minimum string) {
-	info, err := f.KubeClientSet.Discovery().ServerVersion()
+func RequireServerGoVersion(ctx context.Context, f *Framework, minimum string) {
+	info, err := f.KubeClientSet.Discovery().ServerVersionWithContext(ctx)
 	Expect(err).NotTo(HaveOccurred())
 	// Drop any GOEXPERIMENT suffix, as in "go1.26.3 X:boringcrypto".
 	goVersion, _, _ := strings.Cut(info.GoVersion, " ")

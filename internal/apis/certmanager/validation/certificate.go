@@ -363,7 +363,7 @@ func isMLDSACertificateSpec(crt *internalcmapi.CertificateSpec) bool {
 func validateMLDSAUsages(usages []internalcmapi.KeyUsage, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	for i, u := range usages {
-		if len(pki.ForbiddenKeyUsagesForPublicKeyAlgorithm([]cmapi.KeyUsage{cmapi.KeyUsage(u)}, x509.MLDSA)) > 0 {
+		if !pki.KeyUsageAllowedForPublicKeyAlgorithm(cmapi.KeyUsage(u), x509.MLDSA) {
 			el = append(el, field.Invalid(fldPath.Index(i), u, "not allowed for ML-DSA keys (RFC 9881)"))
 		}
 	}

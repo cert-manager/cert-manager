@@ -261,8 +261,16 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 				// The default usages include key encipherment, which RFC 9881
 				// forbids for ML-DSA keys.
 				crt.Spec.Usages = pki.DefaultKeyUsagesForPublicKeyAlgorithm(x509.MLDSA)
-			} else if forbidden := pki.ForbiddenKeyUsagesForPublicKeyAlgorithm(crt.Spec.Usages, x509.MLDSA); len(forbidden) > 0 {
-				return fmt.Errorf("%w %q: key usages %v are not allowed for private key algorithm %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, forbidden, privateKeyAlgorithm)
+			} else {
+				var forbidden []cmapi.KeyUsage
+				for _, u := range crt.Spec.Usages {
+					if !pki.KeyUsageAllowedForPublicKeyAlgorithm(u, x509.MLDSA) {
+						forbidden = append(forbidden, u)
+					}
+				}
+				if len(forbidden) > 0 {
+					return fmt.Errorf("%w %q: key usages %v are not allowed for private key algorithm %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, forbidden, privateKeyAlgorithm)
+				}
 			}
 		default:
 			return fmt.Errorf("%w %q: invalid private key algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)

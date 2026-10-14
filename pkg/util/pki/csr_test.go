@@ -171,7 +171,7 @@ func TestKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
 	}
 }
 
-func TestForbiddenKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
+func TestKeyUsageAllowedForPublicKeyAlgorithm(t *testing.T) {
 	allowed := []cmapi.KeyUsage{
 		cmapi.UsageSigning,
 		cmapi.UsageDigitalSignature,
@@ -189,11 +189,17 @@ func TestForbiddenKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
 		cmapi.UsageDecipherOnly,
 	}
 
-	assert.Empty(t, ForbiddenKeyUsagesForPublicKeyAlgorithm(allowed, x509.MLDSA))
-	assert.Equal(t, forbidden, ForbiddenKeyUsagesForPublicKeyAlgorithm(append(allowed, forbidden...), x509.MLDSA))
+	for _, u := range allowed {
+		assert.True(t, KeyUsageAllowedForPublicKeyAlgorithm(u, x509.MLDSA), u)
+	}
+	for _, u := range forbidden {
+		assert.False(t, KeyUsageAllowedForPublicKeyAlgorithm(u, x509.MLDSA), u)
+	}
 
 	for _, pubKeyAlgo := range []x509.PublicKeyAlgorithm{x509.RSA, x509.ECDSA, x509.Ed25519} {
-		assert.Empty(t, ForbiddenKeyUsagesForPublicKeyAlgorithm(forbidden, pubKeyAlgo), pubKeyAlgo.String())
+		for _, u := range forbidden {
+			assert.True(t, KeyUsageAllowedForPublicKeyAlgorithm(u, pubKeyAlgo), "%s %s", pubKeyAlgo, u)
+		}
 	}
 }
 

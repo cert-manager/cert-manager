@@ -57,8 +57,8 @@ import (
 // have a fixed size for each parameter set, and are much larger than ECDSA or Ed25519 ones.
 // PEM-encoded self-signed ML-DSA X.509 CA certificates: ML-DSA-44 is ~5.5kB, ML-DSA-65 is ~7.6kB, ML-DSA-87 is ~10.2kB.
 // ML-DSA-65 and ML-DSA-87 CA certificates are larger than maxCACertificatePEMSize, but that constant is only an estimate used to
-// derive maxCertificateChainSize and isn't enforced on its own. A chain of four ML-DSA-87 certificates (~41kB) fits comfortably
-// within maxCertificateChainSize; only a pathological chain of about ten ML-DSA-87 certificates would exceed it.
+// derive maxLeafCertificatePEMSize and maxCertificateChainSize, and isn't enforced on its own. A chain of nine ML-DSA-87
+// certificates (~92kB) fits within maxCertificateChainSize; only a pathological chain of ten or more would exceed it.
 // PEM-encoded ML-DSA private keys are small when stored as a seed (as cert-manager writes them), and still smaller than
 // maxPrivateKeyPEMSize in OpenSSL's larger "both" format (~6.7kB for ML-DSA-87).
 
@@ -68,6 +68,8 @@ const (
 	// The value is based on how large a "realistic" (but still very large) 16k-bit RSA CA certificate might be, plus about a kilobyte of extra data.
 	// 16k-bit RSA keys are impractical on most on modern hardware due to how slow they can be,
 	// so we can reasonably assume that no real-world PEM-encoded X.509 cert will be larger than this because of the key size.
+	// ML-DSA-65 and ML-DSA-87 CA certificates (~7.6kB and ~10.2kB) are larger than this value. That's fine because it isn't enforced
+	// on its own: it's only used to derive the limits below, which ML-DSA certificates and realistic chains fit within (see above).
 	maxCACertificatePEMSize = 6500
 
 	// maxLeafCertificatePEMSize is the maximum size in bytes expected for a single PEM-encoded X.509 certificate which SafeDecodeSingleCertificate will accept.

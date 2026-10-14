@@ -84,7 +84,7 @@ const (
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
 	OtherNames featuregate.Feature = "OtherNames"
 
-	// Owner: @siddhibhor-56, @FelixPhipps
+	// Owner: @SgtCoDFish, @FelixPhipps
 	// Alpha: v1.22
 	//
 	// MLDSAPrivateKeys adds support for ML-DSA (FIPS 204) post-quantum private

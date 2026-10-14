@@ -147,21 +147,17 @@ const mldsaForbiddenKeyUsages = x509.KeyUsageKeyEncipherment |
 	x509.KeyUsageEncipherOnly |
 	x509.KeyUsageDecipherOnly
 
-// ForbiddenKeyUsagesForPublicKeyAlgorithm returns the usages from the given
-// list which aren't allowed for a key with the given public key algorithm.
-// Only ML-DSA keys have forbidden usages.
-func ForbiddenKeyUsagesForPublicKeyAlgorithm(usages []v1.KeyUsage, pubKeyAlgo x509.PublicKeyAlgorithm) []v1.KeyUsage {
+// KeyUsageAllowedForPublicKeyAlgorithm reports whether the given usage is
+// allowed for a key with the given public key algorithm. Only ML-DSA keys have
+// usages which aren't allowed (see mldsaForbiddenKeyUsages). Unknown usages are
+// reported as allowed, because they're rejected elsewhere.
+func KeyUsageAllowedForPublicKeyAlgorithm(usage v1.KeyUsage, pubKeyAlgo x509.PublicKeyAlgorithm) bool {
 	if pubKeyAlgo != x509.MLDSA {
-		return nil
+		return true
 	}
 
-	var forbidden []v1.KeyUsage
-	for _, u := range usages {
-		if kuse, ok := apiutil.KeyUsageType(u); ok && kuse&mldsaForbiddenKeyUsages != 0 {
-			forbidden = append(forbidden, u)
-		}
-	}
-	return forbidden
+	kuse, ok := apiutil.KeyUsageType(usage)
+	return !ok || kuse&mldsaForbiddenKeyUsages == 0
 }
 
 // IsMLDSAPublicKey returns true if the given public key is an ML-DSA key.
@@ -579,7 +575,7 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 	} else {
 		pubKeyAlgo, ok = keyAlgorithms[specAlgorithm]
 		if !ok {
-			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519', 'mldsa' or 'rsa", crt.Spec.PrivateKey.Algorithm)
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519', 'mldsa' or 'rsa'", crt.Spec.PrivateKey.Algorithm)
 		}
 	}
 
