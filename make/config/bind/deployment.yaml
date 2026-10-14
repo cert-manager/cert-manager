@@ -15,8 +15,8 @@ spec:
         app: bind
     spec:
       securityContext:
-        # 101 is the user id of the bind user
-        runAsUser: 101
+        # 100:101 is the uid:gid of the bind user in the ubuntu/bind9 image
+        runAsUser: 100
         runAsGroup: 101
         fsGroup: 101
       containers:
