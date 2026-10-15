@@ -26,7 +26,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pires/go-proxyproto"
-	h2proxy "github.com/pires/go-proxyproto/helper/http2"
 )
 
 const (
@@ -41,7 +40,8 @@ const (
 )
 
 type HTTP01Solver struct {
-	ListenPort int
+	ListenPort    int
+	ProxyProtocol bool
 
 	Domain string
 	Token  string
@@ -64,20 +64,18 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 
-	netListener, err := net.Listen("tcp", h.Server.Addr)
-	if err != nil {
-		return err
-	}
+	if h.ProxyProtocol {
+		netListener, err := net.Listen("tcp", h.Server.Addr)
+		if err != nil {
+			return err
+		}
 
-	proxyListener := &proxyproto.Listener{
-		Listener:          netListener,
-		ReadHeaderTimeout: h.Server.ReadHeaderTimeout,
-		ConnPolicy: func(proxyproto.ConnPolicyOptions) (proxyproto.Policy, error) {
-			return proxyproto.USE, nil
-		},
-	}
+		proxyListener := &proxyproto.Listener{Listener: netListener}
 
-	return h2proxy.NewServer(&h.Server, nil).Serve(proxyListener)
+		return h.Server.Serve(proxyListener)
+	} else {
+		return h.Server.ListenAndServe()
+	}
 }
 
 func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
