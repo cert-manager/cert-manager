@@ -228,7 +228,7 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 	}
 
 	if crt.Renewal != nil {
-		el = append(el, validateCertificateRenewal(crt, fldPath)...)
+		el = append(el, validateCertificateRenewal(crt, oldCrt, fldPath)...)
 	}
 
 	return el
@@ -509,7 +509,7 @@ func validateKeystores(crt *internalcmapi.CertificateSpec, fldPath *field.Path) 
 	return el
 }
 
-func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func validateCertificateRenewal(crt, oldCrt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	var el field.ErrorList
 	switch crt.Renewal.Policy {
 	case internalcmapi.RenewBefore:
@@ -524,7 +524,9 @@ func validateCertificateRenewal(crt *internalcmapi.CertificateSpec, fldPath *fie
 
 	if crt.Renewal.Windows != nil {
 		for i, window := range crt.Renewal.Windows {
-			el = append(el, validateCertificateRenewalWindows(window, fldPath.Child("renewal", "windows").Index(i))...)
+			windowPath := fldPath.Child("renewal", "windows").Index(i)
+			el = append(el, validateCertificateRenewalWindows(window, windowPath)...)
+			el = append(el, validateCertificateRenewalWindowFeasibility(crt, oldCrt, window, windowPath)...)
 		}
 	}
 
@@ -547,4 +549,97 @@ func validateCertificateRenewalWindows(window internalcmapi.CertificateRenewalWi
 	}
 
 	return el
+}
+
+const (
+	// renewalWindowCronSamples bounds how many consecutive activations are
+	// inspected when measuring how often a renewal window recurs. Schedules
+	// with an uneven period, such as "0 0 1 * *" which is 28 to 31 days, need
+	// several samples before the shortest gap is seen.
+	renewalWindowCronSamples = 16
+
+	renewalWindowNeverMatches = "cron never matches a date, so this window can never be entered"
+
+	renewalWindowTooInfrequentFmt = "cron matches at most once every %s, which is longer than the %s renewal search range of a certificate with duration %s; whether a window is found at all depends on when the certificate happens to be issued"
+)
+
+// renewalWindowCronEpoch is a fixed reference point for measuring how often a
+// renewal window recurs, so that a given spec always validates the same way.
+// It starts on a leap year so that "29 February" schedules are measured
+// correctly.
+var renewalWindowCronEpoch = time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+// validateCertificateRenewalWindowFeasibility rejects renewal windows that
+// recur less often than pki.RenewalTime searches. Whether such a window is hit
+// then depends on where the certificate's validity happens to fall, so it
+// cannot be relied on across renewals: when it is missed the Certificate keeps
+// Ready=False with reason WindowError and is renewed outside its windows.
+func validateCertificateRenewalWindowFeasibility(crt, oldCrt *internalcmapi.CertificateSpec, window internalcmapi.CertificateRenewalWindows, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+
+	// These checks build on validateCertificateRenewalWindows, so skip them
+	// when the window is not syntactically valid in the first place.
+	if window.WindowDuration == nil || window.WindowDuration.Duration <= 0 {
+		return el
+	}
+	schedule, err := utilpkg.CronParse(window.Cron, window.Timezone)
+	if err != nil {
+		return el
+	}
+
+	interval, matches := minCronInterval(schedule)
+	if !matches {
+		el = append(el, field.Invalid(fldPath.Child("cron"), window.Cron, renewalWindowNeverMatches))
+		return el
+	}
+	if interval == 0 {
+		// Only a single activation could be measured, so there is nothing to
+		// compare the certificate lifetime against.
+		return el
+	}
+
+	// applyRenewBeforeWithWindows searches for a window start within
+	// [notBefore-windowDuration, notAfter+windowDuration), so this is the
+	// widest range a window start can ever fall into.
+	duration := util.DefaultCertDuration(crt.Duration)
+	searchRange := duration + 2*window.WindowDuration.Duration
+
+	if interval > searchRange && !allowInfeasibleRenewalWindowOnUpdate(crt, oldCrt) {
+		el = append(el, field.Invalid(fldPath.Child("cron"), window.Cron, fmt.Sprintf(renewalWindowTooInfrequentFmt, interval, searchRange, duration)))
+	}
+
+	return el
+}
+
+// minCronInterval returns the shortest gap between consecutive activations of
+// schedule, measured from a fixed epoch. It reports false if the schedule never
+// matches a date, and a zero interval if only one activation could be found.
+func minCronInterval(schedule utilpkg.CronSchedule) (time.Duration, bool) {
+	previous := schedule.Next(renewalWindowCronEpoch)
+	if previous.IsZero() {
+		return 0, false
+	}
+
+	var shortest time.Duration
+	for range renewalWindowCronSamples {
+		next := schedule.Next(previous)
+		if next.IsZero() {
+			break
+		}
+		if gap := next.Sub(previous); shortest == 0 || gap < shortest {
+			shortest = gap
+		}
+		previous = next
+	}
+
+	return shortest, true
+}
+
+// allowInfeasibleRenewalWindowOnUpdate keeps Certificates that were admitted
+// before this validation existed updateable, as long as neither the duration
+// nor the renewal configuration is being changed.
+func allowInfeasibleRenewalWindowOnUpdate(crt, oldCrt *internalcmapi.CertificateSpec) bool {
+	return oldCrt != nil &&
+		reflect.DeepEqual(oldCrt.Duration, crt.Duration) &&
+		reflect.DeepEqual(oldCrt.Renewal, crt.Renewal)
 }
