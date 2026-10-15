@@ -2029,6 +2029,40 @@ This startupapicheck is a Helm post-install hook that waits for the webhook endp
 > ```
 
 Enables the startup api check.
+#### **startupapicheck.networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create a network policy for the startupapicheck Job.
+#### **startupapicheck.networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 80
+>       protocol: TCP
+>     - port: 443
+>       protocol: TCP
+>     - port: 53
+>       protocol: TCP
+>     - port: 53
+>       protocol: UDP
+>     - port: 6443
+>       protocol: TCP
+> - ports:
+>     - port: 5353
+>       protocol: TCP
+>     - port: 5353
+>       protocol: UDP
+>   to:
+>     - namespaceSelector:
+>         matchLabels:
+>           kubernetes.io/metadata.name: openshift-dns
+> ```
+
+Egress rule for the startupapicheck network policy. By default, it allows outbound traffic to ports 80 and 443, DNS ports, and the Kubernetes API server port used by OpenShift and OKD.
+
 #### **startupapicheck.securityContext** ~ `object`
 > Default value:
 > ```yaml
