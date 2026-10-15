@@ -700,13 +700,18 @@ func SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager string) Fun
 }
 
 // SecretOwnerReferenceManagedFieldMismatch validates that the Secret has an
-// owner reference to the Certificate if enabled. Returns true (violation) if:
+// owner reference to the Certificate when one is expected, that is when the
+// Certificate's deletion policy (spec.deletionPolicy, or defaultDeletionPolicy
+// when unset) is Delete and the Secret is the one the Certificate owns.
+// Returns true (violation) if:
 // * the Secret doesn't have an owner reference and is expecting one
 // * has an owner reference but is not expecting one
 // A violation with the reason `ManagedFieldsParseError` should be considered a
 // non re-triable error.
-func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager string) Func {
+func SecretOwnerReferenceManagedFieldMismatch(defaultDeletionPolicy cmapi.CertificateDeletionPolicy, fieldManager string) Func {
 	return func(input Input) (string, string, bool) {
+		ownerRefExpected, why := internalcertificates.SecretOwnerReferenceExpected(input.Certificate, input.Secret, defaultDeletionPolicy)
+
 		var hasOwnerRefManagedField bool
 		// Determine whether the Secret has the Certificate as an owner reference
 		// which is owned by the field manager.
@@ -729,11 +734,11 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 			}
 		}
 
-		// The presence of the Certificate owner reference should match owner
-		// reference being enabled.
-		if ownerRefEnabled != hasOwnerRefManagedField {
+		// The presence of the Certificate owner reference should match whether
+		// one is expected for this Certificate.
+		if ownerRefExpected != hasOwnerRefManagedField {
 			return SecretOwnerRefMismatch,
-				fmt.Sprintf("unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+				fmt.Sprintf("unexpected managed Secret Owner Reference field on Secret, owner reference expected %t: %s", ownerRefExpected, why), true
 		}
 
 		return "", "", false
@@ -741,13 +746,15 @@ func SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled bool, fieldManager
 }
 
 // SecretOwnerReferenceMismatch validates that the Secret has the expected
-// owner reference if it is enabled. Returns true (violation) if:
-// * owner reference is enabled, but the reference has an incorrect value
-func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
+// owner reference when one is expected for the Certificate (see
+// SecretOwnerReferenceManagedFieldMismatch). Returns true (violation) if:
+// * an owner reference is expected, but the reference has an incorrect value
+func SecretOwnerReferenceMismatch(defaultDeletionPolicy cmapi.CertificateDeletionPolicy) Func {
 	return func(input Input) (string, string, bool) {
-		// If the Owner Reference is not enabled, we don't need to check the value
-		// and can exit early.
-		if !ownerRefEnabled {
+		// If no owner reference is expected for this Certificate, there is no
+		// value to check and we can exit early.
+		ownerRefExpected, why := internalcertificates.SecretOwnerReferenceExpected(input.Certificate, input.Secret, defaultDeletionPolicy)
+		if !ownerRefExpected {
 			return "", "", false
 		}
 
@@ -768,11 +775,11 @@ func SecretOwnerReferenceMismatch(ownerRefEnabled bool) Func {
 			}
 		}
 
-		// Owner reference is enabled at this point. If the Owner Reference value
-		// doesn't match the expected value, return violation.
+		// An owner reference is expected at this point. If the Owner Reference
+		// value doesn't match the expected value, return violation.
 		if !hasOwnerRefMatchingCertificate {
 			return SecretOwnerRefMismatch,
-				fmt.Sprintf("unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=%t", ownerRefEnabled), true
+				fmt.Sprintf("unexpected Secret Owner Reference value on Secret, owner reference expected: %s", why), true
 		}
 
 		return "", "", false
