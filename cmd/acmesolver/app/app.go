@@ -78,6 +78,7 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&s.ListenPort, "listen-port", 8089, "the port number to listen on for connections")
+	cmd.Flags().BoolVar(&s.ProxyProtocol, "proxy-protocol", false, "enable the proxy protocol for connections")
 	cmd.Flags().StringVar(&s.Domain, "domain", "", "the domain name to verify")
 	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
 	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
