@@ -68,10 +68,8 @@ func (c *ca) createCAIssuer(ctx context.Context, f *framework.Framework) cmmeta.
 	c.secretName = rootCertSecret.Name
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "ca-issuer-",
-		},
-		Spec: createCAIssuerSpec(rootCertSecret.Name),
+		GenerateName: "ca-issuer-",
+		Spec:         createCAIssuerSpec(rootCertSecret.Name),
 	}, metav1.CreateOptions{})
 
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
@@ -97,10 +95,8 @@ func (c *ca) createCAClusterIssuer(ctx context.Context, f *framework.Framework) 
 	c.secretName = rootCertSecret.Name
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "ca-cluster-issuer-",
-		},
-		Spec: createCAIssuerSpec(rootCertSecret.Name),
+		GenerateName: "ca-cluster-issuer-",
+		Spec:         createCAIssuerSpec(rootCertSecret.Name),
 	}, metav1.CreateOptions{})
 
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
@@ -129,10 +125,8 @@ func (c *ca) deleteCAClusterIssuer(ctx context.Context, f *framework.Framework, 
 
 func createCAIssuerSpec(rootCertSecretName string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			CA: &cmapi.CAIssuer{
-				SecretName: rootCertSecretName,
-			},
+		CA: &cmapi.CAIssuer{
+			SecretName: rootCertSecretName,
 		},
 	}
 }
@@ -191,9 +185,7 @@ tSK2ayFX1wQ3PuEmewAogy/20tWo80cr556AXA62Utl2PzLK30Db8w==
 
 func newSigningKeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
-		},
+		GenerateName: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       rootCert,
 			corev1.TLSPrivateKeyKey: rootKey,

@@ -52,7 +52,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 
 	namespace := "testns"
 
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	secretName := "testsecret"
 	secretNamespace := "testns"
 
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: secretNamespace}}
+	ns := &corev1.Namespace{Name: secretNamespace}
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)

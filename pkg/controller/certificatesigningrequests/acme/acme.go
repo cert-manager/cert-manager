@@ -329,14 +329,12 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	// Truncate certificate name so final name will be <= 63 characters. Hash
 	// (uint32) will be at most 10 digits long, and we account for the hyphen.
 	return &cmacme.Order{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   a.issuerOptions.ResourceNamespace(iss),
-			Labels:      csr.Labels,
-			Annotations: annotations,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(csr, schema.GroupVersionKind{Group: "certificates.k8s.io", Version: "v1", Kind: "CertificateSigningRequest"}),
-			},
+		Name:        name,
+		Namespace:   a.issuerOptions.ResourceNamespace(iss),
+		Labels:      csr.Labels,
+		Annotations: annotations,
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(csr, schema.GroupVersionKind{Group: "certificates.k8s.io", Version: "v1", Kind: "CertificateSigningRequest"}),
 		},
 		Spec: spec,
 	}, nil

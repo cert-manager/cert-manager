@@ -195,10 +195,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(ctx context.Context, f
 
 	By("Creating an ACME HTTP01 Ingress Issuer")
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-http01-",
-		},
-		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
+		GenerateName: "acme-issuer-http01-",
+		Spec:         a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -221,10 +219,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(ctx context.Con
 
 	By("Creating an ACME HTTP01 Ingress ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-http01-",
-		},
-		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
+		GenerateName: "acme-cluster-issuer-http01-",
+		Spec:         a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
@@ -257,10 +253,8 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(ctx context.Context, f
 
 	By("Creating an ACME HTTP01 Gateway Issuer")
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-http01-",
-		},
-		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+		GenerateName: "acme-issuer-http01-",
+		Spec:         a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -289,10 +283,8 @@ func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(ctx co
 	}
 
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "pacme-issuer-http01-",
-		},
-		Spec: a.createHTTP01IngressIssuerSpec(PublicACMEServerStagingURL),
+		GenerateName: "pacme-issuer-http01-",
+		Spec:         a.createHTTP01IngressIssuerSpec(PublicACMEServerStagingURL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
@@ -326,10 +318,8 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Con
 	// wait for issuer to be ready
 	By("Creating an ACME HTTP01 Gateway ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-http01-",
-		},
-		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+		GenerateName: "acme-cluster-issuer-http01-",
+		Spec:         a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
@@ -348,24 +338,22 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(ctx context.Con
 
 func (a *acmeIssuerProvisioner) createHTTP01IngressIssuerSpec(serverURL string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key-http01",
-					},
+		ACME: &cmacme.ACMEIssuer{
+			Server:        serverURL,
+			SkipTLSVerify: true,
+			PrivateKey: cmmeta.SecretKeySelector{
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: "acme-private-key-http01",
 				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							// Not setting the Class or Name field will cause cert-manager to create
-							// new ingress resources that do not specify a class to solve challenges,
-							// which means all Ingress controllers should act on the ingresses.
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
+			},
+			ExternalAccountBinding: a.eab,
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						// Not setting the Class or Name field will cause cert-manager to create
+						// new ingress resources that do not specify a class to solve challenges,
+						// which means all Ingress controllers should act on the ingresses.
+						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 					},
 				},
 			},
@@ -375,31 +363,29 @@ func (a *acmeIssuerProvisioner) createHTTP01IngressIssuerSpec(serverURL string) 
 
 func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, labels map[string]string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key-http01",
-					},
+		ACME: &cmacme.ACMEIssuer{
+			Server:        serverURL,
+			SkipTLSVerify: true,
+			PrivateKey: cmmeta.SecretKeySelector{
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: "acme-private-key-http01",
 				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
-								Labels: labels,
-								ParentRefs: []gwapi.ParentReference{
-									{
-										Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
-										Name:      "acmesolver",
-										Kind: func() *gwapi.Kind {
-											g := gwapi.Kind("Gateway")
-											return &g
-										}(),
-										SectionName: nil,
-									},
+			},
+			ExternalAccountBinding: a.eab,
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+						GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+							Labels: labels,
+							ParentRefs: []gwapi.ParentReference{
+								{
+									Namespace: func() *gwapi.Namespace { n := gwapi.Namespace("kgateway-system"); return &n }(),
+									Name:      "acmesolver",
+									Kind: func() *gwapi.Kind {
+										g := gwapi.Kind("Gateway")
+										return &g
+									}(),
+									SectionName: nil,
 								},
 							},
 						},
@@ -415,10 +401,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(ctx context.Context, f *framew
 
 	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		GenerateName: "acme-issuer-dns01-",
+		Spec:         a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
@@ -440,10 +424,8 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f 
 
 	By("Creating an ACME DNS01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		GenerateName: "acme-cluster-issuer-dns01-",
+		Spec:         a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
@@ -462,22 +444,20 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(ctx context.Context, f 
 
 func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL, dnsServer string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key",
-					},
+		ACME: &cmacme.ACMEIssuer{
+			Server:        serverURL,
+			SkipTLSVerify: true,
+			PrivateKey: cmmeta.SecretKeySelector{
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: "acme-private-key",
 				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-								Nameserver: dnsServer,
-							},
+			},
+			ExternalAccountBinding: a.eab,
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: dnsServer,
 						},
 					},
 				},
@@ -495,10 +475,8 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(ctx context.Context, f *framewor
 		ns = f.Namespace.Name
 	}
 	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "external-account-binding-",
-			Namespace:    ns,
-		},
+		GenerateName: "external-account-binding-",
+		Namespace:    ns,
 		Data: map[string][]byte{
 			// Must match the key in the Pebble config. See:
 			// config.json in make/config/pebble/templates/configmaps.yaml
@@ -508,10 +486,8 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(ctx context.Context, f *framewor
 	Expect(err).NotTo(HaveOccurred())
 
 	a.eab.Key = cmmeta.SecretKeySelector{
-		Key: "key",
-		LocalObjectReference: cmmeta.LocalObjectReference{
-			Name: sec.Name,
-		},
+		Key:  "key",
+		Name: sec.Name,
 	}
 
 	a.secretNamespace = sec.Namespace

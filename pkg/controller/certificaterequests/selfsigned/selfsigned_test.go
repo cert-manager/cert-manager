@@ -77,19 +77,15 @@ func TestSign(t *testing.T) {
 	}
 	skRSAPEM := pki.EncodePKCS1PrivateKey(skRSA)
 	rsaKeySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-rsa-key",
-			Namespace: gen.DefaultTestNamespace,
-		},
+		Name:      "test-rsa-key",
+		Namespace: gen.DefaultTestNamespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: skRSAPEM,
 		},
 	}
 	invalidKeySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rsaKeySecret.Name,
-			Namespace: gen.DefaultTestNamespace,
-		},
+		Name:      rsaKeySecret.Name,
+		Namespace: gen.DefaultTestNamespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: []byte("this is a bad key"),
 		},
@@ -107,10 +103,8 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 	ecKeySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rsaKeySecret.Name,
-			Namespace: gen.DefaultTestNamespace,
-		},
+		Name:      rsaKeySecret.Name,
+		Namespace: gen.DefaultTestNamespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: skECPEM,
 		},

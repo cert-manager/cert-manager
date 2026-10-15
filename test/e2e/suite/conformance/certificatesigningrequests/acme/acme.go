@@ -139,10 +139,8 @@ func (a *acme) ensureEABSecret(ctx context.Context, f *framework.Framework, ns s
 		ns = f.Namespace.Name
 	}
 	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "external-account-binding-",
-			Namespace:    ns,
-		},
+		GenerateName: "external-account-binding-",
+		Namespace:    ns,
 		Data: map[string][]byte{
 			// Must match the key in the Pebble config. See:
 			// config.json in make/config/pebble/templates/configmaps.yaml
@@ -152,10 +150,8 @@ func (a *acme) ensureEABSecret(ctx context.Context, f *framework.Framework, ns s
 	Expect(err).NotTo(HaveOccurred())
 
 	a.eab.Key = cmmeta.SecretKeySelector{
-		Key: "key",
-		LocalObjectReference: cmmeta.LocalObjectReference{
-			Name: sec.Name,
-		},
+		Key:  "key",
+		Name: sec.Name,
 	}
 
 	a.secretNamespace = sec.Namespace

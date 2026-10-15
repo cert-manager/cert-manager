@@ -24,7 +24,6 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,10 +45,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 	}{
 		"No errors on valid certificaterequest with no usages set": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
@@ -64,10 +61,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 		},
 		"No errors on valid certificaterequest with special usages set": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
@@ -83,10 +78,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 		},
 		"No errors on valid certificaterequest with special usages set only in CSR": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
@@ -102,10 +95,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 		},
 		"No errors on valid certificaterequest with special usages only set in spec": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
@@ -122,10 +113,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 		},
 		"Errors on certificaterequest with mismatch of usages": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{
@@ -142,10 +131,8 @@ func TestValidationCertificateRequests(t *testing.T) {
 		},
 		"Shouldn't error when setting user info, since this will be overwritten by the mutating webhook": {
 			input: &cmapi.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 				Spec: cmapi.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, &cmapi.Certificate{
 						Spec: cmapi.CertificateSpec{

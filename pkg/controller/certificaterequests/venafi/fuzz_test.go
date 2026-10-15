@@ -126,10 +126,8 @@ func FuzzVenafiCRController(f *testing.F) {
 		// Add token if the fuzzer decides to.
 		if addToken {
 			tokenSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: gen.DefaultTestNamespace,
-					Name:      "token-secret",
-				},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "token-secret",
 				Data: map[string][]byte{
 					"my-token-key": secretTokenData,
 				},

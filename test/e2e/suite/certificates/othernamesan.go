@@ -53,10 +53,8 @@ var _ = framework.CertManagerDescribe("other name san processing", func() {
 
 	createCertificate := func(testingCtx context.Context, f *framework.Framework, OtherNames []cmapi.OtherName) (*cmapi.Certificate, error) {
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: testName + "-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: testName + "-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},

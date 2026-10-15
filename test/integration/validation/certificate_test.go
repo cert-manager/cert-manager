@@ -23,7 +23,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/api"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,10 +44,8 @@ func TestValidationCertificate(t *testing.T) {
 	}{
 		"Happy path returns no errors": {
 			input: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testing",
-					Namespace: "default",
-				},
+				Name:      "testing",
+				Namespace: "default",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},
@@ -65,10 +62,8 @@ func TestValidationCertificate(t *testing.T) {
 		},
 		"Bad value for certificate.spec.privateKey.rotationPolicy returns error": {
 			input: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testing",
-					Namespace: "default",
-				},
+				Name:      "testing",
+				Namespace: "default",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testing-tls",
 					DNSNames:   []string{"myhostname.com"},

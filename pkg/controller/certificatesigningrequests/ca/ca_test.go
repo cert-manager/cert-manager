@@ -151,10 +151,8 @@ func TestSign(t *testing.T) {
 	// generate a self-signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
 	ecCASecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "root-ca-secret",
-			Namespace: gen.DefaultTestNamespace,
-		},
+		Name:      "root-ca-secret",
+		Namespace: gen.DefaultTestNamespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: rootPKPEM,
 			corev1.TLSCertKey:       rootCertPEM,

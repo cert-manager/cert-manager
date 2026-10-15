@@ -72,10 +72,8 @@ func (v *VenafiCloud) Setup(ctx context.Context, cfg *config.Config, _ ...intern
 
 func (v *VenafiCloud) Provision(ctx context.Context) error {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-venafi-cloud-",
-			Namespace:    v.Namespace,
-		},
+		GenerateName: "cm-e2e-venafi-cloud-",
+		Namespace:    v.Namespace,
 		Data: map[string][]byte{
 			"apikey": []byte(v.config.Addons.Venafi.Cloud.APIToken),
 		},
@@ -116,9 +114,7 @@ func (v *VenafiCloud) SupportsGlobal() bool {
 
 func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
 	return &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
-		},
+		GenerateName: "venafi-cloud-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &t.issuerTemplate,
@@ -129,9 +125,7 @@ func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
 
 func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	return &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
-		},
+		GenerateName: "venafi-cloud-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &t.issuerTemplate,

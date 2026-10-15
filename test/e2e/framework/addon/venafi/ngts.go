@@ -78,10 +78,8 @@ func (v *VenafiNGTS) Setup(ctx context.Context, cfg *config.Config, _ ...interna
 
 func (v *VenafiNGTS) Provision(ctx context.Context) error {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-venafi-ngts-",
-			Namespace:    v.Namespace,
-		},
+		GenerateName: "cm-e2e-venafi-ngts-",
+		Namespace:    v.Namespace,
 		Data: map[string][]byte{
 			"client-id":     []byte(v.config.Addons.Venafi.NGTS.ClientID),
 			"client-secret": []byte(v.config.Addons.Venafi.NGTS.ClientSecret),
@@ -121,9 +119,7 @@ func (v *VenafiNGTS) SupportsGlobal() bool {
 
 func (d *NGTSDetails) BuildIssuer() *cmapi.Issuer {
 	return &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-ngts-",
-		},
+		GenerateName: "venafi-ngts-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &d.issuerTemplate,
@@ -134,9 +130,7 @@ func (d *NGTSDetails) BuildIssuer() *cmapi.Issuer {
 
 func (d *NGTSDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	return &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-ngts-",
-		},
+		GenerateName: "venafi-ngts-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &d.issuerTemplate,

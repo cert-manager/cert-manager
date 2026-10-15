@@ -102,12 +102,10 @@ func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) 
 		annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = *crt.Status.NextPrivateKeySecretName
 	}
 	certificateRequest := &cmapi.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "NOT SET",
-			Namespace:       crt.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Annotations:     annotations,
-		},
+		Name:            "NOT SET",
+		Namespace:       crt.Namespace,
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+		Annotations:     annotations,
 		Spec: cmapi.CertificateRequestSpec{
 			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,

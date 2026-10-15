@@ -326,6 +326,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01Config.SolverRunAsNonRoot
 
+	//nolint:modernize // embedlit: the group names document which options struct each field belongs to
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
 		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
