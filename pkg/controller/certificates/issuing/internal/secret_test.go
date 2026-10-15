@@ -328,6 +328,142 @@ func Test_SecretsManager(t *testing.T) {
 			expectedErr: false,
 		},
 
+		"if secret does not exist, create new Secret with owner reference when deletionPolicy is Delete and the controller default is Orphan": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        gen.CertificateFrom(baseCertBundle.Certificate, gen.SetCertificateDeletionPolicy(cmapi.CertificateDeletionPolicyDelete)),
+			existingSecret:     nil,
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expUID := apitypes.UID("test-uid")
+
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io", cmapi.IssuerKindAnnotationKey: "Issuer",
+								cmapi.IssuerNameAnnotationKey: "ca-issuer", cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey: strings.Join(baseCertBundle.Cert.DNSNames, ","), cmapi.IPSANAnnotationKey: strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey: strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}).
+						WithData(map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes, corev1.TLSPrivateKeyKey: []byte("test-key"), cmmeta.TLSCAKey: []byte("test-ca")}).
+						WithType(corev1.SecretTypeTLS).
+						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+							APIVersion: new("cert-manager.io/v1"), Kind: new("Certificate"),
+							Name: new("test"), UID: &expUID,
+							Controller: new(true), BlockOwnerDeletion: new(true),
+						})
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: testpkg.FieldManager, Force: true}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does exist, update existing Secret without owner reference when deletionPolicy is Orphan and the controller default is Delete": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        gen.CertificateFrom(baseCertBundle.Certificate, gen.SetCertificateDeletionPolicy(cmapi.CertificateDeletionPolicyOrphan)),
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:       gen.DefaultTestNamespace,
+					Name:            "output",
+					Annotations:     map[string]string{cmapi.CertificateNameKey: "test"},
+					OwnerReferences: []metav1.OwnerReference{gen.CertificateRef("test", "test-uid")},
+				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "test", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: testpkg.FieldManager, Force: true}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does exist and is annotated with another Certificate's name, do not set an owner reference even when deletionPolicy is Delete": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        gen.CertificateFrom(baseCertBundle.Certificate, gen.SetCertificateDeletionPolicy(cmapi.CertificateDeletionPolicyDelete)),
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   gen.DefaultTestNamespace,
+					Name:        "output",
+					Annotations: map[string]string{cmapi.CertificateNameKey: "other"},
+				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			// ensureSecretData passes the certificate name it finds on the
+			// existing Secret, so the annotation keeps naming the owner.
+			secretData: SecretData{
+				Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key"),
+				CertificateName: "other", IssuerName: "ca-issuer", IssuerKind: "Issuer", IssuerGroup: "foo.io",
+			},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "other", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"}).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: testpkg.FieldManager, Force: true}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
 		"if secret does exist, update existing Secret and add annotations set in secretTemplate": {
 			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
 			certificate:        baseCertWithSecretTemplate,
@@ -889,7 +1025,7 @@ func Test_SecretsManager(t *testing.T) {
 				secretClient, secretLister,
 				recorder,
 				testpkg.FieldManager,
-				test.certificateOptions.EnableOwnerRef,
+				test.certificateOptions.DefaultSecretDeletionPolicy(),
 			)
 
 			err := testManager.UpdateData(t.Context(), test.certificate, test.secretData)

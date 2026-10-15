@@ -1916,8 +1916,8 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 	)
 
 	tests := map[string]struct {
-		input           Input
-		ownerRefEnabled bool
+		input         Input
+		defaultPolicy cmapi.CertificateDeletionPolicy
 
 		expReason    string
 		expMessage   string
@@ -1928,10 +1928,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Certificate: crt,
 				Secret:      &corev1.Secret{},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret managed field owner reference for different UID should return false": {
 			input: Input{
@@ -1948,10 +1948,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret managed field owner reference for same UID should return true": {
 			input: Input{
@@ -1968,10 +1968,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=false",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected managed Secret Owner Reference field on Secret, owner reference expected false: spec.deletionPolicy unset, controller default Orphan",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=false secret managed field different owner reference for same UID should return false": {
 			input: Input{
@@ -1988,10 +1988,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 
 		"ownerReferenceEnabled=true no secret managed field owner reference should return true": {
@@ -1999,10 +1999,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 				Certificate: crt,
 				Secret:      &corev1.Secret{},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected managed Secret Owner Reference field on Secret, owner reference expected true: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret managed field owner reference for different UID should return true": {
 			input: Input{
@@ -2019,10 +2019,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected managed Secret Owner Reference field on Secret, owner reference expected true: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret managed field owner reference for same UID should return false": {
 			input: Input{
@@ -2039,10 +2039,10 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=true secret managed field different owner reference for same UID should return true": {
 			input: Input{
@@ -2059,16 +2059,16 @@ func Test_SecretOwnerReferenceManagedFieldMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected managed Secret Owner Reference field on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected managed Secret Owner Reference field on Secret, owner reference expected true: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceManagedFieldMismatch(test.ownerRefEnabled, fieldManager)(test.input)
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceManagedFieldMismatch(test.defaultPolicy, fieldManager)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
@@ -2082,8 +2082,8 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 	)
 
 	tests := map[string]struct {
-		input           Input
-		ownerRefEnabled bool
+		input         Input
+		defaultPolicy cmapi.CertificateDeletionPolicy
 
 		expReason    string
 		expMessage   string
@@ -2094,10 +2094,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Certificate: crt,
 				Secret:      &corev1.Secret{},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret has random owner reference should return false": {
 			input: Input{
@@ -2110,10 +2110,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret has multiple random owner reference should return false": {
 			input: Input{
@@ -2127,10 +2127,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret has owner reference for certificate with correct value should return false": {
 			input: Input{
@@ -2145,10 +2145,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=false secret has owner reference for certificate with in-correct value should return false": {
 			input: Input{
@@ -2163,10 +2163,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: false,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 
 		"ownerReferenceEnabled=false no secret owner reference should return true": {
@@ -2174,10 +2174,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 				Certificate: crt,
 				Secret:      &corev1.Secret{},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has random owner reference should return true": {
 			input: Input{
@@ -2190,10 +2190,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has multiple random owner reference should return true": {
 			input: Input{
@@ -2207,10 +2207,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with correct value should return false": {
 			input: Input{
@@ -2225,10 +2225,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "",
-			expMessage:      "",
-			expViolation:    false,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "",
+			expMessage:    "",
+			expViolation:  false,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Name value should return true": {
 			input: Input{
@@ -2243,10 +2243,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong APIVersion value should return true": {
 			input: Input{
@@ -2261,10 +2261,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Kind value should return true": {
 			input: Input{
@@ -2279,10 +2279,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong Controller value should return true": {
 			input: Input{
@@ -2297,10 +2297,10 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 		"ownerReferenceEnabled=true secret has owner reference for certificate with wrong BlockDeletion value should return true": {
 			input: Input{
@@ -2315,19 +2315,157 @@ func Test_SecretOwnerReferenceMismatch(t *testing.T) {
 					},
 				},
 			},
-			ownerRefEnabled: true,
-			expReason:       "SecretOwnerRefMismatch",
-			expMessage:      "unexpected Secret Owner Reference value on Secret --enable-certificate-owner-ref=true",
-			expViolation:    true,
+			defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			expReason:     "SecretOwnerRefMismatch",
+			expMessage:    "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy unset, controller default Delete",
+			expViolation:  true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.ownerRefEnabled)(test.input)
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceMismatch(test.defaultPolicy)(test.input)
 			assert.Equal(t, test.expReason, gotReason)
 			assert.Equal(t, test.expMessage, gotMessage)
 			assert.Equal(t, test.expViolation, gotViolation)
+		})
+	}
+}
+
+func Test_SecretOwnerReference_DeletionPolicy(t *testing.T) {
+	const fieldManager = "cert-manager-test"
+
+	managedOwnerRef := func(manager, uid string) []metav1.ManagedFieldsEntry {
+		return []metav1.ManagedFieldsEntry{
+			{Manager: manager, FieldsV1: metav1.NewFieldsV1(`
+				{"f:metadata": {
+					"f:ownerReferences": {
+						"k:{\"uid\":\"` + uid + `\"}": {}
+				}}}`)},
+		}
+	}
+	annotated := func(owner string) map[string]string {
+		return map[string]string{cmapi.CertificateNameKey: owner}
+	}
+	fooRef := metav1.OwnerReference{APIVersion: "foo.bar.io/v1", Kind: "Foo", Name: "Bar", UID: "not-cert", Controller: new(false), BlockOwnerDeletion: new(false)}
+
+	tests := map[string]struct {
+		policy        cmapi.CertificateDeletionPolicy
+		defaultPolicy cmapi.CertificateDeletionPolicy
+		// secret is built against the Certificate the test creates, so it
+		// takes the Certificate to produce its own owner reference.
+		secret func(crt *cmapi.Certificate) *corev1.Secret
+
+		expManagedFieldViolation bool
+		expManagedFieldMessage   string
+		expValueViolation        bool
+		expValueMessage          string
+	}{
+		"Delete field with Orphan default on a Secret without owner reference flags both checks": {
+			policy: cmapi.CertificateDeletionPolicyDelete, defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: annotated(crt.Name)}}
+			},
+			expManagedFieldViolation: true,
+			expManagedFieldMessage:   "unexpected managed Secret Owner Reference field on Secret, owner reference expected true: spec.deletionPolicy=Delete",
+			expValueViolation:        true,
+			expValueMessage:          "unexpected Secret Owner Reference value on Secret, owner reference expected: spec.deletionPolicy=Delete",
+		},
+		"Delete field with Orphan default on a Secret carrying the managed owner reference passes": {
+			policy: cmapi.CertificateDeletionPolicyDelete, defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Annotations:     annotated(crt.Name),
+					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))},
+					ManagedFields:   managedOwnerRef(fieldManager, string(crt.UID)),
+				}}
+			},
+		},
+		"Orphan field with Delete default on a Secret carrying the managed owner reference flags the managed field check only": {
+			policy: cmapi.CertificateDeletionPolicyOrphan, defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Annotations:     annotated(crt.Name),
+					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))},
+					ManagedFields:   managedOwnerRef(fieldManager, string(crt.UID)),
+				}}
+			},
+			expManagedFieldViolation: true,
+			expManagedFieldMessage:   "unexpected managed Secret Owner Reference field on Secret, owner reference expected false: spec.deletionPolicy=Orphan",
+		},
+		"Orphan field with Delete default on a Secret without owner reference passes": {
+			policy: cmapi.CertificateDeletionPolicyOrphan, defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: annotated(crt.Name)}}
+			},
+		},
+		"Delete field on a Secret owned by another Certificate expects no owner reference": {
+			policy: cmapi.CertificateDeletionPolicyDelete, defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: annotated("other")}}
+			},
+		},
+		"Delete default on a Secret owned by another Certificate expects no owner reference": {
+			policy: "", defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: annotated("other")}}
+			},
+		},
+		"Delete field on a Secret owned by another Certificate that still carries this Certificate's managed owner reference flags the managed field check": {
+			policy: cmapi.CertificateDeletionPolicyDelete, defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Annotations:     annotated("other"),
+					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))},
+					ManagedFields:   managedOwnerRef(fieldManager, string(crt.UID)),
+				}}
+			},
+			expManagedFieldViolation: true,
+			expManagedFieldMessage:   `unexpected managed Secret Owner Reference field on Secret, owner reference expected false: Secret is owned by Certificate "other" according to its cert-manager.io/certificate-name annotation`,
+		},
+		"Orphan field with a foreign owner reference set by another manager passes": {
+			policy: cmapi.CertificateDeletionPolicyOrphan, defaultPolicy: cmapi.CertificateDeletionPolicyDelete,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Annotations:     annotated(crt.Name),
+					OwnerReferences: []metav1.OwnerReference{fooRef},
+					ManagedFields:   managedOwnerRef("foo-manager", "not-cert"),
+				}}
+			},
+		},
+		"Delete field with both a foreign and the managed owner reference passes": {
+			policy: cmapi.CertificateDeletionPolicyDelete, defaultPolicy: cmapi.CertificateDeletionPolicyOrphan,
+			secret: func(crt *cmapi.Certificate) *corev1.Secret {
+				return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Annotations:     annotated(crt.Name),
+					OwnerReferences: []metav1.OwnerReference{fooRef, *metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))},
+					ManagedFields:   managedOwnerRef(fieldManager, string(crt.UID)),
+				}}
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			crt := gen.Certificate("test-certificate",
+				gen.SetCertificateUID("uid-123"),
+				gen.SetCertificateDeletionPolicy(test.policy),
+			)
+			input := Input{Certificate: crt, Secret: test.secret(crt)}
+
+			gotReason, gotMessage, gotViolation := SecretOwnerReferenceManagedFieldMismatch(test.defaultPolicy, fieldManager)(input)
+			assert.Equal(t, test.expManagedFieldViolation, gotViolation, "managed field check violation")
+			assert.Equal(t, test.expManagedFieldMessage, gotMessage, "managed field check message")
+			if test.expManagedFieldViolation {
+				assert.Equal(t, SecretOwnerRefMismatch, gotReason)
+			}
+
+			gotReason, gotMessage, gotViolation = SecretOwnerReferenceMismatch(test.defaultPolicy)(input)
+			assert.Equal(t, test.expValueViolation, gotViolation, "value check violation")
+			assert.Equal(t, test.expValueMessage, gotMessage, "value check message")
+			if test.expValueViolation {
+				assert.Equal(t, SecretOwnerRefMismatch, gotReason)
+			}
 		})
 	}
 }

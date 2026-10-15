@@ -1037,6 +1037,122 @@ func Test_IssuingController_OwnerReference(t *testing.T) {
 	}, time.Second*3, time.Millisecond*10, "expected Secret to have owner reference options to Certificate reverse: %#+v", secret.OwnerReferences)
 }
 
+// Test_IssuingController_DeletionPolicy checks that spec.deletionPolicy drives
+// the owner reference on the Secret of a Certificate that does not need
+// issuance: switching to Delete adds the reference and switching back to Orphan
+// removes it, both without creating a CertificateRequest. It also checks that a
+// Certificate never gains an owner reference on a Secret annotated with another
+// Certificate's name, whatever its policy says.
+func Test_IssuingController_DeletionPolicy(t *testing.T) {
+	const (
+		fieldManager = "cert-manager-issuing-test"
+	)
+
+	config, stopFn := framework.RunControlPlane(t)
+	t.Cleanup(stopFn)
+
+	kubeClient, factory, cmClient, cmFactory, scheme := framework.NewClients(t, config)
+	controllerContext := controllerpkg.Context{
+		Client:                    kubeClient,
+		Scheme:                    scheme,
+		KubeSharedInformerFactory: factory,
+		CMClient:                  cmClient,
+		SharedInformerFactory:     cmFactory,
+		Clock:                     clock.RealClock{},
+		ContextOptions: controllerpkg.ContextOptions{
+			// The controller-wide default stays Orphan; only the field moves.
+			CertificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+		},
+		Recorder:     framework.NewEventRecorder(t, scheme),
+		FieldManager: fieldManager,
+	}
+	ctrl, queue, mustSync, err := issuing.NewController(logf.Log, &controllerContext)
+	require.NoError(t, err)
+	c := controllerpkg.NewController(fieldManager, metrics.New(logf.Log, clock.RealClock{}), ctrl.ProcessItem, mustSync, nil, queue)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	ns, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "deletion-policy-test"}}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// newPair creates a Secret that already holds a valid certificate for the
+	// Certificate it returns, so the Certificate never needs issuance and only
+	// the post issuance checks run against the Secret.
+	newPair := func(name, secretName string, secretAnnotations map[string]string, mods ...gen.CertificateModifier) *cmapi.Certificate {
+		crt := gen.Certificate(name, append([]gen.CertificateModifier{
+			gen.SetCertificateNamespace(ns.Name),
+			gen.SetCertificateCommonName("my-common-name"),
+			gen.SetCertificateDNSNames("example.com"),
+			gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+			gen.SetCertificateKeySize(2048),
+			gen.SetCertificateSecretName(secretName),
+			gen.SetCertificateIssuer(cmmeta.IssuerReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+		}, mods...)...)
+		bundle := testcrypto.MustCreateCryptoBundle(t, crt, &clock.RealClock{})
+		_, err := kubeClient.CoreV1().Secrets(ns.Name).Create(t.Context(), &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: secretName, Annotations: secretAnnotations},
+			Data: map[string][]byte{
+				"ca.crt":  bundle.CertBytes,
+				"tls.crt": bundle.CertBytes,
+				"tls.key": bundle.PrivateKeyBytes,
+			},
+		}, metav1.CreateOptions{FieldManager: fieldManager})
+		require.NoError(t, err)
+		crt, err = cmClient.CertmanagerV1().Certificates(ns.Name).Create(t.Context(), crt, metav1.CreateOptions{})
+		require.NoError(t, err)
+		return crt
+	}
+	ownerReferences := func(secretName string) []metav1.OwnerReference {
+		secret, err := kubeClient.CoreV1().Secrets(ns.Name).Get(t.Context(), secretName, metav1.GetOptions{})
+		require.NoError(t, err)
+		return secret.OwnerReferences
+	}
+	setDeletionPolicy := func(crt *cmapi.Certificate, policy cmapi.CertificateDeletionPolicy) {
+		_, err := cmClient.CertmanagerV1().Certificates(ns.Name).Patch(t.Context(), crt.Name, types.MergePatchType,
+			[]byte(fmt.Sprintf(`{"spec":{"deletionPolicy":%q}}`, policy)), metav1.PatchOptions{})
+		require.NoError(t, err)
+	}
+	requireNoIssuance := func(crt *cmapi.Certificate) {
+		reqs, err := cmClient.CertmanagerV1().CertificateRequests(ns.Name).List(t.Context(), metav1.ListOptions{})
+		require.NoError(t, err)
+		require.Empty(t, reqs.Items, "expected no CertificateRequest to be created by a deletionPolicy change")
+		crt, err = cmClient.CertmanagerV1().Certificates(ns.Name).Get(t.Context(), crt.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		require.Nil(t, crt.Status.Revision, "expected the Certificate revision to stay unset")
+	}
+
+	t.Log("a Certificate without deletionPolicy leaves its Secret without owner reference while the controller default is Orphan")
+	crt := newPair("owner", "owner-secret", nil)
+	expectedRef := []metav1.OwnerReference{*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate"))}
+	require.Never(t, func() bool {
+		return len(ownerReferences("owner-secret")) != 0
+	}, time.Second*2, time.Millisecond*50, "expected Secret to stay without owner reference")
+
+	t.Log("switching deletionPolicy to Delete adds the owner reference without issuing")
+	setDeletionPolicy(crt, cmapi.CertificateDeletionPolicyDelete)
+	require.Eventually(t, func() bool {
+		return apiequality.Semantic.DeepEqual(ownerReferences("owner-secret"), expectedRef)
+	}, time.Second*5, time.Millisecond*50, "expected Secret to gain the owner reference to the Certificate: %#+v", ownerReferences("owner-secret"))
+	requireNoIssuance(crt)
+
+	t.Log("switching deletionPolicy to Orphan removes the owner reference again without issuing")
+	setDeletionPolicy(crt, cmapi.CertificateDeletionPolicyOrphan)
+	require.Eventually(t, func() bool {
+		return len(ownerReferences("owner-secret")) == 0
+	}, time.Second*5, time.Millisecond*50, "expected Secret to lose the owner reference to the Certificate: %#+v", ownerReferences("owner-secret"))
+	requireNoIssuance(crt)
+
+	t.Log("a Certificate with deletionPolicy Delete never gains an owner reference on a Secret annotated with another Certificate's name")
+	newPair("intruder", "foreign-secret", map[string]string{cmapi.CertificateNameKey: "someone-else"},
+		gen.SetCertificateDeletionPolicy(cmapi.CertificateDeletionPolicyDelete))
+	require.Never(t, func() bool {
+		return len(ownerReferences("foreign-secret")) != 0
+	}, time.Second*3, time.Millisecond*50, "expected the foreign Secret to stay without owner reference: %#+v", ownerReferences("foreign-secret"))
+	secret, err := kubeClient.CoreV1().Secrets(ns.Name).Get(t.Context(), "foreign-secret", metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Equal(t, "someone-else", secret.Annotations[cmapi.CertificateNameKey], "expected the owner annotation of the foreign Secret to be left alone")
+}
+
 // createNextPrivateKeySecret stores skBytes in a Secret that looks like one the
 // keymanager controller created for crt: it carries the labels the keymanager
 // sets and has crt as its controller. The issuing controller ignores any Secret
