@@ -23,6 +23,7 @@ import (
 	"maps"
 	"net"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -633,6 +634,10 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 		if a.Spec.DNSNames[i] != b.Spec.DNSNames[i] {
 			return true
 		}
+	}
+
+	if !slices.Equal(a.Spec.IPAddresses, b.Spec.IPAddresses) {
+		return true
 	}
 
 	if a.Spec.SecretName != b.Spec.SecretName {
