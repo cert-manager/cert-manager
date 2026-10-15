@@ -145,6 +145,10 @@ type CertificateSpecApplyConfiguration struct {
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
 	IsCA *bool `json:"isCA,omitempty"`
+	// Requested maximum path length for the certificate.
+	// Only meaningful when isCA is true. A value of 0 means no sub-CAs are allowed.
+	// When not set, no pathLenConstraint is encoded in the certificate.
+	MaxPathLen *int `json:"maxPathLen,omitempty"`
 	// Requested key usages and extended key usages.
 	// These usages are used to set the `usages` field on the created CertificateRequest
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
@@ -338,6 +342,14 @@ func (b *CertificateSpecApplyConfiguration) WithIssuerRef(value *applyconfigurat
 // If called multiple times, the IsCA field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithIsCA(value bool) *CertificateSpecApplyConfiguration {
 	b.IsCA = &value
+	return b
+}
+
+// WithMaxPathLen sets the MaxPathLen field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaxPathLen field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithMaxPathLen(value int) *CertificateSpecApplyConfiguration {
+	b.MaxPathLen = &value
 	return b
 }
 

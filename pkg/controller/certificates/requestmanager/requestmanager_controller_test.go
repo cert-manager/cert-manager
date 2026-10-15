@@ -309,6 +309,33 @@ func TestProcessItem(t *testing.T) {
 					)), relaxedCertificateRequestMatcher),
 			},
 		},
+		"create a CertificateRequest with maxPathLen propagated from Certificate": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle3.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateIsCA(true),
+				gen.SetCertificateMaxPathLen(new(1)),
+			),
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-1"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle3.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+						gen.SetCertificateRequestIsCA(true),
+						gen.SetCertificateRequestMaxPathLen(new(1)),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
 		"create a CertificateRequest if none exists (with long name)": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
