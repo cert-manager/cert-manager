@@ -73,6 +73,67 @@ func TestDecodeX509CertificateSetBytes(t *testing.T) {
 	if len(certs) != 1 {
 		t.Errorf("expected 1 certificate, got %d", len(certs))
 	}
+
+	// A valid certificate PEM with non-standard headers must be rejected.
+	block, _ := pem.Decode(certBytes)
+	if block == nil {
+		t.Fatal("failed to decode test certificate PEM")
+	}
+	headeredBytes := pem.EncodeToMemory(&pem.Block{
+		Type:    block.Type,
+		Headers: map[string]string{"Proc-Type": "4,ENCRYPTED"},
+		Bytes:   block.Bytes,
+	})
+	_, err = DecodeX509CertificateSetBytes(headeredBytes)
+	if err == nil {
+		t.Fatal("expected an error decoding a certificate PEM block with headers, got none")
+	}
+	expectHeaderErr := "blocks are not permitted to have PEM headers"
+	if !strings.Contains(err.Error(), expectHeaderErr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectHeaderErr, err.Error())
+	}
+
+	expectNonPEMErr := "unexpected non-PEM data in input"
+
+	// encoding/pem.Decode would silently skip leading garbage; we must reject it.
+	leadingGarbage := append([]byte("NOT-A-PEM-BLOCK\n"), certBytes...)
+	_, err = DecodeX509CertificateSetBytes(leadingGarbage)
+	if err == nil {
+		t.Fatal("expected an error decoding a certificate with leading non-PEM garbage, got none")
+	}
+	if !strings.Contains(err.Error(), expectNonPEMErr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectNonPEMErr, err.Error())
+	}
+
+	// Trailing garbage after the last PEM block must also be rejected.
+	trailingGarbage := append(append([]byte{}, certBytes...), []byte("\nNOT-A-PEM-BLOCK")...)
+	_, err = DecodeX509CertificateSetBytes(trailingGarbage)
+	if err == nil {
+		t.Fatal("expected an error decoding a certificate with trailing non-PEM garbage, got none")
+	}
+	if !strings.Contains(err.Error(), expectNonPEMErr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectNonPEMErr, err.Error())
+	}
+
+	// Non-PEM text between two valid certificates must be rejected.
+	interstitialGarbage := append(append(append([]byte{}, certBytes...), []byte("NOT-A-PEM-BLOCK\n")...), certBytes...)
+	_, err = DecodeX509CertificateSetBytes(interstitialGarbage)
+	if err == nil {
+		t.Fatal("expected an error decoding certificates with interstitial non-PEM garbage, got none")
+	}
+	if !strings.Contains(err.Error(), expectNonPEMErr) {
+		t.Errorf("expected err string to match: '%s', got: '%s'", expectNonPEMErr, err.Error())
+	}
+
+	// Whitespace around PEM blocks is normal and must still be accepted.
+	whitespacePadded := append(append([]byte("\n\n  \n"), certBytes...), []byte("\n\n  \n")...)
+	certs, err = DecodeX509CertificateSetBytes(whitespacePadded)
+	if err != nil {
+		t.Fatalf("unexpected error decoding a whitespace-padded certificate: %s", err)
+	}
+	if len(certs) != 1 {
+		t.Errorf("expected 1 certificate, got %d", len(certs))
+	}
 }
 
 func TestDecodeX509CertificateRequestBytes(t *testing.T) {
