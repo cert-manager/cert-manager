@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -208,6 +209,17 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	if s.ACMEOptions.HTTP01SolverRuntimeClassName != "" {
 		runtimeClassName = new(s.ACMEOptions.HTTP01SolverRuntimeClassName)
 	}
+	args := []string{
+		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+		fmt.Sprintf("--domain=%s", ch.Spec.DNSName),
+		fmt.Sprintf("--token=%s", ch.Spec.Token),
+		fmt.Sprintf("--key=%s", ch.Spec.Key),
+	}
+	// Give the solver the controller's log format. The flag is left out for
+	// the default format, so solver images that predate it keep working.
+	if format := s.ACMEOptions.HTTP01SolverLoggingFormat; format != "" && format != logsapi.DefaultLogFormat {
+		args = append(args, fmt.Sprintf("--logging-format=%s", format))
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -243,13 +255,7 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 					Name:            "acmesolver",
 					Image:           s.ACMEOptions.HTTP01SolverImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					// TODO: replace this with some kind of cmdline generator
-					Args: []string{
-						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
-						fmt.Sprintf("--domain=%s", ch.Spec.DNSName),
-						fmt.Sprintf("--token=%s", ch.Spec.Token),
-						fmt.Sprintf("--key=%s", ch.Spec.Key),
-					},
+					Args:            args,
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    s.ACMEOptions.HTTP01SolverResourceRequestCPU,
