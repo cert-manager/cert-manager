@@ -258,6 +258,13 @@ type CertificateSpec struct {
 	// Default value is `1`.
 	RevisionHistoryLimit *int32
 
+	// Defines what happens to the Secret named by `secretName` when this
+	// Certificate is deleted: `Delete` makes the Certificate the controller
+	// owner of the Secret so that it is garbage collected with the
+	// Certificate, `Orphan` leaves the Secret in place. When unset, the
+	// controller-wide default applies.
+	DeletionPolicy CertificateDeletionPolicy
+
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormat
@@ -343,6 +350,21 @@ var (
 	// RotationPolicyAlways means a private key matching the specified
 	// requirements will be generated whenever a re-issuance occurs.
 	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
+)
+
+// CertificateDeletionPolicy controls what happens to the Secret named by
+// `spec.secretName` when the Certificate that manages it is deleted.
+type CertificateDeletionPolicy string
+
+const (
+	// CertificateDeletionPolicyDelete sets the Certificate as the controller
+	// owner of its Secret, so the Secret is garbage collected when the
+	// Certificate is deleted.
+	CertificateDeletionPolicyDelete CertificateDeletionPolicy = "Delete"
+
+	// CertificateDeletionPolicyOrphan leaves the Secret in place when the
+	// Certificate is deleted.
+	CertificateDeletionPolicyOrphan CertificateDeletionPolicy = "Orphan"
 )
 
 // CertificateOutputFormatType specifies which additional output formats should
