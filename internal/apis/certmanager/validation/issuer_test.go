@@ -611,6 +611,58 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("solvers").Index(0).Child("waitInsteadOfSelfCheck"), -5*time.Second, "waitInsteadOfSelfCheck must not be negative"),
 			},
 		},
+		"acme solver with a valid delayBeforeAccept duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DelayBeforeAccept: &metav1.Duration{Duration: 30 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a negative delayBeforeAccept duration": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DelayBeforeAccept: &metav1.Duration{Duration: -5 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("solvers").Index(0).Child("delayBeforeAccept"), -5*time.Second, "delayBeforeAccept must not be negative"),
+			},
+		},
+		"acme solver with both waitInsteadOfSelfCheck and delayBeforeAccept": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						WaitInsteadOfSelfCheck: &metav1.Duration{Duration: 30 * time.Second},
+						DelayBeforeAccept:      &metav1.Duration{Duration: 30 * time.Second},
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("solvers").Index(0), "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"),
+			},
+		},
 		"acme solver with external account binding missing required fields": {
 			spec: &cmacme.ACMEIssuer{
 				Email:                  "valid-email",
