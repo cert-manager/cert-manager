@@ -107,12 +107,35 @@ spec:
           {{- if not .Values.prometheus.enabled }}
           - --metrics-listen-address=0
           {{- end }}
-          {{- if .Values.prometheus.enabled }}
           ports:
+          - containerPort: 6080
+            name: http-healthz
+            protocol: TCP
+          {{- if .Values.prometheus.enabled }}
           - containerPort: 9402
             name: http-metrics
             protocol: TCP
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-healthz
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.cainjector.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.cainjector.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.cainjector.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.cainjector.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.cainjector.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http-healthz
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.cainjector.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.cainjector.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.cainjector.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.cainjector.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.cainjector.readinessProbe.failureThreshold }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
