@@ -477,6 +477,50 @@ func TestRequestMatchesSpecIssuerRef(t *testing.T) {
 	}
 }
 
+func TestRequestMatchesSpecURIs(t *testing.T) {
+	tests := map[string]struct {
+		crURIs     []string
+		specURIs   []string
+		violations []string
+	}{
+		"should not report a violation if the URIs are equal": {
+			crURIs:   []string{"spiffe://cluster.local/ns/foo/sa/bar"},
+			specURIs: []string{"spiffe://cluster.local/ns/foo/sa/bar"},
+		},
+		"should not report a violation if the URI has an uppercase scheme": {
+			crURIs:   []string{"SPIFFE://cluster.local/ns/foo/sa/bar"},
+			specURIs: []string{"SPIFFE://cluster.local/ns/foo/sa/bar"},
+		},
+		"should not report a violation if the URI has an empty fragment": {
+			crURIs:   []string{"https://example.com/path#"},
+			specURIs: []string{"https://example.com/path#"},
+		},
+		"should not report a violation if the URIs are in a different order": {
+			crURIs:   []string{"spiffe://a/x", "spiffe://b/y"},
+			specURIs: []string{"spiffe://b/y", "spiffe://a/x"},
+		},
+		"should report a violation if a URI differs": {
+			crURIs:     []string{"spiffe://cluster.local/ns/foo/sa/bar"},
+			specURIs:   []string{"spiffe://cluster.local/ns/foo/sa/baz"},
+			violations: []string{"spec.uris"},
+		},
+		"should report a violation if the spec has an extra URI": {
+			crURIs:     []string{"spiffe://a/x"},
+			specURIs:   []string{"spiffe://a/x", "spiffe://b/y"},
+			violations: []string{"spec.uris"},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			cr := mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: cmapi.CertificateSpec{URIs: test.crURIs}})
+
+			violations, err := pki.RequestMatchesSpec(cr, cmapi.CertificateSpec{URIs: test.specURIs})
+			require.NoError(t, err)
+			assert.Equal(t, test.violations, violations)
+		})
+	}
+}
+
 func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 	tests := map[string]struct {
 		x509       *x509.Certificate
@@ -606,6 +650,22 @@ func TestFuzzyX509AltNamesMatchSpec(t *testing.T) {
 				IPAddresses: []string{"127.0.0.1"},
 			}),
 			violations: []string{"spec.commonName"},
+		},
+		"should match if a URI has an uppercase scheme": {
+			spec: cmapi.CertificateSpec{
+				URIs: []string{"SPIFFE://cluster.local/ns/foo/sa/bar"},
+			},
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
+				URIs: []string{"SPIFFE://cluster.local/ns/foo/sa/bar"},
+			}),
+		},
+		"should match if a URI has an empty fragment": {
+			spec: cmapi.CertificateSpec{
+				URIs: []string{"https://example.com/path#"},
+			},
+			x509: selfSignCertificate(t, cmapi.CertificateSpec{
+				URIs: []string{"https://example.com/path#"},
+			}),
 		},
 	}
 	for name, test := range tests {
