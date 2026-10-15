@@ -103,9 +103,7 @@ func jwsEncodeJSON(claimset interface{}, key crypto.Signer, kid KeyID, nonce, ur
 		}
 		payload = base64.RawURLEncoding.EncodeToString(cs)
 	}
-	hash := sha.New()
-	hash.Write([]byte(phead + "." + payload))
-	sig, err := jwsSign(key, sha, hash.Sum(nil))
+	sig, err := jwsSign(key, sha, []byte(phead+"."+payload))
 	if err != nil {
 		return nil, err
 	}
@@ -195,14 +193,13 @@ func jwkEncode(pub crypto.PublicKey) (string, error) {
 	return "", ErrUnsupportedKey
 }
 
-// jwsSign signs the digest using the given key.
-// The hash is unused for ECDSA keys.
-func jwsSign(key crypto.Signer, hash crypto.Hash, digest []byte) ([]byte, error) {
+// jwsSign signs the payload using the given key.
+func jwsSign(key crypto.Signer, hash crypto.Hash, payload []byte) ([]byte, error) {
 	switch pub := key.Public().(type) {
 	case *rsa.PublicKey:
-		return key.Sign(rand.Reader, digest, hash)
+		return crypto.SignMessage(key, rand.Reader, payload, hash)
 	case *ecdsa.PublicKey:
-		sigASN1, err := key.Sign(rand.Reader, digest, hash)
+		sigASN1, err := crypto.SignMessage(key, rand.Reader, payload, hash)
 		if err != nil {
 			return nil, err
 		}

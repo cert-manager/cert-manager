@@ -14,6 +14,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -353,6 +354,22 @@ func (s *customTestSigner) Sign(io.Reader, []byte, crypto.SignerOpts) ([]byte, e
 	return s.sig, nil
 }
 
+type customTestMessageSigner struct {
+	customTestSigner
+	msg  []byte
+	opts crypto.SignerOpts
+}
+
+func (s *customTestMessageSigner) Sign(io.Reader, []byte, crypto.SignerOpts) ([]byte, error) {
+	return nil, errors.New("customTestSigner: Sign() called instead of SignMessage()")
+}
+
+func (s *customTestMessageSigner) SignMessage(_ io.Reader, msg []byte, opts crypto.SignerOpts) ([]byte, error) {
+	s.msg = msg
+	s.opts = opts
+	return s.sig, nil
+}
+
 func TestJWSEncodeJSONCustom(t *testing.T) {
 	claims := struct{ Msg string }{"hello"}
 	const (
@@ -391,23 +408,32 @@ func TestJWSEncodeJSONCustom(t *testing.T) {
 	)
 
 	tt := []struct {
-		alg, phead    string
+		name, phead   string
 		pub           crypto.PublicKey
 		stdsig, jwsig string
+		msgSigner     bool
 	}{
-		{"ES256", es256phead, testKeyEC.Public(), es256stdsig, es256jwsig},
-		{"RS256", rs256phead, testKey.Public(), testsig, testsig},
+		{"ES256", es256phead, testKeyEC.Public(), es256stdsig, es256jwsig, false},
+		{"RS256", rs256phead, testKey.Public(), testsig, testsig, false},
+		{"ES256-MessageSigner", es256phead, testKeyEC.Public(), es256stdsig, es256jwsig, true},
+		{"RS256-MessageSigner", rs256phead, testKey.Public(), testsig, testsig, true},
 	}
 	for _, tc := range tt {
 		tc := tc
-		t.Run(tc.alg, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			stdsig, err := base64.RawStdEncoding.DecodeString(tc.stdsig)
 			if err != nil {
 				t.Errorf("couldn't decode test vector: %v", err)
 			}
-			signer := &customTestSigner{
+			cs := customTestSigner{
 				sig: stdsig,
 				pub: tc.pub,
+			}
+			var signer crypto.Signer = &cs
+			var ms *customTestMessageSigner
+			if tc.msgSigner {
+				ms = &customTestMessageSigner{customTestSigner: cs}
+				signer = ms
 			}
 
 			b, err := jwsEncodeJSON(claims, signer, noKeyID, "nonce", "url")
@@ -426,6 +452,14 @@ func TestJWSEncodeJSONCustom(t *testing.T) {
 			}
 			if j.Sig != tc.jwsig {
 				t.Errorf("j.Sig = %q\nwant %q", j.Sig, tc.jwsig)
+			}
+			if ms != nil {
+				if want := tc.phead + "." + payload; string(ms.msg) != want {
+					t.Errorf("msg = %q; want %q", ms.msg, want)
+				}
+				if ms.opts != crypto.SHA256 {
+					t.Errorf("opts = %v; want %v", ms.opts, crypto.SHA256)
+				}
 			}
 		})
 	}
