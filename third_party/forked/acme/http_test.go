@@ -244,7 +244,7 @@ func TestAccountKidLoop(t *testing.T) {
 	// then Client.Key must be set, otherwise we fall into an
 	// infinite loop (which also causes a deadlock).
 	client := &Client{dir: &Directory{OrderURL: ":)"}}
-	_, _, err := client.postNoRetry(context.Background(), nil, "", nil)
+	_, _, err := client.postNoRetry(context.Background(), nil, false, "", nil)
 	if err == nil {
 		t.Fatal("Client.postNoRetry didn't fail with a nil key")
 	}
