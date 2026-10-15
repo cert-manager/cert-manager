@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -96,6 +97,11 @@ func CSR(keyAlgorithm x509.PublicKeyAlgorithm, mods ...CSRModifier) (csr []byte,
 		if err != nil {
 			return nil, nil, err
 		}
+	case x509.MLDSA:
+		sk, err = pki.GenerateMLDSAPrivateKey(mldsa.MLDSA44())
+		if err != nil {
+			return nil, nil, err
+		}
 	default:
 		return nil, nil, fmt.Errorf("unrecognised key algorithm: %s", keyAlgorithm)
 	}
@@ -137,6 +143,16 @@ func CSRWithSigner(sk crypto.Signer, mods ...CSRModifier) (csr []byte, err error
 	case ed25519.PublicKey:
 		keyAlgorithm = x509.Ed25519
 		signatureAlgorithm = x509.PureEd25519
+	case *mldsa.PublicKey:
+		keyAlgorithm = x509.MLDSA
+		switch pub.Parameters() {
+		case mldsa.MLDSA44():
+			signatureAlgorithm = x509.MLDSA44
+		case mldsa.MLDSA65():
+			signatureAlgorithm = x509.MLDSA65
+		case mldsa.MLDSA87():
+			signatureAlgorithm = x509.MLDSA87
+		}
 	default:
 		return nil, fmt.Errorf("unrecognised public key type: %T", sk)
 	}

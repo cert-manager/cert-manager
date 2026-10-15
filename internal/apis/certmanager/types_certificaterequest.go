@@ -132,7 +132,8 @@ type CertificateRequestSpec struct {
 	// ExtKeyUsage extension, these extensions must have the same values
 	// as specified here without any additional values.
 	//
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` and `key encipherment`, or to
+	// `digital signature` alone if the CSR has an ML-DSA public key.
 	Usages []KeyUsage
 
 	// Username contains the name of the user that created the CertificateRequest.

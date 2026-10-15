@@ -40,6 +40,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.SaveRootCAToSecret,
 		// Vault does not support signing using Ed25519
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.ACMEUseARI,

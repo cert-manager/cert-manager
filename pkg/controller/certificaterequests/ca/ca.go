@@ -20,10 +20,12 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"errors"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -33,6 +35,7 @@ import (
 	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -109,6 +112,15 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	if err != nil {
 		message := "Error generating certificate template"
 		c.reporter.Failed(cr, err, "SigningError", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) &&
+		(pki.IsMLDSAPublicKey(template.PublicKey) || pki.IsMLDSAPublicKey(caKey.Public())) {
+		err := errors.New("the MLDSAPrivateKeys feature gate is disabled")
+		message := "Refusing to sign a certificate involving an ML-DSA key"
+		c.reporter.Failed(cr, err, "MLDSAPrivateKeysDisabled", message)
 		log.Error(err, message)
 		return nil, nil
 	}

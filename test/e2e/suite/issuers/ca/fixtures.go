@@ -17,6 +17,13 @@ limitations under the License.
 package ca
 
 import (
+	"crypto/mldsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"math/big"
+	"time"
+
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -240,6 +247,50 @@ func newSigningIssuer2KeypairSecret(name string) *corev1.Secret {
 			corev1.TLSPrivateKeyKey: issuer2Key,
 		},
 	}
+}
+
+// newMLDSASigningKeypairSecret returns a Secret containing a freshly generated
+// self-signed ML-DSA-87 CA. ML-DSA certificates are large, so unlike the
+// fixtures above the CA is generated at runtime rather than hardcoded.
+func newMLDSASigningKeypairSecret(name string) (*corev1.Secret, error) {
+	pk, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA87())
+	if err != nil {
+		return nil, err
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Country:      []string{"UK"},
+			Organization: []string{"cert-manager"},
+			CommonName:   "cert-manager testing ML-DSA CA",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	certPEM, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	if err != nil {
+		return nil, err
+	}
+
+	keyPEM, err := pki.EncodePKCS8PrivateKey(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Data: map[string][]byte{
+			corev1.TLSCertKey:       certPEM,
+			corev1.TLSPrivateKeyKey: keyPEM,
+		},
+	}, nil
 }
 
 // YAML for creating the hardcoded certificates in this file:

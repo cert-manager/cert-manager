@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/mail"
@@ -181,8 +182,18 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 			}
 		case internalcmapi.Ed25519KeyAlgorithm:
 			break
+		case internalcmapi.MLDSAKeyAlgorithm:
+			// Objects which were created while the feature gate was enabled
+			// can still be updated (e.g. by the controller to update their
+			// status) and deleted, as long as the algorithm isn't changed.
+			if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) && !isMLDSACertificateSpec(oldCrt) {
+				el = append(el, field.Forbidden(fldPath.Child("privateKey", "algorithm"), "MLDSA requires the MLDSAPrivateKeys feature gate to be enabled"))
+			}
+			if crt.PrivateKey.Size > 0 && crt.PrivateKey.Size != pki.MLDSA44 && crt.PrivateKey.Size != pki.MLDSA65 && crt.PrivateKey.Size != pki.MLDSA87 {
+				el = append(el, field.NotSupported(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, []string{"44", "65", "87"}))
+			}
 		default:
-			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa or ed25519"))
+			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa, ecdsa, ed25519 or mldsa"))
 		}
 	}
 
@@ -192,7 +203,12 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 			actualKeyAlg = crt.PrivateKey.Algorithm
 		}
 		allowed, ok := keyAlgToAllowedSigAlgs[actualKeyAlg]
-		if ok && !slices.Contains(allowed, crt.SignatureAlgorithm) {
+		if actualKeyAlg == internalcmapi.MLDSAKeyAlgorithm {
+			// ML-DSA has no entry in keyAlgToAllowedSigAlgs, which would
+			// otherwise allow any signature algorithm.
+			el = append(el, field.Invalid(fldPath.Child("signatureAlgorithm"), crt.SignatureAlgorithm,
+				"must not be set for key algorithm MLDSA: the signature algorithm follows from the key's parameter set"))
+		} else if ok && !slices.Contains(allowed, crt.SignatureAlgorithm) {
 			el = append(el, field.Invalid(fldPath.Child("signatureAlgorithm"), crt.SignatureAlgorithm,
 				fmt.Sprintf("for key algorithm %s the allowed signature algorithms are %v", actualKeyAlg, allowed)))
 		}
@@ -328,6 +344,27 @@ func validateUsages(a *internalcmapi.CertificateSpec, fldPath *field.Path) field
 		_, ekok := util.ExtKeyUsageType(cmapi.KeyUsage(u))
 		if !kok && !ekok {
 			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
+		}
+	}
+	if isMLDSACertificateSpec(a) {
+		el = append(el, validateMLDSAUsages(a.Usages, fldPath.Child("usages"))...)
+	}
+	return el
+}
+
+// isMLDSACertificateSpec returns true if the given (possibly nil) Certificate
+// spec has an ML-DSA private key algorithm.
+func isMLDSACertificateSpec(crt *internalcmapi.CertificateSpec) bool {
+	return crt != nil && crt.PrivateKey != nil && crt.PrivateKey.Algorithm == internalcmapi.MLDSAKeyAlgorithm
+}
+
+// validateMLDSAUsages returns an error for each usage which RFC 9881 forbids
+// for ML-DSA keys.
+func validateMLDSAUsages(usages []internalcmapi.KeyUsage, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	for i, u := range usages {
+		if !pki.KeyUsageAllowedForPublicKeyAlgorithm(cmapi.KeyUsage(u), x509.MLDSA) {
+			el = append(el, field.Invalid(fldPath.Index(i), u, "not allowed for ML-DSA keys (RFC 9881)"))
 		}
 	}
 	return el

@@ -127,6 +127,38 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.Ed25519FeatureSet},
 			},
 			{
+				name: "should issue an ML-DSA-44, defaulted certificate for a single distinct DNS Name",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+						}
+					},
+					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.MLDSAFeatureSet},
+			},
+			{
+				name: "should issue an ML-DSA-87 CA certificate with the CA basicConstraint set",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+							Size:      pki.MLDSA87,
+						}
+					},
+					gen.SetCertificateIsCA(true),
+					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.IssueCAFeature, featureset.MLDSAFeatureSet},
+			},
+			{
 				name: "should issue a basic, defaulted certificate for a single Common Name",
 				certModifiers: []gen.CertificateModifier{
 					// Some issuers use the CN to define the cert's "ID"
@@ -274,6 +306,25 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.CommonNameFeature},
 			},
 			{
+				name: "should issue an ML-DSA-65, defaulted certificate for a single Common Name",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+							Size:      pki.MLDSA65,
+						}
+					},
+					// Some issuers use the CN to define the cert's "ID"
+					// if one cert manages to be in an error state in the issuer it might throw an error
+					// this makes the CN more unique
+					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.MLDSAFeatureSet, featureset.CommonNameFeature},
+			},
+			{
 				name: "should issue a certificate that defines an IP Address",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateIPs(s.SharedIPAddress),
@@ -411,6 +462,10 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 				if requiredFeatures.Has(featureset.LiteralSubjectFeature) {
 					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
+				}
+
+				if requiredFeatures.Has(featureset.MLDSAFeatureSet) {
+					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
 				}
 
 				randomTestID := rand.String(10)

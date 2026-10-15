@@ -56,6 +56,8 @@ const (
 	reasonCannotRegenerateKey = "CannotRegenerateKey"
 	reasonDeleted             = "Deleted"
 	reasonNotOwned            = "NotOwned"
+	reasonGenerateFailed      = "GenerateFailed"
+	reasonMLDSADisabled       = "MLDSAPrivateKeysDisabled"
 )
 
 var (
@@ -272,8 +274,17 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 }
 
 func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.Certificate) error {
+	// The trigger controller doesn't start issuance for ML-DSA Certificates
+	// while the MLDSAPrivateKeys feature gate is disabled, so this is only
+	// defence in depth. Retrying wouldn't help, so no error is returned.
+	if crt.Spec.PrivateKey.Algorithm == cmapi.MLDSAKeyAlgorithm && !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+		c.recorder.Event(crt, corev1.EventTypeWarning, reasonMLDSADisabled, "Not generating an ML-DSA private key because the MLDSAPrivateKeys feature gate is disabled")
+		return nil
+	}
+
 	pk, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonGenerateFailed, "Failed to generate private key: %v", err)
 		return err
 	}
 

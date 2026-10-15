@@ -168,6 +168,9 @@ func NewController(
 		recorder:                 ctx.Recorder,
 		accountRegistry:          ctx.ACMEAccountRegistry,
 		issuerLister:             issuerInformer.Lister(),
+		// Register replaces this with a helper that can also get
+		// ClusterIssuers.
+		helper: issuer.NewHelper(issuerInformer.Lister(), nil),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),

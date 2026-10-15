@@ -54,6 +54,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
 		featureset.OtherNamesFeature,
+		// ML-DSA private keys have not been tested against ACME servers
+		featureset.MLDSAFeatureSet,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
@@ -68,6 +70,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.SaveCAToSecret,
 		featureset.IssueCAFeature,
 		featureset.OtherNamesFeature,
+		// ML-DSA private keys have not been tested against ACME servers
+		featureset.MLDSAFeatureSet,
 	)
 
 	http01 := &acme{
