@@ -52,7 +52,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 
 	// ACME Issuer does not return a ca.crt. See:
 	// https://github.com/cert-manager/cert-manager/issues/1571
-	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	// ACME servers compute their own Subject Key Identifier
+	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret, featureset.SubjectKeyIdentifierFeature)
 	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func(testingCtx context.Context) {
