@@ -685,12 +685,12 @@ func TestCA_Sign_MLDSA(t *testing.T) {
 		"an ML-DSA CSR should not be signed if the MLDSAPrivateKeys feature gate is disabled": {
 			givenCASecretData: ecdsaCASecretData,
 			givenCSR:          mldsaCSR,
-			wantEvent:         "Warning MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+			wantEvent:         "Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
 		},
 		"an ECDSA CSR should not be signed by an ML-DSA CA if the MLDSAPrivateKeys feature gate is disabled": {
 			givenCASecretData: mldsaCASecretData,
 			givenCSR:          ecdsaCSR,
-			wantEvent:         "Warning MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+			wantEvent:         "Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
 		},
 	}
 	for name, test := range tests {
@@ -707,15 +707,15 @@ func TestCA_Sign_MLDSA(t *testing.T) {
 				signingFn:         pki.SignCSRTemplate,
 			}
 
-			gotIssueResp, gotErr := c.Sign(t.Context(),
-				gen.CertificateRequest("cr-1",
-					gen.SetCertificateRequestCSR(test.givenCSR),
-					gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
-						Name:  "issuer-1",
-						Group: certmanager.GroupName,
-						Kind:  "Issuer",
-					}),
-				),
+			cr := gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(test.givenCSR),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			)
+			gotIssueResp, gotErr := c.Sign(t.Context(), cr,
 				gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "secret-1"})),
 			)
 			require.NoError(t, gotErr)
@@ -723,6 +723,10 @@ func TestCA_Sign_MLDSA(t *testing.T) {
 			if test.wantEvent != "" {
 				assert.Nil(t, gotIssueResp)
 				assert.Equal(t, []string{test.wantEvent}, rec.Events)
+				// The gate can be turned back on, so the request is left
+				// pending rather than failed.
+				assert.Equal(t, cmapi.CertificateRequestReasonPending, apiutil.CertificateRequestReadyReason(cr))
+				assert.Nil(t, cr.Status.FailureTime)
 				return
 			}
 

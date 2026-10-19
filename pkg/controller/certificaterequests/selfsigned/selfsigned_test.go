@@ -627,13 +627,13 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"should not sign an ML-DSA key if the MLDSAPrivateKeys feature gate is disabled": {
+		"should leave an ML-DSA key pending if the MLDSAPrivateKeys feature gate is disabled": {
 			certificateRequest: mldsaCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{mldsaKeySecret},
 				CertManagerObjects: []runtime.Object{mldsaCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					"Warning MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+					"Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -644,11 +644,10 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
+								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
 				},

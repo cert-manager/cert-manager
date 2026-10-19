@@ -208,7 +208,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) && pki.IsMLDSAPublicKey(publickey) {
 		err := errors.New("the MLDSAPrivateKeys feature gate is disabled")
 		message := "Refusing to sign a certificate involving an ML-DSA key"
-		s.reporter.Failed(cr, err, "MLDSAPrivateKeysDisabled", message)
+		s.reporter.Pending(cr, err, "MLDSAPrivateKeysDisabled", message)
 		log.Error(err, message)
 		return nil, nil
 	}

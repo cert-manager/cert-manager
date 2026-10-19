@@ -120,7 +120,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		(pki.IsMLDSAPublicKey(template.PublicKey) || pki.IsMLDSAPublicKey(caKey.Public())) {
 		err := errors.New("the MLDSAPrivateKeys feature gate is disabled")
 		message := "Refusing to sign a certificate involving an ML-DSA key"
-		c.reporter.Failed(cr, err, "MLDSAPrivateKeysDisabled", message)
+		c.reporter.Pending(cr, err, "MLDSAPrivateKeysDisabled", message)
 		log.Error(err, message)
 		return nil, nil
 	}

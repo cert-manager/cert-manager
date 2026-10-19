@@ -203,8 +203,10 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 	}
 
 	if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) && pki.IsMLDSAPublicKey(publickey) {
-		message := "Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled"
-		log.Error(errors.New(message), "")
+		err := errors.New("the MLDSAPrivateKeys feature gate is disabled")
+		message := "Refusing to sign a certificate involving an ML-DSA key"
+		log.Error(err, message)
+		message = fmt.Sprintf("%s: %s", message, err)
 		s.recorder.Event(csr, corev1.EventTypeWarning, "MLDSAPrivateKeysDisabled", message)
 		util.CertificateSigningRequestSetFailed(csr, "MLDSAPrivateKeysDisabled", message)
 		_, err = util.UpdateOrApplyStatus(ctx, s.certClient, csr, certificatesv1.CertificateFailed, s.fieldManager)
