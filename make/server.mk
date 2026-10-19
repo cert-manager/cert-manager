@@ -19,7 +19,7 @@ $(bin_dir)/server:
 	@mkdir -p $@
 
 .PHONY: controller
-controller: $(bin_dir)/server/controller-linux-amd64 $(bin_dir)/server/controller-linux-arm64 $(bin_dir)/server/controller-linux-s390x $(bin_dir)/server/controller-linux-ppc64le $(bin_dir)/server/controller-linux-arm | $(NEEDS_GO) $(bin_dir)/server
+controller: $(bin_dir)/server/controller-linux-amd64 $(bin_dir)/server/controller-linux-arm64 $(bin_dir)/server/controller-linux-s390x $(bin_dir)/server/controller-linux-ppc64le $(bin_dir)/server/controller-linux-arm $(bin_dir)/server/controller-linux-riscv64 | $(NEEDS_GO) $(bin_dir)/server
 
 $(bin_dir)/server/controller-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/controller && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
@@ -36,8 +36,11 @@ $(bin_dir)/server/controller-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/
 $(bin_dir)/server/controller-linux-arm: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/controller && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
 
+$(bin_dir)/server/controller-linux-riscv64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
+	cd cmd/controller && GOOS=linux GOARCH=riscv64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
 .PHONY: acmesolver
-acmesolver: $(bin_dir)/server/acmesolver-linux-amd64 $(bin_dir)/server/acmesolver-linux-arm64 $(bin_dir)/server/acmesolver-linux-s390x $(bin_dir)/server/acmesolver-linux-ppc64le $(bin_dir)/server/acmesolver-linux-arm | $(NEEDS_GO) $(bin_dir)/server
+acmesolver: $(bin_dir)/server/acmesolver-linux-amd64 $(bin_dir)/server/acmesolver-linux-arm64 $(bin_dir)/server/acmesolver-linux-s390x $(bin_dir)/server/acmesolver-linux-ppc64le $(bin_dir)/server/acmesolver-linux-arm $(bin_dir)/server/acmesolver-linux-riscv64 | $(NEEDS_GO) $(bin_dir)/server
 
 $(bin_dir)/server/acmesolver-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/acmesolver && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
@@ -54,8 +57,11 @@ $(bin_dir)/server/acmesolver-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/
 $(bin_dir)/server/acmesolver-linux-arm: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/acmesolver && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
 
+$(bin_dir)/server/acmesolver-linux-riscv64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
+	cd cmd/acmesolver && GOOS=linux GOARCH=riscv64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
 .PHONY: webhook
-webhook: $(bin_dir)/server/webhook-linux-amd64 $(bin_dir)/server/webhook-linux-arm64 $(bin_dir)/server/webhook-linux-s390x $(bin_dir)/server/webhook-linux-ppc64le $(bin_dir)/server/webhook-linux-arm | $(NEEDS_GO) $(bin_dir)/server
+webhook: $(bin_dir)/server/webhook-linux-amd64 $(bin_dir)/server/webhook-linux-arm64 $(bin_dir)/server/webhook-linux-s390x $(bin_dir)/server/webhook-linux-ppc64le $(bin_dir)/server/webhook-linux-arm $(bin_dir)/server/webhook-linux-riscv64 | $(NEEDS_GO) $(bin_dir)/server
 
 $(bin_dir)/server/webhook-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/webhook && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
@@ -72,8 +78,11 @@ $(bin_dir)/server/webhook-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/ser
 $(bin_dir)/server/webhook-linux-arm: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/webhook && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
 
+$(bin_dir)/server/webhook-linux-riscv64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
+	cd cmd/webhook && GOOS=linux GOARCH=riscv64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
 .PHONY: cainjector
-cainjector: $(bin_dir)/server/cainjector-linux-amd64 $(bin_dir)/server/cainjector-linux-arm64 $(bin_dir)/server/cainjector-linux-s390x $(bin_dir)/server/cainjector-linux-ppc64le $(bin_dir)/server/cainjector-linux-arm | $(NEEDS_GO) $(bin_dir)/server
+cainjector: $(bin_dir)/server/cainjector-linux-amd64 $(bin_dir)/server/cainjector-linux-arm64 $(bin_dir)/server/cainjector-linux-s390x $(bin_dir)/server/cainjector-linux-ppc64le $(bin_dir)/server/cainjector-linux-arm $(bin_dir)/server/cainjector-linux-riscv64 | $(NEEDS_GO) $(bin_dir)/server
 
 $(bin_dir)/server/cainjector-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/cainjector && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
@@ -90,8 +99,11 @@ $(bin_dir)/server/cainjector-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/
 $(bin_dir)/server/cainjector-linux-arm: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/cainjector && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
 
+$(bin_dir)/server/cainjector-linux-riscv64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
+	cd cmd/cainjector && GOOS=linux GOARCH=riscv64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
 .PHONY: startupapicheck
-cainjector: $(bin_dir)/server/startupapicheck-linux-amd64 $(bin_dir)/server/startupapicheck-linux-arm64 $(bin_dir)/server/startupapicheck-linux-s390x $(bin_dir)/server/startupapicheck-linux-ppc64le $(bin_dir)/server/startupapicheck-linux-arm | $(NEEDS_GO) $(bin_dir)/server
+cainjector: $(bin_dir)/server/startupapicheck-linux-amd64 $(bin_dir)/server/startupapicheck-linux-arm64 $(bin_dir)/server/startupapicheck-linux-s390x $(bin_dir)/server/startupapicheck-linux-ppc64le $(bin_dir)/server/startupapicheck-linux-arm $(bin_dir)/server/startupapicheck-linux-riscv64 | $(NEEDS_GO) $(bin_dir)/server
 
 $(bin_dir)/server/startupapicheck-linux-amd64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/startupapicheck && GOOS=linux GOARCH=amd64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
@@ -107,3 +119,6 @@ $(bin_dir)/server/startupapicheck-linux-ppc64le: $(SOURCES) | $(NEEDS_GO) $(bin_
 
 $(bin_dir)/server/startupapicheck-linux-arm: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
 	cd cmd/startupapicheck && GOOS=linux GOARCH=arm GOARM=7 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go
+
+$(bin_dir)/server/startupapicheck-linux-riscv64: $(SOURCES) | $(NEEDS_GO) $(bin_dir)/server
+	cd cmd/startupapicheck && GOOS=linux GOARCH=riscv64 $(GOBUILD) -o ../../$@ $(GOFLAGS) -ldflags '$(GOLDFLAGS)' main.go

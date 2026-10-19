@@ -46,9 +46,11 @@ echo "STATIC_BASE_IMAGE_arm64 := $STATIC_BASE@$(crane digest $STATIC_BASE:${LATE
 echo "STATIC_BASE_IMAGE_s390x := $STATIC_BASE@$(crane digest $STATIC_BASE:${LATEST_TAG}-s390x)" >> $TARGET
 echo "STATIC_BASE_IMAGE_arm   := $STATIC_BASE@$(crane digest $STATIC_BASE:${LATEST_TAG}-arm)" >> $TARGET
 echo "STATIC_BASE_IMAGE_ppc64le := $STATIC_BASE@$(crane digest $STATIC_BASE:${LATEST_TAG}-ppc64le)" >> $TARGET
+echo "STATIC_BASE_IMAGE_riscv64 := $STATIC_BASE@$(crane digest $STATIC_BASE:${LATEST_TAG}-riscv64)" >> $TARGET
 
 echo "DYNAMIC_BASE_IMAGE_amd64 := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-amd64)" >> $TARGET
 echo "DYNAMIC_BASE_IMAGE_arm64 := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-arm64)" >> $TARGET
 echo "DYNAMIC_BASE_IMAGE_s390x := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-s390x)" >> $TARGET
 echo "DYNAMIC_BASE_IMAGE_arm   := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-arm)" >> $TARGET
 echo "DYNAMIC_BASE_IMAGE_ppc64le := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-ppc64le)" >> $TARGET
+echo "DYNAMIC_BASE_IMAGE_riscv64 := $DYNAMIC_BASE@$(crane digest $DYNAMIC_BASE:${LATEST_TAG}-riscv64)" >> $TARGET
