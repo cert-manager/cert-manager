@@ -10,7 +10,7 @@ replace github.com/cert-manager/cert-manager => ../../
 
 require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
-	github.com/cloudflare/cloudflare-go/v7 v7.12.0
+	github.com/cloudflare/cloudflare-go/v7 v7.13.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
@@ -101,7 +101,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
