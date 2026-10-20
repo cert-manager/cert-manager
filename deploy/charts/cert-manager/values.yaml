@@ -22,6 +22,44 @@ global:
   # +docs:property
   nodeSelector: {}
 
+  # Global tolerations
+  #
+  # A list of Kubernetes Tolerations applied to all cert-manager pods.
+  # For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  #
+  # For example:
+  #   tolerations:
+  #   - key: foo.bar.com/role
+  #     operator: Equal
+  #     value: master
+  #     effect: NoSchedule
+  #
+  # If a component-specific tolerations is also set, it will take precedence
+  # and only the component-specific tolerations will be applied.
+  # +docs:property
+  tolerations: []
+
+  # Global affinity
+  #
+  # A Kubernetes Affinity applied to all cert-manager pods.
+  # For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).
+  #
+  # For example:
+  #   affinity:
+  #     nodeAffinity:
+  #       requiredDuringSchedulingIgnoredDuringExecution:
+  #         nodeSelectorTerms:
+  #         - matchExpressions:
+  #           - key: foo.bar.com/role
+  #             operator: In
+  #             values:
+  #             - master
+  #
+  # If a component-specific affinity is also set, it will take precedence
+  # and only the component-specific affinity will be applied.
+  # +docs:property
+  affinity: {}
+
   # Labels to apply to all resources.
   # These labels are also applied to dynamically-created ACME HTTP01 solver resources
   # (pods, services, ingresses, or Gateway API HTTPRoutes).

@@ -815,6 +815,9 @@
     "helm-values.global": {
       "description": "Global values shared across all (sub)charts",
       "properties": {
+        "affinity": {
+          "$ref": "#/$defs/helm-values.global.affinity"
+        },
         "commonLabels": {
           "$ref": "#/$defs/helm-values.global.commonLabels"
         },
@@ -847,8 +850,16 @@
         },
         "runtimeClassName": {
           "$ref": "#/$defs/helm-values.global.runtimeClassName"
+        },
+        "tolerations": {
+          "$ref": "#/$defs/helm-values.global.tolerations"
         }
       },
+      "type": "object"
+    },
+    "helm-values.global.affinity": {
+      "default": {},
+      "description": "Global affinity\n\nA Kubernetes Affinity applied to all cert-manager pods. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).\n\nFor example:\naffinity:\n  nodeAffinity:\n    requiredDuringSchedulingIgnoredDuringExecution:\n      nodeSelectorTerms:\n      - matchExpressions:\n        - key: foo.bar.com/role\n          operator: In\n          values:\n          - master\nIf a component-specific affinity is also set, it will take precedence and only the component-specific affinity will be applied.",
       "type": "object"
     },
     "helm-values.global.commonLabels": {
@@ -965,6 +976,12 @@
       "default": "",
       "description": "A Kubernetes Runtime Class to apply to ACME HTTP01 solver pods, if required. For more information, see [Runtime Class](https://kubernetes.io/docs/concepts/containers/).\n\nFor example:\nruntimeClassName: gvisor",
       "type": "string"
+    },
+    "helm-values.global.tolerations": {
+      "default": [],
+      "description": "Global tolerations\n\nA list of Kubernetes Tolerations applied to all cert-manager pods. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).\n\nFor example:\ntolerations:\n- key: foo.bar.com/role\n  operator: Equal\n  value: master\n  effect: NoSchedule\nIf a component-specific tolerations is also set, it will take precedence and only the component-specific tolerations will be applied.",
+      "items": {},
+      "type": "array"
     },
     "helm-values.hostAliases": {
       "default": [],

@@ -200,7 +200,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
       {{- end }}
-      {{- with .Values.webhook.affinity }}
+      {{- with .Values.webhook.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -209,7 +209,7 @@ spec:
       {{- else if .Values.global.runtimeClassName }}
       runtimeClassName: {{ .Values.global.runtimeClassName | quote }}
       {{- end }}
-      {{- with .Values.webhook.tolerations }}
+      {{- with .Values.webhook.tolerations | default .Values.global.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
