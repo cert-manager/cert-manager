@@ -29,6 +29,10 @@ import (
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
+// errNoMatchingZone is returned by getHostedZone when no Cloud DNS managed zone
+// matches the authoritative zone of the domain.
+var errNoMatchingZone = errors.New("No matching GoogleCloud domain found")
+
 // DNSProvider is an implementation of the DNSProvider interface.
 type DNSProvider struct {
 	hostedZoneName   string
@@ -227,6 +231,13 @@ func (c *DNSProvider) Present(ctx context.Context, domain, fqdn, value string) e
 // CleanUp removes the TXT record matching the specified parameters.
 func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) error {
 	zone, err := c.getHostedZone(ctx, fqdn)
+	if errors.Is(err, errNoMatchingZone) {
+		// Without a managed zone the challenge record cannot have been
+		// created by Present, so there is nothing to remove. Returning an
+		// error here would keep the Challenge from being cleaned up forever.
+		c.log.V(logf.DebugLevel).Info("No matching GoogleCloud managed-zone, skipping cleanup", "fqdn", fqdn, "error", err.Error())
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -282,7 +293,7 @@ func (c *DNSProvider) getHostedZone(ctx context.Context, domain string) (string,
 	}
 
 	if len(zones.ManagedZones) == 0 {
-		return "", fmt.Errorf("No matching GoogleCloud domain found for domain %s", authZone)
+		return "", fmt.Errorf("%w for domain %s", errNoMatchingZone, authZone)
 	}
 
 	// attempt to get the first public zone

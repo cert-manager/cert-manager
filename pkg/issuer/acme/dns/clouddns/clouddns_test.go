@@ -10,13 +10,18 @@ package clouddns
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
+	"google.golang.org/api/option"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -217,4 +222,63 @@ func TestDNSProvider_getHostedZone(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeResolver struct {
+	util.Resolver
+	zone string
+}
+
+func (f fakeResolver) FindZoneByFQDN(ctx context.Context, fqdn string, nameservers []string) (string, error) {
+	return f.zone, nil
+}
+
+func newFakeProvider(t *testing.T, handler http.HandlerFunc) *DNSProvider {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+
+	svc, err := dns.NewService(t.Context(),
+		option.WithEndpoint(srv.URL),
+		option.WithoutAuthentication(),
+	)
+	require.NoError(t, err)
+
+	return &DNSProvider{
+		project:          "my-project",
+		client:           svc,
+		dns01Nameservers: []string{"127.0.0.1:53"},
+		resolver:         fakeResolver{zone: "example.com."},
+		log:              logr.Discard(),
+	}
+}
+
+func TestCleanUpNoMatchingManagedZone(t *testing.T) {
+	var requests []string
+	provider := newFakeProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"managedZones": []}`))
+	})
+
+	// Present fails because there is no managed zone.
+	err := provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
+	assert.ErrorContains(t, err, "No matching GoogleCloud domain found for domain example.com.")
+
+	// CleanUp must succeed, otherwise the Challenge can never be removed.
+	err = provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
+	assert.NoError(t, err)
+
+	for _, req := range requests {
+		assert.NotContains(t, req, "POST", "no changes should be made when there is no managed zone")
+	}
+}
+
+func TestCleanUpManagedZoneListError(t *testing.T) {
+	provider := newFakeProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+
+	err := provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
+	assert.ErrorContains(t, err, "GoogleCloud API call failed")
 }
