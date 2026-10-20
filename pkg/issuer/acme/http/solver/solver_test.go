@@ -17,11 +17,17 @@ limitations under the License.
 package solver
 
 import (
+	"context"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/pires/go-proxyproto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -185,6 +191,145 @@ func Test_parseHost(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			actual := parseHost(tc.input)
 			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+type proxyConnDialer struct {
+	c net.Conn
+}
+
+func (pcd proxyConnDialer) Dial(ctx context.Context, network, addr string) (net.Conn, error) {
+	return pcd.c, nil
+}
+func Test_listenSolver(t *testing.T) {
+	cases := map[string]struct {
+		solverPort           int
+		solverProxyProtocol  bool
+		solverDomain         string
+		solverToken          string
+		solverKey            string
+		requestTarget        string
+		requestProxyProtocol bool
+		proxyProtocolVersion byte
+		expectedResponseCode int
+	}{
+		"return ok without proxy-protocol": {
+			solverPort:           0,
+			solverProxyProtocol:  false,
+			solverDomain:         "localhost",
+			solverToken:          "secret",
+			solverKey:            "test-key",
+			requestTarget:        HTTPChallengePath + "/secret",
+			requestProxyProtocol: false,
+			expectedResponseCode: http.StatusOK,
+		},
+		"return ok with proxy-protocol v1": {
+			solverPort:           0,
+			solverProxyProtocol:  true,
+			solverDomain:         "localhost",
+			solverToken:          "secret",
+			solverKey:            "test-key",
+			requestTarget:        HTTPChallengePath + "/secret",
+			requestProxyProtocol: true,
+			proxyProtocolVersion: 1,
+			expectedResponseCode: http.StatusOK,
+		},
+		"return ok with proxy-protocol v2": {
+			solverPort:           0,
+			solverProxyProtocol:  true,
+			solverDomain:         "localhost",
+			solverToken:          "secret",
+			solverKey:            "test-key",
+			requestTarget:        HTTPChallengePath + "/secret",
+			requestProxyProtocol: true,
+			proxyProtocolVersion: 2,
+			expectedResponseCode: http.StatusOK,
+		},
+		"return bad request with proxy-protocol mismatch": {
+			solverPort:           0,
+			solverProxyProtocol:  false,
+			solverDomain:         "localhost",
+			solverToken:          "secret",
+			solverKey:            "",
+			requestTarget:        HTTPChallengePath + "/secret",
+			requestProxyProtocol: true,
+			proxyProtocolVersion: 1,
+			expectedResponseCode: http.StatusBadRequest,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			solver := HTTP01Solver{
+				ListenPort:    tc.solverPort,
+				ProxyProtocol: tc.solverProxyProtocol,
+				Domain:        tc.solverDomain,
+				Token:         tc.solverToken,
+				Key:           tc.solverKey,
+			}
+
+			go func() {
+				if err := solver.Listen(logr.Discard()); err != http.ErrServerClosed {
+					t.Error(err)
+				}
+			}()
+			time.Sleep(time.Second)
+
+			addr, err := net.ResolveTCPAddr("tcp", solver.Listener.Addr().String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			conn, err := net.DialTCP("tcp", nil, addr)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer func() {
+				_ = conn.Close()
+			}()
+
+			target := "http://" + tc.solverDomain + ":" + strconv.Itoa(addr.Port) + tc.requestTarget
+			r, err := http.NewRequestWithContext(t.Context(), http.MethodGet, target, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tc.requestProxyProtocol {
+				header := &proxyproto.Header{
+					Version:           tc.proxyProtocolVersion,
+					Command:           proxyproto.PROXY,
+					TransportProtocol: proxyproto.TCPv4,
+					SourceAddr: &net.TCPAddr{
+						IP:   net.ParseIP("10.1.1.1"),
+						Port: 1000,
+					},
+					DestinationAddr: &net.TCPAddr{
+						IP:   net.ParseIP("20.2.2.2"),
+						Port: 2000,
+					},
+				}
+				_, err = header.WriteTo(conn)
+			}
+
+			client := &http.Client{
+				Transport: &http.Transport{
+					DialContext: proxyConnDialer{conn}.Dial,
+				},
+			}
+			resp, err := client.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if resp.StatusCode != tc.expectedResponseCode {
+				t.Errorf("Expected response code %d, got %d", tc.expectedResponseCode, resp.StatusCode)
+			}
+			response, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if tc.solverKey != "" && string(response) != tc.solverKey {
+				t.Errorf("Expected response body %q, got %q", tc.solverKey, response)
+			}
 		})
 	}
 }
