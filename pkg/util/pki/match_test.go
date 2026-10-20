@@ -258,6 +258,12 @@ func TestRequestMatchesSpecSubject(t *testing.T) {
 			literalSubject: "ST=example,C=US,O=#04024869",
 			x509CSR:        createCSRBlob("ST=example,C=US,O=#04024869"),
 		},
+		{
+			name:       "Mismatching postal codes",
+			subject:    &cmapi.X509Subject{Countries: []string{"US"}, PostalCodes: []string{"12345"}},
+			x509CSR:    createCSRBlob("C=US"),
+			violations: []string{"spec.subject.postalCodes"},
+		},
 	}
 
 	for _, test := range tests {
