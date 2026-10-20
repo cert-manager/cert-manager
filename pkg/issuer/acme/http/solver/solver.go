@@ -48,6 +48,7 @@ type HTTP01Solver struct {
 	Key    string
 
 	http.Server
+	net.Listener
 }
 
 func (h *HTTP01Solver) Listen(log logr.Logger) error {
@@ -64,17 +65,18 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 
-	if h.ProxyProtocol {
-		netListener, err := net.Listen("tcp", h.Server.Addr)
-		if err != nil {
-			return err
-		}
+	netListener, err := net.Listen("tcp", h.Server.Addr)
+	if err != nil {
+		return err
+	}
+	h.Listener = netListener
 
-		proxyListener := &proxyproto.Listener{Listener: netListener}
+	if h.ProxyProtocol {
+		proxyListener := &proxyproto.Listener{Listener: h.Listener}
 
 		return h.Server.Serve(proxyListener)
 	} else {
-		return h.Server.ListenAndServe()
+		return h.Server.Serve(h.Listener)
 	}
 }
 
