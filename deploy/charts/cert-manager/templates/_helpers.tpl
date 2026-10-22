@@ -149,16 +149,127 @@ Create chart name and version as used by the chart label.
 
 {{/*
 Labels that should be added on each resource
+
+Labels are merged as a map, not concatenated as YAML text, so a key in
+.Values.global.commonLabels cannot produce a duplicate key. On conflict
+.Values.global.commonLabels wins.
+
+IMPORTANT: This function is standardized across all charts in the cert-manager GH organization.
+Any changes to this function should also be made in trust-manager, approver-policy, istio-csr, ...
+See https://github.com/cert-manager/cert-manager/issues/9348 for a list of linked PRs.
 */}}
 {{- define "labels" -}}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- $labels := dict "app.kubernetes.io/version" .Chart.AppVersion -}}
 {{- if eq .Values.creator "helm" }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-helm.sh/chart: {{ include "chartName" . }}
-{{- end -}}
-{{- if .Values.global.commonLabels}}
-{{ toYaml .Values.global.commonLabels }}
+{{- $labels = merge $labels (dict
+      "app.kubernetes.io/managed-by" .Release.Service
+      "helm.sh/chart" (include "chartName" .)) }}
 {{- end }}
+{{- toYaml (mergeOverwrite $labels (.Values.global.commonLabels | default dict)) }}
+{{- end -}}
+
+{{/*
+Labels for a resource that belongs to one component.
+
+Emits the four identity labels alongside the common labels, merged as one map
+so no key can be emitted twice. The identity labels are applied at a LOWER
+precedence than .Values.global.commonLabels, so they stay overridable exactly
+as they were when the labels were concatenated.
+
+Resources whose identity labels are read by a selector must NOT use these.
+They use the matching "*MatchedLabels" helper below, which applies the
+selector labels at a higher precedence so that overriding them cannot leave
+the selector matching nothing.
+*/}}
+{{- define "cert-manager.controllerLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "controller")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "cert-manager.certManagerLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "cert-manager")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "cainjector.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cainjector.name" .)
+            "app.kubernetes.io/name" (include "cainjector.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "cainjector")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "webhook.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "webhook.name" .)
+            "app.kubernetes.io/name" (include "webhook.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "webhook")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "startupapicheck.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "startupapicheck.name" .)
+            "app.kubernetes.io/name" (include "startupapicheck.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "startupapicheck")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{/*
+Labels for a resource whose identity labels a selector reads.
+
+app.kubernetes.io/name, app.kubernetes.io/instance and
+app.kubernetes.io/component are applied LAST, so .Values.global.commonLabels
+cannot override them: the Deployment, PodDisruptionBudget, Service,
+NetworkPolicy, PodMonitor and ServiceMonitor selectors all match on those
+three, and a pod template that does not match its own Deployment's selector
+is rejected by the API server. "app" is not read by any selector, so it stays
+overridable.
+*/}}
+{{- define "cert-manager.controllerMatchedLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .))
+      (include "labels" . | fromYaml)
+      (dict "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "controller")
+) }}
+{{- end -}}
+
+{{- define "cainjector.matchedLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cainjector.name" .))
+      (include "labels" . | fromYaml)
+      (dict "app.kubernetes.io/name" (include "cainjector.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "cainjector")
+) }}
+{{- end -}}
+
+{{- define "webhook.matchedLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "webhook.name" .))
+      (include "labels" . | fromYaml)
+      (dict "app.kubernetes.io/name" (include "webhook.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "webhook")
+) }}
 {{- end -}}
 
 {{/*
@@ -245,11 +356,13 @@ usage through tuple/variable indirection.
 Labels for the CRD resources.
 */}}
 {{- define "cert-manager.crd-labels" -}}
-app: "{{ template "cert-manager.name" . }}"
-app.kubernetes.io/name: "{{ template "cert-manager.name" . }}"
-app.kubernetes.io/instance: "{{ .Release.Name }}"
-app.kubernetes.io/component: "crds"
-{{ include "labels" . }}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "crds")
+      (include "labels" . | fromYaml)
+) }}
 {{- end -}}
 
 {{/*
