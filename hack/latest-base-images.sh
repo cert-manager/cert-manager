@@ -29,8 +29,8 @@ CRANE=crane
 
 TARGET=make/base_images.mk
 
-STATIC_BASE=gcr.io/distroless/static-debian12
-DYNAMIC_BASE=gcr.io/distroless/base-debian12
+STATIC_BASE=gcr.io/distroless/static-debian13
+DYNAMIC_BASE=gcr.io/distroless/base-debian13
 
 # The 'nonroot' tag has the latest non-root user variants of the distroless images.
 # This tag must match the tag used in .github/renovate.json5
