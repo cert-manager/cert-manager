@@ -261,7 +261,7 @@ func TestProcessItem(t *testing.T) {
 			secretShouldExist: true,
 			certShouldUpdate:  false,
 		},
-		"update status as not ready (Ready=False) with invalid renewal time": {
+		"update status as not ready (Ready=False) with the fallback renewal time on a window error": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionFalse,
@@ -274,8 +274,11 @@ func TestProcessItem(t *testing.T) {
 			secretShouldExist: true,
 			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
 			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
-			renewalTime:       func() *metav1.Time { return nil }(),
-			renewalTimeError:  fmt.Errorf("cannot find a time with the given windows"),
+			// RenewalTime returns a usable fallback time alongside a window
+			// error; the controller must record it in Status.RenewalTime while
+			// still setting Ready=False with WindowError.
+			renewalTime:      func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
+			renewalTimeError: fmt.Errorf("cannot find a time with the given windows"),
 		},
 	}
 	for name, test := range tests {
@@ -1344,6 +1347,8 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 		// renewalTime is status.renewalTime going into the reconcile.
 		renewalTime *metav1.Time
 
+		// Every reconcile calls the calculator once without ARI options, to
+		// validate the renewal configuration and produce the fallback time.
 		wantCalculatorCalls int
 
 		// wantUpdatedRenewalTime, when set, is the renewal time expected in a
@@ -1352,7 +1357,7 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 	}{
 		"keeps the ARI-derived renewal time between fetches without writing status": {
 			renewalTime:         &ariPickedTime,
-			wantCalculatorCalls: 0,
+			wantCalculatorCalls: 1,
 		},
 		"recalculates when the stored renewal time falls outside the suggested window": {
 			renewalTime:            &metav1.Time{Time: now.Add(72 * time.Hour)},
@@ -1428,5 +1433,171 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 				t.Error(err)
 			}
 		})
+	}
+}
+
+// TestProcessItemARIWindowErrorKeepsARITime verifies that when the renewal
+// configuration is invalid, a reconcile that fetches ARI keeps the
+// ARI-derived renewal time in status.renewalTime, so the scheduled wake-up
+// stays in sync with the trigger controller's ARI-window gate, while the
+// error still surfaces as a WindowError Ready condition.
+func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	metaNow := metav1.NewTime(now)
+	metaHourAgo := metav1.NewTime(now.Add(-time.Hour))
+
+	leaf, leafCertID := mustLeafWithAKI(t, now.Add(-time.Hour), now.Add(89*24*time.Hour), 22)
+	leafPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leaf.Raw})
+
+	windowStart := now.Add(24 * time.Hour)
+	windowEnd := now.Add(48 * time.Hour)
+	// The jittered pick inside the ARI window, returned by the calculator
+	// alongside the window error.
+	ariPickedTime := metav1.NewTime(now.Add(36 * time.Hour))
+	// The deterministic fallback from the calculation without ARI options. It
+	// must NOT be written to status.renewalTime when an ARI time is in hand.
+	fallbackTime := metav1.NewTime(now.Add(30 * 24 * time.Hour))
+	windowErr := errors.New("windowDuration must be a positive duration in window { &Duration{Duration:0s,} * * * * *}")
+
+	crt := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+			IssuerRef: cmmeta.IssuerReference{
+				Name:  "test-issuer",
+				Kind:  cmapi.IssuerKind,
+				Group: "cert-manager.io",
+			},
+		},
+		Status: cmapi.CertificateStatus{
+			Conditions: []cmapi.CertificateCondition{{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaHourAgo,
+			}},
+			NotBefore: &metav1.Time{Time: leaf.NotBefore},
+			NotAfter:  &metav1.Time{Time: leaf.NotAfter},
+			ACME: &cmapi.CertificateACMEStatus{
+				ARI: &cmapi.CertificateACMEARIStatus{
+					CertID:      leafCertID,
+					LastChecked: &metaHourAgo,
+					// NextCheck in the past makes this reconcile fetch ARI.
+					NextCheck: &metaHourAgo,
+				},
+			},
+		},
+	}
+
+	issuer := gen.Issuer("test-issuer",
+		gen.SetIssuerNamespace("testns"),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			RenewalInformationSource: cmacme.ACMERenewalInformationSourceARI,
+		}),
+	)
+	secret := gen.Secret("test-secret",
+		gen.SetSecretNamespace("testns"),
+		gen.SetSecretAnnotations(map[string]string{
+			cmapi.IssuerNameAnnotationKey:  "test-issuer",
+			cmapi.IssuerKindAnnotationKey:  cmapi.IssuerKind,
+			cmapi.IssuerGroupAnnotationKey: "cert-manager.io",
+		}),
+		gen.SetSecretData(map[string][]byte{corev1.TLSCertKey: leafPEM}),
+	)
+
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.ACMEUseARI, true)
+
+	builder := &testpkg.Builder{
+		T:                  t,
+		Clock:              fakeclock.NewFakeClock(now),
+		CertManagerObjects: []runtime.Object{crt, issuer},
+		KubeObjects:        []runtime.Object{secret},
+	}
+	builder.Init()
+	defer builder.Stop()
+
+	w := &controllerWrapper{}
+	if _, _, err := w.Register(builder.Context); err != nil {
+		t.Fatal(err)
+	}
+	w.controller.policyEvaluator = policyEvaluatorBuilder(cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionReady,
+		Status:  cmmeta.ConditionTrue,
+		Reason:  ReadyReason,
+		Message: "ready message",
+	})
+	w.controller.recorder = new(testpkg.FakeRecorder)
+	w.controller.accountRegistry = &accountstest.FakeRegistry{
+		GetClientFunc: func(string) (acmecl.Interface, error) {
+			return &acmecl.FakeACME{
+				FakeGetRenewalInfo: func(context.Context, *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+					return &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: windowStart,
+							End:   windowEnd,
+						},
+						ExplanationURL: "example.com/explanation",
+					}, nil
+				},
+			}, nil
+		},
+	}
+	w.controller.renewalTimeCalculator = func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal, opts ...pki.RenewalTimeOptions) (*metav1.Time, error) {
+		if len(opts) > 0 {
+			return &ariPickedTime, windowErr
+		}
+		return &fallbackTime, windowErr
+	}
+
+	expCrt := crt.DeepCopy()
+	expCrt.Status.Conditions = []cmapi.CertificateCondition{{
+		Type:               cmapi.CertificateConditionReady,
+		Status:             cmmeta.ConditionFalse,
+		Reason:             policies.WindowError,
+		Message:            fmt.Sprintf("Could not calculate renewal time: %v", windowErr),
+		LastTransitionTime: &metaNow,
+	}}
+	expCrt.Status.RenewalTime = &ariPickedTime
+	expCrt.Status.ACME = &cmapi.CertificateACMEStatus{
+		ARI: &cmapi.CertificateACMEARIStatus{
+			CertID:         leafCertID,
+			ExplanationURL: "example.com/explanation",
+			SuggestedWindow: &cmapi.ACMERenewalWindow{
+				Start: &metav1.Time{Time: windowStart},
+				End:   &metav1.Time{Time: windowEnd},
+			},
+			LastChecked: &metaNow,
+			LastError:   windowErr.Error(),
+		},
+	}
+	builder.ExpectedActions = append(builder.ExpectedActions,
+		testpkg.NewCustomMatch(
+			coretesting.NewUpdateSubresourceAction(
+				cmapi.SchemeGroupVersion.WithResource("certificates"),
+				"status",
+				expCrt.Namespace,
+				expCrt),
+			func(expected, actual coretesting.Action) error {
+				return testutil.Diff(expected, actual,
+					cmp.FilterPath(func(p cmp.Path) bool {
+						return p.Last().String() == ".ManagedFields"
+					}, cmp.Ignore()),
+					// NextCheck includes random jitter so cannot be deterministic.
+					cmpopts.IgnoreFields(cmapi.CertificateACMEARIStatus{}, "NextCheck"),
+				)
+			},
+		))
+
+	builder.Start()
+
+	key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("ProcessItem() error = %v", err)
+	}
+
+	if err := builder.AllActionsExecuted(); err != nil {
+		t.Error(err)
 	}
 }
