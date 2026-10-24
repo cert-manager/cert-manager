@@ -398,3 +398,20 @@ func Test_translateAnnotations_validAnnotationValuesWithWhitespace(t *testing.T)
 		assert.Equal(t, []string{"test@example.com", "admin@example.com"}, crt.Spec.EmailAddresses)
 	}
 }
+
+// Test_translateAnnotations_altNamesWithWhitespace is a regression test for
+// cert-manager/cert-manager#9295: unlike the ip-sans branch, the alt-names
+// branch did not trim entries after splitting on ",", so
+// "www.example.com, example.com" produced " example.com" with a leading
+// space. That near-duplicate of a host already present from tls.hosts
+// survived dedupeSANs (which compares by exact string) and the CSR carried
+// a SAN with a leading space.
+func Test_translateAnnotations_altNamesWithWhitespace(t *testing.T) {
+	crt := gen.Certificate("example-cert")
+	err := translateAnnotations(crt, map[string]string{
+		cmapi.AltNamesAnnotationKey: "www.example.com, example.com",
+	})
+	if assert.NoError(t, err) {
+		assert.Equal(t, []string{"www.example.com", "example.com"}, crt.Spec.DNSNames)
+	}
+}
