@@ -31,6 +31,8 @@ var OIDConstants = struct {
 	OrganizationalUnit []int
 	CommonName         []int
 	SerialNumber       []int
+	Surname            []int
+	GivenName          []int
 	Locality           []int
 	Province           []int
 	StreetAddress      []int
@@ -42,6 +44,8 @@ var OIDConstants = struct {
 	OrganizationalUnit: []int{2, 5, 4, 11},
 	CommonName:         []int{2, 5, 4, 3},
 	SerialNumber:       []int{2, 5, 4, 5},
+	Surname:            []int{2, 5, 4, 4},
+	GivenName:          []int{2, 5, 4, 42},
 	Locality:           []int{2, 5, 4, 7},
 	Province:           []int{2, 5, 4, 8},
 	StreetAddress:      []int{2, 5, 4, 9},
@@ -58,6 +62,8 @@ var attributeTypeNames = map[string][]int{
 	"OU":           OIDConstants.OrganizationalUnit,
 	"CN":           OIDConstants.CommonName,
 	"SERIALNUMBER": OIDConstants.SerialNumber,
+	"SN":           OIDConstants.Surname,
+	"GN":           OIDConstants.GivenName,
 	"L":            OIDConstants.Locality,
 	"ST":           OIDConstants.Province,
 	"STREET":       OIDConstants.StreetAddress,
