@@ -11,6 +11,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -33,6 +34,7 @@ const maxDNSResponseSize = 128 * 1024
 type preCheckDNSFunc func(ctx context.Context, fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error)
 type dnsQueryFunc func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
+type dnsExchangeContextFunc func(ctx context.Context, client *dns.Client, m *dns.Msg, a string) (r *dns.Msg, rtt time.Duration, err error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -43,6 +45,11 @@ var (
 
 	// dnsQuery is used to be able to mock DNSQuery
 	dnsQuery dnsQueryFunc = DNSQuery
+
+	// dnsExchangeContext is used to be able to mock ExchangeContext in DNSQuery
+	dnsExchangeContext dnsExchangeContextFunc = func(ctx context.Context, client *dns.Client, m *dns.Msg, a string) (*dns.Msg, time.Duration, error) {
+		return client.ExchangeContext(ctx, m, a)
+	}
 
 	// We have moved functionality to the CachingResolver, in order to not break
 	// anything importing this package we have the original functions use this
@@ -148,11 +155,17 @@ func checkDNSPropagation(ctx context.Context, fqdn, value string, nameservers []
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers []string) (bool, error) {
+	var lastErr error
+	var queried int
 	for _, ns := range nameservers {
 		r, err := dnsQuery(ctx, fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
-			return false, err
+			logf.FromContext(ctx).V(logf.DebugLevel).Info("Skipping authoritative nameserver due to query error",
+				"nameserver", ns, "err", err)
+			lastErr = err
+			continue
 		}
+		queried++
 
 		// NXDomain response is not really an error, just waiting for propagation to happen
 		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
@@ -173,6 +186,9 @@ func checkAuthoritativeNss(ctx context.Context, fqdn, value string, nameservers 
 		if !found {
 			return false, nil
 		}
+	}
+	if queried == 0 && lastErr != nil {
+		return false, lastErr
 	}
 	logf.FromContext(ctx).V(logf.DebugLevel).Info("Selfchecking using the DNS Lookup method was successful")
 	return true, nil
@@ -215,14 +231,14 @@ func DNSQuery(ctx context.Context, fqdn string, rtype uint16, nameservers []stri
 			in, _, err = http.Exchange(ctx, m, ns)
 
 		} else {
-			in, _, err = udp.ExchangeContext(ctx, m, ns)
+			in, _, err = dnsExchangeContext(ctx, udp, m, ns)
 
 			// Try TCP if UDP fails
 			if (in != nil && in.Truncated) ||
-				(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
+				(err != nil && (strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout") || isUDPDialError(err))) {
 				logf.FromContext(ctx).V(logf.DebugLevel).Info("UDP dns lookup failed, retrying with TCP", "err", err)
 				// If the TCP request succeeds, the err will reset to nil
-				in, _, err = tcp.ExchangeContext(ctx, m, ns)
+				in, _, err = dnsExchangeContext(ctx, tcp, m, ns)
 			}
 		}
 
@@ -231,6 +247,15 @@ func DNSQuery(ctx context.Context, fqdn string, rtype uint16, nameservers []stri
 		}
 	}
 	return in, err
+}
+
+// isUDPDialError returns true if err is a net.OpError from a dial operation.
+func isUDPDialError(err error) bool {
+	var opErr *net.OpError
+	if !errors.As(err, &opErr) {
+		return false
+	}
+	return opErr.Op == "dial"
 }
 
 type httpDNSClient struct {
