@@ -221,6 +221,16 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 		el = append(el, validateNameConstraints(crt, fldPath)...)
 	}
 
+	if crt.MaxPathLen != nil {
+		if !crt.IsCA {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crt.MaxPathLen,
+				"maxPathLen may only be set when isCA is true"))
+		} else if *crt.MaxPathLen < 0 {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crt.MaxPathLen,
+				"maxPathLen must be a non-negative integer"))
+		}
+	}
+
 	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
 
 	if crt.Keystores != nil {

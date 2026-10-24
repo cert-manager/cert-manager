@@ -107,9 +107,19 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 		return el
 	}
 
+	if crSpec.MaxPathLen != nil {
+		if !crSpec.IsCA {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crSpec.MaxPathLen,
+				"maxPathLen may only be set when isCA is true"))
+		} else if *crSpec.MaxPathLen < 0 {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crSpec.MaxPathLen,
+				"maxPathLen must be a non-negative integer"))
+		}
+	}
+
 	_, err = pki.CertificateTemplateFromCSRPEM(
 		crSpec.Request,
-		pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
+		pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, crSpec.MaxPathLen),
 		pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)
 	if err != nil {

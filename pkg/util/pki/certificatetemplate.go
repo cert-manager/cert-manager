@@ -299,7 +299,7 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 	return CertificateTemplateFromCSR(
 		csr,
 		CertificateTemplateOverrideDuration(certDuration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(crt.Spec.IsCA, nil),
+		CertificateTemplateValidateAndOverrideBasicConstraints(crt.Spec.IsCA, crt.Spec.MaxPathLen),
 		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)
 }
@@ -316,8 +316,8 @@ func CertificateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509
 	return CertificateTemplateFromCSRPEM(
 		cr.Spec.Request,
 		CertificateTemplateOverrideDuration(certDuration),
-		CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
-		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),    // Override the key usages, but make sure they match the usages in the CSR if present
+		CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, cr.Spec.MaxPathLen), // Override the basic constraints, but make sure they match the constraints in the CSR if present
+		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),                   // Override the key usages, but make sure they match the usages in the CSR if present
 	)
 }
 

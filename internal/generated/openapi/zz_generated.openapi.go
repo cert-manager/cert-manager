@@ -3263,6 +3263,13 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 							Format:      "",
 						},
 					},
+					"maxPathLen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Requested maximum path length for the certificate. Only meaningful when isCA is true. A value of 0 means no sub-CAs are allowed. When not set, no pathLenConstraint is encoded in the certificate.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"usages": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -3623,6 +3630,13 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Description: "Requested basic constraints isCA value. The isCA value is used to set the `isCA` field on the created CertificateRequest resources. Note that the issuer may choose to ignore the requested isCA value, just like any other requested attribute.\n\nIf true, this will automatically add the `cert sign` usage to the list of requested `usages`.",
 							Type:        []string{"boolean"},
 							Format:      "",
+						},
+					},
+					"maxPathLen": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Requested maximum path length for the certificate. Only meaningful when isCA is true. A value of 0 means no sub-CAs are allowed. When not set, no pathLenConstraint is encoded in the certificate.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"usages": {
