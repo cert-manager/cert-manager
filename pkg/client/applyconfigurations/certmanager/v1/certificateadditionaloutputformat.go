@@ -32,6 +32,17 @@ type CertificateAdditionalOutputFormatApplyConfiguration struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
 	Type *certmanagerv1.CertificateOutputFormatType `json:"type,omitempty"`
+	// Keys defines the ordered list of keys to concatenate in the combined output.
+	// Defaults to ["tls.key", "tls.crt"] when Type is CombinedPEM.
+	// Supported keys are "tls.key", "tls.crt", and "ca.crt".
+	//
+	// Note: Including "ca.crt" has several important caveats:
+	// 1. The CA certificate is not guaranteed to exist in the issued Secret (e.g. this depends on the Issuer, and changing issuers may cause it to disappear).
+	// 2. The CA certificate in the Secret should NEVER be used for trust verification purposes.
+	// 3. It is primarily provided for software requiring a full certificate chain bundled into a single file.
+	//
+	// Only supported when Type is CombinedPEM.
+	Keys []string `json:"keys,omitempty"`
 }
 
 // CertificateAdditionalOutputFormatApplyConfiguration constructs a declarative configuration of the CertificateAdditionalOutputFormat type for use with
@@ -45,5 +56,15 @@ func CertificateAdditionalOutputFormat() *CertificateAdditionalOutputFormatApply
 // If called multiple times, the Type field is set to the value of the last call.
 func (b *CertificateAdditionalOutputFormatApplyConfiguration) WithType(value certmanagerv1.CertificateOutputFormatType) *CertificateAdditionalOutputFormatApplyConfiguration {
 	b.Type = &value
+	return b
+}
+
+// WithKeys adds the given value to the Keys field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Keys field.
+func (b *CertificateAdditionalOutputFormatApplyConfiguration) WithKeys(values ...string) *CertificateAdditionalOutputFormatApplyConfiguration {
+	for i := range values {
+		b.Keys = append(b.Keys, values[i])
+	}
 	return b
 }
