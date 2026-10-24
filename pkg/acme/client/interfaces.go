@@ -35,7 +35,7 @@ type Interface interface { //nolint:interfacebloat
 	FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error)
 	ListCertAlternates(ctx context.Context, url string) ([]string, error)
 	WaitOrder(ctx context.Context, url string) (*acme.Order, error)
-	CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
+	CreateCertFromOrder(ctx context.Context, order *acme.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
 	// Accept will (in success cases) be called once per a Challenge once it
 	// has passed self-check and is ready to be verified by the ACME server.
 	Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)

@@ -355,7 +355,7 @@ type Order struct {
 	// Possible values are StatusPending, StatusReady, StatusProcessing, StatusValid and StatusInvalid.
 	// Pending means the CA does not believe that the client has fulfilled the requirements.
 	// Ready indicates that the client has fulfilled all the requirements and can submit a CSR
-	// to obtain a certificate. This is done with Client's CreateOrderCert.
+	// to obtain a certificate. This is done with Client's CreateCertFromOrder.
 	// Processing means the certificate is being issued.
 	// Valid indicates the CA has issued the certificate. It can be downloaded
 	// from the Order's CertURL. This is done with Client's FetchCert.
