@@ -34,6 +34,9 @@ const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 // and is chosen to be large enough that any reasonable response would fit.
 const cloudFlareMaxBodySize = 1024 * 1024 // 1mb
 
+// defaultTimeout is the API request timeout used when no Timeout option is given.
+const defaultTimeout = 30 * time.Second
+
 // DNSProviderType is the Mockable Interface
 type DNSProviderType interface {
 	makeRequest(ctx context.Context, method, uri string, body io.Reader) (json.RawMessage, error)
@@ -46,6 +49,7 @@ type DNSProvider struct {
 	authToken string
 
 	userAgent string
+	timeout   time.Duration
 }
 
 // DNSZone is the Zone-Record returned from Cloudflare (we'll ignore everything we don't need)
@@ -86,11 +90,17 @@ func NewDNSProviderFromOptions(_ context.Context, options ...DNSProviderOption) 
 		return nil, err
 	}
 
+	timeout := opts.Timeout
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
+
 	return &DNSProvider{
 		authEmail: opts.Email,
 		authKey:   opts.APIKey,
 		authToken: opts.APIToken,
 		userAgent: opts.UserAgent,
+		timeout:   timeout,
 	}, nil
 }
 
@@ -299,7 +309,7 @@ func (c *DNSProvider) makeRequest(ctx context.Context, method, uri string, body 
 	req.Header.Set("User-Agent", c.userAgent)
 
 	client := http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: c.timeout,
 	}
 	// #nosec G704 -- the URI is prepared in our own code, and is controlled
 	resp, err := client.Do(req)
