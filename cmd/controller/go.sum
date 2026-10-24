@@ -37,8 +37,8 @@ github.com/Khan/genqlient v0.8.1/go.mod h1:R2G6DzjBvCbhjsEajfRjbWdVglSH/73kSivC9
 github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/Venafi/vcert/v5 v5.13.9 h1:TNzVzUoFK6z8rQV7y6u9kopG2EqY0FfP65wM1tE8SIg=
-github.com/Venafi/vcert/v5 v5.13.9/go.mod h1:wu98YHBPNoD3kjVfc7bCsQnoyx8bmFeoPnVae2n/uIE=
+github.com/Venafi/vcert/v5 v5.13.10-0.20261016202221-f44aece1c33f h1:uBfoxlVdw/N3VRyixVjxG5yaQQnVLEKXjNiXFa9wfOU=
+github.com/Venafi/vcert/v5 v5.13.10-0.20261016202221-f44aece1c33f/go.mod h1:xWl1SPAkMrePc29yQenEG2F4pQBxwTdailM8jxATTjU=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0 h1:oLqV1HbQrojeWkpI9aFI1SYJ53x8L12eqwcDHxmWrrE=
 github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0/go.mod h1:l2ajjow2JNoL6HjejeHmkdMEm98uL4MveXwb9Z3FoNk=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e h1:4dAU9FXIyQktpoUAgOJK3OTFc/xug0PCXYCqU0FgDKI=

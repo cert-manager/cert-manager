@@ -4882,8 +4882,15 @@ func schema_pkg_apis_certmanager_v1_VenafiNGTS(ref common.ReferenceCallback) com
 					},
 					"tsgID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token, for example \"1234567890\". The tsg_id: prefix is added automatically. This field is required.",
+							Description: "TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token, for example \"1234567890\". The tsg_id: prefix is added automatically. It must be the 10-digit TSG ID of the tenant, not a workspace ID. If it is shorter than 10 digits, for example because a workspace ID was used by mistake, the Issuer does not become Ready and reports that the scope is not in the format \"tsg_id:<TSG_ID>\". To issue certificates in a workspace, set WorkspaceID as well. This field is required.",
 							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"workspaceID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkspaceID is the ID of the NGTS workspace to send requests to, for example \"1001\". When set, it is sent as the workspace_id query parameter on every NGTS API request. It does not replace TSGID: the access token is still scoped to the tenant, so TSGID must remain the tenant's 10-digit TSG ID. If not set, no workspace is sent.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
