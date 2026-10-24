@@ -52,6 +52,9 @@ import (
 )
 
 func TestSync(t *testing.T) {
+	defer func(d time.Duration) { FinalizeTimeout = d }(FinalizeTimeout)
+	FinalizeTimeout = 100 * time.Millisecond
+
 	nowTime := time.Now()
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := fakeclock.NewFakeClock(nowTime)
@@ -370,6 +373,23 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	testACMEOrderInvalid := &acmeapi.Order{}
 	*testACMEOrderInvalid = *testACMEOrderPending
 	testACMEOrderInvalid.Status = acmeapi.StatusInvalid
+
+	// shallow copy
+	testACMEOrderProcessing := &acmeapi.Order{}
+	*testACMEOrderProcessing = *testACMEOrderPending
+	testACMEOrderProcessing.Status = acmeapi.StatusProcessing
+	testACMEOrderProcessing.Expires = nowTime.Add(time.Hour)
+	// shallow copy
+	testACMEOrderProcessingExpired := &acmeapi.Order{}
+	*testACMEOrderProcessingExpired = *testACMEOrderProcessing
+	testACMEOrderProcessingExpired.Expires = nowTime.Add(-time.Minute)
+
+	testOrderProcessing := testOrderPending.DeepCopy()
+	testOrderProcessing.Status.State = cmacme.Processing
+	testOrderProcessingExpired := testOrderPending.DeepCopy()
+	testOrderProcessingExpired.Status.State = cmacme.Errored
+	testOrderProcessingExpired.Status.FailureTime = &nowMetaTime
+	testOrderProcessingExpired.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", testACMEOrderProcessingExpired.Expires.Format(time.RFC3339))
 
 	tests := map[string]testT{
 		"create a new order with the acme server, set the order url on the status resource and return nil to avoid cache timing issues": {
@@ -749,6 +769,57 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 			expectErr: true,
+		},
+		"call FinalizeOrder, re-queue the Order as 'processing' if the ACME server has not issued the certificate before the finalize timeout": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderProcessing.Namespace, testOrderProcessing)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessing, nil
+				},
+				FakeCreateOrderCert: func(ctx context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+					// An ACME server that never finishes processing the order.
+					<-ctx.Done()
+					return nil, "", ctx.Err()
+				},
+			},
+			shouldSchedule: true,
+		},
+		"re-queue a 'processing' Order while the ACME server is still processing it": {
+			order: testOrderProcessing,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessing, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessing, nil
+				},
+			},
+			shouldSchedule: true,
+		},
+		"mark a 'processing' Order as errored once the ACME order has expired": {
+			order: testOrderProcessing,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessing, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderProcessingExpired.Namespace, testOrderProcessingExpired)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessingExpired, nil
+				},
+			},
 		},
 		"call FinalizeOrder, recover if finalize fails because order is already finalized": {
 			order: testOrderReady,

@@ -59,6 +59,17 @@ const (
 // It can be overridden in tests.
 var RequeuePeriod = time.Second * 5
 
+// ProcessingRequeuePeriod is the period after which an Order whose ACME order
+// is still 'processing' after finalization is re-queued.
+// It can be overridden in tests.
+var ProcessingRequeuePeriod = time.Second * 30
+
+// FinalizeTimeout bounds how long a single sync waits for the ACME server to
+// issue the certificate after the order is finalized. If the order is still
+// 'processing' after this, the Order is re-queued instead of holding a worker.
+// It can be overridden in tests.
+var FinalizeTimeout = time.Minute
+
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
@@ -237,6 +248,13 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			Namespace: o.Namespace,
 		}, RequeuePeriod)
 
+		return nil
+
+	// The order was finalized but the ACME server is still issuing the
+	// certificate. Poll it from the work queue rather than from a worker, and
+	// give up once the ACME server's own deadline for the order has passed.
+	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges) && acmeOrder.Status == acmeapi.StatusProcessing:
+		c.processingOrder(ctx, o, acmeOrder)
 		return nil
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
@@ -574,7 +592,28 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	// Call to CreateOrderCert finalizes the ACME order. This call can only be made once.
-	certSlice, certURL, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
+	// It then waits for the ACME server to issue the certificate, which is
+	// bounded so that an order the server never completes cannot hold this
+	// worker, and with it the Order's work queue key, indefinitely.
+	finalizeCtx, cancel := context.WithTimeout(ctx, FinalizeTimeout)
+	defer cancel()
+	certSlice, certURL, err := cl.CreateOrderCert(finalizeCtx, o.Status.FinalizeURL, derBytes, true)
+
+	if errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
+		log.V(logf.InfoLevel).Info("ACME server has not issued the certificate yet, re-queuing Order", "timeout", FinalizeTimeout)
+		acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
+		if err != nil {
+			return fmt.Errorf("error syncing order status: %w", err)
+		}
+		if acmeOrder.Status == acmeapi.StatusProcessing {
+			c.processingOrder(ctx, o, acmeOrder)
+			return nil
+		}
+		// The order left 'processing' between the timeout and the status
+		// update: the next sync acts on its new state.
+		c.scheduledWorkQueue.Add(types.NamespacedName{Name: o.Name, Namespace: o.Namespace}, 0)
+		return nil
+	}
 
 	acmeErr, ok := err.(*acmeapi.Error)
 
@@ -654,6 +693,27 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	return c.storeCertificateOnStatus(ctx, o, certSlice)
+}
+
+// processingOrder records that the ACME server is still processing a finalized
+// order and re-queues the Order to check it again later. Once the ACME order's
+// expiry has passed, the Order is marked as errored instead.
+func (c *controller) processingOrder(ctx context.Context, o *cmacme.Order, acmeOrder *acmeapi.Order) {
+	log := logf.FromContext(ctx)
+
+	if !acmeOrder.Expires.IsZero() && !c.clock.Now().Before(acmeOrder.Expires) {
+		log.V(logf.InfoLevel).Info("ACME order is still processing after its expiry time, marking Order as failed", "expires", acmeOrder.Expires)
+		c.setOrderState(&o.Status, string(cmacme.Errored))
+		o.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", acmeOrder.Expires.Format(time.RFC3339))
+		return
+	}
+
+	log.V(logf.DebugLevel).Info("ACME order is still processing, re-queuing Order", "requeuePeriod", ProcessingRequeuePeriod)
+	c.setOrderState(&o.Status, string(cmacme.Processing))
+	c.scheduledWorkQueue.Add(types.NamespacedName{
+		Name:      o.Name,
+		Namespace: o.Namespace,
+	}, ProcessingRequeuePeriod)
 }
 
 func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Order, certs [][]byte) error {
