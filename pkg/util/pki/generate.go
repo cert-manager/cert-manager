@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -45,12 +46,19 @@ const (
 	ECCurve384 = 384
 	// ECCurve521 represents a secp521r1 / NIST P-521 ECDSA key.
 	ECCurve521 = 521
+
+	// MLDSA44 represents an ML-DSA-44 key.
+	MLDSA44 = 44
+	// MLDSA65 represents an ML-DSA-65 key.
+	MLDSA65 = 65
+	// MLDSA87 represents an ML-DSA-87 key.
+	MLDSA87 = 87
 )
 
 // GeneratePrivateKeyForCertificate will generate a private key suitable for
 // the provided cert-manager Certificate resource, taking into account the
 // parameters on the provided resource.
-// The returned key will either be RSA or ECDSA.
+// The returned key will either be RSA, ECDSA, Ed25519 or ML-DSA.
 func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error) {
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
@@ -75,6 +83,19 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 		return GenerateECPrivateKey(keySize)
 	case v1.Ed25519KeyAlgorithm:
 		return GenerateEd25519PrivateKey()
+	case v1.MLDSAKeyAlgorithm:
+		keySize := MLDSA44
+
+		if crt.Spec.PrivateKey.Size > 0 {
+			keySize = crt.Spec.PrivateKey.Size
+		}
+
+		params, err := MLDSAParametersForSize(keySize)
+		if err != nil {
+			return nil, err
+		}
+
+		return GenerateMLDSAPrivateKey(params)
 	default:
 		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.PrivateKey.Algorithm)
 	}
@@ -121,9 +142,33 @@ func GenerateEd25519PrivateKey() (ed25519.PrivateKey, error) {
 	return prvkey, err
 }
 
+// GenerateMLDSAPrivateKey will generate an ML-DSA private key for the given parameter set.
+func GenerateMLDSAPrivateKey(params mldsa.Parameters) (*mldsa.PrivateKey, error) {
+	sk, err := mldsa.GenerateKey(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate %s key: %w", params, err)
+	}
+	return sk, nil
+}
+
+// MLDSAParametersForSize returns the ML-DSA parameter set for the given
+// `spec.privateKey.size` value. It can be used with 44, 65 and 87.
+func MLDSAParametersForSize(keySize int) (mldsa.Parameters, error) {
+	switch keySize {
+	case MLDSA44:
+		return mldsa.MLDSA44(), nil
+	case MLDSA65:
+		return mldsa.MLDSA65(), nil
+	case MLDSA87:
+		return mldsa.MLDSA87(), nil
+	default:
+		return mldsa.Parameters{}, fmt.Errorf("unsupported ML-DSA key size specified: %d", keySize)
+	}
+}
+
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
 // the type of key encoding and then inspecting the type of key provided.
-// It only supports encoding RSA or ECDSA keys.
+// It supports encoding RSA, ECDSA, Ed25519, and ML-DSA keys.
 func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1.PrivateKeyEncoding) ([]byte, error) {
 	switch keyEncoding {
 	case v1.PrivateKeyEncoding(""), v1.PKCS1:
@@ -133,6 +178,8 @@ func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1.PrivateKeyEncoding) (
 		case *ecdsa.PrivateKey:
 			return EncodeECPrivateKey(k)
 		case ed25519.PrivateKey:
+			return EncodePKCS8PrivateKey(k)
+		case *mldsa.PrivateKey:
 			return EncodePKCS8PrivateKey(k)
 		default:
 			return nil, fmt.Errorf("error encoding private key: unknown key type: %T", pk)
@@ -174,7 +221,7 @@ func EncodeECPrivateKey(pk *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 // PublicKeyForPrivateKey will return the crypto.PublicKey for the given
-// crypto.PrivateKey. It only supports RSA and ECDSA keys.
+// crypto.PrivateKey. It supports RSA, ECDSA, Ed25519, and ML-DSA keys.
 func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 	switch k := pk.(type) {
 	case *rsa.PrivateKey:
@@ -182,6 +229,8 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 	case *ecdsa.PrivateKey:
 		return k.Public(), nil
 	case ed25519.PrivateKey:
+		return k.Public(), nil
+	case *mldsa.PrivateKey:
 		return k.Public(), nil
 	default:
 		return nil, fmt.Errorf("unknown private key type: %T", pk)
@@ -192,7 +241,7 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 // public key in the given x509.Certificate.
 // Returns false and no error if the public key is *not* the same as the certificate's key
 // Returns true and no error if the public key *is* the same as the certificate's key
-// Returns an error if the certificate's key type cannot be determined (i.e. non RSA/ECDSA keys)
+// Returns an error if the certificate's key type cannot be determined (i.e. not an RSA, ECDSA, Ed25519 or ML-DSA key)
 func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) (bool, error) {
 	return PublicKeysEqual(crt.PublicKey, check)
 }
@@ -201,7 +250,7 @@ func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) 
 // public key in the given x509.CertificateRequest.
 // Returns false and no error if the given public key is *not* the same as the CSR's key
 // Returns true and no error if the given public key *is* the same as the CSR's key
-// Returns an error if the CSR's key type cannot be determined (i.e. non RSA/ECDSA keys)
+// Returns an error if the CSR's key type cannot be determined (i.e. not an RSA, ECDSA, Ed25519 or ML-DSA key)
 func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (bool, error) {
 	return PublicKeysEqual(csr.PublicKey, check)
 }
@@ -217,6 +266,8 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 	case *ecdsa.PublicKey:
 		return pub.Equal(b), nil
 	case ed25519.PublicKey:
+		return pub.Equal(b), nil
+	case *mldsa.PublicKey:
 		return pub.Equal(b), nil
 	default:
 		return false, fmt.Errorf("unrecognised public key type: %T", a)

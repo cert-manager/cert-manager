@@ -72,7 +72,8 @@ type CertificateRequestSpecApplyConfiguration struct {
 	// ExtKeyUsage extension, these extensions must have the same values
 	// as specified here without any additional values.
 	//
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` and `key encipherment`, or to
+	// `digital signature` alone if the CSR has an ML-DSA public key.
 	Usages []certmanagerv1.KeyUsage `json:"usages,omitempty"`
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.

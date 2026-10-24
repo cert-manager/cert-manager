@@ -18,6 +18,7 @@ package selfsigned
 
 import (
 	"crypto"
+	"crypto/mldsa"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -29,8 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,6 +41,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	listersfake "github.com/cert-manager/cert-manager/test/unit/listers"
@@ -119,6 +123,27 @@ func TestSign(t *testing.T) {
 
 	csrEmptyCertPEM := generateCSR(t, skEC, "")
 
+	skMLDSA, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA65())
+	if err != nil {
+		t.Errorf("failed to generate ML-DSA private key: %s", err)
+		t.FailNow()
+	}
+	skMLDSAPEM, err := pki.EncodePKCS8PrivateKey(skMLDSA)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	mldsaKeySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rsaKeySecret.Name,
+			Namespace: gen.DefaultTestNamespace,
+		},
+		Data: map[string][]byte{
+			corev1.TLSPrivateKeyKey: skMLDSAPEM,
+		},
+	}
+	csrMLDSAPEM := generateCSR(t, skMLDSA, "test-mldsa")
+
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestAnnotations(
 			map[string]string{
@@ -156,6 +181,9 @@ func TestSign(t *testing.T) {
 	emptyCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestCSR(csrEmptyCertPEM),
 	)
+	mldsaCR := gen.CertificateRequestFrom(baseCR,
+		gen.SetCertificateRequestCSR(csrMLDSAPEM),
+	)
 
 	templateRSA, err := pki.CertificateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
@@ -186,6 +214,17 @@ func TestSign(t *testing.T) {
 	}
 
 	emptyCertPEM, _, err := pki.SignCertificate(templateEmptyCert, templateEmptyCert, skEC.Public(), skEC)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	templateMLDSA, err := pki.CertificateTemplateFromCertificateRequest(mldsaCR)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	certMLDSAPEM, _, err := pki.SignCertificate(templateMLDSA, templateMLDSA, skMLDSA.Public(), skMLDSA)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -545,6 +584,75 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
+		"should sign an ML-DSA key set condition to Ready if the MLDSAPrivateKeys feature gate is enabled": {
+			certificateRequest:  mldsaCR.DeepCopy(),
+			mldsaFeatureEnabled: true,
+			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk any) ([]byte, *x509.Certificate, error) {
+				// We still check that it will sign and not error
+				// Return error if we do
+				_, cert, err := pki.SignCertificate(c1, c2, pk, sk)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if cert.SignatureAlgorithm != x509.MLDSA65 || cert.KeyUsage != x509.KeyUsageDigitalSignature {
+					return nil, nil, fmt.Errorf("invalid test: unexpected signature algorithm %s or key usage %d", cert.SignatureAlgorithm, cert.KeyUsage)
+				}
+
+				return certMLDSAPEM, nil, nil
+			},
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{mldsaKeySecret},
+				CertManagerObjects: []runtime.Object{mldsaCR.DeepCopy(), baseIssuer},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(mldsaCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certMLDSAPEM),
+							gen.SetCertificateRequestCA(certMLDSAPEM),
+						),
+					)),
+				},
+			},
+		},
+		"should leave an ML-DSA key pending if the MLDSAPrivateKeys feature gate is disabled": {
+			certificateRequest: mldsaCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{mldsaKeySecret},
+				CertManagerObjects: []runtime.Object{mldsaCR.DeepCopy(), baseIssuer},
+				ExpectedEvents: []string{
+					"Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(mldsaCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
 		"should sign a cert with no subject DN and create a warning event": {
 			certificateRequest: emptyCR.DeepCopy(),
 			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk any) ([]byte, *x509.Certificate, error) {
@@ -608,9 +716,15 @@ type testT struct {
 	expectedErr bool
 
 	fakeLister *listersfake.FakeSecretLister
+
+	// mldsaFeatureEnabled is the state of the MLDSAPrivateKeys feature gate
+	// during the test.
+	mldsaFeatureEnabled bool
 }
 
 func runTest(t *testing.T, test testT) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.mldsaFeatureEnabled)
+
 	test.builder.T = t
 	test.builder.Init()
 	defer test.builder.Stop()

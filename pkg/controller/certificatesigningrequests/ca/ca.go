@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"errors"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -28,6 +29,7 @@ import (
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -36,6 +38,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	cmerrors "github.com/cert-manager/cert-manager/pkg/util/errors"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
@@ -124,6 +127,18 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		c.recorder.Event(csr, corev1.EventTypeWarning, "SigningError", message)
 		util.CertificateSigningRequestSetFailed(csr, "SigningError", message)
 		_, err := util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
+		return err
+	}
+
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) &&
+		(pki.IsMLDSAPublicKey(template.PublicKey) || pki.IsMLDSAPublicKey(caKey.Public())) {
+		err := errors.New("the MLDSAPrivateKeys feature gate is disabled")
+		message := "Refusing to sign a certificate involving an ML-DSA key"
+		log.Error(err, message)
+		message = fmt.Sprintf("%s: %s", message, err)
+		c.recorder.Event(csr, corev1.EventTypeWarning, "MLDSAPrivateKeysDisabled", message)
+		util.CertificateSigningRequestSetFailed(csr, "MLDSAPrivateKeysDisabled", message)
+		_, err = util.UpdateOrApplyStatus(ctx, c.certClient, csr, certificatesv1.CertificateFailed, c.fieldManager)
 		return err
 	}
 

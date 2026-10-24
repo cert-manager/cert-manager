@@ -42,6 +42,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
 
 	"github.com/cert-manager/cert-manager/integration-tests/framework"
@@ -344,7 +345,17 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 }
 
 func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
+	return runAllControllersWithRecorder(t, config, nil)
+}
+
+// runAllControllersWithRecorder runs all Certificate controllers like
+// runAllControllers, but records events with the given recorder, so that a
+// test can check them. A nil recorder only logs events.
+func runAllControllersWithRecorder(t *testing.T, config *rest.Config, recorder record.EventRecorder) framework.StopFunc {
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
+	if recorder == nil {
+		recorder = framework.NewEventRecorder(t, scheme)
+	}
 	log := logf.Log
 	clock := clock.RealClock{}
 	metrics := metrics.New(log, clock)
@@ -357,7 +368,7 @@ func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 		Metrics:                   metrics,
 		Clock:                     clock,
 		ContextOptions:            controllerpkg.ContextOptions{},
-		Recorder:                  framework.NewEventRecorder(t, scheme),
+		Recorder:                  recorder,
 		FieldManager:              "cert-manager-certificates-issuing-test",
 	}
 

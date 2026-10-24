@@ -57,6 +57,18 @@ func mustGenerateEd25519(t *testing.T) crypto.PrivateKey {
 	return pk
 }
 
+func mustGenerateMLDSA(t *testing.T, keySize int) crypto.PrivateKey {
+	params, err := pki.MLDSAParametersForSize(keySize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pk, err := pki.GenerateMLDSAPrivateKey(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pk
+}
+
 func TestPrivateKeyMatchesSpec(t *testing.T) {
 	tests := map[string]struct {
 		key          crypto.PrivateKey
@@ -95,6 +107,48 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 		"should match if keySize and algorithm are correct (Ed25519)": {
 			key:          mustGenerateEd25519(t),
 			expectedAlgo: cmapi.Ed25519KeyAlgorithm,
+		},
+		"should match if keySize and algorithm are correct (ML-DSA)": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA65),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			expectedSize: pki.MLDSA65,
+		},
+		"should match an ML-DSA-44 key if keySize is not set": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA44),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+		},
+		"should not match an ML-DSA-65 key if keySize is not set": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA65),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			violations:   []string{"spec.privateKey.size"},
+		},
+		"should not match if ML-DSA keySize is incorrect": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA65),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			expectedSize: pki.MLDSA87,
+			violations:   []string{"spec.privateKey.size"},
+		},
+		"should not match if ML-DSA keySize is unsupported": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA44),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			expectedSize: 2048,
+			violations:   []string{"spec.privateKey.size"},
+		},
+		"should not match an RSA key if algorithm is ML-DSA": {
+			key:          mustGenerateRSA(t, 2048),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			violations:   []string{"spec.privateKey.algorithm"},
+		},
+		"should not match an ML-DSA key if algorithm is ECDSA": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA44),
+			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
+			expectedSize: pki.ECCurve256,
+			violations:   []string{"spec.privateKey.algorithm"},
+		},
+		"should not match if algorithm is unknown": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA44),
+			expectedAlgo: cmapi.PrivateKeyAlgorithm("Unknown"),
+			violations:   []string{"spec.privateKey.algorithm"},
 		},
 	}
 	for name, test := range tests {

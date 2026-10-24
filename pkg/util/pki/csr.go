@@ -22,6 +22,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -86,16 +87,29 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 	return *crt.Spec.Subject
 }
 
+// KeyUsagesForCertificateOrCertificateRequest returns the key usages and
+// extended key usages for the given usages, using the default usages for RSA,
+// ECDSA and Ed25519 keys if no usages are specified.
+// Use KeyUsagesForPublicKeyAlgorithm if the subject public key algorithm is
+// known, so that the correct defaults are used for ML-DSA keys.
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+	return KeyUsagesForPublicKeyAlgorithm(usages, isCA, x509.UnknownPublicKeyAlgorithm)
+}
+
+// KeyUsagesForPublicKeyAlgorithm returns the key usages and extended key
+// usages for the given usages. If no usages are specified, the defaults for
+// the given subject public key algorithm are used (see
+// DefaultKeyUsagesForPublicKeyAlgorithm).
+func KeyUsagesForPublicKeyAlgorithm(usages []v1.KeyUsage, isCA bool, pubKeyAlgo x509.PublicKeyAlgorithm) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
 	if isCA {
 		ku |= x509.KeyUsageCertSign
 	}
 
 	// If no usages are specified, default to the ones specified in the
-	// Kubernetes API.
+	// Kubernetes API, or to the ML-DSA defaults for ML-DSA keys.
 	if len(usages) == 0 {
-		usages = v1.DefaultKeyUsages()
+		usages = DefaultKeyUsagesForPublicKeyAlgorithm(pubKeyAlgo)
 	}
 
 	for _, u := range usages {
@@ -111,6 +125,45 @@ func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool
 		err = fmt.Errorf("unknown key usages: %v", unk)
 	}
 	return
+}
+
+// DefaultKeyUsagesForPublicKeyAlgorithm returns the key usages which are used
+// when no usages are specified for a key with the given public key algorithm.
+// RFC 9881 Section 5 forbids the encipherment usages in v1.DefaultKeyUsages
+// for ML-DSA keys, so ML-DSA keys default to digital signature only.
+func DefaultKeyUsagesForPublicKeyAlgorithm(pubKeyAlgo x509.PublicKeyAlgorithm) []v1.KeyUsage {
+	if pubKeyAlgo == x509.MLDSA {
+		return []v1.KeyUsage{v1.UsageDigitalSignature}
+	}
+
+	return v1.DefaultKeyUsages()
+}
+
+// mldsaForbiddenKeyUsages are the key usages which a certificate with an
+// ML-DSA subject public key must not assert, as defined in RFC 9881 Section 5.
+const mldsaForbiddenKeyUsages = x509.KeyUsageKeyEncipherment |
+	x509.KeyUsageDataEncipherment |
+	x509.KeyUsageKeyAgreement |
+	x509.KeyUsageEncipherOnly |
+	x509.KeyUsageDecipherOnly
+
+// KeyUsageAllowedForPublicKeyAlgorithm reports whether the given usage is
+// allowed for a key with the given public key algorithm. Only ML-DSA keys have
+// usages which aren't allowed (see mldsaForbiddenKeyUsages). Unknown usages are
+// reported as allowed, because they're rejected elsewhere.
+func KeyUsageAllowedForPublicKeyAlgorithm(usage v1.KeyUsage, pubKeyAlgo x509.PublicKeyAlgorithm) bool {
+	if pubKeyAlgo != x509.MLDSA {
+		return true
+	}
+
+	kuse, ok := apiutil.KeyUsageType(usage)
+	return !ok || kuse&mldsaForbiddenKeyUsages == 0
+}
+
+// IsMLDSAPublicKey returns true if the given public key is an ML-DSA key.
+func IsMLDSAPublicKey(pub crypto.PublicKey) bool {
+	_, ok := pub.(*mldsa.PublicKey)
+	return ok
 }
 
 type generateCSROptions struct {
@@ -256,7 +309,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	if crt.Spec.EncodeUsagesInRequest == nil || *crt.Spec.EncodeUsagesInRequest {
-		ku, ekus, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
+		ku, ekus, err := KeyUsagesForPublicKeyAlgorithm(crt.Spec.Usages, crt.Spec.IsCA, pubKeyAlgo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build key usages: %w", err)
 		}
@@ -370,8 +423,21 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		pubKeyAlgo = x509.Ed25519
 		sigAlgoArg = nil // ignored by signatureAlgorithmFromPublicKey
 
+	case *mldsa.PublicKey:
+		pubKeyAlgo = x509.MLDSA
+		sigAlgoArg = pubKey.Parameters()
+
 	default:
 		return nil, nil, fmt.Errorf("unknown public key type on signing certificate: %T", issuerCert.PublicKey)
+	}
+
+	// RFC 9881 Section 5 forbids some key usages for ML-DSA subject public keys.
+	// This is the only check for CertificateSigningRequests, which don't go
+	// through the cert-manager webhook.
+	if IsMLDSAPublicKey(publicKey) {
+		if forbidden := template.KeyUsage & mldsaForbiddenKeyUsages; forbidden != 0 {
+			return nil, nil, fmt.Errorf("key usages %v are not allowed for ML-DSA keys", apiutil.KeyUsageStrings(forbidden))
+		}
 	}
 
 	var err error
@@ -476,6 +542,7 @@ var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
 	v1.RSAKeyAlgorithm:     x509.RSA,
 	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
 	v1.Ed25519KeyAlgorithm: x509.Ed25519,
+	v1.MLDSAKeyAlgorithm:   x509.MLDSA,
 }
 var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.SHA256WithRSA:   x509.SHA256WithRSA,
@@ -508,12 +575,17 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 	} else {
 		pubKeyAlgo, ok = keyAlgorithms[specAlgorithm]
 		if !ok {
-			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519' or 'rsa", crt.Spec.PrivateKey.Algorithm)
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519', 'mldsa' or 'rsa'", crt.Spec.PrivateKey.Algorithm)
 		}
 	}
 
 	var sigAlgo x509.SignatureAlgorithm
 	if crt.Spec.SignatureAlgorithm != "" {
+		// The signature algorithm of an ML-DSA key is determined by its parameter set.
+		if pubKeyAlgo == x509.MLDSA {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("signature algorithm %s is not supported for ML-DSA keys; the signature algorithm follows from the key's parameter set", crt.Spec.SignatureAlgorithm)
+		}
+
 		sigAlgo, ok = sigAlgorithms[crt.Spec.SignatureAlgorithm]
 		if !ok {
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported signature algorithm: %s", crt.Spec.SignatureAlgorithm)
@@ -539,6 +611,15 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
+	case x509.MLDSA:
+		if specKeySize == 0 {
+			specKeySize = MLDSA44
+		}
+		params, err := MLDSAParametersForSize(specKeySize)
+		if err != nil {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, err
+		}
+		sigAlgoArg = params
 	default:
 		// ok
 	}
@@ -556,6 +637,7 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 // If alg is x509.RSA, arg must be an integer key size in bits
 // If alg is x509.ECDSA, arg must be an elliptic.Curve
 // If alg is x509.Ed25519, arg is ignored
+// If alg is x509.MLDSA, arg must be an mldsa.Parameters
 // All other algorithms and args cause an error
 // The signature algorithms returned by this function are to some degree a matter of preference. The
 // choices here are motivated by what is common and what is required by bodies such as the US DoD.
@@ -605,6 +687,26 @@ func signatureAlgorithmFromPublicKey(alg x509.PublicKeyAlgorithm, arg any) (x509
 
 	case x509.Ed25519:
 		signatureAlgorithm = x509.PureEd25519
+
+	case x509.MLDSA:
+		params, ok := arg.(mldsa.Parameters)
+		if !ok {
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("expected to get ML-DSA parameters for ML-DSA key but got %T", arg)
+		}
+
+		switch params {
+		case mldsa.MLDSA44():
+			signatureAlgorithm = x509.MLDSA44
+
+		case mldsa.MLDSA65():
+			signatureAlgorithm = x509.MLDSA65
+
+		case mldsa.MLDSA87():
+			signatureAlgorithm = x509.MLDSA87
+
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unknown / unsupported parameter set attached to ML-DSA signing certificate")
+		}
 
 	default:
 		return x509.UnknownSignatureAlgorithm, fmt.Errorf("got unsupported public key type when trying to calculate signature algorithm")
