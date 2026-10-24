@@ -31,7 +31,7 @@ import (
 
 // errNoMatchingZone is returned by getHostedZone when no Cloud DNS managed zone
 // matches the authoritative zone of the domain.
-var errNoMatchingZone = errors.New("No matching GoogleCloud domain found")
+var errNoMatchingZone = errors.New("no matching GoogleCloud domain found")
 
 // DNSProvider is an implementation of the DNSProvider interface.
 type DNSProvider struct {
@@ -235,7 +235,7 @@ func (c *DNSProvider) CleanUp(ctx context.Context, domain, fqdn, value string) e
 		// Without a managed zone the challenge record cannot have been
 		// created by Present, so there is nothing to remove. Returning an
 		// error here would keep the Challenge from being cleaned up forever.
-		c.log.V(logf.DebugLevel).Info("No matching GoogleCloud managed-zone, skipping cleanup", "fqdn", fqdn, "error", err.Error())
+		c.log.Info("No matching GoogleCloud managed-zone, skipping cleanup", "fqdn", fqdn, "error", err.Error())
 		return nil
 	}
 	if err != nil {

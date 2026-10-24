@@ -263,7 +263,7 @@ func TestCleanUpNoMatchingManagedZone(t *testing.T) {
 
 	// Present fails because there is no managed zone.
 	err := provider.Present(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
-	assert.ErrorContains(t, err, "No matching GoogleCloud domain found for domain example.com.")
+	assert.ErrorContains(t, err, "no matching GoogleCloud domain found for domain example.com.")
 
 	// CleanUp must succeed, otherwise the Challenge can never be removed.
 	err = provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
