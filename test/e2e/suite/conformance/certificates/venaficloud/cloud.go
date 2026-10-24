@@ -56,6 +56,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// configured to allow OtherName fields.
 		featureset.OtherNamesFeature,
 		featureset.ACMEUseARI,
+		// Venafi Cloud computes its own Subject Key Identifier
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	provisioner := new(venafiProvisioner)

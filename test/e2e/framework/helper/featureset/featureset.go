@@ -117,4 +117,7 @@ const (
 
 	// ACMEUseARI denotes whether the ACME CA supports the use of ARI.
 	ACMEUseARI Feature = "ACMEUseARI"
+
+	// SubjectKeyIdentifierFeature denotes SKI generation using cert-manager's algorithm.
+	SubjectKeyIdentifierFeature Feature = "SubjectKeyIdentifier"
 )

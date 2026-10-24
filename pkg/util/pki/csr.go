@@ -24,6 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -336,6 +337,28 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	return cr, nil
 }
 
+// SubjectKeyIdentifier returns the leftmost 160 bits of the SHA-256 hash of
+// subjectPublicKey, excluding the BIT STRING tag, length, and unused-bit count
+// (RFC 7093, Section 2, method 1).
+func SubjectKeyIdentifier(pub crypto.PublicKey) ([]byte, error) {
+	pkBytes, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+
+	// Hash only subjectPublicKey, not the full SubjectPublicKeyInfo.
+	var spki struct {
+		Algorithm        pkix.AlgorithmIdentifier
+		SubjectPublicKey asn1.BitString
+	}
+	if _, err := asn1.Unmarshal(pkBytes, &spki); err != nil {
+		return nil, err
+	}
+
+	hash := sha256.Sum256(spki.SubjectPublicKey.Bytes)
+	return hash[:20], nil
+}
+
 // SignCertificate returns a signed *x509.Certificate given a template
 // *x509.Certificate crt and an issuer.
 // publicKey is the public key of the signee, and signerKey is the private
@@ -378,6 +401,16 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	template.SignatureAlgorithm, err = signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// RFC 5280 requires SKI for CA certificates and recommends it for end entities.
+	// Go derives AKI from the issuer's SKI when the encoded subject and issuer names differ.
+	if len(template.SubjectKeyId) == 0 {
+		ski, err := SubjectKeyIdentifier(publicKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error computing subject key identifier: %s", err.Error())
+		}
+		template.SubjectKeyId = ski
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
@@ -477,6 +510,7 @@ var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
 	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
 	v1.Ed25519KeyAlgorithm: x509.Ed25519,
 }
+
 var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
 	v1.SHA256WithRSA:   x509.SHA256WithRSA,
 	v1.SHA384WithRSA:   x509.SHA384WithRSA,
