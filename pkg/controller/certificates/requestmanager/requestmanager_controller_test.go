@@ -309,6 +309,113 @@ func TestProcessItem(t *testing.T) {
 					)), relaxedCertificateRequestMatcher),
 			},
 		},
+		"report an error if the stable name is held by a terminating CertificateRequest owned by something else": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle3.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+			),
+			// Deleting a Certificate and recreating it under the same name
+			// leaves the old revision's request behind an issuer's finalizer,
+			// still holding the name the new one needs. Its deletion event
+			// carries the old UID, so waiting for it would wait forever.
+			requests: []runtime.Object{
+				gen.CertificateRequest("test-1",
+					gen.SetCertificateRequestNamespace("testns"),
+					func(req *cmapi.CertificateRequest) {
+						req.DeletionTimestamp = fixedNow.DeepCopy()
+						req.Finalizers = []string{"example.com/holding-on"}
+					},
+					gen.AddCertificateRequestOwnerReferences(*metav1.NewControllerRef(
+						gen.CertificateFrom(bundle3.certificate, func(crt *cmapi.Certificate) { crt.UID = "test-previous" }),
+						certificateGvk,
+					)),
+				),
+			},
+			expectedEvents: []string{`Warning RequestFailed Failed to create CertificateRequest: certificaterequests.cert-manager.io "test-1" already exists`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle3.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+					)), relaxedCertificateRequestMatcher),
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-1")),
+			},
+			err: `certificaterequests.cert-manager.io "test-1" already exists`,
+		},
+		"report an error if the stable name is held by a CertificateRequest that is not going away": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle3.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle3.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle3.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+			),
+			// Owned by nobody, so it is not one of the requests this issuance
+			// carries forward, and nothing here can free the name it holds.
+			requests: []runtime.Object{
+				gen.CertificateRequest("test-1", gen.SetCertificateRequestNamespace("testns")),
+			},
+			expectedEvents: []string{`Warning RequestFailed Failed to create CertificateRequest: certificaterequests.cert-manager.io "test-1" already exists`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle3.certificateRequest,
+						gen.SetCertificateRequestName("test-1"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+					)), relaxedCertificateRequestMatcher),
+				testpkg.NewAction(coretesting.NewGetAction(
+					cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-1")),
+			},
+			err: `certificaterequests.cert-manager.io "test-1" already exists`,
+		},
+		"report an error if a generated name is taken and StableCertificateRequestName is disabled": {
+			// Without stable names the replacement does not need any particular
+			// name, so the wait must not apply and the collision is reported.
+			featuresFlags: map[featuregate.Feature]bool{
+				feature.StableCertificateRequestName: false,
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequest("test-notrandom", gen.SetCertificateRequestNamespace("testns")),
+			},
+			expectedEvents: []string{`Warning RequestFailed Failed to create CertificateRequest: certificaterequests.cert-manager.io "test-notrandom" already exists`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName(""),
+						gen.SetCertificateRequestGenerateName("test-"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+			err: `certificaterequests.cert-manager.io "test-notrandom" already exists`,
+		},
 		"create a CertificateRequest if none exists (with long name)": {
 			secrets: []runtime.Object{
 				&corev1.Secret{
