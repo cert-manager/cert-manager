@@ -17,7 +17,6 @@ limitations under the License.
 package validation
 
 import (
-	"crypto/x509"
 	"fmt"
 	"slices"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // Validation functions for cert-manager Issuer types.
@@ -739,21 +739,10 @@ func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Pat
 	return el
 }
 
-// validateCABundleNotEmpty performs a soft check on the CA bundle to see if there's at least one
-// valid CA certificate inside.
-// This uses the standard library crypto/x509.CertPool.AppendCertsFromPEM function, which
-// skips over invalid certificates rather than rejecting them.
+// validateCABundleNotEmpty strictly validates that a CA bundle contains only parseable
+// CERTIFICATE PEM blocks. Unlike crypto/x509.CertPool.AppendCertsFromPEM, invalid or
+// non-certificate PEM blocks cause the whole bundle to be rejected rather than skipped.
 func validateCABundleNotEmpty(bundle []byte) error {
-	// TODO: Change this function to actually validate certificates so that invalid certs
-	// are rejected or at least warned on.
-	// For example, something like: https://github.com/cert-manager/trust-manager/blob/21c839ff1128990e049eaf23000a9a8d6716c89e/pkg/util/pem.go#L26-L81
-
-	pool := x509.NewCertPool()
-
-	ok := pool.AppendCertsFromPEM(bundle)
-	if !ok {
-		return fmt.Errorf("cert bundle didn't contain any valid certificates")
-	}
-
-	return nil
+	_, err := pki.DecodeX509CertificateSetBytes(bundle)
+	return err
 }
