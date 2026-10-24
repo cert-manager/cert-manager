@@ -269,6 +269,7 @@ func TestCleanUpNoMatchingManagedZone(t *testing.T) {
 	err = provider.CleanUp(t.Context(), "example.com", "_acme-challenge.example.com.", "123d==")
 	assert.NoError(t, err)
 
+	assert.Len(t, requests, 2, "Present and CleanUp should each list managed zones")
 	for _, req := range requests {
 		assert.NotContains(t, req, "POST", "no changes should be made when there is no managed zone")
 	}
