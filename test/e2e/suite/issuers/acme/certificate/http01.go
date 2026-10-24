@@ -329,11 +329,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(testingCtx, &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: fixedIngressName,
-					Annotations: map[string]string{
-						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
-					},
+				Name: fixedIngressName,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
 				},
 				Spec: networkingv1.IngressSpec{
 					IngressClassName: new("nginx"),
@@ -346,18 +344,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					Rules: []networkingv1.IngressRule{
 						{
 							Host: acmeIngressDomain,
-							IngressRuleValue: networkingv1.IngressRuleValue{
-								HTTP: &networkingv1.HTTPIngressRuleValue{
-									Paths: []networkingv1.HTTPIngressPath{
-										{
-											Path:     "/",
-											PathType: func() *networkingv1.PathType { s := networkingv1.PathTypePrefix; return &s }(),
-											Backend: networkingv1.IngressBackend{
-												Service: &networkingv1.IngressServiceBackend{
-													Name: "doesnotexist",
-													Port: networkingv1.ServiceBackendPort{
-														Number: 443,
-													},
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
+									{
+										Path:     "/",
+										PathType: func() *networkingv1.PathType { s := networkingv1.PathTypePrefix; return &s }(),
+										Backend: networkingv1.IngressBackend{
+											Service: &networkingv1.IngressServiceBackend{
+												Name: "doesnotexist",
+												Port: networkingv1.ServiceBackendPort{
+													Number: 443,
 												},
 											},
 										},
@@ -372,11 +368,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(testingCtx, &networkingv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: fixedIngressName,
-					Annotations: map[string]string{
-						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
-					},
+				Name: fixedIngressName,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
 				},
 				Spec: networkingv1beta1.IngressSpec{
 					IngressClassName: new("nginx"),
@@ -389,15 +383,13 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					Rules: []networkingv1beta1.IngressRule{
 						{
 							Host: acmeIngressDomain,
-							IngressRuleValue: networkingv1beta1.IngressRuleValue{
-								HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-									Paths: []networkingv1beta1.HTTPIngressPath{
-										{
-											Path: "/",
-											Backend: networkingv1beta1.IngressBackend{
-												ServiceName: "doesnotexist",
-												ServicePort: intstr.FromInt32(443),
-											},
+							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+								Paths: []networkingv1beta1.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: networkingv1beta1.IngressBackend{
+											ServiceName: "doesnotexist",
+											ServicePort: intstr.FromInt32(443),
 										},
 									},
 								},

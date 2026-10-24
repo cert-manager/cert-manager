@@ -274,12 +274,10 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				}
 				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
 				annotatedSecret := corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      secretName.Name,
-						Namespace: secretName.Namespace,
-						Annotations: map[string]string{
-							cmapiv1.AllowsInjectionFromSecretAnnotation: "true",
-						},
+					Name:      secretName.Name,
+					Namespace: secretName.Namespace,
+					Annotations: map[string]string{
+						cmapiv1.AllowsInjectionFromSecretAnnotation: "true",
 					},
 				}
 				Expect(f.CRClient.Create(testingCtx, &annotatedSecret)).To(Succeed())
@@ -297,12 +295,10 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				}
 				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
 				annotatedSecret := corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      secretName.Name,
-						Namespace: secretName.Namespace,
-						Annotations: map[string]string{
-							cmapiv1.AllowsInjectionFromSecretAnnotation: "false",
-						},
+					Name:      secretName.Name,
+					Namespace: secretName.Namespace,
+					Annotations: map[string]string{
+						cmapiv1.AllowsInjectionFromSecretAnnotation: "false",
 					},
 				}
 				Expect(f.CRClient.Create(testingCtx, &annotatedSecret)).To(Succeed())
@@ -355,11 +351,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		makeInjectable: func(namePrefix string) client.Object {
 			someURL := "https://localhost:8675"
 			return &admissionreg.ValidatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
-					Annotations: map[string]string{
-						cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
-					},
+				GenerateName: fmt.Sprintf("%s-hook", namePrefix),
+				Annotations: map[string]string{
+					cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 				},
 				Webhooks: []admissionreg.ValidatingWebhook{
 					{
@@ -398,11 +392,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		makeInjectable: func(namePrefix string) client.Object {
 			someURL := "https://localhost:8675"
 			return &admissionreg.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: fmt.Sprintf("%s-hook", namePrefix),
-					Annotations: map[string]string{
-						cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
-					},
+				GenerateName: fmt.Sprintf("%s-hook", namePrefix),
+				Annotations: map[string]string{
+					cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 				},
 				Webhooks: []admissionreg.MutatingWebhook{
 					{
@@ -443,11 +435,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		makeInjectable: func(namePrefix string) client.Object {
 			someURL := "https://localhost:8675"
 			return &apiext.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "objs." + namePrefix + ".testing.cert-manager.io",
-					Annotations: map[string]string{
-						cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
-					},
+				Name: "objs." + namePrefix + ".testing.cert-manager.io",
+				Annotations: map[string]string{
+					cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 				},
 				Spec: apiext.CustomResourceDefinitionSpec{
 					Group: namePrefix + ".testing.cert-manager.io",
@@ -484,11 +474,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	injectorContext("api service", &injectableTest{
 		makeInjectable: func(namePrefix string) client.Object {
 			return &apireg.APIService{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "v1." + namePrefix + ".testing.cert-manager.io",
-					Annotations: map[string]string{
-						cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
-					},
+				Name: "v1." + namePrefix + ".testing.cert-manager.io",
+				Annotations: map[string]string{
+					cmapiv1.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 				},
 				Spec: apireg.APIServiceSpec{
 					Service: &apireg.ServiceReference{

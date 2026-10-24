@@ -157,7 +157,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	defer stopController()
 
 	// Create a Namespace.
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testName}}
+	ns := &corev1.Namespace{Name: testName}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}

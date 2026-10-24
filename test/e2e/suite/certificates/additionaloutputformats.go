@@ -52,10 +52,8 @@ var _ = framework.CertManagerDescribe("Certificate additionalOutputFormats", fun
 
 	createCertificate := func(testingCtx context.Context, f *framework.Framework, aof []cmapi.CertificateAdditionalOutputFormat) (string, *cmapi.Certificate) {
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-additional-output-formats-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "test-additional-output-formats-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				CommonName: "test",
 				SecretName: secretName,

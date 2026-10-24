@@ -37,10 +37,8 @@ func (a *acme) createDNS01Issuer(ctx context.Context, f *framework.Framework) st
 
 	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		GenerateName: "acme-issuer-dns01-",
+		Spec:         a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
@@ -58,10 +56,8 @@ func (a *acme) createDNS01ClusterIssuer(ctx context.Context, f *framework.Framew
 
 	By("Creating an ACME DNS01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		GenerateName: "acme-cluster-issuer-dns01-",
+		Spec:         a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
@@ -76,22 +72,20 @@ func (a *acme) createDNS01ClusterIssuer(ctx context.Context, f *framework.Framew
 
 func (a *acme) createDNS01IssuerSpec(serverURL, dnsServer string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key",
-					},
+		ACME: &cmacme.ACMEIssuer{
+			Server:        serverURL,
+			SkipTLSVerify: true,
+			PrivateKey: cmmeta.SecretKeySelector{
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: "acme-private-key",
 				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-								Nameserver: dnsServer,
-							},
+			},
+			ExternalAccountBinding: a.eab,
+			Solvers: []cmacme.ACMEChallengeSolver{
+				{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: dnsServer,
 						},
 					},
 				},

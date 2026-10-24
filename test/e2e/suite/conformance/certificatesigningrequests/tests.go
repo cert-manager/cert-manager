@@ -428,14 +428,12 @@ func (s *Suite) Define() {
 				// Create CertificateSigningRequest
 				randomTestID := rand.String(10)
 				kubeCSR := &certificatesv1.CertificateSigningRequest{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "e2e-conformance-" + randomTestID,
-						Annotations: addAnnotation(
-							test.kubeCSRAnnotations,
-							"conformance.cert-manager.io/test-name",
-							s.Name+" "+test.name,
-						),
-					},
+					Name: "e2e-conformance-" + randomTestID,
+					Annotations: addAnnotation(
+						test.kubeCSRAnnotations,
+						"conformance.cert-manager.io/test-name",
+						s.Name+" "+test.name,
+					),
 					Spec: certificatesv1.CertificateSigningRequestSpec{
 						Request:           csr,
 						SignerName:        signerName,

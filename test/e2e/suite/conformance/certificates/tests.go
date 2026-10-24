@@ -415,12 +415,10 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 				randomTestID := rand.String(10)
 				certificate := &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "e2e-conformance-" + randomTestID,
-						Namespace: f.Namespace.Name,
-						Annotations: map[string]string{
-							"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
-						},
+					Name:      "e2e-conformance-" + randomTestID,
+					Namespace: f.Namespace.Name,
+					Annotations: map[string]string{
+						"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
 					},
 					Spec: cmapi.CertificateSpec{
 						SecretName: "e2e-conformance-tls-" + randomTestID,
@@ -459,12 +457,10 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			randomTestID := rand.String(10)
 			certificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "e2e-conformance-ari-" + randomTestID,
-					Namespace: f.Namespace.Name,
-					Annotations: map[string]string{
-						"conformance.cert-manager.io/test-name": s.Name + " ARI",
-					},
+				Name:      "e2e-conformance-ari-" + randomTestID,
+				Namespace: f.Namespace.Name,
+				Annotations: map[string]string{
+					"conformance.cert-manager.io/test-name": s.Name + " ARI",
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "e2e-conformance-ari-tls-" + randomTestID,
@@ -799,9 +795,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			all := gwapi.FromNamespaces("All")
 
 			gw := &gwapi.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
+				Name: name,
 				Spec: gwapi.GatewaySpec{
 					GatewayClassName: "foo",
 					AllowedListeners: &gwapi.AllowedListeners{
@@ -870,10 +864,8 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
+				Name:      "testcert",
+				Namespace: f.Namespace.Name,
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
@@ -933,10 +925,8 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
+				Name:      "testcert",
+				Namespace: f.Namespace.Name,
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},

@@ -975,10 +975,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "acme-dns-secret",
-						Namespace: "default",
-					},
+					Name:      "acme-dns-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"account": []byte("test-account-data"),
 					},
@@ -1057,10 +1055,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "akamai-secret",
-						Namespace: "default",
-					},
+					Name:      "akamai-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"client-secret": []byte("test-client-secret"),
 						"client-token":  []byte("test-client-token"),
@@ -1127,10 +1123,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 								DNS01: &cmacme.ACMEChallengeSolverDNS01{
 									AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 										ClientSecret: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "azure-secret",
-											},
-											Key: "client-secret",
+											Name: "azure-secret",
+											Key:  "client-secret",
 										},
 									},
 								},
@@ -1141,10 +1135,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "azure-secret",
-						Namespace: "default",
-					},
+					Name:      "azure-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"client-secret": []byte("test-client-secret"),
 					},
@@ -1190,10 +1182,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 								DNS01: &cmacme.ACMEChallengeSolverDNS01{
 									CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 										ServiceAccount: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "clouddns-sa",
-											},
-											Key: "service-account-key",
+											Name: "clouddns-sa",
+											Key:  "service-account-key",
 										},
 									},
 								},
@@ -1204,10 +1194,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "clouddns-sa",
-						Namespace: "default",
-					},
+					Name:      "clouddns-sa",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"service-account-key": []byte("test-sa-key"),
 					},
@@ -1229,10 +1217,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 								DNS01: &cmacme.ACMEChallengeSolverDNS01{
 									CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 										ServiceAccount: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "missing-secret",
-											},
-											Key: "service-account-key",
+											Name: "missing-secret",
+											Key:  "service-account-key",
 										},
 									},
 								},
@@ -1260,16 +1246,12 @@ func TestValidateDNSSolvers(t *testing.T) {
 								DNS01: &cmacme.ACMEChallengeSolverDNS01{
 									Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 										APIKey: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "cloudflare-api-key",
-											},
-											Key: "api-key",
+											Name: "cloudflare-api-key",
+											Key:  "api-key",
 										},
 										APIToken: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "cloudflare-api-token",
-											},
-											Key: "api-token",
+											Name: "cloudflare-api-token",
+											Key:  "api-token",
 										},
 									},
 								},
@@ -1280,19 +1262,15 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cloudflare-api-key",
-						Namespace: "default",
-					},
+					Name:      "cloudflare-api-key",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"api-key": []byte("test-api-key"),
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cloudflare-api-token",
-						Namespace: "default",
-					},
+					Name:      "cloudflare-api-token",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"api-token": []byte("test-api-token"),
 					},
@@ -1314,10 +1292,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 								DNS01: &cmacme.ACMEChallengeSolverDNS01{
 									Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 										APIToken: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "cloudflare-api-token",
-											},
-											Key: "api-token",
+											Name: "cloudflare-api-token",
+											Key:  "api-token",
 										},
 									},
 								},
@@ -1328,10 +1304,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cloudflare-api-token",
-						Namespace: "default",
-					},
+					Name:      "cloudflare-api-token",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"api-token": []byte("test-api-token"),
 					},
@@ -1369,10 +1343,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "do-token",
-						Namespace: "default",
-					},
+					Name:      "do-token",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"token": []byte("test-token"),
 					},
@@ -1439,10 +1411,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "tsig-secret",
-						Namespace: "default",
-					},
+					Name:      "tsig-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"tsig-key": []byte("test-tsig-key"),
 					},
@@ -1530,10 +1500,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 											Key: "secret-access-key",
 										},
 										SecretAccessKeyID: &cmmeta.SecretKeySelector{
-											LocalObjectReference: cmmeta.LocalObjectReference{
-												Name: "route53-access-key-id",
-											},
-											Key: "access-key-id",
+											Name: "route53-access-key-id",
+											Key:  "access-key-id",
 										},
 									},
 								},
@@ -1544,19 +1512,15 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route53-secret",
-						Namespace: "default",
-					},
+					Name:      "route53-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"secret-access-key": []byte("test-secret-access-key"),
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route53-access-key-id",
-						Namespace: "default",
-					},
+					Name:      "route53-access-key-id",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"access-key-id": []byte("test-access-key-id"),
 					},
@@ -1635,10 +1599,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			},
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "do-token",
-						Namespace: "default",
-					},
+					Name:      "do-token",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"token": []byte("test-token"),
 					},
@@ -1671,8 +1633,8 @@ func TestValidateDNSSolvers(t *testing.T) {
 			t.Parallel()
 
 			clusterIssuer := &cmapi.ClusterIssuer{
-				ObjectMeta: metav1.ObjectMeta{Name: tt.objectMeta.Name},
-				Spec:       tt.spec,
+				Name: tt.objectMeta.Name,
+				Spec: tt.spec,
 			}
 
 			runValidateDNSSolversTest(t, a, clusterIssuer, tt.wantWarnings, tt.wantWarningCount)
