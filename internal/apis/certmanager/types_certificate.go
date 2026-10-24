@@ -175,9 +175,12 @@ type CertificateSpec struct {
 	Renewal *CertificateRenewal
 
 	// Requested DNS subject alternative names.
+	// Values must be unique.
 	DNSNames []string
 
 	// Requested IP address subject alternative names.
+	// Values must be unique. Addresses are compared by parsed value, so
+	// equivalent spellings of one address count as duplicates.
 	IPAddresses []string
 
 	// Requested URI subject alternative names.
