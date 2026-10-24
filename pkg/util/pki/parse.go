@@ -72,6 +72,13 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
 		return key, nil
+	case "EC PARAMETERS":
+		key, err := DecodePrivateKeyBytes(rest)
+		if err != nil {
+			return nil, err
+		}
+
+		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
