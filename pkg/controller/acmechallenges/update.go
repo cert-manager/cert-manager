@@ -127,6 +127,9 @@ func (o *objectUpdateClientSSA) updateStatus(ctx context.Context, challenge *cma
 	if challenge.Status.PresentedAt != nil {
 		challengeStatus = challengeStatus.WithPresentedAt(*challenge.Status.PresentedAt)
 	}
+	if challenge.Status.SelfCheckSucceededAt != nil {
+		challengeStatus = challengeStatus.WithSelfCheckSucceededAt(*challenge.Status.SelfCheckSucceededAt)
+	}
 	if challenge.Status.Reason != "" {
 		challengeStatus = challengeStatus.WithReason(challenge.Status.Reason)
 	}
