@@ -19,15 +19,16 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
-	"sync/atomic"
 	"time"
 
+	"github.com/miekg/dns"
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
@@ -276,26 +277,27 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	}
 
 	if len(dnsServers) != 0 {
-		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
-			// This Dial ignores the resolv.conf address that the resolver passes
-			// in, so we rotate through dnsServers ourselves. Without this, every
-			// resolver retry would hit the same server. The counter is atomic
-			// because the resolver dials from parallel A and AAAA goroutines.
-			var counter atomic.Uint32
+		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
 			dialer := &net.Dialer{
 				Timeout: 3 * time.Second,
-				Resolver: &net.Resolver{
-					PreferGo: true,
-					Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-						d := net.Dialer{
-							Timeout: 3 * time.Second,
-						}
-						s := dnsServers[int(counter.Add(1)-1)%len(dnsServers)]
-						return d.DialContext(ctx, network, s)
-					},
-				},
 			}
-			return dialer.DialContext(ctx, network, addr)
+
+			// A challenge can name an IP address rather than a hostname, in
+			// which case there is nothing to look up.
+			if net.ParseIP(host) != nil {
+				return dialer.DialContext(ctx, network, addr)
+			}
+
+			ip, err := resolveWithServers(ctx, host, dnsServers)
+			if err != nil {
+				log.V(logf.DebugLevel).Info("failed to resolve host", "error", err)
+				return nil, err
+			}
+			return dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
 		}
 	}
 	client := &http.Client{
@@ -337,4 +339,61 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	log.V(logf.DebugLevel).Info("reachability test succeeded")
 
 	return nil
+}
+
+// resolveWithServers resolves host against dnsServers, trying them in order and
+// returning the first answer.
+//
+// The Go resolver cannot express this. Its Dial hook is handed one server at a
+// time and has no way to report that the server failed to answer: a UDP dial to
+// a host that drops packets still succeeds, so the lookup blocks until the dial
+// deadline instead of moving on. The resolver also runs the A and AAAA queries
+// in parallel, so any scheme that hands a different server to each call leaves
+// one lookup pointed at a server that may be dead.
+//
+// A server that does not answer is skipped. A server that answers but knows no
+// address is not: that is an answer, and falling through to another server
+// would hide it.
+func resolveWithServers(ctx context.Context, host string, dnsServers []string) (string, error) {
+	var errs []error
+	for _, server := range dnsServers {
+		ip, err := lookupHostOnServer(ctx, host, server)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", server, err))
+			continue
+		}
+		if ip == "" {
+			return "", fmt.Errorf("no address found for %q on %s", host, server)
+		}
+		return ip, nil
+	}
+	return "", fmt.Errorf("no configured DNS server answered for %q: %w", host, errors.Join(errs...))
+}
+
+// lookupHostOnServer asks a single server for host, preferring an A record and
+// falling back to AAAA. It returns an empty string and a nil error when the
+// server answered but the name has no address. Recursion is requested, so a
+// resolver that follows a CNAME returns the address in the same answer section.
+func lookupHostOnServer(ctx context.Context, host, server string) (string, error) {
+	for _, qtype := range []uint16{dns.TypeA, dns.TypeAAAA} {
+		msg := new(dns.Msg)
+		msg.SetQuestion(dns.Fqdn(host), qtype)
+		msg.RecursionDesired = true
+
+		response, err := dns.ExchangeContext(ctx, msg, server)
+		if err != nil {
+			return "", err
+		}
+
+		for _, record := range response.Answer {
+			switch t := record.(type) {
+			case *dns.A:
+				return t.A.String(), nil
+			case *dns.AAAA:
+				return t.AAAA.String(), nil
+			}
+		}
+	}
+
+	return "", nil
 }
