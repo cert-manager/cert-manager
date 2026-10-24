@@ -174,6 +174,22 @@ type CertificateSpecApplyConfiguration struct {
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
 	// Default value is `1`.
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"`
+	// Defines what happens to the Secret named by `secretName` when this
+	// Certificate is deleted.
+	//
+	// With `Delete`, cert-manager sets this Certificate as the controller owner
+	// of the Secret, so the Kubernetes garbage collector deletes the whole
+	// Secret, including any keys added to it by other tools, when the
+	// Certificate is deleted. With `Orphan`, the Secret is left in place and
+	// keeps serving its last certificate, which is no longer renewed.
+	//
+	// Changing this field on an existing Certificate adds or removes the owner
+	// reference on the Secret without re-issuing the certificate.
+	//
+	// If unset, the controller-wide default applies: `Delete` when the
+	// controller runs with `--enable-certificate-owner-ref=true`, otherwise
+	// `Orphan`.
+	DeletionPolicy *certmanagerv1.CertificateDeletionPolicy `json:"deletionPolicy,omitempty"`
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
 	AdditionalOutputFormats []CertificateAdditionalOutputFormatApplyConfiguration `json:"additionalOutputFormats,omitempty"`
@@ -380,6 +396,14 @@ func (b *CertificateSpecApplyConfiguration) WithEncodeUsagesInRequest(value bool
 // If called multiple times, the RevisionHistoryLimit field is set to the value of the last call.
 func (b *CertificateSpecApplyConfiguration) WithRevisionHistoryLimit(value int32) *CertificateSpecApplyConfiguration {
 	b.RevisionHistoryLimit = &value
+	return b
+}
+
+// WithDeletionPolicy sets the DeletionPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeletionPolicy field is set to the value of the last call.
+func (b *CertificateSpecApplyConfiguration) WithDeletionPolicy(value certmanagerv1.CertificateDeletionPolicy) *CertificateSpecApplyConfiguration {
+	b.DeletionPolicy = &value
 	return b
 }
 

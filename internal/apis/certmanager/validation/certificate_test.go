@@ -941,6 +941,42 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"valid deletionPolicy Delete": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:     "testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+					DeletionPolicy: internalcmapi.CertificateDeletionPolicyDelete,
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"valid deletionPolicy Orphan": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:     "testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+					DeletionPolicy: internalcmapi.CertificateDeletionPolicyOrphan,
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid deletionPolicy value": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:     "testcn",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+					DeletionPolicy: internalcmapi.CertificateDeletionPolicy("delete"),
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("deletionPolicy"), internalcmapi.CertificateDeletionPolicy("delete"), []string{"Delete", "Orphan"}),
+			},
+		},
 		"invalid windows when renewal policy is disabled": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
