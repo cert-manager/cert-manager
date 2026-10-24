@@ -66,7 +66,7 @@ func (c *CA) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 	log = logf.WithRelatedResourceName(log, issuer.GetSpec().CA.SecretName, resourceNamespace, "Secret")
 	if !cert.IsCA {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
-		log.Error(nil, "signing certificate is not a CA")
+		log.Error(err, "signing certificate is not a CA")
 		c.Recorder.Event(issuer, corev1.EventTypeWarning, errorInvalidKeyPair, s)
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
