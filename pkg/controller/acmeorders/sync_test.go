@@ -831,6 +831,35 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 			},
 			expectErr: false,
 		},
+		"call FinalizeOrder, reschedule rather than fail if a concurrent finalize request is still processing": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace, testOrderPending)),
+				},
+				ExpectedEvents: []string{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return &acmeapi.Order{
+						URI:         testOrderReady.Status.URL,
+						Status:      acmeapi.StatusProcessing,
+						FinalizeURL: testOrderReady.Status.FinalizeURL,
+					}, nil
+				},
+				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+					return nil, "", &acmeError403
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+			expectErr:      false,
+			shouldSchedule: true,
+		},
 		"call FinalizeOrder fetch alternate cert chain": {
 			order: testOrderReady.DeepCopy(),
 			builder: &testpkg.Builder{
