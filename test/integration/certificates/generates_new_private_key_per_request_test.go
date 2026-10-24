@@ -23,9 +23,12 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/keymanager"
@@ -40,7 +43,9 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/clock"
 
@@ -345,6 +350,15 @@ func TestGeneratesNewPrivateKeyPerRequest(t *testing.T) {
 
 func runAllControllers(t *testing.T, config *rest.Config) framework.StopFunc {
 	kubeClient, factory, cmCl, cmFactory, scheme := framework.NewClients(t, config)
+	return runAllControllersWithFactory(t, config, kubeClient, factory, cmCl, cmFactory, scheme)
+}
+
+// runAllControllersWithFactory is runAllControllers with the clients and the
+// KubeInformerFactory supplied by the caller, so a test can run the whole
+// issuance chain against a different Secret informer factory — for example
+// the filtered factory a default install uses (see
+// filtered_secret_lister_test.go and #9346).
+func runAllControllersWithFactory(t *testing.T, config *rest.Config, kubeClient kubernetes.Interface, factory internalinformers.KubeInformerFactory, cmCl cmclient.Interface, cmFactory cminformers.SharedInformerFactory, scheme *runtime.Scheme) framework.StopFunc {
 	log := logf.Log
 	clock := clock.RealClock{}
 	metrics := metrics.New(log, clock)
