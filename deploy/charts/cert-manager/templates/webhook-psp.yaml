@@ -4,11 +4,7 @@ kind: PodSecurityPolicy
 metadata:
   name: {{ template "webhook.fullname" . }}
   labels:
-    app: {{ include "webhook.name" . }}
-    app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "webhook"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "webhook.componentLabels" . | nindent 4 }}
   annotations:
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
     seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'

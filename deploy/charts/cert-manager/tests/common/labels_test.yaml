@@ -1,0 +1,139 @@
+suite: Labels merge as a map without duplicate keys
+templates:
+  - templates/deployment.yaml
+  - templates/webhook-deployment.yaml
+  - templates/cainjector-deployment.yaml
+  - templates/serviceaccount.yaml
+  - templates/service.yaml
+  - templates/servicemonitor.yaml
+  - templates/rbac.yaml
+release:
+  name: rel
+  namespace: cert-manager
+tests:
+  - it: commonLabels wins over a chart-owned label
+    set:
+      global:
+        commonLabels:
+          app.kubernetes.io/managed-by: argocd
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: argocd
+        template: templates/serviceaccount.yaml
+
+  - it: label keys that YAML 1.1 would read as booleans stay strings
+    set:
+      global:
+        commonLabels:
+          "on": alpha
+          "no": beta
+    asserts:
+      - equal:
+          path: metadata.labels["on"]
+          value: alpha
+        template: templates/serviceaccount.yaml
+      - equal:
+          path: metadata.labels["no"]
+          value: beta
+        template: templates/serviceaccount.yaml
+
+  - it: the controller pod template keeps the three labels its selector reads
+    set:
+      global:
+        commonLabels:
+          app.kubernetes.io/name: from-common
+          app.kubernetes.io/instance: from-common
+          app.kubernetes.io/component: from-common
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: cert-manager
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/instance"]
+          value: rel
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: controller
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: cert-manager
+        template: templates/deployment.yaml
+
+  - it: the webhook and cainjector pod templates keep theirs too
+    set:
+      global:
+        commonLabels:
+          app.kubernetes.io/component: from-common
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: webhook
+        template: templates/webhook-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: cainjector
+        template: templates/cainjector-deployment.yaml
+
+  - it: the app label is not read by any selector and stays overridable
+    set:
+      global:
+        commonLabels:
+          app: from-common
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.app
+          value: from-common
+        template: templates/deployment.yaml
+      - equal:
+          path: metadata.labels.app
+          value: from-common
+        template: templates/serviceaccount.yaml
+
+  - it: the controller Service keeps the name label the ServiceMonitor selects on
+    set:
+      prometheus:
+        servicemonitor:
+          enabled: true
+      global:
+        commonLabels:
+          app.kubernetes.io/name: from-common
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: cert-manager
+        template: templates/service.yaml
+
+  - it: the prometheus label still wins over commonLabels
+    set:
+      prometheus:
+        servicemonitor:
+          enabled: true
+          prometheusInstance: default
+      global:
+        commonLabels:
+          prometheus: from-common
+    asserts:
+      - equal:
+          path: metadata.labels.prometheus
+          value: default
+        template: templates/servicemonitor.yaml
+
+  - it: the RBAC aggregation labels still win over commonLabels
+    set:
+      global:
+        rbac:
+          aggregateClusterRoles: true
+        commonLabels:
+          rbac.authorization.k8s.io/aggregate-to-view: from-common
+    asserts:
+      - equal:
+          path: metadata.labels["rbac.authorization.k8s.io/aggregate-to-view"]
+          value: "true"
+        template: templates/rbac.yaml
+        documentSelector:
+          path: metadata.name
+          value: rel-cert-manager-view
