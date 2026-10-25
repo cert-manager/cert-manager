@@ -41,7 +41,7 @@ import (
 
 func TestValidate(t *testing.T) {
 	baseCR := &certmanager.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns"},
+		Namespace: "testns",
 		Spec: certmanager.CertificateRequestSpec{
 			IssuerRef: meta.IssuerReference{
 				Name:  "my-issuer",

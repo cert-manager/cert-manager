@@ -22,7 +22,6 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	crtclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -101,10 +100,8 @@ func (o *issuerBuilder) nameForTestObject(f *framework.Framework, suffix string)
 func (o *issuerBuilder) secretAndIssuerForTest(f *framework.Framework) (*corev1.Secret, *unstructured.Unstructured, error) {
 	secretName := o.nameForTestObject(f, "credentials")
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName.Name,
-			Namespace: secretName.Namespace,
-		},
+		Name:       secretName.Name,
+		Namespace:  secretName.Namespace,
 		StringData: map[string]string{},
 	}
 

@@ -80,11 +80,9 @@ func (k *kubernetes) createIssuer(ctx context.Context, f *framework.Framework) s
 
 	By("Creating a VaultKubernetes Issuer")
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-issuer-",
-			Namespace:    f.Namespace.Name,
-		},
-		Spec: k.issuerSpec(),
+		GenerateName: "vault-issuer-",
+		Namespace:    f.Namespace.Name,
+		Spec:         k.issuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -101,10 +99,8 @@ func (k *kubernetes) createClusterIssuer(ctx context.Context, f *framework.Frame
 
 	By("Creating a VaultKubernetes ClusterIssuer")
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-issuer-",
-		},
-		Spec: k.issuerSpec(),
+		GenerateName: "vault-issuer-",
+		Spec:         k.issuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -161,19 +157,17 @@ func (k *kubernetes) initVault(ctx context.Context, f *framework.Framework, boun
 
 func (k *kubernetes) issuerSpec() cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			Vault: &cmapi.VaultIssuer{
-				Server:   addon.Vault.Details().URL,
-				Path:     k.setup.IntermediateSignPath(),
-				CABundle: addon.Vault.Details().VaultCA,
-				Auth: cmapi.VaultAuth{
-					Kubernetes: &cmapi.VaultKubernetesAuth{
-						Path: k.setup.KubernetesAuthPath(),
-						Role: k.setup.Role(),
-						SecretRef: cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: k.saTokenSecretName,
-							},
+		Vault: &cmapi.VaultIssuer{
+			Server:   addon.Vault.Details().URL,
+			Path:     k.setup.IntermediateSignPath(),
+			CABundle: addon.Vault.Details().VaultCA,
+			Auth: cmapi.VaultAuth{
+				Kubernetes: &cmapi.VaultKubernetesAuth{
+					Path: k.setup.KubernetesAuthPath(),
+					Role: k.setup.Role(),
+					SecretRef: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: k.saTokenSecretName,
 						},
 					},
 				},

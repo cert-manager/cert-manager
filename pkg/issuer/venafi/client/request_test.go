@@ -120,9 +120,7 @@ func TestVenafi_RequestCertificate(t *testing.T) {
 			vcertClient: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return &endpoint.ZoneConfiguration{
-						Policy: endpoint.Policy{
-							SubjectCNRegexes: []string{"foo"},
-						},
+						SubjectCNRegexes: []string{"foo"},
 					}, nil
 				},
 			}.Default(),

@@ -94,13 +94,11 @@ func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 	maps.Copy(labels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 	maps.Copy(labels, ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels)
 	httpRoute := &gwapi.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver-",
-			Namespace:       ch.Namespace,
-			Labels:          labels,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
-		},
-		Spec: generateHTTPRouteSpec(ch, svcName),
+		GenerateName:    "cm-acme-http-solver-",
+		Namespace:       ch.Namespace,
+		Labels:          labels,
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
+		Spec:            generateHTTPRouteSpec(ch, svcName),
 	}
 	newHTTPRoute, err := s.GWClient.GatewayV1().HTTPRoutes(ch.Namespace).Create(ctx, httpRoute, metav1.CreateOptions{})
 	if err != nil {
@@ -151,10 +149,8 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 	}
 
 	return gwapi.HTTPRouteSpec{
-		CommonRouteSpec: gwapi.CommonRouteSpec{
-			ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
-		},
-		Hostnames: hostnames,
+		ParentRefs: ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ParentRefs,
+		Hostnames:  hostnames,
 		Rules: []gwapi.HTTPRouteRule{
 			{
 				Matches: []gwapi.HTTPRouteMatch{
@@ -167,16 +163,12 @@ func generateHTTPRouteSpec(ch *cmacme.Challenge, svcName string) gwapi.HTTPRoute
 				},
 				BackendRefs: []gwapi.HTTPBackendRef{
 					{
-						BackendRef: gwapi.BackendRef{
-							BackendObjectReference: gwapi.BackendObjectReference{
-								Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
-								Kind:      func() *gwapi.Kind { k := gwapi.Kind("Service"); return &k }(),
-								Name:      gwapi.ObjectName(svcName),
-								Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
-								Port:      func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
-							},
-							Weight: new(int32(1)),
-						},
+						Group:     func() *gwapi.Group { g := gwapi.Group(""); return &g }(),
+						Kind:      func() *gwapi.Kind { k := gwapi.Kind("Service"); return &k }(),
+						Name:      gwapi.ObjectName(svcName),
+						Namespace: func() *gwapi.Namespace { n := gwapi.Namespace(ch.Namespace); return &n }(),
+						Port:      func() *gwapi.PortNumber { p := gwapi.PortNumber(acmeSolverListenPort); return &p }(),
+						Weight:    new(int32(1)),
 					},
 				},
 			},

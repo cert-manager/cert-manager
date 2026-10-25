@@ -65,9 +65,7 @@ func (c *ca) createIssuer(ctx context.Context, f *framework.Framework) string {
 	c.secretName = rootCertSecret.Name
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "ca-issuer-",
-		},
+		GenerateName: "ca-issuer-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				CA: &cmapi.CAIssuer{
@@ -95,9 +93,7 @@ func (c *ca) createClusterIssuer(ctx context.Context, f *framework.Framework) st
 	c.secretName = rootCertSecret.Name
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "ca-cluster-issuer-",
-		},
+		GenerateName: "ca-cluster-issuer-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				CA: &cmapi.CAIssuer{
@@ -148,9 +144,7 @@ func newSigningKeypairSecret(name string) *corev1.Secret {
 	Expect(err).NotTo(HaveOccurred())
 
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
-		},
+		GenerateName: name,
 		Data: map[string][]byte{
 			corev1.TLSCertKey:       pem,
 			corev1.TLSPrivateKeyKey: pki.EncodePKCS1PrivateKey(key),
