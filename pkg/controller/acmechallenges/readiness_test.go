@@ -279,7 +279,7 @@ func TestDelayBeforeAcceptReasonIsStable(t *testing.T) {
 	}
 
 	var firstReason string
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		ch := newChallenge()
 		eval := buildChallengeReadinessEvaluator(ch, 10*time.Second, func() time.Time { return now })
 		result, err := eval.evaluate(context.Background(), &fakeSolver{
