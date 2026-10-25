@@ -19,8 +19,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.4
-	github.com/aws/smithy-go v1.28.5
-	github.com/digitalocean/godo v1.229.0
+	github.com/aws/smithy-go v1.28.6
+	github.com/digitalocean/godo v1.230.0
 	github.com/go-ldap/ldap/v3 v3.4.15
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonreference v1.0.3
@@ -38,7 +38,7 @@ require (
 	golang.org/x/crypto v0.58.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.24.0
-	google.golang.org/api v0.305.0
+	google.golang.org/api v0.307.0
 	k8s.io/api v0.37.1
 	k8s.io/apiextensions-apiserver v0.37.1
 	k8s.io/apimachinery v0.37.1
@@ -180,7 +180,7 @@ require (
 	golang.org/x/time v0.16.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
