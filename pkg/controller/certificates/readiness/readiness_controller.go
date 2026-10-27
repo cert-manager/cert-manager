@@ -223,8 +223,14 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
-		var renewalTime *metav1.Time
-		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
+		// Calculate the deterministic renewal time once per reconcile. It is
+		// the fallback when no ARI-derived time is available, and it
+		// revalidates the renewal configuration so a window error surfaces as
+		// a WindowError Ready condition on every reconcile, even when the
+		// schedule is ARI-derived.
+		fallbackTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+
+		renewalTime := c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -236,7 +242,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			if t := ariRenewalTimeFromStatus(crt, x509cert); t != nil {
 				renewalTime = t
 			} else {
-				renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+				renewalTime = fallbackTime
 			}
 		}
 		if err != nil {
@@ -397,6 +403,11 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 				ariStatus.LastError = err.Error()
 				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
+				// Keep the time returned alongside the error: it is a random
+				// time in the ARI suggested window, so the scheduled wake-up
+				// stays in sync with the trigger controller, which renews as
+				// soon as the window opens. The caller surfaces the window
+				// error from its own deterministic calculation.
 				break
 			}
 		}
