@@ -28,6 +28,8 @@ import (
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	vaddon "github.com/cert-manager/cert-manager/e2e-tests/framework/addon/venafi"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/validation"
 	"github.com/cert-manager/cert-manager/e2e-tests/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -99,7 +101,9 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(cert)
+		err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(
+			featureset.NewFeatureSet(featureset.SubjectKeyIdentifierFeature),
+		)...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

@@ -413,6 +413,30 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 	return nil
 }
 
+// ExpectValidSubjectKeyIdentifier checks that SKI matches cert-manager's algorithm.
+func ExpectValidSubjectKeyIdentifier(_ *cmapi.Certificate, secret *corev1.Secret) error {
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	if len(cert.SubjectKeyId) == 0 {
+		return fmt.Errorf("certificate does not have a Subject Key Identifier extension")
+	}
+
+	expectedSKI, err := pki.SubjectKeyIdentifier(cert.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to compute expected Subject Key Identifier: %w", err)
+	}
+
+	if !bytes.Equal(cert.SubjectKeyId, expectedSKI) {
+		return fmt.Errorf("certificate Subject Key Identifier %x does not match expected value %x",
+			cert.SubjectKeyId, expectedSKI)
+	}
+
+	return nil
+}
+
 // ExpectDuration checks if the issued certificate matches the Certificate's duration
 func ExpectDurationToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	certDuration := apiutil.DefaultCertDuration(certificate.Spec.Duration)

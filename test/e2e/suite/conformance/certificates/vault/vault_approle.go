@@ -43,6 +43,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.ACMEUseARI,
+		// Vault computes its own Subject Key Identifier
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)

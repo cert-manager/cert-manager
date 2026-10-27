@@ -48,6 +48,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,
 		featureset.ACMEUseARI,
+		// External issuers compute their own Subject Key Identifier
+		featureset.SubjectKeyIdentifierFeature,
 	)
 
 	issuerBuilder := newIssuerBuilder("Issuer")
