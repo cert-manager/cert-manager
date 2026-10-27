@@ -496,17 +496,9 @@ func TestPublicKeysEqualECDSA(t *testing.T) {
 	}
 
 	pub1 := key1.Public().(*ecdsa.PublicKey)
-
-	// (pub1.X, pub1.Y) isn't likely to be on the curve for key2, so pub2 will be
-	// invalid after changing its X and Y below; still, pub2 is useful for
-	// the test
-
-	// this is not dissimilar to the standard library's test:
-	// https://github.com/golang/go/blob/14a18b7d2538232c6cd6937297c421d5f6b7d92f/src/crypto/ecdsa/equal_test.go#L55-L64
 	pub2 := key2.Public().(*ecdsa.PublicKey)
-	pub2.X = pub1.X
-	pub2.Y = pub1.Y
 
+	// Keys are on different curves → must not be equal
 	if pub1.Equal(pub2) {
 		t.Fatalf("invalid test: got a match from curves which should differ:\npub1: %#v\npub2: %#v\n", pub1, pub2)
 	}
