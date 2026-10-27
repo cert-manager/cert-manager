@@ -18,11 +18,13 @@ package pki
 
 import (
 	"crypto/ecdsa"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"os"
 	"strings"
 	"testing"
 
@@ -260,5 +262,85 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, testFn(test))
+	}
+}
+
+func TestDecodeMLDSAPrivateKeyPEM(t *testing.T) {
+	tests := []struct {
+		name   string
+		params mldsa.Parameters
+	}{
+		{name: "MLDSA44", params: mldsa.MLDSA44()},
+		{name: "MLDSA65", params: mldsa.MLDSA65()},
+		{name: "MLDSA87", params: mldsa.MLDSA87()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sk, err := mldsa.GenerateKey(tt.params)
+			if err != nil {
+				t.Fatalf("failed to generate %s key: %v", tt.name, err)
+			}
+
+			pemBytes, err := EncodePKCS8PrivateKey(sk)
+			if err != nil {
+				t.Fatalf("failed to encode %s key: %v", tt.name, err)
+			}
+
+			decoded, err := DecodePrivateKeyBytes(pemBytes)
+			if err != nil {
+				t.Fatalf("failed to decode %s key: %v", tt.name, err)
+			}
+
+			mldsaKey, ok := decoded.(*mldsa.PrivateKey)
+			if !ok {
+				t.Fatalf("decoded key is not *mldsa.PrivateKey, got %T", decoded)
+			}
+
+			if mldsaKey.PublicKey().Parameters() != tt.params {
+				t.Fatalf("decoded key parameters mismatch: got %s, want %s", mldsaKey.PublicKey().Parameters(), tt.params)
+			}
+		})
+	}
+}
+
+// TestDecodeOpenSSLMLDSAPrivateKeyPEM checks the errors returned for ML-DSA
+// private keys in formats that Go doesn't support. OpenSSL 3.5+ writes the
+// "both" (seed and expanded key) format by default. The expected messages come
+// from the standard library; if this test fails, Go's behaviour has changed and
+// the documentation for these formats needs updating.
+func TestDecodeOpenSSLMLDSAPrivateKeyPEM(t *testing.T) {
+	tests := []struct {
+		file   string
+		errStr string
+	}{
+		{
+			// Generated with: openssl genpkey -algorithm ML-DSA-44
+			file:   "testdata/mldsa44-openssl-both.pem",
+			errStr: `x509: ML-DSA private keys with both seed and expanded key are not supported, use e.g. "openssl pkey -provparam ml-dsa.output_formats=seed-only" to convert to a seed-only key`,
+		},
+		{
+			// Generated with: openssl pkey -provparam ml-dsa.output_formats=priv-only
+			file:   "testdata/mldsa44-openssl-expanded.pem",
+			errStr: "x509: semi-expanded ML-DSA private keys without seed are not supported",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.file, func(t *testing.T) {
+			keyPEM, err := os.ReadFile(tt.file)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = DecodePrivateKeyBytes(keyPEM)
+			if err == nil {
+				t.Fatal("expected an error, but got none")
+			}
+
+			if !strings.Contains(err.Error(), tt.errStr) {
+				t.Errorf("expected error to contain %q, got %q", tt.errStr, err.Error())
+			}
+		})
 	}
 }

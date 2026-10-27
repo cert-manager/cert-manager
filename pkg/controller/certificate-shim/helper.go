@@ -17,6 +17,7 @@ limitations under the License.
 package shimhelper
 
 import (
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,9 +30,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -249,6 +252,26 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 			cmapi.ECDSAKeyAlgorithm,
 			cmapi.Ed25519KeyAlgorithm:
 			// ok
+		case cmapi.MLDSAKeyAlgorithm:
+			if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+				return fmt.Errorf("%w %q: private key algorithm %q requires the MLDSAPrivateKeys feature gate to be enabled", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)
+			}
+
+			if _, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; !found {
+				// The default usages include key encipherment, which RFC 9881
+				// forbids for ML-DSA keys.
+				crt.Spec.Usages = pki.DefaultKeyUsagesForPublicKeyAlgorithm(x509.MLDSA)
+			} else {
+				var forbidden []cmapi.KeyUsage
+				for _, u := range crt.Spec.Usages {
+					if !pki.KeyUsageAllowedForPublicKeyAlgorithm(u, x509.MLDSA) {
+						forbidden = append(forbidden, u)
+					}
+				}
+				if len(forbidden) > 0 {
+					return fmt.Errorf("%w %q: key usages %v are not allowed for private key algorithm %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, forbidden, privateKeyAlgorithm)
+				}
+			}
 		default:
 			return fmt.Errorf("%w %q: invalid private key algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)
 		}
@@ -297,6 +320,13 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 				// ok
 			default:
 				return fmt.Errorf("%w %q: invalid private key size for ECDSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
+			}
+		case cmapi.MLDSAKeyAlgorithm:
+			switch size {
+			case pki.MLDSA44, pki.MLDSA65, pki.MLDSA87:
+				// ok
+			default:
+				return fmt.Errorf("%w %q: invalid private key size for ML-DSA algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeySizeAnnotationKey, privateKeySize)
 			}
 		default:
 			// ok

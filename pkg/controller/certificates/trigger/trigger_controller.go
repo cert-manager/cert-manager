@@ -52,6 +52,19 @@ import (
 
 const (
 	ControllerName = "certificates-trigger"
+
+	// reasonMLDSAPrivateKeysDisabled is the reason of the Warning event which
+	// is emitted when an ML-DSA Certificate must be re-issued but the
+	// MLDSAPrivateKeys feature gate is disabled.
+	reasonMLDSAPrivateKeysDisabled = "MLDSAPrivateKeysDisabled"
+
+	// mldsaPrivateKeysDisabledRecheckInterval is how often an ML-DSA
+	// Certificate that must be re-issued is checked again while the
+	// MLDSAPrivateKeys feature gate is disabled. The gate only changes when the
+	// controller restarts, so this only repeats the Warning event, which would
+	// otherwise expire (after one hour by default) long before the next
+	// informer resync.
+	mldsaPrivateKeysDisabledRecheckInterval = 30 * time.Minute
 )
 
 // This controller observes the state of the certificate's currently
@@ -228,6 +241,18 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	if !reissue {
+		return nil
+	}
+
+	// Don't start issuance for an ML-DSA Certificate (created while the
+	// MLDSAPrivateKeys feature gate was enabled) while the gate is disabled.
+	// The existing Secret is left alone so that workloads keep running.
+	if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.Algorithm == cmapi.MLDSAKeyAlgorithm &&
+		!utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+		message = fmt.Sprintf("Certificate must be re-issued (%s), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled", reason)
+		log.V(logf.InfoLevel).Info("Not re-issuing Certificate because the MLDSAPrivateKeys feature gate is disabled", "reason", reason)
+		c.recorder.Event(crt, corev1.EventTypeWarning, reasonMLDSAPrivateKeysDisabled, message)
+		c.scheduledWorkQueue.Add(key, mldsaPrivateKeysDisabledRecheckInterval)
 		return nil
 	}
 

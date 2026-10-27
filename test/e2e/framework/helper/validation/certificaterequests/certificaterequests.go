@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
@@ -77,6 +78,8 @@ func ExpectValidPrivateKeyData(cr *cmapi.CertificateRequest, key crypto.Signer) 
 		case *ecdsa.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
 		case ed25519.PublicKey:
+			return pub.Equal(cert.PublicKey), nil
+		case *mldsa.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
 		default:
 			return false, fmt.Errorf("Unrecognised public key type: %T", key)

@@ -41,6 +41,8 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	var unsupportedFeatures = featureset.NewFeatureSet(
 		featureset.KeyUsagesFeature,
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		featureset.IssueCAFeature,
 	)
 

@@ -19,6 +19,7 @@ package ca
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -34,8 +35,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -44,6 +47,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
@@ -610,6 +614,124 @@ func TestCA_Sign(t *testing.T) {
 
 				test.assertSignedCert(t, gotCert)
 			}
+		})
+	}
+}
+
+func TestCA_Sign_MLDSA(t *testing.T) {
+	ecdsaPK, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	mldsaPK, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA87())
+	require.NoError(t, err)
+
+	ecdsaCACert, ecdsaCACertPEM := generateSelfSignedCACert(t, ecdsaPK, "ecdsa-root")
+	// generateSelfSignedCACert sets key encipherment, which RFC 9881 forbids
+	// for ML-DSA keys.
+	mldsaCATmpl := &x509.Certificate{
+		BasicConstraintsValid: true,
+		SerialNumber:          big.NewInt(0),
+		Subject:               pkix.Name{CommonName: "mldsa-root"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Minute),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		IsCA:                  true,
+	}
+	mldsaCACertPEM, _, err := pki.SignCertificate(mldsaCATmpl, mldsaCATmpl, mldsaPK.Public(), mldsaPK)
+	require.NoError(t, err)
+	ecdsaCAKeyPEM, err := pki.EncodePKCS8PrivateKey(ecdsaPK)
+	require.NoError(t, err)
+	mldsaCAKeyPEM, err := pki.EncodePKCS8PrivateKey(mldsaPK)
+	require.NoError(t, err)
+	ecdsaCASecretData := map[string][]byte{"tls.key": ecdsaCAKeyPEM, "tls.crt": ecdsaCACertPEM}
+	mldsaCASecretData := map[string][]byte{"tls.key": mldsaCAKeyPEM, "tls.crt": mldsaCACertPEM}
+
+	testMLDSAPK, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA44())
+	require.NoError(t, err)
+	mldsaCSR := generateCSR(t, testMLDSAPK)
+	testECDSAPK, err := pki.GenerateECPrivateKey(256)
+	require.NoError(t, err)
+	ecdsaCSR := generateCSR(t, testECDSAPK)
+
+	tests := map[string]struct {
+		givenCASecretData map[string][]byte
+		givenCSR          []byte
+		featureEnabled    bool
+		assertSignedCert  func(t *testing.T, got *x509.Certificate)
+		wantEvent         string
+	}{
+		"an ML-DSA CSR should be signed by an ECDSA CA with the ML-DSA default key usages": {
+			givenCASecretData: ecdsaCASecretData,
+			givenCSR:          mldsaCSR,
+			featureEnabled:    true,
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, x509.MLDSA, got.PublicKeyAlgorithm)
+				assert.Equal(t, x509.ECDSAWithSHA256, got.SignatureAlgorithm)
+				assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
+				require.NoError(t, got.CheckSignatureFrom(ecdsaCACert))
+			},
+		},
+		"an ECDSA CSR should be signed by an ML-DSA CA": {
+			givenCASecretData: mldsaCASecretData,
+			givenCSR:          ecdsaCSR,
+			featureEnabled:    true,
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, x509.ECDSA, got.PublicKeyAlgorithm)
+				assert.Equal(t, x509.MLDSA87, got.SignatureAlgorithm)
+				assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
+			},
+		},
+		"an ML-DSA CSR should not be signed if the MLDSAPrivateKeys feature gate is disabled": {
+			givenCASecretData: ecdsaCASecretData,
+			givenCSR:          mldsaCSR,
+			wantEvent:         "Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+		},
+		"an ECDSA CSR should not be signed by an ML-DSA CA if the MLDSAPrivateKeys feature gate is disabled": {
+			givenCASecretData: mldsaCASecretData,
+			givenCSR:          ecdsaCSR,
+			wantEvent:         "Normal MLDSAPrivateKeysDisabled Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.featureEnabled)
+			rec := &testpkg.FakeRecorder{}
+
+			c := &CA{
+				reporter: util.NewReporter(fixedClock, rec),
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"), gen.SetSecretData(test.givenCASecretData)), nil),
+				),
+				templateGenerator: pki.CertificateTemplateFromCertificateRequest,
+				signingFn:         pki.SignCSRTemplate,
+			}
+
+			cr := gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(test.givenCSR),
+				gen.SetCertificateRequestIssuer(cmmeta.IssuerReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			)
+			gotIssueResp, gotErr := c.Sign(t.Context(), cr,
+				gen.Issuer("issuer-1", gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "secret-1"})),
+			)
+			require.NoError(t, gotErr)
+
+			if test.wantEvent != "" {
+				assert.Nil(t, gotIssueResp)
+				assert.Equal(t, []string{test.wantEvent}, rec.Events)
+				// The gate can be turned back on, so the request is left
+				// pending rather than failed.
+				assert.Equal(t, cmapi.CertificateRequestReasonPending, apiutil.CertificateRequestReadyReason(cr))
+				assert.Nil(t, cr.Status.FailureTime)
+				return
+			}
+
+			require.NotNil(t, gotIssueResp)
+			gotCert, err := pki.DecodeX509CertificateBytes(gotIssueResp.Certificate)
+			require.NoError(t, err)
+			test.assertSignedCert(t, gotCert)
 		})
 	}
 }

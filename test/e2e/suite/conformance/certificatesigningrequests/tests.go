@@ -23,12 +23,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	experimentalapi "github.com/cert-manager/cert-manager/pkg/apis/experimental/v1alpha1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
 	"github.com/cert-manager/cert-manager/e2e-tests/framework/helper/featureset"
@@ -121,6 +124,17 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.OnlySAN},
 			},
 			{
+				name:    "should issue an ML-DSA certificate for a single distinct DNS Name",
+				keyAlgo: x509.MLDSA,
+				csrModifiers: []gen.CSRModifier{
+					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				},
+				kubeCSRUsages: []certificatesv1.KeyUsage{
+					certificatesv1.UsageDigitalSignature,
+				},
+				requiredFeatures: []featureset.Feature{featureset.MLDSAFeatureSet, featureset.OnlySAN},
+			},
+			{
 				name:    "should issue an RSA certificate for a single Common Name",
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
@@ -155,6 +169,17 @@ func (s *Suite) Define() {
 					certificatesv1.UsageKeyEncipherment,
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.Ed25519FeatureSet},
+			},
+			{
+				name:    "should issue an ML-DSA certificate for a single Common Name",
+				keyAlgo: x509.MLDSA,
+				csrModifiers: []gen.CSRModifier{
+					gen.SetCSRCommonName("test-common-name-" + rand.String(10)),
+				},
+				kubeCSRUsages: []certificatesv1.KeyUsage{
+					certificatesv1.UsageDigitalSignature,
+				},
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.MLDSAFeatureSet},
 			},
 			{
 				name:    "should issue a certificate that defines a Common Name and IP Address",
@@ -421,6 +446,14 @@ func (s *Suite) Define() {
 
 		defineTest := func(test testCase) {
 			s.it(f, test.name, func(ctx context.Context, signerName string) {
+				if sets.New(test.requiredFeatures...).Has(featureset.MLDSAFeatureSet) {
+					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
+					// The API server checks the signature of a
+					// CertificateSigningRequest when it's created, and Go
+					// can only check ML-DSA signatures from Go 1.27.
+					framework.RequireServerGoVersion(ctx, f, "go1.27")
+				}
+
 				// Generate request CSR
 				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers...)
 				Expect(err).NotTo(HaveOccurred())

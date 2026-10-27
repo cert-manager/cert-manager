@@ -2977,21 +2977,21 @@ func schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref common.ReferenceCa
 					},
 					"encoding": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in.\n\nIf provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1 and PKCS#8, respectively. Defaults to `PKCS1` if not specified.",
+							Description: "The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in.\n\nIf provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1 and PKCS#8, respectively. Defaults to `PKCS1` if not specified. `MLDSA` keys are always encoded as PKCS#8, whatever this field says.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"algorithm": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Algorithm is the private key algorithm of the corresponding private key for this certificate.\n\nIf provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`. If `algorithm` is specified and `size` is not provided, key size of 2048 will be used for `RSA` key algorithm and key size of 256 will be used for `ECDSA` key algorithm. key size is ignored when using the `Ed25519` key algorithm.",
+							Description: "Algorithm is the private key algorithm of the corresponding private key for this certificate.\n\nIf provided, allowed values are either `RSA`, `ECDSA`, `Ed25519` or `MLDSA`. `MLDSA` requires the `MLDSAPrivateKeys` feature gate. If `algorithm` is specified and `size` is not provided, key size of 2048 will be used for `RSA` key algorithm and key size of 256 will be used for `ECDSA` key algorithm. key size is ignored when using the `Ed25519` key algorithm. If `algorithm` is `MLDSA` and `size` is not provided, the ML-DSA-44 parameter set will be used.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"size": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Size is the key bit size of the corresponding private key for this certificate.\n\nIf `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. If `algorithm` is set to `Ed25519`, Size is ignored. No other values are allowed.",
+							Description: "Size is the key bit size of the corresponding private key for this certificate, or the parameter set for the `MLDSA` key algorithm.\n\nIf `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. If `algorithm` is set to `Ed25519`, Size is ignored. If `algorithm` is set to `MLDSA`, valid values are `44`, `65` or `87`, selecting the ML-DSA-44, ML-DSA-65 or ML-DSA-87 parameter set, and will default to `44` if not specified. No other values are allowed.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -3270,7 +3270,7 @@ func schema_pkg_apis_certmanager_v1_CertificateRequestSpec(ref common.ReferenceC
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Requested key usages and extended key usages.\n\nNOTE: If the CSR in the `Request` field has uses the KeyUsage or ExtKeyUsage extension, these extensions must have the same values as specified here without any additional values.\n\nIf unset, defaults to `digital signature` and `key encipherment`.",
+							Description: "Requested key usages and extended key usages.\n\nNOTE: If the CSR in the `Request` field has uses the KeyUsage or ExtKeyUsage extension, these extensions must have the same values as specified here without any additional values.\n\nIf unset, defaults to `digital signature` and `key encipherment`, or to `digital signature` alone if the CSR has an ML-DSA public key.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -3632,7 +3632,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Requested key usages and extended key usages. These usages are used to set the `usages` field on the created CertificateRequest resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages will additionally be encoded in the `request` field which contains the CSR blob.\n\nIf unset, defaults to `digital signature` and `key encipherment`.",
+							Description: "Requested key usages and extended key usages. These usages are used to set the `usages` field on the created CertificateRequest resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages will additionally be encoded in the `request` field which contains the CSR blob.\n\nIf unset, defaults to `digital signature` and `key encipherment`, or to `digital signature` alone for the `MLDSA` key algorithm.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -3652,7 +3652,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 					},
 					"signatureAlgorithm": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Signature algorithm to use. Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA. Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512. Allowed values for Ed25519 keys: PureEd25519.",
+							Description: "Signature algorithm to use. Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA. Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512. Allowed values for Ed25519 keys: PureEd25519. Must be unset for MLDSA keys: the signature algorithm follows from the key's parameter set.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

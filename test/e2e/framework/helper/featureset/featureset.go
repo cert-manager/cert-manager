@@ -97,6 +97,10 @@ const (
 	// certificates with an Ed25519 private key.
 	Ed25519FeatureSet Feature = "Ed25519"
 
+	// MLDSAFeatureSet denotes whether the target issuer is able to sign
+	// certificates with an ML-DSA private key.
+	MLDSAFeatureSet Feature = "MLDSA"
+
 	// IssueCAFeature denotes whether the target issuer is able to issue CA
 	// certificates (i.e., certificates for which the CA basicConstraint is true)
 	IssueCAFeature Feature = "IssueCA"

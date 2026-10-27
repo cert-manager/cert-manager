@@ -18,6 +18,7 @@ package selfsigned
 
 import (
 	"crypto"
+	"crypto/mldsa"
 	"crypto/x509"
 	"errors"
 	"testing"
@@ -32,8 +33,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -42,6 +45,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
@@ -753,6 +757,102 @@ func TestSign(t *testing.T) {
 			require.NoError(t, err)
 
 			test.assertSignedCert(t, gotCert)
+		})
+	}
+}
+
+func TestSign_MLDSA(t *testing.T) {
+	key, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA65())
+	require.NoError(t, err)
+	csrPEM, err := gen.CSRWithSigner(key, gen.SetCSRCommonName("test"))
+	require.NoError(t, err)
+	keyPEM, err := pki.EncodePKCS8PrivateKey(key)
+	require.NoError(t, err)
+	secret := &corev1.Secret{
+		Name:      "test-secret",
+		Namespace: "default-unit-test-ns",
+		Data: map[string][]byte{
+			corev1.TLSPrivateKeyKey: keyPEM,
+		},
+	}
+	issuer := gen.Issuer("issuer-1",
+		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+	)
+
+	tests := map[string]struct {
+		usages            []certificatesv1.KeyUsage
+		featureEnabled    bool
+		wantFailedReason  string
+		wantFailedMessage string
+	}{
+		"an ML-DSA CSR should be signed if the MLDSAPrivateKeys feature gate is enabled": {
+			usages:         []certificatesv1.KeyUsage{certificatesv1.UsageDigitalSignature},
+			featureEnabled: true,
+		},
+		"an ML-DSA CSR with key encipherment should fail": {
+			usages:            []certificatesv1.KeyUsage{certificatesv1.UsageDigitalSignature, certificatesv1.UsageKeyEncipherment},
+			featureEnabled:    true,
+			wantFailedReason:  "ErrorSigning",
+			wantFailedMessage: "Error signing certificate: key usages [key encipherment] are not allowed for ML-DSA keys",
+		},
+		"an ML-DSA CSR should fail if the MLDSAPrivateKeys feature gate is disabled": {
+			usages:            []certificatesv1.KeyUsage{certificatesv1.UsageDigitalSignature},
+			wantFailedReason:  "MLDSAPrivateKeysDisabled",
+			wantFailedMessage: "Refusing to sign a certificate involving an ML-DSA key: the MLDSAPrivateKeys feature gate is disabled",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.featureEnabled)
+
+			givenCSR := gen.CertificateSigningRequest("csr-1",
+				gen.AddCertificateSigningRequestAnnotations(map[string]string{
+					"experimental.cert-manager.io/private-key-secret-name": "test-secret",
+				}),
+				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/default-unit-test-ns.issuer-1"),
+				gen.SetCertificateSigningRequestUsages(test.usages),
+				gen.SetCertificateSigningRequestRequest(csrPEM),
+			)
+
+			builder := &testpkg.Builder{
+				KubeObjects:        []runtime.Object{givenCSR, secret},
+				CertManagerObjects: []runtime.Object{issuer},
+			}
+			builder.T = t
+			builder.Init()
+			defer builder.Stop()
+			builder.Start()
+
+			selfsigned := &SelfSigned{
+				certClient: builder.Client.CertificatesV1().CertificateSigningRequests(),
+				recorder:   new(testpkg.FakeRecorder),
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(secret, nil),
+				),
+				signingFn: pki.SignCertificate,
+			}
+
+			gotErr := selfsigned.Sign(t.Context(), givenCSR, issuer)
+			require.NoError(t, gotErr)
+			builder.Sync()
+
+			csr, err := builder.Client.CertificatesV1().CertificateSigningRequests().Get(t.Context(), givenCSR.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+
+			if test.wantFailedReason != "" {
+				assert.Empty(t, csr.Status.Certificate)
+				require.Len(t, csr.Status.Conditions, 1)
+				assert.Equal(t, certificatesv1.CertificateFailed, csr.Status.Conditions[0].Type)
+				assert.Equal(t, test.wantFailedReason, csr.Status.Conditions[0].Reason)
+				assert.Equal(t, test.wantFailedMessage, csr.Status.Conditions[0].Message)
+				return
+			}
+
+			require.NotEmpty(t, csr.Status.Certificate)
+			gotCert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
+			require.NoError(t, err)
+			assert.Equal(t, x509.MLDSA65, gotCert.SignatureAlgorithm)
+			assert.Equal(t, x509.KeyUsageDigitalSignature, gotCert.KeyUsage)
 		})
 	}
 }
