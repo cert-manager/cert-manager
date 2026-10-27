@@ -365,7 +365,7 @@ func (c *eventCollector) waitFor(t *testing.T, reason, objectName string) {
 func createNamespace(t *testing.T, kubeClient kubernetes.Interface, namespace string) {
 	t.Helper()
 	_, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: namespace},
+		Name: namespace,
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 }

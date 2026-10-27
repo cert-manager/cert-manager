@@ -769,10 +769,8 @@ func TestSign_MLDSA(t *testing.T) {
 	keyPEM, err := pki.EncodePKCS8PrivateKey(key)
 	require.NoError(t, err)
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-secret",
-			Namespace: "default-unit-test-ns",
-		},
+		Name:      "test-secret",
+		Namespace: "default-unit-test-ns",
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: keyPEM,
 		},

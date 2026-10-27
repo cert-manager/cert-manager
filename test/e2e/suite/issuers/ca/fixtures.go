@@ -276,9 +276,7 @@ func newMLDSASigningKeypairSecret(name string) (*corev1.Secret, error) {
 	}
 
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Data: map[string][]byte{
 			corev1.TLSCertKey:       certPEM,
 			corev1.TLSPrivateKeyKey: keyPEM,

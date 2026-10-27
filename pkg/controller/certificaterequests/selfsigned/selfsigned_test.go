@@ -128,10 +128,8 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 	mldsaKeySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rsaKeySecret.Name,
-			Namespace: gen.DefaultTestNamespace,
-		},
+		Name:      rsaKeySecret.Name,
+		Namespace: gen.DefaultTestNamespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: skMLDSAPEM,
 		},
