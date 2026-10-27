@@ -22,7 +22,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var rootRSAKeySigner, rootECKeySigner, rootEd25519Signer crypto.Signer
@@ -89,10 +88,8 @@ MC4CAQAwBQYDK2VwBCIEIDILZEyxoAbFmJJFKSGuzFxBB1Q1cygU+g4a9dEZrVqS
 
 func newPrivateKeySecret(name, namespace string, keyData []byte) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: keyData,
 		},

@@ -43,12 +43,10 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 	baseRequest := mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com")))
 
 	baseCR := &cminternal.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				"abc":                      "123",
-				"cert-manager.io/foo":      "abc",
-				"acme.cert-manager.io/bar": "123",
-			},
+		Annotations: map[string]string{
+			"abc":                      "123",
+			"cert-manager.io/foo":      "abc",
+			"acme.cert-manager.io/bar": "123",
 		},
 		Spec: cminternal.CertificateRequestSpec{
 			Request:   baseRequest,
@@ -80,11 +78,9 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 		"if CertificateRequest spec and cert-manager.io annotations change, error": {
 			oldCR: baseCR.DeepCopy(),
 			newCR: &cminternal.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"acme.cert-manager.io/bar": "123",
-						"123":                      "abc",
-					},
+				Annotations: map[string]string{
+					"acme.cert-manager.io/bar": "123",
+					"123":                      "abc",
 				},
 				Spec: cminternal.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
@@ -99,11 +95,9 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 		"if CertificateRequest spec and acme.cert-manager.io annotations change, error": {
 			oldCR: baseCR.DeepCopy(),
 			newCR: &cminternal.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"cert-manager.io/foo": "abc",
-						"123":                 "abc",
-					},
+				Annotations: map[string]string{
+					"cert-manager.io/foo": "abc",
+					"123":                 "abc",
 				},
 				Spec: cminternal.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),

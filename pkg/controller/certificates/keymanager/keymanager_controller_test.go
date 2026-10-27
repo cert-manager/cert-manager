@@ -90,7 +90,7 @@ func relaxedSecretMatcher(l coretesting.Action, r coretesting.Action) error {
 
 func TestProcessItem(t *testing.T) {
 	ownedSecretWithName := func(namespace, name, owner string, data map[string][]byte) *corev1.Secret {
-		return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+		return &corev1.Secret{
 			Namespace: namespace,
 			Name:      name,
 			Labels: map[string]string{
@@ -99,16 +99,19 @@ func TestProcessItem(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(&cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: owner, UID: types.UID(owner)},
+					Namespace: "testns",
+					Name:      owner,
+					UID:       types.UID(owner),
 				}, certificateGvk),
 			},
-		},
 			Data: data,
 		}
 	}
 	ownerRefTo := func(name string) []metav1.OwnerReference {
 		return []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: name, UID: types.UID(name)},
+			Namespace: "testns",
+			Name:      name,
+			UID:       types.UID(name),
 		}, certificateGvk)}
 	}
 	tests := map[string]struct {
@@ -152,7 +155,8 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if Certificate has 'Issuing' condition set to 'false'": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns",
+				Name:      "test",
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
 						{
@@ -165,7 +169,8 @@ func TestProcessItem(t *testing.T) {
 		},
 		"do nothing if Certificate has no 'Issuing' condition": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns",
+				Name:      "test",
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{},
 				},
@@ -173,7 +178,8 @@ func TestProcessItem(t *testing.T) {
 		},
 		"create a secret and record its name if issuing is true": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns",
+				Name:      "test",
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
 						{
@@ -195,7 +201,8 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+						Namespace: "testns",
+						Name:      "test",
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("test-notrandom"),
 							Conditions: []cmapi.CertificateCondition{
@@ -211,13 +218,11 @@ func TestProcessItem(t *testing.T) {
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace:       "testns",
-							GenerateName:    "test-",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, certificateGvk)},
-						},
-						Data: map[string][]byte{"tls.key": nil},
+						Namespace:       "testns",
+						GenerateName:    "test-",
+						Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&cmapi.Certificate{Namespace: "testns", Name: "test"}, certificateGvk)},
+						Data:            map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
 			},
@@ -318,7 +323,9 @@ func TestProcessItem(t *testing.T) {
 			// another Certificate that has not issued yet; creating it here would
 			// let this Certificate delete that Secret, or sign with its key.
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -345,13 +352,11 @@ func TestProcessItem(t *testing.T) {
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace:       "testns",
-							GenerateName:    "test-",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: ownerRefTo("test"),
-						},
-						Data: map[string][]byte{"tls.key": nil},
+						Namespace:       "testns",
+						GenerateName:    "test-",
+						Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+						OwnerReferences: ownerRefTo("test"),
+						Data:            map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
 				testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -359,7 +364,9 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Namespace: "testns",
+						Name:      "test",
+						UID:       types.UID("test"),
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("test-notrandom"),
 							Conditions: []cmapi.CertificateCondition{
@@ -380,7 +387,9 @@ func TestProcessItem(t *testing.T) {
 		// of the field reject that Secret and issuance would never recover.
 		"create a secret under a generated name if status.nextPrivateKeySecretName names a Secret not owned by the Certificate": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -413,13 +422,11 @@ func TestProcessItem(t *testing.T) {
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace:       "testns",
-							GenerateName:    "test-",
-							Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
-							OwnerReferences: ownerRefTo("test"),
-						},
-						Data: map[string][]byte{"tls.key": nil},
+						Namespace:       "testns",
+						GenerateName:    "test-",
+						Labels:          map[string]string{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"},
+						OwnerReferences: ownerRefTo("test"),
+						Data:            map[string][]byte{"tls.key": nil},
 					},
 				), relaxedSecretMatcher),
 				// The status field is repointed at the new Secret, which is
@@ -429,7 +436,9 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Namespace: "testns",
+						Name:      "test",
+						UID:       types.UID("test"),
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("test-notrandom"),
 							Conditions: []cmapi.CertificateCondition{
@@ -447,7 +456,9 @@ func TestProcessItem(t *testing.T) {
 			// The keymanager cannot make a next private key here, so a stale or
 			// untrusted name must not stay in the status field.
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Spec: cmapi.CertificateSpec{
 					SecretName: "output",
 					PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyNever},
@@ -463,8 +474,9 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 			secrets: []runtime.Object{&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "output"},
-				Data:       map[string][]byte{"tls.key": mustGenerateECDSA(t, pki.ECCurve256)},
+				Namespace: "testns",
+				Name:      "output",
+				Data:      map[string][]byte{"tls.key": mustGenerateECDSA(t, pki.ECCurve256)},
 			}},
 			expectedEvents: []string{`Warning CannotRegenerateKey User intervention required: existing private key in Secret "output" does not match requirements on Certificate resource, mismatching fields: [spec.privateKey.algorithm], but cert-manager cannot create new private key as the Certificate's .spec.privateKey.rotationPolicy is unset or set to Never. To allow cert-manager to create a new private key you can set .spec.privateKey.rotationPolicy to 'Always' (this will result in the private key being regenerated every time a cert is renewed) `},
 			expectedActions: []testpkg.Action{
@@ -473,7 +485,9 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Namespace: "testns",
+						Name:      "test",
+						UID:       types.UID("test"),
 						Status: cmapi.CertificateStatus{
 							Conditions: []cmapi.CertificateCondition{
 								{
@@ -488,7 +502,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if multiple owned secrets exist, delete them all": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
 						{
@@ -517,7 +533,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if multiple owned secrets exist with one matching nextPrivateKeySecretName, preserve the matching one and delete others": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -548,7 +566,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if multiple owned secrets exist but none match nextPrivateKeySecretName, delete all": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("expected-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -578,7 +598,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if a named and owned secret exists but contains no data, delete it": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -602,7 +624,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if an owned secret exists but nextPrivateKeySecretName is not set, set it": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
 						{
@@ -621,7 +645,9 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Namespace: "testns",
+						Name:      "test",
+						UID:       types.UID("test"),
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("fixed-name"),
 							Conditions: []cmapi.CertificateCondition{
@@ -641,7 +667,9 @@ func TestProcessItem(t *testing.T) {
 			// and would race the Secret informer after the keymanager itself
 			// repoints the field.
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name-2"),
 					Conditions: []cmapi.CertificateCondition{
@@ -661,7 +689,9 @@ func TestProcessItem(t *testing.T) {
 					"status",
 					"testns",
 					&cmapi.Certificate{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+						Namespace: "testns",
+						Name:      "test",
+						UID:       types.UID("test"),
 						Status: cmapi.CertificateStatus{
 							NextPrivateKeySecretName: new("fixed-name"),
 							Conditions: []cmapi.CertificateCondition{
@@ -677,7 +707,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if an owned secret exists but contains invalid private key data, delete it": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -701,7 +733,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if an owned secret exists but contains 'non-matching' data, delete it'": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{
@@ -726,7 +760,9 @@ func TestProcessItem(t *testing.T) {
 		},
 		"if an owned secret exists and contains data valid for the spec, do nothing'": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", UID: types.UID("test")},
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
 				Status: cmapi.CertificateStatus{
 					NextPrivateKeySecretName: new("fixed-name"),
 					Conditions: []cmapi.CertificateCondition{

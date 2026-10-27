@@ -89,19 +89,15 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 	It("should populate UserInfo with ServiceAccount if is the requester", func(testingCtx context.Context) {
 		By("Creating ServiceAccount")
 		sa, err := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(testingCtx, &corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-sa",
-				Namespace: f.Namespace.Name,
-			},
+			Name:      "test-sa",
+			Namespace: f.Namespace.Name,
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating certificaterequest-creator role")
 		role, err := f.KubeClientSet.RbacV1().Roles(f.Namespace.Name).Create(testingCtx, &rbacv1.Role{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "certificaterequest-creator",
-				Namespace: f.Namespace.Name,
-			},
+			Name:      "certificaterequest-creator",
+			Namespace: f.Namespace.Name,
 			Rules: []rbacv1.PolicyRule{
 				{
 					Verbs:     []string{"create"},
@@ -114,10 +110,8 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 
 		By("Creating certificaterequest-creator rolebinding for ServiceAccount")
 		_, err = f.KubeClientSet.RbacV1().RoleBindings(f.Namespace.Name).Create(testingCtx, &rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "certificaterequest-creator",
-				Namespace: f.Namespace.Name,
-			},
+			Name:      "certificaterequest-creator",
+			Namespace: f.Namespace.Name,
 			Subjects: []rbacv1.Subject{
 				{
 					Kind:      "ServiceAccount",
@@ -136,12 +130,10 @@ var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
 		// Manually create a Secret to be populated with Service Account token
 		// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "sa-secret-",
-				Name:         f.Namespace.Name,
-				Annotations: map[string]string{
-					"kubernetes.io/service-account.name": sa.Name,
-				},
+			GenerateName: "sa-secret-",
+			Name:         f.Namespace.Name,
+			Annotations: map[string]string{
+				"kubernetes.io/service-account.name": sa.Name,
 			},
 			Type: corev1.SecretTypeServiceAccountToken,
 		}, metav1.CreateOptions{})

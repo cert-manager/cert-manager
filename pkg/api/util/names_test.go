@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -41,9 +40,7 @@ func TestComputeName(t *testing.T) {
 			name: "Name generation short domains",
 			args: args{
 				crt: &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "unit.test.jetstack.io",
-					},
+					Name: "unit.test.jetstack.io",
 					Spec: cmapi.CertificateSpec{
 						CommonName: "unit.test.jetstack.io",
 					},
@@ -56,9 +53,7 @@ func TestComputeName(t *testing.T) {
 			name: "Name generation too long domains",
 			args: args{
 				crt: &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab.jetstack.io",
-					},
+					Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab.jetstack.io",
 					Spec: cmapi.CertificateSpec{
 						CommonName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab.jetstack.io",
 					},
@@ -71,9 +66,7 @@ func TestComputeName(t *testing.T) {
 			name: "Name generation for dot as 52nd char",
 			args: args{
 				crt: &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
-					},
+					Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
 					Spec: cmapi.CertificateSpec{
 						CommonName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
 					},
@@ -86,9 +79,7 @@ func TestComputeName(t *testing.T) {
 			name: "Name generation for dot as 54td char",
 			args: args{
 				crt: &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
-					},
+					Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
 					Spec: cmapi.CertificateSpec{
 						CommonName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jetstack.io",
 					},

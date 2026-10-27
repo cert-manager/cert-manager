@@ -80,10 +80,8 @@ func mustCryptoBundle(t *testing.T) cryptoBundle {
 	}
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-secret",
-			Namespace: "default-unit-test-ns",
-		},
+		Name:      "test-secret",
+		Namespace: "default-unit-test-ns",
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: keyPEM,
 		},
@@ -268,10 +266,8 @@ func TestProcessItem(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-secret",
-							Namespace: "default-unit-test-ns",
-						},
+						Name:      "test-secret",
+						Namespace: "default-unit-test-ns",
 						Data: map[string][]byte{
 							"tls.key": []byte("garbage data"),
 						},

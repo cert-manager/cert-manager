@@ -75,9 +75,7 @@ func RequireServerGoVersion(ctx context.Context, f *Framework, minimum string) {
 func RbacClusterRoleHasAccessToResource(ctx context.Context, f *Framework, clusterRole string, verb string, resource string) bool {
 	By("Creating a service account")
 	viewServiceAccount := &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "rbac-test-",
-		},
+		GenerateName: "rbac-test-",
 	}
 	serviceAccountClient := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name)
 	serviceAccount, err := serviceAccountClient.Create(ctx, viewServiceAccount, metav1.CreateOptions{})
@@ -86,9 +84,7 @@ func RbacClusterRoleHasAccessToResource(ctx context.Context, f *Framework, clust
 
 	By("Creating ClusterRoleBinding to view " + clusterRole + " clusterRole")
 	viewRoleBinding := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: viewServiceAccountName + "-rb-",
-		},
+		GenerateName: viewServiceAccountName + "-rb-",
 		Subjects: []rbacv1.Subject{
 			{Kind: "ServiceAccount", Name: viewServiceAccountName, Namespace: f.Namespace.Name},
 		},

@@ -50,10 +50,8 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 
 	createCertificate := func(testingCtx context.Context, f *framework.Framework, secretTemplate *cmapi.CertificateSecretTemplate) string {
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-secret-template-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "test-secret-template-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				CommonName: "test",
 				SecretName: secretName,
