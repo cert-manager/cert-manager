@@ -35,7 +35,7 @@ import (
 type CSRModifier func(*x509.CertificateRequest) error
 
 var defaultGenerateCSROptions = []pki.GenerateCSROption{
-	pki.WithEncodeBasicConstraintsInRequest(true),
+	pki.WithEncodeBasicConstraintsInRequestByDefault(true),
 	pki.WithNameConstraints(true),
 	pki.WithOtherNames(true),
 	pki.WithUseLiteralSubject(true),
