@@ -26,6 +26,7 @@ import (
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cert-manager/cert-manager/e2e-tests/framework"
@@ -63,10 +64,16 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	AfterEach(func(testingCtx context.Context) {
 		By("Cleaning up")
+		// A spec skipped in its BeforeEach never creates these, but this
+		// AfterEach still runs.
 		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingCtx, issuerSecretName, metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		if !apierrors.IsNotFound(err) {
+			Expect(err).NotTo(HaveOccurred())
+		}
 		err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(testingCtx, issuerName, metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		if !apierrors.IsNotFound(err) {
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 
 	Context("when the CA is the root", func() {
@@ -273,6 +280,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	Context("when the CA has an ML-DSA key", func() {
 		BeforeEach(func(testingCtx context.Context) {
+			// Skip before the Issuer is created: with the feature gate
+			// disabled, an Issuer with an ML-DSA CA key never becomes Ready,
+			// so the JustBeforeEach would time out.
+			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
+
 			By("Creating an ML-DSA signing keypair fixture")
 			secret, err := newMLDSASigningKeypairSecret(issuerSecretName)
 			Expect(err).NotTo(HaveOccurred())
@@ -281,8 +293,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		})
 
 		It("should generate a signed ML-DSA keypair", func(testingCtx context.Context) {
-			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
-
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")
@@ -312,8 +322,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		})
 
 		It("should generate a signed RSA keypair", func(testingCtx context.Context) {
-			framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
-
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			By("Creating a Certificate")

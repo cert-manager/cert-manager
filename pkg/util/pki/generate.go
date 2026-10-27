@@ -84,13 +84,7 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 	case v1.Ed25519KeyAlgorithm:
 		return GenerateEd25519PrivateKey()
 	case v1.MLDSAKeyAlgorithm:
-		keySize := MLDSA44
-
-		if crt.Spec.PrivateKey.Size > 0 {
-			keySize = crt.Spec.PrivateKey.Size
-		}
-
-		params, err := MLDSAParametersForSize(keySize)
+		params, err := MLDSAParametersForSize(crt.Spec.PrivateKey.Size)
 		if err != nil {
 			return nil, err
 		}
@@ -152,10 +146,11 @@ func GenerateMLDSAPrivateKey(params mldsa.Parameters) (*mldsa.PrivateKey, error)
 }
 
 // MLDSAParametersForSize returns the ML-DSA parameter set for the given
-// `spec.privateKey.size` value. It can be used with 44, 65 and 87.
+// `spec.privateKey.size` value. It can be used with 44, 65 and 87, or with 0
+// (unset), which selects the default parameter set, ML-DSA-44.
 func MLDSAParametersForSize(keySize int) (mldsa.Parameters, error) {
 	switch keySize {
-	case MLDSA44:
+	case 0, MLDSA44:
 		return mldsa.MLDSA44(), nil
 	case MLDSA65:
 		return mldsa.MLDSA65(), nil

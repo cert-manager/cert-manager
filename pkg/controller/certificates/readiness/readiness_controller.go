@@ -159,6 +159,15 @@ func NewController(
 		issuerInformer.Informer().HasSynced,
 	}
 
+	// ClusterIssuers can only be read when the controller watches every
+	// namespace.
+	var clusterIssuerLister cmlisters.ClusterIssuerLister
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
 	return &controller{
 		policyChain:              chain,
 		certificateLister:        certificateInformer.Lister(),
@@ -168,9 +177,8 @@ func NewController(
 		recorder:                 ctx.Recorder,
 		accountRegistry:          ctx.ACMEAccountRegistry,
 		issuerLister:             issuerInformer.Lister(),
-		// Register replaces this with a helper that can also get
-		// ClusterIssuers.
-		helper: issuer.NewHelper(issuerInformer.Lister(), nil),
+		clusterIssuerLister:      clusterIssuerLister,
+		helper:                   issuer.NewHelper(issuerInformer.Lister(), clusterIssuerLister),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -514,14 +522,6 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Type
 		BuildReadyConditionFromChain,
 	)
 	c.controller = ctrl
-
-	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
-	}
-
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	return queue, mustSync, err
 }

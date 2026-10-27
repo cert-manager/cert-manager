@@ -134,6 +134,12 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 			expectedSize: 2048,
 			violations:   []string{"spec.privateKey.size"},
 		},
+		"should not match if ML-DSA keySize is negative": {
+			key:          mustGenerateMLDSA(t, pki.MLDSA44),
+			expectedAlgo: cmapi.MLDSAKeyAlgorithm,
+			expectedSize: -1,
+			violations:   []string{"spec.privateKey.size"},
+		},
 		"should not match an RSA key if algorithm is ML-DSA": {
 			key:          mustGenerateRSA(t, 2048),
 			expectedAlgo: cmapi.MLDSAKeyAlgorithm,

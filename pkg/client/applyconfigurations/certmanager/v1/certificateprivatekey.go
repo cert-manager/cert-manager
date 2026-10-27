@@ -59,7 +59,8 @@ type CertificatePrivateKeyApplyConfiguration struct {
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
-	// parameter set ML-DSA-44 will be used for `MLDSA` key algorithm.
+	// If `algorithm` is `MLDSA` and `size` is not provided, the ML-DSA-44
+	// parameter set will be used.
 	Algorithm *certmanagerv1.PrivateKeyAlgorithm `json:"algorithm,omitempty"`
 	// Size is the key bit size of the corresponding private key for this certificate,
 	// or the parameter set for the `MLDSA` key algorithm.

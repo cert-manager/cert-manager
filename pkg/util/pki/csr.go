@@ -90,8 +90,9 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 // KeyUsagesForCertificateOrCertificateRequest returns the key usages and
 // extended key usages for the given usages, using the default usages for RSA,
 // ECDSA and Ed25519 keys if no usages are specified.
-// Use KeyUsagesForPublicKeyAlgorithm if the subject public key algorithm is
-// known, so that the correct defaults are used for ML-DSA keys.
+//
+// Deprecated: Use KeyUsagesForPublicKeyAlgorithm instead, which uses the
+// correct default usages for ML-DSA keys.
 func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	return KeyUsagesForPublicKeyAlgorithm(usages, isCA, x509.UnknownPublicKeyAlgorithm)
 }
@@ -612,9 +613,6 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
 	case x509.MLDSA:
-		if specKeySize == 0 {
-			specKeySize = MLDSA44
-		}
 		params, err := MLDSAParametersForSize(specKeySize)
 		if err != nil {
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, err

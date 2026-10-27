@@ -432,7 +432,8 @@ spec:
                         key size of 2048 will be used for `RSA` key algorithm and
                         key size of 256 will be used for `ECDSA` key algorithm.
                         key size is ignored when using the `Ed25519` key algorithm.
-                        parameter set ML-DSA-44 will be used for `MLDSA` key algorithm.
+                        If `algorithm` is `MLDSA` and `size` is not provided, the ML-DSA-44
+                        parameter set will be used.
                       enum:
                         - RSA
                         - ECDSA

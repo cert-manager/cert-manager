@@ -36,6 +36,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -83,6 +84,10 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 		// wantErr is the expected error text returned by the controller, if any.
 		wantErr string
+
+		// wantScheduled is the delays with which the Certificate is expected
+		// to be added to the scheduled work queue, in order.
+		wantScheduled []time.Duration
 
 		// mldsaFeatureEnabled is the state of the MLDSAPrivateKeys feature
 		// gate during the test.
@@ -212,7 +217,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
 				}
 			},
-			wantEvent: []string{"Warning MLDSAPrivateKeysDisabled Certificate must be re-issued (ForceTriggered), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled"},
+			wantEvent:     []string{"Warning MLDSAPrivateKeysDisabled Certificate must be re-issued (ForceTriggered), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled"},
+			wantScheduled: []time.Duration{mldsaPrivateKeysDisabledRecheckInterval},
 		},
 		// The combinations of number of failed issuances and last
 		// failed issuance time that do or do not result in re-issuance
@@ -234,6 +240,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 				)),
 			},
 			wantShouldReissueCalled: false,
+			wantScheduled:           []time.Duration{time.Minute},
 		},
 		"should set Issuing=True when issuance failed once 59 minutes ago but cert and next CR are mismatched": {
 			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
@@ -312,6 +319,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 			},
 			wantDataForCertificateCalled: false,
 			wantShouldReissueCalled:      false,
+			wantScheduled:                []time.Duration{3 * time.Minute},
 		},
 		"should set Issuing=True when other Certificates with the same secret name are found, the secret does not exist and the certificate is the first": {
 			existingCertificate: gen.Certificate("cert-1",
@@ -422,6 +430,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 			},
 			wantDataForCertificateCalled: false,
 			wantShouldReissueCalled:      false,
+			wantScheduled:                []time.Duration{3 * time.Minute},
 		},
 		"should set Issuing=True when renewal time is not found because it doesn't match the windows configured": {
 			existingCertificate: gen.Certificate("cert-1",
@@ -485,6 +494,13 @@ func Test_controller_ProcessItem(t *testing.T) {
 			// These are the default backoff durations set by the config API.
 			w.certificateRequestMinimumBackoffDuration = 1 * time.Hour
 			w.certificateRequestMaximumBackoffDuration = 32 * time.Hour
+
+			var gotScheduled []time.Duration
+			w.scheduledWorkQueue = &schedulertest.FakeScheduler{
+				AddFunc: func(_ types.NamespacedName, duration time.Duration) {
+					gotScheduled = append(gotScheduled, duration)
+				},
+			}
 
 			gotShouldReissueCalled := false
 			w.shouldReissue = func(i policies.Input) (string, string, bool) {
@@ -551,6 +567,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 			assert.Equal(t, test.wantDataForCertificateCalled, gotDataForCertificateCalled, "dataForCertificate func call")
 			assert.Equal(t, test.wantShouldReissueCalled, gotShouldReissueCalled, "shouldReissue func call")
+			assert.Equal(t, test.wantScheduled, gotScheduled, "scheduled work queue additions")
 
 			builder.CheckAndFinish()
 		})

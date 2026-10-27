@@ -123,13 +123,10 @@ func mldsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 		return []string{"spec.privateKey.algorithm"}
 	}
 	var violations []string
-	// The default ML-DSA parameter set is ML-DSA-44. Like the RSA and ECDSA
-	// defaults, it is applied here rather than stored in the Certificate.
-	expectedKeySize := MLDSA44
-	if spec.PrivateKey.Size > 0 {
-		expectedKeySize = spec.PrivateKey.Size
-	}
-	expectedParams, err := MLDSAParametersForSize(expectedKeySize)
+	// MLDSAParametersForSize applies the default ML-DSA parameter set,
+	// ML-DSA-44. Like the RSA and ECDSA defaults, it isn't stored in the
+	// Certificate.
+	expectedParams, err := MLDSAParametersForSize(spec.PrivateKey.Size)
 	if err != nil || mldsaPk.PublicKey().Parameters() != expectedParams {
 		violations = append(violations, "spec.privateKey.size")
 	}

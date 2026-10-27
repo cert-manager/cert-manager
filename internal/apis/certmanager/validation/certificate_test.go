@@ -1122,6 +1122,13 @@ func TestValidateCertificateMLDSA(t *testing.T) {
 				field.NotSupported(fldPath.Child("privateKey", "size"), 256, []string{"44", "65", "87"}),
 			},
 		},
+		"ML-DSA certificate with negative size": {
+			cfg:            mldsaCert(-1, ""),
+			featureEnabled: true,
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("privateKey", "size"), -1, []string{"44", "65", "87"}),
+			},
+		},
 		"ML-DSA certificate with signature algorithm": {
 			cfg:            mldsaCert(0, internalcmapi.PureEd25519),
 			featureEnabled: true,

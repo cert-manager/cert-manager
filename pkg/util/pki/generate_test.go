@@ -191,6 +191,13 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 			expectErr:    true,
 			expectErrStr: "unsupported ML-DSA key size specified",
 		},
+		{
+			name:         "mldsa key with negative keysize",
+			keyAlgo:      v1.MLDSAKeyAlgorithm,
+			keySize:      -1,
+			expectErr:    true,
+			expectErrStr: "unsupported ML-DSA key size specified",
+		},
 	}
 
 	testFn := func(test testT) func(*testing.T) {

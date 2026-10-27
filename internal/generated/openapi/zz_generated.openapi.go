@@ -2984,7 +2984,7 @@ func schema_pkg_apis_certmanager_v1_CertificatePrivateKey(ref common.ReferenceCa
 					},
 					"algorithm": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Algorithm is the private key algorithm of the corresponding private key for this certificate.\n\nIf provided, allowed values are either `RSA`, `ECDSA`, `Ed25519` or `MLDSA`. `MLDSA` requires the `MLDSAPrivateKeys` feature gate. If `algorithm` is specified and `size` is not provided, key size of 2048 will be used for `RSA` key algorithm and key size of 256 will be used for `ECDSA` key algorithm. key size is ignored when using the `Ed25519` key algorithm. parameter set ML-DSA-44 will be used for `MLDSA` key algorithm.",
+							Description: "Algorithm is the private key algorithm of the corresponding private key for this certificate.\n\nIf provided, allowed values are either `RSA`, `ECDSA`, `Ed25519` or `MLDSA`. `MLDSA` requires the `MLDSAPrivateKeys` feature gate. If `algorithm` is specified and `size` is not provided, key size of 2048 will be used for `RSA` key algorithm and key size of 256 will be used for `ECDSA` key algorithm. key size is ignored when using the `Ed25519` key algorithm. If `algorithm` is `MLDSA` and `size` is not provided, the ML-DSA-44 parameter set will be used.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

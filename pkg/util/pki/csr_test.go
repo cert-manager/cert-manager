@@ -345,6 +345,12 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:      "certificate with KeyAlgorithm mldsa and a negative size",
+			keyAlgo:   cmapi.MLDSAKeyAlgorithm,
+			keySize:   -1,
+			expectErr: true,
+		},
+		{
 			name:      "certificate with KeyAlgorithm mldsa and an RSA signature algorithm",
 			keyAlgo:   cmapi.MLDSAKeyAlgorithm,
 			sigAlg:    cmapi.SHA256WithRSA,

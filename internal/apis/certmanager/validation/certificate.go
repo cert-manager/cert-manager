@@ -189,7 +189,7 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 			if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) && !isMLDSACertificateSpec(oldCrt) {
 				el = append(el, field.Forbidden(fldPath.Child("privateKey", "algorithm"), "MLDSA requires the MLDSAPrivateKeys feature gate to be enabled"))
 			}
-			if crt.PrivateKey.Size > 0 && crt.PrivateKey.Size != pki.MLDSA44 && crt.PrivateKey.Size != pki.MLDSA65 && crt.PrivateKey.Size != pki.MLDSA87 {
+			if crt.PrivateKey.Size != 0 && crt.PrivateKey.Size != pki.MLDSA44 && crt.PrivateKey.Size != pki.MLDSA65 && crt.PrivateKey.Size != pki.MLDSA87 {
 				el = append(el, field.NotSupported(fldPath.Child("privateKey", "size"), crt.PrivateKey.Size, []string{"44", "65", "87"}))
 			}
 		default:
