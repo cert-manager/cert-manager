@@ -432,7 +432,12 @@ func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el fiel
 		el = append(el, field.Required(fldPath.Child("url"), ""))
 	}
 
-	// TODO: validate CABundle using validateCABundleNotEmpty
+	if len(tpp.CABundle) > 0 {
+		// The bundle is not echoed in the error, matching the Vault issuer.
+		if err := validateCABundleNotEmpty(tpp.CABundle); err != nil {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "<snip>", err.Error()))
+		}
+	}
 
 	// Validate only one of CABundle/CABundleSecretRef is passed
 	el = append(el, validateVenafiTPPCABundleUnique(tpp, fldPath)...)
