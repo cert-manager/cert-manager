@@ -1992,6 +1992,30 @@ func TestValidateVenafiTPP(t *testing.T) {
 				field.Required(fldPath.Child("url"), ""),
 			},
 		},
+		"valid caBundle": {
+			cfg: &cmapi.VenafiTPP{
+				URL:      "https://tpp.example.com/vedsdk",
+				CABundle: caBundle,
+			},
+		},
+		"invalid caBundle": {
+			cfg: &cmapi.VenafiTPP{
+				URL:      "https://tpp.example.com/vedsdk",
+				CABundle: []byte("not a pem"),
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "<snip>", "error decoding certificate PEM block: unexpected non-PEM data in input"),
+			},
+		},
+		"caBundleSecretRef is not validated at admission": {
+			cfg: &cmapi.VenafiTPP{
+				URL: "https://tpp.example.com/vedsdk",
+				CABundleSecretRef: &cmmeta.SecretKeySelector{
+					Key:  "ca.crt",
+					Name: "test-secret",
+				},
+			},
+		},
 		"venafi TPP issuer defines both caBundle and caBundleSecretRef": {
 			cfg: &cmapi.VenafiTPP{
 				URL:      "https://tpp.example.com/vedsdk",
