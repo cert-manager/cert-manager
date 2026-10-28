@@ -38,15 +38,30 @@ import (
 
 func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	return allErrs, warnings
+	return ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 }
 
 func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	oldIss := oldObj.(*certmanager.Issuer)
 	// Admission request should never be nil
-	return allErrs, warnings
+	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	_, oldWarnings := ValidateIssuerSpec(&oldIss.Spec, field.NewPath("spec"))
+	return allErrs, newWarnings(warnings, oldWarnings)
+}
+
+// newWarnings returns the warnings reported for the new object that were not
+// already reported for the old one, so that a warning is not repeated on every
+// write of a long-lived resource, including the controller's own status
+// updates.
+func newWarnings(warnings, oldWarnings []string) []string {
+	var out []string
+	for _, w := range warnings {
+		if !slices.Contains(oldWarnings, w) {
+			out = append(out, w)
+		}
+	}
+	return out
 }
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
@@ -144,14 +159,17 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 	}
 
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
+		solverErrs, solverWarnings := ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))
+		el = append(el, solverErrs...)
+		warnings = append(warnings, solverWarnings...)
 	}
 
 	return el, warnings
 }
 
-func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) (field.ErrorList, []string) {
 	el := field.ErrorList{}
+	var warnings []string
 
 	numProviders := 0
 	if sol.HTTP01 != nil {
@@ -165,6 +183,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 			numProviders++
 			solverErrs, _ := ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))
 			el = append(el, solverErrs...)
+			warnings = append(warnings, validateRFC2136TSIGAlgorithmWarnings(sol.DNS01.RFC2136, fldPath.Child("dns01"))...)
 		}
 	}
 	if numProviders == 0 {
@@ -175,7 +194,28 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
 	}
 
-	return el
+	return el, warnings
+}
+
+// validateRFC2136TSIGAlgorithmWarnings returns admission warnings for RFC2136
+// solvers that explicitly set one of the deprecated TSIG algorithms. An empty
+// tsigAlgorithm defaults to HMACMD5 at runtime; that case is reported by the
+// DNS provider when a challenge is solved (see
+// pkg/issuer/acme/dns/rfc2136/rfc2136.go), not here.
+func validateRFC2136TSIGAlgorithmWarnings(rfc2136 *cmacme.ACMEIssuerDNS01ProviderRFC2136, fldPath *field.Path) []string {
+	if rfc2136 == nil {
+		return nil
+	}
+
+	if _, deprecated := deprecatedTSIGAlgorithms[strings.ToUpper(rfc2136.TSIGAlgorithm)]; !deprecated {
+		return nil
+	}
+
+	return []string{fmt.Sprintf(
+		deprecatedRFC2136TSIGAlgorithm,
+		fldPath.Child("rfc2136", "tsigAlgorithm").String(),
+		rfc2136.TSIGAlgorithm,
+	)}
 }
 
 func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
@@ -504,6 +544,14 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA1",
 	"HMACSHA256",
 	"HMACSHA512",
+}
+
+// deprecatedTSIGAlgorithms is the subset of supportedTSIGAlgorithms that is
+// deprecated but still accepted. This list must be kept in sync with
+// pkg/issuer/acme/dns/rfc2136/rfc2136.go.
+var deprecatedTSIGAlgorithms = map[string]struct{}{
+	"HMACMD5":  {},
+	"HMACSHA1": {},
 }
 
 func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) (field.ErrorList, []*cmmeta.SecretKeySelector) {

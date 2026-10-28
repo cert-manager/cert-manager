@@ -17,12 +17,14 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
@@ -50,16 +52,58 @@ func TestUpdateValidateClusterIssuer(t *testing.T) {
 	baseIssuer := cmapi.ClusterIssuer{
 		Spec: baseIssuerConfig,
 	}
+
+	rfc2136ClusterIssuer := func(algorithm string) *cmapi.ClusterIssuer {
+		return &cmapi.ClusterIssuer{
+			Spec: cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					ACME: &cmacme.ACMEIssuer{
+						Email:      "valid-email",
+						Server:     "valid-server",
+						PrivateKey: validSecretKeyRef,
+						Solvers: []cmacme.ACMEChallengeSolver{
+							{
+								DNS01: &cmacme.ACMEChallengeSolverDNS01{
+									RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+										Nameserver:    "127.0.0.1",
+										TSIGAlgorithm: algorithm,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	scenarios := map[string]struct {
+		old       *cmapi.ClusterIssuer
 		iss       *cmapi.ClusterIssuer
 		a         *admissionv1.AdmissionRequest
 		expectedE []*field.Error
 		expectedW []string
-	}{}
+	}{
+		"unchanged deprecated solver does not warn": {
+			old: rfc2136ClusterIssuer("HMACMD5"),
+			iss: rfc2136ClusterIssuer("HMACMD5"),
+		},
+		"changed deprecated solver warns": {
+			old: rfc2136ClusterIssuer("HMACSHA256"),
+			iss: rfc2136ClusterIssuer("HMACMD5"),
+			expectedW: []string{
+				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+			},
+		},
+	}
 
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			gotE, gotW := ValidateUpdateClusterIssuer(s.a, &baseIssuer, s.iss)
+			old := &baseIssuer
+			if s.old != nil {
+				old = s.old
+			}
+			gotE, gotW := ValidateUpdateClusterIssuer(s.a, old, s.iss)
 			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
 			assert.Equal(t, s.expectedW, gotW)
 		})

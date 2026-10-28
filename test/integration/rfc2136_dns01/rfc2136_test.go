@@ -92,7 +92,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 		}
 	}()
 
-	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "")
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, server.ListenAddr(), "", "", "")
 	if err != nil {
 		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
@@ -117,7 +117,7 @@ func TestRFC2136ServerError(t *testing.T) {
 		}
 	}()
 
-	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "")
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, server.ListenAddr(), "", "", "")
 	if err != nil {
 		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
@@ -148,7 +148,7 @@ func TestRFC2136TsigClient(t *testing.T) {
 		}
 	}()
 
-	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, server.ListenAddr(), "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	if err != nil {
 		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
@@ -158,23 +158,27 @@ func TestRFC2136TsigClient(t *testing.T) {
 }
 
 func TestRFC2136NameserverEmpty(t *testing.T) {
-	_, err := rfc2136.NewDNSProviderCredentials("", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	ctx := t.Context()
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, "", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
 func TestRFC2136NameserverWithoutHost(t *testing.T) {
-	_, err := rfc2136.NewDNSProviderCredentials(":53", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	ctx := t.Context()
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, ":53", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
 func TestRFC2136NameserverWithoutHostNorPort(t *testing.T) {
-	_, err := rfc2136.NewDNSProviderCredentials(":", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	ctx := t.Context()
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, ":", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
 func TestRFC2136NameserverIPv4WithoutPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "127.0.0.1"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+":"+defaultPort {
@@ -183,8 +187,9 @@ func TestRFC2136NameserverIPv4WithoutPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverIPv4WithEmptyPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "127.0.0.1:"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+defaultPort {
@@ -193,8 +198,9 @@ func TestRFC2136NameserverIPv4WithEmptyPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverIPv4WithPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "127.0.0.1:12345"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver {
@@ -203,20 +209,23 @@ func TestRFC2136NameserverIPv4WithPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverIPv6NotEnclosed(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "2001:db8::1"
-	_, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
 func TestRFC2136NameserverIPv6Empty(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "[]:53"
-	_, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
 func TestRFC2136NameserverIPv6WithoutPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "[2001:db8::1]"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+":"+defaultPort {
@@ -225,8 +234,9 @@ func TestRFC2136NameserverIPv6WithoutPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverIPv6WithEmptyPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "[2001:db8::1]:"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+defaultPort {
@@ -235,8 +245,9 @@ func TestRFC2136NameserverIPv6WithEmptyPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverIPv6WithPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "[2001:db8::1]:12345"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver {
@@ -245,8 +256,9 @@ func TestRFC2136NameserverIPv6WithPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverFQDNWithoutPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns.example.net"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+":"+defaultPort {
@@ -255,8 +267,9 @@ func TestRFC2136NameserverFQDNWithoutPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverFQDNWithEmptyPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns.example.com:"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+defaultPort {
@@ -265,8 +278,9 @@ func TestRFC2136NameserverFQDNWithEmptyPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverFQDNWithPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns.example.net:12345"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver {
@@ -275,8 +289,9 @@ func TestRFC2136NameserverFQDNWithPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverHostnameWithoutPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+":"+defaultPort {
@@ -285,8 +300,9 @@ func TestRFC2136NameserverHostnameWithoutPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverHostnameWithEmptyPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns:"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver+defaultPort {
@@ -295,8 +311,9 @@ func TestRFC2136NameserverHostnameWithEmptyPort(t *testing.T) {
 }
 
 func TestRFC2136NameserverHostnameWithPort(t *testing.T) {
+	ctx := t.Context()
 	nameserver := "dns:12345"
-	dnsProvider, err := rfc2136.NewDNSProviderCredentials(nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	dnsProvider, err := rfc2136.NewDNSProviderCredentials(ctx, nameserver, "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.NoError(t, err)
 
 	if dnsProvider.Nameserver() != nameserver {
@@ -305,14 +322,16 @@ func TestRFC2136NameserverHostnameWithPort(t *testing.T) {
 }
 
 func TestRFC2136DefaultTSIGAlgorithm(t *testing.T) {
-	provider, err := rfc2136.NewDNSProviderCredentials("127.0.0.1:0", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	ctx := t.Context()
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, "127.0.0.1:0", "", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	if err != nil {
 		assert.Equal(t, provider.TSIGAlgorithm(), dns.HmacMD5, "Default TSIG must match")
 	}
 }
 
 func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
-	_, err := rfc2136.NewDNSProviderCredentials("127.0.0.1:0", "HAMMOCK", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
+	ctx := t.Context()
+	_, err := rfc2136.NewDNSProviderCredentials(ctx, "127.0.0.1:0", "HAMMOCK", rfc2136TestTsigKeyName, rfc2136TestTsigSecret)
 	assert.Error(t, err)
 }
 
@@ -338,7 +357,7 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 	m.RemoveRRset(rrs)
 	m.Insert(rrs)
 
-	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "")
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, server.ListenAddr(), "", "", "")
 	if err != nil {
 		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
@@ -372,7 +391,7 @@ func TestRFC2136TCPUpdate(t *testing.T) {
 	m.RemoveRRset(rrs)
 	m.Insert(rrs)
 
-	provider, err := rfc2136.NewDNSProviderCredentials(server.ListenAddr(), "", "", "", rfc2136.WithNetwork("tcp"))
+	provider, err := rfc2136.NewDNSProviderCredentials(ctx, server.ListenAddr(), "", "", "", rfc2136.WithNetwork("tcp"))
 	if err != nil {
 		t.Fatalf("Expected rfc2136.NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
