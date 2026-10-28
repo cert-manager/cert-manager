@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -654,6 +655,104 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			warnings: []string{deprecatedACMEEABKeyAlgorithmField},
 		},
+		"acme solver with deprecated rfc2136 HMACMD5 TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACMD5",
+							},
+						},
+					},
+				},
+			},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5")},
+		},
+		"acme solver with deprecated rfc2136 HMAC-SHA1 TSIG algorithm in lower case": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "hmacsha1",
+							},
+						},
+					},
+				},
+			},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "hmacsha1")},
+		},
+		"acme solvers with two deprecated rfc2136 TSIG algorithms": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACSHA1",
+							},
+						},
+					},
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACMD5",
+							},
+						},
+					},
+				},
+			},
+			warnings: []string{
+				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1"),
+				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[1].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+			},
+		},
+		"acme solver with supported rfc2136 HMACSHA256 TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACSHA256",
+							},
+						},
+					},
+				},
+			},
+		},
+		"acme solver with rfc2136 and no TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver: "127.0.0.1",
+							},
+						},
+					},
+				},
+			},
+		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
@@ -970,6 +1069,27 @@ func TestValidateIssuerSpec(t *testing.T) {
 				ACME: &validACMEIssuer,
 			},
 			errs: []*field.Error{},
+		},
+		"acme issuer with deprecated rfc2136 HMACSHA1 TSIG algorithm": {
+			spec: &cmapi.IssuerSpec{
+				ACME: &cmacme.ACMEIssuer{
+					Email:      "valid-email",
+					Server:     "valid-server",
+					PrivateKey: validSecretKeyRef,
+					Solvers: []cmacme.ACMEChallengeSolver{
+						{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+									Nameserver:    "127.0.0.1",
+									TSIGAlgorithm: "HMACSHA1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errs:     []*field.Error{},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1")},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -2098,16 +2218,94 @@ func TestUpdateValidateIssuer(t *testing.T) {
 	baseIssuer := cmapi.Issuer{
 		Spec: baseIssuerConfig,
 	}
+
+	rfc2136Issuer := func(algorithm string) *cmapi.Issuer {
+		return &cmapi.Issuer{
+			Spec: cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					ACME: &cmacme.ACMEIssuer{
+						Email:      "valid-email",
+						Server:     "valid-server",
+						PrivateKey: validSecretKeyRef,
+						Solvers: []cmacme.ACMEChallengeSolver{
+							{
+								DNS01: &cmacme.ACMEChallengeSolverDNS01{
+									RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+										Nameserver:    "127.0.0.1",
+										TSIGAlgorithm: algorithm,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	eabIssuer := func() *cmapi.Issuer {
+		return &cmapi.Issuer{
+			Spec: cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					ACME: &cmacme.ACMEIssuer{
+						Email:      "valid-email",
+						Server:     "valid-server",
+						PrivateKey: validSecretKeyRef,
+						ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
+							KeyID: "test",
+							Key:   validSecretKeyRef,
+							//nolint:staticcheck // SA1019 setting the deprecated eab.KeyAlgorithm field is intentional.
+							KeyAlgorithm: cmacme.HS384,
+						},
+						Solvers: []cmacme.ACMEChallengeSolver{
+							{
+								DNS01: &cmacme.ACMEChallengeSolverDNS01{
+									CloudDNS: &validCloudDNSProvider,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	scenarios := map[string]struct {
+		old       *cmapi.Issuer
 		iss       *cmapi.Issuer
 		a         *admissionv1.AdmissionRequest
 		expectedE []*field.Error
 		expectedW []string
-	}{}
+	}{
+		"unchanged deprecated solver does not warn": {
+			old: rfc2136Issuer("HMACMD5"),
+			iss: rfc2136Issuer("HMACMD5"),
+		},
+		"changed deprecated solver warns": {
+			old: rfc2136Issuer("HMACSHA256"),
+			iss: rfc2136Issuer("HMACMD5"),
+			expectedW: []string{
+				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+			},
+		},
+		"new deprecated EAB key algorithm warns": {
+			old:       &baseIssuer,
+			iss:       eabIssuer(),
+			expectedW: []string{deprecatedACMEEABKeyAlgorithmField},
+		},
+		"unchanged deprecated EAB key algorithm does not warn": {
+			old: eabIssuer(),
+			iss: eabIssuer(),
+		},
+	}
 
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			gotE, gotW := ValidateUpdateIssuer(s.a, &baseIssuer, s.iss)
+			old := &baseIssuer
+			if s.old != nil {
+				old = s.old
+			}
+			gotE, gotW := ValidateUpdateIssuer(s.a, old, s.iss)
 			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.expectedE, gotE)
 			assert.Equal(t, s.expectedW, gotW)
 		})
