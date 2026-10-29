@@ -507,7 +507,7 @@ Forces cert-manager to use only the recursive nameservers for verification. Enab
 > false
 > ```
 
-Option to disable cert-manager's build-in auto-approver. The auto-approver approves all CertificateRequests that reference issuers matching the 'approveSignerNames' option. This 'disableAutoApproval' option is useful when you want to make all approval decisions using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
+Option to disable cert-manager's built-in auto-approver. The auto-approver approves all CertificateRequests that reference issuers matching the 'approveSignerNames' option. This 'disableAutoApproval' option is useful when you want to make all approval decisions using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
 #### **approveSignerNames** ~ `array`
 > Default value:
 > ```yaml

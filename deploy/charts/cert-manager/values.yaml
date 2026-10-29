@@ -342,7 +342,7 @@ dns01RecursiveNameservers: ""
 # Enabling this option could cause the DNS01 self check to take longer owing to caching performed by the recursive nameservers.
 dns01RecursiveNameserversOnly: false
 
-# Option to disable cert-manager's build-in auto-approver. The auto-approver
+# Option to disable cert-manager's built-in auto-approver. The auto-approver
 # approves all CertificateRequests that reference issuers matching the 'approveSignerNames'
 # option. This 'disableAutoApproval' option is useful when you want to make all approval decisions
 # using a different approver (like approver-policy - https://github.com/cert-manager/approver-policy).
