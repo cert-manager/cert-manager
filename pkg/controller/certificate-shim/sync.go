@@ -141,6 +141,14 @@ func SyncFnFor(
 
 		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
 		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations, defaults)
+		if errors.Is(err, errInvalidIngressAnnotation) {
+			// Retrying won't help. Fixing an invalid annotation means changing
+			// the annotation, which triggers a new sync, or changing a feature
+			// gate, which restarts the controller and resyncs everything.
+			log.Error(err, "not creating or updating Certificates because of an invalid annotation")
+			rec.Eventf(ingLikeObj, corev1.EventTypeWarning, reasonBadConfig, "%s", err.Error())
+			return nil
+		}
 		if err != nil {
 			return err
 		}

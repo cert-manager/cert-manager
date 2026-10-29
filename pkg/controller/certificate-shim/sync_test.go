@@ -762,7 +762,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			Err: true,
+			ExpectedEvents: []string{`Warning BadConfig invalid ingress annotation "cert-manager.io/secret-template": secretTemplate must not have cert-manager.io/ annotations: "cert-manager.io/disallowed-annotation"`},
 		},
 		{
 			Name:   "secret template annotation should not allow unknown fields",
@@ -784,7 +784,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			Err: true,
+			ExpectedEvents: []string{`Warning BadConfig invalid ingress annotation "cert-manager.io/secret-template": error parsing secret template JSON: json: unknown field "unknown-field"`},
 		},
 		{
 			Name:   "edit-in-place set to false should not trigger editing the ingress in-place",
@@ -1876,7 +1876,31 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			Err: true,
+			ExpectedEvents: []string{`Warning BadConfig invalid ingress annotation "cert-manager.io/renew-before": time: invalid duration "invalid renew before value"`},
+		},
+		{
+			Name:   "should record a BadConfig event for an MLDSA private key algorithm annotation if the MLDSAPrivateKeys feature gate is disabled",
+			Issuer: acmeIssuer,
+			IngressLike: &networkingv1.Ingress{
+				Name:      "ingress-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressIssuerNameAnnotationKey:   "issuer-name",
+					cmapi.IssuerKindAnnotationKey:          "Issuer",
+					cmapi.IssuerGroupAnnotationKey:         "cert-manager.io",
+					cmapi.PrivateKeyAlgorithmAnnotationKey: "MLDSA",
+				},
+				UID: types.UID("ingress-name"),
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ExpectedEvents: []string{`Warning BadConfig invalid ingress annotation "cert-manager.io/private-key-algorithm": private key algorithm "MLDSA" requires the MLDSAPrivateKeys feature gate to be enabled`},
 		},
 		{
 			Name:   "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation",
@@ -3628,7 +3652,7 @@ func TestSync(t *testing.T) {
 					}},
 				},
 			},
-			Err: true,
+			ExpectedEvents: []string{`Warning BadConfig invalid ingress annotation "cert-manager.io/renew-before": time: invalid duration "invalid renew before value"`},
 		},
 		{
 			Name:   "return a single Certificate for a Gateway with a single valid TLS entry with common-name and keyusage annotation",
