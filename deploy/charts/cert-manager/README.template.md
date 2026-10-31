@@ -112,7 +112,7 @@ If a component-specific nodeSelector is also set, it will be merged and take pre
 Labels to apply to all resources.  
 These labels are also applied to dynamically-created ACME HTTP01 solver resources  
 (pods, services, ingresses, or Gateway API HTTPRoutes).  
-The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.
+The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources. On a key collision these win over the chart's own labels, except for app.kubernetes.io/name, app.kubernetes.io/instance and app.kubernetes.io/component on the controller, webhook and cainjector Pods and on the Services the ServiceMonitor selects. Those three are matched by selectors, so they cannot be overridden there. They are still applied to every other resource.
 #### **global.revisionHistoryLimit** ~ `number`
 
 The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).

@@ -5,11 +5,7 @@ kind: PodSecurityPolicy
 metadata:
   name: {{ template "startupapicheck.fullname" . }}
   labels:
-    app: {{ include "startupapicheck.name" . }}
-    app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "startupapicheck"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "startupapicheck.componentLabels" . | nindent 4 }}
   annotations:
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
     seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
