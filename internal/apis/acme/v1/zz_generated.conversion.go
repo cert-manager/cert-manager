@@ -989,6 +989,7 @@ func autoConvert_v1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01Provid
 	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
 	}
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }
 
@@ -1002,6 +1003,7 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1_ACMEIssuerDNS01Provid
 	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
 	}
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }
 
