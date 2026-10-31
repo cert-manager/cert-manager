@@ -1742,7 +1742,7 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderRFC2136(ref common.Reference
 					},
 					"tsigAlgorithm": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined. Supported values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.",
+							Description: "The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined. Supported values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.\n\n``HMACMD5`` and ``HMACSHA1`` are deprecated. They are still accepted for backward compatibility, but the webhook returns a warning when either is set explicitly, and support will be removed in a future release. Use ``HMACSHA256`` or ``HMACSHA512`` instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

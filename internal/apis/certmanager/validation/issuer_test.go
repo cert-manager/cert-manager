@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -654,6 +655,75 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			warnings: []string{deprecatedACMEEABKeyAlgorithmField},
 		},
+		"acme solver with deprecated rfc2136 HMACMD5 TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACMD5",
+							},
+						},
+					},
+				},
+			},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "HMACMD5")},
+		},
+		"acme solver with deprecated rfc2136 HMAC-SHA1 TSIG algorithm in lower case": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "hmacsha1",
+							},
+						},
+					},
+				},
+			},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "HMACSHA1")},
+		},
+		"acme solver with supported rfc2136 HMACSHA256 TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver:    "127.0.0.1",
+								TSIGAlgorithm: "HMACSHA256",
+							},
+						},
+					},
+				},
+			},
+		},
+		"acme solver with rfc2136 and no TSIG algorithm": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver: "127.0.0.1",
+							},
+						},
+					},
+				},
+			},
+		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
@@ -970,6 +1040,27 @@ func TestValidateIssuerSpec(t *testing.T) {
 				ACME: &validACMEIssuer,
 			},
 			errs: []*field.Error{},
+		},
+		"acme issuer with deprecated rfc2136 HMACSHA1 TSIG algorithm": {
+			spec: &cmapi.IssuerSpec{
+				ACME: &cmacme.ACMEIssuer{
+					Email:      "valid-email",
+					Server:     "valid-server",
+					PrivateKey: validSecretKeyRef,
+					Solvers: []cmacme.ACMEChallengeSolver{
+						{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+									Nameserver:    "127.0.0.1",
+									TSIGAlgorithm: "HMACSHA1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errs:     []*field.Error{},
+			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "HMACSHA1")},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{

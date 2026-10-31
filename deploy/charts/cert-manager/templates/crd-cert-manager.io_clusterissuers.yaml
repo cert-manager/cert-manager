@@ -1,14 +1,14 @@
-{{- if or .Values.crds.enabled .Values.installCRDs }}
+{{- if REPLACE_CRD_EXPRESSION }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: "clusterissuers.cert-manager.io"
+  name: "REPLACE_CRD_NAME"
   {{- if .Values.crds.keep }}
   annotations:
     helm.sh/resource-policy: keep
   {{- end }}
   labels:
-    {{- include "cert-manager.crd-labels" . | nindent 4 }}
+    {{- include "REPLACE_LABELS_TEMPLATE" . | nindent 4 }}
 spec:
   group: cert-manager.io
   names:
@@ -578,6 +578,11 @@ spec:
                                       when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
                                       Supported values are (case-insensitive): ``HMACMD5`` (default),
                                       ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
+
+                                      ``HMACMD5`` and ``HMACSHA1`` are deprecated. They are still accepted for
+                                      backward compatibility, but the webhook returns a warning when either is
+                                      set explicitly, and support will be removed in a future release. Use
+                                      ``HMACSHA256`` or ``HMACSHA512`` instead.
                                     type: string
                                   tsigKeyName:
                                     description: |-
