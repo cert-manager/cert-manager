@@ -42,6 +42,10 @@ import (
 // Integration tests for the authority can be found in `test/integration/webhook/dynamic_authority_test.go`.
 
 func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAuthority {
+	return testAuthorityForSecret(t, name, "test-secret", cs)
+}
+
+func testAuthorityForSecret(t *testing.T, name, secretName string, cs *kubefake.Clientset) *DynamicAuthority {
 	logger := testr.NewWithOptions(t, testr.Options{
 		Verbosity: 3,
 	})
@@ -49,7 +53,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 
 	da := &DynamicAuthority{
 		SecretNamespace: "test-namespace",
-		SecretName:      "test-secret",
+		SecretName:      secretName,
 		CommonName:      "test-common-name",
 		CADuration:      365 * 24 * time.Hour,
 		LeafDuration:    7 * 24 * time.Hour,
