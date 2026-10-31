@@ -19,6 +19,7 @@ package acmechallenges
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -129,6 +130,37 @@ func runUpdateStatusTests(t *testing.T, verb string) {
 			}
 		})
 	}
+}
+
+// TestUpdateStatusApplyPersistsSelfCheckSucceededAt explicitly verifies the
+// SSA status writer persists status.selfCheckSucceededAt. Without it, every
+// reconcile reads nil, resets the timestamp to now, and the delayBeforeAccept
+// deadline of now+delay is never reached.
+func TestUpdateStatusApplyPersistsSelfCheckSucceededAt(t *testing.T) {
+	featuretesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.ServerSideApply, true)
+
+	presentedAt := metav1.NewTime(time.Date(2026, 5, 15, 12, 0, 0, 0, time.UTC))
+	succeededAt := metav1.NewTime(time.Date(2026, 5, 15, 12, 0, 5, 0, time.UTC))
+	oldChallenge := gen.Challenge("c1")
+	newChallenge := gen.ChallengeFrom(oldChallenge,
+		gen.SetChallengePresented(true),
+		gen.SetChallengePresentedAt(presentedAt),
+		gen.SetChallengeSelfCheckSucceededAt(succeededAt),
+		gen.SetChallengeReason("Waiting until 2026-05-15T12:00:35Z before accepting HTTP-01 challenge"),
+	)
+
+	cl := fake.NewClientset(oldChallenge)
+	updater := newObjectUpdater(cl, "test-fieldmanager")
+	require.NoError(t, updater.updateStatus(t.Context(), oldChallenge, newChallenge))
+
+	actual, err := cl.AcmeV1().Challenges(oldChallenge.Namespace).Get(t.Context(), oldChallenge.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	require.NotNil(t, actual.Status.SelfCheckSucceededAt, "selfCheckSucceededAt must be persisted via SSA apply")
+	assert.True(t, actual.Status.SelfCheckSucceededAt.Time.Equal(succeededAt.Time),
+		"selfCheckSucceededAt = %v, want %v", actual.Status.SelfCheckSucceededAt.Time, succeededAt.Time)
+	require.NotNil(t, actual.Status.PresentedAt, "presentedAt must be persisted via SSA apply")
+	assert.True(t, actual.Status.PresentedAt.Time.Equal(presentedAt.Time),
+		"presentedAt = %v, want %v", actual.Status.PresentedAt.Time, presentedAt.Time)
 }
 
 func TestApplyFinalizers(t *testing.T) {
