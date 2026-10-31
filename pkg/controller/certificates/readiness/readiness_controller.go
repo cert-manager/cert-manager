@@ -68,6 +68,11 @@ const (
 	minARIPoll     = 1 * time.Hour
 	maxARIPoll     = 7 * 24 * time.Hour
 	ariJitterPct   = 0.1
+	// ariRegistryRetry is how long to wait before asking an ACME Issuer for
+	// renewal information again when the controller has no ACME client
+	// registered for it yet. That client appears as soon as the issuer
+	// controller has resolved the account, which at start-up is seconds away.
+	ariRegistryRetry = 1 * time.Minute
 )
 
 type controller struct {
@@ -347,6 +352,22 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		return nil
 	}
 
+	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
+	var renewalTime *metav1.Time
+
+	// A client is only registered once the ACME issuer controller has resolved
+	// the account, so a missing one means no request ever reached the ACME
+	// server. Recording it as a fetch error would set lastError to "not
+	// initialised/available" and bump lastChecked on a certificate that was
+	// never checked - which is what every ACME certificate gets between
+	// controller start-up and its issuer becoming ready - and would defer the
+	// retry by the whole default poll interval. Leave status untouched and try
+	// again shortly instead.
+	if errors.Is(err, accounts.ErrNotFound) {
+		c.scheduledWorkQueue.Add(key, ariRegistryRetry)
+		return nil
+	}
+
 	if crt.Status.ACME == nil {
 		crt.Status.ACME = &cmapi.CertificateACMEStatus{}
 	}
@@ -354,9 +375,6 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		crt.Status.ACME.ARI = &cmapi.CertificateACMEARIStatus{}
 	}
 	ariStatus := crt.Status.ACME.ARI
-
-	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
-	var renewalTime *metav1.Time
 
 	switch {
 	case errors.Is(err, acmeapi.ErrCADoesNotSupportARI):
