@@ -286,7 +286,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	if len(commonName) == 0 && sans.Empty() {
-		return nil, fmt.Errorf("at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailSANs, ipAddresses, otherNames, or uriSANs must be set")
+		return nil, fmt.Errorf("at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailAddresses, ipAddresses, otherNames, or uris must be set")
 	}
 
 	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
