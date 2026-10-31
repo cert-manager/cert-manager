@@ -105,8 +105,11 @@ type CertificateSpecApplyConfiguration struct {
 	// `RenewBefore` then the controller respects `renewBefore` and `renewBeforePercentage`.
 	Renewal *CertificateRenewalApplyConfiguration `json:"renewal,omitempty"`
 	// Requested DNS subject alternative names.
+	// Values must be unique.
 	DNSNames []string `json:"dnsNames,omitempty"`
 	// Requested IP address subject alternative names.
+	// Values must be unique. Addresses are compared by parsed value, so
+	// equivalent spellings of one address count as duplicates.
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 	// Requested URI subject alternative names.
 	URIs []string `json:"uris,omitempty"`
