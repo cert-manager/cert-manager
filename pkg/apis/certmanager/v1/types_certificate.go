@@ -325,6 +325,24 @@ type CertificateSpec struct {
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"`
 
+	// Defines what happens to the Secret named by `secretName` when this
+	// Certificate is deleted.
+	//
+	// With `Delete`, cert-manager sets this Certificate as the controller owner
+	// of the Secret, so the Kubernetes garbage collector deletes the whole
+	// Secret, including any keys added to it by other tools, when the
+	// Certificate is deleted. With `Orphan`, the Secret is left in place and
+	// keeps serving its last certificate, which is no longer renewed.
+	//
+	// Changing this field on an existing Certificate adds or removes the owner
+	// reference on the Secret without re-issuing the certificate.
+	//
+	// If unset, the controller-wide default applies: `Delete` when the
+	// controller runs with `--enable-certificate-owner-ref=true`, otherwise
+	// `Orphan`.
+	// +optional
+	DeletionPolicy CertificateDeletionPolicy `json:"deletionPolicy,omitempty"`
+
 	// Defines extra output formats of the private key and signed certificate chain
 	// to be written to this Certificate's target Secret.
 	// +optional
@@ -426,6 +444,22 @@ var (
 	// RotationPolicyAlways means a private key matching the specified
 	// requirements will be generated whenever a re-issuance occurs.
 	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
+)
+
+// CertificateDeletionPolicy controls what happens to the Secret named by
+// `spec.secretName` when the Certificate that manages it is deleted.
+// +kubebuilder:validation:Enum=Delete;Orphan
+type CertificateDeletionPolicy string
+
+const (
+	// CertificateDeletionPolicyDelete sets the Certificate as the controller
+	// owner of its Secret, so the Secret is garbage collected when the
+	// Certificate is deleted.
+	CertificateDeletionPolicyDelete CertificateDeletionPolicy = "Delete"
+
+	// CertificateDeletionPolicyOrphan leaves the Secret in place when the
+	// Certificate is deleted.
+	CertificateDeletionPolicyOrphan CertificateDeletionPolicy = "Orphan"
 )
 
 // CertificateOutputFormatType specifies which additional output formats should
