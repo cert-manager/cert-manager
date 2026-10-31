@@ -37,7 +37,7 @@ import (
 const (
 	// pebbleModVersion is the module version used for Pebble and Pebble's
 	// challenge test server. It is ignored if `-pebble-local-dir` is provided.
-	pebbleModVersion = "v2.7.0"
+	pebbleModVersion = "v2.10.1"
 	// startingPort is the first port number used for binding interface
 	// addresses. Each call to takeNextPort() will increment a port number
 	// starting at this value.
@@ -69,8 +69,9 @@ func TestWithPebble(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		challSrv func(*environment) (challengeServer, string)
+		name      string
+		challSrv  func(*environment) (challengeServer, string)
+		orderOpts []acme.OrderOption
 	}{
 		{
 			name: "TLSALPN01-Issuance",
@@ -78,14 +79,23 @@ func TestWithPebble(t *testing.T) {
 				bindAddr := fmt.Sprintf(":%d", env.config.TLSPort)
 				return newChallTLSServer(bindAddr), bindAddr
 			},
+			orderOpts: []acme.OrderOption{},
 		},
-
 		{
 			name: "HTTP01-Issuance",
 			challSrv: func(env *environment) (challengeServer, string) {
 				bindAddr := fmt.Sprintf(":%d", env.config.HTTPPort)
 				return newChallHTTPServer(bindAddr), bindAddr
 			},
+			orderOpts: []acme.OrderOption{},
+		},
+		{
+			name: "HTTP01-Issuance with shortlived Profile",
+			challSrv: func(env *environment) (challengeServer, string) {
+				bindAddr := fmt.Sprintf(":%d", env.config.HTTPPort)
+				return newChallHTTPServer(bindAddr), bindAddr
+			},
+			orderOpts: []acme.OrderOption{acme.WithOrderIssuanceProfile(acme.ProfileName("default"))},
 		},
 	}
 
@@ -102,8 +112,73 @@ func TestWithPebble(t *testing.T) {
 			})
 
 			waitForServer(t, challSrvAddr)
-			testIssuance(t, &env, challSrv)
+			testIssuance(t, &env, challSrv, tt.orderOpts)
 		})
+	}
+}
+
+func TestUnsupportedProfileWithPebble(t *testing.T) {
+	// We want to use process groups w/ syscall.Kill, and the acme package
+	// is very platform-agnostic, so skip on non-Linux.
+	if runtime.GOOS != "linux" {
+		t.Skip("skipping pebble tests on non-linux OS")
+	}
+
+	if testing.Short() {
+		t.Skip("skipping pebble tests in short mode")
+	}
+	t.Parallel()
+
+	env := startPebbleEnvironment(t, nil)
+	bindAddr := fmt.Sprintf(":%d", env.config.HTTPPort)
+	challSrv, challSrvAddr := newChallHTTPServer(bindAddr), bindAddr
+	challSrv.Run()
+
+	t.Cleanup(func() {
+		if err := challSrv.Shutdown(); err != nil {
+			t.Logf("error shutting down challenge server: %+v", err)
+		}
+	})
+
+	waitForServer(t, challSrvAddr)
+
+	// Bound the total issuance process by a timeout of 60 seconds.
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	// Create a new ACME account.
+	client := env.client
+	acct, err := client.Register(ctx, &acme.Account{}, acme.AcceptTOS)
+	if err != nil {
+		t.Fatalf("failed to register account: %v", err)
+	}
+	if acct.Status != acme.StatusValid {
+		t.Fatalf("expected new account status to be valid, got %v", acct.Status)
+	}
+	t.Logf("registered account: %s", acct.URI)
+
+	// Create a new order for some example identifiers
+	identifiers := []acme.AuthzID{
+		{
+			Type:  "dns",
+			Value: "example.com",
+		},
+		{
+			Type:  "dns",
+			Value: "www.example.com",
+		},
+		{
+			Type:  "ip",
+			Value: "127.0.0.1",
+		},
+	}
+	order, err := client.AuthorizeOrder(ctx, identifiers, acme.WithOrderIssuanceProfile("does-not-exist"))
+	if err == nil {
+		t.Fatalf("expected authorize order to return an error but got nil: identifiers = %+v; order = %+v", identifiers, order)
+	}
+	const wantErr = "does not advertise a profile with name"
+	if !strings.Contains(err.Error(), wantErr) {
+		t.Fatalf("got error %q, want it to contain %q", err, wantErr)
 	}
 }
 
@@ -306,7 +381,7 @@ func (c *challHTTPServer) Run() {
 	}()
 }
 
-func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
+func testIssuance(t *testing.T, env *environment, challSrv challengeServer, orderOpts []acme.OrderOption) {
 	t.Helper()
 
 	// Bound the total issuance process by a timeout of 60 seconds.
@@ -322,7 +397,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	if acct.Status != acme.StatusValid {
 		t.Fatalf("expected new account status to be valid, got %v", acct.Status)
 	}
-	log.Printf("registered account: %s", acct.URI)
+	t.Logf("registered account: %s", acct.URI)
 
 	// Create a new order for some example identifiers
 	identifiers := []acme.AuthzID{
@@ -339,7 +414,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 			Value: "127.0.0.1",
 		},
 	}
-	order, err := client.AuthorizeOrder(ctx, identifiers)
+	order, err := client.AuthorizeOrder(ctx, identifiers, orderOpts...)
 	if err != nil {
 		t.Fatalf("failed to create order for %v: %v", identifiers, err)
 	}
@@ -347,7 +422,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 		t.Fatalf("expected new order status to be pending, got %v", order.Status)
 	}
 	orderURL := order.URI
-	log.Printf("created order: %v", orderURL)
+	t.Logf("created order: %v", orderURL)
 
 	// For each pending authz provision a supported challenge type's response
 	// with the test challenge server, and tell the ACME server to verify it.
@@ -383,7 +458,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	order, err = client.WaitOrder(ctx, order.URI)
 	if err != nil {
 		var orderErr *acme.OrderError
-		if errors.Is(err, orderErr) {
+		if errors.As(err, &orderErr) {
 			t.Fatalf("failed to wait for order %s: %s: %s", orderURL, err, orderErr.Problem)
 		} else {
 			t.Fatalf("failed to wait for order %s: %s", orderURL, err)
@@ -420,7 +495,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	}
 
 	// Finalize the order by creating a certificate with our CSR.
-	chain, _, err := client.CreateOrderCert(ctx, order.FinalizeURL, csrDer, true)
+	chain, _, err := client.CreateCertFromOrder(ctx, order, csrDer, true)
 	if err != nil {
 		t.Fatalf("failed to finalize order %s with finalize URL %s: %v",
 			orderURL, order.FinalizeURL, err)
@@ -455,7 +530,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	if err != nil {
 		t.Fatalf("failed to verify order %s leaf certificate: %v", orderURL, err)
 	}
-	log.Printf("verified %d path(s) from issued leaf certificate to Pebble root CA", len(paths))
+	t.Logf("verified %d path(s) from issued leaf certificate to Pebble root CA", len(paths))
 
 	// Also verify that the leaf cert is valid for each of the DNS names
 	// and IP addresses from our order's identifiers.
@@ -619,8 +694,8 @@ func startPebbleEnvironment(t *testing.T, config *environmentConfig) environment
 	}
 	configFile.Close()
 
-	log.Printf("pebble dir: %s", pebbleDir)
-	log.Printf("config file: %s", configFile.Name())
+	t.Logf("pebble dir: %s", pebbleDir)
+	t.Logf("config file: %s", configFile.Name())
 
 	// Spawn the Pebble CA server. It answers ACME requests and performs
 	// outbound validations. We configure it to use a mock DNS server that
@@ -638,7 +713,7 @@ func startPebbleEnvironment(t *testing.T, config *environmentConfig) environment
 	// Note: we specify -defaultIPv6 "" so that no AAAA records are served.
 	// The LUCI CI runners have issues with IPv6 connectivity on localhost.
 	spawnServerProcess(t, binDir, "pebble-challtestsrv",
-		"-dns01", fmt.Sprintf(":%d", config.dnsPort),
+		"-dnsserver", fmt.Sprintf(":%d", config.dnsPort),
 		"-defaultIPv6", "",
 		"-management", fmt.Sprintf(":%d", takeNextPort()),
 		"-doh", "",
@@ -649,7 +724,7 @@ func startPebbleEnvironment(t *testing.T, config *environmentConfig) environment
 	waitForServer(t, config.pebbleConfig.ListenAddress)
 	waitForServer(t, fmt.Sprintf("127.0.0.1:%d", config.dnsPort))
 
-	log.Printf("pebble environment ready")
+	t.Log("pebble environment ready")
 
 	// Construct a cert pool that contains the CA certificate used by the ACME
 	// interface's certificate chain. This is separate from the issuing
@@ -761,7 +836,7 @@ func prepareBinaries(t *testing.T, pebbleDir string) string {
 	binDir := t.TempDir()
 
 	build := func(cmd string) {
-		log.Printf("building %s", cmd)
+		t.Logf("building %s", cmd)
 		buildCmd := exec.Command(
 			"go",
 			"build", "-o", filepath.Join(binDir, cmd), "-mod", "mod", "./cmd/"+cmd)
