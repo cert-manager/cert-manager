@@ -83,6 +83,10 @@ func TestIssuingController(t *testing.T) {
 		certificate             *cmapi.Certificate
 		expSecretUpdateDataCall *internal.SecretData
 
+		// secretUpdateDataErr, if set, is returned by the stubbed
+		// secretsUpdateData.
+		secretUpdateDataErr error
+
 		// localTemporarySigner, if set, overrides the signer that the runner
 		// otherwise wires up to return a valid temporary certificate.
 		localTemporarySigner localTemporarySignerFn
@@ -1124,6 +1128,99 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 
+		// A failure to store the issued certificate in the Secret, for example a
+		// missing keystore password Secret, is shown on the Issuing condition
+		// and the item is retried.
+		"if certificate is in Issuing state, one ready CertificateRequest and storing the certificate in the Secret fails, set the Issuing condition reason and message to the failure and return the error": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					issuingCert,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(issuingCert,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "SecretDataFailed",
+								Message:            "Failed to store the issued certificate in the Secret: keystore password Secret \"pw\" not found",
+								ObservedGeneration: 3,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+			secretUpdateDataErr: errors.New(`keystore password Secret "pw" not found`),
+			expSecretUpdateDataCall: &internal.SecretData{
+				Certificate:     exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:      exampleBundle.PrivateKeyBytes,
+				CA:              nil,
+				CertificateName: "test",
+				IssuerName:      "ca-issuer",
+				IssuerKind:      "Issuer",
+				IssuerGroup:     "foo.io",
+			},
+			expectedErr: true,
+		},
+
+		"if storing the certificate in the Secret fails again with the same error, do not write the status again and return the error": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+							Type:               cmapi.CertificateConditionIssuing,
+							Status:             cmmeta.ConditionTrue,
+							Reason:             "SecretDataFailed",
+							Message:            "Failed to store the issued certificate in the Secret: keystore password Secret \"pw\" not found",
+							ObservedGeneration: 3,
+							LastTransitionTime: &metaFixedClockStart,
+						}),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+			},
+			secretUpdateDataErr: errors.New(`keystore password Secret "pw" not found`),
+			expSecretUpdateDataCall: &internal.SecretData{
+				Certificate:     exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:      exampleBundle.PrivateKeyBytes,
+				CA:              nil,
+				CertificateName: "test",
+				IssuerName:      "ca-issuer",
+				IssuerKind:      "Issuer",
+				IssuerGroup:     "foo.io",
+			},
+			expectedErr: true,
+		},
+
 		// Issuing a temporary certificate can fail on a Certificate that the
 		// webhook accepts, e.g. an unsupported spec.privateKey.encoding, and
 		// then fails identically on every reconcile.
@@ -1868,7 +1965,7 @@ func TestIssuingController(t *testing.T) {
 			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {
 				secretsUpdateDataCalled = true
 				assert.Equal(t, *test.expSecretUpdateDataCall, secretData, "expected secretData: %#+v, got %#+v", *test.expSecretUpdateDataCall, secretData)
-				return nil
+				return test.secretUpdateDataErr
 			}
 			t.Cleanup(func() {
 				wantsSecretUpdateDataCall := test.expSecretUpdateDataCall != nil
