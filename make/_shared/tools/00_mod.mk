@@ -76,7 +76,7 @@ tools += helm=v4.3.1
 tools += helm-unittest=v1.2.1
 # https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-tools += kubectl=v1.37.1
+tools += kubectl=v1.37.2
 # https://github.com/kubernetes-sigs/kind/releases
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kind
 tools += kind=v0.33.0
@@ -147,7 +147,7 @@ tools += boilersuite=v0.2.0
 tools += gomarkdoc=v1.1.0
 # https://pkg.go.dev/oras.land/oras/cmd/oras?tab=versions
 # renovate: datasource=go packageName=oras.land/oras
-tools += oras=v1.3.5
+tools += oras=v1.3.6
 # https://pkg.go.dev/github.com/onsi/ginkgo/v2/ginkgo?tab=versions
 # The gingko version should be kept in sync with the version used in code.
 # If there is no go.mod file (which is only the case for the makefile-modules
@@ -172,7 +172,7 @@ tools += helm-tool=v0.6.0
 tools += image-tool=v0.2.0
 # https://github.com/cert-manager/cmctl/releases
 # renovate: datasource=github-releases packageName=cert-manager/cmctl
-tools += cmctl=v2.6.1
+tools += cmctl=v2.6.2
 # https://pkg.go.dev/github.com/cert-manager/release/cmd/cmrel?tab=versions
 # renovate: datasource=go packageName=github.com/cert-manager/release
 tools += cmrel=v1.13.0
@@ -195,10 +195,10 @@ tools += govulncheck=v1.9.0
 tools += operator-sdk=v1.42.3
 # https://pkg.go.dev/github.com/cli/cli/v2?tab=versions
 # renovate: datasource=go packageName=github.com/cli/cli/v2
-tools += gh=v2.103.1
+tools += gh=v2.103.3
 # https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 # renovate: datasource=github-releases packageName=redhat-openshift-ecosystem/openshift-preflight
-tools += preflight=1.21.2
+tools += preflight=1.22.0
 # https://github.com/daixiang0/gci/releases
 # renovate: datasource=github-releases packageName=daixiang0/gci
 tools += gci=v0.14.0
@@ -210,12 +210,12 @@ tools += yamlfmt=v0.21.0
 tools += kubeconform=v0.8.0
 # https://github.com/suzuki-shunsuke/pinact/releases
 # renovate: datasource=github-releases packageName=suzuki-shunsuke/pinact
-tools += pinact=v5.0.1
+tools += pinact=v5.0.2
 
 # FIXME(erikgb): cert-manager needs the ability to override the version set here
 # https://pkg.go.dev/k8s.io/code-generator/cmd?tab=versions
 # renovate: datasource=go packageName=k8s.io/code-generator
-K8S_CODEGEN_VERSION ?= v0.37.1
+K8S_CODEGEN_VERSION ?= v0.37.2
 tools += client-gen=$(K8S_CODEGEN_VERSION)
 tools += deepcopy-gen=$(K8S_CODEGEN_VERSION)
 tools += informer-gen=$(K8S_CODEGEN_VERSION)
@@ -572,10 +572,10 @@ $(DOWNLOAD_DIR)/tools/helm-unittest@$(HELM-UNITTEST_VERSION)_$(HOST_OS)_$(HOST_A
 		chmod +x $(outfile); \
 		rm -f $(outfile).tgz
 
-kubectl_linux_amd64_SHA256SUM=65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8
-kubectl_linux_arm64_SHA256SUM=ff749f4b78d9c4f1ec87307df9b50119ed819e2094aa9810cb9acffc3286c8c7
-kubectl_darwin_amd64_SHA256SUM=6851381c486ff6edd691623e3d65c87cb9a5b02887ff8fbbb38d8a031b748387
-kubectl_darwin_arm64_SHA256SUM=fd65982c97ddad3106754b69ffa196d0e543aa591930ae52aed1adfb92f8c77f
+kubectl_linux_amd64_SHA256SUM=c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4
+kubectl_linux_arm64_SHA256SUM=fcc16f63186659d9722014b7e02d5fdd2d4e669cb8c0ab66365d7d3b8ba03509
+kubectl_darwin_amd64_SHA256SUM=88379aff5c8111de6be0a394adffba2819e44cde269f3ab23cef76de1a48eaa8
+kubectl_darwin_arm64_SHA256SUM=55701af0d51815ee335f240e48acf0959c3c23017ed3fa816e880c4a92bae581
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/kubectl@$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
@@ -773,10 +773,10 @@ $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(
 		chmod +x $(outfile); \
 		rm $(outfile).tar.gz
 
-preflight_linux_amd64_SHA256SUM=7e33916cafb2633afe81ef2beb62d2bb53b441f1dd794c7e8578ce22dcc1948b
-preflight_linux_arm64_SHA256SUM=9c3251450fb43dd0481a0b462a5b26500c09176041694cb5d0ac5070985e89dd
-preflight_darwin_amd64_SHA256SUM=3066d8c051a50b37b583617b5bd4b3611ef117c550be5247519998a7157b16a0
-preflight_darwin_arm64_SHA256SUM=0a31709af8e11ce99eacc764870f4a86dca11b063a5b1b17f5377fbc907c7552
+preflight_linux_amd64_SHA256SUM=1451ed8763f209f4d4a63848d9d62d1d40653a247db43d7606feb28eadbbd99b
+preflight_linux_arm64_SHA256SUM=ddf0cb33b23b53cb8dae62e930a0591d0dc55b9ccc7da4cea649bfdce9d75f5f
+preflight_darwin_amd64_SHA256SUM=beadfa07db093cec051b3c51f6ceb4a9e75026dab97a4be54b6d6b83743083bb
+preflight_darwin_arm64_SHA256SUM=21f6c8186081fd268b57069a57ca40012f678a4a8b3d9543a13720cb8b69ff3c
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
