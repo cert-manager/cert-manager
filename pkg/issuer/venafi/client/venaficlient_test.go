@@ -385,6 +385,7 @@ func TestConfigForIssuerT(t *testing.T) {
 func TestConfigForIssuerNGTS(t *testing.T) {
 	zone := "TestApp\\Default"
 	tsgID := "123456789"
+	workspaceID := "1001"
 	ngtsURL := "https://api.example.paloaltonetworks.com/ngts"
 	tokenEndpoint := "https://auth.example.com/oauth2/token"
 	clientID := "test-client-id"
@@ -402,6 +403,21 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 				URL:           ngtsURL,
 				TokenEndpoint: tokenEndpoint,
 				TSGID:         tsgID,
+				CredentialsRef: cmmeta.LocalObjectReference{
+					Name: ngtsSecretName,
+				},
+			},
+		}),
+	)
+
+	ngtsIssuerWithWorkspace := gen.IssuerFrom(ngtsIssuer,
+		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
+			Zone: zone,
+			NGTS: &cmapi.VenafiNGTS{
+				URL:           ngtsURL,
+				TokenEndpoint: tokenEndpoint,
+				TSGID:         tsgID,
+				WorkspaceID:   workspaceID,
 				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: ngtsSecretName,
 				},
@@ -453,6 +469,35 @@ func TestConfigForIssuerNGTS(t *testing.T) {
 				}
 				if cnf.Credentials.TokenURL != tokenEndpoint {
 					t.Errorf("expected TokenURL %q, got %q", tokenEndpoint, cnf.Credentials.TokenURL)
+				}
+				if cnf.Workspace != "" {
+					t.Errorf("expected no workspace, got %q", cnf.Workspace)
+				}
+			},
+			expectedErr: false,
+		},
+		"if NGTS and workspaceID is set, should return NGTS config with workspace": {
+			iss: ngtsIssuerWithWorkspace,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					ngtsClientIDKey:     []byte(clientID),
+					ngtsClientSecretKey: []byte(clientSecret),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if cnf == nil {
+					t.Fatal("expected config but got nil")
+					return
+				}
+				if cnf.Workspace != workspaceID {
+					t.Errorf("expected workspace %q, got %q", workspaceID, cnf.Workspace)
+				}
+				if cnf.Credentials == nil {
+					t.Fatal("expected credentials but got nil")
+					return
+				}
+				if cnf.Credentials.Scope != "tsg_id:"+tsgID {
+					t.Errorf("expected scope %q, got %q", "tsg_id:"+tsgID, cnf.Credentials.Scope)
 				}
 			},
 			expectedErr: false,

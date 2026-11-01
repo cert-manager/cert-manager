@@ -173,8 +173,21 @@ type VenafiNGTS struct {
 
 	// TSGID is the Tenant Service Group ID used to scope the OAuth 2.0 access token,
 	// for example "1234567890". The tsg_id: prefix is added automatically.
+	// It must be the 10-digit TSG ID of the tenant, not a workspace ID. If it is
+	// shorter than 10 digits, for example because a workspace ID was used by
+	// mistake, the Issuer does not become Ready and reports that the scope is
+	// not in the format "tsg_id:<TSG_ID>". To issue certificates in a
+	// workspace, set WorkspaceID as well.
 	// This field is required.
 	TSGID string `json:"tsgID"`
+
+	// WorkspaceID is the ID of the NGTS workspace to send requests to,
+	// for example "1001". When set, it is sent as the workspace_id query
+	// parameter on every NGTS API request. It does not replace TSGID: the
+	// access token is still scoped to the tenant, so TSGID must remain the
+	// tenant's 10-digit TSG ID. If not set, no workspace is sent.
+	// +optional
+	WorkspaceID string `json:"workspaceID,omitempty"`
 
 	// CredentialsRef is a reference to a Kubernetes Secret containing the OAuth 2.0
 	// Client ID and Client Secret. The secret must contain the keys 'client-id' and
