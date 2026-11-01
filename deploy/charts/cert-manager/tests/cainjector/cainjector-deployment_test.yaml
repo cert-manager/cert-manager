@@ -27,3 +27,82 @@ tests:
     - equal:
         path: spec.template.spec.runtimeClassName
         value: something
+  - it: should fall back to global for tolerations
+    set:
+      global.tolerations:
+        - key: global-key
+          operator: Exists
+          effect: NoSchedule
+    asserts:
+    - equal:
+        path: spec.template.spec.tolerations
+        value:
+          - key: global-key
+            operator: Exists
+            effect: NoSchedule
+  - it: should favor cainjector over global for tolerations
+    set:
+      cainjector.tolerations:
+        - key: cainjector-key
+          operator: Exists
+          effect: NoSchedule
+      global.tolerations:
+        - key: global-key
+          operator: Exists
+          effect: NoSchedule
+    asserts:
+    - equal:
+        path: spec.template.spec.tolerations
+        value:
+          - key: cainjector-key
+            operator: Exists
+            effect: NoSchedule
+  - it: should fall back to global for affinity
+    set:
+      global.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: foo.bar.com/role
+                operator: In
+                values:
+                - master
+    asserts:
+    - equal:
+        path: spec.template.spec.affinity
+        value:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: foo.bar.com/role
+                  operator: In
+                  values:
+                  - master
+  - it: should favor cainjector over global for affinity
+    set:
+      cainjector.affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: cainjector
+      global.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: foo.bar.com/role
+                operator: In
+                values:
+                - master
+    asserts:
+    - equal:
+        path: spec.template.spec.affinity
+        value:
+          podAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: cainjector
