@@ -197,7 +197,7 @@ func (c *Client) accountKeyRollover(ctx context.Context, newKey crypto.Signer) e
 // identify those with StatusPending status and fulfill a challenge using Accept.
 // Once all authorizations are satisfied, the caller will typically want to poll
 // order status using WaitOrder until it's in StatusReady state.
-// To finalize the order and obtain a certificate, the caller submits a CSR with CreateOrderCert.
+// To finalize the order and obtain a certificate, the caller submits a CSR with CreateCertFromOrder.
 func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderOption) (*Order, error) {
 	dir, err := c.Discover(ctx)
 	if err != nil {
@@ -268,7 +268,11 @@ func (c *Client) GetOrder(ctx context.Context, url string) (*Order, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
-	return responseOrder(res)
+	o, err := responseOrder(res)
+	if err == nil && o.URI == "" {
+		o.URI = url
+	}
+	return o, err
 }
 
 // WaitOrder polls an order from the given URL until it is in one of the final states,
@@ -289,6 +293,9 @@ func (c *Client) WaitOrder(ctx context.Context, url string) (*Order, error) {
 		}
 		o, err := responseOrder(res)
 		res.Body.Close()
+		if err == nil && o.URI == "" {
+			o.URI = url
+		}
 		switch {
 		case err != nil:
 			// Skip and retry.
@@ -357,11 +364,43 @@ func responseOrder(res *http.Response) (*Order, error) {
 // certificate chain. Otherwise, only a leaf certificate is returned.
 // The returned URL can be used to re-fetch the certificate using FetchCert.
 //
-// This method is only supported by CAs implementing RFC 8555. See CreateCert for pre-RFC CAs.
+// This method is only supported by CAs implementing RFC 8555 that return a
+// Location header for order finalization responses. Most users should prefer
+// CreateCertFromOrder, an alternative that has better interoperation with RFC 8555
+// compliant CAs. See CreateCert for pre-RFC CAs.
 //
 // CreateOrderCert returns an error if the CA's response is unreasonably large.
 // Callers are encouraged to parse the returned value to ensure the certificate is valid and has the expected features.
 func (c *Client) CreateOrderCert(ctx context.Context, url string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+	return c.createOrderCert(ctx, url, "", csr, bundle)
+}
+
+// CreateCertFromOrder submits the CSR (Certificate Signing Request) to a CA for
+// the specified Order created with AuthorizeOrder.
+//
+// If the bundle argument is true, the returned value also contain the CA (issuer)
+// certificate chain. Otherwise, only a leaf certificate is returned.
+// The returned URL can be used to re-fetch the certificate using FetchCert.
+//
+// This method is only supported by CAs implementing RFC 8555.
+// See CreateCert for pre-RFC CAs.
+//
+// CreateCertFromOrder returns an error if the CA's response is unreasonably large.
+// Callers are encouraged to parse the returned value to ensure the certificate is valid and has the expected features.
+func (c *Client) CreateCertFromOrder(ctx context.Context, order *Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+	if order == nil {
+		return nil, "", errors.New("acme: nil order")
+	}
+	if order.URI == "" {
+		return nil, "", errors.New("acme: order URI is empty")
+	}
+	if order.FinalizeURL == "" {
+		return nil, "", errors.New("acme: order finalize URL is empty")
+	}
+	return c.createOrderCert(ctx, order.FinalizeURL, order.URI, csr, bundle)
+}
+
+func (c *Client) createOrderCert(ctx context.Context, finalizeURL, orderURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 	if _, err := c.Discover(ctx); err != nil { // required by c.accountKID
 		return nil, "", err
 	}
@@ -372,7 +411,7 @@ func (c *Client) CreateOrderCert(ctx context.Context, url string, csr []byte, bu
 	}{
 		CSR: base64.RawURLEncoding.EncodeToString(csr),
 	}
-	res, err := c.post(ctx, nil, url, req, wantStatus(http.StatusOK))
+	res, err := c.post(ctx, nil, finalizeURL, req, wantStatus(http.StatusOK))
 	if err != nil {
 		return nil, "", err
 	}
@@ -384,7 +423,10 @@ func (c *Client) CreateOrderCert(ctx context.Context, url string, csr []byte, bu
 
 	// Wait for CA to issue the cert if they haven't.
 	if o.Status != StatusValid {
-		o, err = c.WaitOrder(ctx, o.URI)
+		if orderURL == "" {
+			orderURL = o.URI
+		}
+		o, err = c.WaitOrder(ctx, orderURL)
 	}
 	if err != nil {
 		return nil, "", err
