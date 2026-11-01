@@ -69,6 +69,7 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc,Apache-2.0
 github.com/aws/aws-sdk-go-v2/service/sts,Apache-2.0
 github.com/aws/smithy-go,Apache-2.0
 github.com/aws/smithy-go/internal/sync/singleflight,BSD-3-Clause
+github.com/aws/smithy-go/transport/http/protocol/internal/json/internal/stdlib,BSD-3-Clause
 github.com/benbjohnson/clock,MIT
 github.com/beorn7/perks/quantile,MIT
 github.com/blang/semver/v4,MIT
@@ -188,6 +189,8 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
+go.opentelemetry.io/otel/log,Apache-2.0
+go.opentelemetry.io/otel/log,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0
