@@ -31,6 +31,12 @@ global:
   # For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and
   # ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute
   # solver labels field for Gateway API HTTPRoute resources.
+  # On a key collision these win over the chart's own labels, except for
+  # app.kubernetes.io/name, app.kubernetes.io/instance and
+  # app.kubernetes.io/component on the controller, webhook and cainjector Pods
+  # and on the Services the ServiceMonitor selects. Those three are matched by
+  # selectors, so they cannot be overridden there. They are still applied to
+  # every other resource.
   commonLabels: {}
 
   # The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).
