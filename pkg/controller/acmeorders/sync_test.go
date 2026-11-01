@@ -1065,6 +1065,55 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
+		"retry order without replaces when the ACME server rejects it as unauthorized": {
+			order: testOrderReplacesID,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReplacesID},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderReplacesID, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			featureGates: map[featuregate.Feature]bool{feature.ACMEUseARI: true},
+			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{RenewalInfo: "http://testurl.com/renewalInfo"}, nil
+				},
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					for _, o := range opt {
+						v := reflect.ValueOf(o)
+						if v.Kind() == reflect.String && v.String() == "testorder-old" {
+							return nil, &acmeapi.Error{
+								StatusCode:  http.StatusForbidden,
+								ProblemType: "urn:ietf:params:acme:error:unauthorized",
+								Detail:      "Could not validate ARI 'replaces' field :: requester account did not request the certificate being replaced by this order",
+							}
+						}
+					}
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -1131,6 +1180,47 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	test.builder.CheckAndFinish(err)
+}
+
+func TestIsARIReplacesRejection(t *testing.T) {
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"CA without ARI support": {err: acmeapi.ErrCADoesNotSupportARI, want: true},
+		"certificate already replaced": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:alreadyReplaced"},
+			want: true,
+		},
+		"malformed replaces field": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:malformed", Detail: "Invalid replaces field"},
+			want: true,
+		},
+		"replaced certificate requested by another account": {
+			err: &acmeapi.Error{
+				ProblemType: "urn:ietf:params:acme:error:unauthorized",
+				Detail:      "Could not validate ARI 'replaces' field :: requester account did not request the certificate being replaced by this order",
+			},
+			want: true,
+		},
+		"unauthorized for another reason": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:unauthorized", Detail: "Account is not valid"},
+			want: false,
+		},
+		"malformed for another reason": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:malformed", Detail: "Invalid identifier"},
+			want: false,
+		},
+		"not an ACME problem": {err: errors.New("connection reset"), want: false},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := isARIReplacesRejection(test.err); got != test.want {
+				t.Errorf("isARIReplacesRejection() = %v, want %v", got, test.want)
+			}
+		})
+	}
 }
 
 func TestFinalizeOrder(t *testing.T) {

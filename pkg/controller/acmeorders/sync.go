@@ -845,6 +845,9 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Orde
 // isARIReplacesRejection reports whether err returned from AuthorizeOrder
 // indicates the ACME server refused to honor the `replaces` field. Per
 // RFC 9773, servers signal this with the `alreadyReplaced` problem type.
+// Servers may also reject the field with a `malformed` or `unauthorized`
+// problem that names it, e.g. Let's Encrypt answers `unauthorized` when the
+// certificate being replaced was requested by another account.
 // We also treat ErrCADoesNotSupportARI as a rejection so renewal can fall
 // back gracefully if the directory changes between Discover and newOrder.
 func isARIReplacesRejection(err error) bool {
@@ -862,8 +865,9 @@ func isARIReplacesRejection(err error) bool {
 		return true
 	}
 
-	if ae.ProblemType == "urn:ietf:params:acme:error:malformed" && strings.Contains(strings.ToLower(ae.Detail), "replaces") {
-		return true
+	switch ae.ProblemType {
+	case "urn:ietf:params:acme:error:malformed", "urn:ietf:params:acme:error:unauthorized":
+		return strings.Contains(strings.ToLower(ae.Detail), "replaces")
 	}
 	return false
 }
