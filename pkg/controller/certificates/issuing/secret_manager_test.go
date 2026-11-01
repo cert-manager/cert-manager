@@ -617,6 +617,97 @@ func Test_ensureSecretData(t *testing.T) {
 			},
 			expectedAction: false,
 		},
+		"deletionPolicy=Delete with Orphan default if Secret has no owner reference, expect action": {
+			enableOwnerRef: false,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret", DeletionPolicy: cmapi.CertificateDeletionPolicyDelete},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								}
+							}}`)},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
+			},
+			expectedAction: true,
+		},
+		"deletionPolicy=Orphan with Delete default if Secret has owner reference to Certificate owned by field manager, expect action": {
+			enableOwnerRef: true,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret", DeletionPolicy: cmapi.CertificateDeletionPolicyOrphan},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Labels: map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					OwnerReferences: []metav1.OwnerReference{
+						{APIVersion: "cert-manager.io/v1", Kind: "Certificate", Name: "test-name", UID: types.UID("uid-123"), Controller: new(true), BlockOwnerDeletion: new(true)},
+					},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								},
+								"f:ownerReferences": {
+									"k:{\"uid\":\"uid-123\"}": {}
+								}
+							}}`)},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
+			},
+			expectedAction: true,
+		},
+		"deletionPolicy=Delete if Secret is annotated with another Certificate's name and has no owner reference, expect no action": {
+			enableOwnerRef: false,
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name", UID: types.UID("uid-123")},
+				Spec:       cmapi.CertificateSpec{SecretName: "test-secret", DeletionPolicy: cmapi.CertificateDeletionPolicyDelete},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret",
+					Labels:      map[string]string{cmapi.PartOfCertManagerControllerLabelKey: "true"},
+					Annotations: map[string]string{cmapi.CertificateNameKey: "other-name"},
+					ManagedFields: []metav1.ManagedFieldsEntry{
+						{Manager: fieldManager, FieldsV1: metav1.NewFieldsV1(`
+							{"f:metadata": {
+								"f:labels": {
+									"f:controller.cert-manager.io/fao": {}
+								},
+								"f:annotations": {
+									"f:cert-manager.io/common-name": {},
+									"f:cert-manager.io/alt-names": {},
+									"f:cert-manager.io/ip-sans": {},
+									"f:cert-manager.io/uri-sans": {}
+								}
+							}}`)},
+					},
+				},
+				Data: map[string][]byte{"tls.crt": cert, "tls.key": pk, "key.der": pkDER},
+			},
+			expectedAction: false,
+		},
 		"refresh secrets when keystore is not defined and the secret has keystore/truststore fields": {
 			enableOwnerRef: true,
 			cert: &cmapi.Certificate{
@@ -1175,7 +1266,7 @@ func Test_ensureSecretData(t *testing.T) {
 				actionCalled = true
 				return nil
 			}
-			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(test.enableOwnerRef, fieldManager)
+			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(defaultDeletionPolicyFor(test.enableOwnerRef), fieldManager)
 
 			// Start the informers and begin processing updates.
 			builder.Start()
@@ -1200,4 +1291,13 @@ func Test_ensureSecretData(t *testing.T) {
 			assert.Equal(t, test.expectedAction, actionCalled, "unexpected Secret reconcile called")
 		})
 	}
+}
+
+// defaultDeletionPolicyFor maps the enableOwnerRef knob of these tests to the
+// controller-wide default deletion policy the post issuance chain takes.
+func defaultDeletionPolicyFor(enableOwnerRef bool) cmapi.CertificateDeletionPolicy {
+	if enableOwnerRef {
+		return cmapi.CertificateDeletionPolicyDelete
+	}
+	return cmapi.CertificateDeletionPolicyOrphan
 }

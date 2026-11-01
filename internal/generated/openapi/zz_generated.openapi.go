@@ -3671,6 +3671,13 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							Format:      "int32",
 						},
 					},
+					"deletionPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Defines what happens to the Secret named by `secretName` when this Certificate is deleted.\n\nWith `Delete`, cert-manager sets this Certificate as the controller owner of the Secret, so the Kubernetes garbage collector deletes the whole Secret, including any keys added to it by other tools, when the Certificate is deleted. With `Orphan`, the Secret is left in place and keeps serving its last certificate, which is no longer renewed.\n\nChanging this field on an existing Certificate adds or removes the owner reference on the Secret without re-issuing the certificate.\n\nIf unset, the controller-wide default applies: `Delete` when the controller runs with `--enable-certificate-owner-ref=true`, otherwise `Orphan`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"additionalOutputFormats": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
