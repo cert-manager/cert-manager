@@ -144,14 +144,17 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 	}
 
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
+		solverErrs, solverWarnings := ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))
+		el = append(el, solverErrs...)
+		warnings = append(warnings, solverWarnings...)
 	}
 
 	return el, warnings
 }
 
-func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) (field.ErrorList, []string) {
 	el := field.ErrorList{}
+	var warnings []string
 
 	numProviders := 0
 	if sol.HTTP01 != nil {
@@ -165,6 +168,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 			numProviders++
 			solverErrs, _ := ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))
 			el = append(el, solverErrs...)
+			warnings = append(warnings, validateRFC2136TSIGAlgorithmWarnings(sol.DNS01.RFC2136)...)
 		}
 	}
 	if numProviders == 0 {
@@ -175,7 +179,28 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
 	}
 
-	return el
+	return el, warnings
+}
+
+// validateRFC2136TSIGAlgorithmWarnings returns admission warnings for RFC2136
+// solvers that use one of the deprecated TSIG algorithms. HMAC-MD5 and
+// HMAC-SHA1 are still accepted for backward compatibility, but users should
+// migrate to HMACSHA256 or HMACSHA512.
+func validateRFC2136TSIGAlgorithmWarnings(rfc2136 *cmacme.ACMEIssuerDNS01ProviderRFC2136) []string {
+	if rfc2136 == nil {
+		return nil
+	}
+
+	// An empty tsigAlgorithm still defaults to HMAC-MD5 at runtime, but that
+	// default is not represented in the spec, so it cannot be warned about
+	// per-object without changing the default itself. See
+	// pkg/issuer/acme/dns/rfc2136/rfc2136.go.
+	switch algorithm := strings.ToUpper(rfc2136.TSIGAlgorithm); algorithm {
+	case "HMACMD5", "HMACSHA1":
+		return []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, algorithm)}
+	default:
+		return nil
+	}
 }
 
 func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
