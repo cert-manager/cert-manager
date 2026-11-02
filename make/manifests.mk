@@ -138,7 +138,7 @@ $(bin_dir)/scratch/yaml/cert-manager.noncrd.unlicensed.yaml: $(bin_dir)/cert-man
 
 $(bin_dir)/scratch/yaml/cert-manager.all.unlicensed.yaml: $(bin_dir)/cert-manager-$(VERSION).tgz | $(NEEDS_HELM) $(bin_dir)/scratch/yaml
 	@# The sed command removes the first line but only if it matches "---", which helm adds
-	$(HELM) template --kube-version="1.29.0" --api-versions="" --namespace=cert-manager --set="crds.enabled=true" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
+	$(HELM) template --kube-version="1.29.0" --api-versions="" --namespace=cert-manager --set="crds.enabled=true" --set="crds.keep=false" --set="creator=static" --set="startupapicheck.enabled=false" cert-manager $< | \
 		sed -e "1{/^---$$/d;}" > $@
 
 $(bin_dir)/scratch/yaml/cert-manager.crds.unlicensed.yaml: $(bin_dir)/scratch/yaml/cert-manager.all.unlicensed.yaml | $(NEEDS_GO) $(bin_dir)/scratch/yaml
