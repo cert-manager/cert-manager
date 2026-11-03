@@ -28,7 +28,7 @@ require (
 	k8s.io/kubectl v0.37.2
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/controller-runtime v0.25.2
-	sigs.k8s.io/gateway-api v1.6.3
+	sigs.k8s.io/gateway-api v1.7.0
 	software.sslmate.com/src/go-pkcs12 v0.7.4
 )
 
