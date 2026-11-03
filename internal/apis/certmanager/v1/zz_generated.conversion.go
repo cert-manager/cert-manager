@@ -1915,6 +1915,7 @@ func autoConvert_v1_VenafiNGTS_To_certmanager_VenafiNGTS(in *certmanagerv1.Venaf
 	out.URL = in.URL
 	out.TokenEndpoint = in.TokenEndpoint
 	out.TSGID = in.TSGID
+	out.WorkspaceID = in.WorkspaceID
 	if err := apismetav1.Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
@@ -1930,6 +1931,7 @@ func autoConvert_certmanager_VenafiNGTS_To_v1_VenafiNGTS(in *certmanager.VenafiN
 	out.URL = in.URL
 	out.TokenEndpoint = in.TokenEndpoint
 	out.TSGID = in.TSGID
+	out.WorkspaceID = in.WorkspaceID
 	if err := apismetav1.Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
