@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager
 
-go 1.27.0
+go 1.27.3
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -12,7 +12,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2 v2.0.0
-	github.com/Venafi/vcert/v5 v5.13.9
+	github.com/Venafi/vcert/v5 v5.14.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0
 	github.com/aws/aws-sdk-go-v2 v1.47.5
 	github.com/aws/aws-sdk-go-v2/config v1.33.12

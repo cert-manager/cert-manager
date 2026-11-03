@@ -1,6 +1,6 @@
 module github.com/cert-manager/cert-manager/controller-binary
 
-go 1.27.0
+go 1.27.3
 
 // Do not remove this comment:
 // please place any replace statements here at the top for visibility and add a
@@ -32,7 +32,7 @@ require (
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.10.1 // indirect
 	github.com/Khan/genqlient v0.8.1 // indirect
-	github.com/Venafi/vcert/v5 v5.13.9 // indirect
+	github.com/Venafi/vcert/v5 v5.14.0 // indirect
 	github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.5 // indirect
