@@ -1460,7 +1460,8 @@ func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
 	windowErr := errors.New("windowDuration must be a positive duration in window { &Duration{Duration:0s,} * * * * *}")
 
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Namespace: "testns",
+		Name:      "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
