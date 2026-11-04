@@ -65,6 +65,12 @@ const (
 	defaultReadHeaderTimeout = 32 * time.Second
 )
 
+// The metrics endpoint serves the controller-runtime registry, so register the
+// build info metric there once, when the package is loaded.
+func init() {
+	ctrlmetrics.Registry.MustRegister(buildinfo.NewCollector())
+}
+
 func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	log := logf.FromContext(ctx)
 
@@ -89,10 +95,6 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	utilruntime.Must(cmscheme.AddToScheme(scheme))
 	utilruntime.Must(apiext.AddToScheme(scheme))
 	utilruntime.Must(apireg.AddToScheme(scheme))
-
-	if err := buildinfo.Register(ctrlmetrics.Registry); err != nil {
-		return fmt.Errorf("error registering the build info metric: %w", err)
-	}
 
 	mgr, err := ctrl.NewManager(
 		restConfig,

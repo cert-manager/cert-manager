@@ -60,6 +60,12 @@ var (
 	ErrNotListening = errors.New("Server is not listening yet")
 )
 
+// The metrics endpoint serves the controller-runtime registry, so register the
+// build info metric there once, when the package is loaded.
+func init() {
+	ctrlmetrics.Registry.MustRegister(buildinfo.NewCollector())
+}
+
 type Server struct {
 	// ListenAddr is the address the HTTP server should listen on
 	// This must be specified.
@@ -189,10 +195,6 @@ func (s *Server) Run(ctx context.Context) error {
 			cfg.ClientAuth = tls.RequireAndVerifyClientCert
 		})
 		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
-	}
-
-	if err := buildinfo.Register(ctrlmetrics.Registry); err != nil {
-		return fmt.Errorf("error registering the build info metric: %w", err)
 	}
 
 	mgr, err := ctrl.NewManager(

@@ -19,40 +19,19 @@ limitations under the License.
 package buildinfo
 
 import (
-	"errors"
-
 	"github.com/prometheus/client_golang/prometheus"
+	versioncollector "github.com/prometheus/client_golang/prometheus/collectors/version"
+	"github.com/prometheus/common/version"
 
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
-// NewCollector returns a collector for the certmanager_build_info metric.
-// The metric always has the value 1 and carries the version, git commit and Go
-// version of the running binary as labels.
+// NewCollector returns the client_golang version collector for the
+// certmanager_build_info metric, with the version and git commit cert-manager
+// was built with. Without a git commit from the build flags, the revision falls
+// back to the VCS information embedded by the Go toolchain.
 func NewCollector() prometheus.Collector {
-	info := util.VersionInfo()
-	return prometheus.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			Namespace: "certmanager",
-			Name:      "build_info",
-			Help:      "A metric with a constant value of 1, labelled with the version, git commit and Go version cert-manager was built with.",
-			ConstLabels: prometheus.Labels{
-				"version":   info.GitVersion,
-				"revision":  info.GitCommit,
-				"goversion": info.GoVersion,
-			},
-		},
-		func() float64 { return 1 },
-	)
-}
-
-// Register registers the build info collector with r. It is not an error if
-// the collector was already registered.
-func Register(r prometheus.Registerer) error {
-	err := r.Register(NewCollector())
-	var are prometheus.AlreadyRegisteredError
-	if errors.As(err, &are) {
-		return nil
-	}
-	return err
+	version.Version = util.AppVersion
+	version.Revision = util.AppGitCommit
+	return versioncollector.NewCollector("certmanager")
 }

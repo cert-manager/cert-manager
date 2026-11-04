@@ -20,29 +20,43 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/prometheus/common/version"
 
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
-func TestCollector(t *testing.T) {
-	info := util.VersionInfo()
-	expected := `
-# HELP certmanager_build_info A metric with a constant value of 1, labelled with the version, git commit and Go version cert-manager was built with.
+func setBuildFlags(t *testing.T, appVersion, gitCommit string) {
+	oldVersion, oldCommit := util.AppVersion, util.AppGitCommit
+	util.AppVersion, util.AppGitCommit = appVersion, gitCommit
+	t.Cleanup(func() { util.AppVersion, util.AppGitCommit = oldVersion, oldCommit })
+}
+
+func expected(revision, appVersion string) string {
+	return `
+# HELP certmanager_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which certmanager was built, and the goos and goarch for the build.
 # TYPE certmanager_build_info gauge
-certmanager_build_info{goversion="` + info.GoVersion + `",revision="` + info.GitCommit + `",version="` + info.GitVersion + `"} 1
+certmanager_build_info{branch="",goarch="` + version.GoArch + `",goos="` + version.GoOS + `",goversion="` + version.GoVersion + `",revision="` + revision + `",tags="` + version.GetTags() + `",version="` + appVersion + `"} 1
 `
-	if err := testutil.CollectAndCompare(NewCollector(), strings.NewReader(expected)); err != nil {
+}
+
+func TestCollector(t *testing.T) {
+	setBuildFlags(t, "v1.2.3", "abc123")
+
+	if err := testutil.CollectAndCompare(NewCollector(), strings.NewReader(expected("abc123", "v1.2.3"))); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestRegisterTwice(t *testing.T) {
-	r := prometheus.NewRegistry()
-	for range 2 {
-		if err := Register(r); err != nil {
-			t.Fatal(err)
-		}
+func TestCollectorWithoutGitCommit(t *testing.T) {
+	setBuildFlags(t, "canary", "")
+
+	c := NewCollector()
+	revision := version.GetRevision()
+	if revision == "" {
+		t.Fatal("expected a fallback revision")
+	}
+	if err := testutil.CollectAndCompare(c, strings.NewReader(expected(revision, "canary"))); err != nil {
+		t.Fatal(err)
 	}
 }
