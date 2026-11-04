@@ -19,6 +19,7 @@ package acmeorders
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -281,6 +282,23 @@ func anyChallengesFailed(chs []*cmacme.Challenge) bool {
 		}
 	}
 	return false
+}
+
+// failedChallengesReason describes every Challenge in a failure state,
+// quoting the reason the Challenge controller recorded.
+func failedChallengesReason(chs []*cmacme.Challenge) string {
+	var reasons []string
+	for _, ch := range chs {
+		if !acme.IsFailureState(ch.Status.State) {
+			continue
+		}
+		reason := fmt.Sprintf("%s challenge for %q is %s", ch.Spec.Type, ch.Spec.DNSName, ch.Status.State)
+		if ch.Status.Reason != "" {
+			reason += ": " + ch.Status.Reason
+		}
+		reasons = append(reasons, reason)
+	}
+	return strings.Join(reasons, "; ")
 }
 
 func allChallengesFinal(chs []*cmacme.Challenge) bool {
