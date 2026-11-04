@@ -37,6 +37,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/clock"
 
+	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	cmcollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
@@ -200,6 +201,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 	registry.MustRegister(
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		collectors.NewGoCollector(),
+		buildinfo.NewCollector(),
 	)
 	// Create server and register Prometheus metrics handler
 	m := &Metrics{

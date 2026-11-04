@@ -26,6 +26,7 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
+	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -49,6 +50,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
@@ -87,6 +89,10 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	utilruntime.Must(cmscheme.AddToScheme(scheme))
 	utilruntime.Must(apiext.AddToScheme(scheme))
 	utilruntime.Must(apireg.AddToScheme(scheme))
+
+	if err := buildinfo.Register(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering the build info metric: %w", err)
+	}
 
 	mgr, err := ctrl.NewManager(
 		restConfig,

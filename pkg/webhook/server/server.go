@@ -34,9 +34,11 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
@@ -187,6 +189,10 @@ func (s *Server) Run(ctx context.Context) error {
 			cfg.ClientAuth = tls.RequireAndVerifyClientCert
 		})
 		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
+	}
+
+	if err := buildinfo.Register(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering the build info metric: %w", err)
 	}
 
 	mgr, err := ctrl.NewManager(
