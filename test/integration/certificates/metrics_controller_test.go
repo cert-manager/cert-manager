@@ -173,7 +173,7 @@ func TestMetricsController(t *testing.T) {
 		// certmanager_build_info has labels that depend on the build and the
 		// platform, so it is left out of the comparison.
 		var withoutBuildInfo []string
-		for _, line := range strings.Split(trimmedOutput, "\n") {
+		for line := range strings.SplitSeq(trimmedOutput, "\n") {
 			if !strings.Contains(line, "certmanager_build_info") {
 				withoutBuildInfo = append(withoutBuildInfo, line)
 			}
