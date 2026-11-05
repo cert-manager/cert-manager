@@ -1576,3 +1576,38 @@ func TestMLDSAMixedChains(t *testing.T) {
 		})
 	}
 }
+
+func TestIPAddressesFromStrings(t *testing.T) {
+	tests := map[string]struct {
+		in      []string
+		want    []net.IP
+		wantErr string
+	}{
+		"valid addresses": {
+			in:   []string{"10.0.0.1", "2001:db8::1"},
+			want: []net.IP{net.ParseIP("10.0.0.1").To4(), net.ParseIP("2001:db8::1")},
+		},
+		"invalid address": {
+			in:      []string{"not-an-ip"},
+			wantErr: `ParseAddr("not-an-ip"): unable to parse IP`,
+		},
+		// netip.ParseAddr accepts zoned IPv6 addresses, but RFC 5280 IP
+		// address SANs have no zone.
+		"zoned IPv6 address": {
+			in:      []string{"fe80::1%eth0"},
+			wantErr: `IP address "fe80::1%eth0" has a zone identifier, which is not allowed in a certificate`,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := IPAddressesFromStrings(test.in)
+			if test.wantErr != "" {
+				assert.EqualError(t, err, test.wantErr)
+				assert.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, test.want, got)
+		})
+	}
+}
