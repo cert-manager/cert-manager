@@ -110,7 +110,7 @@ metadata:
   namespace: ns-1
   ownerReferences:
     - controller: true
-      blockOwnerDeletion: false
+      blockOwnerDeletion: true
       uid: 1e0adf8
       name: cert-1
       kind: Certificate
@@ -150,41 +150,36 @@ Along with this new field, we propose to deprecate the flag `--enable-certificat
 and introduce the new flag `--default-secret-deletion-policy`. Its values are as follows:
 
 - When `--default-secret-deletion-policy` is set to `Orphan`, the Certificate resources
-  that don't have the `deletionPolicy` field set will have their associated Secret
-  resources updated (i.e., the owner reference gets removed) on the next issuance of
-  the Certificate.
+  that don't have the `deletionPolicy` field set have the owner reference removed from
+  their associated Secret resources.
 - When `--default-secret-deletion-policy` is set to `Delete`, the Certificate resources
-  that don't have the `deletionPolicy` field set will have their associated Secret
-  resources updated (i.e., the owner reference gets added) on the next issuance of
-  the Certificate.
-  
-The effect of changing `--default-secret-deletion-policy` from `Orphan` to `Delete`
-or from `Delete` to `Orphan` is not immediate: the change requires a re-issuance
-of the Certificate resources.
+  that don't have the `deletionPolicy` field set have the owner reference added to
+  their associated Secret resources.
+
+Changing the flag takes effect the next time each Certificate is reconciled, which
+happens as soon as the controller restarts with the new value. No re-issuance is
+needed: the owner reference is part of the Secret metadata that the post-issuance
+checks keep in sync (see [Design Details](#design-details)). The same is true for
+the `deletionPolicy` field itself.
 
 The default value for `--default-secret-deletion-policy` is `Orphan`.
 
-When changing the flag from `Orphan` to `Delete`, the existing Certificate
-resources that don't have `deletionPolicy` set are immediately affected, meaning
-that their associated Secrets will gain a new owner reference. When changing the
-flag from `Delete` to `Orphan`, the Secrets associated to Certificates that
-have no `deletionPolicy` set will see their owner reference immediately removed.
-
-The reason we decided to deprecate `--enable-certificate-owner-ref` is because
-this flag behaves differently from how the new `deletionPolicy` behaves:
+We deprecate `--enable-certificate-owner-ref` because its boolean shape does not
+match the new API, not because the two flags behave differently:
 
 - When `--enable-certificate-owner-ref` is not passed (or is set to false), the
-  existing Secret resources that have an owner reference are not changed even
-  after a re-issuance. With `--default-secret-deletion-policy` and given that
-  `deletionPolicy` is not set, the behavior is slightly different: unlike with
-  the old flag, the existing Secret resources will have their owner references
-  removed.
+  owner references that cert-manager itself added to existing Secret resources
+  are removed on the next reconcile, and owner references added by anything else
+  are left untouched. This has been the behavior since cert-manager 1.8
+  ([#4888](https://github.com/cert-manager/cert-manager/pull/4888)), and it is the
+  same as `--default-secret-deletion-policy=Orphan` with `deletionPolicy` unset.
 - When `--enable-certificate-owner-ref` is set to true, the behavior is the same
   as when `--default-secret-deletion-policy` is set to `Delete` and
   `deletionPolicy` is not set.
 
-The deprecated flag `--enable-certificate-owner-ref` keeps precedence over the new flag
-in order to keep backwards compatibility.
+`--enable-certificate-owner-ref=true` keeps precedence over the new flag in order to
+keep backwards compatibility. `--enable-certificate-owner-ref=false` is the same as
+not passing the flag, as it is today.
 
 When upgrading to the new flag, users can refer to the following table:
 
@@ -201,22 +196,32 @@ cert-manager would have to change in a few places.
 **Mutating webhook**
 
 We propose to have no "value defaulting" for `deletionPolicy` because the
-"empty" value has a meaning for us: when `deletionPolicy` is empty, the presence
-or not of the flag `--enable-certificate-owner-ref` takes over. To give more
+"empty" value has a meaning for us: when `deletionPolicy` is empty, the
+controller-wide default takes over (`--default-secret-deletion-policy`, or
+`Delete` when `--enable-certificate-owner-ref=true` is passed). To give more
 context, some other resources, such as the Pod resource, will mutate the object
 when the value is "empty", for example the `imagePullPolicy` value will default
 to `IfNotPresent`.
 
 **PostIssuancePolicyChain**
 
-In ([policies.go#L95](https://github.com/cert-manager/cert-manager/blob/b78af1ef867f8776715cae3dd6a8b83049c4d9b2/internal/controller/certificates/policies/policies.go#L95-L104)), cert-manager does a few sanity checks right after the issuer (either an
-internal or an external issuer) has filled the CertificateRequest's status
-with the signed certificate.
+In [policies.go](https://github.com/cert-manager/cert-manager/blob/master/internal/controller/certificates/policies/policies.go),
+cert-manager runs a few sanity checks on the Secret metadata whenever a
+Certificate is reconciled outside of an issuance. Two of them,
+`SecretOwnerReferenceMismatch` and `SecretOwnerReferenceManagedFieldMismatch`,
+check that the owner reference on the Secret resource matches what the
+Certificate expects: present when the effective deletion policy is `Delete`,
+absent otherwise. A mismatch makes the controller re-apply the Secret metadata
+without re-issuing the certificate, which is what makes changes to
+`deletionPolicy` and to the default flag take effect immediately.
 
-One of the checks is called
-[`SecretOwnerReferenceValueMismatch`](https://github.com/cert-manager/cert-manager/blob/b78af1ef867f8776715cae3dd6a8b83049c4d9b2/internal/controller/certificates/policies/checks.go#L511)
-and checks that the owner reference on the Secret resource matches the one
-on the Certificate resource.
+The owner reference is only ever added to the Secret that the Certificate owns,
+that is the Secret whose `cert-manager.io/certificate-name` annotation names the
+Certificate, or that carries no such annotation yet. A Certificate whose
+`secretName` points at a Secret owned by another Certificate never gets an owner
+reference on it, whatever its `deletionPolicy` says, so it cannot cause that
+Secret to be garbage collected. Two Certificates sharing one `secretName` remain
+unsupported.
 
 ### Test Plan
 
