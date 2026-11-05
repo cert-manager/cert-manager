@@ -211,6 +211,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 	if crt == nil || crt.DeletionTimestamp != nil {
 		// If the Certificate object was/ is being deleted, we don't want to update its status.
+		// Drop any back-off state with it, otherwise the in-memory miss counter
+		// for this key would leak until the controller restarts.
+		c.ariClientMisses.Delete(key)
 		return nil
 	}
 

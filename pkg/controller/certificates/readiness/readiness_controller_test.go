@@ -1001,11 +1001,15 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 		// request is made at all.
 		registryErr error
 
-		wantFetches      int
-		wantNoEvents     bool
-		wantRequeueAfter time.Duration
-		check            func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
-		allowNoARIStatus bool
+		// runs controls how many times useARIForRenewal is invoked against the
+		// same controller instance; the zero value means exactly once.
+		runs              int
+		wantFetches       int
+		wantNoEvents      bool
+		wantRequeueAfter  time.Duration
+		wantRequeueAfters []time.Duration
+		check             func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
+		allowNoARIStatus  bool
 	}{
 		"fetches when no ARI information has been recorded yet": {
 			leaf:        currentLeaf,
@@ -1033,7 +1037,8 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 					End:   &metav1.Time{Time: freshWindow.End},
 				},
 			},
-			wantFetches: 0,
+			wantFetches:      0,
+			wantRequeueAfter: 1 * time.Hour,
 		},
 		"refetches when the recorded CertID belongs to a previous certificate": {
 			leaf: currentLeaf,
@@ -1087,6 +1092,18 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 					t.Errorf("SuggestedWindow = %v, want nil so status cannot contradict itself", ari.SuggestedWindow)
 				}
 			},
+		},
+		// The in-memory retry counter must double the wait on every consecutive
+		// miss while the client is missing, or the reconcile loop keeps listing
+		// every CertificateRequest in the namespace once a minute forever.
+		"the retry for a missing client backs off exponentially": {
+			leaf:              currentLeaf,
+			registryErr:       accounts.ErrNotFound,
+			wantFetches:       0,
+			wantNoEvents:      true,
+			allowNoARIStatus:  true,
+			runs:              2,
+			wantRequeueAfters: []time.Duration{ariRegistryRetry, 2 * ariRegistryRetry},
 		},
 		// A client that has not been registered yet is a local state, not an
 		// answer from the ACME server. Nothing was fetched, so nothing about
@@ -1257,7 +1274,13 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 			}
 
 			key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
-			w.controller.useARIForRenewal(t.Context(), crt, test.leaf, secret, key)
+			runs := test.runs
+			if runs == 0 {
+				runs = 1
+			}
+			for i := 0; i < runs; i++ {
+				w.controller.useARIForRenewal(t.Context(), crt, test.leaf, secret, key)
+			}
 
 			if fetches != test.wantFetches {
 				t.Errorf("GetRenewalInfo called %d times, want %d", fetches, test.wantFetches)
@@ -1271,6 +1294,19 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				if len(requeued) != 1 || requeued[0] != key || requeueAfters[0] != test.wantRequeueAfter {
 					t.Errorf("scheduledWorkQueue.Add called with %v after %v, want %v after %v",
 						requeued, requeueAfters, []types.NamespacedName{key}, []time.Duration{test.wantRequeueAfter})
+				}
+			}
+
+			if len(test.wantRequeueAfters) != 0 {
+				ok := len(requeued) == len(test.wantRequeueAfters)
+				for i, want := range test.wantRequeueAfters {
+					if ok && (requeued[i] != key || requeueAfters[i] != want) {
+						ok = false
+					}
+				}
+				if !ok {
+					t.Errorf("scheduledWorkQueue.Add calls were (%v, %v), want %v after %v",
+						requeued, requeueAfters, []types.NamespacedName{key}, test.wantRequeueAfters)
 				}
 			}
 
