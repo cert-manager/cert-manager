@@ -37,7 +37,7 @@ import (
 const (
 	// pebbleModVersion is the module version used for Pebble and Pebble's
 	// challenge test server. It is ignored if `-pebble-local-dir` is provided.
-	pebbleModVersion = "v2.7.0"
+	pebbleModVersion = "v2.10.1"
 	// startingPort is the first port number used for binding interface
 	// addresses. Each call to takeNextPort() will increment a port number
 	// starting at this value.
@@ -420,7 +420,7 @@ func testIssuance(t *testing.T, env *environment, challSrv challengeServer) {
 	}
 
 	// Finalize the order by creating a certificate with our CSR.
-	chain, _, err := client.CreateOrderCert(ctx, order.FinalizeURL, csrDer, true)
+	chain, _, err := client.CreateCertFromOrder(ctx, order, csrDer, true)
 	if err != nil {
 		t.Fatalf("failed to finalize order %s with finalize URL %s: %v",
 			orderURL, order.FinalizeURL, err)
@@ -638,7 +638,7 @@ func startPebbleEnvironment(t *testing.T, config *environmentConfig) environment
 	// Note: we specify -defaultIPv6 "" so that no AAAA records are served.
 	// The LUCI CI runners have issues with IPv6 connectivity on localhost.
 	spawnServerProcess(t, binDir, "pebble-challtestsrv",
-		"-dns01", fmt.Sprintf(":%d", config.dnsPort),
+		"-dnsserver", fmt.Sprintf(":%d", config.dnsPort),
 		"-defaultIPv6", "",
 		"-management", fmt.Sprintf(":%d", takeNextPort()),
 		"-doh", "",

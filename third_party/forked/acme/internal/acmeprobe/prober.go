@@ -182,9 +182,9 @@ func (p *prober) runOrder(ctx context.Context, identifiers []acme.AuthzID) {
 		log.Fatalf("WaitOrder(%q): %v", o.URI, err)
 	}
 	csr, certkey := newCSR(identifiers)
-	der, curl, err := p.client.CreateOrderCert(ctx, o.FinalizeURL, csr, true)
+	der, curl, err := p.client.CreateCertFromOrder(ctx, o, csr, true)
 	if err != nil {
-		log.Fatalf("CreateOrderCert: %v", err)
+		log.Fatalf("CreateCertFromOrder: %v", err)
 	}
 	log.Printf("cert URL: %s", curl)
 	if err := checkCert(der, identifiers); err != nil {
@@ -247,9 +247,9 @@ func (p *prober) runPreauthz(ctx context.Context, identifiers []acme.AuthzID) {
 		log.Fatalf("WaitOrder(%q): %v", o.URI, err)
 	}
 	csr, certkey := newCSR(identifiers)
-	der, curl, err := p.client.CreateOrderCert(ctx, o.FinalizeURL, csr, true)
+	der, curl, err := p.client.CreateCertFromOrder(ctx, o, csr, true)
 	if err != nil {
-		log.Fatalf("CreateOrderCert: %v", err)
+		log.Fatalf("CreateCertFromOrder: %v", err)
 	}
 	log.Printf("cert URL: %s", curl)
 	if err := checkCert(der, identifiers); err != nil {
