@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -68,10 +69,13 @@ const (
 	minARIPoll     = 1 * time.Hour
 	maxARIPoll     = 7 * 24 * time.Hour
 	ariJitterPct   = 0.1
-	// ariRegistryRetry is how long to wait before asking an ACME Issuer for
+	// ariRegistryRetry is the initial delay before asking an ACME Issuer for
 	// renewal information again when the controller has no ACME client
 	// registered for it yet. That client appears as soon as the issuer
 	// controller has resolved the account, which at start-up is seconds away.
+	// The delay doubles on every consecutive miss up to defaultARIPoll, so an
+	// issuer whose client never registers does not reconcile its certificates
+	// once a minute forever.
 	ariRegistryRetry = 1 * time.Minute
 )
 
@@ -99,6 +103,13 @@ type controller struct {
 	helper             issuer.Helper
 	clock              clock.Clock
 	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+
+	// ariClientMisses counts, per certificate, consecutive reconciles that
+	// found no ACME client registered for the certificate's issuer yet, so the
+	// registry retry can back off instead of polling at full speed forever.
+	// The state is in-memory only: a restart resets it, which is safe because
+	// the back-off is only an optimisation.
+	ariClientMisses sync.Map
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -338,6 +349,10 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	// poll has to keep running even when the certificate has not been replaced.
 	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
 	if !needFetch {
+		// Re-arm the scheduled poll: after a restart, the timer for a future
+		// nextCheck would otherwise be lost until the informer resync or an
+		// unrelated event touched this Certificate.
+		c.scheduledWorkQueue.Add(key, nextCheck.Time.Sub(now))
 		return nil
 	}
 
@@ -353,9 +368,41 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	// retry by the whole default poll interval. Leave status untouched and try
 	// again shortly instead.
 	if errors.Is(err, accounts.ErrNotFound) {
-		c.scheduledWorkQueue.Add(key, ariRegistryRetry)
+		// A client may never register: the ACME server can be unreachable
+		// across restarts, the issuer controllers can be left out of
+		// --controllers, or the issuer setup can fail before AddClient. Back
+		// off the retry instead of reconciling once a minute forever; each
+		// reconcile lists every CertificateRequest in the namespace.
+		misses := 0
+		if v, ok := c.ariClientMisses.Load(key); ok {
+			misses, _ = v.(int)
+		}
+		delay := ariRegistryRetry
+		for i := 0; i < misses && delay < defaultARIPoll; i++ {
+			delay *= 2
+		}
+		if delay > defaultARIPoll {
+			delay = defaultARIPoll
+		}
+		c.ariClientMisses.Store(key, misses+1)
+
+		log.V(logf.DebugLevel).Info("no ACME client registered for issuer yet, will retry",
+			"issuer", genericIssuer.GetName(), "after", delay)
+
+		if staleForCurrentCert && crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+			// The recorded window belongs to the certificate that was in the
+			// Secret before the renewal, so drop it instead of leaving status
+			// advertising a window for a certificate that is gone.
+			crt.Status.ACME.ARI.SuggestedWindow = nil
+			crt.Status.ACME.ARI.ExplanationURL = ""
+		}
+
+		c.scheduledWorkQueue.Add(key, delay)
 		return nil
 	}
+	// The client exists again (or existed all along), so the back-off state
+	// for this certificate is no longer needed.
+	c.ariClientMisses.Delete(key)
 
 	if crt.Status.ACME == nil {
 		crt.Status.ACME = &cmapi.CertificateACMEStatus{}

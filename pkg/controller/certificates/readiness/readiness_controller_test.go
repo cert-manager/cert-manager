@@ -1001,11 +1001,11 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 		// request is made at all.
 		registryErr error
 
-		wantFetches           int
-		wantNoEvents          bool
-		wantRequeueAfter      time.Duration
-		check                 func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
-		wantACMEStatusCleared bool
+		wantFetches      int
+		wantNoEvents     bool
+		wantRequeueAfter time.Duration
+		check            func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
+		allowNoARIStatus bool
 	}{
 		"fetches when no ARI information has been recorded yet": {
 			leaf:        currentLeaf,
@@ -1093,12 +1093,12 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 		// the ARI status may move, and the retry may not wait for the poll
 		// interval. See https://github.com/cert-manager/cert-manager/issues/9499.
 		"a client that is not registered yet records nothing": {
-			leaf:                  currentLeaf,
-			registryErr:           accounts.ErrNotFound,
-			wantFetches:           0,
-			wantNoEvents:          true,
-			wantRequeueAfter:      1 * time.Minute,
-			wantACMEStatusCleared: true,
+			leaf:             currentLeaf,
+			registryErr:      accounts.ErrNotFound,
+			wantFetches:      0,
+			wantNoEvents:     true,
+			wantRequeueAfter: 1 * time.Minute,
+			allowNoARIStatus: true,
 			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
 				if ari != nil {
 					t.Errorf("expected no status.acme.ari block to be created, got %v", ari)
@@ -1135,6 +1135,37 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				}
 			},
 		},
+		"a client that is not registered yet drops a stale window from a previous certificate": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:          previousCertID,
+				NextCheck:       &metav1.Time{Time: now.Add(-time.Minute)},
+				LastChecked:     &metav1.Time{Time: now.Add(-6 * time.Hour)},
+				SuggestedWindow: staleWindow,
+				ExplanationURL:  "https://example.com/why",
+			},
+			registryErr:      accounts.ErrNotFound,
+			wantFetches:      0,
+			wantNoEvents:     true,
+			wantRequeueAfter: 1 * time.Minute,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari == nil {
+					t.Fatal("expected the ARI status block to survive with the stale window cleared")
+				}
+				if ari.SuggestedWindow != nil {
+					t.Errorf("SuggestedWindow = %v, want it dropped with the previous certificate", ari.SuggestedWindow)
+				}
+				if ari.ExplanationURL != "" {
+					t.Errorf("ExplanationURL = %q, want it cleared with the previous certificate", ari.ExplanationURL)
+				}
+				if ari.CertID != previousCertID {
+					t.Errorf("CertID = %q, want the previous ID kept until the next fetch", ari.CertID)
+				}
+				if ari.LastChecked == nil || !ari.LastChecked.Time.Equal(now.Add(-6*time.Hour)) {
+					t.Errorf("LastChecked = %v, want the previous check time kept", ari.LastChecked)
+				}
+			},
+		},
 		"clears the ARI info when the certificate has no usable CertID": {
 			leaf: noAKILeaf,
 			ari: &cmapi.CertificateACMEARIStatus{
@@ -1144,8 +1175,8 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				SuggestedWindow: staleWindow,
 				ExplanationURL:  "https://example.com/why",
 			},
-			wantFetches:           0,
-			wantACMEStatusCleared: true,
+			wantFetches:      0,
+			allowNoARIStatus: true,
 			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
 				if ari != nil {
 					t.Errorf("expected status.acme.ari to be cleared, got %v", ari)
@@ -1248,7 +1279,7 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				if crt.Status.ACME != nil {
 					got = crt.Status.ACME.ARI
 				}
-				if got == nil && !test.wantACMEStatusCleared {
+				if got == nil && !test.allowNoARIStatus {
 					t.Fatal("expected status.acme.ari to be present")
 				}
 				test.check(t, got)
