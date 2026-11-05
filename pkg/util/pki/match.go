@@ -28,6 +28,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"net"
+	"net/url"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -143,6 +144,23 @@ func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
 	return util.EqualIPsUnsorted(parsedStringIPs, parsedIPs)
 }
 
+// uriSlicesMatch reports whether the parsed URIs (as found in an x509 CSR or
+// certificate) match the URI strings from a CertificateSpec. The x509 parser
+// normalizes URIs via url.Parse (e.g. it lowercases the scheme), so each spec
+// URI is normalized the same way before comparing. Spec URIs that fail to
+// parse are compared as-is.
+func uriSlicesMatch(parsedURIs []*url.URL, stringURIs []string) bool {
+	normalized := make([]string, len(stringURIs))
+	for i, s := range stringURIs {
+		normalized[i] = s
+		if u, err := url.Parse(s); err == nil {
+			normalized[i] = u.String()
+		}
+	}
+
+	return util.EqualUnsorted(URLsToString(parsedURIs), normalized)
+}
+
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec
 // and returns a list of field names on the Certificate that do not match their
 // counterpart fields on the CertificateRequest.
@@ -165,7 +183,7 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.ipAddresses")
 	}
 
-	if !util.EqualUnsorted(URLsToString(x509req.URIs), spec.URIs) {
+	if !uriSlicesMatch(x509req.URIs, spec.URIs) {
 		violations = append(violations, "spec.uris")
 	}
 
@@ -361,7 +379,7 @@ func FuzzyX509AltNamesMatchSpec(x509cert *x509.Certificate, spec cmapi.Certifica
 		violations = append(violations, "spec.ipAddresses")
 	}
 
-	if !util.EqualUnsorted(URLsToString(x509cert.URIs), spec.URIs) {
+	if !uriSlicesMatch(x509cert.URIs, spec.URIs) {
 		violations = append(violations, "spec.uris")
 	}
 
