@@ -221,3 +221,27 @@ func TestNewDNSProviderFromOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestNewDNSProviderFromOptionsTimeout(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout time.Duration
+		want    time.Duration
+	}{
+		{name: "unset falls back to the default", want: defaultTimeout},
+		{name: "zero falls back to the default", timeout: 0, want: defaultTimeout},
+		{name: "negative falls back to the default", timeout: -1 * time.Second, want: defaultTimeout},
+		{name: "explicit value is honoured", timeout: 90 * time.Second, want: 90 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider, err := NewDNSProviderFromOptions(t.Context(),
+				APIToken("123"),
+				UserAgent("cert-manager-test"),
+				Timeout(tt.timeout))
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, provider.timeout)
+		})
+	}
+}
