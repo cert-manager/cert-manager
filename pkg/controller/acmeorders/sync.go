@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -258,10 +259,37 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
+var (
+	errCADoesNotSupportProfiles = errors.New("ACME server does not advertise support for profiles")
+	errProfileNotSupported      = errors.New("ACME server does not advertise the requested profile")
+)
+
+// checkProfileSupported returns a non-retryable error if the ACME server's
+// directory does not offer the requested profile. AuthorizeOrder makes the
+// same check, but the errors it returns are unexported.
+func checkProfileSupported(ctx context.Context, cl acmecl.Interface, profile string) error {
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching ACME directory: %w", err)
+	}
+	if len(dir.Profiles) == 0 {
+		return errCADoesNotSupportProfiles
+	}
+	if _, ok := dir.Profiles[acmeapi.ProfileName(profile)]; !ok {
+		supported := make([]string, 0, len(dir.Profiles))
+		for name := range dir.Profiles {
+			supported = append(supported, string(name))
+		}
+		slices.Sort(supported)
+		return fmt.Errorf("%w: %q (supported profiles: %s)", errProfileNotSupported, profile, strings.Join(supported, ", "))
+	}
+	return nil
+}
+
 func isRetryableError(err error) bool {
 	for _, targetErr := range []error{
-		acmeapi.ErrCADoesNotSupportProfiles,
-		acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+		errCADoesNotSupportProfiles,
+		errProfileNotSupported,
 	} {
 		if errors.Is(err, targetErr) {
 			return false
@@ -304,7 +332,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 
 	if o.Spec.Profile != "" {
-		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+		options = append(options, acmeapi.WithOrderIssuanceProfile(acmeapi.ProfileName(o.Spec.Profile)))
 	}
 
 	ariEnabled := acme.ARIEnabledForIssuer(genericIssuer)
@@ -318,7 +346,14 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		replacesAppended = true
 	}
 
-	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
+	var acmeOrder *acmeapi.Order
+	var err error
+	if o.Spec.Profile != "" {
+		err = checkProfileSupported(ctx, cl, o.Spec.Profile)
+	}
+	if err == nil {
+		acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
+	}
 	if err != nil && replacesAppended && isARIReplacesRejection(err) {
 		// Per RFC 9773, a server may reject the replaces field (e.g. the
 		// predecessor has already been replaced, or is unknown). Retry the
