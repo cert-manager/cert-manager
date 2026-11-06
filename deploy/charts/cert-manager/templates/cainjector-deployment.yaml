@@ -40,17 +40,19 @@ spec:
         {{- with .Values.cainjector.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- with .Values.cainjector.podAnnotations }}
       annotations:
+        {{- if .Values.cainjector.config -}}
+        checksum/config: {{ include (print $.Template.BasePath "/cainjector-config.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.cainjector.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
-      {{- if not .Values.cainjector.podAnnotations }}
-      annotations:
-      {{- end }}
+        {{- end }}
+        {{- if and .Values.prometheus.enabled (not (or .Values.prometheus.servicemonitor.enabled .Values.prometheus.podmonitor.enabled)) }}
+        {{- if not .Values.cainjector.podAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
         prometheus.io/port: '9402'
+        {{- end }}
       {{- end }}
     spec:
       {{- if not .Values.cainjector.serviceAccount.create }}
