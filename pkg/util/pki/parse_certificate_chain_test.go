@@ -137,9 +137,15 @@ func TestParseSingleCertificateChainPEM(t *testing.T) {
 			expErr:       false,
 		},
 		"empty entries should be ignored, and return ca and certificate": {
-			inputBundle:  joinPEM(root.pem, intA2.pem, []byte("\n#foo\n  \n"), intA1.pem),
+			inputBundle:  joinPEM(root.pem, intA2.pem, []byte("\n  \n"), intA1.pem),
 			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
+		},
+		"non-PEM comment between certificates should return error": {
+			inputBundle:  joinPEM(root.pem, intA2.pem, []byte("\n#foo\n  \n"), intA1.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
+			expErrString: "error decoding certificate PEM block: unexpected non-PEM data in input",
 		},
 		"if 4 certificate chain passed in order, should return single ca and chain in order": {
 			inputBundle:  joinPEM(leaf.pem, intA1.pem, intA2.pem, root.pem),
