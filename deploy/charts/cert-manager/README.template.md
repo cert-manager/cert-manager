@@ -2031,6 +2031,25 @@ This startupapicheck is a Helm post-install hook that waits for the webhook endp
 > ```
 
 Enables the startup api check.
+#### **startupapicheck.networkPolicy.enabled** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Create a network policy for the startupapicheck Job.
+#### **startupapicheck.networkPolicy.egress** ~ `array`
+> Default value:
+> ```yaml
+> - ports:
+>     - port: 443
+>       protocol: TCP
+>     - port: 6443
+>       protocol: TCP
+> ```
+
+Egress rule for the startupapicheck network policy. By default, it only allows outbound traffic to the Kubernetes API server, on port 443 and on port 6443. The startupapicheck uses the in-cluster API server address, so it does not need DNS. If you point it at a hostname (for example via `extraArgs` or a proxy in `extraEnv`), add egress rules for DNS and that destination.
+
 #### **startupapicheck.securityContext** ~ `object`
 > Default value:
 > ```yaml
