@@ -862,6 +862,11 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
 	// Supported values are (case-insensitive): ``HMACMD5`` (default),
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
+	//
+	// ``HMACMD5`` and ``HMACSHA1`` are deprecated. They are still accepted for
+	// backward compatibility, but support will be removed in a future release.
+	// Use ``HMACSHA256`` or ``HMACSHA512`` instead. The default value is
+	// unchanged for now.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 

@@ -190,5 +190,5 @@ func (s *Solver) buildDNSProvider(ch *whapi.ChallengeRequest) (*DNSProvider, err
 		key = string(secret)
 	}
 
-	return NewDNSProviderCredentials(cfg.Nameserver, cfg.TSIGAlgorithm, cfg.TSIGKeyName, key, WithNetwork(string(cfg.Protocol)))
+	return NewDNSProviderCredentials(ch.Context(), cfg.Nameserver, cfg.TSIGAlgorithm, cfg.TSIGKeyName, key, WithNetwork(string(cfg.Protocol)))
 }

@@ -22,6 +22,7 @@ limitations under the License.
 package rfc2136
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -39,6 +40,24 @@ var supportedAlgorithms = map[string]string{
 	"HMACSHA256": dns.HmacSHA256,
 	"HMACSHA512": dns.HmacSHA512,
 }
+
+// deprecatedAlgorithms is the subset of supportedAlgorithms that is deprecated
+// but still accepted. This list must be kept in sync with
+// internal/apis/certmanager/validation/issuer.go.
+var deprecatedAlgorithms = map[string]struct{}{
+	dns.HmacMD5:  {},
+	dns.HmacSHA1: {},
+}
+
+const (
+	// deprecatedTSIGAlgorithmMessage is logged when an RFC2136 solver is
+	// configured with a deprecated TSIG algorithm.
+	deprecatedTSIGAlgorithmMessage = "RFC2136 DNS-01 solver is using a deprecated TSIG algorithm; use HMACSHA256 or HMACSHA512 instead"
+
+	// defaultedTSIGAlgorithmMessage is logged when an RFC2136 solver omits
+	// tsigAlgorithm, which silently selects the deprecated HMACMD5.
+	defaultedTSIGAlgorithmMessage = "RFC2136 DNS-01 solver tsigAlgorithm is not set and defaults to the deprecated HMACMD5; set it explicitly to HMACSHA256 or HMACSHA512"
+)
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface that
 // uses dynamic DNS updates (RFC 2136) to create TXT records on a nameserver.
@@ -68,8 +87,10 @@ func WithNetwork(network string) ProviderOption {
 // DNSProvider instance configured for rfc2136 dynamic update. To disable TSIG
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
-func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, opts ...ProviderOption) (*DNSProvider, error) {
-	logf.Log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
+func NewDNSProviderCredentials(ctx context.Context, nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, opts ...ProviderOption) (*DNSProvider, error) {
+	log := logf.FromContext(ctx)
+
+	log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
 
@@ -88,7 +109,8 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 		d.tsigSecret = tsigSecret
 	}
 
-	if tsigAlgorithm == "" {
+	defaulted := tsigAlgorithm == ""
+	if defaulted {
 		tsigAlgorithm = dns.HmacMD5
 	} else {
 		if value, ok := supportedAlgorithms[strings.ToUpper(tsigAlgorithm)]; ok {
@@ -99,13 +121,28 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	}
 	d.tsigAlgorithm = tsigAlgorithm
 
+	// Only warn when TSIG is actually in use; the algorithm is irrelevant when
+	// no key name or secret is configured.
+	if d.tsigKeyName != "" && len(d.tsigSecret) > 0 {
+		if _, deprecated := deprecatedAlgorithms[d.tsigAlgorithm]; deprecated {
+			message := deprecatedTSIGAlgorithmMessage
+			if defaulted {
+				message = defaultedTSIGAlgorithmMessage
+			}
+			log.V(logf.WarnLevel).Info(message,
+				"nameserver", d.nameserver,
+				"tsigAlgorithm", d.tsigAlgorithm,
+			)
+		}
+	}
+
 	keyLen := len(d.tsigSecret)
 	mask := make([]rune, keyLen/2)
 	for i := range mask {
 		mask[i] = '*'
 	}
 	masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
-	logf.Log.V(logf.DebugLevel).Info("DNSProvider",
+	log.V(logf.DebugLevel).Info("DNSProvider",
 		"nameserver", d.nameserver,
 		"tsigAlgorithm", d.tsigAlgorithm,
 		"tsigKeyName", d.tsigKeyName,
