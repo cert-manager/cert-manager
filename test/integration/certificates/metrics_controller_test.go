@@ -170,6 +170,15 @@ func TestMetricsController(t *testing.T) {
 		}
 
 		trimmedOutput, _, _ := strings.Cut(string(output), "# HELP go_gc_duration_seconds")
+		// certmanager_build_info has labels that depend on the build and the
+		// platform, so it is left out of the comparison.
+		var withoutBuildInfo []string
+		for line := range strings.SplitSeq(trimmedOutput, "\n") {
+			if !strings.Contains(line, "certmanager_build_info") {
+				withoutBuildInfo = append(withoutBuildInfo, line)
+			}
+		}
+		trimmedOutput = strings.Join(withoutBuildInfo, "\n")
 		if strings.TrimSpace(trimmedOutput) != strings.TrimSpace(expectedOutput) {
 			return fmt.Errorf("got unexpected metrics output\nexp:\n%s\ngot:\n%s\n",
 				expectedOutput, output)
