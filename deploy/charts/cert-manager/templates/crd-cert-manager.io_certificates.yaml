@@ -318,6 +318,13 @@ spec:
 
                     Cannot be set if the `subject` or `commonName` field is set.
                   type: string
+                maxPathLen:
+                  description: |-
+                    Requested maximum path length for the certificate.
+                    Only meaningful when isCA is true. A value of 0 means no sub-CAs are allowed.
+                    When not set, no pathLenConstraint is encoded in the certificate.
+                  minimum: 0
+                  type: integer
                 nameConstraints:
                   description: |-
                     x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
