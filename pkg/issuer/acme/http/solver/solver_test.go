@@ -24,11 +24,11 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pires/go-proxyproto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSolver(t *testing.T) {
@@ -269,17 +269,12 @@ func Test_listenSolver(t *testing.T) {
 				Key:           tc.solverKey,
 			}
 
-			go func() {
-				if err := solver.Listen(logr.Discard()); err != http.ErrServerClosed {
-					t.Error(err)
-				}
-			}()
-			time.Sleep(time.Second)
+			ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(solver.ListenPort))
+			require.NoError(t, err)
+			go func() { _ = solver.Serve(logr.Discard(), ln) }()
+			t.Cleanup(func() { _ = solver.Server.Close() })
 
-			addr, err := net.ResolveTCPAddr("tcp", solver.Listener.Addr().String())
-			if err != nil {
-				t.Fatal(err)
-			}
+			addr := ln.Addr().(*net.TCPAddr)
 			conn, err := net.DialTCP("tcp", nil, addr)
 			if err != nil {
 				t.Fatal(err)
@@ -310,6 +305,9 @@ func Test_listenSolver(t *testing.T) {
 					},
 				}
 				_, err = header.WriteTo(conn)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			client := &http.Client{
