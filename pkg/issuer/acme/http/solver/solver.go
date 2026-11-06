@@ -48,10 +48,17 @@ type HTTP01Solver struct {
 	Key    string
 
 	http.Server
-	net.Listener
 }
 
 func (h *HTTP01Solver) Listen(log logr.Logger) error {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", h.ListenPort))
+	if err != nil {
+		return err
+	}
+	return h.Serve(log, ln)
+}
+
+func (h *HTTP01Solver) Serve(log logr.Logger, ln net.Listener) error {
 	log.Info("starting listener",
 		"expected_domain", h.Domain,
 		"expected_token", h.Token,
@@ -60,24 +67,15 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 	)
 
 	h.Server = http.Server{
-		Addr:              fmt.Sprintf(":%d", h.ListenPort),
+		Addr:              ln.Addr().String(),
 		Handler:           h.challengeHandler(log),
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 
-	netListener, err := net.Listen("tcp", h.Server.Addr)
-	if err != nil {
-		return err
-	}
-	h.Listener = netListener
-
 	if h.ProxyProtocol {
-		proxyListener := &proxyproto.Listener{Listener: h.Listener}
-
-		return h.Server.Serve(proxyListener)
-	} else {
-		return h.Server.Serve(h.Listener)
+		ln = &proxyproto.Listener{Listener: ln}
 	}
+	return h.Server.Serve(ln)
 }
 
 func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
