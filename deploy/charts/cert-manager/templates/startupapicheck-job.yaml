@@ -5,11 +5,7 @@ metadata:
   name: {{ include "startupapicheck.fullname" . }}
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
-    app: {{ include "startupapicheck.name" . }}
-    app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "startupapicheck"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "startupapicheck.componentLabels" . | nindent 4 }}
   {{- with .Values.startupapicheck.jobAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -22,11 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ include "startupapicheck.name" . }}
-        app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/component: "startupapicheck"
-        {{- include "labels" . | nindent 8 }}
+        {{- include "startupapicheck.componentLabels" . | nindent 8 }}
         {{- with .Values.startupapicheck.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

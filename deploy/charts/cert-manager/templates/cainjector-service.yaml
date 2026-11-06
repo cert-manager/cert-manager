@@ -10,11 +10,7 @@ metadata:
 {{ toYaml . | indent 4 }}
 {{- end }}
   labels:
-    app: {{ include "cainjector.name" . }}
-    app.kubernetes.io/name: {{ include "cainjector.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "cainjector"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "cainjector.matchedLabels" . | nindent 4 }}
     {{- with .Values.cainjector.serviceLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

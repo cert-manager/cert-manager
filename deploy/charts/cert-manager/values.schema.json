@@ -853,7 +853,7 @@
     },
     "helm-values.global.commonLabels": {
       "default": {},
-      "description": "Labels to apply to all resources.\nThese labels are also applied to dynamically-created ACME HTTP01 solver resources\n(pods, services, ingresses, or Gateway API HTTPRoutes).\nThe following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.",
+      "description": "Labels to apply to all resources.\nThese labels are also applied to dynamically-created ACME HTTP01 solver resources\n(pods, services, ingresses, or Gateway API HTTPRoutes).\nThe following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources. On a key collision these win over the chart's own labels, except for app.kubernetes.io/name, app.kubernetes.io/instance and app.kubernetes.io/component on the controller, webhook and cainjector Pods and on the Services the ServiceMonitor selects. Those three are matched by selectors, so they cannot be overridden there. They are still applied to every other resource.",
       "type": "object"
     },
     "helm-values.global.hostUsers": {

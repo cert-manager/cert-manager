@@ -4,11 +4,7 @@ metadata:
   name: {{ template "cert-manager.fullname" . }}
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
-    app: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "controller"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.controllerLabels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -31,11 +27,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "cert-manager.name" . }}
-        app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/component: "controller"
-        {{- include "labels" . | nindent 8 }}
+        {{- include "cert-manager.controllerMatchedLabels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

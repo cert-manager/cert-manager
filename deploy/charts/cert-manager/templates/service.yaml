@@ -9,11 +9,7 @@ metadata:
 {{ toYaml . | indent 4 }}
 {{- end }}
   labels:
-    app: {{ include "cert-manager.name" . }}
-    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "controller"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.controllerMatchedLabels" . | nindent 4 }}
     {{- with .Values.serviceLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

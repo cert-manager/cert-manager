@@ -5,11 +5,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cainjector.fullname" . }}-psp
   labels:
-    app: {{ include "cainjector.name" . }}
-    app.kubernetes.io/name: {{ include "cainjector.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "cainjector"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "cainjector.componentLabels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

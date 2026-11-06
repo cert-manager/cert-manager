@@ -8,11 +8,7 @@ metadata:
   name: {{ include "cert-manager.fullname" . }}
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
-    app: {{ include "cert-manager.name" . }}
-    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "controller"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "cert-manager.controllerLabels" . | nindent 4 }}
 data:
   config.yaml: |
     {{- $config | toYaml | nindent 4 }}
