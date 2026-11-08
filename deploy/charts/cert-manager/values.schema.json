@@ -54,6 +54,9 @@
         "enabled": {
           "$ref": "#/$defs/helm-values.enabled"
         },
+        "externalIssuers": {
+          "$ref": "#/$defs/helm-values.externalIssuers"
+        },
         "extraArgs": {
           "$ref": "#/$defs/helm-values.extraArgs"
         },
@@ -176,6 +179,9 @@
         },
         "topologySpreadConstraints": {
           "$ref": "#/$defs/helm-values.topologySpreadConstraints"
+        },
+        "vault-issuer": {
+          "$ref": "#/$defs/helm-values.vault-issuer"
         },
         "volumeMounts": {
           "$ref": "#/$defs/helm-values.volumeMounts"
@@ -777,6 +783,20 @@
     "helm-values.enabled": {
       "default": true,
       "description": "Field that can be used as a condition when cert-manager is a dependency. This definition is only here as a placeholder such that it is included in the json schema. See https://helm.sh/docs/chart_best_practices/dependencies/#conditions-and-tags for more info.",
+      "type": "boolean"
+    },
+    "helm-values.externalIssuers": {
+      "additionalProperties": false,
+      "properties": {
+        "vault": {
+          "$ref": "#/$defs/helm-values.externalIssuers.vault"
+        }
+      },
+      "type": "object"
+    },
+    "helm-values.externalIssuers.vault": {
+      "default": false,
+      "description": "Install the external vault-issuer (https://github.com/cert-manager/vault-issuer) and disable the in-tree Vault issuer controllers.",
       "type": "boolean"
     },
     "helm-values.extraArgs": {
@@ -1819,6 +1839,11 @@
       "description": "A list of Kubernetes TopologySpreadConstraints, if required. For more information, see [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/).\n\nFor example:\ntopologySpreadConstraints:\n- maxSkew: 2\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app.kubernetes.io/instance: cert-manager\n      app.kubernetes.io/component: controller",
       "items": {},
       "type": "array"
+    },
+    "helm-values.vault-issuer": {
+      "default": {},
+      "description": "Values passed through to the vault-issuer sub-chart when\n`externalIssuers.vault` is true. For the available options, see\nhttps://github.com/cert-manager/vault-issuer/blob/main/deploy/charts/vault-issuer/README.md\n\nFor example:\nvault-issuer:\n  app:\n    logLevel: 2\n    issuer:\n      clusterResourceNamespace: cert-manager",
+      "type": "object"
     },
     "helm-values.volumeMounts": {
       "default": [],
