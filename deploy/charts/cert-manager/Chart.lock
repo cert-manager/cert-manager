@@ -1,0 +1,6 @@
+dependencies:
+- name: vault-issuer
+  repository: oci://quay.io/jetstack/charts
+  version: v0.2.0
+digest: sha256:5598fd79c1700f6d9b2d55683c33298e4e54a6b1b8b24a7a29796864b04aa599
+generated: "2026-11-25T09:14:03.65165-07:00"
