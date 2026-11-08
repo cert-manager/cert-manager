@@ -551,6 +551,16 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, acmeEma
 		return cl.GetReg(ctx, "")
 	}
 	if err != nil {
+		// Some CAs reject the new-account request for a key that already
+		// has an account instead of returning 200 (e.g. DigiCert answers
+		// 400 eabProcessError when EAB is mandated for new registrations
+		// only). Fall back to looking the account up before giving up.
+		var acmeErr *acmeapi.Error
+		if errors.As(err, &acmeErr) {
+			if existing, getErr := cl.GetReg(ctx, ""); getErr == nil && existing != nil {
+				return existing, nil
+			}
+		}
 		return nil, err
 	}
 	// TODO: re-enable this check once this field is set by Pebble

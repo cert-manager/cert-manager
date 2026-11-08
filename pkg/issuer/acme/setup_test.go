@@ -97,6 +97,15 @@ func TestAcme_Setup(t *testing.T) {
 			Detail:      "contact email has an invalid domain: empty label",
 		}
 
+		// eabProcessErr is what DigiCert returns when a new-account request
+		// is made for a key that already has an account, on a server where
+		// EAB is mandated for new registrations only.
+		eabProcessErr = &acmeapi.Error{
+			StatusCode:  400,
+			ProblemType: "urn:ietf:params:acme:error:eabProcessError",
+			Detail:      "EAB request error.",
+		}
+
 		// reflectedBodyACMEErr models a response from an endpoint which is not an
 		// ACME server. The ACME client cannot parse the body as a problem
 		// document, so it copies it verbatim into Detail; it must not reach the
@@ -421,6 +430,39 @@ func TestAcme_Setup(t *testing.T) {
 					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+someErr.Error())),
 			},
 			wantsErr: true,
+		},
+		"Register is rejected for an existing account, retrieving it succeeds": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEEmail(someEmail)),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			addClientShouldBeCalled:    true,
+			registerErr:                eabProcessErr,
+			getRegAcc: &acmeapi.Account{
+				URI:     "https://example.com/acme/acct/123",
+				Contact: []string{someEmailURL},
+			},
+			expectedRegisteredAcc: &acmeapi.Account{Contact: []string{someEmailURL}},
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyTrueCondition,
+					gen.SetIssuerConditionStatus(cmmeta.ConditionTrue),
+					gen.SetIssuerConditionReason(successAccountRegistered),
+					gen.SetIssuerConditionMessage(messageAccountRegistered)),
+			},
+		},
+		"Register is rejected and no account exists, original error is returned": {
+			issuer: gen.IssuerFrom(baseIssuer,
+				gen.SetIssuerACMEEmail(someEmail)),
+			kfsKey:                     rsaPrivKey,
+			removeClientShouldBeCalled: true,
+			registerErr:                eabProcessErr,
+			getRegErr:                  acmeapi.ErrNoAccount,
+			expectedRegisteredAcc:      &acmeapi.Account{Contact: []string{someEmailURL}},
+			expectedConditions: []cmapi.IssuerCondition{
+				*gen.IssuerConditionFrom(readyFalseCondition,
+					gen.SetIssuerConditionReason(errorAccountRegistrationFailed),
+					gen.SetIssuerConditionMessage(messageAccountRegistrationFailed+eabProcessErr.Error())),
+			},
 		},
 		"ACME account with EAB registered successfully": {
 			issuer: gen.IssuerFrom(baseIssuer,
