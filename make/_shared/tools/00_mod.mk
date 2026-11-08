@@ -100,7 +100,7 @@ tools += ko=0.19.1
 tools += protoc=v36.2
 # https://github.com/aquasecurity/trivy/releases
 # renovate: datasource=github-releases packageName=aquasecurity/trivy
-tools += trivy=v0.76.1
+tools += trivy=v0.76.2
 # https://github.com/vmware-tanzu/carvel-ytt/releases
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-ytt
 tools += ytt=v0.55.4
@@ -129,7 +129,7 @@ tools += gotestsum=v1.13.0
 tools += kustomize=v5.8.3
 # https://pkg.go.dev/github.com/itchyny/gojq?tab=versions
 # renovate: datasource=go packageName=github.com/itchyny/gojq
-tools += gojq=v0.12.19
+tools += gojq=v0.12.20
 # https://pkg.go.dev/github.com/google/go-containerregistry/pkg/crane?tab=versions
 # renovate: datasource=go packageName=github.com/google/go-containerregistry
 tools += crane=v0.22.1
@@ -160,10 +160,10 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.3.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.19.0
+tools += goreleaser=v2.20.0
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.55.0
+tools += syft=v1.56.0
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.6.0
@@ -185,7 +185,7 @@ tools += golangci-lint=$(golangci_lint_version)
 # newer snapshot.
 # https://pkg.go.dev/sigs.k8s.io/kube-api-linter?tab=versions
 # renovate: datasource=go packageName=sigs.k8s.io/kube-api-linter
-kube_api_linter_version ?= v0.0.0-20261012124120-79b557aa8c8d
+kube_api_linter_version ?= v0.0.0-20261030144752-d90122c89087
 tools += kube-api-linter=$(golangci_lint_version)_$(kube_api_linter_version)
 # https://pkg.go.dev/golang.org/x/vuln?tab=versions
 # renovate: datasource=go packageName=golang.org/x/vuln
@@ -225,7 +225,7 @@ tools += defaulter-gen=$(K8S_CODEGEN_VERSION)
 tools += conversion-gen=$(K8S_CODEGEN_VERSION)
 # https://github.com/kubernetes/kube-openapi
 # renovate: datasource=go packageName=k8s.io/kube-openapi
-tools += openapi-gen=v0.0.0-20261014044854-ca3452a79603
+tools += openapi-gen=v0.0.0-20261104182252-5bee61fc5225
 
 # https://raw.githubusercontent.com/kubernetes-sigs/controller-tools/master/envtest-releases.yaml
 # FIXME: Find a way to configure Renovate to suggest upgrades
@@ -709,10 +709,10 @@ $(DOWNLOAD_DIR)/tools/protoc@$(PROTOC_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-trivy_linux_amd64_SHA256SUM=c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0
-trivy_linux_arm64_SHA256SUM=e174dff2a6dba5e3ae41f8d0537a6324405bd08132497340304c6b20e0f16a1f
-trivy_darwin_amd64_SHA256SUM=7aa762eacd582052d053b62dcf972a1ab058abe39a57ccae234ed8894945b6b7
-trivy_darwin_arm64_SHA256SUM=11a9b6cd2752011b54f01ea4bd0dbfa9f0c41dc6538d5a3f9d23955f471bf4e5
+trivy_linux_amd64_SHA256SUM=bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf
+trivy_linux_arm64_SHA256SUM=ab9d51f86e6a5fb936f605faff6b593ac51bc378fff4d3e8b9d58358b9c367c3
+trivy_darwin_amd64_SHA256SUM=e08bb9ea449ecf66c6bfb03cbb8697c503ff33d35fc585c9747e3eaeb7ed4c7b
+trivy_darwin_arm64_SHA256SUM=ae7ea358326960406b703c77b2ac490190797d80b306b5b50c2a27221da0a5b8
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/trivy@$(TRIVY_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
