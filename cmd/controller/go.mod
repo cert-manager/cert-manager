@@ -12,7 +12,7 @@ require (
 	github.com/cert-manager/cert-manager v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.4.4
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	golang.org/x/sync v0.24.0
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
