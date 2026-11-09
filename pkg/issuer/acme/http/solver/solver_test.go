@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -213,6 +214,7 @@ func Test_listenSolver(t *testing.T) {
 		requestProxyProtocol bool
 		proxyProtocolVersion byte
 		expectedResponseCode int
+		expectedErrorKey     string
 	}{
 		"return ok without proxy-protocol": {
 			solverPort:           0,
@@ -223,6 +225,7 @@ func Test_listenSolver(t *testing.T) {
 			requestTarget:        HTTPChallengePath + "/secret",
 			requestProxyProtocol: false,
 			expectedResponseCode: http.StatusOK,
+			expectedErrorKey:     "",
 		},
 		"return ok with proxy-protocol v1": {
 			solverPort:           0,
@@ -234,6 +237,7 @@ func Test_listenSolver(t *testing.T) {
 			requestProxyProtocol: true,
 			proxyProtocolVersion: 1,
 			expectedResponseCode: http.StatusOK,
+			expectedErrorKey:     "",
 		},
 		"return ok with proxy-protocol v2": {
 			solverPort:           0,
@@ -245,8 +249,9 @@ func Test_listenSolver(t *testing.T) {
 			requestProxyProtocol: true,
 			proxyProtocolVersion: 2,
 			expectedResponseCode: http.StatusOK,
+			expectedErrorKey:     "",
 		},
-		"return bad request with proxy-protocol mismatch": {
+		"return bad request with proxy-protocol header sent without --proxy-protocol flag on": {
 			solverPort:           0,
 			solverProxyProtocol:  false,
 			solverDomain:         "localhost",
@@ -256,6 +261,19 @@ func Test_listenSolver(t *testing.T) {
 			requestProxyProtocol: true,
 			proxyProtocolVersion: 1,
 			expectedResponseCode: http.StatusBadRequest,
+			expectedErrorKey:     "",
+		},
+		"return EOF with --proxy-protocol flag on without proxy-protocol header sent": {
+			solverPort:           0,
+			solverProxyProtocol:  true,
+			solverDomain:         "localhost",
+			solverToken:          "secret",
+			solverKey:            "",
+			requestTarget:        HTTPChallengePath + "/secret",
+			requestProxyProtocol: false,
+			proxyProtocolVersion: 1,
+			expectedResponseCode: 0,
+			expectedErrorKey:     "EOF",
 		},
 	}
 
@@ -315,19 +333,26 @@ func Test_listenSolver(t *testing.T) {
 					DialContext: proxyConnDialer{conn}.Dial,
 				},
 			}
+
 			resp, err := client.Do(r)
 			if err != nil {
-				t.Fatal(err)
+				if !(strings.Contains(err.Error(), tc.expectedErrorKey) && tc.expectedErrorKey != "") {
+					t.Fatal(err)
+				}
+			} else {
+				if resp.StatusCode != tc.expectedResponseCode {
+					t.Errorf("Expected response code %d, got %d", tc.expectedResponseCode, resp.StatusCode)
+				}
+				response, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tc.solverKey != "" && string(response) != tc.solverKey {
+					t.Errorf("Expected response body %q, got %q", tc.solverKey, response)
+				}
 			}
 
-			if resp.StatusCode != tc.expectedResponseCode {
-				t.Errorf("Expected response code %d, got %d", tc.expectedResponseCode, resp.StatusCode)
-			}
-			response, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if tc.solverKey != "" && string(response) != tc.solverKey {
-				t.Errorf("Expected response body %q, got %q", tc.solverKey, response)
-			}
 		})
 	}
 }
