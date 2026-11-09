@@ -23,12 +23,14 @@ import (
 	"maps"
 	"net"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -717,6 +719,32 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	}
 
 	if !ptr.Equal(a.Spec.RenewBefore, b.Spec.RenewBefore) {
+		return true
+	}
+
+	if !ptr.Equal(a.Spec.RenewBeforePercentage, b.Spec.RenewBeforePercentage) {
+		return true
+	}
+
+	if !slices.Equal(a.Spec.Usages, b.Spec.Usages) {
+		return true
+	}
+
+	if !slices.Equal(a.Spec.EmailAddresses, b.Spec.EmailAddresses) {
+		return true
+	}
+
+	// A nil Subject means the same as an empty one, and Semantic.DeepEqual
+	// treats nil and empty slices as equal, so a Subject that round-tripped
+	// through the API server does not trigger a spurious update.
+	aSubject, bSubject := a.Spec.Subject, b.Spec.Subject
+	if aSubject == nil {
+		aSubject = &cmapi.X509Subject{}
+	}
+	if bSubject == nil {
+		bSubject = &cmapi.X509Subject{}
+	}
+	if !apiequality.Semantic.DeepEqual(aSubject, bSubject) {
 		return true
 	}
 
