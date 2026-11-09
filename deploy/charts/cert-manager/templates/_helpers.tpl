@@ -149,16 +149,77 @@ Create chart name and version as used by the chart label.
 
 {{/*
 Labels that should be added on each resource
+
+.Values.global.commonLabels wins on a key collision.
+
+IMPORTANT: This function is standardized across all charts in the cert-manager GH organization.
+Any changes to this function should also be made in trust-manager, approver-policy, istio-csr, ...
+See https://github.com/cert-manager/cert-manager/issues/9348 for a list of linked PRs.
 */}}
 {{- define "labels" -}}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- $labels := dict "app.kubernetes.io/version" .Chart.AppVersion -}}
 {{- if eq .Values.creator "helm" }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-helm.sh/chart: {{ include "chartName" . }}
-{{- end -}}
-{{- if .Values.global.commonLabels}}
-{{ toYaml .Values.global.commonLabels }}
+{{- $labels = merge $labels (dict
+      "app.kubernetes.io/managed-by" .Release.Service
+      "helm.sh/chart" (include "chartName" .)) }}
 {{- end }}
+{{- toYaml (mergeOverwrite $labels (.Values.global.commonLabels | default dict)) }}
+{{- end -}}
+
+{{/*
+Labels for a resource that belongs to one component.
+
+The identity labels lose to .Values.global.commonLabels. Templates whose
+identity labels a selector reads re-apply them after the merge.
+*/}}
+{{- define "cert-manager.controllerLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "controller")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "cert-manager.certManagerLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "cert-manager")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "cainjector.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cainjector.name" .)
+            "app.kubernetes.io/name" (include "cainjector.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "cainjector")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "webhook.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "webhook.name" .)
+            "app.kubernetes.io/name" (include "webhook.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "webhook")
+      (include "labels" . | fromYaml)
+) }}
+{{- end -}}
+
+{{- define "startupapicheck.componentLabels" -}}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "startupapicheck.name" .)
+            "app.kubernetes.io/name" (include "startupapicheck.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "startupapicheck")
+      (include "labels" . | fromYaml)
+) }}
 {{- end -}}
 
 {{/*
@@ -245,11 +306,13 @@ usage through tuple/variable indirection.
 Labels for the CRD resources.
 */}}
 {{- define "cert-manager.crd-labels" -}}
-app: "{{ template "cert-manager.name" . }}"
-app.kubernetes.io/name: "{{ template "cert-manager.name" . }}"
-app.kubernetes.io/instance: "{{ .Release.Name }}"
-app.kubernetes.io/component: "crds"
-{{ include "labels" . }}
+{{- toYaml (mergeOverwrite
+      (dict "app" (include "cert-manager.name" .)
+            "app.kubernetes.io/name" (include "cert-manager.name" .)
+            "app.kubernetes.io/instance" .Release.Name
+            "app.kubernetes.io/component" "crds")
+      (include "labels" . | fromYaml)
+) }}
 {{- end -}}
 
 {{/*
