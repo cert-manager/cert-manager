@@ -22,41 +22,20 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/version"
-
-	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
-func setBuildFlags(t *testing.T, appVersion, gitCommit string) {
-	oldVersion, oldCommit := util.AppVersion, util.AppGitCommit
-	util.AppVersion, util.AppGitCommit = appVersion, gitCommit
-	t.Cleanup(func() { util.AppVersion, util.AppGitCommit = oldVersion, oldCommit })
-}
+func TestCollector(t *testing.T) {
+	oldVersion, oldRevision := version.Version, version.Revision
+	version.Version, version.Revision = "v1.2.3", "abc123"
+	t.Cleanup(func() { version.Version, version.Revision = oldVersion, oldRevision })
 
-func expected(revision, appVersion string) string {
-	return `
+	expected := `
 # HELP certmanager_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which certmanager was built, and the goos and goarch for the build.
 # TYPE certmanager_build_info gauge
-certmanager_build_info{branch="",goarch="` + version.GoArch + `",goos="` + version.GoOS + `",goversion="` + version.GoVersion + `",revision="` + revision + `",tags="` + version.GetTags() + `",version="` + appVersion + `"} 1
+certmanager_build_info{branch="",goarch="` + version.GoArch + `",goos="` + version.GoOS + `",goversion="` + version.GoVersion + `",revision="abc123",tags="` + version.GetTags() + `",version="v1.2.3"} 1
 `
-}
 
-func TestCollector(t *testing.T) {
-	setBuildFlags(t, "v1.2.3", "abc123")
-
-	if err := testutil.CollectAndCompare(NewCollector(), strings.NewReader(expected("abc123", "v1.2.3"))); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCollectorWithoutGitCommit(t *testing.T) {
-	setBuildFlags(t, "canary", "")
-
-	c := NewCollector()
-	revision := version.GetRevision()
-	if revision == "" {
-		t.Fatal("expected a fallback revision")
-	}
-	if err := testutil.CollectAndCompare(c, strings.NewReader(expected(revision, "canary"))); err != nil {
+	if err := testutil.CollectAndCompare(NewCollector(), strings.NewReader(expected)); err != nil {
 		t.Fatal(err)
 	}
 }

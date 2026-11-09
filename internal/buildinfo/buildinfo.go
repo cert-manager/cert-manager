@@ -26,12 +26,17 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
-// NewCollector returns the client_golang version collector for the
-// certmanager_build_info metric, with the version and git commit cert-manager
-// was built with. Without a git commit from the build flags, the revision falls
-// back to the VCS information embedded by the Go toolchain.
-func NewCollector() prometheus.Collector {
+// The version collector reads the prometheus/common version variables, so copy
+// the values from the build flags once, when the package is loaded. Without a
+// git commit from the build flags, the revision falls back to the VCS
+// information embedded by the Go toolchain.
+func init() {
 	version.Version = util.AppVersion
 	version.Revision = util.AppGitCommit
+}
+
+// NewCollector returns the client_golang version collector for the
+// certmanager_build_info metric.
+func NewCollector() prometheus.Collector {
 	return versioncollector.NewCollector("certmanager")
 }

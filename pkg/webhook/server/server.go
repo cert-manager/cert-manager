@@ -34,11 +34,9 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
@@ -59,12 +57,6 @@ const (
 var (
 	ErrNotListening = errors.New("Server is not listening yet")
 )
-
-// The metrics endpoint serves the controller-runtime registry, so register the
-// build info metric there once, when the package is loaded.
-func init() {
-	ctrlmetrics.Registry.MustRegister(buildinfo.NewCollector())
-}
 
 type Server struct {
 	// ListenAddr is the address the HTTP server should listen on
