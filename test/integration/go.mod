@@ -18,7 +18,7 @@ require (
 	github.com/munnerz/crd-schema-fuzz v1.1.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	k8s.io/api v0.37.2
 	k8s.io/apiextensions-apiserver v0.37.2
 	k8s.io/apimachinery v0.37.2
