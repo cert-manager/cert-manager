@@ -73,6 +73,7 @@ func (h *HTTP01Solver) Serve(log logr.Logger, ln net.Listener) error {
 	}
 
 	if h.ProxyProtocol {
+		// Default policy is REQUIRE
 		ln = &proxyproto.Listener{Listener: ln}
 	}
 	return h.Server.Serve(ln)
