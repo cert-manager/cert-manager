@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -38,6 +39,7 @@ import (
 const (
 	ControllerName       = "listenerset"
 	indexByParentGateway = "cert-manager.io/parent-gateway"
+	indexBySecretName    = "cert-manager.io/secret-name"
 )
 
 type controller struct {
@@ -77,6 +79,14 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 
 			return []string{fmt.Sprintf("%s/%s", ns, ls.Spec.ParentRef.Name)}, nil
 		},
+		indexBySecretName: func(obj any) ([]string, error) {
+			ls, ok := obj.(*gwapi.ListenerSet)
+			if !ok {
+				return nil, nil
+			}
+
+			return listenerSetSecretKeys(ls), nil
+		},
 	}); err != nil {
 		return nil, nil, fmt.Errorf("error adding indexer for xlistenerset %v", err)
 	}
@@ -113,6 +123,19 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.TypedRateLi
 		controllerpkg.BlockingEventHandler(listenerSetCertificateHandler(c.queue)),
 	); err != nil {
 		return nil, nil, fmt.Errorf("error setting up certificate handler: %v", err)
+	}
+
+	// The handler above only re-queues the ListenerSet that controls a
+	// Certificate. When the Certificate for one of the ListenerSet's Secrets is
+	// controlled by another object (an Ingress during a migration, for
+	// example), the sync refuses to update it and the ListenerSet gets no
+	// Certificate. Re-queue every ListenerSet that references the Secret when
+	// such a Certificate is deleted, so that the ListenerSet gets a Certificate
+	// of its own without waiting for the next resync.
+	if _, err := ctx.SharedInformerFactory.Certmanager().V1().Certificates().Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{DeleteFunc: listenerSetCertificateDeleteHandler(c.queue, lsInf.GetIndexer())},
+	); err != nil {
+		return nil, nil, fmt.Errorf("error setting up certificate delete handler: %v", err)
 	}
 
 	mustSync := []cache.InformerSynced{
@@ -211,6 +234,68 @@ func listenerSetCertificateHandler(queue workqueue.TypedRateLimitingInterface[ty
 			Namespace: crt.Namespace,
 			Name:      ref.Name,
 		})
+	}
+}
+
+// listenerSetSecretKeys returns a "namespace/name" key for each Secret that the
+// listeners of the ListenerSet reference through tls.certificateRefs.
+func listenerSetSecretKeys(ls *gwapi.ListenerSet) []string {
+	keys := sets.New[string]()
+	for _, l := range ls.Spec.Listeners {
+		if l.TLS == nil {
+			continue
+		}
+
+		for _, ref := range l.TLS.CertificateRefs {
+			ns := ls.Namespace
+			if ref.Namespace != nil && string(*ref.Namespace) != "" {
+				ns = string(*ref.Namespace)
+			}
+
+			keys.Insert(fmt.Sprintf("%s/%s", ns, ref.Name))
+		}
+	}
+
+	return sets.List(keys)
+}
+
+// listenerSetCertificateDeleteHandler re-queues the ListenerSets whose listeners
+// reference the Secret of a deleted Certificate, whichever object controlled the
+// Certificate. The ListenerSet controlling it, if any, is already re-queued by
+// listenerSetCertificateHandler.
+func listenerSetCertificateDeleteHandler(queue workqueue.TypedRateLimitingInterface[types.NamespacedName], indexer cache.Indexer) func(obj any) {
+	return func(obj any) {
+		if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+			obj = tombstone.Obj
+		}
+
+		crt, ok := obj.(*cmapi.Certificate)
+		if !ok || crt.Spec.SecretName == "" {
+			return
+		}
+
+		indexed, err := indexer.ByIndex(indexBySecretName, fmt.Sprintf("%s/%s", crt.Namespace, crt.Spec.SecretName))
+		if err != nil {
+			runtime.HandleError(fmt.Errorf("cannot get object for index %v", err))
+			return
+		}
+
+		controller := metav1.GetControllerOf(crt)
+		for _, in := range indexed {
+			ls, ok := in.(*gwapi.ListenerSet)
+			if !ok {
+				continue
+			}
+
+			if controller != nil && controller.Kind == "ListenerSet" && controller.Name == ls.Name {
+				continue
+			}
+
+			queue.Add(types.NamespacedName{
+				Namespace: ls.Namespace,
+				Name:      ls.Name,
+			})
+		}
 	}
 }
 
