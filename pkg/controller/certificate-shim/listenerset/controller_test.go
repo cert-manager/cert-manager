@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -219,6 +220,107 @@ func Test_controller_Register(t *testing.T) {
 			}, 2*time.Second, 10*time.Millisecond)
 		})
 	}
+}
+
+func Test_controller_Register_requeuesListenerSetWhenReferencedCertificateIsDeleted(t *testing.T) {
+	ingressRef := *metav1.NewControllerRef(&networkingv1.Ingress{
+		Namespace: "namespace-1",
+		Name:      "ingress-1",
+	}, networkingv1.SchemeGroupVersion.WithKind("Ingress"))
+
+	// Both Certificates are controlled by an Ingress. Only "shared-tls" is the
+	// Secret of a listener of the ListenerSet created below.
+	b := &testpkg.Builder{T: t, CertManagerObjects: []runtime.Object{
+		&cmapi.Certificate{
+			Namespace:       "namespace-1",
+			Name:            "shared-tls",
+			OwnerReferences: []metav1.OwnerReference{ingressRef},
+			Spec:            cmapi.CertificateSpec{SecretName: "shared-tls"},
+		},
+		&cmapi.Certificate{
+			Namespace:       "namespace-1",
+			Name:            "other-tls",
+			OwnerReferences: []metav1.OwnerReference{ingressRef},
+			Spec:            cmapi.CertificateSpec{SecretName: "other-tls"},
+		},
+	}}
+	b.Init()
+
+	mock := &mockWorkqueue{t: t}
+	_, _, err := (&controller{queue: mock}).Register(b.Context)
+	require.NoError(t, err)
+
+	b.Start()
+	defer b.Stop()
+
+	_, err = b.GWClient.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
+		&gwapi.ListenerSet{
+			Namespace: "namespace-1",
+			Name:      "ls-6",
+			Spec: gwapi.ListenerSetSpec{
+				Listeners: []gwapi.ListenerEntry{{
+					Name:     "https",
+					Protocol: gwapi.HTTPSProtocolType,
+					TLS: &gwapi.ListenerTLSConfig{
+						CertificateRefs: []gwapi.SecretObjectReference{{Name: "shared-tls"}},
+					},
+				}},
+			},
+		},
+		metav1.CreateOptions{},
+	)
+	require.NoError(t, err)
+
+	// The 'Added' event of the ListenerSet re-queues it. Wait for that, and for
+	// the ListenerSet to be indexed, so that any further Add comes from a
+	// Certificate event.
+	lsl := b.Context.GWShared.Gateway().V1().ListenerSets().Lister()
+	require.Eventually(t, func() bool {
+		_, err := lsl.ListenerSets("namespace-1").Get("ls-6")
+		return err == nil && len(mock.callsToAdd) == 1
+	}, 2*time.Second, 10*time.Millisecond)
+
+	// Deleting the Certificate of a Secret that no listener references changes nothing.
+	err = b.CMClient.CertmanagerV1().Certificates("namespace-1").Delete(t.Context(), "other-tls", metav1.DeleteOptions{})
+	require.NoError(t, err)
+	require.Never(t, func() bool {
+		return len(mock.callsToAdd) > 1
+	}, 200*time.Millisecond, 10*time.Millisecond)
+
+	// Deleting the Certificate that claims the ListenerSet's Secret re-queues
+	// the ListenerSet, although the Certificate was controlled by the Ingress.
+	err = b.CMClient.CertmanagerV1().Certificates("namespace-1").Delete(t.Context(), "shared-tls", metav1.DeleteOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		return len(mock.callsToAdd) == 2
+	}, 2*time.Second, 10*time.Millisecond)
+	require.Equal(t, []types.NamespacedName{
+		// Create ListenerSet
+		{Namespace: "namespace-1", Name: "ls-6"},
+		// Certificate delete triggers requeue of ls-6 via the secret name index
+		{Namespace: "namespace-1", Name: "ls-6"},
+	}, mock.callsToAdd)
+}
+
+func Test_listenerSetSecretKeys(t *testing.T) {
+	ns := gwapi.Namespace("namespace-2")
+	ls := &gwapi.ListenerSet{
+		Namespace: "namespace-1",
+		Name:      "ls-1",
+		Spec: gwapi.ListenerSetSpec{
+			Listeners: []gwapi.ListenerEntry{
+				{Name: "http", Protocol: gwapi.HTTPProtocolType},
+				{Name: "https", Protocol: gwapi.HTTPSProtocolType, TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{{Name: "b-tls"}, {Name: "a-tls"}},
+				}},
+				{Name: "https-2", Protocol: gwapi.HTTPSProtocolType, TLS: &gwapi.ListenerTLSConfig{
+					CertificateRefs: []gwapi.SecretObjectReference{{Name: "a-tls"}, {Name: "c-tls", Namespace: &ns}},
+				}},
+			},
+		},
+	}
+
+	require.Equal(t, []string{"namespace-1/a-tls", "namespace-1/b-tls", "namespace-2/c-tls"}, listenerSetSecretKeys(ls))
 }
 
 func Test_inheritAnnotations(t *testing.T) {
