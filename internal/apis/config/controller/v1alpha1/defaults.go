@@ -99,6 +99,7 @@ var (
 	defaultACMEHTTP01SolverRunAsNonRoot          = true
 	defaultACMEHTTP01SolverRuntimeClassName      = ""
 	defaultACMEHTTP01SolverNameservers           = []string{}
+	defaultACMEHTTP01SolverProxyProtocol         = false
 
 	defaultCertificateRequestMinimumBackoffDuration = 1 * time.Hour
 	defaultCertificateRequestMaximumBackoffDuration = 32 * time.Hour
@@ -358,6 +359,10 @@ func SetDefaults_ACMEHTTP01Config(obj *v1alpha1.ACMEHTTP01Config) {
 
 	if len(obj.SolverNameservers) == 0 {
 		obj.SolverNameservers = defaultACMEHTTP01SolverNameservers
+	}
+
+	if obj.SolverProxyProtocol == nil {
+		obj.SolverProxyProtocol = &defaultACMEHTTP01SolverProxyProtocol
 	}
 }
 

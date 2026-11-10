@@ -62,7 +62,8 @@
 		"solverResourceRequestMemory": "64Mi",
 		"solverResourceLimitsCPU": "100m",
 		"solverResourceLimitsMemory": "64Mi",
-		"solverRunAsNonRoot": true
+		"solverRunAsNonRoot": true,
+		"solverProxyProtocol": false
 	},
 	"acmeDNS01Config": {
 		"recursiveNameserversOnly": false,
