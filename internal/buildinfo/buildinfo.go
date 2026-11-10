@@ -27,10 +27,16 @@ import (
 )
 
 // The version collector reads the prometheus/common version variables, so copy
-// the values from the build flags once, when the package is loaded. Without a
-// git commit from the build flags, the revision falls back to the VCS
-// information embedded by the Go toolchain.
+// the values from the build flags once, when the package is loaded.
 func init() {
+	setVersion()
+}
+
+// setVersion copies the version and git commit set by the build flags into the
+// prometheus/common version variables. Without a git commit from the build
+// flags, the revision falls back to the VCS information embedded by the Go
+// toolchain.
+func setVersion() {
 	version.Version = util.AppVersion
 	version.Revision = util.AppGitCommit
 }

@@ -22,12 +22,22 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/version"
+
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 func TestCollector(t *testing.T) {
+	oldAppVersion, oldAppGitCommit := util.AppVersion, util.AppGitCommit
 	oldVersion, oldRevision := version.Version, version.Revision
-	version.Version, version.Revision = "v1.2.3", "abc123"
-	t.Cleanup(func() { version.Version, version.Revision = oldVersion, oldRevision })
+	t.Cleanup(func() {
+		util.AppVersion, util.AppGitCommit = oldAppVersion, oldAppGitCommit
+		version.Version, version.Revision = oldVersion, oldRevision
+	})
+
+	// Go through setVersion so the test covers how the build flag values map
+	// to the version and revision labels.
+	util.AppVersion, util.AppGitCommit = "v1.2.3", "abc123"
+	setVersion()
 
 	expected := `
 # HELP certmanager_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which certmanager was built, and the goos and goarch for the build.
