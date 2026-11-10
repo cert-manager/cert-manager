@@ -194,10 +194,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
 		// Delete all secrets, optionally skipping the one specified in nextPrivateKeySecretName
-		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets))
+		// as read from the API server, since the cached Certificate can lag our own status writes.
+		latestCrt, err := c.client.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		keep := ptr.Deref(latestCrt.Status.NextPrivateKeySecretName, "")
 
-		// Use ptr.Deref to get the value or empty string if nil
-		return c.deleteSecretResources(ctx, secrets, ptr.Deref(crt.Status.NextPrivateKeySecretName, ""))
+		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found", "total_secrets", len(secrets), "keep", keep)
+
+		return c.deleteSecretResources(ctx, secrets, keep)
 	}
 
 	secret := secrets[0]
