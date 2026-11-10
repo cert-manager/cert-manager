@@ -239,6 +239,9 @@ type ACMEHTTP01Config struct {
 	// ignored: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token,
 	// acme.cert-manager.io/http01-solver.
 	SolverExtraLabels map[string]string `json:"solverExtraLabels,omitempty"`
+
+	// Defines the ability to run the http01 solver with ProxyProtocol
+	SolverProxyProtocol *bool `json:"solverProxyProtocol,omitempty"`
 }
 
 type ACMEDNS01Config struct {

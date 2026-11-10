@@ -142,6 +142,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.ControllerConfiguration) {
 			"podTemplate/ingressTemplate/GatewayHTTPRoute.Labels.")
 
 	fs.StringVar(&c.ACMEHTTP01Config.SolverRuntimeClassName, "acme-http01-solver-runtime-class-name", c.ACMEHTTP01Config.SolverRuntimeClassName, "RuntimeClassName to apply to ACME HTTP01 solver pods")
+
+	fs.BoolVar(&c.ACMEHTTP01Config.SolverProxyProtocol, "acme-http01-solver-proxy-protocol", c.ACMEHTTP01Config.SolverProxyProtocol,
+		"If true, ACME HTTP-01 solver pods require a PROXY protocol v1 or v2 header on every connection. Only enable this if every connection to the solver pods comes through a proxy that sends the header.")
+
 	fs.BoolVar(&c.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", c.ClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
