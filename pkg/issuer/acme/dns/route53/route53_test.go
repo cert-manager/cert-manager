@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,6 +35,46 @@ import (
 )
 
 const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9uYXdzLmNvbSIsImV4cCI6MTc0MTg4NzYwOCwiaWF0IjoxNzEwMzUxNjM4LCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.SfuV3SW-vEdV-tLFIr2PK2DnN6QYmozygav5OeoH36Q"
+
+// TestMain detaches the package from whatever AWS configuration the machine
+// running the tests happens to have.
+//
+// These tests assert on the configuration the SDK resolves, and the SDK reads
+// the environment and ~/.aws when an input is not supplied explicitly. A
+// developer with AWS_PROFILE or AWS_REGION exported therefore sees failures
+// that have nothing to do with their change; CI passes only because it sets
+// none of this. Tests that need a value still set it themselves with
+// t.Setenv, which overrides what is cleared here for the duration of the test.
+func TestMain(m *testing.M) {
+	for _, key := range []string{
+		"AWS_PROFILE",
+		"AWS_DEFAULT_PROFILE",
+		"AWS_REGION",
+		"AWS_DEFAULT_REGION",
+		"AWS_ACCESS_KEY_ID",
+		"AWS_SECRET_ACCESS_KEY",
+		"AWS_SESSION_TOKEN",
+		"AWS_ROLE_ARN",
+		"AWS_WEB_IDENTITY_TOKEN_FILE",
+	} {
+		if err := os.Unsetenv(key); err != nil {
+			panic(err)
+		}
+	}
+
+	// Pointed at an empty file rather than unset, so that the SDK reads no
+	// configuration instead of falling back to the default ~/.aws paths.
+	for key, value := range map[string]string{
+		"AWS_CONFIG_FILE":             os.DevNull,
+		"AWS_SHARED_CREDENTIALS_FILE": os.DevNull,
+	} {
+		if err := os.Setenv(key, value); err != nil {
+			panic(err)
+		}
+	}
+
+	os.Exit(m.Run())
+}
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	cfg, err := config.LoadDefaultConfig(
@@ -367,9 +408,9 @@ func TestRoute53Cleanup(t *testing.T) {
 }
 
 func TestAssumeRole(t *testing.T) {
-	// Set the AWS config file to a non-existent file to ensure that the
-	// SDK does not load any local configuration.
-	t.Setenv("AWS_CONFIG_FILE", "/dev/null")
+	// Every input these cases rely on is set on the sessionProvider itself.
+	// TestMain detaches the package from any ambient AWS configuration that
+	// would otherwise skew the result.
 	creds := &ststypes.Credentials{
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),
