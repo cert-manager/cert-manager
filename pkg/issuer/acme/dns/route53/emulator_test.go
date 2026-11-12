@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -52,7 +53,9 @@ import (
 // build the provider with NewDNSProviderFromOptions, sign real requests and
 // read the records back to check what the provider did.
 //
-// The tests are skipped unless the `aws-emulator` command is on the PATH.
+// `make test` downloads the emulator and sets AWS_EMULATOR to its path.
+// Without that variable, the tests look for `aws-emulator` on the PATH and are
+// skipped if it is not there. AWS publishes the emulator for Linux only.
 // See https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-linux.html
 
 // startEmulator starts an AWS Emulator which is stopped when the test ends.
@@ -61,9 +64,14 @@ import (
 func startEmulator(t *testing.T) {
 	t.Helper()
 
-	bin, err := exec.LookPath("aws-emulator")
-	if err != nil {
-		t.Skip("aws-emulator is not on the PATH")
+	// The Makefile sets AWS_EMULATOR, so that the tests cannot be skipped by
+	// accident in CI.
+	bin := os.Getenv("AWS_EMULATOR")
+	if bin == "" {
+		var err error
+		if bin, err = exec.LookPath("aws-emulator"); err != nil {
+			t.Skip("AWS_EMULATOR is not set and aws-emulator is not on the PATH")
+		}
 	}
 
 	cmd := exec.CommandContext(t.Context(), bin, "--port=0", "--telemetry=off", "--idle-timeout=300")
