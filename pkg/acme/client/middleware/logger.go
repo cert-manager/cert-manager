@@ -83,7 +83,15 @@ func (l *Logger) CreateOrderCert(ctx context.Context, finalizeURL string, csr []
 	l.log.V(logf.TraceLevel).Info("Calling CreateOrderCert")
 	ctx = context.WithValue(ctx, client.AcmeActionLabel, "create_order_cert")
 
-	return l.baseCl.CreateOrderCert(ctx, finalizeURL, csr, bundle)
+	return l.baseCl.CreateOrderCert(ctx, finalizeURL, csr, bundle) //nolint:staticcheck // SA1019: the middleware must still forward the deprecated method
+}
+
+func (l *Logger) CreateCertFromOrder(ctx context.Context, order *acme.Order, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+	l.log.V(logf.TraceLevel).Info("Calling CreateCertFromOrder")
+	// The label keeps the old method's name so existing dashboards and alerts still match.
+	ctx = context.WithValue(ctx, client.AcmeActionLabel, "create_order_cert")
+
+	return l.baseCl.CreateCertFromOrder(ctx, order, csr, bundle)
 }
 
 func (l *Logger) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
