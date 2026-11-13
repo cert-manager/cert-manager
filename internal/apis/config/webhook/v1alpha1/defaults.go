@@ -17,13 +17,25 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	logsapi "k8s.io/component-base/logs/api/v1"
 
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 )
 
-const defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+const (
+	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+
+	// defaultShutdownDelay is how long a terminating webhook Pod keeps
+	// serving, so that it is removed from the Service's endpoints before it
+	// stops listening. That took 0.3s to 0.4s in
+	// https://github.com/cert-manager/cert-manager/issues/9590, and 5s stays
+	// well inside the default terminationGracePeriodSeconds of 30s.
+	defaultShutdownDelay = 5 * time.Second
+)
 
 var (
 	// PEM size limits based on existing constants in internal/pem/decode.go
@@ -50,6 +62,11 @@ func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
 
 	if obj.MetricsListenAddress == "" {
 		obj.MetricsListenAddress = defaultPrometheusMetricsServerAddress
+	}
+
+	// Only default a missing value, because an explicit 0 turns the delay off.
+	if obj.ShutdownDelay == nil {
+		obj.ShutdownDelay = sharedv1alpha1.DurationFromTime(defaultShutdownDelay)
 	}
 
 	logsapi.SetRecommendedLoggingConfiguration(&obj.Logging)
