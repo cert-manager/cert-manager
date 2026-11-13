@@ -288,7 +288,8 @@ type CertificateSpec struct {
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	//
 	// If unset, defaults to `digital signature` and `key encipherment`, or to
-	// `digital signature` alone for the `MLDSA` key algorithm.
+	// `digital signature` alone for the `ECDSA`, `Ed25519` and `MLDSA` key
+	// algorithms.
 	// +optional
 	// +listType=atomic
 	Usages []KeyUsage `json:"usages,omitempty"`

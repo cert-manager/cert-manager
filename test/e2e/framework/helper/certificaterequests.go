@@ -276,9 +276,14 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 // algorithm and the isCA field.
 func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAlg cmapi.PrivateKeyAlgorithm, issuerSpec *cmapi.IssuerSpec) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 
-	// ML-DSA keys have different default key usages.
+	// ECDSA, Ed25519 and ML-DSA keys have different default key usages.
 	pubKeyAlgo := x509.UnknownPublicKeyAlgorithm
-	if keyAlg == cmapi.MLDSAKeyAlgorithm {
+	switch keyAlg {
+	case cmapi.ECDSAKeyAlgorithm:
+		pubKeyAlgo = x509.ECDSA
+	case cmapi.Ed25519KeyAlgorithm:
+		pubKeyAlgo = x509.Ed25519
+	case cmapi.MLDSAKeyAlgorithm:
 		pubKeyAlgo = x509.MLDSA
 	}
 

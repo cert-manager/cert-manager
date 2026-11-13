@@ -133,10 +133,12 @@ func KeyUsagesForPublicKeyAlgorithm(usages []v1.KeyUsage, isCA bool, pubKeyAlgo 
 
 // DefaultKeyUsagesForPublicKeyAlgorithm returns the key usages which are used
 // when no usages are specified for a key with the given public key algorithm.
-// RFC 9881 Section 5 forbids the encipherment usages in v1.DefaultKeyUsages
-// for ML-DSA keys, so ML-DSA keys default to digital signature only.
+// The encipherment usages in v1.DefaultKeyUsages are forbidden for ECDSA keys
+// (RFC 8813 Section 3), Ed25519 keys (RFC 8410 Section 5) and ML-DSA keys
+// (RFC 9881 Section 5), so those keys default to digital signature only.
 func DefaultKeyUsagesForPublicKeyAlgorithm(pubKeyAlgo x509.PublicKeyAlgorithm) []v1.KeyUsage {
-	if pubKeyAlgo == x509.MLDSA {
+	switch pubKeyAlgo {
+	case x509.ECDSA, x509.Ed25519, x509.MLDSA:
 		return []v1.KeyUsage{v1.UsageDigitalSignature}
 	}
 

@@ -670,14 +670,14 @@ func TestCA_Sign_MLDSA(t *testing.T) {
 				require.NoError(t, got.CheckSignatureFrom(ecdsaCACert))
 			},
 		},
-		"an ECDSA CSR should be signed by an ML-DSA CA": {
+		"an ECDSA CSR should be signed by an ML-DSA CA with the ECDSA default key usages": {
 			givenCASecretData: mldsaCASecretData,
 			givenCSR:          ecdsaCSR,
 			featureEnabled:    true,
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
 				assert.Equal(t, x509.ECDSA, got.PublicKeyAlgorithm)
 				assert.Equal(t, x509.MLDSA87, got.SignatureAlgorithm)
-				assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
+				assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
 			},
 		},
 		"an ML-DSA CSR should not be signed if the MLDSAPrivateKeys feature gate is disabled": {

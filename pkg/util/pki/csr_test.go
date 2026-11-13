@@ -144,14 +144,20 @@ func TestKeyUsagesForPublicKeyAlgorithm(t *testing.T) {
 			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		},
 		{
-			name:             "ECDSA default is unchanged",
+			name:             "ECDSA default",
 			pubKeyAlgo:       x509.ECDSA,
-			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature,
 		},
 		{
-			name:             "Ed25519 default is unchanged",
+			name:             "ECDSA default with isCA",
+			isCA:             true,
+			pubKeyAlgo:       x509.ECDSA,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		},
+		{
+			name:             "Ed25519 default",
 			pubKeyAlgo:       x509.Ed25519,
-			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature,
 		},
 		{
 			name:             "unknown public key algorithm default is unchanged",
