@@ -190,6 +190,8 @@ func TestEnsurePod(t *testing.T) {
 	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 	scPod.Spec.Tolerations = []corev1.Toleration{}
 
+	ppACMEOptions := acmeOptions
+	ppACMEOptions.ACMEHTTP01SolverProxyProtocol = true
 	ppPod := pod.DeepCopy()
 	ppPod.Spec.Containers[0].Args = []string{
 		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
@@ -327,14 +329,7 @@ func TestEnsurePod(t *testing.T) {
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ppPod))},
 				Context: &controller.Context{
-					ACMEOptions: controller.ACMEOptions{
-						HTTP01SolverResourceRequestCPU:    cpuRequest,
-						HTTP01SolverResourceRequestMemory: memoryRequest,
-						HTTP01SolverResourceLimitsCPU:     cpuLimit,
-						HTTP01SolverResourceLimitsMemory:  memoryLimit,
-						ACMEHTTP01SolverRunAsNonRoot:      true,
-						ACMEHTTP01SolverProxyProtocol:     true,
-					},
+					ACMEOptions: ppACMEOptions,
 				},
 			},
 		},

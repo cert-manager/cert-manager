@@ -67,7 +67,7 @@ func NewACMESolverCommand(_ context.Context) *cobra.Command {
 				}
 			}()
 
-			if err := s.Listen(log); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			if err := s.Listen(runCtx, log); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
 

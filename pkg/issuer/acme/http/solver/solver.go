@@ -17,6 +17,7 @@ limitations under the License.
 package solver
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -50,8 +51,9 @@ type HTTP01Solver struct {
 	http.Server
 }
 
-func (h *HTTP01Solver) Listen(log logr.Logger) error {
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", h.ListenPort))
+func (h *HTTP01Solver) Listen(ctx context.Context, log logr.Logger) error {
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(ctx, "tcp", fmt.Sprintf(":%d", h.ListenPort))
 	if err != nil {
 		return err
 	}

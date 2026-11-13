@@ -17,7 +17,8 @@ limitations under the License.
 package solver
 
 import (
-	"context"
+	"bufio"
+	"bytes"
 	"io"
 	"net"
 	"net/http"
@@ -196,13 +197,6 @@ func Test_parseHost(t *testing.T) {
 	}
 }
 
-type proxyConnDialer struct {
-	c net.Conn
-}
-
-func (pcd proxyConnDialer) Dial(ctx context.Context, network, addr string) (net.Conn, error) {
-	return pcd.c, nil
-}
 func Test_listenSolver(t *testing.T) {
 	cases := map[string]struct {
 		solverPort           int
@@ -287,10 +281,20 @@ func Test_listenSolver(t *testing.T) {
 				Key:           tc.solverKey,
 			}
 
-			ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(solver.ListenPort))
+			lc := net.ListenConfig{}
+			ln, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:"+strconv.Itoa(solver.ListenPort))
 			require.NoError(t, err)
-			go func() { _ = solver.Serve(logr.Discard(), ln) }()
-			t.Cleanup(func() { _ = solver.Server.Close() })
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				_ = solver.Serve(logr.Discard(), ln)
+			}()
+			// Close the listener, not solver.Server: Serve assigns
+			// solver.Server in the other goroutine.
+			t.Cleanup(func() {
+				_ = ln.Close()
+				<-done
+			})
 
 			addr := ln.Addr().(*net.TCPAddr)
 			conn, err := net.DialTCP("tcp", nil, addr)
@@ -308,6 +312,11 @@ func Test_listenSolver(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// Send the optional PROXY header and the request in one write.
+			// If they are written separately, a server without
+			// --proxy-protocol can reply 400 and close the connection
+			// before the request has been sent.
+			var buf bytes.Buffer
 			if tc.requestProxyProtocol {
 				header := &proxyproto.Header{
 					Version:           tc.proxyProtocolVersion,
@@ -322,19 +331,14 @@ func Test_listenSolver(t *testing.T) {
 						Port: 2000,
 					},
 				}
-				_, err = header.WriteTo(conn)
-				if err != nil {
-					t.Fatal(err)
-				}
+				_, err = header.WriteTo(&buf)
+				require.NoError(t, err)
 			}
+			require.NoError(t, r.Write(&buf))
+			_, err = conn.Write(buf.Bytes())
+			require.NoError(t, err)
 
-			client := &http.Client{
-				Transport: &http.Transport{
-					DialContext: proxyConnDialer{conn}.Dial,
-				},
-			}
-
-			resp, err := client.Do(r)
+			resp, err := http.ReadResponse(bufio.NewReader(conn), r)
 			if err != nil {
 				if !(strings.Contains(err.Error(), tc.expectedErrorKey) && tc.expectedErrorKey != "") {
 					t.Fatal(err)
