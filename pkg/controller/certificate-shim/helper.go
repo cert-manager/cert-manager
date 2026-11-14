@@ -247,33 +247,38 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if privateKeyAlgorithm, found := ingLikeAnnotations[cmapi.PrivateKeyAlgorithmAnnotationKey]; found {
 		algorithm := cmapi.PrivateKeyAlgorithm(privateKeyAlgorithm)
+		var pubKeyAlgo x509.PublicKeyAlgorithm
 		switch algorithm {
-		case cmapi.RSAKeyAlgorithm,
-			cmapi.ECDSAKeyAlgorithm,
-			cmapi.Ed25519KeyAlgorithm:
-			// ok
+		case cmapi.RSAKeyAlgorithm:
+			pubKeyAlgo = x509.RSA
+		case cmapi.ECDSAKeyAlgorithm:
+			pubKeyAlgo = x509.ECDSA
+		case cmapi.Ed25519KeyAlgorithm:
+			pubKeyAlgo = x509.Ed25519
 		case cmapi.MLDSAKeyAlgorithm:
 			if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
 				return fmt.Errorf("%w %q: private key algorithm %q requires the MLDSAPrivateKeys feature gate to be enabled", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)
 			}
-
-			if _, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; !found {
-				// The default usages include key encipherment, which RFC 9881
-				// forbids for ML-DSA keys.
-				crt.Spec.Usages = pki.DefaultKeyUsagesForPublicKeyAlgorithm(x509.MLDSA)
-			} else {
-				var forbidden []cmapi.KeyUsage
-				for _, u := range crt.Spec.Usages {
-					if !pki.KeyUsageAllowedForPublicKeyAlgorithm(u, x509.MLDSA) {
-						forbidden = append(forbidden, u)
-					}
-				}
-				if len(forbidden) > 0 {
-					return fmt.Errorf("%w %q: key usages %v are not allowed for private key algorithm %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, forbidden, privateKeyAlgorithm)
-				}
-			}
+			pubKeyAlgo = x509.MLDSA
 		default:
 			return fmt.Errorf("%w %q: invalid private key algorithm %q", errInvalidIngressAnnotation, cmapi.PrivateKeyAlgorithmAnnotationKey, privateKeyAlgorithm)
+		}
+
+		if _, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; !found {
+			// The default usages include key encipherment, which is forbidden
+			// for ECDSA (RFC 8813), Ed25519 (RFC 8410) and ML-DSA (RFC 9881)
+			// keys.
+			crt.Spec.Usages = pki.DefaultKeyUsagesForPublicKeyAlgorithm(pubKeyAlgo)
+		} else {
+			var forbidden []cmapi.KeyUsage
+			for _, u := range crt.Spec.Usages {
+				if !pki.KeyUsageAllowedForPublicKeyAlgorithm(u, pubKeyAlgo) {
+					forbidden = append(forbidden, u)
+				}
+			}
+			if len(forbidden) > 0 {
+				return fmt.Errorf("%w %q: key usages %v are not allowed for private key algorithm %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, forbidden, privateKeyAlgorithm)
+			}
 		}
 
 		if crt.Spec.PrivateKey == nil {
