@@ -1,0 +1,45 @@
+suite: cainjector ConfigMap - Config Flag
+templates:
+  - templates/cainjector-config.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should render cainjector config when provided and cainjector enabled
+    set:
+      cainjector.config:
+        logging:
+          verbosity: 2
+      cainjector.enabled: true
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: cert-manager-cainjector
+      - isNotEmpty:
+          path: data.config\.yaml
+
+  - it: should skip cainjector config when cainjector disabled
+    set:
+      cainjector.config:
+        logging:
+          verbosity: 2
+      cainjector.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should skip cainjector config when no config provided
+    set:
+      cainjector.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should skip cainjector config when both disabled and no config
+    set:
+      cainjector.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
