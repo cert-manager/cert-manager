@@ -14,6 +14,14 @@
 
 export KUBEBUILDER_ASSETS=$(PWD)/$(bin_dir)/tools
 
+# AWS Emulator serves the AWS APIs locally. The Route 53 tests in
+# pkg/issuer/acme/dns/route53 use it when AWS_EMULATOR is set and are skipped
+# otherwise. AWS publishes it for Linux only.
+ifeq ($(HOST_OS),linux)
+export AWS_EMULATOR=$(AWS-EMULATOR)
+test test-ci unit-test-core-module: | $(NEEDS_AWS-EMULATOR)
+endif
+
 # GOTESTSUM_CI_FLAGS contains flags which are common to invocations of gotestsum in CI environments
 GOTESTSUM_CI_FLAGS := --junitfile-testsuite-name short --junitfile-testcase-classname relative
 

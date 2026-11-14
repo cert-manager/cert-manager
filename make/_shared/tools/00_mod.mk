@@ -110,6 +110,9 @@ tools += rclone=v1.76.0
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
 tools += istioctl=1.31.4
+# https://github.com/aws/aws-emulator/releases
+# renovate: datasource=github-releases packageName=aws/aws-emulator
+tools += aws-emulator=v1.0.322
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -785,6 +788,32 @@ $(DOWNLOAD_DIR)/tools/preflight@$(PREFLIGHT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | 
 		$(checkhash_script) $(outfile) $(preflight_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
 		chmod +x $(outfile)
 
+# AWS Emulator serves the AWS APIs locally, for tests which would otherwise
+# need an AWS account. AWS publishes it for Linux only, as RPM and Debian
+# packages, so the "tools" targets leave it out on other systems.
+# https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-linux.html
+linux_only_tool_names := aws-emulator
+
+aws-emulator_linux_amd64_SHA256SUM=ef3c75e5d4196bf2c0170b55b75b01e340e0ef497e636b700a1efe68d68a60d7
+aws-emulator_linux_arm64_SHA256SUM=8cfabb461ccfbfa75468393e8dfbf5216b07ef54fcf20584c11d02a9fc854b03
+
+.PRECIOUS: $(DOWNLOAD_DIR)/tools/aws-emulator@$(AWS-EMULATOR_VERSION)_$(HOST_OS)_$(HOST_ARCH)
+$(DOWNLOAD_DIR)/tools/aws-emulator@$(AWS-EMULATOR_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
+	$(if $(filter linux,$(HOST_OS)),,$(error aws-emulator is only published for Linux))
+	@# The binary is unpacked from the Debian package without installing it.
+	@# dpkg-deb needs no xz command, which our CI image lacks. Systems without
+	@# dpkg-deb, such as Fedora, use ar and tar instead.
+	@source $(lock_script) $@; \
+		$(CURL) https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/aws-emulator_$(AWS-EMULATOR_VERSION:v%=%)-1_$(HOST_ARCH).deb -o $(outfile).deb; \
+		$(checkhash_script) $(outfile).deb $(aws-emulator_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM); \
+		if command -v dpkg-deb >/dev/null; then \
+			dpkg-deb --fsys-tarfile $(outfile).deb | tar xfO - ./opt/aws-emulator/bin/aws-emulator > $(outfile); \
+		else \
+			ar p $(outfile).deb data.tar.xz | tar xJfO - ./opt/aws-emulator/bin/aws-emulator > $(outfile); \
+		fi; \
+		chmod +x $(outfile); \
+		rm -f $(outfile).deb
+
 operator-sdk_linux_amd64_SHA256SUM=887a3bb0d63ccc4ca47a522d0c8ffac56d9d5246f6a2bd886b4ed23eb2e2672f
 operator-sdk_linux_arm64_SHA256SUM=6db93cd821b429f0bb514cea4bbb5553827d273fc8aa211f13e14798599d31cd
 operator-sdk_darwin_amd64_SHA256SUM=7cb0f24bb63b6383a117291ee4c808953c5dd789d5877da98051aa68b41f40ac
@@ -835,7 +864,7 @@ ifneq ($(missing),)
 $(error Missing required tools: $(missing))
 endif
 
-non_go_tool_names := $(filter-out $(go_tool_names),$(tool_names))
+non_go_tool_names := $(filter-out $(go_tool_names) $(if $(filter linux,$(HOST_OS)),,$(linux_only_tool_names)),$(tool_names))
 
 .PHONY: non-go-tools
 ## Download and setup all Non-Go tools
