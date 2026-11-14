@@ -116,6 +116,11 @@ func TestDiscover_WithProfiles(t *testing.T) {
 		metaWebsite = "https://www.example.com/"
 		metaCAA     = "example.com"
 	)
+	expected := map[ProfileName]string{"default": "Your favorite default profile", "tlsserver": "New and improved", "client": "For all your mutual TLS needs"}
+	profilesBytes, err := json.Marshal(expected)
+	if err != nil {
+		t.Fatalf("cannot marshal %+v: %+v", expected, err)
+	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{
@@ -130,13 +135,9 @@ func TestDiscover_WithProfiles(t *testing.T) {
 				"website": %q,
 				"caaIdentities": [%q],
 				"externalAccountRequired": true,
-                "profiles": {
-                    "default": "Your favorite default profile",
-                    "tlsserver": "New and improved",
-                    "client": "For all your mutual TLS needs"
-                }
+				"profiles": %s
 			}
-		}`, nonce, reg, order, authz, revoke, keychange, metaTerms, metaWebsite, metaCAA)
+		}`, nonce, reg, order, authz, revoke, keychange, metaTerms, metaWebsite, metaCAA, profilesBytes)
 	}))
 	defer ts.Close()
 	c := &Client{DirectoryURL: ts.URL}
@@ -144,15 +145,8 @@ func TestDiscover_WithProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := Profiles(map[string]string{"default": "Your favorite default profile", "tlsserver": "New and improved", "client": "For all your mutual TLS needs"})
-	if dir.Profiles == nil {
-		t.Errorf("expected directory to be %+v; got nil", expected)
-	}
-
-	for key, value := range dir.Profiles {
-		if expValue := expected.GetDescription(key); value != expValue {
-			t.Errorf("expected key %+q to have description %+q; got %+q", key, expected, value)
-		}
+	if !reflect.DeepEqual(dir.Profiles, expected) {
+		t.Errorf("got profiles = %+v; want %+v", dir.Profiles, expected)
 	}
 }
 
@@ -864,7 +858,7 @@ func TestRFC_AuthorizeOrder(t *testing.T) {
 	}
 }
 
-func TestRFC_AuthorizeOrder_WithOrderProfile(t *testing.T) {
+func TestRFC_AuthorizeOrder_WithOrderIssuanceProfile(t *testing.T) {
 	s := newACMEServer()
 	s.handle("/acme/new-account", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Location", s.url("/accounts/1"))
@@ -872,6 +866,23 @@ func TestRFC_AuthorizeOrder_WithOrderProfile(t *testing.T) {
 		w.Write([]byte(`{"status": "valid"}`))
 	})
 	s.handle("/acme/new-order", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Profile string `json:"profile"`
+		}
+		decodeJWSRequest(t, &req, r.Body)
+		if req.Profile == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			returnedErr := wireError{
+				Status:      http.StatusBadRequest,
+				Type:        "test:missing-issuance-profile",
+				Detail:      "expected an order issuance profile but received none",
+				Instance:    "",
+				Subproblems: []Subproblem{},
+			}
+			bs, _ := json.Marshal(&returnedErr)
+			w.Write(bs)
+			t.Errorf("got profile = %q; want %q", req.Profile, "server")
+		}
 		w.Header().Set("Location", s.url("/orders/1"))
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprintf(w, `{
@@ -880,8 +891,9 @@ func TestRFC_AuthorizeOrder_WithOrderProfile(t *testing.T) {
 			"notBefore": "2019-08-31T00:00:00Z",
 			"notAfter": "2019-09-02T00:00:00Z",
 			"identifiers": [{"type":"dns", "value":"example.org"}],
-			"authorizations": [%q]
-		}`, s.url("/authz/1"))
+			"authorizations": [%q],
+			"profile": %q
+		}`, s.url("/authz/1"), req.Profile)
 	})
 	s.start()
 	defer s.close()
@@ -890,10 +902,10 @@ func TestRFC_AuthorizeOrder_WithOrderProfile(t *testing.T) {
 	o, err := cl.AuthorizeOrder(context.Background(), DomainIDs("example.org"),
 		WithOrderNotBefore(time.Date(2019, 8, 31, 0, 0, 0, 0, time.UTC)),
 		WithOrderNotAfter(time.Date(2019, 9, 2, 0, 0, 0, 0, time.UTC)),
-		WithOrderProfile("server"),
+		WithOrderIssuanceProfile("server"),
 	)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("unexpected error: %+v", err)
 	}
 	okOrder := &Order{
 		URI:         s.url("/orders/1"),
@@ -903,6 +915,7 @@ func TestRFC_AuthorizeOrder_WithOrderProfile(t *testing.T) {
 		NotAfter:    time.Date(2019, 9, 2, 0, 0, 0, 0, time.UTC),
 		Identifiers: []AuthzID{{Type: "dns", Value: "example.org"}},
 		AuthzURLs:   []string{s.url("/authz/1")},
+		Profile:     ProfileName("server"),
 	}
 	if !reflect.DeepEqual(o, okOrder) {
 		t.Errorf("AuthorizeOrder = %+v; want %+v", o, okOrder)
