@@ -162,6 +162,8 @@ github.com/spf13/cobra,Apache-2.0
 github.com/spf13/pflag,BSD-3-Clause
 github.com/stretchr/objx,MIT
 github.com/stretchr/testify,MIT
+github.com/stretchr/testify/internal/difflib,BSD-3-Clause
+github.com/stretchr/testify/internal/spew,ISC
 github.com/vektah/gqlparser/v2,MIT
 github.com/x448/float16,MIT
 github.com/youmark/pkcs8,MIT
@@ -177,6 +179,8 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace,BSD-3-Clause
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,Apache-2.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc,BSD-3-Clause
+go.opentelemetry.io/otel/log,Apache-2.0
+go.opentelemetry.io/otel/log,BSD-3-Clause
 go.opentelemetry.io/otel/metric,Apache-2.0
 go.opentelemetry.io/otel/metric,BSD-3-Clause
 go.opentelemetry.io/otel/sdk,Apache-2.0
