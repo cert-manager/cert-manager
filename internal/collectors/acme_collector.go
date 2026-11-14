@@ -18,6 +18,9 @@ package collectors
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -30,6 +33,33 @@ var (
 	challengeValidStatuses  = [...]acmemeta.State{acmemeta.Ready, acmemeta.Valid, acmemeta.Errored, acmemeta.Expired, acmemeta.Invalid, acmemeta.Processing, acmemeta.Unknown, acmemeta.Pending}
 	certChallengeMetricDesc = prometheus.NewDesc("certmanager_certificate_challenge_status", "The status of certificate challenges", []string{"status", "domain", "reason", "processing", "name", "namespace", "type"}, nil)
 )
+
+// maxChallengeReasonLabelLen caps the "reason" label: ACME status text can embed HTML
+// responses and unbounded detail, which breaks Prometheus scraping and explodes series size.
+const maxChallengeReasonLabelLen = 256
+
+// normalizeChallengeReason converts arbitrary challenge reason text into a
+// bounded, printable string suitable for use as a Prometheus label value.
+func normalizeChallengeReason(reason string) string {
+	var b strings.Builder
+	if reasonLen := len(reason); reasonLen > maxChallengeReasonLabelLen {
+		b.Grow(maxChallengeReasonLabelLen)
+	} else {
+		b.Grow(reasonLen)
+	}
+
+	for _, r := range reason {
+		if unicode.IsControl(r) {
+			r = ' '
+		}
+		runeLen := utf8.RuneLen(r)
+		if b.Len()+runeLen > maxChallengeReasonLabelLen {
+			break
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
 
 type ACMECollector struct {
 	challengesLister                 cmacmelisters.ChallengeLister
@@ -65,7 +95,7 @@ func (ac *ACMECollector) Collect(ch chan<- prometheus.Metric) {
 				value,
 				string(status),
 				challenge.Spec.DNSName,
-				challenge.Status.Reason,
+				normalizeChallengeReason(challenge.Status.Reason),
 				fmt.Sprint(challenge.Status.Processing),
 				challenge.Name,
 				challenge.Namespace,
