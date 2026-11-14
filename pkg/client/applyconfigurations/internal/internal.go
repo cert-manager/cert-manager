@@ -469,6 +469,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolver
   map:
     fields:
+    - name: delayBeforeAccept
+      type:
+        namedType: Duration.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: dns01
       type:
         namedType: com.github.cert-manager.cert-manager.pkg.apis.acme.v1.ACMEChallengeSolverDNS01
@@ -1032,6 +1035,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: reason
       type:
         scalar: string
+    - name: selfCheckSucceededAt
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
     - name: state
       type:
         scalar: string

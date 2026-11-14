@@ -487,6 +487,7 @@ func autoConvert_v1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *acmev1.A
 		out.DNS01 = nil
 	}
 	out.WaitInsteadOfSelfCheck = (*metav1.Duration)(unsafe.Pointer(in.WaitInsteadOfSelfCheck))
+	out.DelayBeforeAccept = (*metav1.Duration)(unsafe.Pointer(in.DelayBeforeAccept))
 	return nil
 }
 
@@ -508,6 +509,7 @@ func autoConvert_acme_ACMEChallengeSolver_To_v1_ACMEChallengeSolver(in *acme.ACM
 		out.DNS01 = nil
 	}
 	out.WaitInsteadOfSelfCheck = (*metav1.Duration)(unsafe.Pointer(in.WaitInsteadOfSelfCheck))
+	out.DelayBeforeAccept = (*metav1.Duration)(unsafe.Pointer(in.DelayBeforeAccept))
 	return nil
 }
 

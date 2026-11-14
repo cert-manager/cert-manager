@@ -41,6 +41,35 @@ func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj run
 	return el, nil
 }
 
+// ValidateACMEChallengeSolverTiming validates the mutually exclusive delay
+// options shared by Issuer solvers and Challenge specs, so the two cannot
+// drift.
+func ValidateACMEChallengeSolverTiming(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if sol.WaitInsteadOfSelfCheck != nil && sol.WaitInsteadOfSelfCheck.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
+	}
+
+	if sol.DelayBeforeAccept != nil && sol.DelayBeforeAccept.Duration < 0 {
+		el = append(el, field.Invalid(fldPath.Child("delayBeforeAccept"), sol.DelayBeforeAccept.Duration, "delayBeforeAccept must not be negative"))
+	}
+
+	if sol.WaitInsteadOfSelfCheck != nil && sol.DelayBeforeAccept != nil {
+		el = append(el, field.Forbidden(fldPath, "may not specify both waitInsteadOfSelfCheck and delayBeforeAccept"))
+	}
+
+	return el
+}
+
 func ValidateChallenge(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
-	return nil, nil
+	ch, ok := obj.(*cmacme.Challenge)
+	if !ok || ch == nil {
+		return nil, nil
+	}
+
+	fldPath := field.NewPath("spec", "solver")
+	el := ValidateACMEChallengeSolverTiming(&ch.Spec.Solver, fldPath)
+
+	return el, nil
 }

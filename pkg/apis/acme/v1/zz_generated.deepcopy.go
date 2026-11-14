@@ -95,6 +95,11 @@ func (in *ACMEChallengeSolver) DeepCopyInto(out *ACMEChallengeSolver) {
 		*out = new(metav1.Duration)
 		**out = **in
 	}
+	if in.DelayBeforeAccept != nil {
+		in, out := &in.DelayBeforeAccept, &out.DelayBeforeAccept
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	return
 }
 
@@ -898,6 +903,10 @@ func (in *ChallengeStatus) DeepCopyInto(out *ChallengeStatus) {
 	*out = *in
 	if in.PresentedAt != nil {
 		in, out := &in.PresentedAt, &out.PresentedAt
+		*out = (*in).DeepCopy()
+	}
+	if in.SelfCheckSucceededAt != nil {
+		in, out := &in.SelfCheckSucceededAt, &out.SelfCheckSucceededAt
 		*out = (*in).DeepCopy()
 	}
 	return
