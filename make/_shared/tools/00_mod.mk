@@ -109,7 +109,7 @@ tools += ytt=v0.55.4
 tools += rclone=v1.76.0
 # https://github.com/istio/istio/releases
 # renovate: datasource=github-releases packageName=istio/istio
-tools += istioctl=1.31.4
+tools += istioctl=1.32.0
 
 ### go packages
 # https://pkg.go.dev/sigs.k8s.io/controller-tools/cmd/controller-gen?tab=versions
@@ -160,10 +160,10 @@ tools += ginkgo=$(detected_ginkgo_version)
 tools += klone=v0.3.0
 # https://pkg.go.dev/github.com/goreleaser/goreleaser/v2?tab=versions
 # renovate: datasource=go packageName=github.com/goreleaser/goreleaser/v2
-tools += goreleaser=v2.20.0
+tools += goreleaser=v2.20.1
 # https://pkg.go.dev/github.com/anchore/syft/cmd/syft?tab=versions
 # renovate: datasource=go packageName=github.com/anchore/syft
-tools += syft=v1.57.0
+tools += syft=v1.57.1
 # https://github.com/cert-manager/helm-tool/releases
 # renovate: datasource=github-releases packageName=cert-manager/helm-tool
 tools += helm-tool=v0.6.0
@@ -756,10 +756,10 @@ $(DOWNLOAD_DIR)/tools/rclone@$(RCLONE_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWN
 		chmod +x $(outfile); \
 		rm -f $(outfile).zip
 
-istioctl_linux_amd64_SHA256SUM=956421eb4934c10029622b6cd96442c904548d12eadbe874fb1d1a38d5d58ccc
-istioctl_linux_arm64_SHA256SUM=746985d0fd0347efde7e971888344c86d520f5cf86c538e8faa325f3d246bf55
-istioctl_darwin_amd64_SHA256SUM=6cc1d5d8363ddb9d716f483b3911b16b7b7f9c0072e05a45a604d7bf60852a64
-istioctl_darwin_arm64_SHA256SUM=d737d06b48b9513567f902d225f9a0a1b023159b45fc6d938fa8d2be15ee0e6b
+istioctl_linux_amd64_SHA256SUM=b9cc0d427e2742b63ade28e15332a4b5da37ebf2d777a25ba22cc91bbfd51fbf
+istioctl_linux_arm64_SHA256SUM=76f220746c75b6b0098d752da941ed91afc4e0cfd6722b853172d764fb6c2173
+istioctl_darwin_amd64_SHA256SUM=803f30507ba687f88e10ea9b6736dfb77fcc3c66c1d3ce8dc71420bfcfe27d6c
+istioctl_darwin_arm64_SHA256SUM=1d9a82445c2395f85ce3a165dc90e182ad4e52214f85c18e93db274fd6d82fbb
 
 .PRECIOUS: $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH)
 $(DOWNLOAD_DIR)/tools/istioctl@$(ISTIOCTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | $(DOWNLOAD_DIR)/tools
