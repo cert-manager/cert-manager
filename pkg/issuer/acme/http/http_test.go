@@ -241,10 +241,14 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 			dnsServer2Called: false,
 		},
 		{
+			// The servers are tried in order and the first one answers, so the
+			// second is never reached. This previously expected both to be
+			// called, because every lookup rotated through the list instead of
+			// staying on a server that works.
 			name:             "two custom dns servers",
 			dnsServers:       []string{"127.0.0.1:15353", "127.0.0.1:15354"},
 			dnsServer1Called: true,
-			dnsServer2Called: true,
+			dnsServer2Called: false,
 		},
 		{
 			name:             "system dns servers",
@@ -353,5 +357,128 @@ func TestReachabilityDoesNotReflectRedirectedResponseBody(t *testing.T) {
 	}
 	if errorLeaksBody(err, internalBody) {
 		t.Errorf("response body reached via a redirect must not be reflected in the error, but got: %v", err)
+	}
+}
+
+// TestReachabilityCustomDnsServersFailover ensures that a configured DNS server
+// which never answers does not fail the self check when another configured
+// server can answer. The unresponsive server is listed first so that the test
+// fails if the servers are not tried in turn.
+func TestReachabilityCustomDnsServersFailover(t *testing.T) {
+	site := "https://cert-manager.io"
+	u, err := url.Parse(site)
+	if err != nil {
+		t.Fatalf("Failed to parse url %s: %v", site, err)
+	}
+	ips, err := net.LookupIP(u.Host) //nolint: noctx // We intentionally use LookupIP here for test compatibility
+	if err != nil {
+		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
+	}
+
+	// deadServer accepts queries but never writes a reply, which is how a
+	// packet-dropping resolver behaves from the client's point of view.
+	deadStarted := make(chan struct{})
+	deadServer := &dns.Server{Addr: "127.0.0.1:15355", Net: "udp", NotifyStartedFunc: func() { close(deadStarted) }}
+	defer func() {
+		if err := deadServer.Shutdown(); err != nil {
+			t.Error(err)
+		}
+	}()
+	deadMux := &dns.ServeMux{}
+	deadServer.Handler = deadMux
+	deadMux.HandleFunc(".", func(dns.ResponseWriter, *dns.Msg) {})
+	go func() {
+		if err := deadServer.ListenAndServe(); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	liveStarted := make(chan struct{})
+	liveCalled := int32(0)
+	liveServer := &dns.Server{Addr: "127.0.0.1:15356", Net: "udp", NotifyStartedFunc: func() { close(liveStarted) }}
+	defer func() {
+		if err := liveServer.Shutdown(); err != nil {
+			t.Error(err)
+		}
+	}()
+	liveMux := &dns.ServeMux{}
+	liveServer.Handler = liveMux
+	liveMux.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
+		m := new(dns.Msg)
+		m.SetReply(r)
+		if r.Opcode != dns.OpcodeQuery {
+			return
+		}
+		for _, q := range m.Question {
+			if q.Name != u.Host+"." {
+				continue
+			}
+			atomic.StoreInt32(&liveCalled, 1)
+			for _, ip := range ips {
+				isV6 := strings.Contains(ip.String(), ":")
+				if q.Qtype == dns.TypeA && !isV6 {
+					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
+						m.Answer = append(m.Answer, rr)
+					}
+				}
+				if q.Qtype == dns.TypeAAAA && isV6 {
+					if rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, ip)); err == nil {
+						m.Answer = append(m.Answer, rr)
+					}
+				}
+			}
+		}
+		if err := w.WriteMsg(m); err != nil {
+			t.Errorf("failed to write DNS response: %v", err)
+		}
+	})
+	go func() {
+		if err := liveServer.ListenAndServe(); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	<-deadStarted
+	<-liveStarted
+
+	key := "there is no key"
+
+	err = testReachability(t.Context(), u, key, []string{"127.0.0.1:15355", "127.0.0.1:15356"}, "cert-manager-test")
+	if err == nil {
+		t.Fatal("expected testReachability to return an error for a mismatched response, but got none")
+	}
+	// Reaching the HTTP request at all means the name was resolved; a resolution
+	// failure surfaces as "failed to perform self check GET request" instead.
+	if !strings.Contains(err.Error(), key) {
+		t.Errorf("expected the self check to resolve via the responding server, but it failed to resolve: %v", err)
+	}
+	if atomic.LoadInt32(&liveCalled) != 1 {
+		t.Error("expected the responding DNS server to be queried, but it never was")
+	}
+}
+
+// TestReachabilityCustomDnsServersIPAddress ensures that a challenge for an IP
+// address is not sent to the configured DNS servers. There is nothing to
+// resolve, so an unresponsive server must not prevent the check from running.
+func TestReachabilityCustomDnsServersIPAddress(t *testing.T) {
+	const key = "the-expected-challenge-key"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, key)
+	}))
+	defer server.Close()
+
+	u, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("failed to parse test server URL %q: %v", server.URL, err)
+	}
+	if net.ParseIP(u.Hostname()) == nil {
+		t.Fatalf("expected the test server to listen on an IP address, got %q", u.Hostname())
+	}
+
+	// 127.0.0.1:1 is not listening, so any attempt to use it as a resolver fails.
+	err = testReachability(t.Context(), u, key, []string{"127.0.0.1:1"}, "cert-manager-test")
+	if err != nil {
+		t.Errorf("expected an IP address challenge to skip DNS resolution, but got: %v", err)
 	}
 }
