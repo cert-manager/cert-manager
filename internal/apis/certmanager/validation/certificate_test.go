@@ -1010,6 +1010,60 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("renewal", "windows").Index(0).Child("cron"), "CRON_TZ=UTC", "invalid cron syntax: failed to parse cron spec 'CRON_TZ=UTC': expected timezone prefix to be followed by a cron spec: CRON_TZ=UTC. cron needs to follow: cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow"),
 			},
 		},
+		"valid maxPathLen on CA certificate": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: new(1),
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"valid maxPathLen zero on CA certificate": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: new(0),
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid maxPathLen on non-CA certificate": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					IsCA:       false,
+					MaxPathLen: new(1),
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("maxPathLen"), 1, "maxPathLen may only be set when isCA is true"),
+			},
+		},
+		"invalid negative maxPathLen": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: new(-1),
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("maxPathLen"), -1, "maxPathLen must be a non-negative integer"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

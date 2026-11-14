@@ -126,6 +126,12 @@ type CertificateRequestSpec struct {
 	// of requested `usages`.
 	IsCA bool
 
+	// Requested maximum path length for the certificate.
+	// Only meaningful when IsCA is true. A value of 0 means no sub-CAs are allowed.
+	// When not set, no pathLenConstraint is encoded in the certificate.
+	// +optional
+	MaxPathLen *int
+
 	// Requested key usages and extended key usages.
 	//
 	// NOTE: If the CSR in the `Request` field has uses the KeyUsage or
