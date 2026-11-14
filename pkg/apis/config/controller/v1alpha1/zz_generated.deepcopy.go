@@ -77,6 +77,11 @@ func (in *ACMEHTTP01Config) DeepCopyInto(out *ACMEHTTP01Config) {
 			(*out)[key] = val
 		}
 	}
+	if in.SolverProxyProtocol != nil {
+		in, out := &in.SolverProxyProtocol, &out.SolverProxyProtocol
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

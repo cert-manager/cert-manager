@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/pires/go-proxyproto"
 )
 
 const (
@@ -39,7 +40,8 @@ const (
 )
 
 type HTTP01Solver struct {
-	ListenPort int
+	ListenPort    int
+	ProxyProtocol bool
 
 	Domain string
 	Token  string
@@ -49,6 +51,14 @@ type HTTP01Solver struct {
 }
 
 func (h *HTTP01Solver) Listen(log logr.Logger) error {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", h.ListenPort))
+	if err != nil {
+		return err
+	}
+	return h.Serve(log, ln)
+}
+
+func (h *HTTP01Solver) Serve(log logr.Logger, ln net.Listener) error {
 	log.Info("starting listener",
 		"expected_domain", h.Domain,
 		"expected_token", h.Token,
@@ -57,12 +67,16 @@ func (h *HTTP01Solver) Listen(log logr.Logger) error {
 	)
 
 	h.Server = http.Server{
-		Addr:              fmt.Sprintf(":%d", h.ListenPort),
+		Addr:              ln.Addr().String(),
 		Handler:           h.challengeHandler(log),
 		ReadHeaderTimeout: defaultReadHeaderTimeout, // Mitigation for G112: Potential slowloris attack
 	}
 
-	return h.Server.ListenAndServe()
+	if h.ProxyProtocol {
+		// Default policy is REQUIRE
+		ln = &proxyproto.Listener{Listener: ln}
+	}
+	return h.Server.Serve(ln)
 }
 
 func (h *HTTP01Solver) challengeHandler(log logr.Logger) http.HandlerFunc {
