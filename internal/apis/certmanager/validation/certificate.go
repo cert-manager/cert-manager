@@ -247,6 +247,15 @@ func validateCertificateSpec(crt, oldCrt *internalcmapi.CertificateSpec, fldPath
 		el = append(el, validateCertificateRenewal(crt, fldPath)...)
 	}
 
+	switch crt.DeletionPolicy {
+	case "", internalcmapi.CertificateDeletionPolicyDelete, internalcmapi.CertificateDeletionPolicyOrphan:
+	default:
+		el = append(el, field.NotSupported(fldPath.Child("deletionPolicy"), crt.DeletionPolicy, []string{
+			string(internalcmapi.CertificateDeletionPolicyDelete),
+			string(internalcmapi.CertificateDeletionPolicyOrphan),
+		}))
+	}
+
 	return el
 }
 

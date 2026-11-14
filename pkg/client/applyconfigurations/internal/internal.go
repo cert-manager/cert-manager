@@ -1430,6 +1430,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: commonName
       type:
         scalar: string
+    - name: deletionPolicy
+      type:
+        scalar: string
     - name: dnsNames
       type:
         list:

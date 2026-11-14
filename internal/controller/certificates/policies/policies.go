@@ -105,7 +105,7 @@ func NewReadinessPolicyChain(c clock.Clock) Chain {
 // NewSecretPostIssuancePolicyChain includes policy checks that are to be
 // performed _after_ issuance has been successful, testing for the presence and
 // correctness of metadata and output formats of Certificate's Secrets.
-func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string) Chain {
+func NewSecretPostIssuancePolicyChain(defaultDeletionPolicy cmapi.CertificateDeletionPolicy, fieldManager string) Chain {
 	return Chain{
 		SecretBaseLabelsMismatch,                                             // Make sure the managed labels have the correct values
 		SecretCertificateDetailsAnnotationsMismatch,                          // Make sure the managed certificate details annotations have the correct values
@@ -114,8 +114,8 @@ func NewSecretPostIssuancePolicyChain(ownerRefEnabled bool, fieldManager string)
 		SecretSecretTemplateManagedFieldsMismatch(fieldManager),              // Make sure only the expected template labels and annotations exist
 		SecretAdditionalOutputFormatsMismatch,
 		SecretAdditionalOutputFormatsManagedFieldsMismatch(fieldManager),
-		SecretOwnerReferenceMismatch(ownerRefEnabled),
-		SecretOwnerReferenceManagedFieldMismatch(ownerRefEnabled, fieldManager),
+		SecretOwnerReferenceMismatch(defaultDeletionPolicy),
+		SecretOwnerReferenceManagedFieldMismatch(defaultDeletionPolicy, fieldManager),
 
 		SecretKeystoreFormatMismatch,
 	}

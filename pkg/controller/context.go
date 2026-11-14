@@ -57,6 +57,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/kube"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
@@ -259,6 +260,16 @@ type CertificateOptions struct {
 	// the minimum backoff duration and is exponentially increased with
 	// each consecutive failure, but will never exceed this maximum (default 32h).
 	CertificateRequestMaximumBackoffDuration time.Duration
+}
+
+// DefaultSecretDeletionPolicy returns the deletion policy applied to
+// Certificates that leave spec.deletionPolicy unset: Delete when the
+// deprecated EnableOwnerRef option is set, otherwise Orphan.
+func (o CertificateOptions) DefaultSecretDeletionPolicy() cmapi.CertificateDeletionPolicy {
+	if o.EnableOwnerRef {
+		return cmapi.CertificateDeletionPolicyDelete
+	}
+	return cmapi.CertificateDeletionPolicyOrphan
 }
 
 type SchedulerOptions struct {
