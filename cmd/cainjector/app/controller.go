@@ -26,6 +26,7 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/cainjector"
 	"github.com/cert-manager/cert-manager/internal/apis/config/shared"
+	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -49,6 +50,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
@@ -62,6 +64,12 @@ const (
 	//   https://github.com/kubernetes-sigs/controller-runtime/blob/1ea2be573f7887a9fbd766e9a921c5af344da6eb/pkg/internal/httpserver/server.go#L14
 	defaultReadHeaderTimeout = 32 * time.Second
 )
+
+// The metrics endpoint serves the controller-runtime registry, so register the
+// build info metric there once, when the package is loaded.
+func init() {
+	ctrlmetrics.Registry.MustRegister(buildinfo.NewCollector())
+}
 
 func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	log := logf.FromContext(ctx)
