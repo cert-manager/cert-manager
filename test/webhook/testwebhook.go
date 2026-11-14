@@ -114,6 +114,10 @@ func startWebhookServer(t *testing.T, args []string, argumentsForNewServerWithOp
 	if err != nil {
 		t.Fatalf("Failed building test webhook config: %v", err)
 	}
+	// Stop as soon as the test is done rather than waiting out the shutdown
+	// delay, which only matters to the kube-apiserver. Set before the flags
+	// are added so that a test can still pass --shutdown-delay.
+	webhookConfig.ShutdownDelay = 0
 	webhookFlags.AddFlags(fs)
 	options.AddConfigFlags(fs, webhookConfig)
 	// Parse the arguments passed in into the WebhookOptions struct

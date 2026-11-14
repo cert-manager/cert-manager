@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/pem"
@@ -177,6 +178,48 @@ logging:
 			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
 				cc.Logging.Verbosity = 2
 				cc.Logging.Format = "text"
+			}),
+		},
+		{
+			yaml: ``,
+			args: func(tempFilePath string) []string {
+				return []string{"--kubeconfig=valid", "--shutdown-delay=12s"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = "valid"
+				cc.ShutdownDelay = 12 * time.Second
+			}),
+		},
+		{
+			// An explicit zero in the config file turns the delay off and
+			// must not be replaced by the default.
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+kubeConfig: valid
+shutdownDelay: 0s
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = path.Join(tempDir, "valid")
+				cc.ShutdownDelay = 0
+			}),
+		},
+		{
+			yaml: `
+apiVersion: webhook.config.cert-manager.io/v1alpha1
+kind: WebhookConfiguration
+kubeConfig: valid
+shutdownDelay: 20s
+`,
+			args: func(tempFilePath string) []string {
+				return []string{"--config=" + tempFilePath, "--shutdown-delay=3s"}
+			},
+			expConfig: configFromDefaults(func(tempDir string, cc *config.WebhookConfiguration) {
+				cc.KubeConfig = path.Join(tempDir, "valid")
+				cc.ShutdownDelay = 3 * time.Second
 			}),
 		},
 	}

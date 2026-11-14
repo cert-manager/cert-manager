@@ -130,6 +130,9 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(i
 	if err := Convert_v1alpha1_PEMSizeLimitsConfig_To_webhook_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig, &out.PEMSizeLimitsConfig, s); err != nil {
 		return err
 	}
+	if err := sharedv1alpha1.Convert_Pointer_v1alpha1_Duration_To_time_Duration(&in.ShutdownDelay, &out.ShutdownDelay, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -162,6 +165,9 @@ func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(i
 	out.ClientCAPath = in.ClientCAPath
 	out.ClientCertificateSubjects = *(*[]string)(unsafe.Pointer(&in.ClientCertificateSubjects))
 	if err := Convert_webhook_PEMSizeLimitsConfig_To_v1alpha1_PEMSizeLimitsConfig(&in.PEMSizeLimitsConfig, &out.PEMSizeLimitsConfig, s); err != nil {
+		return err
+	}
+	if err := sharedv1alpha1.Convert_time_Duration_To_Pointer_v1alpha1_Duration(&in.ShutdownDelay, &out.ShutdownDelay, s); err != nil {
 		return err
 	}
 	return nil

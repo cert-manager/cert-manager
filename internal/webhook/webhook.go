@@ -86,6 +86,7 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		EnableClientVerification:  opts.EnableClientVerification,
 		ClientCAPath:              opts.ClientCAPath,
 		ClientCertificateSubjects: opts.ClientCertificateSubjects,
+		ShutdownDelay:             opts.ShutdownDelay,
 	}
 	for _, fn := range optionFunctions {
 		fn(s)
