@@ -5,11 +5,7 @@ metadata:
   name: {{ template "webhook.fullname" . }}:dynamic-serving
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
-    app: {{ include "webhook.name" . }}
-    app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "webhook"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "webhook.componentLabels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -37,11 +33,7 @@ metadata:
   name: {{ template "webhook.fullname" . }}:dynamic-serving
   namespace: {{ include "cert-manager.namespace" . }}
   labels:
-    app: {{ include "webhook.name" . }}
-    app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "webhook"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "webhook.componentLabels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -58,11 +50,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "webhook.fullname" . }}:subjectaccessreviews
   labels:
-    app: {{ include "webhook.name" . }}
-    app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "webhook"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "webhook.componentLabels" . | nindent 4 }}
 rules:
 - apiGroups: ["authorization.k8s.io"]
   resources: ["subjectaccessreviews"]
@@ -74,11 +62,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "webhook.fullname" . }}:subjectaccessreviews
   labels:
-    app: {{ include "webhook.name" . }}
-    app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: "webhook"
-    {{- include "labels" . | nindent 4 }}
+    {{- include "webhook.componentLabels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
