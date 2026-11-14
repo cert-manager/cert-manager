@@ -115,6 +115,33 @@ crds:
   # (Certificates, Issuers, ...) will be removed too by the garbage collector.
   keep: true
 
+# +docs:section=External Issuers
+
+# Install external (out-of-tree) issuers as Helm sub-charts in place of the
+# equivalent in-tree issuers.
+#
+# Enabling an external issuer installs its sub-chart and disables the
+# corresponding in-tree controllers by passing
+# `--controllers=-certificaterequests-issuer-<name>,-certificatesigningrequests-issuer-<name>`
+# to the cert-manager controller. This composes with any `--controllers` flag
+# in `extraArgs`.
+externalIssuers:
+  # Install the external vault-issuer (https://github.com/cert-manager/vault-issuer)
+  # and disable the in-tree Vault issuer controllers.
+  vault: false
+
+# Values passed through to the vault-issuer sub-chart when
+# `externalIssuers.vault` is true. For the available options, see
+# https://github.com/cert-manager/vault-issuer/blob/main/deploy/charts/vault-issuer/README.md
+#
+# For example:
+#  vault-issuer:
+#    app:
+#      logLevel: 2
+#      issuer:
+#        clusterResourceNamespace: cert-manager
+vault-issuer: {}
+
 # +docs:section=Controller
 
 # The number of replicas of the cert-manager controller to run.

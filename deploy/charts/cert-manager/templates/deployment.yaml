@@ -115,6 +115,16 @@ spec:
           {{- end }}
           {{- end }}
           - --acme-http01-solver-image={{ template "cert-manager.image" (tuple .Values.acmesolver.image .Values.imageRegistry .Values.imageNamespace (printf ":%s" .Chart.AppVersion)) }}
+          {{- $disabledControllers := list }}
+          {{- range $name, $enabled := .Values.externalIssuers }}
+          {{- if $enabled }}
+          {{- $disabledControllers = append $disabledControllers (printf "-certificaterequests-issuer-%s" $name) }}
+          {{- $disabledControllers = append $disabledControllers (printf "-certificatesigningrequests-issuer-%s" $name) }}
+          {{- end }}
+          {{- end }}
+          {{- if $disabledControllers }}
+          - --controllers={{ join "," $disabledControllers }}
+          {{- end }}
           {{- with .Values.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}

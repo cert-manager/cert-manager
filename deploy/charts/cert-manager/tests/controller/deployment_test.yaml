@@ -172,6 +172,26 @@ tests:
           path: spec.template.spec.containers[0].args
           content: "--extra-flag=value"
 
+  - it: should not disable in-tree issuer controllers by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: "--controllers=-certificaterequests-issuer-vault,-certificatesigningrequests-issuer-vault"
+
+  - it: should disable in-tree vault issuer controllers when the external vault issuer is enabled
+    set:
+      externalIssuers:
+        vault: true
+      extraArgs:
+        - --controllers=*,-certificaterequests-approver
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--controllers=-certificaterequests-issuer-vault,-certificatesigningrequests-issuer-vault"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: "--controllers=*,-certificaterequests-approver"
+
   - it: should set DNS01 recursive nameservers
     set:
       dns01RecursiveNameservers: "8.8.8.8:53,1.1.1.1:53"
