@@ -30,6 +30,10 @@ import (
 type ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration struct {
 	Host          *string                                     `json:"host,omitempty"`
 	AccountSecret *metav1.SecretKeySelectorApplyConfiguration `json:"accountSecretRef,omitempty"`
+	// CABundle is a base64 encoded TLS certificate authority bundle to use when verifying
+	// connections to the acme-dns server. If set, it overrides the spec.acme.caBundle
+	// for TLS connections to the acme-dns server.
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration constructs a declarative configuration of the ACMEIssuerDNS01ProviderAcmeDNS type for use with
@@ -51,5 +55,15 @@ func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithHost(value string
 // If called multiple times, the AccountSecret field is set to the value of the last call.
 func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithAccountSecret(value *metav1.SecretKeySelectorApplyConfiguration) *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration {
 	b.AccountSecret = value
+	return b
+}
+
+// WithCABundle adds the given value to the CABundle field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the CABundle field.
+func (b *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration) WithCABundle(values ...byte) *ACMEIssuerDNS01ProviderAcmeDNSApplyConfiguration {
+	for i := range values {
+		b.CABundle = append(b.CABundle, values[i])
+	}
 	return b
 }
