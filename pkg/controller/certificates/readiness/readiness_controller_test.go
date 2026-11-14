@@ -24,9 +24,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +37,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/util/workqueue"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
@@ -46,6 +51,7 @@ import (
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -1427,6 +1433,130 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 			if err := builder.AllActionsExecuted(); err != nil {
 				t.Error(err)
 			}
+		})
+	}
+}
+
+// TestScheduleRecheckAtExpiry drives a real ScheduledWorkQueue and workqueue
+// inside a synctest bubble, so the assertions are on when the re-check fires
+// and when the Certificate is queued again.
+func TestScheduleRecheckAtExpiry(t *testing.T) {
+	key := types.NamespacedName{Namespace: "testns", Name: "test"}
+
+	tests := map[string]struct {
+		notAfter func(now time.Time) *metav1.Time
+		// ready is whether the reconcile just published Ready=True.
+		ready bool
+		// wantRecheckAfter is the offset from now at which the expiry re-check
+		// must fire. Zero means it must not fire during the test.
+		wantRecheckAfter time.Duration
+		// wantRequeue is whether the key must be handed back to the
+		// controller's workqueue after a second. That is the case when the
+		// expiry passed while the reconcile was running and left Ready=True
+		// stale.
+		wantRequeue bool
+	}{
+		"fires one second after a future expiry": {
+			notAfter:         func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(time.Hour)} },
+			ready:            true,
+			wantRecheckAfter: time.Hour + time.Second,
+		},
+		"arms the re-check when not Ready": {
+			notAfter:         func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(time.Hour)} },
+			wantRecheckAfter: time.Hour + time.Second,
+		},
+		"requeues an expired certificate that is still Ready": {
+			notAfter:    func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(-time.Hour)} },
+			ready:       true,
+			wantRequeue: true,
+		},
+		// Ready is already False, so expiry cannot make it more wrong.
+		"does nothing for an expired certificate that is not Ready": {
+			notAfter: func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(-time.Hour)} },
+		},
+		"does nothing when the expiry is unknown": {
+			notAfter: func(time.Time) *metav1.Time { return nil },
+			ready:    true,
+		},
+		// time.Time.Sub saturates at math.MaxInt64 for a NotAfter this far
+		// away. If the buffer were added after Sub, the result would wrap
+		// negative and look like an expired certificate.
+		"does not mistake an expiry centuries away for an expired one": {
+			notAfter: func(time.Time) *metav1.Time {
+				return &metav1.Time{Time: time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)}
+			},
+			ready: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				start := time.Now()
+
+				// The timer goroutine writes and the test goroutine reads, and
+				// synctest.Wait does not order the two for the race detector.
+				var mu sync.Mutex
+				var fired []time.Duration
+				firedAt := func() []time.Duration {
+					mu.Lock()
+					defer mu.Unlock()
+					return append([]time.Duration(nil), fired...)
+				}
+
+				queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[types.NamespacedName]())
+				defer queue.ShutDown()
+
+				c := &controller{
+					clock: clock.RealClock{},
+					queue: queue,
+					expiryWorkQueue: scheduler.NewScheduledWorkQueue(clock.RealClock{}, func(types.NamespacedName) {
+						mu.Lock()
+						defer mu.Unlock()
+						fired = append(fired, time.Since(start))
+					}),
+				}
+				defer c.expiryWorkQueue.Forget(key)
+
+				c.scheduleRecheckAtExpiry(logr.Discard(), key, test.notAfter(start), test.ready)
+
+				time.Sleep(time.Second - time.Nanosecond)
+				synctest.Wait()
+				if queue.Len() != 0 {
+					t.Fatalf("requeued early: queue length %d", queue.Len())
+				}
+
+				time.Sleep(time.Nanosecond)
+				synctest.Wait()
+				wantLen := 0
+				if test.wantRequeue {
+					wantLen = 1
+				}
+				if queue.Len() != wantLen {
+					t.Fatalf("expected queue length %d one second in, got %d", wantLen, queue.Len())
+				}
+
+				if test.wantRecheckAfter == 0 {
+					time.Sleep(time.Hour)
+					synctest.Wait()
+					if got := firedAt(); len(got) != 0 {
+						t.Fatalf("expected no re-check, but it fired at %v", got)
+					}
+					return
+				}
+
+				time.Sleep(test.wantRecheckAfter - time.Second - time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 0 {
+					t.Fatalf("re-check fired early at %v", got)
+				}
+
+				time.Sleep(time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 1 || got[0] != test.wantRecheckAfter {
+					t.Fatalf("expected one re-check at %v, got %v", test.wantRecheckAfter, got)
+				}
+			})
 		})
 	}
 }
