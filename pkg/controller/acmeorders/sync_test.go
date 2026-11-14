@@ -384,8 +384,30 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	*testACMEOrderProcessingExpired = *testACMEOrderProcessing
 	testACMEOrderProcessingExpired.Expires = nowTime.Add(-time.Minute)
 
+	// shallow copies
+	testACMEOrderProcessingRetryAfter := &acmeapi.Order{}
+	*testACMEOrderProcessingRetryAfter = *testACMEOrderProcessing
+	testACMEOrderProcessingRetryAfter.RetryAfter = 2 * time.Minute
+	testACMEOrderProcessingLongRetryAfter := &acmeapi.Order{}
+	*testACMEOrderProcessingLongRetryAfter = *testACMEOrderProcessing
+	testACMEOrderProcessingLongRetryAfter.RetryAfter = 3 * time.Hour
+	testACMEOrderProcessingNoExpiry := &acmeapi.Order{}
+	*testACMEOrderProcessingNoExpiry = *testACMEOrderProcessing
+	testACMEOrderProcessingNoExpiry.Expires = time.Time{}
+
 	testOrderProcessing := testOrderPending.DeepCopy()
 	testOrderProcessing.Status.State = cmacme.Processing
+	// A recently created Order whose ACME order has no expiry time.
+	testOrderProcessingNew := testOrderProcessing.DeepCopy()
+	testOrderProcessingNew.CreationTimestamp = nowMetaTime
+	// An Order older than ProcessingTimeout whose ACME order has no expiry time.
+	testOrderProcessingOld := testOrderProcessing.DeepCopy()
+	testOrderProcessingOld.CreationTimestamp = metav1.NewTime(nowTime.Add(-ProcessingTimeout - time.Minute))
+	testOrderProcessingOldErrored := testOrderPending.DeepCopy()
+	testOrderProcessingOldErrored.CreationTimestamp = testOrderProcessingOld.CreationTimestamp
+	testOrderProcessingOldErrored.Status.State = cmacme.Errored
+	testOrderProcessingOldErrored.Status.FailureTime = &nowMetaTime
+	testOrderProcessingOldErrored.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", testOrderProcessingOld.CreationTimestamp.Add(ProcessingTimeout).Format(time.RFC3339))
 	testOrderProcessingExpired := testOrderPending.DeepCopy()
 	testOrderProcessingExpired.Status.State = cmacme.Errored
 	testOrderProcessingExpired.Status.FailureTime = &nowMetaTime
@@ -795,6 +817,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 			shouldSchedule: true,
+			scheduleDelay:  ProcessingRequeuePeriod,
 		},
 		"re-queue a 'processing' Order while the ACME server is still processing it": {
 			order: testOrderProcessing,
@@ -808,6 +831,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 			shouldSchedule: true,
+			scheduleDelay:  ProcessingRequeuePeriod,
 		},
 		"mark a 'processing' Order as errored once the ACME order has expired": {
 			order: testOrderProcessing,
@@ -824,6 +848,120 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 					return testACMEOrderProcessingExpired, nil
 				},
 			},
+		},
+		"re-queue a 'processing' Order after the Retry-After interval the ACME server asked for": {
+			order: testOrderProcessing,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessing, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessingRetryAfter, nil
+				},
+			},
+			shouldSchedule: true,
+			scheduleDelay:  2 * time.Minute,
+		},
+		"re-queue a 'processing' Order no later than the ACME order expires, even if Retry-After is longer": {
+			order: testOrderProcessing,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessing, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessingLongRetryAfter, nil
+				},
+			},
+			shouldSchedule: true,
+			scheduleDelay:  time.Hour,
+		},
+		"keep re-queuing a 'processing' Order whose ACME order has no expiry time until it is older than ProcessingTimeout": {
+			order: testOrderProcessingNew,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessingNew, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessingNoExpiry, nil
+				},
+			},
+			shouldSchedule: true,
+			scheduleDelay:  ProcessingRequeuePeriod,
+		},
+		"mark a 'processing' Order as errored when it is older than ProcessingTimeout and the ACME order has no expiry time": {
+			order: testOrderProcessingOld,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderProcessingOld, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderProcessingOldErrored.Namespace, testOrderProcessingOldErrored)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessingNoExpiry, nil
+				},
+			},
+		},
+		"call FinalizeOrder, re-queue the Order soon if the order is no longer 'processing' after the finalize timeout": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderReady, nil
+				},
+				FakeCreateCertFromOrder: func(ctx context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
+					<-ctx.Done()
+					return nil, "", ctx.Err()
+				},
+			},
+			shouldSchedule: true,
+			scheduleDelay:  RequeuePeriod,
+		},
+		"call FinalizeOrder, return an error and do not re-queue if the status refresh after the finalize timeout fails": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return nil, errors.New("connection reset")
+				},
+				FakeCreateCertFromOrder: func(ctx context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
+					<-ctx.Done()
+					return nil, "", ctx.Err()
+				},
+			},
+			expectErr: true,
+		},
+		"call FinalizeOrder, re-queue the Order if finalize fails because the order is already 'processing'": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderProcessing.Namespace, testOrderProcessing)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderProcessing, nil
+				},
+				FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, csr []byte, bundle bool) ([][]byte, string, error) {
+					return nil, "", &acmeError403
+				},
+			},
+			shouldSchedule: true,
+			scheduleDelay:  ProcessingRequeuePeriod,
 		},
 		"call FinalizeOrder, recover if finalize fails because order is already finalized": {
 			order: testOrderReady,
@@ -1163,8 +1301,10 @@ type testT struct {
 	builder        *testpkg.Builder
 	acmeClient     acmecl.Interface
 	shouldSchedule bool
-	expectErr      bool
-	featureGates   map[featuregate.Feature]bool
+	// scheduleDelay, when not zero, is the delay the Order must be re-queued with.
+	scheduleDelay time.Duration
+	expectErr     bool
+	featureGates  map[featuregate.Feature]bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -1185,9 +1325,11 @@ func runTest(t *testing.T, test testT) {
 		},
 	}
 	gotScheduled := false
+	var gotDelay time.Duration
 	fakeScheduler := schedulertest.FakeScheduler{
 		AddFunc: func(obj types.NamespacedName, duration time.Duration) {
 			gotScheduled = true
+			gotDelay = duration
 		},
 	}
 	cw.scheduledWorkQueue = &fakeScheduler
@@ -1203,6 +1345,9 @@ func runTest(t *testing.T, test testT) {
 	}
 	if gotScheduled != test.shouldSchedule {
 		t.Errorf("Expected Order to be re-queued: %v got re-queued: %v", test.shouldSchedule, gotScheduled)
+	}
+	if test.scheduleDelay != 0 && gotDelay != test.scheduleDelay {
+		t.Errorf("Expected Order to be re-queued after %v, got %v", test.scheduleDelay, gotDelay)
 	}
 
 	test.builder.CheckAndFinish(err)

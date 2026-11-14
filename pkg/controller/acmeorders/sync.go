@@ -68,7 +68,17 @@ var ProcessingRequeuePeriod = time.Second * 30
 // issue the certificate after the order is finalized. If the order is still
 // 'processing' after this, the Order is re-queued instead of holding a worker.
 // It can be overridden in tests.
-var FinalizeTimeout = time.Minute
+//
+// It is longer than the 90 second HTTP timeout of the ACME client, so the
+// finalize request itself is bounded by the client and this deadline only
+// bounds the wait for the order to leave 'processing'.
+var FinalizeTimeout = 2 * time.Minute
+
+// ProcessingTimeout is how long after the Order was created an ACME order may
+// stay 'processing' when the ACME server did not report an expiry time. RFC 8555
+// only requires 'expires' for 'pending' and 'valid' orders.
+// It can be overridden in tests.
+var ProcessingTimeout = 24 * time.Hour
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
@@ -598,21 +608,8 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	defer cancel()
 	certSlice, certURL, err := cl.CreateCertFromOrder(finalizeCtx, &acmeapi.Order{URI: o.Status.URL, FinalizeURL: o.Status.FinalizeURL}, derBytes, true)
 
-	if errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
-		log.V(logf.InfoLevel).Info("ACME server has not issued the certificate yet, re-queuing Order", "timeout", FinalizeTimeout)
-		acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
-		if err != nil {
-			return fmt.Errorf("error syncing order status: %w", err)
-		}
-		if acmeOrder.Status == acmeapi.StatusProcessing {
-			c.processingOrder(ctx, o, acmeOrder)
-			return nil
-		}
-		// The order left 'processing' between the timeout and the status
-		// update: the next sync acts on its new state.
-		c.scheduledWorkQueue.Add(types.NamespacedName{Name: o.Name, Namespace: o.Namespace}, 0)
-		return nil
-	}
+	// The wait timed out, but not because the controller is shutting down.
+	timedOut := errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil
 
 	acmeErr, ok := err.(*acmeapi.Error)
 
@@ -639,6 +636,12 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			c.setOrderState(&o.Status, string(cmacme.Valid))
 			return c.syncCertificateDataWithOrder(ctx, cl, *acmeOrder, o, issuer)
 		}
+		// The finalize request of an earlier sync was accepted and the ACME
+		// server is still issuing the certificate. Poll it from the work queue.
+		if acmeOrder.Status == acmeapi.StatusProcessing {
+			c.processingOrder(ctx, o, acmeOrder)
+			return nil
+		}
 
 	}
 
@@ -656,7 +659,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 	// Before checking whether the call to CreateCertFromOrder returned a
 	// non-4xx error, ensure the order status is up-to-date.
-	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
+	acmeOrder, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -671,6 +674,17 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
+	}
+	if timedOut {
+		log.V(logf.InfoLevel).Info("ACME server has not issued the certificate yet", "timeout", FinalizeTimeout)
+		if acmeOrder.Status == acmeapi.StatusProcessing {
+			c.processingOrder(ctx, o, acmeOrder)
+			return nil
+		}
+		// The order left 'processing' between the timeout and the status
+		// refresh, or the finalize request did not complete: look again soon.
+		c.scheduledWorkQueue.Add(types.NamespacedName{Name: o.Name, Namespace: o.Namespace}, RequeuePeriod)
+		return nil
 	}
 	// Check for non-4xx errors from CreateCertFromOrder
 	if err != nil {
@@ -700,19 +714,27 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 func (c *controller) processingOrder(ctx context.Context, o *cmacme.Order, acmeOrder *acmeapi.Order) {
 	log := logf.FromContext(ctx)
 
-	if !acmeOrder.Expires.IsZero() && !c.clock.Now().Before(acmeOrder.Expires) {
-		log.V(logf.InfoLevel).Info("ACME order is still processing after its expiry time, marking Order as failed", "expires", acmeOrder.Expires)
+	expires := acmeOrder.Expires
+	if expires.IsZero() {
+		expires = o.CreationTimestamp.Add(ProcessingTimeout)
+	}
+	if !c.clock.Now().Before(expires) {
+		log.V(logf.InfoLevel).Info("ACME order is still processing after its expiry time, marking Order as failed", "expires", expires)
 		c.setOrderState(&o.Status, string(cmacme.Errored))
-		o.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", acmeOrder.Expires.Format(time.RFC3339))
+		o.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", expires.Format(time.RFC3339))
 		return
 	}
 
-	log.V(logf.DebugLevel).Info("ACME order is still processing, re-queuing Order", "requeuePeriod", ProcessingRequeuePeriod)
+	// Honour the polling interval the ACME server asked for.
+	requeue := max(ProcessingRequeuePeriod, acmeOrder.RetryAfter)
+	// Never wait past the point where the order expires.
+	requeue = min(requeue, expires.Sub(c.clock.Now()))
+	log.V(logf.DebugLevel).Info("ACME order is still processing, re-queuing Order", "requeuePeriod", requeue)
 	c.setOrderState(&o.Status, string(cmacme.Processing))
 	c.scheduledWorkQueue.Add(types.NamespacedName{
 		Name:      o.Name,
 		Namespace: o.Namespace,
-	}, ProcessingRequeuePeriod)
+	}, requeue)
 }
 
 func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Order, certs [][]byte) error {
