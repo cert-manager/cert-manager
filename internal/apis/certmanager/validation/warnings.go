@@ -21,4 +21,11 @@ package validation
 const (
 	// deprecatedACMEEABKeyAlgorithmField is raised when the deprecated keyAlgorithm field for an ACME issuer's external account binding (EAB) is set.
 	deprecatedACMEEABKeyAlgorithmField = "ACME issuer spec field 'externalAccount.keyAlgorithm' is deprecated. The value of this field will be ignored."
+
+	// deprecatedRFC2136TSIGAlgorithm is raised when an ACME issuer's RFC2136
+	// solver explicitly sets a deprecated TSIG algorithm. The algorithm is
+	// still accepted but is expected to be removed in a future release. The
+	// first argument is the field path and the second is the value as written
+	// by the user.
+	deprecatedRFC2136TSIGAlgorithm = "ACME issuer solver field %q is set to the deprecated algorithm %q. Use HMACSHA256 or HMACSHA512 instead."
 )
