@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -68,6 +69,10 @@ const (
 	minARIPoll     = 1 * time.Hour
 	maxARIPoll     = 7 * 24 * time.Hour
 	ariJitterPct   = 0.1
+	// ariRegistryRetry is the initial retry delay when the ACME Issuer has no
+	// client registered yet; the delay doubles on every consecutive miss up to
+	// defaultARIPoll.
+	ariRegistryRetry = 1 * time.Minute
 )
 
 type controller struct {
@@ -94,6 +99,8 @@ type controller struct {
 	helper             issuer.Helper
 	clock              clock.Clock
 	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+
+	ariClientMisses sync.Map
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -206,6 +213,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 	if crt == nil || crt.DeletionTimestamp != nil {
 		// If the Certificate object was/ is being deleted, we don't want to update its status.
+		c.ariClientMisses.Delete(key)
 		return nil
 	}
 
@@ -344,8 +352,42 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	// poll has to keep running even when the certificate has not been replaced.
 	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
 	if !needFetch {
+		// Re-arm the poll: a restart loses timers for a future nextCheck
+		// until the informer resync or an unrelated event.
+		c.scheduledWorkQueue.Add(key, nextCheck.Time.Sub(now))
 		return nil
 	}
+
+	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
+
+	// A missing client means no request reached the ACME server, so leave
+	// status untouched and back off until the issuer controller registers it.
+	if errors.Is(err, accounts.ErrNotFound) {
+		misses := 0
+		if v, ok := c.ariClientMisses.Load(key); ok {
+			misses, _ = v.(int)
+		}
+		delay := ariRegistryRetry
+		for i := 0; i < misses && delay < defaultARIPoll; i++ {
+			delay *= 2
+		}
+		if delay > defaultARIPoll {
+			delay = defaultARIPoll
+		}
+		c.ariClientMisses.Store(key, misses+1)
+
+		log.V(logf.DebugLevel).Info("no ACME client registered for issuer yet, will retry",
+			"issuer", genericIssuer.GetName(), "after", delay)
+
+		if staleForCurrentCert && crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+			crt.Status.ACME.ARI.SuggestedWindow = nil
+			crt.Status.ACME.ARI.ExplanationURL = ""
+		}
+
+		c.scheduledWorkQueue.Add(key, delay)
+		return nil
+	}
+	c.ariClientMisses.Delete(key)
 
 	if crt.Status.ACME == nil {
 		crt.Status.ACME = &cmapi.CertificateACMEStatus{}
@@ -355,7 +397,6 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	}
 	ariStatus := crt.Status.ACME.ARI
 
-	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
 	var renewalTime *metav1.Time
 
 	switch {
@@ -376,9 +417,8 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
 
 		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-		// ariInfo may be nil when getARIInfo fails before issuing a request
-		// (e.g. no ACME client registered yet). Fall back to the default poll
-		// interval rather than dereferencing a nil response.
+		// ariInfo is nil whenever getARIInfo fails, so fall back to the
+		// default poll interval rather than dereferencing a nil response.
 		retryAfter := defaultARIPoll
 		if ariInfo != nil {
 			retryAfter = ariInfo.RetryAfter
