@@ -37,12 +37,12 @@ func ParseObjectIdentifier(oidString string) (oid asn1.ObjectIdentifier, err err
 
 	oid = make(asn1.ObjectIdentifier, 0, len(parts))
 	for _, part := range parts {
-		value, err := strconv.Atoi(part)
+		value, err := strconv.ParseUint(part, 10, 31)
 		if err != nil {
 			return nil, err
 		}
 
-		oid = append(oid, value)
+		oid = append(oid, int(value))
 	}
 
 	return oid, nil
