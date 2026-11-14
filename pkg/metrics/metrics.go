@@ -40,6 +40,7 @@ import (
 	cmcollectors "github.com/cert-manager/cert-manager/internal/collectors"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 )
 
 const (
@@ -251,6 +252,10 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 	m.registry.MustRegister(m.controllerSyncErrorCount)
+	// state of the dynamically generated serving certificate of this endpoint
+	if err := authority.RegisterMetrics(m.registry); err != nil {
+		panic(err)
+	}
 
 	if m.challengeCollector != nil {
 		m.registry.MustRegister(m.challengeCollector)
