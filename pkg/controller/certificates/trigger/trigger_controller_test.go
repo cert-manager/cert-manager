@@ -35,6 +35,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
@@ -578,14 +579,15 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 		return testcrypto.MustCreateCryptoBundle(t, crt, clock).CertificateRequest
 	}
 
-	tests := map[string]struct {
+	type backoffCase struct {
 		givenCert          *cmapi.Certificate
 		givenNextCR        *cmapi.CertificateRequest
 		wantBackoff        bool
 		backoffDuration    time.Duration
 		maxBackoffDuration time.Duration
 		wantDelay          time.Duration
-	}{
+	}
+	tests := map[string]backoffCase{
 		"no need to backoff from reissuing when the input request is nil": {
 			givenCert:   gen.Certificate("test", gen.SetCertificateNamespace("testns")),
 			wantBackoff: false,
@@ -1019,6 +1021,70 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			maxBackoffDuration: 4 * time.Hour,
 			wantDelay:          4 * time.Hour,
 		},
+	}
+	dnsFailure := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionIssuing,
+		Status:  cmmeta.ConditionFalse,
+		Reason:  "Failed",
+		Message: `The certificate request has failed to complete and will be retried: Failed to wait for order resource "cert-1-1" to become ready: order is in "invalid" state: HTTP-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for example.com`,
+	})
+	connectionFailureLegacyURN := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionIssuing,
+		Status:  cmmeta.ConditionFalse,
+		Reason:  "Failed",
+		Message: `order is in "invalid" state: HTTP-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 400 urn:acme:error:connection: Fetching http://example.com/.well-known/acme-challenge/x: Timeout`,
+	})
+	unauthorizedFailure := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionIssuing,
+		Status:  cmmeta.ConditionFalse,
+		Reason:  "Failed",
+		Message: `order is in "invalid" state: DNS-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 403 urn:ietf:params:acme:error:unauthorized: Incorrect TXT record found`,
+	})
+	failedCert := func(attempts int, since time.Duration, mods ...gen.CertificateModifier) *cmapi.Certificate {
+		return gen.Certificate("cert-1", append([]gen.CertificateModifier{
+			gen.SetCertificateNamespace("testns"),
+			gen.SetCertificateUID("cert-1-uid"),
+			gen.SetCertificateRevision(1),
+			gen.SetCertificateDNSNames("example.com"),
+			gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-since))),
+			gen.SetCertificateIssuanceAttempts(new(attempts)),
+		}, mods...)...)
+	}
+	tests["should back off 5 minutes after 1 failure when the ACME server could not resolve the challenge"] = backoffCase{
+		givenCert:   failedCert(1, 0, dnsFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 0)),
+		wantBackoff: true,
+		wantDelay:   5 * time.Minute,
+	}
+	tests["should back off 10 minutes after 2 failures when the ACME server could not resolve the challenge"] = backoffCase{
+		givenCert:   failedCert(2, 0, dnsFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(2, 0)),
+		wantBackoff: true,
+		wantDelay:   10 * time.Minute,
+	}
+	tests["should not back off 6 minutes after 1 failure when the ACME server could not resolve the challenge"] = backoffCase{
+		givenCert:   failedCert(1, 6*time.Minute, dnsFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 6*time.Minute)),
+		wantBackoff: false,
+	}
+	tests["should back off 5 minutes when the ACME server could not connect to the challenge, using the pre-RFC URN"] = backoffCase{
+		givenCert:   failedCert(1, 0, connectionFailureLegacyURN),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 0)),
+		wantBackoff: true,
+		wantDelay:   5 * time.Minute,
+	}
+	tests["should back off 1 hour when the ACME server rejected the challenge content"] = backoffCase{
+		givenCert:   failedCert(1, 0, unauthorizedFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 0)),
+		wantBackoff: true,
+		wantDelay:   1 * time.Hour,
+	}
+	tests["should keep a configured backoff shorter than 5 minutes for an unreachable challenge"] = backoffCase{
+		givenCert:       failedCert(1, 0, dnsFailure),
+		givenNextCR:     createCertificateRequestOrPanic(failedCert(1, 0)),
+		backoffDuration: 1 * time.Minute,
+		wantBackoff:     true,
+		wantDelay:       1 * time.Minute,
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {

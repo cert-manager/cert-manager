@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -307,6 +308,48 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 // match the "next" certificate (since a mismatch means that this certificate
 // gets re-issued immediately).
 //
+// transientFailureInitialBackoff is the initial backoff used when the last
+// issuance failed because the ACME server could not reach the challenge
+// rather than because the challenge was wrong. Such failures usually mean
+// the solver resources had not propagated to the server's point of view
+// yet, so waiting the default hour before the next attempt delays issuance
+// for no benefit. The delay still doubles on every attempt, so a solver
+// that keeps failing converges on the regular schedule. Five minutes keeps
+// a persistently broken solver under the Let's Encrypt limit of five failed
+// validations per hostname per hour.
+const transientFailureInitialBackoff = 5 * time.Minute
+
+// transientACMEProblemTypes are the RFC 8555 section 6.7 error types which
+// say the ACME server could not reach the challenge. Each is matched as a
+// suffix of the problem type URN followed by the colon that separates it
+// from the detail, so that both the RFC URN prefix and the pre-RFC
+// "urn:acme:error:" prefix still used by some servers match.
+var transientACMEProblemTypes = []string{
+	"acme:error:dns:",
+	"acme:error:connection:",
+}
+
+// isTransientValidationFailure reports whether the Certificate's last
+// issuance failed with one of transientACMEProblemTypes.
+//
+// The problem type reaches the Certificate as text. The Challenge records
+// the ACME error in its status reason, the Order copies the failed
+// Challenge reasons, the CertificateRequest quotes the Order reason, and
+// the issuing controller quotes the CertificateRequest in the Issuing
+// condition message.
+func isTransientValidationFailure(crt *cmapi.Certificate) bool {
+	cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+	if cond == nil || cond.Status != cmmeta.ConditionFalse {
+		return false
+	}
+	for _, problemType := range transientACMEProblemTypes {
+		if strings.Contains(cond.Message, problemType) {
+			return true
+		}
+	}
+	return false
+}
+
 // Note that the request can be left nil: in that case, the returned back-off
 // will be 0 since it means the CR must be created immediately.
 func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest, initialDelay time.Duration, maxDelay time.Duration) (bool, time.Duration) {
@@ -344,6 +387,10 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	if initialDelay <= 0 {
 		log.V(logf.InfoLevel).Info("initial backoff duration is less than or equal to zero, skipping backoff")
 		return false, 0
+	}
+	if isTransientValidationFailure(crt) && transientFailureInitialBackoff < initialDelay {
+		log.V(logf.InfoLevel).Info("last issuance failed because the ACME server could not reach the challenge, using a shorter backoff", "initial_delay", transientFailureInitialBackoff)
+		initialDelay = transientFailureInitialBackoff
 	}
 	delay := initialDelay
 	// It is possible that crt.Status.LastFailureTime != nil &&
