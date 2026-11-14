@@ -56,6 +56,7 @@ GOLDFLAGS := -w -s \
     -X github.com/cert-manager/cert-manager/pkg/util.AppGitCommit=$(GITCOMMIT)
 
 golangci_lint_config := .golangci.yaml
+kube_api_linter_config := .golangci-kal.yml
 
 GINKGO_VERSION ?= $(shell awk '/ginkgo\/v2/ {print $$2}' test/e2e/go.mod)
 
