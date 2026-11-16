@@ -547,7 +547,7 @@ Extra containers to add to the pod spec in the deployment of the cert-manager co
 ```yaml
 extraEnv:
   - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
-  - value: http://127.0.0.1:9911
+    value: http://127.0.0.1:9911
 extraContainers:
   - name: rolesanywhere-credential-helper
     image: public.ecr.aws/rolesanywhere/credential-helper:latest
