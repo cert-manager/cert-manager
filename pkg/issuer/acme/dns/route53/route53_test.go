@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -46,19 +47,14 @@ const jwt string = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHMuYW1hem9
 // none of this. Tests that need a value still set it themselves with
 // t.Setenv, which overrides what is cleared here for the duration of the test.
 func TestMain(m *testing.M) {
-	for _, key := range []string{
-		"AWS_PROFILE",
-		"AWS_DEFAULT_PROFILE",
-		"AWS_REGION",
-		"AWS_DEFAULT_REGION",
-		"AWS_ACCESS_KEY_ID",
-		"AWS_SECRET_ACCESS_KEY",
-		"AWS_SESSION_TOKEN",
-		"AWS_ROLE_ARN",
-		"AWS_WEB_IDENTITY_TOKEN_FILE",
-	} {
-		if err := os.Unsetenv(key); err != nil {
-			panic(err)
+	// Every AWS_ variable is cleared rather than a fixed list: the SDK reads
+	// around 35 of them, and new releases add more.
+	for _, kv := range os.Environ() {
+		key, _, _ := strings.Cut(kv, "=")
+		if strings.HasPrefix(key, "AWS_") {
+			if err := os.Unsetenv(key); err != nil {
+				panic(err)
+			}
 		}
 	}
 
@@ -73,7 +69,7 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
@@ -106,7 +102,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 		UserAgent("cert-manager-test"),
 		Resolver(util.NewCachingResolver()))
 
-	assert.NoError(t, err, "Expected no error constructing DNSProvider")
+	require.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Options().Credentials.Retrieve(ctx)
 	assert.NoError(t, err, "Expected credentials to be set from environment")
@@ -408,9 +404,6 @@ func TestRoute53Cleanup(t *testing.T) {
 }
 
 func TestAssumeRole(t *testing.T) {
-	// Every input these cases rely on is set on the sessionProvider itself.
-	// TestMain detaches the package from any ambient AWS configuration that
-	// would otherwise skew the result.
 	creds := &ststypes.Credentials{
 		AccessKeyId:     aws.String("foo"),
 		SecretAccessKey: aws.String("bar"),
