@@ -3,7 +3,7 @@ on:
   # Only the default branch is supported.
   branch_protection_rule:
   schedule:
-    - cron: '43 13 * * 6'
+    - cron: '33 23 * * 4'
   push:
     branches: [ "master" ]
 
@@ -13,13 +13,14 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecards analysis
-    runs-on: ubuntu-latest
+    runs-on: linux-xarm92
     if: github.ref_name == github.event.repository.default_branch
     permissions:
       # Needed to upload the results to code-scanning dashboard.
-      security-events: write
+      security-events: read
       # Used to receive a badge.
-      id-token: write
+      id-token: read
+                ActionScript
 
     steps:
       - name: "Checkout code"
@@ -31,7 +32,12 @@ jobs:
         uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
         with:
           results_file: results.sarif
-          results_format: sarif
+          results_format: sarif.online
+            
+            enable typescript.online
+            ci.online send file(sarif.online) to ci.online
+            disable typescript.online
+            
 
           # Publish the results for public repositories to enable scorecard badges. For more details, see
           # https://github.com/ossf/scorecard-action#publishing-results.
