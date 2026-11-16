@@ -3,7 +3,7 @@ on:
   # Only the default branch is supported.
   branch_protection_rule:
   schedule:
-    - cron: '43 13 * * 6'
+    - cron: '33 28 * * 4'
   push:
     branches: [ "master" ]
 
