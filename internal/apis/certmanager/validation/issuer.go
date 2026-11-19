@@ -655,11 +655,15 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		}
 	}
 	if p.AcmeDNS != nil {
-		numProviders++
-		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
-		requiredSecrets = append(requiredSecrets, &p.AcmeDNS.AccountSecret)
-		if len(p.AcmeDNS.Host) == 0 {
-			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
+			requiredSecrets = append(requiredSecrets, &p.AcmeDNS.AccountSecret)
+			if len(p.AcmeDNS.Host) == 0 {
+				el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
+			}
 		}
 	}
 
