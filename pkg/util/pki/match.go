@@ -187,6 +187,14 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		}
 	}
 
+	nameConstraintsMatched, err := matchNameConstraints(x509req.Extensions, spec.NameConstraints)
+	if err != nil {
+		return nil, err
+	}
+	if !nameConstraintsMatched {
+		violations = append(violations, "spec.nameConstraints")
+	}
+
 	if spec.LiteralSubject == "" {
 		// Comparing Subject fields
 		if x509req.Subject.CommonName != spec.CommonName {
@@ -319,6 +327,58 @@ func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherNam
 	}
 
 	return true, nil
+}
+
+// matchNameConstraints reports whether the NameConstraints extension in
+// extensions is the one that GenerateCSR encodes for the given spec: either
+// both are absent, or both are present with the same criticality and the same
+// constraints, in any order.
+func matchNameConstraints(extensions []pkix.Extension, spec *cmapi.NameConstraints) (bool, error) {
+	expected, err := nameConstraintsFromSpec(spec)
+	if err != nil {
+		return false, err
+	}
+
+	var actual *NameConstraints
+	var actualCritical bool
+	for _, extension := range extensions {
+		if !extension.Id.Equal(OIDExtensionNameConstraints) {
+			continue
+		}
+
+		actual, err = UnmarshalNameConstraints(extension.Value)
+		if err != nil {
+			// An extension that cannot be parsed was not encoded for this spec.
+			return false, nil //nolint:nilerr
+		}
+		actualCritical = extension.Critical
+		break
+	}
+
+	if expected == nil || actual == nil {
+		return expected == nil && actual == nil, nil
+	}
+
+	return spec.Critical == actualCritical && nameConstraintsEqualUnsorted(*expected, *actual), nil
+}
+
+func nameConstraintsEqualUnsorted(a, b NameConstraints) bool {
+	ipNetsToStrings := func(ipNets []*net.IPNet) []string {
+		strs := make([]string, 0, len(ipNets))
+		for _, ipNet := range ipNets {
+			strs = append(strs, ipNet.String())
+		}
+		return strs
+	}
+
+	return util.EqualUnsorted(a.PermittedDNSDomains, b.PermittedDNSDomains) &&
+		util.EqualUnsorted(ipNetsToStrings(a.PermittedIPRanges), ipNetsToStrings(b.PermittedIPRanges)) &&
+		util.EqualUnsorted(a.PermittedEmailAddresses, b.PermittedEmailAddresses) &&
+		util.EqualUnsorted(a.PermittedURIDomains, b.PermittedURIDomains) &&
+		util.EqualUnsorted(a.ExcludedDNSDomains, b.ExcludedDNSDomains) &&
+		util.EqualUnsorted(ipNetsToStrings(a.ExcludedIPRanges), ipNetsToStrings(b.ExcludedIPRanges)) &&
+		util.EqualUnsorted(a.ExcludedEmailAddresses, b.ExcludedEmailAddresses) &&
+		util.EqualUnsorted(a.ExcludedURIDomains, b.ExcludedURIDomains)
 }
 
 // FuzzyX509AltNamesMatchSpec will compare a X509 Certificate to a CertificateSpec
