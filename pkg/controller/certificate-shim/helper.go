@@ -130,7 +130,7 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		subject.OrganizationalUnits = organizationalUnits
 
 		if err != nil {
-			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationsAnnotationKey, err)
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectOrganizationalUnitsAnnotationKey, err)
 		}
 	}
 

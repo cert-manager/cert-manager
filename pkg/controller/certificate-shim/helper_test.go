@@ -456,6 +456,41 @@ func Test_translateAnnotations_invalidAnnotationValues(t *testing.T) {
 	}
 }
 
+// Test_translateAnnotations_subjectCSVErrorNamesCorrectAnnotation checks that
+// when a subject annotation holds a value that cannot be parsed as CSV, the
+// returned error names the annotation that was actually at fault. The
+// organizationalunits branch previously reported the error against the
+// subject-organizations annotation, pointing the Ingress author at the wrong
+// field.
+func Test_translateAnnotations_subjectCSVErrorNamesCorrectAnnotation(t *testing.T) {
+	// A bare double quote inside an unquoted field is not valid CSV, so
+	// SplitWithEscapeCSV fails and translateAnnotations surfaces the error.
+	const malformedCSV = `a"b`
+
+	tests := map[string]struct {
+		annotationKey string
+	}{
+		"organizations": {
+			annotationKey: cmapi.SubjectOrganizationsAnnotationKey,
+		},
+		"organizationalunits": {
+			annotationKey: cmapi.SubjectOrganizationalUnitsAnnotationKey,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			crt := gen.Certificate("example-cert")
+			err := translateAnnotations(crt, map[string]string{tc.annotationKey: malformedCSV})
+			assertErrorIs(t, err, errInvalidIngressAnnotation)
+			if assert.Error(t, err) {
+				assert.Contains(t, err.Error(), tc.annotationKey,
+					"error should name the annotation that was actually at fault")
+			}
+		})
+	}
+}
+
 // Test_translateAnnotations_validAnnotationValuesWithWhitespace ensures that,
 // when a valid annotation value contains surrounding whitespace, the shim
 // trims it before storing so the resulting Certificate passes admission
