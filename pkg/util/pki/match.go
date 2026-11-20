@@ -125,18 +125,18 @@ func ipSlicesMatch(parsedIPs []net.IP, stringIPs []string) bool {
 // uriSlicesMatch reports whether the parsed URIs (as found in an x509 CSR or
 // certificate) match the URI strings from a CertificateSpec. The x509 parser
 // normalizes URIs via url.Parse (e.g. it lowercases the scheme), so each spec
-// URI is normalized the same way before comparing. Spec URIs that fail to
-// parse are compared as-is.
+// URI is normalized the same way before comparing.
 func uriSlicesMatch(parsedURIs []*url.URL, stringURIs []string) bool {
-	normalized := make([]string, len(stringURIs))
+	parsedStringURIs := make([]*url.URL, len(stringURIs))
 	for i, s := range stringURIs {
-		normalized[i] = s
-		if u, err := url.Parse(s); err == nil {
-			normalized[i] = u.String()
+		u, err := url.Parse(s)
+		if err != nil {
+			return false
 		}
+		parsedStringURIs[i] = u
 	}
 
-	return util.EqualUnsorted(URLsToString(parsedURIs), normalized)
+	return util.EqualURLsUnsorted(parsedStringURIs, parsedURIs)
 }
 
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec

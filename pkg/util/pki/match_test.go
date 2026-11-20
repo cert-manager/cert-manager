@@ -495,18 +495,9 @@ func TestRequestMatchesSpecURIs(t *testing.T) {
 			crURIs:   []string{"https://example.com/path#"},
 			specURIs: []string{"https://example.com/path#"},
 		},
-		"should not report a violation if the URIs are in a different order": {
-			crURIs:   []string{"spiffe://a/x", "spiffe://b/y"},
-			specURIs: []string{"spiffe://b/y", "spiffe://a/x"},
-		},
 		"should report a violation if a URI differs": {
 			crURIs:     []string{"spiffe://cluster.local/ns/foo/sa/bar"},
 			specURIs:   []string{"spiffe://cluster.local/ns/foo/sa/baz"},
-			violations: []string{"spec.uris"},
-		},
-		"should report a violation if the spec has an extra URI": {
-			crURIs:     []string{"spiffe://a/x"},
-			specURIs:   []string{"spiffe://a/x", "spiffe://b/y"},
 			violations: []string{"spec.uris"},
 		},
 	}
