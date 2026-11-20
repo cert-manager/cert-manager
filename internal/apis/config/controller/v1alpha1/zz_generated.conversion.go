@@ -156,6 +156,9 @@ func autoConvert_v1alpha1_ACMEHTTP01Config_To_controller_ACMEHTTP01Config(in *co
 	out.SolverRuntimeClassName = in.SolverRuntimeClassName
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
 	out.SolverExtraLabels = *(*map[string]string)(unsafe.Pointer(&in.SolverExtraLabels))
+	if err := v1.Convert_Pointer_bool_To_bool(&in.SolverProxyProtocol, &out.SolverProxyProtocol, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -176,6 +179,9 @@ func autoConvert_controller_ACMEHTTP01Config_To_v1alpha1_ACMEHTTP01Config(in *co
 	out.SolverRuntimeClassName = in.SolverRuntimeClassName
 	out.SolverNameservers = *(*[]string)(unsafe.Pointer(&in.SolverNameservers))
 	out.SolverExtraLabels = *(*map[string]string)(unsafe.Pointer(&in.SolverExtraLabels))
+	if err := v1.Convert_bool_To_Pointer_bool(&in.SolverProxyProtocol, &out.SolverProxyProtocol, s); err != nil {
+		return err
+	}
 	return nil
 }
 

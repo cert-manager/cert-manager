@@ -176,17 +176,37 @@ func TestEnsurePod(t *testing.T) {
 			Kind:       "Pod",
 			ObjectMeta: pod.ObjectMeta,
 		}
+		acmeOptions = controller.ACMEOptions{
+			HTTP01SolverResourceRequestCPU:    cpuRequest,
+			HTTP01SolverResourceRequestMemory: memoryRequest,
+			HTTP01SolverResourceLimitsCPU:     cpuLimit,
+			HTTP01SolverResourceLimitsMemory:  memoryLimit,
+			ACMEHTTP01SolverRunAsNonRoot:      true,
+		}
 	)
 	scPod := pod.DeepCopy()
 	scPod.Spec.SecurityContext.RunAsUser = new(int64(1020))
 	scPod.Spec.SecurityContext.RunAsNonRoot = nil
 	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 	scPod.Spec.Tolerations = []corev1.Toleration{}
+
+	ppPod := pod.DeepCopy()
+	ppPod.Spec.Containers[0].Args = []string{
+		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+		fmt.Sprintf("--domain=%s", chal.Spec.DNSName),
+		fmt.Sprintf("--token=%s", chal.Spec.Token),
+		fmt.Sprintf("--key=%s", chal.Spec.Key),
+		"--proxy-protocol",
+	}
+
 	tests := map[string]testT{
 		"should do nothing if pod already exists": {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{podMeta},
 				ExpectedActions:        []testpkg.Action{},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal: chal,
 		},
@@ -194,6 +214,9 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal: chal,
 		},
@@ -214,6 +237,9 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"security context should be configurable": {
@@ -244,6 +270,9 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"security context should be configurable using gateway-api": {
@@ -274,6 +303,9 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"should clean up if multiple pods exist": {
@@ -282,9 +314,29 @@ func TestEnsurePod(t *testing.T) {
 				KubeObjects:            []runtime.Object{pod, func(p corev1.Pod) *corev1.Pod { p.Name = "foobar"; return &p }(*pod)},
 				ExpectedActions: []testpkg.Action{testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, "foobar")),
 					testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ""))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal:        chal,
 			expectedErr: true,
+		},
+		"proxy protocol should be configurable": {
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ppPod))},
+				Context: &controller.Context{
+					ACMEOptions: controller.ACMEOptions{
+						HTTP01SolverResourceRequestCPU:    cpuRequest,
+						HTTP01SolverResourceRequestMemory: memoryRequest,
+						HTTP01SolverResourceLimitsCPU:     cpuLimit,
+						HTTP01SolverResourceLimitsMemory:  memoryLimit,
+						ACMEHTTP01SolverRunAsNonRoot:      true,
+						ACMEHTTP01SolverProxyProtocol:     true,
+					},
+				},
+			},
 		},
 	}
 	for name, scenario := range tests {
@@ -295,13 +347,7 @@ func TestEnsurePod(t *testing.T) {
 				Context:   scenario.builder.Context,
 				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
-			s.Context.ACMEOptions = controller.ACMEOptions{
-				HTTP01SolverResourceRequestCPU:    cpuRequest,
-				HTTP01SolverResourceRequestMemory: memoryRequest,
-				HTTP01SolverResourceLimitsCPU:     cpuLimit,
-				HTTP01SolverResourceLimitsMemory:  memoryLimit,
-				ACMEHTTP01SolverRunAsNonRoot:      true,
-			}
+
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
 			err := s.ensurePod(t.Context(), scenario.chal)
