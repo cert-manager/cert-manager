@@ -228,6 +228,34 @@ This option decides if the CRDs should be installed as part of the Helm installa
 
 This option makes it so that the "helm.sh/resource-policy": keep annotation is added to the CRD. This will prevent Helm from uninstalling the CRD when the Helm release is uninstalled. WARNING: when the CRDs are removed, all cert-manager custom resources  
 (Certificates, Issuers, ...) will be removed too by the garbage collector.
+### External Issuers
+
+#### **externalIssuers.vault** ~ `bool`
+> Default value:
+> ```yaml
+> false
+> ```
+
+Install the external vault-issuer (https://github.com/cert-manager/vault-issuer) and disable the in-tree Vault issuer controllers.
+#### **vault-issuer** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+Values passed through to the vault-issuer sub-chart when  
+`externalIssuers.vault` is true. For the available options, see  
+https://github.com/cert-manager/vault-issuer/blob/main/deploy/charts/vault-issuer/README.md  
+  
+For example:
+
+```yaml
+vault-issuer:
+  app:
+    logLevel: 2
+    issuer:
+      clusterResourceNamespace: cert-manager
+```
 ### Controller
 
 #### **replicaCount** ~ `number`
