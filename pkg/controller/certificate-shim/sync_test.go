@@ -399,7 +399,8 @@ func TestSync(t *testing.T) {
 				Annotations: map[string]string{
 					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 					cmapi.CommonNameAnnotationKey:               "my-cn",
-					cmapi.AltNamesAnnotationKey:                 "foo.alt.example.com,bar.alt.example.com",
+					cmapi.AltNamesAnnotationKey:                 "example.com,foo.alt.example.com,bar.alt.example.com,foo.alt.example.com",
+					cmapi.IPSANAnnotationKey:                    "1.1.1.1,2a00:1450:4009:0819::eeee,192.0.2.1,192.0.2.1",
 				},
 				UID: types.UID("ingress-name"),
 				Spec: networkingv1.IngressSpec{
@@ -423,7 +424,7 @@ func TestSync(t *testing.T) {
 					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					Spec: cmapi.CertificateSpec{
 						DNSNames:    []string{"example.com", "www.example.com", "foo.alt.example.com", "bar.alt.example.com"},
-						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee"},
+						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee", "192.0.2.1"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
 						IssuerRef: cmmeta.IssuerReference{

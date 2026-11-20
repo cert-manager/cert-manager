@@ -446,6 +446,22 @@ func buildCertificates(
 			return nil, nil, err
 		}
 
+		for _, sans := range []*[]string{&crt.Spec.DNSNames, &crt.Spec.IPAddresses} {
+			seen := sets.New[string]()
+			unique := (*sans)[:0]
+			for _, san := range *sans {
+				key := san
+				if ip := net.ParseIP(san); ip != nil {
+					key = ip.String()
+				}
+				if !seen.Has(key) {
+					seen.Insert(key)
+					unique = append(unique, san)
+				}
+			}
+			*sans = unique
+		}
+
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
