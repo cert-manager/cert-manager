@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -188,6 +189,33 @@ func TestCheckAuthoritativeNss(t *testing.T) {
 
 		_, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53"})
 		assert.EqualError(t, err, "some error coming from DnsQuery")
+	})
+
+	t.Run("skips nameserver with query error and succeeds if another has TXT record", func(t *testing.T) {
+		mu.Lock()
+		t.Cleanup(func() { mu.Unlock() })
+
+		origDNSQuery := dnsQuery
+		t.Cleanup(func() { dnsQuery = origDNSQuery })
+
+		dnsQuery = func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (*dns.Msg, error) {
+			if len(nameservers) > 0 && nameservers[0] == "1.1.1.1:53" {
+				return nil, &net.OpError{Op: "dial", Net: "udp", Err: errors.New("network is unreachable")}
+			}
+			msg := new(dns.Msg)
+			msg.Rcode = dns.RcodeSuccess
+			msg.Answer = []dns.RR{
+				&dns.TXT{
+					Hdr: dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300},
+					Txt: []string{"fe01="},
+				},
+			}
+			return msg, nil
+		}
+
+		ok, err := checkAuthoritativeNss(t.Context(), "8.8.8.8.asn.routeviews.org.", "fe01=", []string{"1.1.1.1:53", "2.2.2.2:53"})
+		require.NoError(t, err)
+		assert.True(t, ok)
 	})
 }
 
@@ -398,4 +426,153 @@ func withMockDNSQueryErr(t *testing.T, err error) {
 	dnsQuery = func(ctx context.Context, fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err2 error) {
 		return nil, err
 	}
+}
+
+func TestIsUDPDialError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: false,
+		},
+		{
+			name: "net.OpError with dial op",
+			err: &net.OpError{
+				Op:  "dial",
+				Net: "udp",
+				Err: errors.New("connect: network is unreachable"),
+			},
+			expected: true,
+		},
+		{
+			name: "wrapped net.OpError with dial op",
+			err: fmt.Errorf("lookup failed: %w", &net.OpError{
+				Op:  "dial",
+				Net: "udp",
+				Err: errors.New("connect: network is unreachable"),
+			}),
+			expected: true,
+		},
+		{
+			name: "net.OpError with read op",
+			err: &net.OpError{
+				Op:  "read",
+				Net: "udp",
+				Err: errors.New("read: connection refused"),
+			},
+			expected: false,
+		},
+		{
+			name:     "generic error",
+			err:      errors.New("some generic error"),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isUDPDialError(tt.err))
+		})
+	}
+}
+
+func TestDNSQuery_UDPFallbackToTCP(t *testing.T) {
+	expectedMsg := new(dns.Msg)
+	expectedMsg.SetQuestion("example.com.", dns.TypeTXT)
+	expectedMsg.Answer = []dns.RR{
+		&dns.TXT{
+			Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300},
+			Txt: []string{"test-value"},
+		},
+	}
+
+	t.Run("fallback to TCP on UDP dial error", func(t *testing.T) {
+		origExchange := dnsExchangeContext
+		t.Cleanup(func() { dnsExchangeContext = origExchange })
+
+		var udpCalled, tcpCalled bool
+		dnsExchangeContext = func(ctx context.Context, client *dns.Client, m *dns.Msg, a string) (*dns.Msg, time.Duration, error) {
+			if client.Net == "udp" {
+				udpCalled = true
+				return nil, 0, &net.OpError{
+					Op:  "dial",
+					Net: "udp",
+					Err: errors.New("connect: network is unreachable"),
+				}
+			}
+			if client.Net == "tcp" {
+				tcpCalled = true
+				return expectedMsg, 5 * time.Millisecond, nil
+			}
+			return nil, 0, fmt.Errorf("unexpected client net: %s", client.Net)
+		}
+
+		msg, err := DNSQuery(t.Context(), "example.com.", dns.TypeTXT, []string{"198.51.100.1:53"}, false)
+		require.NoError(t, err)
+		assert.Equal(t, expectedMsg, msg)
+		assert.True(t, udpCalled, "UDP exchange should be attempted first")
+		assert.True(t, tcpCalled, "TCP exchange should be attempted when UDP dial fails")
+	})
+
+	t.Run("fails when both UDP and TCP dial fail", func(t *testing.T) {
+		origExchange := dnsExchangeContext
+		t.Cleanup(func() { dnsExchangeContext = origExchange })
+
+		var udpCalled, tcpCalled bool
+		tcpErr := &net.OpError{
+			Op:  "dial",
+			Net: "tcp",
+			Err: errors.New("connect: network is unreachable"),
+		}
+		dnsExchangeContext = func(ctx context.Context, client *dns.Client, m *dns.Msg, a string) (*dns.Msg, time.Duration, error) {
+			if client.Net == "udp" {
+				udpCalled = true
+				return nil, 0, &net.OpError{
+					Op:  "dial",
+					Net: "udp",
+					Err: errors.New("connect: network is unreachable"),
+				}
+			}
+			if client.Net == "tcp" {
+				tcpCalled = true
+				return nil, 0, tcpErr
+			}
+			return nil, 0, fmt.Errorf("unexpected client net: %s", client.Net)
+		}
+
+		msg, err := DNSQuery(t.Context(), "example.com.", dns.TypeTXT, []string{"198.51.100.1:53"}, false)
+		assert.Nil(t, msg)
+		assert.ErrorIs(t, err, tcpErr)
+		assert.True(t, udpCalled)
+		assert.True(t, tcpCalled)
+	})
+
+	t.Run("no TCP fallback on non-dial UDP error", func(t *testing.T) {
+		origExchange := dnsExchangeContext
+		t.Cleanup(func() { dnsExchangeContext = origExchange })
+
+		var udpCalled, tcpCalled bool
+		genericErr := errors.New("generic UDP error")
+		dnsExchangeContext = func(ctx context.Context, client *dns.Client, m *dns.Msg, a string) (*dns.Msg, time.Duration, error) {
+			if client.Net == "udp" {
+				udpCalled = true
+				return nil, 0, genericErr
+			}
+			if client.Net == "tcp" {
+				tcpCalled = true
+				return expectedMsg, 5 * time.Millisecond, nil
+			}
+			return nil, 0, fmt.Errorf("unexpected client net: %s", client.Net)
+		}
+
+		msg, err := DNSQuery(t.Context(), "example.com.", dns.TypeTXT, []string{"198.51.100.1:53"}, false)
+		assert.Nil(t, msg)
+		assert.Equal(t, genericErr, err)
+		assert.True(t, udpCalled)
+		assert.False(t, tcpCalled, "TCP fallback should not occur for generic UDP error")
+	})
 }
