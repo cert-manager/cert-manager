@@ -49,12 +49,20 @@ type Registry interface {
 	Getter
 }
 
-// Getter is an interface that contains the read-only methods for a registry.
+// Getter is an interface that contains the methods which controllers other
+// than the issuer controller need: reading clients and refreshing them.
 type Getter interface {
 	// GetClient will fetch a registered client using the UID of the Issuer
 	// resources that constructed it.
 	// If no client is found, ErrNotFound will be returned.
 	GetClient(uid string) (acmecl.Interface, error)
+
+	// RefreshClient replaces the registered client with a new one built from
+	// the same options, and returns it. An ACME client caches the ACME
+	// directory for its lifetime, so use this to pick up directory changes,
+	// such as a newly added profile.
+	// If no client is found, ErrNotFound will be returned.
+	RefreshClient(uid string) (acmecl.Interface, error)
 
 	// ListClients will return a full list of all ACME clients by their UIDs.
 	// This can be used to enumerate all registered clients and call RemoveClient
@@ -120,6 +128,9 @@ type clientWithMeta struct {
 	acmecl.Interface
 
 	stableOptions
+
+	// options are kept so that RefreshClient can build a replacement client.
+	options NewClientOptions
 }
 
 // AddClient will ensure the registry has a stored ACME client for the Issuer
@@ -152,7 +163,23 @@ func (r *registry) ensureClient(uid string, options NewClientOptions) {
 	r.clients[uid] = clientWithMeta{
 		Interface:     r.newClientFunc(options),
 		stableOptions: newOpts,
+		options:       options,
 	}
+}
+
+// RefreshClient replaces the registered client with a new one built from the
+// same options, and returns it.
+// If no client is found, ErrNotFound will be returned.
+func (r *registry) RefreshClient(uid string) (acmecl.Interface, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	meta, ok := r.clients[uid]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	meta.Interface = r.newClientFunc(meta.options)
+	r.clients[uid] = meta
+	return meta.Interface, nil
 }
 
 // GetClient will fetch a registered client using the UID of the Issuer

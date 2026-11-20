@@ -1077,6 +1077,57 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 				},
 			},
 		},
+		"acme-profiles:profile-added-after-directory-was-cached": {
+			// The registered client cached a directory without the profile.
+			// A refreshed client sees the profile, so the order is created
+			// with the refreshed client.
+			order: testOrderWithProfile,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderWithProfile},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(
+							cmacme.SchemeGroupVersion.WithResource("orders"),
+							"status",
+							testOrderWithProfile.Namespace,
+							gen.OrderFrom(testOrderWithProfile, gen.SetOrderStatus(cmacme.OrderStatus{
+								State:       cmacme.Pending,
+								URL:         "http://testurl.com/abcde",
+								FinalizeURL: "http://testurl.com/abcde/finalize",
+								Authorizations: []cmacme.ACMEAuthorization{
+									{
+										URL: "http://authzurl",
+									},
+								},
+							})),
+						)),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{Profiles: map[acmeapi.ProfileName]string{
+						"classic": "https://example.com/classic",
+					}}, nil
+				},
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return nil, errors.New("AuthorizeOrder must not be called on the client with the stale directory")
+				},
+			},
+			refreshedACMEClient: &acmecl.FakeACME{
+				FakeDiscover: func(ctx context.Context) (acmeapi.Directory, error) {
+					return acmeapi.Directory{Profiles: map[acmeapi.ProfileName]string{
+						"classic":    "https://example.com/classic",
+						"shortlived": "https://example.com/shortlived",
+					}}, nil
+				},
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return testACMEAuthorizationPending, nil
+				},
+			},
+		},
 		"create order with replaces id of the certificate that is being renewed": {
 			order: testOrderReplacesID,
 			builder: &testpkg.Builder{
@@ -1145,12 +1196,15 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 }
 
 type testT struct {
-	order          *cmacme.Order
-	builder        *testpkg.Builder
-	acmeClient     acmecl.Interface
-	shouldSchedule bool
-	expectErr      bool
-	featureGates   map[featuregate.Feature]bool
+	order      *cmacme.Order
+	builder    *testpkg.Builder
+	acmeClient acmecl.Interface
+	// refreshedACMEClient is returned by the registry's RefreshClient. If it
+	// is nil, RefreshClient returns acmeClient.
+	refreshedACMEClient acmecl.Interface
+	shouldSchedule      bool
+	expectErr           bool
+	featureGates        map[featuregate.Feature]bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -1167,6 +1221,12 @@ func runTest(t *testing.T, test testT) {
 	// Set some fields on the embedded controller.
 	cw.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {
+			return test.acmeClient, nil
+		},
+		RefreshClientFunc: func(_ string) (acmecl.Interface, error) {
+			if test.refreshedACMEClient != nil {
+				return test.refreshedACMEClient, nil
+			}
 			return test.acmeClient, nil
 		},
 	}

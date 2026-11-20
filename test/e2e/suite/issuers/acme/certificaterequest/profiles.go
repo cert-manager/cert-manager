@@ -171,7 +171,7 @@ var _ = framework.CertManagerDescribe("ACME Profiles Extension", func() {
 			Expect(err).To(MatchError(helper.ErrCertificateRequestFailed))
 			readyCondition := apiutil.GetCertificateRequestCondition(cr, v1.CertificateRequestConditionReady)
 			Expect(readyCondition.Message).To(ContainSubstring(
-				"Failed to create Order: acme: certificate authority does not advertise a profile with name unsupported-profile",
+				`Failed to create Order: ACME server does not advertise the requested profile: "unsupported-profile"`,
 			))
 		})
 	})
