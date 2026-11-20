@@ -655,7 +655,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			warnings: []string{deprecatedACMEEABKeyAlgorithmField},
 		},
-		"acme solver with deprecated rfc2136 HMACMD5 TSIG algorithm": {
+		"acme solver with weak rfc2136 HMACMD5 TSIG algorithm": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -671,9 +671,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					},
 				},
 			},
-			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5")},
+			warnings: []string{fmt.Sprintf(weakRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5")},
 		},
-		"acme solver with deprecated rfc2136 HMAC-SHA1 TSIG algorithm in lower case": {
+		"acme solver with weak rfc2136 HMAC-SHA1 TSIG algorithm in lower case": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -689,9 +689,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					},
 				},
 			},
-			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "hmacsha1")},
+			warnings: []string{fmt.Sprintf(weakRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "hmacsha1")},
 		},
-		"acme solvers with two deprecated rfc2136 TSIG algorithms": {
+		"acme solvers with two weak rfc2136 TSIG algorithms": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -716,8 +716,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			warnings: []string{
-				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1"),
-				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "solvers[1].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+				fmt.Sprintf(weakRFC2136TSIGAlgorithm, "solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1"),
+				fmt.Sprintf(weakRFC2136TSIGAlgorithm, "solvers[1].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
 			},
 		},
 		"acme solver with supported rfc2136 HMACSHA256 TSIG algorithm": {
@@ -1070,7 +1070,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
-		"acme issuer with deprecated rfc2136 HMACSHA1 TSIG algorithm": {
+		"acme issuer with weak rfc2136 HMACSHA1 TSIG algorithm": {
 			spec: &cmapi.IssuerSpec{
 				ACME: &cmacme.ACMEIssuer{
 					Email:      "valid-email",
@@ -1089,7 +1089,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 				},
 			},
 			errs:     []*field.Error{},
-			warnings: []string{fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1")},
+			warnings: []string{fmt.Sprintf(weakRFC2136TSIGAlgorithm, "acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACSHA1")},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -2277,15 +2277,15 @@ func TestUpdateValidateIssuer(t *testing.T) {
 		expectedE []*field.Error
 		expectedW []string
 	}{
-		"unchanged deprecated solver does not warn": {
+		"unchanged weak solver does not warn": {
 			old: rfc2136Issuer("HMACMD5"),
 			iss: rfc2136Issuer("HMACMD5"),
 		},
-		"changed deprecated solver warns": {
+		"changed weak solver warns": {
 			old: rfc2136Issuer("HMACSHA256"),
 			iss: rfc2136Issuer("HMACMD5"),
 			expectedW: []string{
-				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+				fmt.Sprintf(weakRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
 			},
 		},
 		"new deprecated EAB key algorithm warns": {

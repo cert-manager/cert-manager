@@ -41,22 +41,22 @@ var supportedAlgorithms = map[string]string{
 	"HMACSHA512": dns.HmacSHA512,
 }
 
-// deprecatedAlgorithms is the subset of supportedAlgorithms that is deprecated
-// but still accepted. This list must be kept in sync with
-// internal/apis/certmanager/validation/issuer.go.
-var deprecatedAlgorithms = map[string]struct{}{
+// weakAlgorithms is the subset of supportedAlgorithms that is weak
+// (RFC 8945 section 6) but still accepted. This list must be kept in sync
+// with internal/apis/certmanager/validation/issuer.go.
+var weakAlgorithms = map[string]struct{}{
 	dns.HmacMD5:  {},
 	dns.HmacSHA1: {},
 }
 
 const (
-	// deprecatedTSIGAlgorithmMessage is logged when an RFC2136 solver is
-	// configured with a deprecated TSIG algorithm.
-	deprecatedTSIGAlgorithmMessage = "RFC2136 DNS-01 solver is using a deprecated TSIG algorithm; use HMACSHA256 or HMACSHA512 instead"
+	// weakTSIGAlgorithmMessage is logged when an RFC2136 solver is
+	// configured with a weak TSIG algorithm.
+	weakTSIGAlgorithmMessage = "RFC2136 DNS-01 solver is using a weak TSIG algorithm; use HMACSHA256 or HMACSHA512 instead"
 
 	// defaultedTSIGAlgorithmMessage is logged when an RFC2136 solver omits
-	// tsigAlgorithm, which silently selects the deprecated HMACMD5.
-	defaultedTSIGAlgorithmMessage = "RFC2136 DNS-01 solver tsigAlgorithm is not set and defaults to the deprecated HMACMD5; set it explicitly to HMACSHA256 or HMACSHA512"
+	// tsigAlgorithm, which silently selects the weak HMACMD5.
+	defaultedTSIGAlgorithmMessage = "RFC2136 DNS-01 solver tsigAlgorithm is not set and defaults to the weak HMACMD5; set it explicitly to HMACSHA256 or HMACSHA512"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface that
@@ -124,8 +124,8 @@ func NewDNSProviderCredentials(ctx context.Context, nameserver, tsigAlgorithm, t
 	// Only warn when TSIG is actually in use; the algorithm is irrelevant when
 	// no key name or secret is configured.
 	if d.tsigKeyName != "" && len(d.tsigSecret) > 0 {
-		if _, deprecated := deprecatedAlgorithms[d.tsigAlgorithm]; deprecated {
-			message := deprecatedTSIGAlgorithmMessage
+		if _, weak := weakAlgorithms[d.tsigAlgorithm]; weak {
+			message := weakTSIGAlgorithmMessage
 			if defaulted {
 				message = defaultedTSIGAlgorithmMessage
 			}

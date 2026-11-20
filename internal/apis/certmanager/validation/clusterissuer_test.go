@@ -84,15 +84,15 @@ func TestUpdateValidateClusterIssuer(t *testing.T) {
 		expectedE []*field.Error
 		expectedW []string
 	}{
-		"unchanged deprecated solver does not warn": {
+		"unchanged weak solver does not warn": {
 			old: rfc2136ClusterIssuer("HMACMD5"),
 			iss: rfc2136ClusterIssuer("HMACMD5"),
 		},
-		"changed deprecated solver warns": {
+		"changed weak solver warns": {
 			old: rfc2136ClusterIssuer("HMACSHA256"),
 			iss: rfc2136ClusterIssuer("HMACMD5"),
 			expectedW: []string{
-				fmt.Sprintf(deprecatedRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
+				fmt.Sprintf(weakRFC2136TSIGAlgorithm, "spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm", "HMACMD5"),
 			},
 		},
 	}

@@ -198,7 +198,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 }
 
 // validateRFC2136TSIGAlgorithmWarnings returns admission warnings for RFC2136
-// solvers that explicitly set one of the deprecated TSIG algorithms. An empty
+// solvers that explicitly set one of the weak TSIG algorithms. An empty
 // tsigAlgorithm defaults to HMACMD5 at runtime; that case is reported by the
 // DNS provider when a challenge is solved (see
 // pkg/issuer/acme/dns/rfc2136/rfc2136.go), not here.
@@ -207,12 +207,12 @@ func validateRFC2136TSIGAlgorithmWarnings(rfc2136 *cmacme.ACMEIssuerDNS01Provide
 		return nil
 	}
 
-	if _, deprecated := deprecatedTSIGAlgorithms[strings.ToUpper(rfc2136.TSIGAlgorithm)]; !deprecated {
+	if _, weak := weakTSIGAlgorithms[strings.ToUpper(rfc2136.TSIGAlgorithm)]; !weak {
 		return nil
 	}
 
 	return []string{fmt.Sprintf(
-		deprecatedRFC2136TSIGAlgorithm,
+		weakRFC2136TSIGAlgorithm,
 		fldPath.Child("rfc2136", "tsigAlgorithm").String(),
 		rfc2136.TSIGAlgorithm,
 	)}
@@ -546,10 +546,10 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA512",
 }
 
-// deprecatedTSIGAlgorithms is the subset of supportedTSIGAlgorithms that is
-// deprecated but still accepted. This list must be kept in sync with
-// pkg/issuer/acme/dns/rfc2136/rfc2136.go.
-var deprecatedTSIGAlgorithms = map[string]struct{}{
+// weakTSIGAlgorithms is the subset of supportedTSIGAlgorithms that is weak
+// (RFC 8945 section 6) but still accepted. This list must be kept in sync
+// with pkg/issuer/acme/dns/rfc2136/rfc2136.go.
+var weakTSIGAlgorithms = map[string]struct{}{
 	"HMACMD5":  {},
 	"HMACSHA1": {},
 }

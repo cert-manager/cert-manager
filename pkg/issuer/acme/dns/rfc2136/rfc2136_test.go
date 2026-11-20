@@ -42,7 +42,7 @@ func captureLogs(t *testing.T) (context.Context, func() string) {
 	}
 }
 
-func TestNewDNSProviderCredentials_DeprecatedTSIGAlgorithmWarning(t *testing.T) {
+func TestNewDNSProviderCredentials_WeakTSIGAlgorithmWarning(t *testing.T) {
 	tests := map[string]struct {
 		tsigAlgorithm string
 		tsigKeyName   string
@@ -58,13 +58,13 @@ func TestNewDNSProviderCredentials_DeprecatedTSIGAlgorithmWarning(t *testing.T) 
 			tsigAlgorithm: "HMACMD5",
 			tsigKeyName:   "key",
 			tsigSecret:    "secret",
-			wantMessage:   deprecatedTSIGAlgorithmMessage,
+			wantMessage:   weakTSIGAlgorithmMessage,
 		},
 		"explicit HMACSHA1 warns": {
 			tsigAlgorithm: "hmacsha1",
 			tsigKeyName:   "key",
 			tsigSecret:    "secret",
-			wantMessage:   deprecatedTSIGAlgorithmMessage,
+			wantMessage:   weakTSIGAlgorithmMessage,
 		},
 		"supported algorithm does not warn": {
 			tsigAlgorithm: "HMACSHA256",
@@ -84,8 +84,8 @@ func TestNewDNSProviderCredentials_DeprecatedTSIGAlgorithmWarning(t *testing.T) 
 
 			got := logs()
 			if tt.wantMessage == "" {
-				if strings.Contains(got, "deprecated") {
-					t.Errorf("expected no deprecation warning, got:\n%s", got)
+				if strings.Contains(got, "weak") {
+					t.Errorf("expected no weak algorithm warning, got:\n%s", got)
 				}
 				return
 			}
