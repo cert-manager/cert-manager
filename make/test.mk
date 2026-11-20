@@ -15,10 +15,10 @@
 export KUBEBUILDER_ASSETS=$(PWD)/$(bin_dir)/tools
 
 # AWS Emulator serves the AWS APIs locally. The Route 53 tests in
-# pkg/issuer/acme/dns/route53 use it when AWS_EMULATOR is set and are skipped
+# pkg/issuer/acme/dns/route53 use it when CERT_MANAGER_AWS_EMULATOR is set and are skipped
 # otherwise. AWS publishes it for Linux only.
 ifeq ($(HOST_OS),linux)
-export AWS_EMULATOR=$(AWS-EMULATOR)
+export CERT_MANAGER_AWS_EMULATOR=$(AWS-EMULATOR)
 test test-ci unit-test-core-module: | $(NEEDS_AWS-EMULATOR)
 endif
 

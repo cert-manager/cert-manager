@@ -53,7 +53,7 @@ import (
 // build the provider with NewDNSProviderFromOptions, sign real requests and
 // read the records back to check what the provider did.
 //
-// `make test` downloads the emulator and sets AWS_EMULATOR to its path.
+// `make test` downloads the emulator and sets CERT_MANAGER_AWS_EMULATOR to its path.
 // Without that variable, the tests look for `aws-emulator` on the PATH and are
 // skipped if it is not there. AWS publishes the emulator for Linux only.
 // See https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-linux.html
@@ -64,16 +64,17 @@ import (
 func startEmulator(t *testing.T) {
 	t.Helper()
 
-	// The Makefile sets AWS_EMULATOR, so that the tests cannot be skipped by
+	// The Makefile sets CERT_MANAGER_AWS_EMULATOR, so that the tests cannot be skipped by
 	// accident in CI.
-	bin := os.Getenv("AWS_EMULATOR")
+	bin := os.Getenv("CERT_MANAGER_AWS_EMULATOR")
 	if bin == "" {
 		var err error
 		if bin, err = exec.LookPath("aws-emulator"); err != nil {
-			t.Skip("AWS_EMULATOR is not set and aws-emulator is not on the PATH")
+			t.Skip("CERT_MANAGER_AWS_EMULATOR is not set and aws-emulator is not on the PATH")
 		}
 	}
 
+	// #nosec G702 -- test code; the path comes from the Makefile or from the PATH
 	cmd := exec.CommandContext(t.Context(), bin, "--port=0", "--telemetry=off", "--idle-timeout=300")
 	// The emulator writes its credentials and its CA certificate below $HOME.
 	cmd.Env = append(cmd.Environ(), "HOME="+t.TempDir())
