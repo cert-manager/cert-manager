@@ -154,6 +154,7 @@ github.com/modern-go/concurrent,Apache-2.0
 github.com/modern-go/reflect2,Apache-2.0
 github.com/munnerz/goautoneg,BSD-3-Clause
 github.com/nrdcg/goacmedns,MIT
+github.com/pandatix/go-abnf,MIT
 github.com/pavlo-v-chernykh/keystore-go/v4,MIT
 github.com/pierrec/lz4,BSD-3-Clause
 github.com/pkg/browser,BSD-2-Clause
