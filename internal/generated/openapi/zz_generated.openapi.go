@@ -868,7 +868,7 @@ func schema_pkg_apis_acme_v1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(ref commo
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute. cert-manager needs to know which parentRefs should be used when creating the HTTPRoute. Usually, the parentRef references a Gateway. See: https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways",
+							Description: "When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute. cert-manager needs to know which parentRefs should be used when creating the HTTPRoute. Usually, the parentRef references a Gateway. See: https://gateway-api.sigs.k8s.io/reference/api-types/httproute/#attaching-to-gateways",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
