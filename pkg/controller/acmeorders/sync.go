@@ -350,15 +350,6 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	var err error
 	if o.Spec.Profile != "" {
 		err = checkProfileSupported(ctx, cl, o.Spec.Profile)
-		if errors.Is(err, errCADoesNotSupportProfiles) || errors.Is(err, errProfileNotSupported) {
-			// The client caches the ACME directory for its lifetime, so it
-			// does not see a profile which the server added later. Check once
-			// more with a new client before marking the Order as failed.
-			cl, err = c.accountRegistry.RefreshClient(string(genericIssuer.GetUID()))
-			if err == nil {
-				err = checkProfileSupported(ctx, cl, o.Spec.Profile)
-			}
-		}
 	}
 	if err == nil {
 		acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
