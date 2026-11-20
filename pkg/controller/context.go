@@ -210,6 +210,10 @@ type ACMEOptions struct {
 	// HTTP01SolverRuntimeClassName defines the ACME pod's runtimeClassName
 	HTTP01SolverRuntimeClassName string
 
+	// HTTP01SolverLoggingFormat is the controller's log format. It is passed
+	// to the ACME pod as --logging-format when it is not the default.
+	HTTP01SolverLoggingFormat string
+
 	// HTTP01SolverNameservers is a list of nameservers to use when performing self-checks
 	// for ACME HTTP01 validations.
 	HTTP01SolverNameservers []string
