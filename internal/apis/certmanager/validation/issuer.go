@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	acmevalidation "github.com/cert-manager/cert-manager/internal/apis/acme/validation"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -171,9 +172,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Required(fldPath, "no solver type configured"))
 	}
 
-	if sol.WaitInsteadOfSelfCheck != nil && sol.WaitInsteadOfSelfCheck.Duration < 0 {
-		el = append(el, field.Invalid(fldPath.Child("waitInsteadOfSelfCheck"), sol.WaitInsteadOfSelfCheck.Duration, "waitInsteadOfSelfCheck must not be negative"))
-	}
+	el = append(el, acmevalidation.ValidateACMEChallengeSolverTiming(sol, fldPath)...)
 
 	return el
 }
