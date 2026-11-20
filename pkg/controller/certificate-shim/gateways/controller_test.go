@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -232,12 +233,13 @@ func Test_controller_Register(t *testing.T) {
 
 			// We only expect 0 or 1 keys received in the queue, or 2 keys when
 			// we have to create a Gateway before deleting or updating it.
-			assert.Equal(t, test.expectAddCalls, mock.callsToAdd)
+			assert.Equal(t, test.expectAddCalls, mock.getCallsToAdd())
 		})
 	}
 }
 
 type mockWorkqueue struct {
+	lock       sync.Mutex
 	t          *testing.T
 	callsToAdd []types.NamespacedName
 }
@@ -245,7 +247,15 @@ type mockWorkqueue struct {
 var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+func (m *mockWorkqueue) getCallsToAdd() []types.NamespacedName {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return append([]types.NamespacedName(nil), m.callsToAdd...)
 }
 
 func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {
