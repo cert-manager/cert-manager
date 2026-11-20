@@ -24,6 +24,7 @@ import (
 
 	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/validation"
+	"github.com/cert-manager/cert-manager/internal/buildinfo"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	cmwebhook "github.com/cert-manager/cert-manager/internal/webhook"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -34,9 +35,16 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/webhook/options"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 const componentWebhook = "webhook"
+
+// The metrics endpoint serves the controller-runtime registry, so register the
+// build info metric there once, when the package is loaded.
+func init() {
+	ctrlmetrics.Registry.MustRegister(buildinfo.NewCollector())
+}
 
 func NewServerCommand(ctx context.Context) *cobra.Command {
 	return newServerCommand(
