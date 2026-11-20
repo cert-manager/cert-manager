@@ -30,6 +30,7 @@ type FakeRegistry struct {
 	AddClientFunc           func(uid string, options accounts.NewClientOptions)
 	RemoveClientFunc        func(uid string)
 	GetClientFunc           func(uid string) (acmecl.Interface, error)
+	RefreshClientFunc       func(uid string) (acmecl.Interface, error)
 	ListClientsFunc         func() map[string]acmecl.Interface
 	IsKeyCheckSumCachedFunc func(lastPrivateKeyHash string, privateKey *rsa.PrivateKey) bool
 }
@@ -43,6 +44,15 @@ func (f *FakeRegistry) RemoveClient(uid string) {
 }
 
 func (f *FakeRegistry) GetClient(uid string) (acmecl.Interface, error) {
+	return f.GetClientFunc(uid)
+}
+
+// RefreshClient returns the client from GetClientFunc unless RefreshClientFunc
+// is set.
+func (f *FakeRegistry) RefreshClient(uid string) (acmecl.Interface, error) {
+	if f.RefreshClientFunc != nil {
+		return f.RefreshClientFunc(uid)
+	}
 	return f.GetClientFunc(uid)
 }
 

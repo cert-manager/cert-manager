@@ -30,6 +30,7 @@ import (
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
@@ -40,12 +41,19 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/scheduler"
 )
 
+// clientRefresher is the part of the ACME accounts registry which this
+// controller uses. It can read a client and replace it with a new one.
+type clientRefresher interface {
+	accounts.Getter
+	RefreshClient(uid string) (acmecl.Interface, error)
+}
+
 type controller struct {
 	// issuer helper is used to obtain references to issuers, used by Sync()
 	helper issuer.Helper
 
 	// used to fetch ACME clients used in the controller
-	accountRegistry accounts.Getter
+	accountRegistry clientRefresher
 
 	// all the listers used by this controller
 	orderLister         cmacmelisters.OrderLister
