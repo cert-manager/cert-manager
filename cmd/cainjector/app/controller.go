@@ -89,6 +89,9 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := authority.RegisterMetrics(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering dynamic serving certificate metrics: %w", err)
+	}
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(kscheme.AddToScheme(scheme))

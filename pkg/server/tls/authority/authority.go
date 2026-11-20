@@ -188,6 +188,12 @@ var ErrCertificateNotAvailable = errors.New("certificate not available")
 // the managed CA.
 // It will automatically set the NotBefore and NotAfter times appropriately.
 func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, error) {
+	cert, err := d.sign(template)
+	d.observeSign(cert, err)
+	return cert, err
+}
+
+func (d *DynamicAuthority) sign(template *x509.Certificate) (*x509.Certificate, error) {
 	d.signMutex.Lock()
 	defer d.signMutex.Unlock()
 
@@ -285,6 +291,12 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 	}
 
 	d.log.V(logf.InfoLevel).Info("Detected change in CA secret data, update current CA data and notify watches")
+
+	if caCert, err := pki.DecodeX509CertificateBytes(newCertData); err != nil {
+		d.log.Error(err, "Failed to decode CA certificate, not updating CA metrics")
+	} else {
+		d.observeCA(caCert)
+	}
 
 	func() {
 		d.signMutex.Lock()
