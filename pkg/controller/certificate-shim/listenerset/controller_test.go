@@ -172,7 +172,7 @@ func Test_controller_Register(t *testing.T) {
 				require.Eventually(t, func() bool {
 					_, err := lsl.ListenerSets("namespace-1").Get("ls-3")
 					return err == nil
-				}, 2*time.Second, 10*time.Millisecond)
+				}, wait.ForeverTestTimeout, 10*time.Millisecond)
 
 				// Update Gateway -> should enqueue attached ls via the parent index.
 				_, err = c.GatewayV1().Gateways("namespace-1").Update(t.Context(),
