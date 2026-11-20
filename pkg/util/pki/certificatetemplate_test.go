@@ -20,13 +20,20 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/pem"
 	"math/big"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
+
+var testIssuerRef = cmmeta.IssuerReference{Name: "test-issuer", Kind: "ClusterIssuer"}
 
 func TestCertificateTemplateFromCSR(t *testing.T) {
 	subjectGenerator := func(t *testing.T, name pkix.Name) []byte {
@@ -163,6 +170,111 @@ func TestCertificateTemplateFromCSR(t *testing.T) {
 			testutil.AssertEqual(t, *tc.expected, *result, cmp.Comparer(func(a, b *big.Int) bool {
 				return (a == nil && b == nil) || (a != nil && b != nil && a.Cmp(b) == 0)
 			}))
+		})
+	}
+}
+
+func TestCertificateTemplateFromCertificateMaxPathLen(t *testing.T) {
+	tests := []struct {
+		name            string
+		maxPathLen      *int
+		wantMaxPathLen  int
+		wantMaxPathZero bool
+	}{
+		{
+			name:            "nil maxPathLen produces no constraint",
+			maxPathLen:      nil,
+			wantMaxPathLen:  0,
+			wantMaxPathZero: false,
+		},
+		{
+			name:            "maxPathLen=0 sets MaxPathLenZero",
+			maxPathLen:      new(0),
+			wantMaxPathLen:  0,
+			wantMaxPathZero: true,
+		},
+		{
+			name:            "maxPathLen=2 sets MaxPathLen",
+			maxPathLen:      new(2),
+			wantMaxPathLen:  2,
+			wantMaxPathZero: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			crt := &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					DNSNames:   []string{"example.com"},
+					SecretName: "test",
+					IssuerRef:  testIssuerRef,
+					IsCA:       true,
+					MaxPathLen: tc.maxPathLen,
+				},
+			}
+			tmpl, err := CertificateTemplateFromCertificate(crt)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantMaxPathLen, tmpl.MaxPathLen)
+			assert.Equal(t, tc.wantMaxPathZero, tmpl.MaxPathLenZero)
+		})
+	}
+}
+
+func TestCertificateTemplateFromCertificateRequestMaxPathLen(t *testing.T) {
+	tests := []struct {
+		name            string
+		maxPathLen      *int
+		wantMaxPathLen  int
+		wantMaxPathZero bool
+	}{
+		{
+			name:            "nil maxPathLen produces no constraint",
+			maxPathLen:      nil,
+			wantMaxPathLen:  0,
+			wantMaxPathZero: false,
+		},
+		{
+			name:            "maxPathLen=0 sets MaxPathLenZero",
+			maxPathLen:      new(0),
+			wantMaxPathLen:  0,
+			wantMaxPathZero: true,
+		},
+		{
+			name:            "maxPathLen=1 sets MaxPathLen",
+			maxPathLen:      new(1),
+			wantMaxPathLen:  1,
+			wantMaxPathZero: false,
+		},
+	}
+
+	key, err := GenerateRSAPrivateKey(2048)
+	require.NoError(t, err)
+	csrTemplate, err := GenerateCSR(&cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
+			DNSNames:  []string{"example.com"},
+			IssuerRef: testIssuerRef,
+			IsCA:      true,
+		},
+	})
+	require.NoError(t, err)
+	csrDER, err := EncodeCSR(csrTemplate, key)
+	require.NoError(t, err)
+	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cr := &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					Request:    csrPEM,
+					IssuerRef:  testIssuerRef,
+					IsCA:       true,
+					MaxPathLen: tc.maxPathLen,
+				},
+			}
+			tmpl, err := CertificateTemplateFromCertificateRequest(cr)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantMaxPathLen, tmpl.MaxPathLen)
+			assert.Equal(t, tc.wantMaxPathZero, tmpl.MaxPathLenZero)
 		})
 	}
 }

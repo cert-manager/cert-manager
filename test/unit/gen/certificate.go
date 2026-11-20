@@ -101,6 +101,12 @@ func SetCertificateIsCA(isCA bool) CertificateModifier {
 	}
 }
 
+func SetCertificateMaxPathLen(maxPathLen *int) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.MaxPathLen = maxPathLen
+	}
+}
+
 func SetCertificateKeyAlgorithm(keyAlgorithm v1.PrivateKeyAlgorithm) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.PrivateKey.Algorithm = keyAlgorithm

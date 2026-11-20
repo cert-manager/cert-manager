@@ -141,6 +141,13 @@ spec:
                 required:
                 - name
                 type: object
+              maxPathLen:
+                description: |-
+                  Requested maximum path length for the certificate.
+                  Only meaningful when isCA is true. A value of 0 means no sub-CAs are allowed.
+                  When not set, no pathLenConstraint is encoded in the certificate.
+                minimum: 0
+                type: integer
               request:
                 description: |-
                   The PEM-encoded X.509 certificate signing request to be submitted to the
