@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
@@ -288,13 +289,13 @@ func containsValue(values []string, value string) bool {
 	return false
 }
 
+// isNotFound reports whether err is the Akamai API telling us that the record
+// does not exist. Every non-200 response from the API is returned as a
+// *dns.Error, so the status code has to be checked: a 401, 403, 429 or 5xx
+// does not say anything about whether the record exists.
 func isNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	_, ok := err.(*dns.Error)
-	return ok
+	var apiErr *dns.Error
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
