@@ -1640,6 +1640,17 @@ func Test_validateLiteralSubject(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
+		"valid with a `literalSubject` using lowercase attribute type names": {
+			featureEnabled: true,
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					LiteralSubject: "cn=testcn,ou=IT,o=Acme,c=US",
+					SecretName:     "abc",
+					IssuerRef:      validIssuerRef,
+				},
+			},
+			a: someAdmissionRequest,
+		},
 		"invalid with a `literalSubject` without CN and no dnsNames, ipAddresses, or emailAddress": {
 			featureEnabled: true,
 			cfg: &internalcmapi.Certificate{

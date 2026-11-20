@@ -21,6 +21,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
+	"strings"
 
 	"github.com/go-ldap/ldap/v3"
 )
@@ -79,7 +80,12 @@ func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, erro
 
 		atvs := make([]pkix.AttributeTypeAndValue, 0, len(ldapRelativeDN.Attributes))
 		for _, ldapATV := range ldapRelativeDN.Attributes {
-			oid, ok := attributeTypeNames[ldapATV.Type]
+			// Attribute type names are case insensitive (RFC 4512, section 1.4).
+
+			// NB: `strings.ToUpper` folds Unicode, not just ASCII.
+			// So if this becomes a problem in the future add a helper
+			// to specifically allow ASCII as per the RFC.
+			oid, ok := attributeTypeNames[strings.ToUpper(ldapATV.Type)]
 			if !ok {
 				// If the attribute type is not known, we try to parse it as an OID.
 				// If it is not an OID, we set Type=nil
