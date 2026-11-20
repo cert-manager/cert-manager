@@ -55,6 +55,7 @@ const (
 	ControllerName                   = "certificates-issuing"
 	reasonTemporaryCertificateFailed = "TemporaryCertificateFailed"
 	reasonStalled                    = "Stalled"
+	reasonSecretDataFailed           = "SecretDataFailed"
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -490,7 +491,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	}
 
 	if err := c.secretsUpdateData(ctx, crt, secretData); err != nil {
-		return err
+		return c.reportSecretDataFailure(ctx, crt, err)
 	}
 
 	// Set status.revision to revision of the CertificateRequest
@@ -516,6 +517,29 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 
 	return nil
 
+}
+
+// reportSecretDataFailure records on the Issuing condition why the issued
+// certificate could not be stored in the Secret, for example because the
+// referenced keystore password Secret is missing, so that users who cannot read
+// the controller logs can see it. The condition stays True: the certificate was
+// issued, only storing it failed, so the issuance is retried from the stored
+// CertificateRequest and no new request is made to the issuer. The original
+// error is returned so the item is requeued as before. The status is only
+// written when the message changed, so a failure that repeats does not cause
+// repeated writes.
+func (c *controller) reportSecretDataFailure(ctx context.Context, crt *cmapi.Certificate, cause error) error {
+	message := fmt.Sprintf("Failed to store the issued certificate in the Secret: %s", cause.Error())
+	if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil &&
+		cond.Status == cmmeta.ConditionTrue && cond.Reason == reasonSecretDataFailed && cond.Message == message {
+		return cause
+	}
+
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reasonSecretDataFailed, message)
+	if err := c.updateOrApplyStatus(ctx, crt, false); err != nil {
+		logf.FromContext(ctx).Error(err, "failed to record the Secret data failure on the Certificate status")
+	}
+	return cause
 }
 
 // updateOrApplyStatus will update the controller status. If the
