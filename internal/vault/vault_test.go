@@ -2025,3 +2025,55 @@ func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
 		})
 	}
 }
+
+func TestAWSLoginPath(t *testing.T) {
+	tests := map[string]struct {
+		mountPath string
+		want      string
+	}{
+		"default mount path":                {mountPath: "/v1/auth/aws", want: "auth/aws/login"},
+		"custom mount path with v1 prefix":  {mountPath: "/v1/auth/foo", want: "auth/foo/login"},
+		"mount path without v1 prefix":      {mountPath: "auth/foo", want: "auth/foo/login"},
+		"leading slash without v1 prefix":   {mountPath: "/auth/foo", want: "auth/foo/login"},
+		"trailing slash":                    {mountPath: "/v1/auth/aws/", want: "auth/aws/login"},
+		"mount path nested below the mount": {mountPath: "/v1/auth/team/aws", want: "auth/team/aws/login"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, awsLoginPath(tt.mountPath))
+		})
+	}
+}
+
+// Write prepends "/v1/" to the path it is given, so the login path must not
+// carry the "/v1" of the mount path, which the default "/v1/auth/aws" does.
+func TestAWSLoginPathReachesLoginEndpoint(t *testing.T) {
+	tests := map[string]struct {
+		mountPath string
+		wantPath  string
+	}{
+		"default mount path":               {mountPath: "/v1/auth/aws", wantPath: "/v1/auth/aws/login"},
+		"custom mount path with v1 prefix": {mountPath: "/v1/auth/foo", wantPath: "/v1/auth/foo/login"},
+		"mount path without v1 prefix":     {mountPath: "auth/foo", wantPath: "/v1/auth/foo/login"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			var gotPath string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"auth":{"client_token":"token"}}`))
+			}))
+			defer srv.Close()
+
+			cfg := vault.DefaultConfig()
+			cfg.Address = srv.URL
+			client, err := vault.NewClient(cfg)
+			require.NoError(t, err)
+
+			_, err = (&vaultClientWrapper{Client: client}).Write(awsLoginPath(tt.mountPath), map[string]any{"role": "role"})
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPath, gotPath)
+		})
+	}
+}
