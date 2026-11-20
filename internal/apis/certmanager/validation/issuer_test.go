@@ -1746,6 +1746,15 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""),
 			},
 		},
+		"valid acmeDNS config": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"multiple providers configured": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
@@ -1755,6 +1764,35 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
+			},
+		},
+		"acmeDNS configured together with another provider": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &validCloudDNSProvider,
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"),
+			},
+		},
+		"acmeDNS configured together with akamai": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
+					AccessToken:           validSecretKeyRef,
+					ClientSecret:          validSecretKeyRef,
+					ClientToken:           validSecretKeyRef,
+					ServiceConsumerDomain: "abc",
+				},
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"),
 			},
 		},
 		"valid nameservers with ip:port": {
