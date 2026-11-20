@@ -82,6 +82,10 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 		"The client cert CA used to verify clients contacting webhooks.")
 	fs.StringSliceVar(&c.ClientCertificateSubjects, "client-subject-names", c.ClientCertificateSubjects, ""+
 		"One or more client certificate subject names (CN or DNS SAN) that the apiserver may present when contacting the webhook. Should be a comma-separated list.")
+	fs.DurationVar(&c.ShutdownDelay, "shutdown-delay", c.ShutdownDelay, ""+
+		"How long to keep serving requests after receiving SIGTERM or SIGINT, before shutting down. "+
+		"This gives the cluster time to remove the Pod from the Service's endpoints, so that the kube-apiserver "+
+		"does not send requests to a Pod which is no longer listening. Set to 0 to shut down immediately.")
 	fs.StringVar(&c.PprofAddress, "profiler-address", c.PprofAddress,
 		"Address of the Go profiler (pprof). This should never be exposed on a public interface. If this flag is not set, the profiler is not run.")
 	tlsCipherPossibleValues := cliflag.TLSCipherPossibleValues()

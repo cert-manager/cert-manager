@@ -121,6 +121,14 @@ type Server struct {
 	// the provided ClientCAPath and will not enforce specific subject names.
 	ClientCertificateSubjects []string
 
+	// ShutdownDelay is how long Run keeps serving after ctx is cancelled,
+	// before it closes the webhook listener and stops the other servers.
+	// This gives the cluster time to remove a terminating Pod from the
+	// Service's endpoints, so that the kube-apiserver does not send it
+	// requests after it has stopped listening.
+	// If zero, Run starts shutting down as soon as ctx is cancelled.
+	ShutdownDelay time.Duration
+
 	// listenPort is the port Run has chosen for the webhook listener. It is
 	// read by Port from other goroutines, so access must go through the
 	// atomic.
@@ -312,7 +320,47 @@ func (s *Server) Run(ctx context.Context) error {
 
 	mgr.GetWebhookServer().Register("/validate", cmadmission.NewCustomValidationWebhook(mgr.GetScheme(), s.ValidationWebhook))
 
-	return mgr.Start(ctx)
+	// The manager closes every listener as soon as its context is cancelled,
+	// so hold back the cancellation for ShutdownDelay.
+	mgrCtx, stop := withShutdownDelay(ctx, s.ShutdownDelay, func() {
+		log.V(logf.InfoLevel).Info("received shutdown signal, serving requests until the shutdown delay has passed", "shutdownDelay", s.ShutdownDelay.String())
+	})
+	defer stop()
+
+	return mgr.Start(mgrCtx)
+}
+
+// withShutdownDelay returns a copy of parent that is cancelled delay after
+// parent is done, with the same cause. onDelay is called when parent is done
+// and the delay starts. If delay is not positive, the returned context is
+// cancelled together with parent and onDelay is never called.
+// The returned stop function cancels the context straight away and must be
+// called once the context is no longer needed.
+func withShutdownDelay(parent context.Context, delay time.Duration, onDelay func()) (context.Context, context.CancelFunc) {
+	if delay <= 0 {
+		return context.WithCancel(parent)
+	}
+
+	ctx, cancel := context.WithCancelCause(context.WithoutCancel(parent))
+	go func() {
+		select {
+		case <-parent.Done():
+		case <-ctx.Done():
+			return
+		}
+
+		onDelay()
+
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-timer.C:
+			cancel(context.Cause(parent))
+		case <-ctx.Done():
+		}
+	}()
+
+	return ctx, func() { cancel(context.Canceled) }
 }
 
 // freePort asks the kernel for a free port by binding to port 0, then closes the

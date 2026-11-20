@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	sharedv1alpha1 "github.com/cert-manager/cert-manager/pkg/apis/config/shared/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -91,6 +92,11 @@ func (in *WebhookConfiguration) DeepCopyInto(out *WebhookConfiguration) {
 		copy(*out, *in)
 	}
 	in.PEMSizeLimitsConfig.DeepCopyInto(&out.PEMSizeLimitsConfig)
+	if in.ShutdownDelay != nil {
+		in, out := &in.ShutdownDelay, &out.ShutdownDelay
+		*out = new(sharedv1alpha1.Duration)
+		**out = **in
+	}
 	return
 }
 
