@@ -207,6 +207,12 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// it.
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
+		// The ACME server does not say why the order failed, so record the
+		// reasons from the failed Challenges. The CertificateRequest and
+		// Certificate controllers copy this reason into their conditions.
+		if acme.IsFailureState(o.Status.State) && o.Status.Reason == "" {
+			o.Status.Reason = failedChallengesReason(challenges)
+		}
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")

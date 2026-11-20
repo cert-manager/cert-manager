@@ -297,6 +297,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	testOrderInvalid := testOrderPending.DeepCopy()
 	testOrderInvalid.Status.State = cmacme.Invalid
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
+	testOrderInvalid.Status.Reason = `HTTP-01 challenge for "test.com" is invalid: Error accepting authorization: acme: authorization error for test.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for test.com`
 	testOrderErrored := gen.OrderFrom(testOrder, gen.SetOrderStatus(erroredStatus))
 	testOrderErrored.Status.FailureTime = &nowMetaTime
 	testOrderErroredWithDetail := gen.OrderFrom(testOrderPending, gen.SetOrderStatus(erroredStatusWithDetail))
@@ -330,6 +331,7 @@ Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 	testAuthorizationChallengeValid.Status.State = cmacme.Valid
 	testAuthorizationChallengeInvalid := testAuthorizationChallenge.DeepCopy()
 	testAuthorizationChallengeInvalid.Status.State = cmacme.Invalid
+	testAuthorizationChallengeInvalid.Status.Reason = "Error accepting authorization: acme: authorization error for test.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for test.com"
 
 	testACMEAuthorizationPending := &acmeapi.Authorization{
 		URI:    "http://authzurl",
