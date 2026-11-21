@@ -208,6 +208,20 @@ const (
 	// renewal windows configurations if specified.
 	ACMEUseARI featuregate.Feature = "ACMEUseARI"
 
+	// Owner: @NUAAwqy
+	// Alpha: v1.24
+	//
+	// RemoveWildcardCoveredDNSNames makes the certificate-shim drop DNS names
+	// from a generated Certificate that are already covered by a wildcard DNS
+	// name in the same Certificate, e.g. `keycloak.example.com` is dropped when
+	// `*.example.com` is present. The wildcard label matches exactly one label,
+	// so `*.example.com` does not cover `a.b.example.com`. Wildcard names
+	// themselves are never dropped. Some ACME providers reject an Order whose
+	// identifiers are redundant with a wildcard in the same request, which
+	// failed issuance entirely for affected users.
+	// See https://github.com/cert-manager/cert-manager/issues/8853
+	RemoveWildcardCoveredDNSNames featuregate.Feature = "RemoveWildcardCoveredDNSNames"
+
 	// Owner: @SgtCoDFish, @FelixPhipps
 	// Alpha: v1.22
 	//
@@ -244,6 +258,7 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	DefaultPrivateKeyRotationPolicyAlways:            {Default: true, PreRelease: featuregate.GA},
 	ACMEHTTP01IngressPathTypeExact:                   {Default: true, PreRelease: featuregate.Beta},
 	ACMEUseARI:                                       {Default: false, PreRelease: featuregate.Alpha},
+	RemoveWildcardCoveredDNSNames:                    {Default: false, PreRelease: featuregate.Alpha},
 	MLDSAPrivateKeys:                                 {Default: false, PreRelease: featuregate.Alpha},
 
 	// NB: Deprecated + removed feature gates are kept here.

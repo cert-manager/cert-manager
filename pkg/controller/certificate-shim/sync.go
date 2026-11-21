@@ -390,6 +390,14 @@ func buildCertificates(
 
 		dnsNames, ipAddress := splitHosts(hosts)
 
+		// Names covered by a wildcard in the same set are redundant: some ACME
+		// providers reject an Order whose identifiers overlap with a wildcard in
+		// the same request, which fails issuance for the whole Certificate.
+		// See https://github.com/cert-manager/cert-manager/issues/8853
+		if utilfeature.DefaultFeatureGate.Enabled(feature.RemoveWildcardCoveredDNSNames) {
+			dnsNames = dropDNSNamesCoveredByWildcard(dnsNames)
+		}
+
 		// The ingresses and gateways controllers pass the informer-cached
 		// object straight in, so clone its labels before deleting from them
 		// and never let the Certificate alias the cached map.
@@ -551,6 +559,42 @@ func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
 		}
 	}
 	return dnsNames, ipAddresses
+}
+
+// dropDNSNamesCoveredByWildcard returns the names that are not already covered
+// by a wildcard DNS name in the same list, preserving the order of the
+// surviving names. A wildcard name itself is never dropped, and a wildcard
+// label matches exactly one label, so `*.example.com` covers
+// `keycloak.example.com` but neither `a.b.example.com` nor `*.sub.example.com`.
+func dropDNSNamesCoveredByWildcard(dnsNames []string) []string {
+	out := make([]string, 0, len(dnsNames))
+	for _, name := range dnsNames {
+		covered := false
+		for _, wildcard := range dnsNames {
+			if name != wildcard && dnsNameCoveredByWildcard(wildcard, name) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
+// dnsNameCoveredByWildcard reports whether name is covered by the wildcard
+// `*.<suffix>`, i.e. name is exactly one label followed by the wildcard's
+// suffix. Comparison is case-insensitive because DNS names are.
+func dnsNameCoveredByWildcard(wildcard, name string) bool {
+	if !strings.HasPrefix(wildcard, "*.") {
+		return false
+	}
+	label, rest, found := strings.Cut(name, ".")
+	if !found || label == "" || label == "*" {
+		return false
+	}
+	return strings.EqualFold(rest, wildcard[2:])
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {

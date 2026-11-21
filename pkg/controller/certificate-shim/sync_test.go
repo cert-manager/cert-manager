@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"slices"
 	"testing"
 	"time"
 
@@ -97,11 +98,14 @@ func TestSync(t *testing.T) {
 		DefaultIssuerKind        string
 		DefaultIssuerGroup       string
 		GatewayAPIExtraProtocols sets.Set[string]
-		Err                      bool
-		ExpectedCreate           []*cmapi.Certificate
-		ExpectedUpdate           []*cmapi.Certificate
-		ExpectedDelete           []*cmapi.Certificate
-		ExpectedEvents           []string
+		// FeatureGate enables the RemoveWildcardCoveredDNSNames feature gate for
+		// this case.
+		FeatureGate    bool
+		Err            bool
+		ExpectedCreate []*cmapi.Certificate
+		ExpectedUpdate []*cmapi.Certificate
+		ExpectedDelete []*cmapi.Certificate
+		ExpectedEvents []string
 	}
 	testIngressShim := []testT{
 		{
@@ -2237,6 +2241,47 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Regression test for issue #8853: the same wildcard-coverage rule
+			// applies to Ingress TLS entries.
+			Name:        "removes an Ingress TLS host covered by a wildcard in the same entry (RemoveWildcardCoveredDNSNames)",
+			FeatureGate: true,
+			Issuer:      acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				Name:      "ingress-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				},
+				UID: types.UID("ingress-name"),
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"*.example.com", "keycloak.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"*.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testGatewayShim := []testT{
@@ -4269,10 +4314,245 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Regression test for issue #8853: with the RemoveWildcardCoveredDNSNames feature
+			// gate enabled, `keycloak.example.com` is covered by `*.example.com` and must
+			// not appear in the generated Certificate. Some ACME providers reject an Order
+			// whose identifiers are redundant with a wildcard in the same request, which
+			// fails issuance for the whole Certificate.
+			Name:        "removes a listener hostname covered by a wildcard listener for the same Secret (RemoveWildcardCoveredDNSNames)",
+			FeatureGate: true,
+			Issuer:      acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				Name:      "gateway-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				},
+				UID: types.UID("gateway-name"),
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Name:     "wildcard-listener",
+							Hostname: ptrHostname("*.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "keycloak-listener",
+							Hostname: ptrHostname("keycloak.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					Annotations:     buildParentRefAnnotations(),
+					OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"*.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+
+		{
+			// Without the gate the long-standing behavior is unchanged: every listener
+			// hostname is included in the generated Certificate.
+			Name:        "keeps a listener hostname covered by a wildcard listener when RemoveWildcardCoveredDNSNames is disabled",
+			FeatureGate: false,
+			Issuer:      acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				Name:      "gateway-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				},
+				UID: types.UID("gateway-name"),
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Name:     "wildcard-listener",
+							Hostname: ptrHostname("*.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "keycloak-listener",
+							Hostname: ptrHostname("keycloak.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					Annotations:     buildParentRefAnnotations(),
+					OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"*.example.com", "keycloak.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+
+		{
+			// A wildcard label matches exactly one label, so `*.example.com` does not cover
+			// `a.b.example.com`; and `other.example.org` is a different domain entirely.
+			Name:        "keeps a hostname that the wildcard listener does not cover (RemoveWildcardCoveredDNSNames)",
+			FeatureGate: true,
+			Issuer:      acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				Name:      "gateway-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+				},
+				UID: types.UID("gateway-name"),
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Name:     "wildcard-listener",
+							Hostname: ptrHostname("*.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "nested-listener",
+							Hostname: ptrHostname("a.b.example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+						{
+							Name:     "other-listener",
+							Hostname: ptrHostname("other.example.org"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					Annotations:     buildParentRefAnnotations(),
+					OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"*.example.com", "a.b.example.com", "other.example.org"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.RemoveWildcardCoveredDNSNames, test.FeatureGate)
 			var allCMObjects []runtime.Object
 			allCMObjects = append(allCMObjects, test.IssuerLister...)
 			allCMObjects = append(allCMObjects, test.ClusterIssuerLister...)
@@ -5616,5 +5896,45 @@ func Test_buildCertificates_doesNotMutateIngressLikeLabels(t *testing.T) {
 			crt.Labels["added-by-test"] = "should-not-leak"
 			assert.NotContains(t, test.ingLike.GetLabels(), "added-by-test", "Certificate labels alias the labels of the object passed to buildCertificates")
 		})
+	}
+}
+
+func Test_dnsNameCoveredByWildcard(t *testing.T) {
+	type testT struct {
+		Wildcard string
+		Name     string
+		Want     bool
+	}
+	tests := []testT{
+		{Wildcard: "*.example.com", Name: "keycloak.example.com", Want: true},
+		{Wildcard: "*.example.com", Name: "a.b.example.com", Want: false},
+		{Wildcard: "*.example.com", Name: "example.com", Want: false},
+		{Wildcard: "*.example.com", Name: "*.sub.example.com", Want: false},
+		{Wildcard: "*.example.com", Name: "*.example.com", Want: false},
+		{Wildcard: "*.example.com", Name: "KEYCLOAK.EXAMPLE.COM", Want: true},
+		{Wildcard: "*.sub.example.com", Name: "a.sub.example.com", Want: true},
+		{Wildcard: "example.com", Name: "keycloak.example.com", Want: false},
+		{Wildcard: "*.", Name: "anything.example.com", Want: false},
+		{Wildcard: "*.example.com", Name: "", Want: false},
+	}
+	for _, test := range tests {
+		if got := dnsNameCoveredByWildcard(test.Wildcard, test.Name); got != test.Want {
+			t.Errorf("dnsNameCoveredByWildcard(%q, %q) = %v, want %v", test.Wildcard, test.Name, got, test.Want)
+		}
+	}
+}
+
+func Test_dropDNSNamesCoveredByWildcard(t *testing.T) {
+	got := dropDNSNamesCoveredByWildcard([]string{
+		"*.example.com",
+		"keycloak.example.com",
+		"other.example.org",
+		"a.b.example.com",
+		"www.other.example.org",
+		"another.example.com",
+	})
+	want := []string{"*.example.com", "other.example.org", "a.b.example.com", "www.other.example.org"}
+	if !slices.Equal(got, want) {
+		t.Errorf("dropDNSNamesCoveredByWildcard() = %#v, want %#v", got, want)
 	}
 }
