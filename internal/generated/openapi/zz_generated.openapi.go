@@ -3635,7 +3635,7 @@ func schema_pkg_apis_certmanager_v1_CertificateSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Requested key usages and extended key usages. These usages are used to set the `usages` field on the created CertificateRequest resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages will additionally be encoded in the `request` field which contains the CSR blob.\n\nIf unset, defaults to `digital signature` and `key encipherment`, or to `digital signature` alone for the `MLDSA` key algorithm.",
+							Description: "Requested key usages and extended key usages. These usages are used to set the `usages` field on the created CertificateRequest resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages will additionally be encoded in the `request` field which contains the CSR blob.\n\nIf unset, defaults to `digital signature` and `key encipherment`, or to `digital signature` alone for the `ECDSA`, `Ed25519` and `MLDSA` key algorithms.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

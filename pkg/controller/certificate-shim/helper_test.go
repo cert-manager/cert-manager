@@ -172,6 +172,47 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
 			},
 		},
+		"rsa private key algorithm with default usages": {
+			crt: gen.Certificate("example-cert", gen.SetCertificateKeyUsages(cmapi.DefaultKeyUsages()...)),
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "RSA",
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.RSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal(cmapi.DefaultKeyUsages(), crt.Spec.Usages)
+			},
+		},
+		"ecdsa private key algorithm with default usages": {
+			crt: gen.Certificate("example-cert", gen.SetCertificateKeyUsages(cmapi.DefaultKeyUsages()...)),
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.ECDSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageDigitalSignature}, crt.Spec.Usages)
+			},
+		},
+		"ed25519 private key algorithm with default usages": {
+			crt: gen.Certificate("example-cert", gen.SetCertificateKeyUsages(cmapi.DefaultKeyUsages()...)),
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "Ed25519",
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.Ed25519KeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageDigitalSignature}, crt.Spec.Usages)
+			},
+		},
+		"ecdsa private key algorithm with explicit usages": {
+			crt: gen.Certificate("example-cert", gen.SetCertificateKeyUsages(cmapi.DefaultKeyUsages()...)),
+			annotations: map[string]string{
+				cmapi.PrivateKeyAlgorithmAnnotationKey: "ECDSA",
+				cmapi.UsagesAnnotationKey:              "digital signature,server auth",
+			},
+			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
+				a.Equal(cmapi.ECDSAKeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageServerAuth}, crt.Spec.Usages)
+			},
+		},
 		"nil annotations": {
 			crt:         gen.Certificate("example-cert"),
 			annotations: nil,
