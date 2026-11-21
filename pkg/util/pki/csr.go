@@ -140,9 +140,9 @@ func DefaultKeyUsagesForPublicKeyAlgorithm(pubKeyAlgo x509.PublicKeyAlgorithm) [
 	switch pubKeyAlgo {
 	case x509.ECDSA, x509.Ed25519, x509.MLDSA:
 		return []v1.KeyUsage{v1.UsageDigitalSignature}
+	default:
+		return v1.DefaultKeyUsages()
 	}
-
-	return v1.DefaultKeyUsages()
 }
 
 // mldsaForbiddenKeyUsages are the key usages which a certificate with an
