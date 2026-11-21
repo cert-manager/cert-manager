@@ -279,6 +279,8 @@ func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAl
 	// ECDSA, Ed25519 and ML-DSA keys have different default key usages.
 	pubKeyAlgo := x509.UnknownPublicKeyAlgorithm
 	switch keyAlg {
+	case cmapi.RSAKeyAlgorithm:
+		pubKeyAlgo = x509.RSA
 	case cmapi.ECDSAKeyAlgorithm:
 		pubKeyAlgo = x509.ECDSA
 	case cmapi.Ed25519KeyAlgorithm:
