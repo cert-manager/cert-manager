@@ -130,6 +130,11 @@ func TestProcessItem(t *testing.T) {
 		renewalTimeError error
 
 		wantsErr bool
+
+		// evaluatorCondition, when set, is what the fake policy evaluator
+		// returns instead of condition. Lets a scenario assert that the
+		// final condition differs from the policy chain's result.
+		evaluatorCondition *cmapi.CertificateCondition
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
@@ -270,6 +275,14 @@ func TestProcessItem(t *testing.T) {
 			certShouldUpdate:  false,
 		},
 		"update status as not ready (Ready=False) with the fallback renewal time on a window error": {
+			// The policy chain finds no violation; the window error alone
+			// flips Ready to False.
+			evaluatorCondition: &cmapi.CertificateCondition{
+				Type:    cmapi.CertificateConditionReady,
+				Status:  cmmeta.ConditionTrue,
+				Reason:  ReadyReason,
+				Message: "ready message",
+			},
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
 				Status:             cmmeta.ConditionFalse,
@@ -287,6 +300,26 @@ func TestProcessItem(t *testing.T) {
 			// still setting Ready=False with WindowError.
 			renewalTime:      func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
 			renewalTimeError: fmt.Errorf("cannot find a time with the given windows"),
+		},
+		"keep the policy chain's not-ready reason when the renewal config is also invalid": {
+			// The chain's violation is more actionable than the window
+			// error, so the WindowError override must not replace it. The
+			// window error is still surfaced as a Warning event and the
+			// fallback renewal time is still recorded.
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "SecretMismatch",
+				Message:            "Existing issued Secret does not match requested certificate",
+				LastTransitionTime: &metaNow,
+			},
+			cert:              gen.CertificateFrom(cert),
+			certShouldUpdate:  true,
+			secretShouldExist: true,
+			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
+			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
+			renewalTime:       func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
+			renewalTimeError:  fmt.Errorf("cannot find a time with the given windows"),
 		},
 	}
 	for name, test := range tests {
@@ -326,8 +359,13 @@ func TestProcessItem(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Override controller's readyCondition func with a fake that returns test.condition.
-			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
+			// Override controller's readyCondition func with a fake that returns test.condition,
+			// or test.evaluatorCondition when the scenario needs them to differ.
+			evaluatorCondition := test.condition
+			if test.evaluatorCondition != nil {
+				evaluatorCondition = *test.evaluatorCondition
+			}
+			w.controller.policyEvaluator = policyEvaluatorBuilder(evaluatorCondition)
 
 			// Override controller's renewalTime func with a fake that returns test.renewalTime.
 			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime, test.renewalTimeError)
@@ -1704,7 +1742,7 @@ func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
 	// The deterministic fallback from the calculation without ARI options. It
 	// must NOT be written to status.renewalTime when an ARI time is in hand.
 	fallbackTime := metav1.NewTime(now.Add(30 * 24 * time.Hour))
-	windowErr := errors.New("windowDuration must be a positive duration in window { &Duration{Duration:0s,} * * * * *}")
+	windowErr := errors.New(`windowDuration must be a positive duration in window with cron "* * * * *"`)
 
 	crt := &cmapi.Certificate{
 		Namespace: "testns",
