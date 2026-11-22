@@ -18,6 +18,7 @@ package acmeorders
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -756,3 +757,63 @@ func parentRefs(name, namespace string) []gwapi.ParentReference {
 }
 
 var noParentRef []gwapi.ParentReference = nil
+
+func Test_failedChallengesReason(t *testing.T) {
+	const (
+		dns          = "Error accepting authorization: acme: authorization error for example.com: 400 urn:ietf:params:acme:error:dns: NXDOMAIN"
+		connection   = "400 urn:acme:error:connection: Timeout"
+		unauthorized = "403 urn:ietf:params:acme:error:unauthorized: Incorrect TXT record found"
+	)
+	challenge := func(wildcard bool, state cmacme.State, reason string) *cmacme.Challenge {
+		return &cmacme.Challenge{
+			Spec:   cmacme.ChallengeSpec{Type: cmacme.ACMEChallengeTypeDNS01, DNSName: "example.com", Wildcard: wildcard},
+			Status: cmacme.ChallengeStatus{State: state, Reason: reason},
+		}
+	}
+	tests := map[string]struct {
+		challenges []*cmacme.Challenge
+		want       string
+	}{
+		"no failed challenges": {
+			challenges: []*cmacme.Challenge{challenge(false, cmacme.Valid, "")},
+			want:       "",
+		},
+		"wildcard names keep their prefix and valid challenges are left out": {
+			challenges: []*cmacme.Challenge{
+				challenge(false, cmacme.Invalid, unauthorized),
+				challenge(false, cmacme.Valid, ""),
+				challenge(true, cmacme.Expired, ""),
+			},
+			want: `DNS-01 challenge for "example.com" is invalid: ` + unauthorized + `; DNS-01 challenge for "*.example.com" is expired`,
+		},
+		"every failed challenge was unreachable, with the RFC and the pre-RFC URN": {
+			challenges: []*cmacme.Challenge{
+				challenge(false, cmacme.Invalid, dns),
+				challenge(true, cmacme.Invalid, connection),
+			},
+			want: `The ACME server could not reach the challenges: DNS-01 challenge for "example.com" is invalid: ` + dns + `; DNS-01 challenge for "*.example.com" is invalid: ` + connection,
+		},
+		"one failed challenge was unreachable and another was wrong": {
+			challenges: []*cmacme.Challenge{
+				challenge(false, cmacme.Invalid, dns),
+				challenge(true, cmacme.Invalid, unauthorized),
+			},
+			want: `DNS-01 challenge for "example.com" is invalid: ` + dns + `; DNS-01 challenge for "*.example.com" is invalid: ` + unauthorized,
+		},
+		"only the first three failed challenges are described, but all of them are checked": {
+			challenges: []*cmacme.Challenge{
+				challenge(false, cmacme.Invalid, dns),
+				challenge(false, cmacme.Invalid, dns),
+				challenge(false, cmacme.Invalid, dns),
+				challenge(false, cmacme.Invalid, dns),
+				challenge(false, cmacme.Invalid, unauthorized),
+			},
+			want: strings.Repeat(`DNS-01 challenge for "example.com" is invalid: `+dns+`; `, 3) + `and 2 more failed challenges`,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.want, failedChallengesReason(test.challenges))
+		})
+	}
+}

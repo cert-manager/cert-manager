@@ -1026,13 +1026,16 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 		Type:    cmapi.CertificateConditionIssuing,
 		Status:  cmmeta.ConditionFalse,
 		Reason:  "Failed",
-		Message: `The certificate request has failed to complete and will be retried: Failed to wait for order resource "cert-1-1" to become ready: order is in "invalid" state: HTTP-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for example.com`,
+		Message: `The certificate request has failed to complete and will be retried: Failed to wait for order resource "cert-1-1" to become ready: order is in "invalid" state: The ACME server could not reach the challenges: HTTP-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for example.com`,
 	})
-	connectionFailureLegacyURN := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+	// One challenge was unreachable and the other was wrong, so the Order
+	// controller did not start the reason with
+	// acme.UnreachableChallengesReason.
+	mixedFailure := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 		Type:    cmapi.CertificateConditionIssuing,
 		Status:  cmmeta.ConditionFalse,
 		Reason:  "Failed",
-		Message: `order is in "invalid" state: HTTP-01 challenge for "example.com" is invalid: Error accepting authorization: acme: authorization error for example.com: 400 urn:acme:error:connection: Fetching http://example.com/.well-known/acme-challenge/x: Timeout`,
+		Message: `order is in "invalid" state: HTTP-01 challenge for "a.example.com" is invalid: Error accepting authorization: acme: authorization error for a.example.com: 400 urn:ietf:params:acme:error:dns: DNS problem: NXDOMAIN looking up A for a.example.com; HTTP-01 challenge for "b.example.com" is invalid: Error accepting authorization: acme: authorization error for b.example.com: 403 urn:ietf:params:acme:error:unauthorized: The key authorization file from the server did not match this challenge`,
 	})
 	unauthorizedFailure := gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 		Type:    cmapi.CertificateConditionIssuing,
@@ -1067,11 +1070,23 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 6*time.Minute)),
 		wantBackoff: false,
 	}
-	tests["should back off 5 minutes when the ACME server could not connect to the challenge, using the pre-RFC URN"] = backoffCase{
-		givenCert:   failedCert(1, 0, connectionFailureLegacyURN),
+	tests["should back off 1 hour after 3 failures when the ACME server could not resolve the challenge"] = backoffCase{
+		givenCert:   failedCert(3, 0, dnsFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(3, 0)),
+		wantBackoff: true,
+		wantDelay:   1 * time.Hour,
+	}
+	tests["should back off 2 hours after 4 failures when the ACME server could not resolve the challenge"] = backoffCase{
+		givenCert:   failedCert(4, 0, dnsFailure),
+		givenNextCR: createCertificateRequestOrPanic(failedCert(4, 0)),
+		wantBackoff: true,
+		wantDelay:   2 * time.Hour,
+	}
+	tests["should back off 1 hour when the ACME server could reach only some of the failed challenges"] = backoffCase{
+		givenCert:   failedCert(1, 0, mixedFailure),
 		givenNextCR: createCertificateRequestOrPanic(failedCert(1, 0)),
 		wantBackoff: true,
-		wantDelay:   5 * time.Minute,
+		wantDelay:   1 * time.Hour,
 	}
 	tests["should back off 1 hour when the ACME server rejected the challenge content"] = backoffCase{
 		givenCert:   failedCert(1, 0, unauthorizedFailure),

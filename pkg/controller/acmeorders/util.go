@@ -284,21 +284,75 @@ func anyChallengesFailed(chs []*cmacme.Challenge) bool {
 	return false
 }
 
-// failedChallengesReason describes every Challenge in a failure state,
-// quoting the reason the Challenge controller recorded.
+// maxFailedChallengesInReason is the number of failed Challenges that the
+// Order reason describes. The CertificateRequest, the Certificate and an
+// Event all copy the reason, so it must stay short for an Order with many
+// names.
+const maxFailedChallengesInReason = 3
+
+// unreachableACMEProblemTypes are the RFC 8555 section 6.7 error types which
+// say the ACME server could not reach the challenge. Each is the end of the
+// problem type URN followed by the colon that separates it from the detail,
+// so that both the RFC URN prefix and the pre-RFC "urn:acme:error:" prefix
+// still used by some servers match.
+var unreachableACMEProblemTypes = []string{
+	"acme:error:dns:",
+	"acme:error:connection:",
+}
+
+// isUnreachableChallengeReason reports whether a Challenge reason quotes one
+// of unreachableACMEProblemTypes.
+func isUnreachableChallengeReason(reason string) bool {
+	for _, problemType := range unreachableACMEProblemTypes {
+		if strings.Contains(reason, problemType) {
+			return true
+		}
+	}
+	return false
+}
+
+// failedChallengesReason describes the Challenges in a failure state,
+// quoting the reason the Challenge controller recorded. It describes the
+// first maxFailedChallengesInReason of them and counts the rest.
+//
+// The reason starts with acme.UnreachableChallengesReason if the ACME
+// server could not reach any of the failed Challenges. It does not if any
+// Challenge failed for another reason, because retrying sooner cannot fix
+// that Challenge.
 func failedChallengesReason(chs []*cmacme.Challenge) string {
 	var reasons []string
+	failed := 0
+	allUnreachable := true
 	for _, ch := range chs {
 		if !acme.IsFailureState(ch.Status.State) {
 			continue
 		}
-		reason := fmt.Sprintf("%s challenge for %q is %s", ch.Spec.Type, ch.Spec.DNSName, ch.Status.State)
+		failed++
+		allUnreachable = allUnreachable && isUnreachableChallengeReason(ch.Status.Reason)
+		if failed > maxFailedChallengesInReason {
+			continue
+		}
+		name := ch.Spec.DNSName
+		if ch.Spec.Wildcard {
+			name = "*." + name
+		}
+		reason := fmt.Sprintf("%s challenge for %q is %s", ch.Spec.Type, name, ch.Status.State)
 		if ch.Status.Reason != "" {
 			reason += ": " + ch.Status.Reason
 		}
 		reasons = append(reasons, reason)
 	}
-	return strings.Join(reasons, "; ")
+	if failed == 0 {
+		return ""
+	}
+	reason := strings.Join(reasons, "; ")
+	if failed > maxFailedChallengesInReason {
+		reason += fmt.Sprintf("; and %d more failed challenges", failed-maxFailedChallengesInReason)
+	}
+	if allUnreachable {
+		reason = acme.UnreachableChallengesReason + ": " + reason
+	}
+	return reason
 }
 
 func allChallengesFinal(chs []*cmacme.Challenge) bool {

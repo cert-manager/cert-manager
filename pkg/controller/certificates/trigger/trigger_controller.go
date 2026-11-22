@@ -37,6 +37,7 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
+	"github.com/cert-manager/cert-manager/pkg/acme"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -293,6 +294,38 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 	}
 }
 
+// transientFailureInitialBackoff is the initial backoff used when the last
+// issuance failed because the ACME server could not reach the challenge
+// rather than because the challenge was wrong. Such failures usually mean
+// the solver resources had not propagated to the server's point of view
+// yet, so waiting the default hour before the next attempt delays issuance
+// for no benefit.
+const transientFailureInitialBackoff = 5 * time.Minute
+
+// transientFailureShortAttempts is the number of failed issuances which use
+// transientFailureInitialBackoff. Later failures use the configured backoff,
+// starting from its initial delay, because a challenge that is still
+// unreachable is probably misconfigured. With the default configuration the
+// delays are 5m, 10m, 1h, 2h and so on. That is three failed validations in
+// the first hour, which is under the Let's Encrypt limit of five per
+// hostname per hour.
+const transientFailureShortAttempts = 2
+
+// isTransientValidationFailure reports whether the Certificate's last
+// issuance failed because the ACME server could not reach any of the failed
+// challenges.
+//
+// The Order controller decides this, and says so by starting the Order
+// reason with acme.UnreachableChallengesReason. That text reaches the
+// Certificate because the CertificateRequest quotes the Order reason, and
+// the issuing controller quotes the CertificateRequest in the Issuing
+// condition message.
+func isTransientValidationFailure(crt *cmapi.Certificate) bool {
+	cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+	return cond != nil && cond.Status == cmmeta.ConditionFalse &&
+		strings.Contains(cond.Message, acme.UnreachableChallengesReason)
+}
+
 // shouldBackOffReissuingOnFailure returns true if an issuance needs to be
 // delayed and the required delay after calculating the exponential backoff.
 // The backoff period is configured through ControllerConfig using the certificateRequestMinimumBackoffDuration
@@ -308,48 +341,6 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 // match the "next" certificate (since a mismatch means that this certificate
 // gets re-issued immediately).
 //
-// transientFailureInitialBackoff is the initial backoff used when the last
-// issuance failed because the ACME server could not reach the challenge
-// rather than because the challenge was wrong. Such failures usually mean
-// the solver resources had not propagated to the server's point of view
-// yet, so waiting the default hour before the next attempt delays issuance
-// for no benefit. The delay still doubles on every attempt, so a solver
-// that keeps failing converges on the regular schedule. Five minutes keeps
-// a persistently broken solver under the Let's Encrypt limit of five failed
-// validations per hostname per hour.
-const transientFailureInitialBackoff = 5 * time.Minute
-
-// transientACMEProblemTypes are the RFC 8555 section 6.7 error types which
-// say the ACME server could not reach the challenge. Each is matched as a
-// suffix of the problem type URN followed by the colon that separates it
-// from the detail, so that both the RFC URN prefix and the pre-RFC
-// "urn:acme:error:" prefix still used by some servers match.
-var transientACMEProblemTypes = []string{
-	"acme:error:dns:",
-	"acme:error:connection:",
-}
-
-// isTransientValidationFailure reports whether the Certificate's last
-// issuance failed with one of transientACMEProblemTypes.
-//
-// The problem type reaches the Certificate as text. The Challenge records
-// the ACME error in its status reason, the Order copies the failed
-// Challenge reasons, the CertificateRequest quotes the Order reason, and
-// the issuing controller quotes the CertificateRequest in the Issuing
-// condition message.
-func isTransientValidationFailure(crt *cmapi.Certificate) bool {
-	cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
-	if cond == nil || cond.Status != cmmeta.ConditionFalse {
-		return false
-	}
-	for _, problemType := range transientACMEProblemTypes {
-		if strings.Contains(cond.Message, problemType) {
-			return true
-		}
-	}
-	return false
-}
-
 // Note that the request can be left nil: in that case, the returned back-off
 // will be 0 since it means the CR must be created immediately.
 func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest, initialDelay time.Duration, maxDelay time.Duration) (bool, time.Duration) {
@@ -388,28 +379,27 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 		log.V(logf.InfoLevel).Info("initial backoff duration is less than or equal to zero, skipping backoff")
 		return false, 0
 	}
-	if isTransientValidationFailure(crt) && transientFailureInitialBackoff < initialDelay {
-		log.V(logf.InfoLevel).Info("last issuance failed because the ACME server could not reach the challenge, using a shorter backoff", "initial_delay", transientFailureInitialBackoff)
-		initialDelay = transientFailureInitialBackoff
-	}
-	delay := initialDelay
 	// It is possible that crt.Status.LastFailureTime != nil &&
 	// crt.Status.FailedIssuanceAttempts == nil (in case of the Certificate having
 	// failed for an installation of cert-manager before the issuance
-	// attempts were introduced). In such case delay = initialDelay.
-	if crt.Status.FailedIssuanceAttempts != nil {
-		if *crt.Status.FailedIssuanceAttempts <= 0 {
-			// FailedIssuanceAttempts <= 0 can only arise from a manual kubectl patch;
-			// treat it the same as nil (use initialDelay).
-			delay = initialDelay
+	// attempts were introduced). FailedIssuanceAttempts <= 0 can only arise
+	// from a manual kubectl patch. In both cases delay = initialDelay.
+	attempts := 1
+	if crt.Status.FailedIssuanceAttempts != nil && *crt.Status.FailedIssuanceAttempts > 0 {
+		attempts = *crt.Status.FailedIssuanceAttempts
+	}
+	if isTransientValidationFailure(crt) && transientFailureInitialBackoff < initialDelay {
+		if attempts <= transientFailureShortAttempts {
+			log.V(logf.InfoLevel).Info("last issuance failed because the ACME server could not reach the challenge, using a shorter backoff", "initial_delay", transientFailureInitialBackoff)
+			initialDelay = transientFailureInitialBackoff
 		} else {
-			computed := initialDelay * time.Duration(math.Pow(2, float64(*crt.Status.FailedIssuanceAttempts-1)))
-			if computed < initialDelay || computed > maxDelay {
-				delay = maxDelay
-			} else {
-				delay = computed
-			}
+			// Start the configured schedule from its initial delay.
+			attempts -= transientFailureShortAttempts
 		}
+	}
+	delay := initialDelay * time.Duration(math.Pow(2, float64(attempts-1)))
+	if delay < initialDelay || delay > maxDelay {
+		delay = maxDelay
 	}
 
 	// Ensure that minimum returned delay is initialDelay that is configured by the operator.
