@@ -278,8 +278,12 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		if err != nil {
 			reason := policies.WindowError
 			message := fmt.Sprintf("Could not calculate renewal time: %v", err)
-			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
-
+			// Only replace a Ready=True condition. A violation found by the
+			// policy chain (e.g. a mismatched Secret) is more actionable than
+			// the window error, which stays visible through the event below.
+			if condition.Status == cmmeta.ConditionTrue {
+				apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
+			}
 			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
 		}
 
@@ -496,10 +500,9 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		} else {
 			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
 			if err != nil {
-				reason := policies.ARIError
-				message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
-				c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-
+				// No event here: the caller surfaces the same renewal
+				// configuration error as a WindowError event and Ready
+				// condition on this reconcile.
 				ariStatus.LastError = err.Error()
 				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
