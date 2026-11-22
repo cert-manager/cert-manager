@@ -1727,6 +1727,21 @@ func TestScheduleRecheckAtExpiry(t *testing.T) {
 // stays in sync with the trigger controller's ARI-window gate, while the
 // error still surfaces as a WindowError Ready condition.
 func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
+	windowErr := errors.New(`windowDuration must be a positive duration in window with cron "* * * * *"`)
+	testProcessItemARIWindowError(t, windowErr, windowErr, true)
+}
+
+// TestProcessItemARINoWindowForFallbackStaysReady verifies that a Certificate
+// on a valid ARI schedule stays Ready when the renewal windows are valid but
+// none occurs after the renewBefore-based time, which is not the time in use.
+func TestProcessItemARINoWindowForFallbackStaysReady(t *testing.T) {
+	testProcessItemARIWindowError(t, nil, fmt.Errorf("%w between a and b", pki.ErrNoRenewalWindow), false)
+}
+
+// testProcessItemARIWindowError runs one reconcile that fetches ARI. ariErr
+// and fallbackErr are returned by the renewal time calculation with and
+// without ARI options respectively.
+func testProcessItemARIWindowError(t *testing.T, ariErr, fallbackErr error, wantWindowError bool) {
 	now := time.Now().UTC().Truncate(time.Second)
 	metaNow := metav1.NewTime(now)
 	metaHourAgo := metav1.NewTime(now.Add(-time.Hour))
@@ -1742,7 +1757,6 @@ func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
 	// The deterministic fallback from the calculation without ARI options. It
 	// must NOT be written to status.renewalTime when an ARI time is in hand.
 	fallbackTime := metav1.NewTime(now.Add(30 * 24 * time.Hour))
-	windowErr := errors.New(`windowDuration must be a positive duration in window with cron "* * * * *"`)
 
 	crt := &cmapi.Certificate{
 		Namespace: "testns",
@@ -1832,19 +1846,25 @@ func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
 	}
 	w.controller.renewalTimeCalculator = func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal, opts ...pki.RenewalTimeOptions) (*metav1.Time, error) {
 		if len(opts) > 0 {
-			return &ariPickedTime, windowErr
+			return &ariPickedTime, ariErr
 		}
-		return &fallbackTime, windowErr
+		return &fallbackTime, fallbackErr
 	}
 
 	expCrt := crt.DeepCopy()
-	expCrt.Status.Conditions = []cmapi.CertificateCondition{{
-		Type:               cmapi.CertificateConditionReady,
-		Status:             cmmeta.ConditionFalse,
-		Reason:             policies.WindowError,
-		Message:            fmt.Sprintf("Could not calculate renewal time: %v", windowErr),
-		LastTransitionTime: &metaNow,
-	}}
+	wantLastError := ""
+	if ariErr != nil {
+		wantLastError = ariErr.Error()
+	}
+	if wantWindowError {
+		expCrt.Status.Conditions = []cmapi.CertificateCondition{{
+			Type:               cmapi.CertificateConditionReady,
+			Status:             cmmeta.ConditionFalse,
+			Reason:             policies.WindowError,
+			Message:            fmt.Sprintf("Could not calculate renewal time: %v", fallbackErr),
+			LastTransitionTime: &metaNow,
+		}}
+	}
 	expCrt.Status.RenewalTime = &ariPickedTime
 	expCrt.Status.ACME = &cmapi.CertificateACMEStatus{
 		ARI: &cmapi.CertificateACMEARIStatus{
@@ -1855,7 +1875,7 @@ func TestProcessItemARIWindowErrorKeepsARITime(t *testing.T) {
 				End:   &metav1.Time{Time: windowEnd},
 			},
 			LastChecked: &metaNow,
-			LastError:   windowErr.Error(),
+			LastError:   wantLastError,
 		},
 	}
 	builder.ExpectedActions = append(builder.ExpectedActions,

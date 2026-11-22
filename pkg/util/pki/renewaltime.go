@@ -18,6 +18,7 @@ package pki
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -156,6 +157,12 @@ func RenewBeforeFromPercentage(duration time.Duration, percentage int32) time.Du
 	return duration/100*time.Duration(percentage) + duration%100*time.Duration(percentage)/100
 }
 
+// ErrNoRenewalWindow is returned by RenewalTime when the renewal windows are
+// valid but none of them occurs at or after the desired renewal time. Unlike
+// the other window errors it depends on the desired renewal time, so the same
+// windows can fail for the renewBefore-based time and succeed for an ARI one.
+var ErrNoRenewalWindow = errors.New("cannot find a time with the given windows")
+
 // applyRenewBeforeWithWindows calculates effective renewal time with windows in it. We want the logic to be as follows:
 // Take in the desiredRenewalTime from the function above and look forward and backward to find a desirable time which satisfies
 // the cron window along with the cronSeconds duration. If we find a time that is before the renewalTime we return that first.
@@ -210,7 +217,7 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 		return &metav1.Time{Time: *bestAfter}, nil
 	}
 
-	return &fallback, fmt.Errorf("cannot find a time with the given windows between %s and %s for: %s", notBefore, notAfter, desiredRenewalTime)
+	return &fallback, fmt.Errorf("%w between %s and %s for: %s", ErrNoRenewalWindow, notBefore, notAfter, desiredRenewalTime)
 }
 
 // bsFindEarliestWindowBeforeDesired performs a binary search over time to find
