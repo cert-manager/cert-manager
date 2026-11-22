@@ -261,6 +261,7 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		fallbackTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
 
 		renewalTime := c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
+		usingFallbackTime := false
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -273,7 +274,16 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 				renewalTime = t
 			} else {
 				renewalTime = fallbackTime
+				usingFallbackTime = true
 			}
+		}
+		// ErrNoRenewalWindow depends on the desired renewal time, so it says
+		// nothing about an ARI-derived schedule: the same windows can have no
+		// occurrence after the renewBefore-based time and still have one after
+		// the ARI time. Every other window error means the renewal
+		// configuration itself is invalid and is reported for any schedule.
+		if !usingFallbackTime && errors.Is(err, pki.ErrNoRenewalWindow) {
+			err = nil
 		}
 		if err != nil {
 			reason := policies.WindowError
@@ -500,17 +510,19 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		} else {
 			renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal, pki.WithARIInfo(ariInfo))
 			if err != nil {
-				// No event here: the caller surfaces the same renewal
-				// configuration error as a WindowError event and Ready
-				// condition on this reconcile.
+				reason := policies.ARIError
+				message := fmt.Sprintf("Could not calculate renewal time using ACME Renewal Information: %v", err)
+				c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+
 				ariStatus.LastError = err.Error()
 				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
 				// Keep the time returned alongside the error: it is a random
 				// time in the ARI suggested window, so the scheduled wake-up
 				// stays in sync with the trigger controller, which renews as
-				// soon as the window opens. The caller surfaces the window
-				// error from its own deterministic calculation.
+				// soon as the window opens. The caller reports an invalid
+				// renewal configuration as a WindowError from its own
+				// deterministic calculation.
 				break
 			}
 		}
