@@ -28,10 +28,12 @@ const (
 	metricsSubsystem = "dynamic_serving"
 )
 
-// The metrics are shared by all DynamicAuthority instances in the process and
-// are partitioned by the Secret resource storing the CA, so that e.g. the
-// webhook serving certificate and the metrics serving certificate of the same
-// component can be told apart.
+// The metrics are shared by all DynamicAuthority instances in the process.
+// The CA metric is partitioned by the Secret resource storing the CA. The leaf
+// certificate metrics are also partitioned by the server using the
+// certificates, so that e.g. the webhook serving certificate and the metrics
+// serving certificate of the same component can be told apart even if they
+// share a Secret.
 var (
 	caExpirationTimestampSeconds = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -50,9 +52,10 @@ var (
 			Subsystem: metricsSubsystem,
 			Name:      "certificate_expiration_timestamp_seconds",
 			Help: "The time after which the most recently signed dynamic serving certificate expires, " +
-				"expressed in Unix Epoch Time. Labels: secret_namespace, secret_name (the Secret storing the signing CA).",
+				"expressed in Unix Epoch Time. Labels: secret_namespace, secret_name (the Secret storing the signing CA), " +
+				"server (the server using the certificate).",
 		},
-		[]string{"secret_namespace", "secret_name"},
+		[]string{"secret_namespace", "secret_name", "server"},
 	)
 
 	certificateSigningsTotal = prometheus.NewCounterVec(
@@ -61,9 +64,10 @@ var (
 			Subsystem: metricsSubsystem,
 			Name:      "certificate_signings_total",
 			Help: "Total number of attempts to sign a dynamic serving certificate. Attempts made before the CA is available are not counted. " +
-				"Labels: secret_namespace, secret_name (the Secret storing the signing CA), status (success/failure).",
+				"Labels: secret_namespace, secret_name (the Secret storing the signing CA), " +
+				"server (the server using the certificate), status (success/failure).",
 		},
-		[]string{"secret_namespace", "secret_name", "status"},
+		[]string{"secret_namespace", "secret_name", "server", "status"},
 	)
 )
 
@@ -101,9 +105,9 @@ func (d *DynamicAuthority) observeSign(cert *x509.Certificate, err error) {
 		// The CA has not been loaded yet, which is expected while the
 		// component is starting up.
 	case err != nil:
-		certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, "failure").Inc()
+		certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, d.Server, "failure").Inc()
 	default:
-		certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, "success").Inc()
-		certificateExpirationTimestampSeconds.WithLabelValues(d.SecretNamespace, d.SecretName).Set(float64(cert.NotAfter.Unix()))
+		certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, d.Server, "success").Inc()
+		certificateExpirationTimestampSeconds.WithLabelValues(d.SecretNamespace, d.SecretName, d.Server).Set(float64(cert.NotAfter.Unix()))
 	}
 }

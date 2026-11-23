@@ -41,9 +41,9 @@ func TestDynamicAuthorityMetrics(t *testing.T) {
 	da := testAuthorityForSecret(t, "authority", "metrics-test-secret", fake)
 
 	caExpiry := caExpirationTimestampSeconds.WithLabelValues(da.SecretNamespace, da.SecretName)
-	certExpiry := certificateExpirationTimestampSeconds.WithLabelValues(da.SecretNamespace, da.SecretName)
-	successes := certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, "success")
-	failures := certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, "failure")
+	certExpiry := certificateExpirationTimestampSeconds.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server)
+	successes := certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "success")
+	failures := certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "failure")
 	// The counters are global and not reset between test runs (e.g. with
 	// -count), so compare against their initial values.
 	initialSuccesses := testutil.ToFloat64(successes)
@@ -111,8 +111,35 @@ func TestDynamicAuthorityMetricsCANotAvailable(t *testing.T) {
 	require.ErrorIs(t, err, ErrCertificateNotAvailable)
 
 	// Attempts made while the CA is not available are not counted as failures.
-	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, "failure")), 0)
-	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, "success")), 0)
+	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "failure")), 0)
+	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "success")), 0)
+}
+
+func TestDynamicAuthorityMetricsSharedSecret(t *testing.T) {
+	webhook := &DynamicAuthority{
+		SecretNamespace: "test-namespace",
+		SecretName:      "metrics-shared-test-secret",
+		Server:          "webhook",
+	}
+	metrics := &DynamicAuthority{
+		SecretNamespace: webhook.SecretNamespace,
+		SecretName:      webhook.SecretName,
+		Server:          "metrics",
+	}
+
+	webhookSuccesses := certificateSigningsTotal.WithLabelValues(webhook.SecretNamespace, webhook.SecretName, webhook.Server, "success")
+	metricsSuccesses := certificateSigningsTotal.WithLabelValues(metrics.SecretNamespace, metrics.SecretName, metrics.Server, "success")
+	initialWebhookSuccesses := testutil.ToFloat64(webhookSuccesses)
+	initialMetricsSuccesses := testutil.ToFloat64(metricsSuccesses)
+
+	webhook.observeSign(&x509.Certificate{NotAfter: time.Unix(100, 0)}, nil)
+	metrics.observeSign(&x509.Certificate{NotAfter: time.Unix(200, 0)}, nil)
+	metrics.observeSign(&x509.Certificate{NotAfter: time.Unix(300, 0)}, nil)
+
+	assert.InDelta(t, initialWebhookSuccesses+1, testutil.ToFloat64(webhookSuccesses), 0)
+	assert.InDelta(t, initialMetricsSuccesses+2, testutil.ToFloat64(metricsSuccesses), 0)
+	assert.InDelta(t, 100, testutil.ToFloat64(certificateExpirationTimestampSeconds.WithLabelValues(webhook.SecretNamespace, webhook.SecretName, webhook.Server)), 0)
+	assert.InDelta(t, 300, testutil.ToFloat64(certificateExpirationTimestampSeconds.WithLabelValues(metrics.SecretNamespace, metrics.SecretName, metrics.Server)), 0)
 }
 
 func TestRegisterMetrics(t *testing.T) {
@@ -121,6 +148,11 @@ func TestRegisterMetrics(t *testing.T) {
 	require.NoError(t, RegisterMetrics(reg))
 	// Registering the same metrics again is a no-op.
 	require.NoError(t, RegisterMetrics(reg))
+
+	// A vector without series emits nothing to lint.
+	caExpirationTimestampSeconds.WithLabelValues("test-namespace", "lint-test-secret")
+	certificateExpirationTimestampSeconds.WithLabelValues("test-namespace", "lint-test-secret", "lint-test-server")
+	certificateSigningsTotal.WithLabelValues("test-namespace", "lint-test-secret", "lint-test-server", "success")
 
 	for _, c := range collectors() {
 		problems, err := testutil.CollectAndLint(c)
@@ -140,9 +172,10 @@ func TestRegisterMetricsCollision(t *testing.T) {
 			Subsystem: metricsSubsystem,
 			Name:      "certificate_signings_total",
 			Help: "Total number of attempts to sign a dynamic serving certificate. Attempts made before the CA is available are not counted. " +
-				"Labels: secret_namespace, secret_name (the Secret storing the signing CA), status (success/failure).",
+				"Labels: secret_namespace, secret_name (the Secret storing the signing CA), " +
+				"server (the server using the certificate), status (success/failure).",
 		},
-		[]string{"secret_namespace", "secret_name", "status"},
+		[]string{"secret_namespace", "secret_name", "server", "status"},
 	)))
 
 	require.ErrorAs(t, RegisterMetrics(reg), &prometheus.AlreadyRegisteredError{})
