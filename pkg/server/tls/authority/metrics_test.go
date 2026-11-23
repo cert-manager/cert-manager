@@ -142,6 +142,24 @@ func TestDynamicAuthorityMetricsSharedSecret(t *testing.T) {
 	assert.InDelta(t, 300, testutil.ToFloat64(certificateExpirationTimestampSeconds.WithLabelValues(metrics.SecretNamespace, metrics.SecretName, metrics.Server)), 0)
 }
 
+func TestDynamicAuthorityMetricsInit(t *testing.T) {
+	da := &DynamicAuthority{
+		SecretNamespace: "test-namespace",
+		SecretName:      "metrics-init-test-secret",
+		Server:          "webhook",
+	}
+	// The metrics are global and not reset between test runs (e.g. with
+	// -count), so remove the series left by a previous run.
+	certificateSigningsTotal.DeletePartialMatch(prometheus.Labels{"secret_name": da.SecretName})
+	before := testutil.CollectAndCount(certificateSigningsTotal)
+
+	da.initMetrics()
+
+	assert.Equal(t, before+2, testutil.CollectAndCount(certificateSigningsTotal))
+	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "success")), 0)
+	assert.InDelta(t, 0, testutil.ToFloat64(certificateSigningsTotal.WithLabelValues(da.SecretNamespace, da.SecretName, da.Server, "failure")), 0)
+}
+
 func TestRegisterMetrics(t *testing.T) {
 	reg := prometheus.NewPedanticRegistry()
 

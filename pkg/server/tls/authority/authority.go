@@ -122,6 +122,8 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 		d.LeafDuration = time.Hour * 24 * 7 // 7d
 	}
 
+	d.initMetrics()
+
 	if d.newClient == nil {
 		d.newClient = func(c *rest.Config) (kubernetes.Interface, error) {
 			return kubernetes.NewForConfig(c)
