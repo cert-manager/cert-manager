@@ -303,15 +303,15 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			return reason, fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", gateTime), true
 		}
 
-		message := "Renewing certificate"
-		if crt.Status.RenewalTime != nil {
-			message = fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", crt.Status.RenewalTime)
-		}
-
 		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		var message string
 		if err != nil {
 			reason = WindowError
 			message = err.Error()
+		} else {
+			// Report the computed renewal time, which is what this check gates
+			// on. Status.RenewalTime may be nil or out of date.
+			message = fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", renewalTime)
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())

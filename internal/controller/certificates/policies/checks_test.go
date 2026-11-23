@@ -481,7 +481,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:56:00 +0000 UTC",
 			reissue: true,
 		},
 		"trigger renewal if renewalTime is in the past": {
@@ -517,7 +517,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:56:00 +0000 UTC",
 			reissue: true,
 		},
 		"trigger renewal if renewalTime is nil and certificate is nearing expiry": {
@@ -550,7 +550,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:56:00 +0000 UTC",
 			reissue: true,
 		},
 		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
