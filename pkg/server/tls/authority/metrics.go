@@ -95,6 +95,13 @@ func collectors() []prometheus.Collector {
 	}
 }
 
+// initMetrics creates the signing counters, so that they are exported as 0
+// before the first signing attempt.
+func (d *DynamicAuthority) initMetrics() {
+	certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, d.Server, "success")
+	certificateSigningsTotal.WithLabelValues(d.SecretNamespace, d.SecretName, d.Server, "failure")
+}
+
 func (d *DynamicAuthority) observeCA(caCert *x509.Certificate) {
 	caExpirationTimestampSeconds.WithLabelValues(d.SecretNamespace, d.SecretName).Set(float64(caCert.NotAfter.Unix()))
 }
