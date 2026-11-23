@@ -1795,6 +1795,22 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"),
 			},
 		},
+		// digitalocean is checked after acmeDNS, so here it is digitalocean that
+		// is reported, not acmeDNS.
+		"acmeDNS configured together with digitalocean": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+					Host:          "https://acme-dns.example.com",
+					AccountSecret: validSecretKeyRef,
+				},
+				DigitalOcean: &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{
+					Token: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"),
+			},
+		},
 		"valid nameservers with ip:port": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Nameservers: []string{"8.8.8.8:53", "1.1.1.1:53"},
@@ -2150,4 +2166,88 @@ func TestUpdateValidateIssuer(t *testing.T) {
 			assert.Equal(t, s.expectedW, gotW)
 		})
 	}
+}
+
+// An Issuer that has acmeDNS together with another DNS01 provider was accepted
+// before that was rejected, so it can already be stored. Its status is updated
+// by the controller, and the webhook validates that update too, so the
+// combination must only be rejected where the solver is new or was changed.
+func TestValidateUpdateIssuerAcmeDNSWithAnotherProvider(t *testing.T) {
+	// akamai is checked before acmeDNS, so a solver with both is reported on acmeDNS.
+	withAcmeDNS := func(serviceConsumerDomain string) cmacme.ACMEChallengeSolver {
+		return cmacme.ACMEChallengeSolver{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+			Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
+				AccessToken:           validSecretKeyRef,
+				ClientSecret:          validSecretKeyRef,
+				ClientToken:           validSecretKeyRef,
+				ServiceConsumerDomain: serviceConsumerDomain,
+			},
+			AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+				Host:          "https://acme-dns.example.com",
+				AccountSecret: validSecretKeyRef,
+			},
+		}}
+	}
+	valid := cmacme.ACMEChallengeSolver{DNS01: &cmacme.ACMEChallengeSolverDNS01{CloudDNS: &validCloudDNSProvider}}
+	spec := func(solvers ...cmacme.ACMEChallengeSolver) cmapi.IssuerSpec {
+		acme := validACMEIssuer
+		acme.Solvers = solvers
+		var spec cmapi.IssuerSpec
+		spec.ACME = &acme
+		return spec
+	}
+	forbidden := func(solver int) *field.Error {
+		return field.Forbidden(
+			field.NewPath("spec", "acme", "solvers").Index(solver).Child("dns01", "acmeDNS"),
+			"may not specify more than one provider type",
+		)
+	}
+
+	scenarios := map[string]struct {
+		oldSpec, newSpec cmapi.IssuerSpec
+		errs             []*field.Error
+	}{
+		"unchanged": {
+			oldSpec: spec(withAcmeDNS("a")),
+			newSpec: spec(withAcmeDNS("a")),
+		},
+		"unchanged solver kept, another one added before it": {
+			oldSpec: spec(withAcmeDNS("a")),
+			newSpec: spec(valid, withAcmeDNS("a")),
+		},
+		"unchanged solver kept, another valid one removed before it": {
+			oldSpec: spec(valid, withAcmeDNS("a")),
+			newSpec: spec(withAcmeDNS("a")),
+		},
+		"solver added that combines acmeDNS with another provider": {
+			oldSpec: spec(valid),
+			newSpec: spec(valid, withAcmeDNS("a")),
+			errs:    []*field.Error{forbidden(1)},
+		},
+		"solver changed while it still combines acmeDNS with another provider": {
+			oldSpec: spec(withAcmeDNS("a")),
+			newSpec: spec(withAcmeDNS("b")),
+			errs:    []*field.Error{forbidden(0)},
+		},
+		"second solver added next to an unchanged one": {
+			oldSpec: spec(withAcmeDNS("a")),
+			newSpec: spec(withAcmeDNS("a"), withAcmeDNS("b")),
+			errs:    []*field.Error{forbidden(1)},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			gotE, _ := ValidateUpdateIssuer(nil, &cmapi.Issuer{Spec: s.oldSpec}, &cmapi.Issuer{Spec: s.newSpec})
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, gotE)
+
+			gotE, _ = ValidateUpdateClusterIssuer(nil, &cmapi.ClusterIssuer{Spec: s.oldSpec}, &cmapi.ClusterIssuer{Spec: s.newSpec})
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, gotE)
+		})
+	}
+
+	t.Run("created", func(t *testing.T) {
+		gotE, _ := ValidateIssuer(nil, &cmapi.Issuer{Spec: spec(withAcmeDNS("a"))})
+		field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, []*field.Error{forbidden(0)}, gotE)
+	})
 }
