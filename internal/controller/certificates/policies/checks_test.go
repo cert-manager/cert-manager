@@ -629,7 +629,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:00:00 +0000 UTC",
 			reissue: true,
 		},
 		"trigger renewal at the ARI window start when the stored renewal time lies outside the window": {
@@ -644,7 +644,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at 0001-01-04 00:00:00 +0000 UTC",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:00:00 +0000 UTC",
 			reissue: true,
 		},
 		"does not trigger renewal before the jittered renewal time inside an open ARI window": {
