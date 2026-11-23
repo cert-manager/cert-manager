@@ -452,6 +452,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
 				SecretLabels:    map[string]string{"app.kubernetes.io/managed-by": "cert-manager"},
+				Server:          "metrics",
 				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},

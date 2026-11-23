@@ -74,13 +74,13 @@ func NewCertManagerWebhookServer(log logr.Logger, opts config.WebhookConfigurati
 		HealthzAddr:               new(int(opts.HealthzPort)),
 		EnablePprof:               opts.EnablePprof,
 		PprofAddress:              opts.PprofAddress,
-		CertificateSource:         buildCertificateSource(log, opts.TLSConfig, restcfg),
+		CertificateSource:         buildCertificateSource(log, "webhook", opts.TLSConfig, restcfg),
 		CipherSuites:              opts.TLSConfig.CipherSuites,
 		MinTLSVersion:             opts.TLSConfig.MinTLSVersion,
 		ValidationWebhook:         admissionHandler,
 		MutationWebhook:           admissionHandler,
 		MetricsListenAddress:      opts.MetricsListenAddress,
-		MetricsCertificateSource:  buildCertificateSource(log, opts.MetricsTLSConfig, restcfg),
+		MetricsCertificateSource:  buildCertificateSource(log, "metrics", opts.MetricsTLSConfig, restcfg),
 		MetricsCipherSuites:       opts.MetricsTLSConfig.CipherSuites,
 		MetricsMinTLSVersion:      opts.MetricsTLSConfig.MinTLSVersion,
 		EnableClientVerification:  opts.EnableClientVerification,
@@ -120,7 +120,7 @@ func buildAdmissionChain(client kubernetes.Interface) (admission.PluginChain, er
 	return pluginChain, nil
 }
 
-func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
+func buildCertificateSource(log logr.Logger, server string, tlsConfig shared.TLSConfig, restCfg *rest.Config) tls.CertificateSource {
 	switch {
 	case tlsConfig.FilesystemConfigProvided():
 		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", tlsConfig.Filesystem.KeyFile, "certificate", tlsConfig.Filesystem.CertFile)
@@ -137,6 +137,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
 				SecretLabels:    map[string]string{"app.kubernetes.io/managed-by": "cert-manager-webhook"},
+				Server:          server,
 				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},

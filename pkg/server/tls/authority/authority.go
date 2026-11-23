@@ -58,6 +58,11 @@ type DynamicAuthority struct {
 	// Labels added to the Secret resource used to store the authority.
 	SecretLabels map[string]string
 
+	// Server names the server using the leaf certificates signed by this
+	// authority, e.g. 'webhook' or 'metrics'. It is only used as a metric
+	// label, to tell apart authorities sharing a Secret resource.
+	Server string
+
 	// RESTConfig used to connect to the apiserver.
 	RESTConfig *rest.Config
 
@@ -191,6 +196,13 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 	d.signMutex.Lock()
 	defer d.signMutex.Unlock()
 
+	cert, err := d.sign(template)
+	d.observeSign(cert, err)
+	return cert, err
+}
+
+// sign must be called with signMutex held.
+func (d *DynamicAuthority) sign(template *x509.Certificate) (*x509.Certificate, error) {
 	if d.currentCertData == nil || d.currentPrivateKeyData == nil {
 		return nil, ErrCertificateNotAvailable
 	}
@@ -285,6 +297,12 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 	}
 
 	d.log.V(logf.InfoLevel).Info("Detected change in CA secret data, update current CA data and notify watches")
+
+	if caCert, err := pki.DecodeX509CertificateBytes(newCertData); err != nil {
+		d.log.Error(err, "Failed to decode CA certificate, not updating CA metrics")
+	} else {
+		d.observeCA(caCert)
+	}
 
 	func() {
 		d.signMutex.Lock()

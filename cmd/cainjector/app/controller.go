@@ -89,6 +89,9 @@ func Run(opts *config.CAInjectorConfiguration, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := authority.RegisterMetrics(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering dynamic serving certificate metrics: %w", err)
+	}
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(kscheme.AddToScheme(scheme))
@@ -317,6 +320,7 @@ func buildCertificateSource(tlsConfig shared.TLSConfig, restCfg *rest.Config) cm
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
 				SecretLabels:    map[string]string{"app.kubernetes.io/managed-by": "cert-manager-cainjector"},
+				Server:          "metrics",
 				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},
