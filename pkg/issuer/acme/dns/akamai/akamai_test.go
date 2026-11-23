@@ -26,6 +26,7 @@ import (
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -576,6 +577,7 @@ func TestIsNotFound(t *testing.T) {
 		"error that did not come from the API": {err: errors.New("connection refused"), want: false},
 		"404 Not Found":                        {err: &dns.Error{StatusCode: http.StatusNotFound}, want: true},
 		"wrapped 404 Not Found":                {err: fmt.Errorf("get record: %w", &dns.Error{StatusCode: http.StatusNotFound}), want: true},
+		"nil *dns.Error in an error":           {err: (*dns.Error)(nil), want: false},
 		"401 Unauthorized":                     {err: &dns.Error{StatusCode: http.StatusUnauthorized}, want: false},
 		"403 Forbidden":                        {err: &dns.Error{StatusCode: http.StatusForbidden}, want: false},
 		"429 Too Many Requests":                {err: &dns.Error{StatusCode: http.StatusTooManyRequests}, want: false},
@@ -605,7 +607,7 @@ func TestGetRecordAPIError(t *testing.T) {
 			Nameservers(util.RecursiveNameservers),
 			Resolver(util.NewCachingResolver()),
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
 		akamai.dnsclient = &StubOpenDNSConfig{

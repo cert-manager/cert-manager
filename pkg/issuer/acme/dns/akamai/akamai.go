@@ -295,7 +295,8 @@ func containsValue(values []string, value string) bool {
 // does not say anything about whether the record exists.
 func isNotFound(err error) bool {
 	var apiErr *dns.Error
-	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+	// errors.As also matches a nil *dns.Error stored in the error.
+	return errors.As(err, &apiErr) && apiErr != nil && apiErr.StatusCode == http.StatusNotFound
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
