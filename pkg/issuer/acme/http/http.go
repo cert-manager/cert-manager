@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -292,12 +293,25 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 				return dialer.DialContext(ctx, network, addr)
 			}
 
-			ip, err := resolveWithServers(ctx, host, dnsServers)
-			if err != nil {
-				log.V(logf.DebugLevel).Info("failed to resolve host", "error", err)
-				return nil, err
+			// The Go resolver read /etc/hosts before asking DNS, which Pod
+			// hostAliases and a proxy host name from HTTP_PROXY rely on.
+			ips := lookupHostsFile(hostsFile, host)
+			if len(ips) == 0 {
+				ips, err = resolveWithServers(ctx, host, dnsServers)
+				if err != nil {
+					return nil, err
+				}
 			}
-			return dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+
+			var errs []error
+			for _, ip := range ips {
+				conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+				if err == nil {
+					return conn, nil
+				}
+				errs = append(errs, err)
+			}
+			return nil, errors.Join(errs...)
 		}
 	}
 	client := &http.Client{
@@ -341,8 +355,16 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	return nil
 }
 
+// dnsServerTimeout bounds each query to a configured DNS server. The whole self
+// check has 10 seconds, and every connection, including each redirect hop,
+// resolves again, so a dead server must not cost the default 2 seconds.
+const dnsServerTimeout = time.Second
+
+// hostsFile is a variable so that tests can point it at a temporary file.
+var hostsFile = "/etc/hosts"
+
 // resolveWithServers resolves host against dnsServers, trying them in order and
-// returning the first answer.
+// returning every address from the first one that answers.
 //
 // The Go resolver cannot express this. Its Dial hook is handed one server at a
 // time and has no way to report that the server failed to answer: a UDP dial to
@@ -351,49 +373,102 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 // in parallel, so any scheme that hands a different server to each call leaves
 // one lookup pointed at a server that may be dead.
 //
-// A server that does not answer is skipped. A server that answers but knows no
-// address is not: that is an answer, and falling through to another server
-// would hide it.
-func resolveWithServers(ctx context.Context, host string, dnsServers []string) (string, error) {
+// A server that does not answer, or answers with an error such as SERVFAIL, is
+// skipped. A server that answers but knows no address is not: that is an
+// answer, and falling through to another server would hide it.
+func resolveWithServers(ctx context.Context, host string, dnsServers []string) ([]string, error) {
 	var errs []error
 	for _, server := range dnsServers {
-		ip, err := lookupHostOnServer(ctx, host, server)
+		ips, err := lookupHostOnServer(ctx, host, server)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", server, err))
 			continue
 		}
-		if ip == "" {
-			return "", fmt.Errorf("no address found for %q on %s", host, server)
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("no address found for %q on %s", host, server)
 		}
-		return ip, nil
+		return ips, nil
 	}
-	return "", fmt.Errorf("no configured DNS server answered for %q: %w", host, errors.Join(errs...))
+	return nil, fmt.Errorf("no configured DNS server answered for %q: %w", host, errors.Join(errs...))
 }
 
-// lookupHostOnServer asks a single server for host, preferring an A record and
-// falling back to AAAA. It returns an empty string and a nil error when the
-// server answered but the name has no address. Recursion is requested, so a
-// resolver that follows a CNAME returns the address in the same answer section.
-func lookupHostOnServer(ctx context.Context, host, server string) (string, error) {
+// lookupHostOnServer asks a single server for the A and then the AAAA records
+// of host. It returns no addresses and a nil error when the server answered but
+// the name has none. Recursion is requested, so a resolver that follows a CNAME
+// returns the address in the same answer section.
+func lookupHostOnServer(ctx context.Context, host, server string) ([]string, error) {
+	var ips []string
 	for _, qtype := range []uint16{dns.TypeA, dns.TypeAAAA} {
-		msg := new(dns.Msg)
-		msg.SetQuestion(dns.Fqdn(host), qtype)
-		msg.RecursionDesired = true
-
-		response, err := dns.ExchangeContext(ctx, msg, server)
+		response, err := exchangeWithServer(ctx, host, qtype, server)
 		if err != nil {
-			return "", err
+			// A server that fails the AAAA query has still answered for A.
+			if len(ips) > 0 {
+				break
+			}
+			return nil, err
 		}
-
+		if response.Rcode == dns.RcodeNameError {
+			break
+		}
 		for _, record := range response.Answer {
 			switch t := record.(type) {
 			case *dns.A:
-				return t.A.String(), nil
+				ips = append(ips, t.A.String())
 			case *dns.AAAA:
-				return t.AAAA.String(), nil
+				ips = append(ips, t.AAAA.String())
 			}
 		}
 	}
+	return ips, nil
+}
 
-	return "", nil
+// exchangeWithServer sends one query to server. Only a success or NXDOMAIN reply
+// counts as an answer; any other response code is returned as an error so that
+// the caller moves on to the next server, as the Go resolver does. A truncated
+// UDP reply is retried over TCP.
+func exchangeWithServer(ctx context.Context, host string, qtype uint16, server string) (*dns.Msg, error) {
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(host), qtype)
+	msg.RecursionDesired = true
+
+	client := &dns.Client{Net: "udp", Timeout: dnsServerTimeout}
+	response, _, err := client.ExchangeContext(ctx, msg, server)
+	if err == nil && response.Truncated {
+		client.Net = "tcp"
+		response, _, err = client.ExchangeContext(ctx, msg, server)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if response.Rcode != dns.RcodeSuccess && response.Rcode != dns.RcodeNameError {
+		return nil, fmt.Errorf("server replied %s", dns.RcodeToString[response.Rcode])
+	}
+	return response, nil
+}
+
+// lookupHostsFile returns the addresses that the hosts file at path lists for
+// host, or nil when it lists none or cannot be read.
+func lookupHostsFile(path, host string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	host = strings.TrimSuffix(host, ".")
+	var ips []string
+	for line := range strings.Lines(string(data)) {
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 || net.ParseIP(fields[0]) == nil {
+			continue
+		}
+		for _, name := range fields[1:] {
+			if strings.EqualFold(strings.TrimSuffix(name, "."), host) {
+				ips = append(ips, fields[0])
+				break
+			}
+		}
+	}
+	return ips
 }

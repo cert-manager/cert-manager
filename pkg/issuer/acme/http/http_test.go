@@ -24,6 +24,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -360,100 +363,240 @@ func TestReachabilityDoesNotReflectRedirectedResponseBody(t *testing.T) {
 	}
 }
 
-// TestReachabilityCustomDnsServersFailover ensures that a configured DNS server
-// which never answers does not fail the self check when another configured
-// server can answer. The unresponsive server is listed first so that the test
-// fails if the servers are not tried in turn.
-func TestReachabilityCustomDnsServersFailover(t *testing.T) {
-	site := "https://cert-manager.io"
-	u, err := url.Parse(site)
+// startDNSServer serves handler over UDP on a free loopback port, and over TCP
+// on the same port when tcp is set, and returns the address.
+func startDNSServer(t *testing.T, handler dns.HandlerFunc, tcp bool) string {
+	t.Helper()
+	var lc net.ListenConfig
+	pc, err := lc.ListenPacket(t.Context(), "udp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("Failed to parse url %s: %v", site, err)
+		t.Fatalf("failed to listen for DNS over UDP: %v", err)
 	}
-	ips, err := net.LookupIP(u.Host) //nolint: noctx // We intentionally use LookupIP here for test compatibility
-	if err != nil {
-		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
+	addr := pc.LocalAddr().String()
+	runDNSServer(t, &dns.Server{PacketConn: pc, Handler: handler})
+	if tcp {
+		l, err := lc.Listen(t.Context(), "tcp", addr)
+		if err != nil {
+			t.Fatalf("failed to listen for DNS over TCP: %v", err)
+		}
+		runDNSServer(t, &dns.Server{Listener: l, Handler: handler})
 	}
+	return addr
+}
 
-	// deadServer accepts queries but never writes a reply, which is how a
-	// packet-dropping resolver behaves from the client's point of view.
-	deadStarted := make(chan struct{})
-	deadServer := &dns.Server{Addr: "127.0.0.1:15355", Net: "udp", NotifyStartedFunc: func() { close(deadStarted) }}
-	defer func() {
-		if err := deadServer.Shutdown(); err != nil {
+func runDNSServer(t *testing.T, server *dns.Server) {
+	t.Helper()
+	started := make(chan struct{})
+	server.NotifyStartedFunc = func() { close(started) }
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.ActivateAndServe() }()
+	select {
+	case <-started:
+	case err := <-errCh:
+		t.Fatalf("DNS server did not start: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := server.Shutdown(); err != nil {
 			t.Error(err)
-		}
-	}()
-	deadMux := &dns.ServeMux{}
-	deadServer.Handler = deadMux
-	deadMux.HandleFunc(".", func(dns.ResponseWriter, *dns.Msg) {})
-	go func() {
-		if err := deadServer.ListenAndServe(); err != nil {
-			t.Error(err)
-		}
-	}()
-
-	liveStarted := make(chan struct{})
-	liveCalled := int32(0)
-	liveServer := &dns.Server{Addr: "127.0.0.1:15356", Net: "udp", NotifyStartedFunc: func() { close(liveStarted) }}
-	defer func() {
-		if err := liveServer.Shutdown(); err != nil {
-			t.Error(err)
-		}
-	}()
-	liveMux := &dns.ServeMux{}
-	liveServer.Handler = liveMux
-	liveMux.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
-		m := new(dns.Msg)
-		m.SetReply(r)
-		if r.Opcode != dns.OpcodeQuery {
-			return
-		}
-		for _, q := range m.Question {
-			if q.Name != u.Host+"." {
-				continue
-			}
-			atomic.StoreInt32(&liveCalled, 1)
-			for _, ip := range ips {
-				isV6 := strings.Contains(ip.String(), ":")
-				if q.Qtype == dns.TypeA && !isV6 {
-					if rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip)); err == nil {
-						m.Answer = append(m.Answer, rr)
-					}
-				}
-				if q.Qtype == dns.TypeAAAA && isV6 {
-					if rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, ip)); err == nil {
-						m.Answer = append(m.Answer, rr)
-					}
-				}
-			}
-		}
-		if err := w.WriteMsg(m); err != nil {
-			t.Errorf("failed to write DNS response: %v", err)
 		}
 	})
-	go func() {
-		if err := liveServer.ListenAndServe(); err != nil {
-			t.Error(err)
+}
+
+// answerHost replies to A and AAAA queries for name with the matching ips.
+func answerHost(name string, ips ...string) dns.HandlerFunc {
+	return func(w dns.ResponseWriter, r *dns.Msg) {
+		m := new(dns.Msg)
+		m.SetReply(r)
+		for _, q := range r.Question {
+			if q.Name != dns.Fqdn(name) {
+				continue
+			}
+			for _, ip := range ips {
+				rrType := "A"
+				if strings.Contains(ip, ":") {
+					rrType = "AAAA"
+				}
+				if dns.StringToType[rrType] != q.Qtype {
+					continue
+				}
+				if rr, err := dns.NewRR(fmt.Sprintf("%s %s %s", q.Name, rrType, ip)); err == nil {
+					m.Answer = append(m.Answer, rr)
+				}
+			}
 		}
-	}()
-
-	<-deadStarted
-	<-liveStarted
-
-	key := "there is no key"
-
-	err = testReachability(t.Context(), u, key, []string{"127.0.0.1:15355", "127.0.0.1:15356"}, "cert-manager-test")
-	if err == nil {
-		t.Fatal("expected testReachability to return an error for a mismatched response, but got none")
+		_ = w.WriteMsg(m)
 	}
-	// Reaching the HTTP request at all means the name was resolved; a resolution
-	// failure surfaces as "failed to perform self check GET request" instead.
-	if !strings.Contains(err.Error(), key) {
-		t.Errorf("expected the self check to resolve via the responding server, but it failed to resolve: %v", err)
+}
+
+func replyRcode(rcode int) dns.HandlerFunc {
+	return func(w dns.ResponseWriter, r *dns.Msg) {
+		m := new(dns.Msg)
+		m.SetRcode(r, rcode)
+		_ = w.WriteMsg(m)
 	}
-	if atomic.LoadInt32(&liveCalled) != 1 {
-		t.Error("expected the responding DNS server to be queried, but it never was")
+}
+
+const (
+	challengeHost = "challenge.test"
+	challengeKey  = "the-expected-challenge-key"
+)
+
+// startChallengeServer serves challengeKey on listener (a free IPv4 loopback port when
+// nil) and returns a URL for it under challengeHost, so that reaching it needs
+// the name to resolve to the listener's address.
+func startChallengeServer(t *testing.T, listener net.Listener) *url.URL {
+	t.Helper()
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, challengeKey)
+	}))
+	if listener != nil {
+		server.Listener.Close()
+		server.Listener = listener
+	}
+	server.Start()
+	t.Cleanup(server.Close)
+
+	_, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	if err != nil {
+		t.Fatalf("failed to split the test server address: %v", err)
+	}
+	return &url.URL{Scheme: "http", Host: net.JoinHostPort(challengeHost, port), Path: "/"}
+}
+
+// TestReachabilityCustomDnsServersFailover ensures that a configured DNS server
+// that cannot answer does not fail the self check when the next configured
+// server can, and that a server that answers is not skipped.
+func TestReachabilityCustomDnsServersFailover(t *testing.T) {
+	tests := []struct {
+		name    string
+		first   dns.HandlerFunc
+		wantErr bool
+	}{
+		{
+			name:  "first server drops queries",
+			first: func(dns.ResponseWriter, *dns.Msg) {},
+		},
+		{
+			name:  "first server replies SERVFAIL",
+			first: replyRcode(dns.RcodeServerFailure),
+		},
+		{
+			name:  "first server replies REFUSED",
+			first: replyRcode(dns.RcodeRefused),
+		},
+		{
+			// NXDOMAIN is an answer, so the next server is not asked.
+			name:    "first server replies NXDOMAIN",
+			first:   replyRcode(dns.RcodeNameError),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u := startChallengeServer(t, nil)
+			first := startDNSServer(t, tt.first, false)
+			second := startDNSServer(t, answerHost(challengeHost, "127.0.0.1"), false)
+
+			err := testReachability(t.Context(), u, challengeKey, []string{first, second}, "cert-manager-test")
+			if tt.wantErr && err == nil {
+				t.Fatal("expected the self check to fail, but it succeeded")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("expected the self check to succeed through the second server, but got: %v", err)
+			}
+		})
+	}
+}
+
+// TestReachabilityCustomDnsServersTruncated ensures that a truncated UDP reply
+// is retried over TCP instead of being read as a name with no address.
+func TestReachabilityCustomDnsServersTruncated(t *testing.T) {
+	u := startChallengeServer(t, nil)
+
+	answer := answerHost(challengeHost, "127.0.0.1")
+	server := startDNSServer(t, func(w dns.ResponseWriter, r *dns.Msg) {
+		if _, ok := w.RemoteAddr().(*net.UDPAddr); ok {
+			m := new(dns.Msg)
+			m.SetReply(r)
+			m.Truncated = true
+			_ = w.WriteMsg(m)
+			return
+		}
+		answer(w, r)
+	}, true)
+
+	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
+		t.Errorf("expected the self check to succeed over TCP, but got: %v", err)
+	}
+}
+
+// TestReachabilityCustomDnsServersTriesEveryAddress ensures that every address
+// a server returns is tried, A and AAAA alike. The challenge listens on IPv6
+// only, behind an IPv4 address that refuses the connection.
+func TestReachabilityCustomDnsServersTriesEveryAddress(t *testing.T) {
+	var lc net.ListenConfig
+	listener, err := lc.Listen(t.Context(), "tcp", "[::1]:0")
+	if err != nil {
+		t.Skipf("IPv6 loopback is not available: %v", err)
+	}
+	u := startChallengeServer(t, listener)
+	server := startDNSServer(t, answerHost(challengeHost, "127.0.0.1", "::1"), false)
+
+	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
+		t.Errorf("expected the self check to reach the IPv6 address, but got: %v", err)
+	}
+}
+
+// TestReachabilityCustomDnsServersHostsFile ensures that a name listed in the
+// hosts file, such as a Pod hostAlias, resolves without asking the configured
+// DNS servers.
+func TestReachabilityCustomDnsServersHostsFile(t *testing.T) {
+	u := startChallengeServer(t, nil)
+
+	path := filepath.Join(t.TempDir(), "hosts")
+	if err := os.WriteFile(path, []byte("127.0.0.1 "+challengeHost+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	original := hostsFile
+	hostsFile = path
+	t.Cleanup(func() { hostsFile = original })
+
+	server := startDNSServer(t, replyRcode(dns.RcodeNameError), false)
+	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
+		t.Errorf("expected the self check to use the hosts file entry, but got: %v", err)
+	}
+}
+
+func TestLookupHostsFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "hosts")
+	content := `# comment line
+127.0.0.1	localhost
+10.0.0.1 proxy.example.com proxy # trailing comment
+10.0.0.2 Mixed.Example.com
+fd00::1 proxy.example.com
+not-an-ip proxy.example.com
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		host string
+		want []string
+	}{
+		{host: "proxy.example.com", want: []string{"10.0.0.1", "fd00::1"}},
+		{host: "proxy", want: []string{"10.0.0.1"}},
+		{host: "mixed.example.com.", want: []string{"10.0.0.2"}},
+		{host: "comment", want: nil},
+		{host: "missing.example.com", want: nil},
+	}
+	for _, tt := range tests {
+		if got := lookupHostsFile(path, tt.host); !slices.Equal(got, tt.want) {
+			t.Errorf("lookupHostsFile(%q) = %v, want %v", tt.host, got, tt.want)
+		}
+	}
+	if got := lookupHostsFile(filepath.Join(t.TempDir(), "missing"), "localhost"); got != nil {
+		t.Errorf("expected nil for a missing hosts file, got %v", got)
 	}
 }
 
