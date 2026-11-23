@@ -204,6 +204,22 @@ func Test_controller_ProcessItem(t *testing.T) {
 				ObservedGeneration: 42,
 			}},
 		},
+		"should not emit a renewal event for an ML-DSA Certificate when the feature gate is disabled": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateGeneration(42),
+				gen.SetCertificateKeyAlgorithm(cmapi.MLDSAKeyAlgorithm),
+			),
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{},
+			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return policies.WindowError, "cannot find renewal time in window", true
+				}
+			},
+			wantEvent:     []string{"Warning MLDSAPrivateKeysDisabled Certificate must be re-issued (Renewing), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled"},
+			wantScheduled: []time.Duration{mldsaPrivateKeysDisabledRecheckInterval},
+		},
 		"should not set Issuing=True for an ML-DSA Certificate if the MLDSAPrivateKeys feature gate is disabled": {
 			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
 				gen.SetCertificateGeneration(42),

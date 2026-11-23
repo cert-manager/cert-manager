@@ -234,8 +234,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 
 	reason, message, reissue := c.shouldReissue(input)
+	var windowErrorMessage string
 	if reason == policies.WindowError {
-		c.recorder.Event(crt, corev1.EventTypeWarning, reason, fmt.Sprintf("Renewing certificate without satisfying renewal windows due to %s", message))
+		windowErrorMessage = message
 		message = fmt.Sprintf("Renewing certificate without satisfying renewal windows at: %s", crt.Status.RenewalTime)
 		reason = policies.Renewing
 	}
@@ -254,6 +255,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		c.recorder.Event(crt, corev1.EventTypeWarning, reasonMLDSAPrivateKeysDisabled, message)
 		c.scheduledWorkQueue.Add(key, mldsaPrivateKeysDisabledRecheckInterval)
 		return nil
+	}
+
+	if windowErrorMessage != "" {
+		c.recorder.Event(crt, corev1.EventTypeWarning, policies.WindowError, fmt.Sprintf("Renewing certificate without satisfying renewal windows due to %s", windowErrorMessage))
 	}
 
 	// Although the below recorder.Event already logs the event, the log
