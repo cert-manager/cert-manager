@@ -240,7 +240,9 @@ type ACMEHTTP01Config struct {
 	// acme.cert-manager.io/http01-solver.
 	SolverExtraLabels map[string]string `json:"solverExtraLabels,omitempty"`
 
-	// Defines the ability to run the http01 solver with ProxyProtocol
+	// Defines the ability to run the http01 solver with ProxyProtocol.
+	// If true, ACME HTTP-01 solver pods require a PROXY protocol v1 or v2 header on every connection.
+	// Only enable this if every connection to the solver pods comes through a proxy that sends the header.
 	SolverProxyProtocol *bool `json:"solverProxyProtocol,omitempty"`
 }
 
