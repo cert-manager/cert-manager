@@ -277,7 +277,10 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		}
 
 		reason := Renewing
-		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
+		message := "Renewing certificate"
+		if crt.Status.RenewalTime != nil {
+			message = fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", crt.Status.RenewalTime)
+		}
 
 		if input.ARIRenewalInfo != nil &&
 			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() {

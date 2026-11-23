@@ -520,6 +520,39 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
 			reissue: true,
 		},
+		"trigger renewal if renewalTime is nil and certificate is nearing expiry": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.IssuerReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 5},
+				},
+			},
+			secret: &corev1.Secret{
+				Name: "something",
+				Annotations: map[string]string{
+					cmapi.IssuerNameAnnotationKey:  "testissuer",
+					cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+					cmapi.IssuerGroupAnnotationKey: "group.example.com",
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						clock.Now().Add(time.Minute*-30),
+						// expires in 1 minute time
+						clock.Now().Add(time.Minute*1),
+					),
+				},
+			},
+			reason:  Renewing,
+			message: "Renewing certificate",
+			reissue: true,
+		},
 		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
@@ -596,7 +629,7 @@ func Test_NewTriggerPolicyChain(t *testing.T) {
 				},
 			},
 			reason:  Renewing,
-			message: "Renewing certificate as renewal was scheduled at <nil>",
+			message: "Renewing certificate",
 			reissue: true,
 		},
 		"trigger renewal at the ARI window start when the stored renewal time lies outside the window": {
