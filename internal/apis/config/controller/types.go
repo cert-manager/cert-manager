@@ -235,6 +235,11 @@ type ACMEHTTP01Config struct {
 	// ignored: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token,
 	// acme.cert-manager.io/http01-solver.
 	SolverExtraLabels map[string]string
+
+	// Defines the ability to run the http01 solver with ProxyProtocol.
+	// If true, ACME HTTP-01 solver pods require a PROXY protocol v1 or v2 header on every connection.
+	// Only enable this if every connection to the solver pods comes through a proxy that sends the header.
+	SolverProxyProtocol bool
 }
 
 type ACMEDNS01Config struct {
