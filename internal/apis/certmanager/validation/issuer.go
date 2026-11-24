@@ -46,23 +46,13 @@ func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.
 func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	oldIss := oldObj.(*certmanager.Issuer)
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := validateIssuerSpec(&iss.Spec, &oldIss.Spec, field.NewPath("spec"))
+	allErrs, warnings := validateIssuerConfig(&iss.Spec.IssuerConfig, &oldIss.Spec.IssuerConfig, field.NewPath("spec"))
 	// Admission request should never be nil
 	return allErrs, warnings
 }
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
-	return validateIssuerSpec(iss, nil, fldPath)
-}
-
-// validateIssuerSpec validates the spec of an Issuer or ClusterIssuer. oldIss
-// is the spec before an update, or nil when the object is created.
-func validateIssuerSpec(iss, oldIss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
-	var oldConfig *certmanager.IssuerConfig
-	if oldIss != nil {
-		oldConfig = &oldIss.IssuerConfig
-	}
-	return validateIssuerConfig(&iss.IssuerConfig, oldConfig, fldPath)
+	return ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 }
 
 func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, []string) {
@@ -185,10 +175,6 @@ func validateACMEIssuerConfig(iss, oldIss *cmacme.ACMEIssuer, fldPath *field.Pat
 	}
 
 	return el, warnings
-}
-
-func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
-	return validateACMEIssuerChallengeSolverConfig(sol, nil, fldPath)
 }
 
 func validateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, oldDNS01Solvers []*cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
@@ -704,10 +690,8 @@ func validateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, oldSol
 	}
 	if p.AcmeDNS != nil {
 		if numProviders > 0 {
-			// The solver ignores acmeDNS when another provider is set. Issuers
-			// that were stored before this was rejected must stay updatable,
-			// because the controller updates their status. So only reject a
-			// solver that was not already like this in the Issuer.
+			// Keep Issuers stored before this check updatable (the controller
+			// updates their status), so only reject a solver that is new or changed.
 			if !slices.ContainsFunc(oldSolvers, func(old *cmacme.ACMEChallengeSolverDNS01) bool {
 				return reflect.DeepEqual(old, p)
 			}) {

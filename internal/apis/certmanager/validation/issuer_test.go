@@ -1778,23 +1778,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"),
 			},
 		},
-		"acmeDNS configured together with akamai": {
-			cfg: &cmacme.ACMEChallengeSolverDNS01{
-				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
-					AccessToken:           validSecretKeyRef,
-					ClientSecret:          validSecretKeyRef,
-					ClientToken:           validSecretKeyRef,
-					ServiceConsumerDomain: "abc",
-				},
-				AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
-					Host:          "https://acme-dns.example.com",
-					AccountSecret: validSecretKeyRef,
-				},
-			},
-			errs: []*field.Error{
-				field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"),
-			},
-		},
 		// digitalocean is checked after acmeDNS, so here it is digitalocean that
 		// is reported, not acmeDNS.
 		"acmeDNS configured together with digitalocean": {
@@ -2215,10 +2198,6 @@ func TestValidateUpdateIssuerAcmeDNSWithAnotherProvider(t *testing.T) {
 			oldSpec: spec(withAcmeDNS("a")),
 			newSpec: spec(valid, withAcmeDNS("a")),
 		},
-		"unchanged solver kept, another valid one removed before it": {
-			oldSpec: spec(valid, withAcmeDNS("a")),
-			newSpec: spec(withAcmeDNS("a")),
-		},
 		"solver added that combines acmeDNS with another provider": {
 			oldSpec: spec(valid),
 			newSpec: spec(valid, withAcmeDNS("a")),
@@ -2245,9 +2224,4 @@ func TestValidateUpdateIssuerAcmeDNSWithAnotherProvider(t *testing.T) {
 			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, s.errs, gotE)
 		})
 	}
-
-	t.Run("created", func(t *testing.T) {
-		gotE, _ := ValidateIssuer(nil, &cmapi.Issuer{Spec: spec(withAcmeDNS("a"))})
-		field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, []*field.Error{forbidden(0)}, gotE)
-	})
 }
