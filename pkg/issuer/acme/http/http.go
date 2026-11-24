@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -216,8 +217,29 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
-// check if the returned body equals 'key'
+// check if the returned body equals 'key'. When custom DNS servers are set,
+// each server is tried in order so one unresponsive server cannot make the
+// whole self-check fail.
 func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
+	if len(dnsServers) == 0 {
+		return reachabilityRequest(ctx, url, key, nil, userAgent)
+	}
+
+	var errs []error
+	for _, dnsServer := range dnsServers {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := reachabilityRequest(ctx, url, key, []string{dnsServer}, userAgent); err == nil {
+			return nil
+		} else {
+			errs = append(errs, fmt.Errorf("DNS server %s: %w", dnsServer, err))
+		}
+	}
+	return fmt.Errorf("all configured DNS servers failed: %w", errors.Join(errs...))
+}
+
+func reachabilityRequest(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 

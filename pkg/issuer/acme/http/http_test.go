@@ -247,6 +247,12 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 			dnsServer2Called: true,
 		},
 		{
+			name:             "falls back to a responsive custom dns server",
+			dnsServers:       []string{"127.0.0.1:15355", "127.0.0.1:15353"},
+			dnsServer1Called: true,
+			dnsServer2Called: false,
+		},
+		{
 			name:             "system dns servers",
 			dnsServer1Called: false,
 			dnsServer2Called: false,
