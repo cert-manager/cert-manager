@@ -368,20 +368,30 @@ func TestReachabilityDoesNotReflectRedirectedResponseBody(t *testing.T) {
 func startDNSServer(t *testing.T, handler dns.HandlerFunc, tcp bool) string {
 	t.Helper()
 	var lc net.ListenConfig
-	pc, err := lc.ListenPacket(t.Context(), "udp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("failed to listen for DNS over UDP: %v", err)
-	}
-	addr := pc.LocalAddr().String()
-	runDNSServer(t, &dns.Server{PacketConn: pc, Handler: handler})
-	if tcp {
+	var tcpErr error
+	// A free UDP port can be taken over TCP, so a clash retries on a new port.
+	for range 5 {
+		pc, err := lc.ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("failed to listen for DNS over UDP: %v", err)
+		}
+		addr := pc.LocalAddr().String()
+		if !tcp {
+			runDNSServer(t, &dns.Server{PacketConn: pc, Handler: handler})
+			return addr
+		}
 		l, err := lc.Listen(t.Context(), "tcp", addr)
 		if err != nil {
-			t.Fatalf("failed to listen for DNS over TCP: %v", err)
+			tcpErr = err
+			pc.Close()
+			continue
 		}
+		runDNSServer(t, &dns.Server{PacketConn: pc, Handler: handler})
 		runDNSServer(t, &dns.Server{Listener: l, Handler: handler})
+		return addr
 	}
-	return addr
+	t.Fatalf("failed to listen for DNS over TCP on the UDP port: %v", tcpErr)
+	return ""
 }
 
 func runDNSServer(t *testing.T, server *dns.Server) {
@@ -441,19 +451,13 @@ const (
 	challengeKey  = "the-expected-challenge-key"
 )
 
-// startChallengeServer serves challengeKey on listener (a free IPv4 loopback port when
-// nil) and returns a URL for it under challengeHost, so that reaching it needs
-// the name to resolve to the listener's address.
-func startChallengeServer(t *testing.T, listener net.Listener) *url.URL {
+// startChallengeServer serves challengeKey on 127.0.0.1 and returns its URL
+// under challengeHost, which therefore has to resolve to 127.0.0.1.
+func startChallengeServer(t *testing.T) *url.URL {
 	t.Helper()
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, challengeKey)
 	}))
-	if listener != nil {
-		server.Listener.Close()
-		server.Listener = listener
-	}
-	server.Start()
 	t.Cleanup(server.Close)
 
 	_, port, err := net.SplitHostPort(server.Listener.Addr().String())
@@ -493,7 +497,7 @@ func TestReachabilityCustomDnsServersFailover(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := startChallengeServer(t, nil)
+			u := startChallengeServer(t)
 			first := startDNSServer(t, tt.first, false)
 			second := startDNSServer(t, answerHost(challengeHost, "127.0.0.1"), false)
 
@@ -511,7 +515,7 @@ func TestReachabilityCustomDnsServersFailover(t *testing.T) {
 // TestReachabilityCustomDnsServersTruncated ensures that a truncated UDP reply
 // is retried over TCP instead of being read as a name with no address.
 func TestReachabilityCustomDnsServersTruncated(t *testing.T) {
-	u := startChallengeServer(t, nil)
+	u := startChallengeServer(t)
 
 	answer := answerHost(challengeHost, "127.0.0.1")
 	server := startDNSServer(t, func(w dns.ResponseWriter, r *dns.Msg) {
@@ -531,19 +535,64 @@ func TestReachabilityCustomDnsServersTruncated(t *testing.T) {
 }
 
 // TestReachabilityCustomDnsServersTriesEveryAddress ensures that every address
-// a server returns is tried, A and AAAA alike. The challenge listens on IPv6
-// only, behind an IPv4 address that refuses the connection.
+// a server returns is tried, A and AAAA alike. The challenge listens on IPv4
+// only, behind an IPv6 address that is tried first and cannot connect.
 func TestReachabilityCustomDnsServersTriesEveryAddress(t *testing.T) {
-	var lc net.ListenConfig
-	listener, err := lc.Listen(t.Context(), "tcp", "[::1]:0")
-	if err != nil {
-		t.Skipf("IPv6 loopback is not available: %v", err)
-	}
-	u := startChallengeServer(t, listener)
+	u := startChallengeServer(t)
 	server := startDNSServer(t, answerHost(challengeHost, "127.0.0.1", "::1"), false)
 
 	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
-		t.Errorf("expected the self check to reach the IPv6 address, but got: %v", err)
+		t.Errorf("expected the self check to reach the IPv4 address, but got: %v", err)
+	}
+}
+
+// TestDialAddresses ensures that IPv6 addresses are tried first and that one
+// address that does not answer cannot use the whole dial timeout.
+func TestDialAddresses(t *testing.T) {
+	tests := []struct {
+		name            string
+		ips             []string
+		wantOrder       []string
+		wantFirstBudget time.Duration
+	}{
+		{
+			name:            "IPv6 first, timeout shared between two addresses",
+			ips:             []string{"192.0.2.1", "2001:db8::1"},
+			wantOrder:       []string{"[2001:db8::1]:80", "192.0.2.1:80"},
+			wantFirstBudget: dialTimeout / 2,
+		},
+		{
+			name:            "each address keeps the minimum",
+			ips:             []string{"192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"},
+			wantOrder:       []string{"192.0.2.1:80", "192.0.2.2:80", "192.0.2.3:80", "192.0.2.4:80"},
+			wantFirstBudget: minAddressDialTimeout,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var order []string
+			var firstBudget time.Duration
+			original := dialContext
+			dialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				if len(order) == 0 {
+					deadline, _ := ctx.Deadline()
+					firstBudget = time.Until(deadline)
+				}
+				order = append(order, addr)
+				return nil, errors.New("connection refused")
+			}
+			t.Cleanup(func() { dialContext = original })
+
+			if _, err := dialAddresses(t.Context(), "tcp", "80", test.ips); err == nil {
+				t.Fatal("expected an error when no address accepts")
+			}
+			if !slices.Equal(order, test.wantOrder) {
+				t.Errorf("expected addresses to be tried in order %v, but got %v", test.wantOrder, order)
+			}
+			if firstBudget > test.wantFirstBudget || firstBudget < test.wantFirstBudget-100*time.Millisecond {
+				t.Errorf("expected the first address to get about %v, but got %v", test.wantFirstBudget, firstBudget)
+			}
+		})
 	}
 }
 
@@ -551,7 +600,7 @@ func TestReachabilityCustomDnsServersTriesEveryAddress(t *testing.T) {
 // hosts file, such as a Pod hostAlias, resolves without asking the configured
 // DNS servers.
 func TestReachabilityCustomDnsServersHostsFile(t *testing.T) {
-	u := startChallengeServer(t, nil)
+	u := startChallengeServer(t)
 
 	path := filepath.Join(t.TempDir(), "hosts")
 	if err := os.WriteFile(path, []byte("127.0.0.1 "+challengeHost+"\n"), 0o600); err != nil {

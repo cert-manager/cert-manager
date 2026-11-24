@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -26,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -283,14 +285,11 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 			if err != nil {
 				return nil, err
 			}
-			dialer := &net.Dialer{
-				Timeout: 3 * time.Second,
-			}
 
 			// A challenge can name an IP address rather than a hostname, in
 			// which case there is nothing to look up.
 			if net.ParseIP(host) != nil {
-				return dialer.DialContext(ctx, network, addr)
+				return dialAddresses(ctx, network, port, []string{host})
 			}
 
 			// The Go resolver read /etc/hosts before asking DNS, which Pod
@@ -302,16 +301,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 					return nil, err
 				}
 			}
-
-			var errs []error
-			for _, ip := range ips {
-				conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
-				if err == nil {
-					return conn, nil
-				}
-				errs = append(errs, err)
-			}
-			return nil, errors.Join(errs...)
+			return dialAddresses(ctx, network, port, ips)
 		}
 	}
 	client := &http.Client{
@@ -362,6 +352,52 @@ const dnsServerTimeout = time.Second
 
 // hostsFile is a variable so that tests can point it at a temporary file.
 var hostsFile = "/etc/hosts"
+
+const (
+	// dialTimeout bounds the whole dial, as net.Dialer.Timeout does.
+	dialTimeout           = 3 * time.Second
+	minAddressDialTimeout = time.Second
+)
+
+// dialContext is a variable so that tests can observe each connection attempt.
+var dialContext = (&net.Dialer{}).DialContext
+
+// dialAddresses orders IPv6 first, as Go's resolver does on a host with an IPv6
+// route, and shares the time left among the addresses left, so that one that
+// drops packets cannot use up the whole timeout.
+func dialAddresses(ctx context.Context, network, port string, ips []string) (net.Conn, error) {
+	ips = slices.Clone(ips)
+	slices.SortStableFunc(ips, func(a, b string) int {
+		return cmp.Compare(ipFamilyRank(a), ipFamilyRank(b))
+	})
+
+	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
+	defer cancel()
+	deadline, _ := ctx.Deadline()
+
+	var errs []error
+	for i, ip := range ips {
+		timeout := max(time.Until(deadline)/time.Duration(len(ips)-i), minAddressDialTimeout)
+		attemptCtx, attemptCancel := context.WithTimeout(ctx, timeout)
+		conn, err := dialContext(attemptCtx, network, net.JoinHostPort(ip, port))
+		attemptCancel()
+		if err == nil {
+			return conn, nil
+		}
+		errs = append(errs, err)
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	return nil, errors.Join(errs...)
+}
+
+func ipFamilyRank(ip string) int {
+	if parsed := net.ParseIP(ip); parsed != nil && parsed.To4() == nil {
+		return 0
+	}
+	return 1
+}
 
 // resolveWithServers resolves host against dnsServers, trying them in order and
 // returning every address from the first one that answers.
