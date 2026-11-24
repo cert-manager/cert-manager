@@ -673,8 +673,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		// The request in bundle1 has no NameConstraints extension, which is what
 		// the controller generates for a Certificate with nameConstraints when the
-		// feature gate is off. It must be kept: deleting it would make the
-		// controller build the same request again, forever.
+		// feature gate is off.
 		"should do nothing if the NameConstraints feature gate is off and the CertificateRequest has no NameConstraints extension": {
 			featuresFlags: map[featuregate.Feature]bool{
 				feature.NameConstraints: false,

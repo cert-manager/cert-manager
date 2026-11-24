@@ -2401,8 +2401,7 @@ func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
 
 // The controller only puts the NameConstraints extension in a CertificateRequest
 // if the NameConstraints feature gate is on. With the gate off, a Certificate
-// that has spec.nameConstraints must still match the request generated for it,
-// otherwise the request is rebuilt and mismatches again, forever.
+// that has spec.nameConstraints must still match the request generated for it.
 func Test_CurrentCertificateRequestMismatchesSpec_NameConstraints(t *testing.T) {
 	pk := testcrypto.MustCreatePEMPrivateKey(t)
 	issuerRef := cmmeta.IssuerReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"}

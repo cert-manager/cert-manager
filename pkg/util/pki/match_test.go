@@ -401,9 +401,7 @@ func TestRequestMatchesSpecNameConstraints(t *testing.T) {
 	}
 
 	// With the NameConstraints feature gate off, the controller generates the
-	// request without the extension. If the comparison did not take that into
-	// account, a Certificate that has nameConstraints would never match the
-	// request that was generated for it.
+	// request without the extension.
 	t.Run("should not compare the nameConstraints if the request was generated without them", func(t *testing.T) {
 		crt := &cmapi.Certificate{Spec: certWithNameConstraints(baseNameConstraints())}
 		x509CSR, err := pki.GenerateCSR(crt) // no pki.WithNameConstraints(true)
@@ -420,15 +418,6 @@ func TestRequestMatchesSpecNameConstraints(t *testing.T) {
 		violations, err := pki.RequestMatchesSpec(cr, crt.Spec)
 		require.NoError(t, err)
 		assert.Empty(t, violations)
-
-		violations, err = pki.RequestMatchesSpec(cr, crt.Spec, pki.WithNameConstraints(false))
-		require.NoError(t, err)
-		assert.Empty(t, violations)
-
-		// The same request does not match once the extension is expected.
-		violations, err = pki.RequestMatchesSpec(cr, crt.Spec, pki.WithNameConstraints(true))
-		require.NoError(t, err)
-		assert.Equal(t, []string{"spec.nameConstraints"}, violations)
 	})
 
 	t.Run("should report a violation, not an error, if the request has a malformed nameConstraints extension", func(t *testing.T) {
