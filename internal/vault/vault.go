@@ -85,6 +85,10 @@ func (w *vaultClientWrapper) Write(path string, data map[string]any) (*vault.Sec
 // mountPath, in the form that Write expects. Write prepends "/v1/" itself, so
 // the "/v1" prefix of a mount path such as the default "/v1/auth/aws" must be
 // dropped, otherwise the login request goes to "/v1/v1/auth/aws/login".
+//
+// A mount path without the "/v1" prefix, such as "auth/aws", is accepted too. As
+// a result a mount whose own name starts with "v1/" has to be written with the
+// prefix, for example "/v1/v1/aws", because "v1/aws" is read as "/v1/aws".
 func awsLoginPath(mountPath string) string {
 	loginPath := path.Join(mountPath, "login")
 	return strings.TrimPrefix(strings.TrimPrefix(loginPath, "/"), "v1/")
