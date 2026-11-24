@@ -1906,6 +1906,110 @@ func TestSignIntegration(t *testing.T) {
 	require.NotEmpty(t, caPEM)
 }
 
+// TestCloseIntegration demonstrates that Close revokes a token issued by a
+// Vault login, in the Vault namespace it was issued in, and leaves a token from
+// tokenSecretRef alone.
+func TestCloseIntegration(t *testing.T) {
+	const (
+		loginToken     = "login-token"
+		secretToken    = "secret-token"
+		vaultNamespace = "vault-ns-1"
+	)
+
+	tests := map[string]struct {
+		auth          cmapiv1.VaultAuth
+		revokeStatus  int
+		expectRevoked []string
+	}{
+		"token issued by a login is revoked": {
+			auth: cmapiv1.VaultAuth{
+				AppRole: &cmapiv1.VaultAppRole{
+					RoleId: "my-role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						Name: "secret1",
+						Key:  "key1",
+					},
+				},
+			},
+			revokeStatus:  http.StatusNoContent,
+			expectRevoked: []string{loginToken},
+		},
+		"failed revocation is ignored": {
+			auth: cmapiv1.VaultAuth{
+				AppRole: &cmapiv1.VaultAppRole{
+					RoleId: "my-role-id",
+					SecretRef: cmmeta.SecretKeySelector{
+						Name: "secret1",
+						Key:  "key1",
+					},
+				},
+			},
+			revokeStatus:  http.StatusForbidden,
+			expectRevoked: []string{loginToken},
+		},
+		"token from tokenSecretRef is not revoked": {
+			auth: cmapiv1.VaultAuth{
+				TokenSecretRef: &cmmeta.SecretKeySelector{
+					Name: "secret1",
+					Key:  "key1",
+				},
+			},
+			revokeStatus:  http.StatusNoContent,
+			expectRevoked: nil,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var revoked []string
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("/v1/auth/approle/login", func(response http.ResponseWriter, _ *http.Request) {
+				_, err := fmt.Fprintf(response, `{"auth":{"client_token":%q}}`, loginToken)
+				assert.NoError(t, err)
+			})
+			mux.HandleFunc("/v1/auth/token/revoke-self", func(response http.ResponseWriter, request *http.Request) {
+				assert.Equal(t, http.MethodPost, request.Method)
+				assert.Equal(t, vaultNamespace, request.Header.Get("X-Vault-Namespace"))
+				revoked = append(revoked, request.Header.Get("X-Vault-Token"))
+				response.WriteHeader(test.revokeStatus)
+			})
+			server := httptest.NewServer(mux)
+			defer server.Close()
+
+			v, err := New(
+				t.Context(),
+				"k8s-ns1",
+				func(ns string) CreateToken { return nil },
+				listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+					listers.SetFakeSecretNamespaceListerGet(
+						&corev1.Secret{
+							Data: map[string][]byte{
+								"key1": []byte(secretToken),
+							},
+						}, nil),
+				),
+				&cmapiv1.Issuer{
+					Name:      "issuer1",
+					Namespace: "k8s-ns1",
+					Spec: cmapiv1.IssuerSpec{
+						IssuerConfig: cmapiv1.IssuerConfig{
+							Vault: &cmapiv1.VaultIssuer{
+								Server:    server.URL,
+								Namespace: vaultNamespace,
+								Auth:      test.auth,
+							},
+						},
+					},
+				}, false)
+			require.NoError(t, err)
+
+			v.Close(t.Context())
+			assert.Equal(t, test.expectRevoked, revoked)
+		})
+	}
+}
+
 // TestExportedFunctionsDoNotLeakResponseBodies pins the invariant that the
 // exported surface of this package never returns an error carrying a response
 // body chosen by whatever spec.vault.server points at. Callers render these

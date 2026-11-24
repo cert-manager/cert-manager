@@ -99,6 +99,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 		return nil, err // Return error to requeue and retry
 	}
+	defer client.Close(ctx)
 
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 	certPem, caPem, err := client.Sign(cr.Spec.Request, certDuration)
