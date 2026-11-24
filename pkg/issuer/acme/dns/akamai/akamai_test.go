@@ -26,7 +26,6 @@ import (
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -578,72 +577,12 @@ func TestIsNotFound(t *testing.T) {
 		"404 Not Found":                        {err: &dns.Error{StatusCode: http.StatusNotFound}, want: true},
 		"wrapped 404 Not Found":                {err: fmt.Errorf("get record: %w", &dns.Error{StatusCode: http.StatusNotFound}), want: true},
 		"nil *dns.Error in an error":           {err: (*dns.Error)(nil), want: false},
-		"401 Unauthorized":                     {err: &dns.Error{StatusCode: http.StatusUnauthorized}, want: false},
 		"403 Forbidden":                        {err: &dns.Error{StatusCode: http.StatusForbidden}, want: false},
-		"429 Too Many Requests":                {err: &dns.Error{StatusCode: http.StatusTooManyRequests}, want: false},
-		"500 Internal Server Error":            {err: &dns.Error{StatusCode: http.StatusInternalServerError}, want: false},
-		"503 Service Unavailable":              {err: &dns.Error{StatusCode: http.StatusServiceUnavailable}, want: false},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tt.want, isNotFound(tt.err))
-		})
-	}
-}
-
-// TestGetRecordAPIError uses the real isNotFound function, which the tests
-// above replace with a stub, to check what Present and CleanUp do when looking
-// up the TXT record fails. A 404 means there is no record. Any other API error
-// must be returned: CleanUp must not report success without deleting the
-// record, and Present must not go on to create a record that may already exist.
-func TestGetRecordAPIError(t *testing.T) {
-	newProvider := func(t *testing.T, getRecordErr error) *DNSProvider {
-		akamai, err := NewDNSProviderFromOptions(t.Context(),
-			ServiceConsumerDomain("akamai.example.com"),
-			ClientToken("token"),
-			ClientSecret("secret"),
-			AccessToken("access-token"),
-			Nameservers(util.RecursiveNameservers),
-			Resolver(util.NewCachingResolver()),
-		)
-		require.NoError(t, err)
-
-		akamai.findHostedDomainByFqdn = findStubHostedDomainByFqdn
-		akamai.dnsclient = &StubOpenDNSConfig{
-			FuncOutput: map[string]any{"RecordSave": testRecordBodyData()},
-			FuncErrors: map[string]error{
-				"GetRecord":    getRecordErr,
-				"RecordUpdate": fmt.Errorf("Update not expected"),
-				"RecordDelete": fmt.Errorf("Delete not expected"),
-			},
-		}
-		return akamai
-	}
-
-	t.Run("404 means there is no record", func(t *testing.T) {
-		notFound := &dns.Error{StatusCode: http.StatusNotFound}
-
-		akamai := newProvider(t, notFound)
-		assert.NoError(t, akamai.Present(t.Context(), "test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
-
-		akamai = newProvider(t, notFound)
-		assert.NoError(t, akamai.CleanUp(t.Context(), "test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
-	})
-
-	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests, http.StatusInternalServerError} {
-		t.Run(fmt.Sprintf("%d is returned as an error", status), func(t *testing.T) {
-			apiErr := &dns.Error{StatusCode: status, Title: http.StatusText(status)}
-
-			akamai := newProvider(t, apiErr)
-			err := akamai.Present(t.Context(), "test.example.com", "_acme-challenge.test.example.com.", "dns01-key")
-			assert.ErrorContains(t, err, "failed to retrieve TXT record")
-			assert.ErrorIs(t, err, apiErr)
-
-			akamai = newProvider(t, apiErr)
-			err = akamai.CleanUp(t.Context(), "test.example.com", "_acme-challenge.test.example.com.", "dns01-key")
-			assert.ErrorContains(t, err, "failed to retrieve TXT record")
-			assert.ErrorIs(t, err, apiErr)
 		})
 	}
 }

@@ -289,10 +289,8 @@ func containsValue(values []string, value string) bool {
 	return false
 }
 
-// isNotFound reports whether err is the Akamai API telling us that the record
-// does not exist. Every non-200 response from the API is returned as a
-// *dns.Error, so the status code has to be checked: a 401, 403, 429 or 5xx
-// does not say anything about whether the record exists.
+// isNotFound reports whether err is a 404 from the Akamai API. The SDK returns
+// every non-200 response as a *dns.Error, so the type alone is not enough.
 func isNotFound(err error) bool {
 	var apiErr *dns.Error
 	// errors.As also matches a nil *dns.Error stored in the error.
