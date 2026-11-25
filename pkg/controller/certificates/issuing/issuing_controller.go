@@ -259,7 +259,9 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 
 	// Verify the CSR options match what is requested in certificate.spec.
 	// If there are violations in the spec, then the requestmanager will handle this.
-	requestViolations, err := utilpki.RequestMatchesSpec(req, crt.Spec)
+	requestViolations, err := utilpki.RequestMatchesSpec(req, crt.Spec,
+		utilpki.WithNameConstraints(utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints)),
+	)
 	if err != nil {
 		return err
 	}

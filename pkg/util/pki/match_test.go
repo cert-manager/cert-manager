@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"testing"
 
@@ -268,6 +269,174 @@ func TestCertificateRequestOtherNamesMatchSpec(t *testing.T) {
 			assert.Equal(t, test.violations, violations, "violations did not match")
 		})
 	}
+}
+
+func TestRequestMatchesSpecNameConstraints(t *testing.T) {
+	certWithNameConstraints := func(nameConstraints *cmapi.NameConstraints) cmapi.CertificateSpec {
+		return cmapi.CertificateSpec{
+			CommonName:      "cn",
+			IsCA:            true,
+			NameConstraints: nameConstraints,
+		}
+	}
+
+	baseNameConstraints := func() *cmapi.NameConstraints {
+		return &cmapi.NameConstraints{
+			Critical: true,
+			Permitted: &cmapi.NameConstraintItem{
+				DNSDomains:     []string{"example.com", "example.org"},
+				IPRanges:       []string{"10.0.0.0/8", "2001:db8::/32"},
+				EmailAddresses: []string{"example.com"},
+				URIDomains:     []string{".example.com"},
+			},
+			Excluded: &cmapi.NameConstraintItem{
+				DNSDomains: []string{"internal.example.com"},
+				IPRanges:   []string{"10.1.0.0/16"},
+			},
+		}
+	}
+
+	tests := map[string]struct {
+		requested  *cmapi.NameConstraints
+		spec       *cmapi.NameConstraints
+		violations []string
+	}{
+		"should not report a violation if neither the request nor the Certificate has nameConstraints": {
+			requested: nil,
+			spec:      nil,
+		},
+		"should not report a violation if the nameConstraints match": {
+			requested: baseNameConstraints(),
+			spec:      baseNameConstraints(),
+		},
+		"should not report a violation if the nameConstraints match with a different order": {
+			requested: baseNameConstraints(),
+			spec: &cmapi.NameConstraints{
+				Critical: true,
+				Permitted: &cmapi.NameConstraintItem{
+					DNSDomains:     []string{"example.org", "example.com"},
+					IPRanges:       []string{"2001:db8::/32", "10.0.0.0/8"},
+					EmailAddresses: []string{"example.com"},
+					URIDomains:     []string{".example.com"},
+				},
+				Excluded: &cmapi.NameConstraintItem{
+					DNSDomains: []string{"internal.example.com"},
+					IPRanges:   []string{"10.1.0.0/16"},
+				},
+			},
+		},
+		"should report a violation if nameConstraints were added to the Certificate": {
+			requested:  nil,
+			spec:       baseNameConstraints(),
+			violations: []string{"spec.nameConstraints"},
+		},
+		"should report a violation if nameConstraints were removed from the Certificate": {
+			requested:  baseNameConstraints(),
+			spec:       nil,
+			violations: []string{"spec.nameConstraints"},
+		},
+		"should report a violation if a permitted DNS domain changed": {
+			requested: baseNameConstraints(),
+			spec: func() *cmapi.NameConstraints {
+				nc := baseNameConstraints()
+				nc.Permitted.DNSDomains = []string{"example.com", "example.net"}
+				return nc
+			}(),
+			violations: []string{"spec.nameConstraints"},
+		},
+		"should report a violation if an excluded IP range changed": {
+			requested: baseNameConstraints(),
+			spec: func() *cmapi.NameConstraints {
+				nc := baseNameConstraints()
+				nc.Excluded.IPRanges = []string{"10.2.0.0/16"}
+				return nc
+			}(),
+			violations: []string{"spec.nameConstraints"},
+		},
+		"should report a violation if a constraint moved from permitted to excluded": {
+			requested: baseNameConstraints(),
+			spec: func() *cmapi.NameConstraints {
+				nc := baseNameConstraints()
+				nc.Permitted.EmailAddresses = nil
+				nc.Excluded.EmailAddresses = []string{"example.com"}
+				return nc
+			}(),
+			violations: []string{"spec.nameConstraints"},
+		},
+		"should report a violation if only critical changed": {
+			requested: baseNameConstraints(),
+			spec: func() *cmapi.NameConstraints {
+				nc := baseNameConstraints()
+				nc.Critical = false
+				return nc
+			}(),
+			violations: []string{"spec.nameConstraints"},
+		},
+		// GenerateCSR does not encode a NameConstraints extension if there is
+		// nothing to constrain, whatever critical says.
+		"should not report a violation for a critical nameConstraints without entries if the request has no extension": {
+			requested: nil,
+			spec:      &cmapi.NameConstraints{Critical: true},
+		},
+		// The webhook rejects an invalid CIDR, so this can only happen to a
+		// Certificate that got past it. It must not make RequestMatchesSpec
+		// fail, because the callers treat an error as an undecodable request.
+		"should report a violation, not an error, if the Certificate has an invalid CIDR": {
+			requested: baseNameConstraints(),
+			spec: &cmapi.NameConstraints{
+				Permitted: &cmapi.NameConstraintItem{IPRanges: []string{"10.0.0.0"}},
+			},
+			violations: []string{"spec.nameConstraints"},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			cr := mustBuildCertificateRequest(t, &cmapi.Certificate{Spec: certWithNameConstraints(test.requested)})
+
+			violations, err := pki.RequestMatchesSpec(cr, certWithNameConstraints(test.spec), pki.WithNameConstraints(true))
+			require.NoError(t, err)
+			assert.Equal(t, test.violations, violations)
+		})
+	}
+
+	// With the NameConstraints feature gate off, the controller generates the
+	// request without the extension.
+	t.Run("should not compare the nameConstraints if the request was generated without them", func(t *testing.T) {
+		crt := &cmapi.Certificate{Spec: certWithNameConstraints(baseNameConstraints())}
+		x509CSR, err := pki.GenerateCSR(crt) // no pki.WithNameConstraints(true)
+		require.NoError(t, err)
+		csrPEM, _, err := gen.CSR(x509CSR.PublicKeyAlgorithm, func(csr *x509.CertificateRequest) error {
+			*csr = *x509CSR
+			return nil
+		})
+		require.NoError(t, err)
+		cr := &cmapi.CertificateRequest{
+			Spec: cmapi.CertificateRequestSpec{Request: csrPEM, IsCA: crt.Spec.IsCA},
+		}
+
+		violations, err := pki.RequestMatchesSpec(cr, crt.Spec)
+		require.NoError(t, err)
+		assert.Empty(t, violations)
+	})
+
+	t.Run("should report a violation, not an error, if the request has a malformed nameConstraints extension", func(t *testing.T) {
+		spec := certWithNameConstraints(nil)
+		csrPEM, _, err := gen.CSRForCertificate(&cmapi.Certificate{Spec: spec}, func(csr *x509.CertificateRequest) error {
+			csr.ExtraExtensions = append(csr.ExtraExtensions, pkix.Extension{
+				Id:    pki.OIDExtensionNameConstraints,
+				Value: []byte{0x30, 0x00}, // an empty SEQUENCE, which is not a valid NameConstraints
+			})
+			return nil
+		})
+		require.NoError(t, err)
+
+		violations, err := pki.RequestMatchesSpec(&cmapi.CertificateRequest{
+			Spec: cmapi.CertificateRequestSpec{Request: csrPEM, IsCA: spec.IsCA},
+		}, spec, pki.WithNameConstraints(true))
+		require.NoError(t, err)
+		assert.Equal(t, []string{"spec.nameConstraints"}, violations)
+	})
 }
 
 func TestRequestMatchesSpecSubject(t *testing.T) {

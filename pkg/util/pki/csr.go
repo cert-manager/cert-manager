@@ -346,30 +346,13 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 		extraExtensions = append(extraExtensions, basicExtension)
 	}
 
-	if opts.EncodeNameConstraints && crt.Spec.NameConstraints != nil {
-		nameConstraints := &NameConstraints{}
-
-		if crt.Spec.NameConstraints.Permitted != nil {
-			nameConstraints.PermittedDNSDomains = crt.Spec.NameConstraints.Permitted.DNSDomains
-			nameConstraints.PermittedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Permitted.IPRanges)
-			if err != nil {
-				return nil, err
-			}
-			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
-			nameConstraints.PermittedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
+	if opts.EncodeNameConstraints {
+		nameConstraints, err := nameConstraintsFromSpec(crt.Spec.NameConstraints)
+		if err != nil {
+			return nil, err
 		}
 
-		if crt.Spec.NameConstraints.Excluded != nil {
-			nameConstraints.ExcludedDNSDomains = crt.Spec.NameConstraints.Excluded.DNSDomains
-			nameConstraints.ExcludedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Excluded.IPRanges)
-			if err != nil {
-				return nil, err
-			}
-			nameConstraints.ExcludedEmailAddresses = crt.Spec.NameConstraints.Excluded.EmailAddresses
-			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Excluded.URIDomains
-		}
-
-		if !nameConstraints.IsEmpty() {
+		if nameConstraints != nil {
 			extension, err := MarshalNameConstraints(nameConstraints, crt.Spec.NameConstraints.Critical)
 			if err != nil {
 				return nil, err
@@ -391,6 +374,44 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 	}
 
 	return cr, nil
+}
+
+// nameConstraintsFromSpec converts the nameConstraints of a Certificate into
+// the constraints that GenerateCSR encodes in the CSR. It returns nil if the
+// spec has nothing to encode.
+func nameConstraintsFromSpec(spec *v1.NameConstraints) (*NameConstraints, error) {
+	if spec == nil {
+		return nil, nil
+	}
+
+	var err error
+	nameConstraints := &NameConstraints{}
+
+	if spec.Permitted != nil {
+		nameConstraints.PermittedDNSDomains = spec.Permitted.DNSDomains
+		nameConstraints.PermittedIPRanges, err = parseCIDRs(spec.Permitted.IPRanges)
+		if err != nil {
+			return nil, err
+		}
+		nameConstraints.PermittedEmailAddresses = spec.Permitted.EmailAddresses
+		nameConstraints.PermittedURIDomains = spec.Permitted.URIDomains
+	}
+
+	if spec.Excluded != nil {
+		nameConstraints.ExcludedDNSDomains = spec.Excluded.DNSDomains
+		nameConstraints.ExcludedIPRanges, err = parseCIDRs(spec.Excluded.IPRanges)
+		if err != nil {
+			return nil, err
+		}
+		nameConstraints.ExcludedEmailAddresses = spec.Excluded.EmailAddresses
+		nameConstraints.ExcludedURIDomains = spec.Excluded.URIDomains
+	}
+
+	if nameConstraints.IsEmpty() {
+		return nil, nil
+	}
+
+	return nameConstraints, nil
 }
 
 // SignCertificate returns a signed *x509.Certificate given a template

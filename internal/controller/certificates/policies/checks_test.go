@@ -25,11 +25,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/pem"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
@@ -2427,4 +2430,46 @@ func Test_SecretCertificateNameAnnotationsMismatch(t *testing.T) {
 			assert.Equal(t, test.expViolation, gotViolation)
 		})
 	}
+}
+
+// The controller only puts the NameConstraints extension in a CertificateRequest
+// if the NameConstraints feature gate is on. With the gate off, a Certificate
+// that has spec.nameConstraints must still match the request generated for it.
+func Test_CurrentCertificateRequestMismatchesSpec_NameConstraints(t *testing.T) {
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	issuerRef := cmmeta.IssuerReference{Name: "testissuer", Kind: "IssuerKind", Group: "group.example.com"}
+	crt := &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+		CommonName: "example.com",
+		IsCA:       true,
+		IssuerRef:  issuerRef,
+		NameConstraints: &cmapi.NameConstraints{
+			Permitted: &cmapi.NameConstraintItem{DNSDomains: []string{"example.com"}},
+		},
+	}}
+	input := Input{
+		Certificate: crt,
+		CurrentRevisionRequest: &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
+			IsCA:      true,
+			IssuerRef: issuerRef,
+			// Like the request the controller generates with the feature gate off,
+			// this one does not have the NameConstraints extension.
+			Request: testcrypto.MustGenerateCSRImpl(t, pk, crt),
+		}},
+	}
+
+	t.Run("feature gate off", func(t *testing.T) {
+		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, false)
+
+		reason, message, mismatch := CurrentCertificateRequestMismatchesSpec(input)
+		assert.False(t, mismatch, "reason=%q message=%q", reason, message)
+	})
+
+	t.Run("feature gate on", func(t *testing.T) {
+		featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.NameConstraints, true)
+
+		reason, message, mismatch := CurrentCertificateRequestMismatchesSpec(input)
+		assert.True(t, mismatch)
+		assert.Equal(t, RequestChanged, reason)
+		assert.Equal(t, "Fields on existing CertificateRequest resource not up to date: [spec.nameConstraints]", message)
+	})
 }

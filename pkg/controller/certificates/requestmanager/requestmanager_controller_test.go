@@ -671,6 +671,81 @@ func TestProcessItem(t *testing.T) {
 					)), relaxedCertificateRequestMatcher),
 			},
 		},
+		// The request in bundle1 has no NameConstraints extension, which is what
+		// the controller generates for a Certificate with nameConstraints when the
+		// feature gate is off.
+		"should do nothing if the NameConstraints feature gate is off and the CertificateRequest has no NameConstraints extension": {
+			featuresFlags: map[featuregate.Feature]bool{
+				feature.NameConstraints: false,
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(5),
+				func(crt *cmapi.Certificate) {
+					crt.Spec.NameConstraints = &cmapi.NameConstraints{
+						Permitted: &cmapi.NameConstraintItem{DNSDomains: []string{"example.com"}},
+					}
+				},
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("random-value"),
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+				),
+			},
+		},
+		"should recreate the CertificateRequest if the NameConstraints feature gate is on and the CertificateRequest has no NameConstraints extension": {
+			featuresFlags: map[featuregate.Feature]bool{
+				feature.NameConstraints: true,
+			},
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: nextPrivateKeySecretMeta(bundle1.certificate, "exists"),
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(5),
+				func(crt *cmapi.Certificate) {
+					crt.Spec.NameConstraints = &cmapi.NameConstraints{
+						Permitted: &cmapi.NameConstraintItem{DNSDomains: []string{"example.com"}},
+					}
+				},
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestName("test-6"),
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+				),
+			},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-6"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test-6")),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestName("test-6"),
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
 		"should do nothing if request has an up to date CSR and it is still pending": {
 			secrets: []runtime.Object{
 				&corev1.Secret{

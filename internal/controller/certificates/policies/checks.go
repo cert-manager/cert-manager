@@ -36,8 +36,10 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -222,7 +224,9 @@ func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool)
 		return currentSecretValidForSpec(input)
 	}
 
-	violations, err := pki.RequestMatchesSpec(input.CurrentRevisionRequest, input.Certificate.Spec)
+	violations, err := pki.RequestMatchesSpec(input.CurrentRevisionRequest, input.Certificate.Spec,
+		pki.WithNameConstraints(utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints)),
+	)
 	if err != nil {
 		// If parsing the request fails, we don't immediately trigger a re-issuance as
 		// the existing certificate stored in the Secret may still be valid/up to date.

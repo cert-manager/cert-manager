@@ -165,7 +165,17 @@ func uriSlicesMatch(parsedURIs []*url.URL, stringURIs []string) bool {
 // and returns a list of field names on the Certificate that do not match their
 // counterpart fields on the CertificateRequest.
 // If decoding the x509 certificate request fails, an error will be returned.
-func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
+//
+// The options are the ones the request was generated with by GenerateCSR.
+// Only WithNameConstraints is used: unless it is enabled, the request cannot
+// contain the NameConstraints extension, so spec.nameConstraints is not
+// compared.
+func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec, optFuncs ...GenerateCSROption) ([]string, error) {
+	opts := &generateCSROptions{}
+	for _, opt := range optFuncs {
+		opt(opts)
+	}
+
 	x509req, err := DecodeX509CertificateRequestBytes(req.Spec.Request)
 	if err != nil {
 		return nil, err
@@ -203,6 +213,10 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		if !matched {
 			violations = append(violations, "spec.otherNames")
 		}
+	}
+
+	if opts.EncodeNameConstraints && !matchNameConstraints(x509req.Extensions, spec.NameConstraints) {
+		violations = append(violations, "spec.nameConstraints")
 	}
 
 	if spec.LiteralSubject == "" {
@@ -337,6 +351,61 @@ func matchOtherNames(extension []pkix.Extension, specOtherNames []cmapi.OtherNam
 	}
 
 	return true, nil
+}
+
+// matchNameConstraints reports whether the NameConstraints extension in
+// extensions is the one that GenerateCSR encodes for the given spec: either
+// both are absent, or both are present with the same criticality and the same
+// constraints, in any order.
+//
+// A spec that cannot be converted (for example one with an invalid CIDR, which
+// the webhook rejects) or an extension that cannot be parsed does not match:
+// the request was not encoded for this spec.
+func matchNameConstraints(extensions []pkix.Extension, spec *cmapi.NameConstraints) bool {
+	expected, err := nameConstraintsFromSpec(spec)
+	if err != nil {
+		return false
+	}
+
+	var actual *NameConstraints
+	var actualCritical bool
+	for _, extension := range extensions {
+		if !extension.Id.Equal(OIDExtensionNameConstraints) {
+			continue
+		}
+
+		actual, err = UnmarshalNameConstraints(extension.Value)
+		if err != nil {
+			return false
+		}
+		actualCritical = extension.Critical
+		break
+	}
+
+	if expected == nil || actual == nil {
+		return expected == nil && actual == nil
+	}
+
+	return spec.Critical == actualCritical && nameConstraintsEqualUnsorted(*expected, *actual)
+}
+
+func nameConstraintsEqualUnsorted(a, b NameConstraints) bool {
+	ipNetsToStrings := func(ipNets []*net.IPNet) []string {
+		strs := make([]string, 0, len(ipNets))
+		for _, ipNet := range ipNets {
+			strs = append(strs, ipNet.String())
+		}
+		return strs
+	}
+
+	return util.EqualUnsorted(a.PermittedDNSDomains, b.PermittedDNSDomains) &&
+		util.EqualUnsorted(ipNetsToStrings(a.PermittedIPRanges), ipNetsToStrings(b.PermittedIPRanges)) &&
+		util.EqualUnsorted(a.PermittedEmailAddresses, b.PermittedEmailAddresses) &&
+		util.EqualUnsorted(a.PermittedURIDomains, b.PermittedURIDomains) &&
+		util.EqualUnsorted(a.ExcludedDNSDomains, b.ExcludedDNSDomains) &&
+		util.EqualUnsorted(ipNetsToStrings(a.ExcludedIPRanges), ipNetsToStrings(b.ExcludedIPRanges)) &&
+		util.EqualUnsorted(a.ExcludedEmailAddresses, b.ExcludedEmailAddresses) &&
+		util.EqualUnsorted(a.ExcludedURIDomains, b.ExcludedURIDomains)
 }
 
 // FuzzyX509AltNamesMatchSpec will compare a X509 Certificate to a CertificateSpec
