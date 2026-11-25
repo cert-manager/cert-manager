@@ -129,50 +129,53 @@ $(bin_dir)/scratch/kyverno:
 	@mkdir -p $@
 
 # The commit of kyverno/policies to build the pod-security policies from.
-# Pinned because https://github.com/kyverno/policies/pull/1544 deleted pod-security/
-# from main; it was superseded by the CEL policies in pod-security-vpol/, see
-# https://github.com/kyverno/policies/issues/1543.
 #
-# This is the tip of the release-1.19 branch, one of the last commits that still
-# has pod-security/. The branch name does not matter: the pod-security/ bundle is
-# identical on every release branch from release-1.12 to release-1.19, and each
-# policy declares kyverno 1.6.0 as its minimum version. The release branches are
-# snapshots for the kyverno.io website, not compatibility boundaries. So this
-# does not need to change when the kyverno tool in modules/tools is bumped.
-kyverno_policies_version := ef9843f08d25b3555fe69616f8612c9f915af5d4
+# These are the CEL ValidatingPolicy resources in pod-security-vpol/. They
+# replaced the ClusterPolicy resources in pod-security/, which the kyverno CLI
+# refuses to load since v1.20.0. See https://github.com/kyverno/policies/issues/1543.
+#
+# kyverno/policies has no tags, so this is a commit on its main branch. The
+# policies declare kyverno 1.19.1 as their minimum version.
+kyverno_policies_version := 85554e1ef32b5b1dc83f22d0e26c11917df748b5
 
 # The version is part of the file name, so a change to it builds a new file
 # instead of reusing a stale cached one.
 kyverno_policy_file := $(bin_dir)/scratch/kyverno/pod-security-policy-$(kyverno_policies_version).yaml
 
+# The restricted bundle does not include the baseline bundle, so build both.
+# The file is written to a temporary name first, so a failed download does not
+# leave a partial file that Make would treat as up to date.
 $(kyverno_policy_file): | $(NEEDS_KUSTOMIZE) $(bin_dir)/scratch/kyverno
-	@$(KUSTOMIZE) build "https://github.com/kyverno/policies/pod-security/enforce?ref=$(kyverno_policies_version)" > $@
+	@{ $(KUSTOMIZE) build "https://github.com/kyverno/policies/pod-security-vpol/baseline?ref=$(kyverno_policies_version)" && \
+		echo "---" && \
+		$(KUSTOMIZE) build "https://github.com/kyverno/policies/pod-security-vpol/restricted?ref=$(kyverno_policies_version)"; \
+	} > $@.tmp
+	@mv $@.tmp $@
 
 # Extra arguments for kyverno apply.
 kyverno_apply_extra_args :=
 # Allows known policy violations to be skipped by supplying Kyverno policy
 # exceptions as a Kyverno YAML resource, e.g.:
-# apiVersion: kyverno.io/v2
+# apiVersion: policies.kyverno.io/v1
 # kind: PolicyException
 # metadata:
 #   name: pod-security-exceptions
 # spec:
-#   exceptions:
-#   - policyName: disallow-privilege-escalation
-#     ruleNames:
-#     - autogen-privilege-escalation
-#   - policyName: restrict-seccomp-strict
-#     ruleNames:
-#     - autogen-check-seccomp-strict
-#   match:
-#     any:
-#     - resources:
-#         kinds:
-#         - Deployment
-#         namespaces:
-#         - mynamespace
-#         names:
-#         - my-deployment
+#   policyRefs:
+#   - name: disallow-privilege-escalation
+#     kind: ValidatingPolicy
+#   - name: restrict-seccomp-strict
+#     kind: ValidatingPolicy
+#   matchConditions:
+#   - name: my-deployment
+#     expression: >-
+#       object.kind == 'Deployment' &&
+#       object.metadata.namespace == 'mynamespace' &&
+#       object.metadata.name == 'my-deployment'
+#
+# An exception applies to a whole policy. To allow only certain values or
+# images, see
+# https://github.com/kyverno/policies/blob/85554e1ef32b5b1dc83f22d0e26c11917df748b5/pod-security-vpol/EXCEPTIONS.md
 ifneq ("$(wildcard make/verify-pod-security-standards-exceptions.yaml)","")
 		kyverno_apply_extra_args += --exceptions make/verify-pod-security-standards-exceptions.yaml
 endif
