@@ -245,9 +245,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 		},
 		{
 			// The servers are tried in order and the first one answers, so the
-			// second is never reached. This previously expected both to be
-			// called, because every lookup rotated through the list instead of
-			// staying on a server that works.
+			// second is never reached.
 			name:             "two custom dns servers",
 			dnsServers:       []string{"127.0.0.1:15353", "127.0.0.1:15354"},
 			dnsServer1Called: true,
@@ -541,8 +539,20 @@ func TestReachabilityCustomDnsServersTriesEveryAddress(t *testing.T) {
 	u := startChallengeServer(t)
 	server := startDNSServer(t, answerHost(challengeHost, "127.0.0.1", "::1"), false)
 
+	var dialed []string
+	original := dialContext
+	dialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialed = append(dialed, addr)
+		return original(ctx, network, addr)
+	}
+	t.Cleanup(func() { dialContext = original })
+
 	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
 		t.Errorf("expected the self check to reach the IPv4 address, but got: %v", err)
+	}
+	want := []string{net.JoinHostPort("::1", u.Port()), net.JoinHostPort("127.0.0.1", u.Port())}
+	if !slices.Equal(dialed, want) {
+		t.Errorf("expected addresses to be dialed in order %v, but got %v", want, dialed)
 	}
 }
 
@@ -653,24 +663,11 @@ not-an-ip proxy.example.com
 // address is not sent to the configured DNS servers. There is nothing to
 // resolve, so an unresponsive server must not prevent the check from running.
 func TestReachabilityCustomDnsServersIPAddress(t *testing.T) {
-	const key = "the-expected-challenge-key"
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, key)
-	}))
-	defer server.Close()
-
-	u, err := url.Parse(server.URL)
-	if err != nil {
-		t.Fatalf("failed to parse test server URL %q: %v", server.URL, err)
-	}
-	if net.ParseIP(u.Hostname()) == nil {
-		t.Fatalf("expected the test server to listen on an IP address, got %q", u.Hostname())
-	}
+	u := startChallengeServer(t)
+	u.Host = net.JoinHostPort("127.0.0.1", u.Port())
 
 	// 127.0.0.1:1 is not listening, so any attempt to use it as a resolver fails.
-	err = testReachability(t.Context(), u, key, []string{"127.0.0.1:1"}, "cert-manager-test")
-	if err != nil {
+	if err := testReachability(t.Context(), u, challengeKey, []string{"127.0.0.1:1"}, "cert-manager-test"); err != nil {
 		t.Errorf("expected an IP address challenge to skip DNS resolution, but got: %v", err)
 	}
 }

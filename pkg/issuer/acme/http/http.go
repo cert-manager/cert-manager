@@ -292,8 +292,8 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 				return dialAddresses(ctx, network, port, []string{host})
 			}
 
-			// The Go resolver read /etc/hosts before asking DNS, which Pod
-			// hostAliases and a proxy host name from HTTP_PROXY rely on.
+			// /etc/hosts comes before DNS: Pod hostAliases and a proxy host
+			// name from HTTP_PROXY rely on it.
 			ips := lookupHostsFile(hostsFile, host)
 			if len(ips) == 0 {
 				ips, err = resolveWithServers(ctx, host, dnsServers)
@@ -347,14 +347,14 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 
 // dnsServerTimeout bounds each query to a configured DNS server. The whole self
 // check has 10 seconds, and every connection, including each redirect hop,
-// resolves again, so a dead server must not cost the default 2 seconds.
+// resolves again.
 const dnsServerTimeout = time.Second
 
 // hostsFile is a variable so that tests can point it at a temporary file.
 var hostsFile = "/etc/hosts"
 
 const (
-	// dialTimeout bounds the whole dial, as net.Dialer.Timeout does.
+	// dialTimeout bounds the whole dial, across every address.
 	dialTimeout           = 3 * time.Second
 	minAddressDialTimeout = time.Second
 )
@@ -362,11 +362,10 @@ const (
 // dialContext is a variable so that tests can observe each connection attempt.
 var dialContext = (&net.Dialer{}).DialContext
 
-// dialAddresses orders IPv6 first, as Go's resolver does on a host with an IPv6
-// route, and shares the time left among the addresses left, so that one that
-// drops packets cannot use up the whole timeout.
+// dialAddresses tries IPv6 addresses first and shares the time left among the
+// addresses left, so that one that drops packets cannot use up the whole
+// timeout.
 func dialAddresses(ctx context.Context, network, port string, ips []string) (net.Conn, error) {
-	ips = slices.Clone(ips)
 	slices.SortStableFunc(ips, func(a, b string) int {
 		return cmp.Compare(ipFamilyRank(a), ipFamilyRank(b))
 	})
@@ -401,13 +400,6 @@ func ipFamilyRank(ip string) int {
 
 // resolveWithServers resolves host against dnsServers, trying them in order and
 // returning every address from the first one that answers.
-//
-// The Go resolver cannot express this. Its Dial hook is handed one server at a
-// time and has no way to report that the server failed to answer: a UDP dial to
-// a host that drops packets still succeeds, so the lookup blocks until the dial
-// deadline instead of moving on. The resolver also runs the A and AAAA queries
-// in parallel, so any scheme that hands a different server to each call leaves
-// one lookup pointed at a server that may be dead.
 //
 // A server that does not answer, or answers with an error such as SERVFAIL, is
 // skipped. A server that answers but knows no address is not: that is an
@@ -460,11 +452,12 @@ func lookupHostOnServer(ctx context.Context, host, server string) ([]string, err
 
 // exchangeWithServer sends one query to server. Only a success or NXDOMAIN reply
 // counts as an answer; any other response code is returned as an error so that
-// the caller moves on to the next server, as the Go resolver does. A truncated
-// UDP reply is retried over TCP.
+// the caller moves on to the next server. A truncated UDP reply is retried over
+// TCP.
 func exchangeWithServer(ctx context.Context, host string, qtype uint16, server string) (*dns.Msg, error) {
 	msg := new(dns.Msg)
 	msg.SetQuestion(dns.Fqdn(host), qtype)
+	msg.SetEdns0(1232, false)
 	msg.RecursionDesired = true
 
 	client := &dns.Client{Net: "udp", Timeout: dnsServerTimeout}
