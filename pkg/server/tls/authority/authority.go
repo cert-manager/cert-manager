@@ -375,10 +375,6 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	if err != nil {
 		return err
 	}
-
-	if err != nil {
-		return err
-	}
 	cert := &x509.Certificate{
 		BasicConstraintsValid: true,
 		PublicKeyAlgorithm:    x509.ECDSA,
