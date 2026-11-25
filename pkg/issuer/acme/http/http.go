@@ -286,8 +286,6 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 				return nil, err
 			}
 
-			// A challenge can name an IP address rather than a hostname, in
-			// which case there is nothing to look up.
 			if net.ParseIP(host) != nil {
 				return dialAddresses(ctx, network, port, []string{host})
 			}
@@ -345,9 +343,8 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	return nil
 }
 
-// dnsServerTimeout bounds each query to a configured DNS server. The whole self
-// check has 10 seconds, and every connection, including each redirect hop,
-// resolves again.
+// dnsServerTimeout bounds each query to a configured DNS server, so that a dead
+// one does not use up the 10 second self check.
 const dnsServerTimeout = time.Second
 
 // hostsFile is a variable so that tests can point it at a temporary file.
