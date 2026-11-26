@@ -483,6 +483,7 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 			End:   &metav1.Time{Time: ariInfo.SuggestedWindow.End},
 		}
 		if existing != nil &&
+			ariStatus.LastError == "" &&
 			existing.Time.After(x509cert.NotBefore) &&
 			!existing.Time.Before(ariInfo.SuggestedWindow.Start) &&
 			!existing.Time.After(ariInfo.SuggestedWindow.End) {
@@ -499,9 +500,9 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 
 				break
 			}
+			ariStatus.LastError = ""
 		}
 
-		ariStatus.LastError = ""
 		ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, ariInfo.RetryAfter)}
 	}
 
