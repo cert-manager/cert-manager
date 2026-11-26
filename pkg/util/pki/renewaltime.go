@@ -205,8 +205,8 @@ func bsFindLatestWindowBeforeDesired(sched util.CronSchedule, minTime, maxTime t
 		return nil
 	}
 
-	// If the first instance that matches the cron is after the max bound then we don't have a earliest window before desired renewal.
-	if sched.Next(minTime.Add(-time.Second)).After(maxTime) {
+	// If the first instance that matches the cron does not exist or is after the max bound then we don't have a earliest window before desired renewal.
+	if first := sched.Next(minTime.Add(-time.Second)); first.IsZero() || first.After(maxTime) {
 		return nil
 	}
 
@@ -223,7 +223,7 @@ func bsFindLatestWindowBeforeDesired(sched util.CronSchedule, minTime, maxTime t
 		mid := low.Add(high.Sub(low) / 2)
 		next := sched.Next(mid)
 
-		if next.After(maxTime) {
+		if next.IsZero() || next.After(maxTime) {
 			high = mid
 		} else {
 			low = mid
@@ -231,7 +231,7 @@ func bsFindLatestWindowBeforeDesired(sched util.CronSchedule, minTime, maxTime t
 	}
 
 	last := sched.Next(low.Add(-time.Second))
-	if last.After(maxTime) {
+	if last.IsZero() || last.After(maxTime) {
 		return nil
 	}
 
@@ -243,7 +243,7 @@ func bsFindLatestWindowBeforeDesired(sched util.CronSchedule, minTime, maxTime t
 // if the desiredRenewalTime is in [lastStart, lastStart+duration) we just return that else we return lastStart+duration.
 func findBeforeDesired(cronSched util.CronSchedule, searchMin, searchMax, desiredRenewalTime time.Time, bestBefore *time.Time, duration time.Duration) *time.Time {
 	if desiredRenewalTime.Before(searchMin) {
-		return nil
+		return bestBefore
 	}
 	var beforeMax time.Time
 	if desiredRenewalTime.Before(searchMax) {
@@ -283,8 +283,8 @@ func findAfterDesired(cronSched util.CronSchedule, searchMin, searchMax, desired
 		afterMin = searchMin
 	}
 	start := cronSched.Next(afterMin.Add(-time.Second))
-	if start.After(searchMax) {
-		return nil
+	if start.IsZero() || start.After(searchMax) {
+		return bestAfter
 	}
 
 	end := start.Add(duration)
