@@ -448,9 +448,10 @@ func lookupHostOnServer(ctx context.Context, host, server string) ([]string, err
 }
 
 // exchangeWithServer sends one query to server. Only a success or NXDOMAIN reply
-// counts as an answer; any other response code is returned as an error so that
-// the caller moves on to the next server. A truncated UDP reply is retried over
-// TCP.
+// counts as an answer; any other response code, or an empty success from a
+// server that neither recurses nor is authoritative, is returned as an error so
+// that the caller moves on to the next server. A truncated UDP reply is retried
+// over TCP.
 func exchangeWithServer(ctx context.Context, host string, qtype uint16, server string) (*dns.Msg, error) {
 	msg := new(dns.Msg)
 	msg.SetQuestion(dns.Fqdn(host), qtype)
@@ -468,6 +469,9 @@ func exchangeWithServer(ctx context.Context, host string, qtype uint16, server s
 	}
 	if response.Rcode != dns.RcodeSuccess && response.Rcode != dns.RcodeNameError {
 		return nil, fmt.Errorf("server replied %s", dns.RcodeToString[response.Rcode])
+	}
+	if response.Rcode == dns.RcodeSuccess && len(response.Answer) == 0 && !response.Authoritative && !response.RecursionAvailable {
+		return nil, errors.New("server does not recurse and is not authoritative")
 	}
 	return response, nil
 }
