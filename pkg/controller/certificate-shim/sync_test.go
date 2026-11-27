@@ -1596,6 +1596,68 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:         "should update an existing Certificate resource with different Usages if they do not match those specified on the IngressLike",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.UsagesAnnotationKey:            "digital signature,server auth",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "cert-secret-name",
+						},
+					},
+				},
+			},
+			DefaultIssuerKind: "Issuer",
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-secret-name",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "cert-secret-name"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cert-secret-name",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageServerAuth},
+					},
+				},
+			},
+		},
+		{
 			Name:         "should not update an existing Certificate if there are no changes (testing elements that default to the nil pointer)",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
@@ -5615,6 +5677,93 @@ func Test_buildCertificates_doesNotMutateIngressLikeLabels(t *testing.T) {
 			// not show up on the (cached) input object.
 			crt.Labels["added-by-test"] = "should-not-leak"
 			assert.NotContains(t, test.ingLike.GetLabels(), "added-by-test", "Certificate labels alias the labels of the object passed to buildCertificates")
+		})
+	}
+}
+
+func Test_certNeedsUpdate(t *testing.T) {
+	base := func() *cmapi.Certificate {
+		return &cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{Name: "crt"},
+			Spec: cmapi.CertificateSpec{
+				DNSNames:   []string{"example.com"},
+				SecretName: "crt",
+				IssuerRef:  cmmeta.IssuerReference{Name: "issuer", Kind: "Issuer"},
+				Usages:     cmapi.DefaultKeyUsages(),
+			},
+		}
+	}
+
+	tests := map[string]struct {
+		mutateExisting func(crt *cmapi.Certificate)
+		mutate         func(crt *cmapi.Certificate)
+		wantUpdate     bool
+	}{
+		"identical certificates do not need an update": {
+			mutate:     func(*cmapi.Certificate) {},
+			wantUpdate: false,
+		},
+		"nil and empty subject do not need an update": {
+			mutateExisting: func(crt *cmapi.Certificate) {
+				crt.Spec.Subject = &cmapi.X509Subject{}
+			},
+			mutate:     func(*cmapi.Certificate) {},
+			wantUpdate: false,
+		},
+		"different usages need an update": {
+			mutate: func(crt *cmapi.Certificate) {
+				crt.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageServerAuth}
+			},
+			wantUpdate: true,
+		},
+		"usages in a different order need an update": {
+			mutate: func(crt *cmapi.Certificate) {
+				usages := cmapi.DefaultKeyUsages()
+				usages[0], usages[1] = usages[1], usages[0]
+				crt.Spec.Usages = usages
+			},
+			wantUpdate: true,
+		},
+		"different subject needs an update": {
+			mutate: func(crt *cmapi.Certificate) {
+				crt.Spec.Subject = &cmapi.X509Subject{Organizations: []string{"example"}}
+			},
+			wantUpdate: true,
+		},
+		"subject with different organizational units needs an update": {
+			mutateExisting: func(crt *cmapi.Certificate) {
+				crt.Spec.Subject = &cmapi.X509Subject{Organizations: []string{"example"}}
+			},
+			mutate: func(crt *cmapi.Certificate) {
+				crt.Spec.Subject = &cmapi.X509Subject{Organizations: []string{"example"}, OrganizationalUnits: []string{"ou"}}
+			},
+			wantUpdate: true,
+		},
+		"different email addresses need an update": {
+			mutate: func(crt *cmapi.Certificate) {
+				crt.Spec.EmailAddresses = []string{"admin@example.com"}
+			},
+			wantUpdate: true,
+		},
+		"different renewBeforePercentage needs an update": {
+			mutate: func(crt *cmapi.Certificate) {
+				crt.Spec.RenewBeforePercentage = new(int32(50))
+			},
+			wantUpdate: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			existing := base()
+			if test.mutateExisting != nil {
+				test.mutateExisting(existing)
+			}
+			desired := base()
+			test.mutate(desired)
+
+			assert.Equal(t, test.wantUpdate, certNeedsUpdate(existing, desired), "existing -> desired")
+			assert.Equal(t, test.wantUpdate, certNeedsUpdate(desired, existing), "desired -> existing")
 		})
 	}
 }
