@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -87,6 +88,9 @@ func TestIssuingController(t *testing.T) {
 		// otherwise wires up to return a valid temporary certificate.
 		localTemporarySigner localTemporarySignerFn
 
+		// featureGates, if set, are applied for this case only.
+		featureGates map[featuregate.Feature]bool
+
 		expectedErr bool
 	}
 
@@ -112,6 +116,16 @@ func TestIssuingController(t *testing.T) {
 			LastTransitionTime: &metaFixedClockStart,
 		}),
 	)
+
+	// withNameConstraints adds spec.nameConstraints. The requests in
+	// exampleBundle have no NameConstraints extension, which is what the
+	// requestmanager builds for such a Certificate when the NameConstraints
+	// feature gate is off.
+	withNameConstraints := func(crt *cmapi.Certificate) {
+		crt.Spec.NameConstraints = &cmapi.NameConstraints{
+			Permitted: &cmapi.NameConstraintItem{DNSDomains: []string{"example.com"}},
+		}
+	}
 
 	// incompleteRequest builds the state this fix is about: a
 	// CertificateRequest for the revision being issued that has a failureTime
@@ -927,6 +941,77 @@ func TestIssuingController(t *testing.T) {
 				IssuerName:      "ca-issuer",
 				IssuerKind:      "Issuer",
 				IssuerGroup:     "foo.io",
+			},
+			expectedErr: false,
+		},
+
+		"if certificate with nameConstraints is in Issuing state, the NameConstraints feature gate is off, and the ready CertificateRequest has no NameConstraints extension, store the signed certificate": {
+			featureGates: map[featuregate.Feature]bool{feature.NameConstraints: false},
+			certificate:  exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert, withNameConstraints),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateRevision(2),
+							withNameConstraints,
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing The certificate has been successfully issued",
+				},
+			},
+			expSecretUpdateDataCall: &internal.SecretData{
+				Certificate:     exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:      exampleBundle.PrivateKeyBytes,
+				CA:              nil,
+				CertificateName: "test",
+				IssuerName:      "ca-issuer",
+				IssuerKind:      "Issuer",
+				IssuerGroup:     "foo.io",
+			},
+			expectedErr: false,
+		},
+
+		"if certificate with nameConstraints is in Issuing state, the NameConstraints feature gate is on, and the ready CertificateRequest has no NameConstraints extension, do nothing": {
+			featureGates: map[featuregate.Feature]bool{feature.NameConstraints: true},
+			certificate:  exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert, withNameConstraints),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: nextPrivateKeySecretMeta(exampleBundle.Certificate),
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
 			},
 			expectedErr: false,
 		},
@@ -1850,6 +1935,9 @@ func TestIssuingController(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			for f, enabled := range test.featureGates {
+				featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, f, enabled)
+			}
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
 			test.builder.T = t
