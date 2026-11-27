@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"math/big"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"testing/synctest"
@@ -1675,5 +1676,197 @@ func TestScheduleRecheckAtExpiry(t *testing.T) {
 				}
 			})
 		})
+	}
+}
+
+// TestProcessItemARILastErrorPersistence verifies that status.acme.ari.lastError
+// is not cleared prematurely on subsequent ARI polls while the error condition persists,
+// and is only cleared once a renewal time calculation succeeds.
+func TestProcessItemARILastErrorPersistence(t *testing.T) {
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.ACMEUseARI, true)
+
+	now := time.Now().UTC().Truncate(time.Second)
+	metaHourAgo := metav1.NewTime(now.Add(-time.Hour))
+
+	leaf, leafCertID := mustLeafWithAKI(t, now.Add(-time.Hour), now.Add(89*24*time.Hour), 42)
+	leafPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leaf.Raw})
+
+	windowStart := now.Add(60 * 24 * time.Hour)
+	windowEnd := now.Add(65 * 24 * time.Hour)
+	ariFallbackTime := metav1.NewTime(now.Add(62 * 24 * time.Hour))
+	successfulTime := metav1.NewTime(now.Add(30 * 24 * time.Hour))
+
+	crt := &cmapi.Certificate{
+		Namespace: "testns",
+		Name:      "test",
+		Spec: cmapi.CertificateSpec{
+			SecretName: "test-secret",
+			DNSNames:   []string{"example.com"},
+			IssuerRef: cmmeta.IssuerReference{
+				Name:  "test-issuer",
+				Kind:  cmapi.IssuerKind,
+				Group: "cert-manager.io",
+			},
+		},
+		Status: cmapi.CertificateStatus{
+			Conditions: []cmapi.CertificateCondition{{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaHourAgo,
+			}},
+			NotBefore: &metav1.Time{Time: leaf.NotBefore},
+			NotAfter:  &metav1.Time{Time: leaf.NotAfter},
+			ACME: &cmapi.CertificateACMEStatus{
+				ARI: &cmapi.CertificateACMEARIStatus{
+					CertID:      leafCertID,
+					LastChecked: &metaHourAgo,
+					NextCheck:   &metaHourAgo, // due for ARI fetch
+				},
+			},
+		},
+	}
+
+	issuer := gen.Issuer("test-issuer",
+		gen.SetIssuerNamespace("testns"),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{
+			RenewalInformationSource: cmacme.ACMERenewalInformationSourceARI,
+		}),
+	)
+	secret := gen.Secret("test-secret",
+		gen.SetSecretNamespace("testns"),
+		gen.SetSecretAnnotations(map[string]string{
+			cmapi.IssuerNameAnnotationKey:  "test-issuer",
+			cmapi.IssuerKindAnnotationKey:  cmapi.IssuerKind,
+			cmapi.IssuerGroupAnnotationKey: "cert-manager.io",
+		}),
+		gen.SetSecretData(map[string][]byte{corev1.TLSCertKey: leafPEM}),
+	)
+
+	fakeClock := fakeclock.NewFakeClock(now)
+	builder := &testpkg.Builder{
+		T:                  t,
+		Clock:              fakeClock,
+		CertManagerObjects: []runtime.Object{crt, issuer},
+		KubeObjects:        []runtime.Object{secret},
+	}
+	builder.Init()
+	defer builder.Stop()
+
+	w := &controllerWrapper{}
+	if _, _, err := w.Register(builder.Context); err != nil {
+		t.Fatal(err)
+	}
+	w.controller.policyEvaluator = policyEvaluatorBuilder(cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionReady,
+		Status:  cmmeta.ConditionTrue,
+		Reason:  ReadyReason,
+		Message: "ready message",
+	})
+	recorder := new(testpkg.FakeRecorder)
+	w.controller.recorder = recorder
+
+	var fetches int
+	w.controller.accountRegistry = &accountstest.FakeRegistry{
+		GetClientFunc: func(string) (acmecl.Interface, error) {
+			return &acmecl.FakeACME{
+				FakeGetRenewalInfo: func(context.Context, *x509.Certificate) (*acmeapi.RenewalInfoResponse, error) {
+					fetches++
+					return &acmeapi.RenewalInfoResponse{
+						SuggestedWindow: acmeapi.RenewalInfoWindow{
+							Start: windowStart,
+							End:   windowEnd,
+						},
+						ExplanationURL: "example.com/explanation",
+						RetryAfter:     24 * time.Hour,
+					}, nil
+				},
+			}, nil
+		},
+	}
+
+	calcErr := errors.New("cannot find a time with the given windows")
+	var returnErr error = calcErr
+	w.controller.renewalTimeCalculator = func(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *cmapi.CertificateRenewal, opts ...pki.RenewalTimeOptions) (*metav1.Time, error) {
+		if returnErr != nil {
+			return &ariFallbackTime, returnErr
+		}
+		return &successfulTime, nil
+	}
+
+	builder.Start()
+	key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
+
+	// --- Phase 1: Reconcile with ARI fetch where calculation fails ---
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("Phase 1: ProcessItem() error = %v", err)
+	}
+	if fetches != 1 {
+		t.Errorf("Phase 1: fetches = %d, want 1", fetches)
+	}
+	p1Crt, err := builder.CMClient.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Phase 1: failed to get cert: %v", err)
+	}
+	if p1Crt.Status.ACME == nil || p1Crt.Status.ACME.ARI == nil || p1Crt.Status.ACME.ARI.LastError == "" {
+		t.Fatal("Phase 1: expected status.acme.ari.lastError to be recorded")
+	}
+	if !strings.Contains(p1Crt.Status.ACME.ARI.LastError, "cannot find a time with the given windows") {
+		t.Errorf("Phase 1: LastError = %q, want 'cannot find a time with the given windows'", p1Crt.Status.ACME.ARI.LastError)
+	}
+	p1NextCheck := p1Crt.Status.ACME.ARI.NextCheck
+	if p1NextCheck == nil {
+		t.Fatal("Phase 1: expected nextCheck to be set")
+	}
+
+	// Update informer store
+	if err := builder.Context.SharedInformerFactory.Certmanager().V1().Certificates().Informer().GetStore().Update(p1Crt); err != nil {
+		t.Fatalf("failed to update informer store: %v", err)
+	}
+
+	// --- Phase 2: Next ARI poll when nextCheck arrives ---
+	// The conflict still exists, so LastError must NOT be cleared to ""!
+	fakeClock.SetTime(p1NextCheck.Time.Add(time.Second))
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("Phase 2: ProcessItem() error = %v", err)
+	}
+	if fetches != 2 {
+		t.Errorf("Phase 2: fetches = %d, want 2", fetches)
+	}
+	p2Crt, err := builder.CMClient.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Phase 2: failed to get cert: %v", err)
+	}
+	// Crucial assertion: LastError must persist!
+	if p2Crt.Status.ACME.ARI.LastError == "" {
+		t.Errorf("Phase 2: expected LastError to persist across polls, but it was wiped out to empty string")
+	}
+	if !strings.Contains(p2Crt.Status.ACME.ARI.LastError, "cannot find a time with the given windows") {
+		t.Errorf("Phase 2: LastError = %q, want 'cannot find a time with the given windows'", p2Crt.Status.ACME.ARI.LastError)
+	}
+	p2NextCheck := p2Crt.Status.ACME.ARI.NextCheck
+
+	// Update informer store
+	if err := builder.Context.SharedInformerFactory.Certmanager().V1().Certificates().Informer().GetStore().Update(p2Crt); err != nil {
+		t.Fatalf("failed to update informer store: %v", err)
+	}
+
+	// --- Phase 3: Resolution - calculation now succeeds ---
+	returnErr = nil // error resolved
+	fakeClock.SetTime(p2NextCheck.Time.Add(time.Second))
+	if err := w.controller.ProcessItem(t.Context(), key); err != nil {
+		t.Fatalf("Phase 3: ProcessItem() error = %v", err)
+	}
+	p3Crt, err := builder.CMClient.CertmanagerV1().Certificates(crt.Namespace).Get(t.Context(), crt.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Phase 3: failed to get cert: %v", err)
+	}
+	// LastError must now be cleared!
+	if p3Crt.Status.ACME.ARI.LastError != "" {
+		t.Errorf("Phase 3: expected LastError to be cleared on successful calculation, got %q", p3Crt.Status.ACME.ARI.LastError)
+	}
+	if !p3Crt.Status.RenewalTime.Time.Equal(successfulTime.Time) {
+		t.Errorf("Phase 3: renewalTime = %v, want %v", p3Crt.Status.RenewalTime.Time, successfulTime.Time)
 	}
 }
