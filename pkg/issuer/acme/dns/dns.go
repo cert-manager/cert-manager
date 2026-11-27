@@ -463,9 +463,15 @@ func (s *Solver) solverForChallenge(ctx context.Context, ch *cmacme.Challenge) (
 			return nil, nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
 		}
 
+		httpClient, err := buildHTTPClientFromCABundle(providerConfig.AcmeDNS.CABundle)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error building HTTP client from caBundle for acmedns: %w", err)
+		}
+
 		impl, err = s.dnsProviderConstructors.acmeDNS(ctx,
 			acmedns.Host(providerConfig.AcmeDNS.Host),
-			acmedns.AccountJSON(accountSecretBytes))
+			acmedns.AccountJSON(accountSecretBytes),
+			acmedns.HTTPClient{Client: httpClient})
 
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %w", err)

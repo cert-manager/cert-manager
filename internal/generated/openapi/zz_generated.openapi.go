@@ -1494,6 +1494,13 @@ func schema_pkg_apis_acme_v1_ACMEIssuerDNS01ProviderAcmeDNS(ref common.Reference
 							Ref:     ref("github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector"),
 						},
 					},
+					"caBundle": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Base64-encoded bundle of PEM CAs which can be used to validate the certificate chain presented by the acme-dns server. If set, only these CAs are trusted for connections to the acme-dns server; they replace the system certificate bundle rather than being added to it. If unset, the system certificate bundle inside the container is used. The ACME issuer's caBundle is not used for connections to the acme-dns server.",
+							Type:        []string{"string"},
+							Format:      "byte",
+						},
+					},
 				},
 				Required: []string{"host", "accountSecretRef"},
 			},

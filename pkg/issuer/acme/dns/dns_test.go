@@ -17,6 +17,7 @@ limitations under the License.
 package dns
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -965,6 +966,107 @@ func TestRoute53AssumeRole(t *testing.T) {
 			if tt.out.expectedCall != nil {
 				expectedCall := *tt.out.expectedCall(&f)
 				assertProviderCalls(t, []fakeDNSProviderCall{expectedCall}, f.dnsProviders.calls)
+			}
+		})
+	}
+}
+
+func TestSolverForAcmeDNSPassesHTTPClient(t *testing.T) {
+	validCAPEM := mustGenerateCAPEM(t)
+
+	tests := map[string]struct {
+		caBundle      []byte
+		wantNilClient bool
+	}{
+		"per-solver caBundle produces non-nil httpClient passed to acmeDNS constructor": {
+			caBundle:      validCAPEM,
+			wantNilClient: false,
+		},
+		"no caBundle produces nil httpClient passed to acmeDNS constructor": {
+			caBundle:      nil,
+			wantNilClient: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			f := &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("acmedns-key", map[string][]byte{
+							"acmedns.json": []byte("{}"),
+						}, fakeIssuerNamespace),
+					},
+				},
+				Challenge: &cmacme.Challenge{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: fakeIssuerNamespace,
+					},
+					Spec: cmacme.ChallengeSpec{
+						Solver: cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+									Host: "https://acme-dns.example.com",
+									AccountSecret: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "acmedns-key",
+										},
+										Key: "acmedns.json",
+									},
+									CABundle: tc.caBundle,
+								},
+							},
+						},
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "test-issuer",
+						},
+					},
+				},
+				dnsProviders: newFakeDNSProviders(),
+			}
+
+			f.Setup(t)
+			defer f.Finish(t)
+
+			_, _, err := f.Solver.solverForChallenge(t.Context(), f.Challenge)
+			if err != nil {
+				t.Fatalf("expected no error, got: %v", err)
+			}
+
+			if len(f.dnsProviders.calls) != 1 {
+				t.Fatalf("expected 1 provider call, got %d", len(f.dnsProviders.calls))
+			}
+
+			call := f.dnsProviders.calls[0]
+			if call.name != "acmedns" {
+				t.Fatalf("expected acmedns call, got %q", call.name)
+			}
+
+			if len(call.args) < 1 {
+				t.Fatalf("expected at least 1 arg in acmedns call, got %d", len(call.args))
+			}
+
+			opt, ok := call.args[0].(acmedns.DNSProviderOptions)
+			if !ok {
+				t.Fatalf("expected acmedns.DNSProviderOptions, got %T", call.args[0])
+			}
+			httpClient := opt.HTTPClient
+
+			if tc.wantNilClient {
+				if httpClient != nil {
+					t.Fatal("expected nil httpClient when no caBundle is set")
+				}
+			} else {
+				if httpClient == nil {
+					t.Fatal("expected non-nil httpClient when caBundle is set")
+				}
+				transport, ok := httpClient.Transport.(*http.Transport)
+				if !ok {
+					t.Fatalf("expected *http.Transport, got %T", httpClient.Transport)
+				}
+				if transport.TLSClientConfig == nil || transport.TLSClientConfig.RootCAs == nil {
+					t.Fatal("expected TLSClientConfig.RootCAs to be set from caBundle")
+				}
 			}
 		})
 	}
