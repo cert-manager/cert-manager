@@ -630,6 +630,8 @@ func SecretAdditionalOutputFormatsMismatch(input Input) (string, string, bool) {
 			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatCombinedPEM(
 				input.Secret.Data[corev1.TLSPrivateKeyKey],
 				input.Secret.Data[corev1.TLSCertKey],
+				input.Secret.Data[cmmeta.TLSCAKey],
+				format.Keys...,
 			)) {
 				return AdditionalOutputFormatsMismatch, message, true
 			}
