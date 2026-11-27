@@ -1334,7 +1334,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						Usages: cmapi.DefaultKeyUsages(),
+						Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature},
 						PrivateKey: &cmapi.CertificatePrivateKey{
 							Algorithm: cmapi.ECDSAKeyAlgorithm,
 							Size:      384,
@@ -1400,7 +1400,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						Usages: cmapi.DefaultKeyUsages(),
+						Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature},
 						PrivateKey: &cmapi.CertificatePrivateKey{
 							Algorithm: cmapi.ECDSAKeyAlgorithm,
 							Encoding:  cmapi.PKCS8,
@@ -1468,7 +1468,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						Usages: cmapi.DefaultKeyUsages(),
+						Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature},
 						PrivateKey: &cmapi.CertificatePrivateKey{
 							Algorithm:      cmapi.ECDSAKeyAlgorithm,
 							Encoding:       cmapi.PKCS1,
