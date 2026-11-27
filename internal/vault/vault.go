@@ -563,6 +563,11 @@ func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertifica
 		if err != nil {
 			return "", fmt.Errorf("error initializing intermediary Vault client: %s", err.Error())
 		}
+		// Preserve the Vault namespace on the intermediary client because
+		// CloneConfig does not copy client headers such as X-Vault-Namespace.
+		if v.issuer != nil && v.issuer.GetSpec().Vault != nil {
+			rawClient = rawClient.WithNamespace(v.issuer.GetSpec().Vault.Namespace)
+		}
 		client = &vaultClientWrapper{rawClient}
 	}
 
