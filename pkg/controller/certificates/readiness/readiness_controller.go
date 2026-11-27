@@ -253,8 +253,15 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 
-		var renewalTime *metav1.Time
-		renewalTime = c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
+		// Calculate the deterministic renewal time once per reconcile. It is
+		// the fallback when no ARI-derived time is available, and it
+		// revalidates the renewal configuration so a window error surfaces as
+		// a WindowError Ready condition on every reconcile, even when the
+		// schedule is ARI-derived.
+		fallbackTime, err := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+
+		renewalTime := c.useARIForRenewal(ctx, crt, x509cert, input.Secret, key)
+		usingFallbackTime := false
 
 		// If there is no renewal time from ARI or if the featuregate is disabled.
 		if renewalTime == nil || renewalTime.IsZero() {
@@ -266,14 +273,27 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 			if t := ariRenewalTimeFromStatus(crt, x509cert); t != nil {
 				renewalTime = t
 			} else {
-				renewalTime, err = c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+				renewalTime = fallbackTime
+				usingFallbackTime = true
 			}
+		}
+		// ErrNoRenewalWindow depends on the desired renewal time, so it says
+		// nothing about an ARI-derived schedule: the same windows can have no
+		// occurrence after the renewBefore-based time and still have one after
+		// the ARI time. Every other window error means the renewal
+		// configuration itself is invalid and is reported for any schedule.
+		if !usingFallbackTime && errors.Is(err, pki.ErrNoRenewalWindow) {
+			err = nil
 		}
 		if err != nil {
 			reason := policies.WindowError
 			message := fmt.Sprintf("Could not calculate renewal time: %v", err)
-			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
-
+			// Only replace a Ready=True condition. A violation found by the
+			// policy chain (e.g. a mismatched Secret) is more actionable than
+			// the window error, which stays visible through the event below.
+			if condition.Status == cmmeta.ConditionTrue {
+				apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
+			}
 			c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
 		}
 
@@ -497,6 +517,12 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 				ariStatus.LastError = err.Error()
 				ariStatus.NextCheck = &metav1.Time{Time: c.computeNextCheck(now, defaultARIPoll)}
 
+				// Keep the time returned alongside the error: it is a random
+				// time in the ARI suggested window, so the scheduled wake-up
+				// stays in sync with the trigger controller, which renews as
+				// soon as the window opens. The caller reports an invalid
+				// renewal configuration as a WindowError from its own
+				// deterministic calculation.
 				break
 			}
 		}

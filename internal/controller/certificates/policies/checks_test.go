@@ -2473,3 +2473,235 @@ func Test_CurrentCertificateRequestMismatchesSpec_NameConstraints(t *testing.T) 
 		assert.Equal(t, "Fields on existing CertificateRequest resource not up to date: [spec.nameConstraints]", message)
 	})
 }
+
+func Test_CurrentCertificateNearingExpiry_RenewalDisabled(t *testing.T) {
+	clock := &fakeclock.FakeClock{}
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCert(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	})
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyDisabled,
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+	assert.Equal(t, "", reason)
+	assert.Equal(t, "", message)
+	assert.False(t, violation)
+}
+
+// Test_CurrentCertificateNearingExpiry_WindowError covers the renewal-window
+// error path (here an invalid cron expression). pki.RenewalTime previously
+// returned a nil time with an error, which crash-looped the trigger controller
+// with a nil pointer panic. It now returns the deterministic renewBefore-based
+// time alongside the error, so renewal is gated on that time and the error
+// surfaces as a WindowError violation only once renewal is actually due; a
+// certificate nowhere near expiry must not be flagged for re-issuance.
+func Test_CurrentCertificateNearingExpiry_WindowError(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	notBefore := now
+	notAfter := now.Add(30 * 24 * time.Hour)
+	pk := testcrypto.MustCreatePEMPrivateKey(t)
+	certPEM := testcrypto.MustCreateCertWithNotBeforeAfter(t, pk, &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+	}, notBefore, notAfter)
+	input := Input{
+		Certificate: &cmapi.Certificate{
+			Spec: cmapi.CertificateSpec{
+				Renewal: &cmapi.CertificateRenewal{
+					Policy: cmapi.CertificateRenewalPolicyRenewBefore,
+					Windows: []cmapi.CertificateRenewalWindows{{
+						Cron:           "not a valid cron",
+						WindowDuration: &metav1.Duration{Duration: 5 * time.Minute},
+					}},
+				},
+			},
+		},
+		Secret: &corev1.Secret{
+			Data: map[string][]byte{corev1.TLSCertKey: certPEM},
+		},
+	}
+
+	t.Run("not yet due: no premature re-issuance despite the window error", func(t *testing.T) {
+		clock := fakeclock.NewFakeClock(now)
+		reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.False(t, violation)
+		assert.Equal(t, "", reason)
+		assert.Equal(t, "", message)
+	})
+
+	t.Run("due: surface the window error as a violation", func(t *testing.T) {
+		// Past the certificate's NotAfter, so renewal is unambiguously due.
+		clock := fakeclock.NewFakeClock(notAfter.Add(time.Hour))
+		reason, _, violation := CurrentCertificateNearingExpiry(clock)(input)
+		assert.True(t, violation)
+		assert.Equal(t, WindowError, reason)
+	})
+}
+
+// Test_CurrentCertificateNearingExpiry_ARIMissesRenewalWindows asserts the Trigger Controller
+// and trigger policy chain behaviour described in issue #9639:
+// When a Certificate has spec.renewal.windows and the CA returns an ARI window that misses every renewal window:
+// 1. CurrentCertificateNearingExpiry checks only input.ARIRenewalInfo and status.renewalTime.
+//    It does not evaluate spec.renewal.windows when ARI renewal information is present.
+// 2. Before the renewal time (e.g. Day 10), reissue = false.
+// 3. During the user's renewal window (e.g. Day 30), reissue = false because the ARI window gate defers renewal.
+// 4. During the ARI window but before the scheduled renewal time (e.g. Day 60), reissue = false.
+// 5. At the scheduled ARI renewal time (e.g. Day 62), reissue = true with reason = Renewing (not WindowError).
+func Test_CurrentCertificateNearingExpiry_ARIMissesRenewalWindows(t *testing.T) {
+	tests := map[string]struct {
+		certLifetime     time.Duration
+		renewBefore      time.Duration
+		renewalWindow    cmapi.CertificateRenewalWindows
+		ariWindowStart   time.Duration
+		ariWindowEnd     time.Duration
+		scheduledOffset  time.Duration
+		userWindowOffset time.Duration
+	}{
+		"90-day cert: user window at Day 30, ARI window at Days 60-65, renewal scheduled at Day 62": {
+			certLifetime: 90 * 24 * time.Hour,
+			renewBefore:  70 * 24 * time.Hour, // day 20
+			renewalWindow: cmapi.CertificateRenewalWindows{
+				Timezone:       "UTC",
+				WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				Cron:           "0 12 31 1 *", // Jan 31 12:00 (day 30 for notBefore=Jan 1)
+			},
+			ariWindowStart:   60 * 24 * time.Hour,
+			ariWindowEnd:     65 * 24 * time.Hour,
+			scheduledOffset:  62 * 24 * time.Hour,                                      // Day 62
+			userWindowOffset: 30*24*time.Hour + 12*time.Hour + 30*time.Minute,          // Day 30 12:30 (inside window)
+		},
+		"6-day short-lived cert: user window on Friday Day 1, ARI window at Days 4-5, renewal scheduled at Day 4.5": {
+			certLifetime: 6 * 24 * time.Hour,
+			renewBefore:  5 * 24 * time.Hour, // day 1 (Jan 2 00:00)
+			renewalWindow: cmapi.CertificateRenewalWindows{
+				Timezone:       "UTC",
+				WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				Cron:           "0 10 * * 5", // Friday 10:00 (day 1 for notBefore=Jan 1 Thursday)
+			},
+			ariWindowStart:   4 * 24 * time.Hour,                                       // day 4 (Jan 5)
+			ariWindowEnd:     5 * 24 * time.Hour,                                       // day 5 (Jan 6)
+			scheduledOffset:  4*24*time.Hour + 12*time.Hour,                            // Day 4.5 (Jan 5 12:00)
+			userWindowOffset: 24*time.Hour + 10*time.Hour + 30*time.Minute,             // Day 1 10:30 (inside window)
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			notBefore := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+			notAfter := notBefore.Add(tc.certLifetime)
+			pk := testcrypto.MustCreatePEMPrivateKey(t)
+			certPEM := testcrypto.MustCreateCertWithNotBeforeAfter(t, pk, &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{CommonName: "example.com"},
+			}, notBefore, notAfter)
+
+			ariStart := notBefore.Add(tc.ariWindowStart)
+			ariEnd := notBefore.Add(tc.ariWindowEnd)
+			scheduledTime := notBefore.Add(tc.scheduledOffset)
+
+			crt := &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.IssuerReference{
+						Name:  "test-issuer",
+						Kind:  cmapi.IssuerKind,
+						Group: "cert-manager.io",
+					},
+					RenewBefore: &metav1.Duration{Duration: tc.renewBefore},
+					Renewal: &cmapi.CertificateRenewal{
+						Policy:  cmapi.CertificateRenewalPolicyRenewBefore,
+						Windows: []cmapi.CertificateRenewalWindows{tc.renewalWindow},
+					},
+				},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: scheduledTime},
+				},
+			}
+
+			secret := &corev1.Secret{
+				Annotations: map[string]string{
+					cmapi.IssuerNameAnnotationKey:  "test-issuer",
+					cmapi.IssuerKindAnnotationKey:  cmapi.IssuerKind,
+					cmapi.IssuerGroupAnnotationKey: "cert-manager.io",
+				},
+				Data: map[string][]byte{
+					corev1.TLSCertKey:       certPEM,
+					corev1.TLSPrivateKeyKey: pk,
+				},
+			}
+
+			input := Input{
+				Certificate: crt,
+				Secret:      secret,
+				ARIRenewalInfo: &acmeapi.RenewalInfoResponse{
+					SuggestedWindow: acmeapi.RenewalInfoWindow{
+						Start: ariStart,
+						End:   ariEnd,
+					},
+				},
+			}
+
+			// Point 1: Before renewal window (Day 0.5)
+			t.Run("early: no renewal", func(t *testing.T) {
+				clock := fakeclock.NewFakeClock(notBefore.Add(12 * time.Hour))
+				reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+				assert.False(t, violation)
+				assert.Equal(t, "", reason)
+				assert.Equal(t, "", message)
+
+				chainReason, _, chainReissue := NewTriggerPolicyChain(clock).Evaluate(input)
+				assert.False(t, chainReissue)
+				assert.Equal(t, "", chainReason)
+			})
+
+			// Point 2: During user's configured renewal window: Trigger Controller defers to ARI and does NOT reissue!
+			t.Run("during user renewal window: ignored by trigger controller because ARI window is in future", func(t *testing.T) {
+				clock := fakeclock.NewFakeClock(notBefore.Add(tc.userWindowOffset))
+				reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+				assert.False(t, violation)
+				assert.Equal(t, "", reason)
+				assert.Equal(t, "", message)
+
+				chainReason, _, chainReissue := NewTriggerPolicyChain(clock).Evaluate(input)
+				assert.False(t, chainReissue)
+				assert.Equal(t, "", chainReason)
+			})
+
+			// Point 3: At ARI window start, but before scheduled renewal time: no renewal yet
+			t.Run("at ARI window start before scheduled time: no renewal", func(t *testing.T) {
+				clock := fakeclock.NewFakeClock(ariStart)
+				reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+				assert.False(t, violation)
+				assert.Equal(t, "", reason)
+				assert.Equal(t, "", message)
+
+				chainReason, _, chainReissue := NewTriggerPolicyChain(clock).Evaluate(input)
+				assert.False(t, chainReissue)
+				assert.Equal(t, "", chainReason)
+			})
+
+			// Point 4: At scheduled ARI renewal time: renewal triggers with reason Renewing (not WindowError)
+			t.Run("at scheduled ARI renewal time: triggers renewal with reason Renewing", func(t *testing.T) {
+				clock := fakeclock.NewFakeClock(scheduledTime)
+				reason, message, violation := CurrentCertificateNearingExpiry(clock)(input)
+				assert.True(t, violation)
+				assert.Equal(t, Renewing, reason)
+				assert.Contains(t, message, "Renewing certificate as renewal was scheduled at")
+
+				chainReason, chainMessage, chainReissue := NewTriggerPolicyChain(clock).Evaluate(input)
+				assert.True(t, chainReissue)
+				assert.Equal(t, Renewing, chainReason)
+				assert.Contains(t, chainMessage, "Renewing certificate as renewal was scheduled at")
+			})
+		})
+	}
+}

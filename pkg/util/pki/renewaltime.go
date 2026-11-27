@@ -18,6 +18,7 @@ package pki
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -41,7 +42,10 @@ func WithARIInfo(ariInfo *acmeapi.RenewalInfoResponse) RenewalTimeOptions {
 	}
 }
 
-// RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
+// RenewalTimeFunc is a custom function type for calculating renewal time of a
+// certificate. Implementations must follow the RenewalTime contract: a nil
+// time is returned only when renewal is disabled, and a usable fallback time
+// is returned alongside every error.
 type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1.CertificateRenewal, ...RenewalTimeOptions) (*metav1.Time, error)
 
 // RenewalTime calculates renewal time for a certificate.
@@ -51,6 +55,13 @@ type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration, *int32, *apiv1
 // will be the computed period before expiry based on the renewBeforePercentage
 // value and certificate lifetime.
 // Default renewal time is 2/3 through certificate's lifetime.
+//
+// A nil time is returned only when the renewal policy is Disabled. On any
+// error a usable fallback time is returned alongside it, so callers must not
+// discard the returned time when err != nil. Without ARI info the fallback is
+// the deterministic renewBefore-based time; with ARI info it is a random time
+// in the ARI suggested window, so callers wanting a deterministic fallback
+// should recalculate without ARI options.
 //
 // NB: If ARI is provided and the feature gate is enabled, the renewal time will be calculated based on the ARI suggested window instead of the renewBefore and renewBeforePercentage values. Cron windows will be applied on top of the ARI suggested window if provided.
 func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, renewBeforePercentage *int32, renewalSpec *apiv1.CertificateRenewal, opts ...RenewalTimeOptions) (*metav1.Time, error) {
@@ -94,7 +105,11 @@ func RenewalTime(notBefore, notAfter time.Time, renewBefore *metav1.Duration, re
 	case apiv1.CertificateRenewalPolicyRenewBefore:
 		return applyRenewBeforeWithWindows(notAfter, notBefore, rt.Time, renewalSpec.Windows)
 	default:
-		return nil, fmt.Errorf("unsupported renewal policy: %s", renewalSpec.Policy)
+		// An unrecognized policy can only occur on version skew (the CRD and
+		// webhook validate the enum). Deliberately fail open: keep renewing on
+		// the default schedule so certificates do not silently expire, and
+		// surface the error so the operator notices the skew.
+		return &rt, fmt.Errorf("unsupported renewal policy: %s", renewalSpec.Policy)
 	}
 }
 
@@ -142,6 +157,12 @@ func RenewBeforeFromPercentage(duration time.Duration, percentage int32) time.Du
 	return duration/100*time.Duration(percentage) + duration%100*time.Duration(percentage)/100
 }
 
+// ErrNoRenewalWindow is returned by RenewalTime when the renewal windows are
+// valid but none of them occurs at or after the desired renewal time. Unlike
+// the other window errors it depends on the desired renewal time, so the same
+// windows can fail for the renewBefore-based time and succeed for an ARI one.
+var ErrNoRenewalWindow = errors.New("cannot find a time with the given windows")
+
 // applyRenewBeforeWithWindows calculates effective renewal time with windows in it. We want the logic to be as follows:
 // Take in the desiredRenewalTime from the function above and look forward and backward to find a desirable time which satisfies
 // the cron window along with the cronSeconds duration. If we find a time that is before the renewalTime we return that first.
@@ -151,8 +172,13 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 		bestAfter  *time.Time
 	)
 
+	// On any window misconfiguration the fallback is returned alongside the
+	// error, so callers can keep scheduling renewal on the sane default while
+	// surfacing the error, rather than being handed a nil time to dereference.
+	fallback := metav1.NewTime(desiredRenewalTime)
+
 	if len(windows) == 0 {
-		return &metav1.Time{Time: desiredRenewalTime}, nil
+		return &fallback, nil
 	}
 
 	for _, w := range windows {
@@ -162,17 +188,17 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 				loc = tz
 			} else {
 				// This shouldn't get triggered as we validate timezones in the validation webhook.
-				return nil, fmt.Errorf("error parsing timezone in window: %w", err)
+				return &fallback, fmt.Errorf("error parsing timezone in window: %w", err)
 			}
 		}
 
 		cronSched, err := util.CronParse(w.Cron, loc.String())
 		if err != nil {
-			return nil, fmt.Errorf("error parsing cron in window: %w", err)
+			return &fallback, fmt.Errorf("error parsing cron in window: %w", err)
 		}
 
 		if w.WindowDuration == nil || w.WindowDuration.Duration <= 0 {
-			return nil, fmt.Errorf("windowDuration must be a positive duration in window %v", w)
+			return &fallback, fmt.Errorf("windowDuration must be a positive duration in window with cron %q", w.Cron)
 		}
 
 		// Any renewal logic should only start after notBefore and before notAfter. Bounds are [notBefore - dur, notAfter + dur)
@@ -191,7 +217,7 @@ func applyRenewBeforeWithWindows(notAfter, notBefore, desiredRenewalTime time.Ti
 		return &metav1.Time{Time: *bestAfter}, nil
 	}
 
-	return &metav1.Time{Time: desiredRenewalTime}, fmt.Errorf("cannot find a time with the given windows between %s and %s for: %s", notBefore, notAfter, desiredRenewalTime)
+	return &fallback, fmt.Errorf("%w between %s and %s for: %s", ErrNoRenewalWindow, notBefore, notAfter, desiredRenewalTime)
 }
 
 // bsFindEarliestWindowBeforeDesired performs a binary search over time to find
