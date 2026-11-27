@@ -1833,7 +1833,7 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 							},
 						},
 					},
-				}, false)
+				}, false, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tc.vaultNS, c.(*Vault).client.(*vaultClientWrapper).Client.Namespace(),
 				"The vault client should have the namespace provided in the Issuer resource")
@@ -1886,7 +1886,7 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 					},
 				},
 			},
-		}, false)
+		}, false, nil)
 	require.NoError(t, err)
 
 	err = v.IsVaultInitializedAndUnsealed()
@@ -1950,7 +1950,7 @@ func TestSignIntegration(t *testing.T) {
 					},
 				},
 			},
-		}, false)
+		}, false, nil)
 	require.NoError(t, err)
 
 	certPEM, caPEM, err := v.Sign(csrPEM, time.Hour)
