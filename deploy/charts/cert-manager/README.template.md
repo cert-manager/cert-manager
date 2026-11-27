@@ -103,6 +103,54 @@ The nodeSelector on Pods tells Kubernetes to schedule Pods on the nodes with mat
   
 If a component-specific nodeSelector is also set, it will be merged and take precedence.
 
+#### **global.tolerations** ~ `array`
+> Default value:
+> ```yaml
+> []
+> ```
+
+Global tolerations  
+  
+A list of Kubernetes Tolerations applied to all cert-manager pods. For more information, see [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).  
+  
+For example:
+
+```yaml
+tolerations:
+- key: foo.bar.com/role
+  operator: Equal
+  value: master
+  effect: NoSchedule
+```
+
+If a component-specific tolerations is also set, it will take precedence and only the component-specific tolerations will be applied.
+
+#### **global.affinity** ~ `object`
+> Default value:
+> ```yaml
+> {}
+> ```
+
+Global affinity  
+  
+A Kubernetes Affinity applied to all cert-manager pods. For more information, see [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity).  
+  
+For example:
+
+```yaml
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: foo.bar.com/role
+          operator: In
+          values:
+          - master
+```
+
+If a component-specific affinity is also set, it will take precedence and only the component-specific affinity will be applied.
+
 #### **global.commonLabels** ~ `object`
 > Default value:
 > ```yaml
