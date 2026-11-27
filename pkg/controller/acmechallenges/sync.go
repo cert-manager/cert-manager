@@ -200,7 +200,7 @@ func (c *controller) Sync(ctx context.Context, chOriginal *cmacme.Challenge) (er
 		ch.Status.PresentedAt = &now
 	}
 
-	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now())
+	readiness := buildChallengeReadinessEvaluator(ch, c.DNS01CheckRetryPeriod, c.clock.Now)
 	result, err := readiness.evaluate(ctx, solver, genericIssuer, ch)
 	if err != nil {
 		return err
