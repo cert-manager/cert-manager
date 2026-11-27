@@ -81,6 +81,19 @@ func (w *vaultClientWrapper) Write(path string, data map[string]any) (*vault.Sec
 	return w.Client.Logical().Write(path, data)
 }
 
+// awsLoginPath returns the login path of the AWS auth method mounted at
+// mountPath, in the form that Write expects. Write prepends "/v1/" itself, so
+// the "/v1" prefix of a mount path such as the default "/v1/auth/aws" must be
+// dropped, otherwise the login request goes to "/v1/v1/auth/aws/login".
+//
+// A mount path without the "/v1" prefix, such as "auth/aws", is accepted too. As
+// a result a mount whose own name starts with "v1/" has to be written with the
+// prefix, for example "/v1/v1/aws", because "v1/aws" is read as "/v1/aws".
+func awsLoginPath(mountPath string) string {
+	loginPath := path.Join(mountPath, "login")
+	return strings.TrimPrefix(strings.TrimPrefix(loginPath, "/"), "v1/")
+}
+
 // For mocking purposes.
 type CreateToken func(ctx context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error)
 
@@ -775,8 +788,7 @@ func (v *Vault) requestTokenWithAWSAuth(ctx context.Context, client Client, awsA
 	loginData["role"] = awsAuth.Role
 
 	// Send the signed request to Vault's AWS auth endpoint using logical write
-	loginPath := path.Join(mountPath, "login")
-	secret, err := client.Write(loginPath, loginData)
+	secret, err := client.Write(awsLoginPath(mountPath), loginData)
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %w", err)
 	}
