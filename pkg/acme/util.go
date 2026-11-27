@@ -73,3 +73,9 @@ func ARIEnabledForIssuer(issuer cmapi.GenericIssuer) bool {
 	// predate the CRD default (kubebuilder:default=ARI) being applied.
 	return acme.RenewalInformationSource == "" || acme.RenewalInformationSource == cmacme.ACMERenewalInformationSourceARI
 }
+
+// UnreachableChallengesReason starts the reason of an Order when the ACME
+// server could not reach any of its failed Challenges. The certificates
+// trigger controller looks for this text in the Certificate's Issuing
+// condition message, and retries such a Certificate sooner.
+const UnreachableChallengesReason = "The ACME server could not reach the challenges"

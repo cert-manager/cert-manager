@@ -424,7 +424,9 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	ch.Status.Reason = ""
 	if acmeChallenge.Error != nil {
 		if acmeErr, ok := acmeChallenge.Error.(*acmeapi.Error); ok {
-			ch.Status.Reason = acmeErr.Detail
+			// Include the problem type, not only the detail. The Order
+			// controller reads the type from this reason.
+			ch.Status.Reason = acmeErr.Error()
 		} else {
 			ch.Status.Reason = acmeChallenge.Error.Error()
 		}
