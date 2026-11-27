@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 	acmeapi "github.com/cert-manager/cert-manager/third_party/forked/acme"
 )
 
@@ -440,4 +442,149 @@ func TestRenewalWithDisable(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Nil(t, res)
+}
+
+func TestRenewalWithMultipleWindowsOrderIndependence(t *testing.T) {
+	sat := time.Date(2026, time.June, 6, 0, 0, 0, 0, time.UTC)
+	require.Equal(t, time.Saturday, sat.Weekday())
+
+	tests := map[string]struct {
+		notBefore           time.Time
+		notAfter            time.Time
+		targetRenewalTime   time.Time
+		ariInfo             *acmeapi.RenewalInfoResponse
+		windows             []apiv1.CertificateRenewalWindows
+		expectedRenewalTime time.Time
+	}{
+		"weekend window before weekday window that misses searchMax": {
+			notBefore:           sat.AddDate(0, 0, -10),
+			notAfter:            sat.Add(24 * time.Hour),
+			targetRenewalTime:   sat.Add(6 * time.Hour),
+			expectedRenewalTime: sat.Add(10 * time.Hour),
+			windows: []apiv1.CertificateRenewalWindows{
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 10 * * 6,0",
+					WindowDuration: &metav1.Duration{Duration: 4 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 23 * * 1-5",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+			},
+		},
+		"sooner match preserved when a later window misses before a third window": {
+			notBefore:           sat.AddDate(0, 0, -10),
+			notAfter:            sat.Add(24 * time.Hour),
+			targetRenewalTime:   sat.Add(6 * time.Hour),
+			expectedRenewalTime: sat.Add(10 * time.Hour),
+			windows: []apiv1.CertificateRenewalWindows{
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 10 * * 6,0",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 23 * * 1-5",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 14 * * 6,0",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+			},
+		},
+		"bestBefore preserved when a later window has narrower searchMin": {
+			notBefore:           sat,
+			notAfter:            sat.Add(48 * time.Hour),
+			targetRenewalTime:   sat.Add(-time.Hour),
+			expectedRenewalTime: sat.Add(-time.Hour),
+			ariInfo: &acmeapi.RenewalInfoResponse{
+				SuggestedWindow: acmeapi.RenewalInfoWindow{
+					Start: sat.Add(-time.Hour),
+					End:   sat.Add(-time.Hour),
+				},
+			},
+			windows: []apiv1.CertificateRenewalWindows{
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 22 * * *",
+					WindowDuration: &metav1.Duration{Duration: 4 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 10 * * *",
+					WindowDuration: &metav1.Duration{Duration: 30 * time.Minute},
+				},
+			},
+		},
+		"valid window followed by unsatisfiable cron": {
+			notBefore:           sat.AddDate(0, 0, -10),
+			notAfter:            sat.Add(24 * time.Hour),
+			targetRenewalTime:   sat.Add(6 * time.Hour),
+			expectedRenewalTime: sat.Add(10 * time.Hour),
+			windows: []apiv1.CertificateRenewalWindows{
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 10 * * *",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 0 30 2 *",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+			},
+		},
+		"unsatisfiable cron followed by valid window": {
+			notBefore:           sat.AddDate(0, 0, -10),
+			notAfter:            sat.Add(24 * time.Hour),
+			targetRenewalTime:   sat.Add(6 * time.Hour),
+			expectedRenewalTime: sat.Add(10 * time.Hour),
+			windows: []apiv1.CertificateRenewalWindows{
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 0 30 2 *",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+				{
+					Timezone:       time.UTC.String(),
+					Cron:           "0 10 * * *",
+					WindowDuration: &metav1.Duration{Duration: 2 * time.Hour},
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			var opts []RenewalTimeOptions
+			var renewBefore *metav1.Duration
+			if tc.ariInfo != nil {
+				opts = append(opts, WithARIInfo(tc.ariInfo))
+			} else {
+				renewBefore = &metav1.Duration{Duration: tc.notAfter.Sub(tc.targetRenewalTime)}
+			}
+
+			res, err := RenewalTime(tc.notBefore, tc.notAfter, renewBefore, nil, &apiv1.CertificateRenewal{
+				Policy:  apiv1.CertificateRenewalPolicyRenewBefore,
+				Windows: tc.windows,
+			}, opts...)
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			assert.Equal(t, tc.expectedRenewalTime, res.Time)
+		})
+	}
+}
+
+func TestBSFindLatestWindowBeforeDesiredUnsatisfiableCron(t *testing.T) {
+	sched, err := util.CronParse("0 0 30 2 *", time.UTC.String())
+	require.NoError(t, err)
+
+	minTime := time.Date(2026, time.June, 1, 0, 0, 0, 0, time.UTC)
+	maxTime := minTime.Add(24 * time.Hour)
+	assert.Nil(t, bsFindLatestWindowBeforeDesired(sched, minTime, maxTime))
 }
