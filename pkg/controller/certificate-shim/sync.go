@@ -446,21 +446,10 @@ func buildCertificates(
 			return nil, nil, err
 		}
 
-		for _, sans := range []*[]string{&crt.Spec.DNSNames, &crt.Spec.IPAddresses} {
-			seen := sets.New[string]()
-			unique := (*sans)[:0]
-			for _, san := range *sans {
-				key := san
-				if ip := net.ParseIP(san); ip != nil {
-					key = ip.String()
-				}
-				if !seen.Has(key) {
-					seen.Insert(key)
-					unique = append(unique, san)
-				}
-			}
-			*sans = unique
-		}
+		// Hosts and annotation values can repeat each other.
+		crt.Spec.DNSNames = dedupeSANs(crt.Spec.DNSNames, nil)
+		crt.Spec.IPAddresses = dedupeSANs(crt.Spec.IPAddresses, ipSANKey)
+		crt.Spec.EmailAddresses = dedupeSANs(crt.Spec.EmailAddresses, nil)
 
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
@@ -567,6 +556,36 @@ func splitHosts(hosts []string) (dnsNames, ipAddresses []string) {
 		}
 	}
 	return dnsNames, ipAddresses
+}
+
+// dedupeSANs returns sans without the values whose key repeats the key of an
+// earlier value, keeping first-seen order. A nil key compares values as they are.
+func dedupeSANs(sans []string, key func(string) string) []string {
+	if len(sans) == 0 {
+		return sans
+	}
+	seen := sets.New[string]()
+	unique := make([]string, 0, len(sans))
+	for _, san := range sans {
+		k := san
+		if key != nil {
+			k = key(san)
+		}
+		if !seen.Has(k) {
+			seen.Insert(k)
+			unique = append(unique, san)
+		}
+	}
+	return unique
+}
+
+// ipSANKey keys an IP address by its parsed value, so two spellings of one
+// address are one SAN.
+func ipSANKey(san string) string {
+	if ip := net.ParseIP(san); ip != nil {
+		return ip.String()
+	}
+	return san
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {

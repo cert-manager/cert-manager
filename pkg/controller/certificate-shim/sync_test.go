@@ -399,8 +399,7 @@ func TestSync(t *testing.T) {
 				Annotations: map[string]string{
 					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 					cmapi.CommonNameAnnotationKey:               "my-cn",
-					cmapi.AltNamesAnnotationKey:                 "example.com,foo.alt.example.com,bar.alt.example.com,foo.alt.example.com",
-					cmapi.IPSANAnnotationKey:                    "1.1.1.1,2a00:1450:4009:0819::eeee,192.0.2.1,192.0.2.1",
+					cmapi.AltNamesAnnotationKey:                 "foo.alt.example.com,bar.alt.example.com",
 				},
 				UID: types.UID("ingress-name"),
 				Spec: networkingv1.IngressSpec{
@@ -424,12 +423,111 @@ func TestSync(t *testing.T) {
 					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
 					Spec: cmapi.CertificateSpec{
 						DNSNames:    []string{"example.com", "www.example.com", "foo.alt.example.com", "bar.alt.example.com"},
-						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee", "192.0.2.1"},
+						IPAddresses: []string{"1.1.1.1", "2a00:1450:4009:819::eeee"},
 						CommonName:  "my-cn",
 						SecretName:  "example-com-tls",
 						IssuerRef: cmmeta.IssuerReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "drops repeated alt-names, ip-sans and email-sans values, keeping first-seen order",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				Name:      "ingress-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					cmapi.AltNamesAnnotationKey:                 "example.com,foo.example.com,foo.example.com",
+					cmapi.IPSANAnnotationKey:                    "192.0.2.1,2001:db8::1,2001:0db8::1,192.0.2.1",
+					cmapi.EmailsAnnotationKey:                   "a@example.com,a@example.com",
+				},
+				UID: types.UID("ingress-name"),
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:       []string{"example.com", "foo.example.com"},
+						IPAddresses:    []string{"192.0.2.1", "2001:db8::1"},
+						EmailAddresses: []string{"a@example.com"},
+						SecretName:     "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:         "should update an existing Certificate whose dnsNames repeat a value",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &networkingv1.Ingress{
+				Name:      "ingress-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+					cmapi.AltNamesAnnotationKey:          "example.com",
+				},
+				UID: types.UID("ingress-name"),
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			DefaultIssuerKind: "Issuer",
+			CertificateLister: []runtime.Object{
+				&cmapi.Certificate{
+					Name:            "existing-crt",
+					Namespace:       gen.DefaultTestNamespace,
+					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "existing-crt"`},
+			ExpectedUpdate: []*cmapi.Certificate{
+				{
+					Name:            "existing-crt",
+					Namespace:       gen.DefaultTestNamespace,
+					OwnerReferences: buildIngressOwnerReferences("ingress-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
 						},
 						Usages: cmapi.DefaultKeyUsages(),
 					},
@@ -2241,6 +2339,58 @@ func TestSync(t *testing.T) {
 	}
 
 	testGatewayShim := []testT{
+		{
+			Name:   "drops a repeated alt-names value for a Gateway, keeping first-seen order",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &gwapi.Gateway{
+				Name:      "gateway-name",
+				Namespace: gen.DefaultTestNamespace,
+				Annotations: map[string]string{
+					cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					cmapi.AltNamesAnnotationKey:                 "example.com,www.example.com,www.example.com",
+				},
+				UID: types.UID("gateway-name"),
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{
+						{
+							Hostname: ptrHostname("example.com"),
+							Port:     443,
+							Protocol: gwapi.HTTPSProtocolType,
+							TLS: &gwapi.ListenerTLSConfig{
+								Mode: new(gwapi.TLSModeTerminate),
+								CertificateRefs: []gwapi.SecretObjectReference{
+									{
+										Group: func() *gwapi.Group { g := gwapi.Group("core"); return &g }(),
+										Kind:  func() *gwapi.Kind { k := gwapi.Kind("Secret"); return &k }(),
+										Name:  "example-com-tls",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					Name:            "example-com-tls",
+					Namespace:       gen.DefaultTestNamespace,
+					Annotations:     buildParentRefAnnotations(),
+					OwnerReferences: buildGatewayOwnerReferences("gateway-name"),
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.IssuerReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 		{
 			Name:   "return a single Certificate for a Gateway with a single valid TLS entry and common-name annotation (HTTPS)",
 			Issuer: acmeClusterIssuer,
@@ -5528,6 +5678,43 @@ func Test_splitHosts(t *testing.T) {
 			gotDNSNames, gotIPAddresses := splitHosts(tt.hosts)
 			assert.Equal(t, tt.wantDNSNames, gotDNSNames, "dnsNames")
 			assert.Equal(t, tt.wantIPAddresses, gotIPAddresses, "ipAddresses")
+		})
+	}
+}
+
+func Test_dedupeSANs(t *testing.T) {
+	tests := []struct {
+		name string
+		sans []string
+		key  func(string) string
+		want []string
+	}{
+		{
+			name: "drops later repeats, keeping first-seen order",
+			sans: []string{"b.example.com", "a.example.com", "b.example.com"},
+			want: []string{"b.example.com", "a.example.com"},
+		},
+		{
+			name: "compares IP addresses by parsed value with ipSANKey",
+			sans: []string{"2001:db8::1", "192.0.2.1", "2001:0db8::1"},
+			key:  ipSANKey,
+			want: []string{"2001:db8::1", "192.0.2.1"},
+		},
+		{
+			name: "compares values as they are without a key",
+			sans: []string{"2001:db8::1", "2001:0db8::1"},
+			want: []string{"2001:db8::1", "2001:0db8::1"},
+		},
+		{
+			name: "nil stays nil",
+			sans: nil,
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, dedupeSANs(tt.sans, tt.key))
 		})
 	}
 }
