@@ -23,8 +23,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 func buildHTTPClientFromCABundle(caBundle []byte) (*http.Client, error) {
@@ -52,39 +50,4 @@ func buildHTTPClientFromCABundle(caBundle []byte) (*http.Client, error) {
 			},
 		},
 	}, nil
-}
-
-func (s *Solver) resolveCABundle(ch *cmacme.Challenge) ([]byte, error) {
-	if ch.Spec.Solver.DNS01 != nil &&
-		ch.Spec.Solver.DNS01.AcmeDNS != nil &&
-		len(ch.Spec.Solver.DNS01.AcmeDNS.CABundle) > 0 {
-		return ch.Spec.Solver.DNS01.AcmeDNS.CABundle, nil
-	}
-
-	if ch.Spec.IssuerRef.Kind == "ClusterIssuer" {
-		if s.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot resolve ClusterIssuer %q: solver is running in namespaced mode", ch.Spec.IssuerRef.Name)
-		}
-		issuer, err := s.clusterIssuerLister.Get(ch.Spec.IssuerRef.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get %s %q: %w", ch.Spec.IssuerRef.Kind, ch.Spec.IssuerRef.Name, err)
-		}
-		if issuer.GetSpec().ACME != nil && len(issuer.GetSpec().ACME.CABundle) > 0 {
-			return issuer.GetSpec().ACME.CABundle, nil
-		}
-		return nil, nil
-	}
-
-	if s.issuerLister == nil {
-		return nil, nil
-	}
-
-	issuer, err := s.issuerLister.Issuers(ch.Namespace).Get(ch.Spec.IssuerRef.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get %s %q: %w", ch.Spec.IssuerRef.Kind, ch.Spec.IssuerRef.Name, err)
-	}
-	if issuer.GetSpec().ACME != nil && len(issuer.GetSpec().ACME.CABundle) > 0 {
-		return issuer.GetSpec().ACME.CABundle, nil
-	}
-	return nil, nil
 }

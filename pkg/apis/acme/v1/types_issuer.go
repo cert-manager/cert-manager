@@ -838,9 +838,12 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 
 	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
 
-	// CABundle is a base64 encoded TLS certificate authority bundle to use when verifying
-	// connections to the acme-dns server. If set, it overrides the spec.acme.caBundle
-	// for TLS connections to the acme-dns server.
+	// Base64-encoded bundle of PEM CAs which can be used to validate the certificate
+	// chain presented by the acme-dns server.
+	// If set, only these CAs are trusted for connections to the acme-dns server;
+	// they replace the system certificate bundle rather than being added to it.
+	// If unset, the system certificate bundle inside the container is used.
+	// The ACME issuer's caBundle is not used for connections to the acme-dns server.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 }
