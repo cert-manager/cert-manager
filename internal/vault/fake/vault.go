@@ -18,6 +18,7 @@ limitations under the License.
 package fake
 
 import (
+	"context"
 	"time"
 
 	internalinformers "github.com/cert-manager/cert-manager/internal/informers"
@@ -82,3 +83,6 @@ func (v *Vault) New(ns string, sl internalinformers.SecretLister, iss cmapi.Gene
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	return nil
 }
+
+// Close does nothing
+func (v *Vault) Close(context.Context) {}

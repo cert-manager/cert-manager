@@ -61,6 +61,7 @@ type ClientBuilder func(ctx context.Context, namespace string, _ func(ns string)
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
 	IsVaultInitializedAndUnsealed() error
+	Close(ctx context.Context)
 }
 
 // Client implements functionality to talk to a Vault server.
@@ -122,6 +123,10 @@ type Vault struct {
 	// header is provided
 	// See https://developer.hashicorp.com/vault/docs/enterprise/namespaces#root-only-api-paths
 	clientSys Client
+
+	// revokeToken is true when the token was issued by a Vault login, so
+	// Close should revoke it. A token from tokenSecretRef is never revoked.
+	revokeToken bool
 }
 
 // New returns a new Vault instance with the given namespace, issuer and
@@ -279,6 +284,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 			return err
 		}
 		client.SetToken(token)
+		v.revokeToken = true
 
 		return nil
 	}
@@ -290,6 +296,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 			return err
 		}
 		client.SetToken(token)
+		v.revokeToken = true
 
 		return nil
 	}
@@ -301,6 +308,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 			return fmt.Errorf("while requesting a Vault token using the Kubernetes auth: %w", err)
 		}
 		client.SetToken(token)
+		v.revokeToken = true
 		return nil
 	}
 
@@ -311,6 +319,7 @@ func (v *Vault) setToken(ctx context.Context, client Client) error {
 			return fmt.Errorf("while requesting a Vault token using the AWS auth: %w", err)
 		}
 		client.SetToken(token)
+		v.revokeToken = true
 		return nil
 	}
 
@@ -983,4 +992,22 @@ func (v *Vault) isVaultInitializedAndUnsealed() error {
 	}
 
 	return nil
+}
+
+// Close revokes the Vault token if it was issued by a Vault login, so that
+// each use of the client does not leave a token behind until its TTL expires.
+// A failed revocation is logged and otherwise ignored.
+func (v *Vault) Close(ctx context.Context) {
+	if !v.revokeToken {
+		return
+	}
+
+	request := v.client.NewRequest("POST", "/v1/auth/token/revoke-self")
+	resp, err := v.client.RawRequest(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		logf.FromContext(ctx).V(logf.WarnLevel).Info("failed to revoke Vault token", "err", LoggableErrorMessage(err))
+	}
 }

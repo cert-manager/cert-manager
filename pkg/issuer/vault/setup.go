@@ -156,6 +156,7 @@ func (v *Vault) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		// it, so it can be returned whole and callers keep the chain.
 		return err
 	}
+	defer client.Close(ctx)
 
 	if err := client.IsVaultInitializedAndUnsealed(); err != nil {
 		msg := vaultinternal.SafeErrorMessage(err)

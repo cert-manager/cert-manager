@@ -105,6 +105,7 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorVaultInit", message)
 		return err
 	}
+	defer client.Close(ctx)
 
 	duration, err := pki.DurationFromCertificateSigningRequest(csr)
 	// We should never get to this point as the caller would have already
