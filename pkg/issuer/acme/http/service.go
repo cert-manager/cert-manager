@@ -44,7 +44,7 @@ func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (strin
 		return "", err
 	}
 	if len(existingServices) == 1 {
-		logf.WithRelatedResource(log, existingServices[0]).Info("found one existing HTTP01 solver Service for challenge resource")
+		logf.WithRelatedResource(log, existingServices[0]).V(logf.DebugLevel).Info("found one existing HTTP01 solver Service for challenge resource")
 		return existingServices[0].Name, nil
 	}
 	if len(existingServices) > 1 {
