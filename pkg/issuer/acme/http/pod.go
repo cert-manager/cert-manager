@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	logsapi "k8s.io/component-base/logs/api/v1"
 
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -216,6 +217,11 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	}
 	if s.ACMEOptions.ACMEHTTP01SolverProxyProtocol {
 		podArgs = append(podArgs, "--proxy-protocol")
+	}
+	// Give the solver the controller's log format. The flag is left out for
+	// the default format, so solver images that predate it keep working.
+	if format := s.ACMEOptions.HTTP01SolverLoggingFormat; format != "" && format != logsapi.DefaultLogFormat {
+		podArgs = append(podArgs, fmt.Sprintf("--logging-format=%s", format))
 	}
 
 	return &corev1.Pod{
