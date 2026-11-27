@@ -410,13 +410,15 @@ func runDNSServer(t *testing.T, server *dns.Server) {
 	})
 }
 
-// answerHost replies to A and AAAA queries for name with the matching ips.
-func answerHost(name string, ips ...string) dns.HandlerFunc {
+// answerHost replies to A and AAAA queries for challengeHost with the matching
+// ips, as a recursive resolver would.
+func answerHost(ips ...string) dns.HandlerFunc {
 	return func(w dns.ResponseWriter, r *dns.Msg) {
 		m := new(dns.Msg)
 		m.SetReply(r)
+		m.RecursionAvailable = true
 		for _, q := range r.Question {
-			if q.Name != dns.Fqdn(name) {
+			if q.Name != dns.Fqdn(challengeHost) {
 				continue
 			}
 			for _, ip := range ips {
@@ -487,6 +489,14 @@ func TestReachabilityCustomDnsServersFailover(t *testing.T) {
 			first: replyRcode(dns.RcodeRefused),
 		},
 		{
+			name: "first server does not recurse",
+			first: func(w dns.ResponseWriter, r *dns.Msg) {
+				m := new(dns.Msg)
+				m.SetReply(r)
+				_ = w.WriteMsg(m)
+			},
+		},
+		{
 			// NXDOMAIN is an answer, so the next server is not asked.
 			name:    "first server replies NXDOMAIN",
 			first:   replyRcode(dns.RcodeNameError),
@@ -497,7 +507,7 @@ func TestReachabilityCustomDnsServersFailover(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := startChallengeServer(t)
 			first := startDNSServer(t, tt.first, false)
-			second := startDNSServer(t, answerHost(challengeHost, "127.0.0.1"), false)
+			second := startDNSServer(t, answerHost("127.0.0.1"), false)
 
 			err := testReachability(t.Context(), u, challengeKey, []string{first, second}, "cert-manager-test")
 			if tt.wantErr && err == nil {
@@ -515,7 +525,7 @@ func TestReachabilityCustomDnsServersFailover(t *testing.T) {
 func TestReachabilityCustomDnsServersTruncated(t *testing.T) {
 	u := startChallengeServer(t)
 
-	answer := answerHost(challengeHost, "127.0.0.1")
+	answer := answerHost("127.0.0.1")
 	server := startDNSServer(t, func(w dns.ResponseWriter, r *dns.Msg) {
 		if _, ok := w.RemoteAddr().(*net.UDPAddr); ok {
 			m := new(dns.Msg)
@@ -532,12 +542,50 @@ func TestReachabilityCustomDnsServersTruncated(t *testing.T) {
 	}
 }
 
+// TestReachabilityCustomDnsServersEDNS0 ensures that queries carry an EDNS0
+// record with a 1232 byte buffer size.
+func TestReachabilityCustomDnsServersEDNS0(t *testing.T) {
+	u := startChallengeServer(t)
+
+	answer := answerHost("127.0.0.1")
+	server := startDNSServer(t, func(w dns.ResponseWriter, r *dns.Msg) {
+		if opt := r.IsEdns0(); opt == nil || opt.UDPSize() != 1232 {
+			replyRcode(dns.RcodeFormatError)(w, r)
+			return
+		}
+		answer(w, r)
+	}, false)
+
+	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
+		t.Errorf("expected the self check to succeed with an EDNS0 query, but got: %v", err)
+	}
+}
+
+// TestReachabilityCustomDnsServersAAAAFailure ensures that the A addresses of a
+// server are used when its AAAA query fails.
+func TestReachabilityCustomDnsServersAAAAFailure(t *testing.T) {
+	u := startChallengeServer(t)
+
+	answer := answerHost("127.0.0.1")
+	server := startDNSServer(t, func(w dns.ResponseWriter, r *dns.Msg) {
+		if len(r.Question) == 1 && r.Question[0].Qtype == dns.TypeAAAA {
+			replyRcode(dns.RcodeServerFailure)(w, r)
+			return
+		}
+		answer(w, r)
+	}, false)
+
+	if err := testReachability(t.Context(), u, challengeKey, []string{server}, "cert-manager-test"); err != nil {
+		t.Errorf("expected the self check to succeed with the A address, but got: %v", err)
+	}
+}
+
 // TestReachabilityCustomDnsServersTriesEveryAddress ensures that every address
 // a server returns is tried, A and AAAA alike. The challenge listens on IPv4
 // only, behind an IPv6 address that is tried first and cannot connect.
 func TestReachabilityCustomDnsServersTriesEveryAddress(t *testing.T) {
 	u := startChallengeServer(t)
-	server := startDNSServer(t, answerHost(challengeHost, "127.0.0.1", "::1"), false)
+	server := startDNSServer(t, answerHost("127.0.0.1", "::1"), false)
 
 	var dialed []string
 	original := dialContext
