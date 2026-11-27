@@ -81,7 +81,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) error {
 		return err
 	}
 	if len(existingPods) == 1 {
-		logf.WithRelatedResource(log, existingPods[0]).Info("found one existing HTTP01 solver pod")
+		logf.WithRelatedResource(log, existingPods[0]).V(logf.DebugLevel).Info("found one existing HTTP01 solver pod")
 		return nil
 	}
 	if len(existingPods) > 1 {

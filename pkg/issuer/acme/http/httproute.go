@@ -53,7 +53,7 @@ func (s *Solver) ensureGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 		return httpRoute, nil
 	}
 
-	log.Info("Found existing HTTPRoute for challenge", "name", ch.Name, "namespace", ch.Namespace)
+	log.V(logf.DebugLevel).Info("Found existing HTTPRoute for challenge", "name", ch.Name, "namespace", ch.Namespace)
 
 	httpRoute, err = s.checkAndUpdateGatewayHTTPRoute(ctx, ch, svcName, httpRoute)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *Solver) ensureGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 
 func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) (*gwapi.HTTPRoute, error) {
 	log := logf.FromContext(ctx).WithName("getGatewayHTTPRoute")
-	log.Info("getting httpRoutes for challenge", "name", ch.Name, "namespace", ch.Namespace)
+	log.V(logf.DebugLevel).Info("getting httpRoutes for challenge", "name", ch.Name, "namespace", ch.Namespace)
 	httpRoutes, err := s.httpRouteLister.HTTPRoutes(ch.Namespace).List(labels.Set(podLabels(ch)).AsSelector())
 	if err != nil {
 		return nil, err
