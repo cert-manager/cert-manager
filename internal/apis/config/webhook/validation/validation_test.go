@@ -18,6 +18,7 @@ package validation
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -160,6 +161,43 @@ func TestValidateWebhookConfiguration(t *testing.T) {
 			func(wc *config.WebhookConfiguration) field.ErrorList {
 				return field.ErrorList{
 					field.Invalid(field.NewPath("pemSizeLimitsConfig.maxCertificateSize"), 400000, "must not be larger than maxBundleSize"),
+				}
+			},
+		},
+		{
+			"with zero shutdown delay",
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
+				ShutdownDelay:       0,
+			},
+			nil,
+		},
+		{
+			"with valid shutdown delay",
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
+				ShutdownDelay:       10 * time.Second,
+			},
+			nil,
+		},
+		{
+			"with negative shutdown delay",
+			&config.WebhookConfiguration{
+				Logging: logsapi.LoggingConfiguration{
+					Format: "text",
+				},
+				PEMSizeLimitsConfig: validPEMSizeLimitsConfig(),
+				ShutdownDelay:       -time.Second,
+			},
+			func(wc *config.WebhookConfiguration) field.ErrorList {
+				return field.ErrorList{
+					field.Invalid(field.NewPath("shutdownDelay"), wc.ShutdownDelay, "must not be negative"),
 				}
 			},
 		},

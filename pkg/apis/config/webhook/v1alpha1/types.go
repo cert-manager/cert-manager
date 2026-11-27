@@ -90,6 +90,17 @@ type WebhookConfiguration struct {
 
 	// pemSizeLimitsConfig configures the maximum sizes for PEM-encoded data
 	PEMSizeLimitsConfig PEMSizeLimitsConfig `json:"pemSizeLimitsConfig,omitzero"`
+
+	// shutdownDelay is how long the webhook keeps serving requests after it
+	// receives a shutdown signal (SIGTERM or SIGINT), before it stops
+	// listening and shuts down. A terminating Pod stays in the Service's
+	// endpoints for a short time after it is sent SIGTERM, and the
+	// kube-apiserver keeps sending admission requests to it until it is
+	// removed. The Pod's terminationGracePeriodSeconds must cover this
+	// delay plus the time it takes to finish in-flight requests.
+	// Set to 0 to shut down as soon as the signal is received.
+	// Defaults to 5s.
+	ShutdownDelay *sharedv1alpha1.Duration `json:"shutdownDelay,omitempty"`
 }
 
 type PEMSizeLimitsConfig struct {

@@ -39,6 +39,10 @@ func ValidateWebhookConfiguration(cfg *config.WebhookConfiguration, fldPath *fie
 
 	allErrors = append(allErrors, validatePEMSizeLimitsConfig(&cfg.PEMSizeLimitsConfig, fldPath.Child("pemSizeLimitsConfig"))...)
 
+	if cfg.ShutdownDelay < 0 {
+		allErrors = append(allErrors, field.Invalid(fldPath.Child("shutdownDelay"), cfg.ShutdownDelay, "must not be negative"))
+	}
+
 	return allErrors
 }
 

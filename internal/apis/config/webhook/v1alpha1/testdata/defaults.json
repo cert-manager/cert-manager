@@ -34,5 +34,6 @@
 		"maxPrivateKeySize": 13000,
 		"maxChainLength": 95000,
 		"maxBundleSize": 330000
-	}
+	},
+	"shutdownDelay": "5s"
 }
