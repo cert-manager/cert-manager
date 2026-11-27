@@ -563,6 +563,7 @@ func TestGenerateCSR(t *testing.T) {
 		crt                                     *cmapi.Certificate
 		want                                    *x509.CertificateRequest
 		wantErr                                 bool
+		wantErrMsg                              string
 		literalCertificateSubjectFeatureEnabled bool
 		basicConstraintsFeatureEnabled          bool
 		nameConstraintsFeatureEnabled           bool
@@ -815,9 +816,10 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
-			name:    "Error on generating CSR from certificate with no subject",
-			crt:     &cmapi.Certificate{Spec: cmapi.CertificateSpec{}},
-			wantErr: true,
+			name:       "Error on generating CSR from certificate with no subject",
+			crt:        &cmapi.Certificate{Spec: cmapi.CertificateSpec{}},
+			wantErr:    true,
+			wantErrMsg: "at least one of commonName (from the commonName field or from a literalSubject), dnsNames, emailAddresses, ipAddresses, otherNames, or uris must be set",
 		},
 		{
 			name: "Generate CSR from certificate with literal subject honouring the exact order",
@@ -1005,6 +1007,9 @@ func TestGenerateCSR(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if tt.wantErrMsg != "" {
+				assert.EqualError(t, err, tt.wantErrMsg)
 			}
 			assert.Equal(t, tt.want, got, "GenerateCSR()")
 
