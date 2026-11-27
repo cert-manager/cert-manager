@@ -33,7 +33,8 @@ func ValidateClusterIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) 
 }
 
 func ValidateUpdateClusterIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldIss := oldObj.(*cmapi.ClusterIssuer)
 	iss := obj.(*cmapi.ClusterIssuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	allErrs, warnings := validateIssuerConfig(&iss.Spec.IssuerConfig, &oldIss.Spec.IssuerConfig, field.NewPath("spec"))
 	return allErrs, warnings
 }

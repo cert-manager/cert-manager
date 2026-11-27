@@ -19,6 +19,7 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -43,8 +44,9 @@ func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.
 }
 
 func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	oldIss := oldObj.(*certmanager.Issuer)
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	allErrs, warnings := validateIssuerConfig(&iss.Spec.IssuerConfig, &oldIss.Spec.IssuerConfig, field.NewPath("spec"))
 	// Admission request should never be nil
 	return allErrs, warnings
 }
@@ -54,6 +56,10 @@ func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field
 }
 
 func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, []string) {
+	return validateIssuerConfig(iss, nil, fldPath)
+}
+
+func validateIssuerConfig(iss, oldIss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
 	numConfigs := 0
 	el := field.ErrorList{}
@@ -62,7 +68,11 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 			el = append(el, field.Forbidden(fldPath.Child("acme"), "may not specify more than one issuer type"))
 		} else {
 			numConfigs++
-			e, w := ValidateACMEIssuerConfig(iss.ACME, fldPath.Child("acme"))
+			var oldACME *cmacme.ACMEIssuer
+			if oldIss != nil {
+				oldACME = oldIss.ACME
+			}
+			e, w := validateACMEIssuerConfig(iss.ACME, oldACME, fldPath.Child("acme"))
 			el, warnings = append(el, e...), append(warnings, w...)
 		}
 	}
@@ -106,6 +116,13 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 }
 
 func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
+	return validateACMEIssuerConfig(iss, nil, fldPath)
+}
+
+// validateACMEIssuerConfig validates the ACME config of an Issuer or
+// ClusterIssuer. oldIss is the config before an update, or nil when the object
+// is created.
+func validateACMEIssuerConfig(iss, oldIss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
 	var warnings []string
 
 	el := field.ErrorList{}
@@ -143,14 +160,24 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		}
 	}
 
+	// The DNS01 solvers that the Issuer already had before this update.
+	var oldDNS01Solvers []*cmacme.ACMEChallengeSolverDNS01
+	if oldIss != nil {
+		for _, sol := range oldIss.Solvers {
+			if sol.DNS01 != nil {
+				oldDNS01Solvers = append(oldDNS01Solvers, sol.DNS01)
+			}
+		}
+	}
+
 	for i, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
+		el = append(el, validateACMEIssuerChallengeSolverConfig(&sol, oldDNS01Solvers, fldPath.Child("solvers").Index(i))...)
 	}
 
 	return el, warnings
 }
 
-func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+func validateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, oldDNS01Solvers []*cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	numProviders := 0
@@ -163,7 +190,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 			el = append(el, field.Forbidden(fldPath, "may not specify more than one solver type in a single solver"))
 		} else {
 			numProviders++
-			solverErrs, _ := ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))
+			solverErrs, _ := validateACMEChallengeSolverDNS01(sol.DNS01, oldDNS01Solvers, fldPath.Child("dns01"))
 			el = append(el, solverErrs...)
 		}
 	}
@@ -507,6 +534,13 @@ var supportedTSIGAlgorithms = []string{
 }
 
 func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) (field.ErrorList, []*cmmeta.SecretKeySelector) {
+	return validateACMEChallengeSolverDNS01(p, nil, fldPath)
+}
+
+// validateACMEChallengeSolverDNS01 validates a DNS01 solver. oldSolvers are the
+// DNS01 solvers that the Issuer had before an update, and are nil when the
+// object is created.
+func validateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, oldSolvers []*cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) (field.ErrorList, []*cmmeta.SecretKeySelector) {
 	el := field.ErrorList{}
 	requiredSecrets := []*cmmeta.SecretKeySelector{}
 
@@ -655,11 +689,21 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		}
 	}
 	if p.AcmeDNS != nil {
-		numProviders++
-		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
-		requiredSecrets = append(requiredSecrets, &p.AcmeDNS.AccountSecret)
-		if len(p.AcmeDNS.Host) == 0 {
-			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
+		if numProviders > 0 {
+			// Keep Issuers stored before this check updatable (the controller
+			// updates their status), so only reject a solver that is new or changed.
+			if !slices.ContainsFunc(oldSolvers, func(old *cmacme.ACMEChallengeSolverDNS01) bool {
+				return reflect.DeepEqual(old, p)
+			}) {
+				el = append(el, field.Forbidden(fldPath.Child("acmeDNS"), "may not specify more than one provider type"))
+			}
+		} else {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
+			requiredSecrets = append(requiredSecrets, &p.AcmeDNS.AccountSecret)
+			if len(p.AcmeDNS.Host) == 0 {
+				el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
+			}
 		}
 	}
 

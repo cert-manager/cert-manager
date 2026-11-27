@@ -112,6 +112,25 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 			}),
 			expectNames: []string{"acmedns-creds"},
 		},
+		// The solver ignores acmeDNS when another provider is set, so an Issuer
+		// that is stored like this does not depend on the acmeDNS account Secret.
+		"ACME issuer with an AcmeDNS and an Akamai DNS-01 provider returns only the Akamai secrets": {
+			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
+				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
+						ServiceConsumerDomain: "example.com",
+						AccessToken:           cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-access-token"}},
+						ClientSecret:          cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-client-secret"}},
+						ClientToken:           cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "akamai-client-token"}},
+					},
+					AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
+						Host:          "https://auth.example.com",
+						AccountSecret: cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "acmedns-creds"}},
+					},
+				}},
+			}),
+			expectNames: []string{"akamai-access-token", "akamai-client-secret", "akamai-client-token"},
+		},
 		"ACME issuer with a DigitalOcean DNS-01 solver returns its secret": {
 			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
