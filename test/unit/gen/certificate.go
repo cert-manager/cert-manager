@@ -297,6 +297,12 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 	}
 }
 
+func SetCertificateDeletionPolicy(policy v1.CertificateDeletionPolicy) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.DeletionPolicy = policy
+	}
+}
+
 func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.CertificateAdditionalOutputFormat) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats

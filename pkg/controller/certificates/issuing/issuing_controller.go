@@ -154,7 +154,7 @@ func NewController(
 
 	secretsManager := internal.NewSecretsManager(
 		ctx.Client.CoreV1(), secretsInformer.Lister(),
-		ctx.Recorder, ctx.FieldManager, ctx.CertificateOptions.EnableOwnerRef,
+		ctx.Recorder, ctx.FieldManager, ctx.CertificateOptions.DefaultSecretDeletionPolicy(),
 	)
 
 	return &controller{
@@ -166,7 +166,7 @@ func NewController(
 		clock:                    ctx.Clock,
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain: policies.NewSecretPostIssuancePolicyChain(
-			ctx.CertificateOptions.EnableOwnerRef,
+			ctx.CertificateOptions.DefaultSecretDeletionPolicy(),
 			ctx.FieldManager,
 		),
 		fieldManager:         ctx.FieldManager,

@@ -59,11 +59,11 @@ type SecretsManager struct {
 	// fieldManager is the manager name used for the Apply operations on Secrets.
 	fieldManager string
 
-	// if true, Secret resources created by the controller will have an
-	// 'owner reference' set, meaning when the Certificate is deleted, the
-	// Secret resource will be automatically deleted.
-	// This option is disabled by default.
-	enableSecretOwnerReferences bool
+	// defaultDeletionPolicy applies to Certificates that leave
+	// spec.deletionPolicy unset. With Delete, the Secret written for such a
+	// Certificate gets an owner reference to it, so that the Secret is deleted
+	// together with the Certificate.
+	defaultDeletionPolicy cmapi.CertificateDeletionPolicy
 }
 
 // SecretData is a structure wrapping private key, Certificate and CA data
@@ -73,22 +73,22 @@ type SecretData struct {
 	IssuerName, IssuerKind, IssuerGroup string
 }
 
-// NewSecretsManager returns a new SecretsManager. Setting
-// enableSecretOwnerReferences to true will mean that secrets will be deleted
-// when the corresponding Certificate is deleted.
+// NewSecretsManager returns a new SecretsManager. defaultDeletionPolicy is
+// the deletion policy applied to Certificates that leave spec.deletionPolicy
+// unset; with Delete their Secrets are deleted together with the Certificate.
 func NewSecretsManager(
 	secretClient coreclient.SecretsGetter,
 	secretLister internalinformers.SecretLister,
 	recorder record.EventRecorder,
 	fieldManager string,
-	enableSecretOwnerReferences bool,
+	defaultDeletionPolicy cmapi.CertificateDeletionPolicy,
 ) *SecretsManager {
 	return &SecretsManager{
-		secretClient:                secretClient,
-		secretLister:                secretLister,
-		recorder:                    recorder,
-		fieldManager:                fieldManager,
-		enableSecretOwnerReferences: enableSecretOwnerReferences,
+		secretClient:          secretClient,
+		secretLister:          secretLister,
+		recorder:              recorder,
+		fieldManager:          fieldManager,
+		defaultDeletionPolicy: defaultDeletionPolicy,
 	}
 }
 
@@ -120,10 +120,12 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
 		WithData(secret.Data).WithType(secret.Type)
 
-	// If Secret owner reference is enabled, set it on the Secret. This results
-	// in a no-op if the Secret already exists and has the owner reference set,
-	// and visa-versa.
-	if s.enableSecretOwnerReferences {
+	// Set the owner reference when the Certificate's deletion policy asks for
+	// one and the Secret is the one this Certificate owns. Applying without the
+	// field removes an owner reference this field manager set earlier, so a
+	// Certificate switched to Orphan releases its Secret on the next Apply.
+	if ownerRefExpected, why := certificates.SecretOwnerReferenceExpected(crt, secret, s.defaultDeletionPolicy); ownerRefExpected {
+		log.V(logf.DebugLevel).Info("setting owner reference on secret", "reason", why)
 		ref := *metav1.NewControllerRef(crt, certificateGvk)
 		applyCnf = applyCnf.WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
 			APIVersion: &ref.APIVersion, Kind: &ref.Kind,
