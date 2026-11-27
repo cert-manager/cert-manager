@@ -1203,12 +1203,16 @@ func TestIsARIReplacesRejection(t *testing.T) {
 			},
 			want: true,
 		},
-		"unauthorized for another reason": {
-			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:unauthorized", Detail: "Account is not valid"},
+		"replaced certificate unknown to the server, worded differently": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:unauthorized", Detail: "The certificate being replaced was not issued to this account"},
+			want: true,
+		},
+		"rate limited": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:rateLimited", Detail: "too many new orders"},
 			want: false,
 		},
-		"malformed for another reason": {
-			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:malformed", Detail: "Invalid identifier"},
+		"server error": {
+			err:  &acmeapi.Error{ProblemType: "urn:ietf:params:acme:error:serverInternal"},
 			want: false,
 		},
 		"not an ACME problem": {err: errors.New("connection reset"), want: false},

@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -841,12 +840,15 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Orde
 	}
 }
 
-// isARIReplacesRejection reports whether err returned from AuthorizeOrder
-// indicates the ACME server refused to honor the `replaces` field. Per
-// RFC 9773, servers signal this with the `alreadyReplaced` problem type.
-// Servers may also reject the field with a `malformed` or `unauthorized`
-// problem that names it, e.g. Let's Encrypt answers `unauthorized` when the
-// certificate being replaced was requested by another account.
+// isARIReplacesRejection reports whether err returned from AuthorizeOrder,
+// for an order sent with the `replaces` field, indicates the ACME server
+// refused that field. Per RFC 9773, servers signal this with the
+// `alreadyReplaced` problem type. Servers may also reject the field with a
+// `malformed` or `unauthorized` problem, and the detail text differs between
+// servers (e.g. Let's Encrypt answers `unauthorized` when the certificate being
+// replaced was requested by another account), so any such problem is treated
+// as a rejection. If the problem was about something else, the retry without
+// `replaces` fails the same way.
 // We also treat ErrCADoesNotSupportARI as a rejection so renewal can fall
 // back gracefully if the directory changes between Discover and newOrder.
 func isARIReplacesRejection(err error) bool {
@@ -860,13 +862,11 @@ func isARIReplacesRejection(err error) bool {
 		return false
 	}
 
-	if ae.ProblemType == "urn:ietf:params:acme:error:alreadyReplaced" {
-		return true
-	}
-
 	switch ae.ProblemType {
-	case "urn:ietf:params:acme:error:malformed", "urn:ietf:params:acme:error:unauthorized":
-		return strings.Contains(strings.ToLower(ae.Detail), "replaces")
+	case "urn:ietf:params:acme:error:alreadyReplaced",
+		"urn:ietf:params:acme:error:malformed",
+		"urn:ietf:params:acme:error:unauthorized":
+		return true
 	}
 	return false
 }
