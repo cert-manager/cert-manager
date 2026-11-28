@@ -155,7 +155,7 @@ type CertificateRequestSpec struct {
 	// If unset, defaults to `digital signature` and `key encipherment`, or to
 	// `digital signature` alone if the CSR has an ML-DSA public key.
 	// +optional
-	// +listType=atomic
+	// +listType=set
 	Usages []KeyUsage `json:"usages,omitempty"`
 
 	// Username contains the name of the user that created the CertificateRequest.
