@@ -1912,6 +1912,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: url
       type:
         scalar: string
+    - name: workspaceID
+      type:
+        scalar: string
 - name: com.github.cert-manager.cert-manager.pkg.apis.certmanager.v1.VenafiTPP
   map:
     fields:

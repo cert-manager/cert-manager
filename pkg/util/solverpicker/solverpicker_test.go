@@ -19,8 +19,6 @@ package solverpicker
 import (
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -291,10 +289,8 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
+				Labels: map[string]string{
+					"label": "exists",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -344,10 +340,8 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
+				Labels: map[string]string{
+					"label": "exists",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -387,10 +381,8 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
+				Labels: map[string]string{
+					"label": "exists",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -429,11 +421,9 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label":   "exists",
-						"another": "label",
-					},
+				Labels: map[string]string{
+					"label":   "exists",
+					"another": "label",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -483,11 +473,9 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label":   "exists",
-						"another": "matches",
-					},
+				Labels: map[string]string{
+					"label":   "exists",
+					"another": "matches",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"example.com"},
@@ -809,10 +797,8 @@ func TestPick(t *testing.T) {
 				},
 			},
 			order: &cmacme.Order{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"label": "exists",
-					},
+				Labels: map[string]string{
+					"label": "exists",
 				},
 				Spec: cmacme.OrderSpec{
 					DNSNames: []string{"www.example.com"},

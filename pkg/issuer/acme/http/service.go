@@ -117,15 +117,13 @@ func (s *Solver) buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	maps.Copy(serviceLabels, filterACMEIdentityLabels(s.ACMEOptions.HTTP01SolverExtraLabels))
 
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
-			Labels:       serviceLabels,
-			Annotations: map[string]string{
-				"auth.istio.io/8089": "NONE",
-			},
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
+		GenerateName: "cm-acme-http-solver-",
+		Namespace:    ch.Namespace,
+		Labels:       serviceLabels,
+		Annotations: map[string]string{
+			"auth.istio.io/8089": "NONE",
 		},
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeNodePort,
 			Ports: []corev1.ServicePort{

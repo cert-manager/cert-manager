@@ -1,0 +1,202 @@
+suite: Labels merge as a map without duplicate keys
+templates:
+  - templates/deployment.yaml
+  - templates/webhook-deployment.yaml
+  - templates/cainjector-deployment.yaml
+  - templates/serviceaccount.yaml
+  - templates/service.yaml
+  - templates/webhook-service.yaml
+  - templates/cainjector-service.yaml
+  - templates/servicemonitor.yaml
+  - templates/rbac.yaml
+release:
+  name: rel
+  namespace: cert-manager
+tests:
+  - it: commonLabels wins over a chart-owned label
+    set:
+      global:
+        commonLabels:
+          app.kubernetes.io/managed-by: argocd
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: argocd
+        template: templates/serviceaccount.yaml
+
+  - it: the webhook and cainjector pod templates keep theirs too
+    set:
+      global:
+        commonLabels:
+          app.kubernetes.io/component: from-common
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: webhook
+        template: templates/webhook-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: cainjector
+        template: templates/cainjector-deployment.yaml
+
+  - it: the app label is not read by any selector and stays overridable
+    set:
+      global:
+        commonLabels:
+          app: from-common
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.app
+          value: from-common
+        template: templates/deployment.yaml
+      - equal:
+          path: metadata.labels.app
+          value: from-common
+        template: templates/serviceaccount.yaml
+
+  - it: the Services the ServiceMonitor selects keep the labels it selects on
+    set:
+      prometheus:
+        servicemonitor:
+          enabled: true
+      global:
+        commonLabels:
+          app.kubernetes.io/name: from-common
+          app.kubernetes.io/component: from-common
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: cert-manager
+        template: templates/service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: controller
+        template: templates/service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: webhook
+        template: templates/webhook-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: webhook
+        template: templates/webhook-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: cainjector
+        template: templates/cainjector-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: cainjector
+        template: templates/cainjector-service.yaml
+
+  - it: the prometheus label still wins over commonLabels
+    set:
+      prometheus:
+        servicemonitor:
+          enabled: true
+          prometheusInstance: default
+      global:
+        commonLabels:
+          prometheus: from-common
+    asserts:
+      - equal:
+          path: metadata.labels.prometheus
+          value: default
+        template: templates/servicemonitor.yaml
+
+  - it: the RBAC aggregation labels still win over commonLabels
+    set:
+      global:
+        rbac:
+          aggregateClusterRoles: true
+        commonLabels:
+          rbac.authorization.k8s.io/aggregate-to-view: from-common
+    asserts:
+      - equal:
+          path: metadata.labels["rbac.authorization.k8s.io/aggregate-to-view"]
+          value: "true"
+        template: templates/rbac.yaml
+        documentSelector:
+          path: metadata.name
+          value: rel-cert-manager-view
+
+  - it: podLabels wins over commonLabels but cannot take the selector labels
+    set:
+      global:
+        commonLabels:
+          team: from-common
+          shared: from-common
+      podLabels:
+        team: from-pod
+        app.kubernetes.io/component: hijack
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.team
+          value: from-pod
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels.shared
+          value: from-common
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: controller
+        template: templates/deployment.yaml
+
+  - it: serviceLabels wins over commonLabels but cannot take the label the ServiceMonitor selects on
+    set:
+      global:
+        commonLabels:
+          team: from-common
+      serviceLabels:
+        team: from-service
+        app.kubernetes.io/name: hijack
+    asserts:
+      - equal:
+          path: metadata.labels.team
+          value: from-service
+        template: templates/service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: cert-manager
+        template: templates/service.yaml
+
+  - it: webhook.serviceLabels cannot take the labels the ServiceMonitor selects on
+    set:
+      webhook:
+        serviceLabels:
+          team: from-service
+          app.kubernetes.io/name: hijack
+          app.kubernetes.io/component: hijack
+    asserts:
+      - equal:
+          path: metadata.labels.team
+          value: from-service
+        template: templates/webhook-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: webhook
+        template: templates/webhook-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: webhook
+        template: templates/webhook-service.yaml
+
+  - it: serviceAccount.labels wins over commonLabels
+    set:
+      global:
+        commonLabels:
+          team: from-common
+          shared: from-common
+      serviceAccount:
+        labels:
+          team: from-serviceaccount
+    asserts:
+      - equal:
+          path: metadata.labels.team
+          value: from-serviceaccount
+        template: templates/serviceaccount.yaml
+      - equal:
+          path: metadata.labels.shared
+          value: from-common
+        template: templates/serviceaccount.yaml

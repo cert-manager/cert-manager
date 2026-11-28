@@ -19,6 +19,8 @@ package framework
 import (
 	"context"
 	"fmt"
+	"go/version"
+	"strings"
 	"time"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -56,13 +58,24 @@ func RequireFeatureGate(featureSet featuregate.FeatureGate, gate featuregate.Fea
 	}
 }
 
+// RequireServerGoVersion skips the test if the Kubernetes API server was built
+// with a Go release older than minimum, such as "go1.27". It doesn't skip if
+// the API server doesn't report a valid Go version.
+func RequireServerGoVersion(ctx context.Context, f *Framework, minimum string) {
+	info, err := f.KubeClientSet.Discovery().ServerVersionWithContext(ctx)
+	Expect(err).NotTo(HaveOccurred())
+	// Drop any GOEXPERIMENT suffix, as in "go1.26.3 X:boringcrypto".
+	goVersion, _, _ := strings.Cut(info.GoVersion, " ")
+	if version.IsValid(goVersion) && version.Compare(goVersion, minimum) < 0 {
+		Skipf("the Kubernetes API server was built with %s, which is older than %s, skipping test", info.GoVersion, minimum)
+	}
+}
+
 // TODO: move this function into a different package
 func RbacClusterRoleHasAccessToResource(ctx context.Context, f *Framework, clusterRole string, verb string, resource string) bool {
 	By("Creating a service account")
 	viewServiceAccount := &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "rbac-test-",
-		},
+		GenerateName: "rbac-test-",
 	}
 	serviceAccountClient := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name)
 	serviceAccount, err := serviceAccountClient.Create(ctx, viewServiceAccount, metav1.CreateOptions{})
@@ -71,9 +84,7 @@ func RbacClusterRoleHasAccessToResource(ctx context.Context, f *Framework, clust
 
 	By("Creating ClusterRoleBinding to view " + clusterRole + " clusterRole")
 	viewRoleBinding := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: viewServiceAccountName + "-rb-",
-		},
+		GenerateName: viewServiceAccountName + "-rb-",
 		Subjects: []rbacv1.Subject{
 			{Kind: "ServiceAccount", Name: viewServiceAccountName, Namespace: f.Namespace.Name},
 		},

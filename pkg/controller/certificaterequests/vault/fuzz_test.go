@@ -131,10 +131,8 @@ func FuzzVaultCRController(f *testing.F) {
 		// Add token if the fuzzer decides to.
 		if addToken {
 			tokenSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: gen.DefaultTestNamespace,
-					Name:      "token-secret",
-				},
+				Namespace: gen.DefaultTestNamespace,
+				Name:      "token-secret",
 				Data: map[string][]byte{
 					"my-token-key": secretTokenData,
 				},
@@ -144,10 +142,8 @@ func FuzzVaultCRController(f *testing.F) {
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					Auth: cmapi.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							Key: "my-token-key",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "token-secret",
-							},
+							Key:  "my-token-key",
+							Name: "token-secret",
 						},
 					},
 				}),

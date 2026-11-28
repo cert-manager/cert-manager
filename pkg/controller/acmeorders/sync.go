@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -57,6 +59,27 @@ const (
 // RequeuePeriod is the default period after which an Order should be re-queued.
 // It can be overridden in tests.
 var RequeuePeriod = time.Second * 5
+
+// ProcessingRequeuePeriod is the period after which an Order whose ACME order
+// is still 'processing' after finalization is re-queued.
+// It can be overridden in tests.
+var ProcessingRequeuePeriod = time.Second * 30
+
+// FinalizeTimeout bounds how long a single sync waits for the ACME server to
+// issue the certificate after the order is finalized. If the order is still
+// 'processing' after this, the Order is re-queued instead of holding a worker.
+// It can be overridden in tests.
+//
+// It is longer than the 90 second HTTP timeout of the ACME client, so the
+// finalize request itself is bounded by the client and this deadline only
+// bounds the wait for the order to leave 'processing'.
+var FinalizeTimeout = 2 * time.Minute
+
+// ProcessingTimeout is how long after the Order was created an ACME order may
+// stay 'processing' when the ACME server did not report an expiry time. RFC 8555
+// only requires 'expires' for 'pending' and 'valid' orders.
+// It can be overridden in tests.
+var ProcessingTimeout = 24 * time.Hour
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
@@ -238,6 +261,13 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 		return nil
 
+	// The order was finalized but the ACME server is still issuing the
+	// certificate. Poll it from the work queue rather than from a worker, and
+	// give up once the ACME server's own deadline for the order has passed.
+	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges) && acmeOrder.Status == acmeapi.StatusProcessing:
+		c.processingOrder(ctx, o, acmeOrder)
+		return nil
+
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatusFromACMEOrder(o, acmeOrder)
@@ -257,10 +287,37 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
+var (
+	errCADoesNotSupportProfiles = errors.New("ACME server does not advertise support for profiles")
+	errProfileNotSupported      = errors.New("ACME server does not advertise the requested profile")
+)
+
+// checkProfileSupported returns a non-retryable error if the ACME server's
+// directory does not offer the requested profile. AuthorizeOrder makes the
+// same check, but the errors it returns are unexported.
+func checkProfileSupported(ctx context.Context, cl acmecl.Interface, profile string) error {
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching ACME directory: %w", err)
+	}
+	if len(dir.Profiles) == 0 {
+		return errCADoesNotSupportProfiles
+	}
+	if _, ok := dir.Profiles[acmeapi.ProfileName(profile)]; !ok {
+		supported := make([]string, 0, len(dir.Profiles))
+		for name := range dir.Profiles {
+			supported = append(supported, string(name))
+		}
+		slices.Sort(supported)
+		return fmt.Errorf("%w: %q (supported profiles: %s)", errProfileNotSupported, profile, strings.Join(supported, ", "))
+	}
+	return nil
+}
+
 func isRetryableError(err error) bool {
 	for _, targetErr := range []error{
-		acmeapi.ErrCADoesNotSupportProfiles,
-		acmeapi.ErrProfileNotInSetOfSupportedProfiles,
+		errCADoesNotSupportProfiles,
+		errProfileNotSupported,
 	} {
 		if errors.Is(err, targetErr) {
 			return false
@@ -303,7 +360,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 
 	if o.Spec.Profile != "" {
-		options = append(options, acmeapi.WithOrderProfile(o.Spec.Profile))
+		options = append(options, acmeapi.WithOrderIssuanceProfile(acmeapi.ProfileName(o.Spec.Profile)))
 	}
 
 	ariEnabled := acme.ARIEnabledForIssuer(genericIssuer)
@@ -317,7 +374,14 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		replacesAppended = true
 	}
 
-	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
+	var acmeOrder *acmeapi.Order
+	var err error
+	if o.Spec.Profile != "" {
+		err = checkProfileSupported(ctx, cl, o.Spec.Profile)
+	}
+	if err == nil {
+		acmeOrder, err = cl.AuthorizeOrder(ctx, authzIDs, options...)
+	}
 	if err != nil && replacesAppended && isARIReplacesRejection(err) {
 		// Per RFC 9773, a server may reject the replaces field (e.g. the
 		// predecessor has already been replaced, or is unknown). Retry the
@@ -355,12 +419,9 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 }
 
 func (c *controller) updateOrderStatusFromACMEOrder(o *cmacme.Order, acmeOrder *acmeapi.Order) (*acmeapi.Order, error) {
-	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
-	// order's URI field will be empty when calling GetOrder due to the
-	// 'Location' header not being set on the response from the ACME server.
-	//
-	// TODO(wallrj): We have vendored golang.org/x/crypto/acme so there's
-	// nothing stopping us fixing this bug.
+	// GetOrder falls back to the request URL when the server omits the
+	// Location header, so URI is only empty from Interface implementations
+	// that do not set it, such as test fakes.
 	if acmeOrder.URI != "" {
 		o.Status.URL = acmeOrder.URI
 	}
@@ -572,8 +633,18 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		derBytes = block.Bytes
 	}
 
-	// Call to CreateOrderCert finalizes the ACME order. This call can only be made once.
-	certSlice, certURL, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
+	// Call to CreateCertFromOrder finalizes the ACME order. This call can only be made once.
+	// The order URL is passed in because RFC 8555 does not require the finalize
+	// response to carry a Location header, and Pebble omits it.
+	// It then waits for the ACME server to issue the certificate, which is
+	// bounded so that an order the server never completes cannot hold this
+	// worker, and with it the Order's work queue key, indefinitely.
+	finalizeCtx, cancel := context.WithTimeout(ctx, FinalizeTimeout)
+	defer cancel()
+	certSlice, certURL, err := cl.CreateCertFromOrder(finalizeCtx, &acmeapi.Order{URI: o.Status.URL, FinalizeURL: o.Status.FinalizeURL}, derBytes, true)
+
+	// The wait timed out, but not because the controller is shutting down.
+	timedOut := errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil
 
 	acmeErr, ok := err.(*acmeapi.Error)
 
@@ -600,6 +671,12 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			c.setOrderState(&o.Status, string(cmacme.Valid))
 			return c.syncCertificateDataWithOrder(ctx, cl, *acmeOrder, o, issuer)
 		}
+		// The finalize request of an earlier sync was accepted and the ACME
+		// server is still issuing the certificate. Poll it from the work queue.
+		if acmeOrder.Status == acmeapi.StatusProcessing {
+			c.processingOrder(ctx, o, acmeOrder)
+			return nil
+		}
 
 	}
 
@@ -615,9 +692,9 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		log.Error(acmeErr, "acme server fatal error", "errorCode", acmeErr.StatusCode, "dnsNames", o.Spec.DNSNames, "ipAddresses", o.Spec.IPAddresses, "responseHeaders", acmeErr.Header)
 	}
 
-	// Before checking whether the call to CreateOrderCert returned a
+	// Before checking whether the call to CreateCertFromOrder returned a
 	// non-4xx error, ensure the order status is up-to-date.
-	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
+	acmeOrder, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -633,7 +710,18 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
 	}
-	// Check for non-4xx errors from CreateOrderCert
+	if timedOut {
+		log.V(logf.InfoLevel).Info("ACME server has not issued the certificate yet", "timeout", FinalizeTimeout)
+		if acmeOrder.Status == acmeapi.StatusProcessing {
+			c.processingOrder(ctx, o, acmeOrder)
+			return nil
+		}
+		// The order left 'processing' between the timeout and the status
+		// refresh, or the finalize request did not complete: look again soon.
+		c.scheduledWorkQueue.Add(types.NamespacedName{Name: o.Name, Namespace: o.Namespace}, RequeuePeriod)
+		return nil
+	}
+	// Check for non-4xx errors from CreateCertFromOrder
 	if err != nil {
 		return fmt.Errorf("error finalizing order: %v", err)
 	}
@@ -653,6 +741,35 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	return c.storeCertificateOnStatus(ctx, o, certSlice)
+}
+
+// processingOrder records that the ACME server is still processing a finalized
+// order and re-queues the Order to check it again later. Once the ACME order's
+// expiry has passed, the Order is marked as errored instead.
+func (c *controller) processingOrder(ctx context.Context, o *cmacme.Order, acmeOrder *acmeapi.Order) {
+	log := logf.FromContext(ctx)
+
+	expires := acmeOrder.Expires
+	if expires.IsZero() {
+		expires = o.CreationTimestamp.Add(ProcessingTimeout)
+	}
+	if !c.clock.Now().Before(expires) {
+		log.V(logf.InfoLevel).Info("ACME order is still processing after its expiry time, marking Order as failed", "expires", expires)
+		c.setOrderState(&o.Status, string(cmacme.Errored))
+		o.Status.Reason = fmt.Sprintf("ACME server did not issue the certificate before the order expired at %s", expires.Format(time.RFC3339))
+		return
+	}
+
+	// Honour the polling interval the ACME server asked for.
+	requeue := max(ProcessingRequeuePeriod, acmeOrder.RetryAfter)
+	// Never wait past the point where the order expires.
+	requeue = min(requeue, expires.Sub(c.clock.Now()))
+	log.V(logf.DebugLevel).Info("ACME order is still processing, re-queuing Order", "requeuePeriod", requeue)
+	c.setOrderState(&o.Status, string(cmacme.Processing))
+	c.scheduledWorkQueue.Add(types.NamespacedName{
+		Name:      o.Name,
+		Namespace: o.Namespace,
+	}, requeue)
 }
 
 func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Order, certs [][]byte) error {
@@ -831,8 +948,9 @@ func getPreferredCertChain(
 func (c *controller) updateOrApplyStatus(ctx context.Context, order *cmacme.Order) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		return internalorders.ApplyStatus(ctx, c.cmClient, c.fieldManager, &cmacme.Order{
-			ObjectMeta: metav1.ObjectMeta{Namespace: order.Namespace, Name: order.Name},
-			Status:     *order.Status.DeepCopy(),
+			Namespace: order.Namespace,
+			Name:      order.Name,
+			Status:    *order.Status.DeepCopy(),
 		})
 	} else {
 		_, err := c.cmClient.AcmeV1().Orders(order.Namespace).UpdateStatus(ctx, order, metav1.UpdateOptions{})

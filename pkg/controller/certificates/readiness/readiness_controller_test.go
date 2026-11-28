@@ -24,9 +24,13 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
+	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
@@ -34,18 +38,23 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/util/workqueue"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
+	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/internal/test/testutil"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
+	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
 	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
@@ -74,7 +83,8 @@ func TestProcessItem(t *testing.T) {
 	// private key to be used to generate X509 certificate
 	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Namespace: "testns",
+		Name:      "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -82,10 +92,8 @@ func TestProcessItem(t *testing.T) {
 	}
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test-secret",
-		},
+		Namespace: "testns",
+		Name:      "test-secret",
 	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -583,7 +591,8 @@ func TestReadinessForARI(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
 	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+		Namespace: "testns",
+		Name:      "test",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "test-secret",
 			DNSNames:   []string{"example.com"},
@@ -597,10 +606,8 @@ func TestReadinessForARI(t *testing.T) {
 
 	// base Secret to be used in tests
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test-secret",
-		},
+		Namespace: "testns",
+		Name:      "test-secret",
 	}
 
 	tests := map[string]struct {
@@ -995,9 +1002,18 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 		// fetchErr, when set, is returned by the fake GetRenewalInfo.
 		fetchErr error
 
-		wantFetches           int
-		check                 func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
-		wantACMEStatusCleared bool
+		// registryErr, when set, is returned instead of an ACME client, so no
+		// request is made at all.
+		registryErr error
+
+		// runs controls how many times useARIForRenewal is invoked against the
+		// same controller instance; the zero value means exactly once.
+		runs              int
+		wantFetches       int
+		wantNoEvents      bool
+		wantRequeueAfters []time.Duration
+		check             func(t *testing.T, ari *cmapi.CertificateACMEARIStatus)
+		allowNoARIStatus  bool
 	}{
 		"fetches when no ARI information has been recorded yet": {
 			leaf:        currentLeaf,
@@ -1025,7 +1041,8 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 					End:   &metav1.Time{Time: freshWindow.End},
 				},
 			},
-			wantFetches: 0,
+			wantFetches:       0,
+			wantRequeueAfters: []time.Duration{1 * time.Hour},
 		},
 		"refetches when the recorded CertID belongs to a previous certificate": {
 			leaf: currentLeaf,
@@ -1080,6 +1097,86 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				}
 			},
 		},
+		"the retry for a missing client backs off exponentially": {
+			leaf:              currentLeaf,
+			registryErr:       accounts.ErrNotFound,
+			wantFetches:       0,
+			wantNoEvents:      true,
+			allowNoARIStatus:  true,
+			runs:              2,
+			wantRequeueAfters: []time.Duration{ariRegistryRetry, 2 * ariRegistryRetry},
+		},
+		"a client that is not registered yet records nothing": {
+			leaf:              currentLeaf,
+			registryErr:       accounts.ErrNotFound,
+			wantFetches:       0,
+			wantNoEvents:      true,
+			wantRequeueAfters: []time.Duration{1 * time.Minute},
+			allowNoARIStatus:  true,
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari != nil {
+					t.Errorf("expected no status.acme.ari block to be created, got %v", ari)
+				}
+			},
+		},
+		"a client that is not registered yet leaves a recorded window in place": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:      currentCertID,
+				NextCheck:   &metav1.Time{Time: now.Add(-time.Minute)},
+				LastChecked: &metav1.Time{Time: now.Add(-6 * time.Hour)},
+				SuggestedWindow: &cmapi.ACMERenewalWindow{
+					Start: &metav1.Time{Time: freshWindow.Start},
+					End:   &metav1.Time{Time: freshWindow.End},
+				},
+			},
+			registryErr:       accounts.ErrNotFound,
+			wantFetches:       0,
+			wantNoEvents:      true,
+			wantRequeueAfters: []time.Duration{1 * time.Minute},
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari.LastError != "" {
+					t.Errorf("LastError = %q, want nothing recorded for a fetch that never happened", ari.LastError)
+				}
+				if ari.LastChecked == nil || !ari.LastChecked.Time.Equal(now.Add(-6*time.Hour)) {
+					t.Errorf("LastChecked = %v, want the previous check time kept", ari.LastChecked)
+				}
+				if ari.NextCheck == nil || !ari.NextCheck.Time.Equal(now.Add(-time.Minute)) {
+					t.Errorf("NextCheck = %v, want the previous poll time kept", ari.NextCheck)
+				}
+				if ari.SuggestedWindow == nil || !ari.SuggestedWindow.Start.Time.Equal(freshWindow.Start) {
+					t.Errorf("SuggestedWindow = %v, want the recorded window kept", ari.SuggestedWindow)
+				}
+			},
+		},
+		"a client that is not registered yet drops a stale window from a previous certificate": {
+			leaf: currentLeaf,
+			ari: &cmapi.CertificateACMEARIStatus{
+				CertID:          previousCertID,
+				NextCheck:       &metav1.Time{Time: now.Add(-time.Minute)},
+				LastChecked:     &metav1.Time{Time: now.Add(-6 * time.Hour)},
+				SuggestedWindow: staleWindow,
+				ExplanationURL:  "https://example.com/why",
+			},
+			registryErr:       accounts.ErrNotFound,
+			wantFetches:       0,
+			wantNoEvents:      true,
+			wantRequeueAfters: []time.Duration{1 * time.Minute},
+			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
+				if ari.SuggestedWindow != nil {
+					t.Errorf("SuggestedWindow = %v, want it dropped with the previous certificate", ari.SuggestedWindow)
+				}
+				if ari.ExplanationURL != "" {
+					t.Errorf("ExplanationURL = %q, want it cleared with the previous certificate", ari.ExplanationURL)
+				}
+				if ari.CertID != previousCertID {
+					t.Errorf("CertID = %q, want the previous ID kept until the next fetch", ari.CertID)
+				}
+				if ari.LastChecked == nil || !ari.LastChecked.Time.Equal(now.Add(-6*time.Hour)) {
+					t.Errorf("LastChecked = %v, want the previous check time kept", ari.LastChecked)
+				}
+			},
+		},
 		"clears the ARI info when the certificate has no usable CertID": {
 			leaf: noAKILeaf,
 			ari: &cmapi.CertificateACMEARIStatus{
@@ -1089,8 +1186,8 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				SuggestedWindow: staleWindow,
 				ExplanationURL:  "https://example.com/why",
 			},
-			wantFetches:           0,
-			wantACMEStatusCleared: true,
+			wantFetches:      0,
+			allowNoARIStatus: true,
 			check: func(t *testing.T, ari *cmapi.CertificateACMEARIStatus) {
 				if ari != nil {
 					t.Errorf("expected status.acme.ari to be cleared, got %v", ari)
@@ -1132,16 +1229,29 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 			if _, _, err := w.Register(builder.Context); err != nil {
 				t.Fatal(err)
 			}
-			w.controller.recorder = new(testpkg.FakeRecorder)
+			recorder := new(testpkg.FakeRecorder)
+			w.controller.recorder = recorder
 			w.controller.accountRegistry = &accountstest.FakeRegistry{
-				GetClientFunc: func(string) (acmecl.Interface, error) { return acmeClient, nil },
+				GetClientFunc: func(string) (acmecl.Interface, error) {
+					if test.registryErr != nil {
+						return nil, test.registryErr
+					}
+					return acmeClient, nil
+				},
+			}
+			var requeueAfters []time.Duration
+			w.controller.scheduledWorkQueue = &schedulertest.FakeScheduler{
+				AddFunc: func(_ types.NamespacedName, after time.Duration) {
+					requeueAfters = append(requeueAfters, after)
+				},
 			}
 			w.controller.renewalTimeCalculator = renewalTimeBuilder(&metav1.Time{Time: now.Add(24 * time.Hour)}, nil)
 
 			builder.Start()
 
 			crt := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				Namespace: "testns",
+				Name:      "test",
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 					DNSNames:   []string{"example.com"},
@@ -1157,10 +1267,22 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 			}
 
 			key := types.NamespacedName{Namespace: crt.Namespace, Name: crt.Name}
-			w.controller.useARIForRenewal(t.Context(), crt, test.leaf, secret, key)
+			for range max(test.runs, 1) {
+				w.controller.useARIForRenewal(t.Context(), crt, test.leaf, secret, key)
+			}
 
 			if fetches != test.wantFetches {
 				t.Errorf("GetRenewalInfo called %d times, want %d", fetches, test.wantFetches)
+			}
+
+			if test.wantNoEvents && len(recorder.Events) != 0 {
+				t.Errorf("unexpected events recorded: %v", recorder.Events)
+			}
+
+			// A nil wantRequeueAfters skips the check: requeues after a fetch
+			// carry the poll jitter from computeNextCheck.
+			if test.wantRequeueAfters != nil && !slices.Equal(requeueAfters, test.wantRequeueAfters) {
+				t.Errorf("scheduled requeues were %v, want %v", requeueAfters, test.wantRequeueAfters)
 			}
 
 			if test.check != nil {
@@ -1168,7 +1290,7 @@ func TestUseARIForRenewalStaleness(t *testing.T) {
 				if crt.Status.ACME != nil {
 					got = crt.Status.ACME.ARI
 				}
-				if got == nil && !test.wantACMEStatusCleared {
+				if got == nil && !test.allowNoARIStatus {
 					t.Fatal("expected status.acme.ari to be present")
 				}
 				test.check(t, got)
@@ -1297,7 +1419,8 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 
 	newCert := func(renewalTime *metav1.Time) *cmapi.Certificate {
 		return &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+			Namespace: "testns",
+			Name:      "test",
 			Spec: cmapi.CertificateSpec{
 				SecretName: "test-secret",
 				DNSNames:   []string{"example.com"},
@@ -1427,6 +1550,130 @@ func TestProcessItemARIRenewalTimePersistence(t *testing.T) {
 			if err := builder.AllActionsExecuted(); err != nil {
 				t.Error(err)
 			}
+		})
+	}
+}
+
+// TestScheduleRecheckAtExpiry drives a real ScheduledWorkQueue and workqueue
+// inside a synctest bubble, so the assertions are on when the re-check fires
+// and when the Certificate is queued again.
+func TestScheduleRecheckAtExpiry(t *testing.T) {
+	key := types.NamespacedName{Namespace: "testns", Name: "test"}
+
+	tests := map[string]struct {
+		notAfter func(now time.Time) *metav1.Time
+		// ready is whether the reconcile just published Ready=True.
+		ready bool
+		// wantRecheckAfter is the offset from now at which the expiry re-check
+		// must fire. Zero means it must not fire during the test.
+		wantRecheckAfter time.Duration
+		// wantRequeue is whether the key must be handed back to the
+		// controller's workqueue after a second. That is the case when the
+		// expiry passed while the reconcile was running and left Ready=True
+		// stale.
+		wantRequeue bool
+	}{
+		"fires one second after a future expiry": {
+			notAfter:         func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(time.Hour)} },
+			ready:            true,
+			wantRecheckAfter: time.Hour + time.Second,
+		},
+		"arms the re-check when not Ready": {
+			notAfter:         func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(time.Hour)} },
+			wantRecheckAfter: time.Hour + time.Second,
+		},
+		"requeues an expired certificate that is still Ready": {
+			notAfter:    func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(-time.Hour)} },
+			ready:       true,
+			wantRequeue: true,
+		},
+		// Ready is already False, so expiry cannot make it more wrong.
+		"does nothing for an expired certificate that is not Ready": {
+			notAfter: func(now time.Time) *metav1.Time { return &metav1.Time{Time: now.Add(-time.Hour)} },
+		},
+		"does nothing when the expiry is unknown": {
+			notAfter: func(time.Time) *metav1.Time { return nil },
+			ready:    true,
+		},
+		// time.Time.Sub saturates at math.MaxInt64 for a NotAfter this far
+		// away. If the buffer were added after Sub, the result would wrap
+		// negative and look like an expired certificate.
+		"does not mistake an expiry centuries away for an expired one": {
+			notAfter: func(time.Time) *metav1.Time {
+				return &metav1.Time{Time: time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)}
+			},
+			ready: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				start := time.Now()
+
+				// The timer goroutine writes and the test goroutine reads, and
+				// synctest.Wait does not order the two for the race detector.
+				var mu sync.Mutex
+				var fired []time.Duration
+				firedAt := func() []time.Duration {
+					mu.Lock()
+					defer mu.Unlock()
+					return append([]time.Duration(nil), fired...)
+				}
+
+				queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[types.NamespacedName]())
+				defer queue.ShutDown()
+
+				c := &controller{
+					clock: clock.RealClock{},
+					queue: queue,
+					expiryWorkQueue: scheduler.NewScheduledWorkQueue(clock.RealClock{}, func(types.NamespacedName) {
+						mu.Lock()
+						defer mu.Unlock()
+						fired = append(fired, time.Since(start))
+					}),
+				}
+				defer c.expiryWorkQueue.Forget(key)
+
+				c.scheduleRecheckAtExpiry(logr.Discard(), key, test.notAfter(start), test.ready)
+
+				time.Sleep(time.Second - time.Nanosecond)
+				synctest.Wait()
+				if queue.Len() != 0 {
+					t.Fatalf("requeued early: queue length %d", queue.Len())
+				}
+
+				time.Sleep(time.Nanosecond)
+				synctest.Wait()
+				wantLen := 0
+				if test.wantRequeue {
+					wantLen = 1
+				}
+				if queue.Len() != wantLen {
+					t.Fatalf("expected queue length %d one second in, got %d", wantLen, queue.Len())
+				}
+
+				if test.wantRecheckAfter == 0 {
+					time.Sleep(time.Hour)
+					synctest.Wait()
+					if got := firedAt(); len(got) != 0 {
+						t.Fatalf("expected no re-check, but it fired at %v", got)
+					}
+					return
+				}
+
+				time.Sleep(test.wantRecheckAfter - time.Second - time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 0 {
+					t.Fatalf("re-check fired early at %v", got)
+				}
+
+				time.Sleep(time.Nanosecond)
+				synctest.Wait()
+				if got := firedAt(); len(got) != 1 || got[0] != test.wantRecheckAfter {
+					t.Fatalf("expected one re-check at %v, got %v", test.wantRecheckAfter, got)
+				}
+			})
 		})
 	}
 }

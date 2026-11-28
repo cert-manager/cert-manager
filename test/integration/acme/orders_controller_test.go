@@ -99,7 +99,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		FakeDNS01ChallengeRecord: func(_ string) (string, error) {
 			return testName, nil
 		},
-		FakeCreateOrderCert: func(_ context.Context, _ string, _ []byte, _ bool) ([][]byte, string, error) {
+		FakeCreateCertFromOrder: func(_ context.Context, _ *acmeapi.Order, _ []byte, _ bool) ([][]byte, string, error) {
 			// A hack to ensure the status of the _ACME_ order gets set to valid
 			// when we're finalizing the order.
 			acmeOrder.Status = acmeapi.StatusValid
@@ -157,7 +157,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	defer stopController()
 
 	// Create a Namespace.
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testName}}
+	ns := &corev1.Namespace{Name: testName}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}

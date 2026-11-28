@@ -291,7 +291,7 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 	}
 
 	certDuration := apiutil.DefaultCertDuration(crt.Spec.Duration)
-	keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
+	keyUsage, extKeyUsage, err := KeyUsagesForPublicKeyAlgorithm(crt.Spec.Usages, crt.Spec.IsCA, csr.PublicKeyAlgorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -307,14 +307,24 @@ func CertificateTemplateFromCertificate(crt *v1.Certificate) (*x509.Certificate,
 // CertificateTemplateFromCertificateRequest will create a x509.Certificate for the given
 // CertificateRequest resource
 func CertificateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	keyUsage, extKeyUsage, err := KeyUsagesForCertificateOrCertificateRequest(cr.Spec.Usages, cr.Spec.IsCA)
+	csr, err := DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
 		return nil, err
 	}
 
-	return CertificateTemplateFromCSRPEM(
-		cr.Spec.Request,
+	if err := csr.CheckSignature(); err != nil {
+		return nil, err
+	}
+
+	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+	// The default key usages depend on the CSR's public key algorithm.
+	keyUsage, extKeyUsage, err := KeyUsagesForPublicKeyAlgorithm(cr.Spec.Usages, cr.Spec.IsCA, csr.PublicKeyAlgorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	return CertificateTemplateFromCSR(
+		csr,
 		CertificateTemplateOverrideDuration(certDuration),
 		CertificateTemplateValidateAndOverrideBasicConstraints(cr.Spec.IsCA, nil), // Override the basic constraints, but make sure they match the constraints in the CSR if present
 		CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),    // Override the key usages, but make sure they match the usages in the CSR if present

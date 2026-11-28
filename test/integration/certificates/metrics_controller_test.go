@@ -147,7 +147,7 @@ func TestMetricsController(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	_, err = kubernetesCl.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -170,6 +170,19 @@ func TestMetricsController(t *testing.T) {
 		}
 
 		trimmedOutput, _, _ := strings.Cut(string(output), "# HELP go_gc_duration_seconds")
+		// certmanager_build_info has labels that depend on the build and the
+		// platform, so check that it is served and then leave it out of the
+		// comparison.
+		if !strings.Contains(trimmedOutput, "# TYPE certmanager_build_info gauge\ncertmanager_build_info{") {
+			return fmt.Errorf("certmanager_build_info is missing from the metrics output:\n%s\n", output)
+		}
+		var withoutBuildInfo []string
+		for line := range strings.SplitSeq(trimmedOutput, "\n") {
+			if !strings.Contains(line, "certmanager_build_info") {
+				withoutBuildInfo = append(withoutBuildInfo, line)
+			}
+		}
+		trimmedOutput = strings.Join(withoutBuildInfo, "\n")
 		if strings.TrimSpace(trimmedOutput) != strings.TrimSpace(expectedOutput) {
 			return fmt.Errorf("got unexpected metrics output\nexp:\n%s\ngot:\n%s\n",
 				expectedOutput, output)

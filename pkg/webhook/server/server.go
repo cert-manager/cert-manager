@@ -34,11 +34,13 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	servertls "github.com/cert-manager/cert-manager/pkg/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/server/tls/authority"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 	cmadmission "github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
@@ -187,6 +189,12 @@ func (s *Server) Run(ctx context.Context) error {
 			cfg.ClientAuth = tls.RequireAndVerifyClientCert
 		})
 		webhookOpts.TLSOpts = append(webhookOpts.TLSOpts, s.setVerifyPeerCertificate)
+	}
+
+	// expose the state of dynamically generated serving certificates on the
+	// controller-runtime metrics endpoint
+	if err := authority.RegisterMetrics(ctrlmetrics.Registry); err != nil {
+		return fmt.Errorf("error registering dynamic serving certificate metrics: %w", err)
 	}
 
 	mgr, err := ctrl.NewManager(

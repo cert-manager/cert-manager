@@ -49,10 +49,8 @@ var _ = framework.CertManagerDescribe("Certificate Duplicate Secret Name", func(
 
 	createCertificate := func(testingCtx context.Context, f *framework.Framework, pk cmapi.PrivateKeyAlgorithm) string {
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-duplicate-secret-name-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "test-duplicate-secret-name-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				CommonName: "test",
 				SecretName: secretName,

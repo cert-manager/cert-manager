@@ -77,7 +77,7 @@ type CertificateList struct {
 	Items []Certificate `json:"items"`
 }
 
-// +kubebuilder:validation:Enum=RSA;ECDSA;Ed25519
+// +kubebuilder:validation:Enum=RSA;ECDSA;Ed25519;MLDSA
 type PrivateKeyAlgorithm string
 
 const (
@@ -89,6 +89,10 @@ const (
 
 	// Ed25519 private key algorithm.
 	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
+
+	// ML-DSA (FIPS 204) private key algorithm.
+	// Requires the MLDSAPrivateKeys feature gate.
+	MLDSAKeyAlgorithm PrivateKeyAlgorithm = "MLDSA"
 )
 
 // +kubebuilder:validation:Enum=PKCS1;PKCS8
@@ -283,7 +287,8 @@ type CertificateSpec struct {
 	// resources. If `encodeUsagesInRequest` is unset or set to `true`, the usages
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	//
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` and `key encipherment`, or to
+	// `digital signature` alone for the `MLDSA` key algorithm.
 	// +optional
 	// +listType=atomic
 	Usages []KeyUsage `json:"usages,omitempty"`
@@ -297,6 +302,8 @@ type CertificateSpec struct {
 	// Allowed values for RSA keys: SHA256WithRSA, SHA384WithRSA, SHA512WithRSA.
 	// Allowed values for ECDSA keys: ECDSAWithSHA256, ECDSAWithSHA384, ECDSAWithSHA512.
 	// Allowed values for Ed25519 keys: PureEd25519.
+	// Must be unset for MLDSA keys: the signature algorithm follows from the
+	// key's parameter set.
 	// +optional
 	SignatureAlgorithm SignatureAlgorithm `json:"signatureAlgorithm,omitempty"`
 
@@ -370,27 +377,35 @@ type CertificatePrivateKey struct {
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
+	// `MLDSA` keys are always encoded as PKCS#8, whatever this field says.
 	// +optional
 	Encoding PrivateKeyEncoding `json:"encoding,omitempty"`
 
 	// Algorithm is the private key algorithm of the corresponding private key
 	// for this certificate.
 	//
-	// If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
+	// If provided, allowed values are either `RSA`, `ECDSA`, `Ed25519` or
+	// `MLDSA`. `MLDSA` requires the `MLDSAPrivateKeys` feature gate.
 	// If `algorithm` is specified and `size` is not provided,
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
+	// If `algorithm` is `MLDSA` and `size` is not provided, the ML-DSA-44
+	// parameter set will be used.
 	// +optional
 	Algorithm PrivateKeyAlgorithm `json:"algorithm,omitempty"`
 
-	// Size is the key bit size of the corresponding private key for this certificate.
+	// Size is the key bit size of the corresponding private key for this certificate,
+	// or the parameter set for the `MLDSA` key algorithm.
 	//
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
 	// and will default to `2048` if not specified.
 	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// If `algorithm` is set to `Ed25519`, Size is ignored.
+	// If `algorithm` is set to `MLDSA`, valid values are `44`, `65` or `87`,
+	// selecting the ML-DSA-44, ML-DSA-65 or ML-DSA-87 parameter set, and will
+	// default to `44` if not specified.
 	// No other values are allowed.
 	// +optional
 	Size int `json:"size,omitempty"`

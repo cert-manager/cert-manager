@@ -17,14 +17,18 @@ limitations under the License.
 package controller
 
 import (
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -53,9 +57,10 @@ func Test_controller_Register(t *testing.T) {
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, lsl gwapilisters.ListenerSetLister) {
 				// Prefer Create calls for gateway-api fake clients; see Gateway test rationale.
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
-					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "ls-1",
-					}},
+					&gwapi.ListenerSet{
+						Namespace: "namespace-1",
+						Name:      "ls-1",
+					},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
@@ -66,17 +71,20 @@ func Test_controller_Register(t *testing.T) {
 			name: "listenerset is re-queued when an 'Updated' event is received for this listenerset",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, lsl gwapilisters.ListenerSetLister) {
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
-					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "ls-1",
-					}},
+					&gwapi.ListenerSet{
+						Namespace: "namespace-1",
+						Name:      "ls-1",
+					},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
 
 				_, err = c.GatewayV1().ListenerSets("namespace-1").Update(t.Context(),
-					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "ls-1", Labels: map[string]string{"foo": "bar"},
-					}},
+					&gwapi.ListenerSet{
+						Namespace: "namespace-1",
+						Name:      "ls-1",
+						Labels:    map[string]string{"foo": "bar"},
+					},
 					metav1.UpdateOptions{},
 				)
 				require.NoError(t, err)
@@ -92,9 +100,10 @@ func Test_controller_Register(t *testing.T) {
 			name: "listenerset is re-queued when a 'Deleted' event is received for this listenerset",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, lsl gwapilisters.ListenerSetLister) {
 				_, err := c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
-					&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "ls-1",
-					}},
+					&gwapi.ListenerSet{
+						Namespace: "namespace-1",
+						Name:      "ls-1",
+					},
 					metav1.CreateOptions{},
 				)
 				require.NoError(t, err)
@@ -111,19 +120,19 @@ func Test_controller_Register(t *testing.T) {
 		},
 		{
 			name: "listenerset is re-queued when its parent Gateway is updated (default issuer changes, etc.)",
-			existingCert: &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
-				Namespace: "namespace-1", Name: "cert-1",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-					Namespace: "namespace-1", Name: "ls-3",
-				}}, listnerSetGVK)},
-			}},
+			existingCert: &cmapi.Certificate{
+				Namespace: "namespace-1",
+				Name:      "cert-1",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&gwapi.ListenerSet{
+					Namespace: "namespace-1",
+					Name:      "ls-3",
+				}, listnerSetGVK)},
+			},
 			givenCall: func(t *testing.T, _ cmclient.Interface, c gwclient.Interface, lsl gwapilisters.ListenerSetLister) {
 				// Create parent Gateway
 				_, err := c.GatewayV1().Gateways("namespace-1").Create(t.Context(),
 					&gwapi.Gateway{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: "namespace-1", Name: "gw-1",
-						},
+						Namespace: "namespace-1", Name: "gw-1",
 						Spec: gwapi.GatewaySpec{
 							AllowedListeners: &gwapi.AllowedListeners{
 								Namespaces: &gwapi.ListenerNamespaces{
@@ -143,7 +152,8 @@ func Test_controller_Register(t *testing.T) {
 				// Create ListenerSet referencing that Gateway.
 				_, err = c.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
 					&gwapi.ListenerSet{
-						ObjectMeta: metav1.ObjectMeta{Namespace: "namespace-1", Name: "ls-3"},
+						Namespace: "namespace-1",
+						Name:      "ls-3",
 						Spec: gwapi.ListenerSetSpec{
 							ParentRef: gwapi.ParentGatewayReference{
 								Name: "gw-1",
@@ -162,13 +172,15 @@ func Test_controller_Register(t *testing.T) {
 				require.Eventually(t, func() bool {
 					_, err := lsl.ListenerSets("namespace-1").Get("ls-3")
 					return err == nil
-				}, 2*time.Second, 10*time.Millisecond)
+				}, wait.ForeverTestTimeout, 10*time.Millisecond)
 
 				// Update Gateway -> should enqueue attached ls via the parent index.
 				_, err = c.GatewayV1().Gateways("namespace-1").Update(t.Context(),
-					&gwapi.Gateway{ObjectMeta: metav1.ObjectMeta{
-						Namespace: "namespace-1", Name: "gw-1", Labels: map[string]string{"changed": "true"},
-					}},
+					&gwapi.Gateway{
+						Namespace: "namespace-1",
+						Name:      "gw-1",
+						Labels:    map[string]string{"changed": "true"},
+					},
 					metav1.UpdateOptions{},
 				)
 				require.NoError(t, err)
@@ -205,10 +217,19 @@ func Test_controller_Register(t *testing.T) {
 
 			test.givenCall(t, b.CMClient, b.GWClient, b.Context.GWShared.Gateway().V1().ListenerSets().Lister())
 
-			require.Eventually(t, func() bool {
-				require.Subsetf(t, test.expectAddCalls, mock.callsToAdd, "unexpected calls to workqueue.Add: got %v, want subset of %v", mock.callsToAdd, test.expectAddCalls)
-				return true
-			}, 2*time.Second, 10*time.Millisecond)
+			// The informers deliver events asynchronously, so wait generously
+			// for the expected Add calls to arrive, then allow a short grace
+			// period for unexpected extra calls before the final check. The
+			// order of calls across different informers is not deterministic,
+			// and a late Gateway 'Add' event can legitimately enqueue a
+			// duplicate key via the parent index, hence Subset rather than
+			// an exact comparison.
+			assert.Eventually(t, func() bool {
+				return len(mock.addCalls()) >= len(test.expectAddCalls)
+			}, wait.ForeverTestTimeout, 10*time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
+			calls := mock.addCalls()
+			assert.Subsetf(t, test.expectAddCalls, calls, "unexpected calls to workqueue.Add: got %v, want subset of %v", calls, test.expectAddCalls)
 		})
 	}
 }
@@ -230,14 +251,12 @@ func Test_inheritAnnotations(t *testing.T) {
 
 	gw, err := b.GWClient.GatewayV1().Gateways("namespace-1").Create(t.Context(),
 		&gwapi.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "namespace-1",
-				Name:      "gw-1",
-				Annotations: map[string]string{
-					"cert-manager.io/issuer":       "test-issuer",
-					"cert-manager.io/issuer-kind":  "ClusterIssuer",
-					"cert-manager.io/issuer-group": "cert-manager.io",
-				},
+			Namespace: "namespace-1",
+			Name:      "gw-1",
+			Annotations: map[string]string{
+				"cert-manager.io/issuer":       "test-issuer",
+				"cert-manager.io/issuer-kind":  "ClusterIssuer",
+				"cert-manager.io/issuer-group": "cert-manager.io",
 			},
 			Spec: gwapi.GatewaySpec{
 				AllowedListeners: &gwapi.AllowedListeners{
@@ -258,13 +277,11 @@ func Test_inheritAnnotations(t *testing.T) {
 	// Create ListenerSet referencing that Gateway.
 	ls, err := b.GWClient.GatewayV1().ListenerSets("namespace-1").Create(t.Context(),
 		&gwapi.ListenerSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "namespace-1",
-				Name:      "ls-4",
-				Annotations: map[string]string{
-					"cert-manager.io/issuer":       "test-issuer-1",
-					"cert-manager.io/issuer-group": "cert-manager.io",
-				},
+			Namespace: "namespace-1",
+			Name:      "ls-4",
+			Annotations: map[string]string{
+				"cert-manager.io/issuer":       "test-issuer-1",
+				"cert-manager.io/issuer-group": "cert-manager.io",
 			},
 			Spec: gwapi.ListenerSetSpec{
 				ParentRef: gwapi.ParentGatewayReference{
@@ -291,13 +308,24 @@ func Test_inheritAnnotations(t *testing.T) {
 
 type mockWorkqueue struct {
 	t          *testing.T
+	mu         sync.Mutex
 	callsToAdd []types.NamespacedName
 }
 
 var _ workqueue.TypedInterface[types.NamespacedName] = &mockWorkqueue{}
 
 func (m *mockWorkqueue) Add(arg0 types.NamespacedName) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.callsToAdd = append(m.callsToAdd, arg0)
+}
+
+// addCalls returns a snapshot of the Add calls received so far. The informers
+// call Add from their own goroutines, so the mutex is required.
+func (m *mockWorkqueue) addCalls() []types.NamespacedName {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.Clone(m.callsToAdd)
 }
 
 func (m *mockWorkqueue) AddAfter(arg0 types.NamespacedName, arg1 time.Duration) {

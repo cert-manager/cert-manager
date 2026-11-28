@@ -66,10 +66,8 @@ func provision(ctx context.Context, f *framework.Framework, csr *certificatesv1.
 	Expect(err).NotTo(HaveOccurred(), "failed to encode requester's private key")
 
 	secret, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "selfsigned-requester-key-",
-			Namespace:    ns,
-		},
+		GenerateName: "selfsigned-requester-key-",
+		Namespace:    ns,
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: keyPEM,
 		},
@@ -97,9 +95,7 @@ func createSelfSignedIssuer(ctx context.Context, f *framework.Framework) string 
 	By("Creating a SelfSigned Issuer")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "selfsigned-issuer-",
-		},
+		GenerateName: "selfsigned-issuer-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				SelfSigned: &cmapi.SelfSignedIssuer{},
@@ -120,9 +116,7 @@ func createSelfSignedClusterIssuer(ctx context.Context, f *framework.Framework) 
 	By("Creating a SelfSigned ClusterIssuer")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "selfsigned-cluster-issuer-",
-		},
+		GenerateName: "selfsigned-cluster-issuer-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				SelfSigned: &cmapi.SelfSignedIssuer{},

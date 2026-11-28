@@ -292,10 +292,8 @@ func TestCleanupIngresses(t *testing.T) {
 			Builder: &test.Builder{
 				KubeObjects: []runtime.Object{
 					&networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testingress",
-							Namespace: defaultTestNamespace,
-						},
+						Name:      "testingress",
+						Namespace: defaultTestNamespace,
 						Spec: networkingv1.IngressSpec{
 							DefaultBackend: &networkingv1.IngressBackend{
 								Service: &networkingv1.IngressServiceBackend{
@@ -308,17 +306,15 @@ func TestCleanupIngresses(t *testing.T) {
 							Rules: []networkingv1.IngressRule{
 								{
 									Host: "example.com",
-									IngressRuleValue: networkingv1.IngressRuleValue{
-										HTTP: &networkingv1.HTTPIngressRuleValue{
-											Paths: []networkingv1.HTTPIngressPath{
-												{
-													Path: "/.well-known/acme-challenge/abcd",
-													Backend: networkingv1.IngressBackend{
-														Service: &networkingv1.IngressServiceBackend{
-															Name: "solversvc",
-															Port: networkingv1.ServiceBackendPort{
-																Number: 8081,
-															},
+									HTTP: &networkingv1.HTTPIngressRuleValue{
+										Paths: []networkingv1.HTTPIngressPath{
+											{
+												Path: "/.well-known/acme-challenge/abcd",
+												Backend: networkingv1.IngressBackend{
+													Service: &networkingv1.IngressServiceBackend{
+														Name: "solversvc",
+														Port: networkingv1.ServiceBackendPort{
+															Number: 8081,
 														},
 													},
 												},
@@ -332,10 +328,8 @@ func TestCleanupIngresses(t *testing.T) {
 				},
 			},
 			Challenge: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testchal",
-					Namespace: defaultTestNamespace,
-				},
+				Name:      "testchal",
+				Namespace: defaultTestNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
@@ -369,10 +363,8 @@ func TestCleanupIngresses(t *testing.T) {
 			Builder: &test.Builder{
 				KubeObjects: []runtime.Object{
 					&networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testingress",
-							Namespace: defaultTestNamespace,
-						},
+						Name:      "testingress",
+						Namespace: defaultTestNamespace,
 						Spec: networkingv1.IngressSpec{
 							DefaultBackend: &networkingv1.IngressBackend{
 								Service: &networkingv1.IngressServiceBackend{
@@ -385,17 +377,15 @@ func TestCleanupIngresses(t *testing.T) {
 							Rules: []networkingv1.IngressRule{
 								{
 									Host: "example.com",
-									IngressRuleValue: networkingv1.IngressRuleValue{
-										HTTP: &networkingv1.HTTPIngressRuleValue{
-											Paths: []networkingv1.HTTPIngressPath{
-												{
-													Path: "/.well-known/acme-challenge/abcd",
-													Backend: networkingv1.IngressBackend{
-														Service: &networkingv1.IngressServiceBackend{
-															Name: "solversvc",
-															Port: networkingv1.ServiceBackendPort{
-																Number: 8081,
-															},
+									HTTP: &networkingv1.HTTPIngressRuleValue{
+										Paths: []networkingv1.HTTPIngressPath{
+											{
+												Path: "/.well-known/acme-challenge/abcd",
+												Backend: networkingv1.IngressBackend{
+													Service: &networkingv1.IngressServiceBackend{
+														Name: "solversvc",
+														Port: networkingv1.ServiceBackendPort{
+															Number: 8081,
 														},
 													},
 												},
@@ -405,17 +395,15 @@ func TestCleanupIngresses(t *testing.T) {
 								},
 								{
 									Host: "a.example.com",
-									IngressRuleValue: networkingv1.IngressRuleValue{
-										HTTP: &networkingv1.HTTPIngressRuleValue{
-											Paths: []networkingv1.HTTPIngressPath{
-												{
-													Path: "/",
-													Backend: networkingv1.IngressBackend{
-														Service: &networkingv1.IngressServiceBackend{
-															Name: "real-backend-svc",
-															Port: networkingv1.ServiceBackendPort{
-																Number: 8081,
-															},
+									HTTP: &networkingv1.HTTPIngressRuleValue{
+										Paths: []networkingv1.HTTPIngressPath{
+											{
+												Path: "/",
+												Backend: networkingv1.IngressBackend{
+													Service: &networkingv1.IngressServiceBackend{
+														Name: "real-backend-svc",
+														Port: networkingv1.ServiceBackendPort{
+															Number: 8081,
 														},
 													},
 												},
@@ -429,10 +417,8 @@ func TestCleanupIngresses(t *testing.T) {
 				},
 			},
 			Challenge: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testchal",
-					Namespace: defaultTestNamespace,
-				},
+				Name:      "testchal",
+				Namespace: defaultTestNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
@@ -625,16 +611,14 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
-									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
-											"nginx.org/mergeable-ingress-type":                    "minion",
-											"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
+										"nginx.org/mergeable-ingress-type":                    "minion",
+										"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
 									},
 								},
 							},
@@ -742,10 +726,8 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
-									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
-										Labels: map[string]string{
-											"custom-extra-label": "overridden-by-template",
-										},
+									Labels: map[string]string{
+										"custom-extra-label": "overridden-by-template",
 									},
 								},
 							},
@@ -806,16 +788,14 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: new("nginx"),
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
-									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"ingress.kubernetes.io/whitelist-source-range":        "0.0.0.0/0,::/0",
-											"nginx.org/mergeable-ingress-type":                    "minion",
-											"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"ingress.kubernetes.io/whitelist-source-range":        "0.0.0.0/0,::/0",
+										"nginx.org/mergeable-ingress-type":                    "minion",
+										"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
 									},
 								},
 							},

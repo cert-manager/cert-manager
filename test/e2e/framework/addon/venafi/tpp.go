@@ -81,10 +81,8 @@ func (v *VenafiTPP) Setup(ctx context.Context, cfg *config.Config, _ ...internal
 
 func (v *VenafiTPP) Provision(ctx context.Context) error {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-venafi-",
-			Namespace:    v.Namespace,
-		},
+		GenerateName: "cm-e2e-venafi-",
+		Namespace:    v.Namespace,
 		Data: map[string][]byte{
 			"username":     []byte(v.config.Addons.Venafi.TPP.Username),
 			"password":     []byte(v.config.Addons.Venafi.TPP.Password),
@@ -128,9 +126,7 @@ func (v *VenafiTPP) SupportsGlobal() bool {
 
 func (t *TPPDetails) BuildIssuer() *cmapi.Issuer {
 	return &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-tpp-",
-		},
+		GenerateName: "venafi-tpp-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &t.issuerTemplate,
@@ -141,9 +137,7 @@ func (t *TPPDetails) BuildIssuer() *cmapi.Issuer {
 
 func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	return &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-tpp-",
-		},
+		GenerateName: "venafi-tpp-",
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Venafi: &t.issuerTemplate,

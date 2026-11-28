@@ -56,6 +56,8 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	var unsupportedFeatures = featureset.NewFeatureSet(
 		featureset.KeyUsagesFeature,
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		featureset.IssueCAFeature,
 	)
 
@@ -126,10 +128,8 @@ func (a *approle) createIssuer(ctx context.Context, f *framework.Framework) stri
 	a.secretNamespace = sec.Namespace
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(ctx, &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-issuer-",
-		},
-		Spec: a.createIssuerSpec(),
+		GenerateName: "vault-issuer-",
+		Spec:         a.createIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
@@ -154,10 +154,8 @@ func (a *approle) createClusterIssuer(ctx context.Context, f *framework.Framewor
 	a.secretNamespace = sec.Namespace
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(ctx, &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "vault-cluster-issuer-",
-		},
-		Spec: a.createIssuerSpec(),
+		GenerateName: "vault-cluster-issuer-",
+		Spec:         a.createIssuerSpec(),
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
@@ -190,20 +188,18 @@ func (a *approle) initVault(ctx context.Context) *secrets {
 
 func (a *approle) createIssuerSpec() cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			Vault: &cmapi.VaultIssuer{
-				Server:   addon.Vault.Details().URL,
-				Path:     a.setup.IntermediateSignPath(),
-				CABundle: addon.Vault.Details().VaultCA,
-				Auth: cmapi.VaultAuth{
-					AppRole: &cmapi.VaultAppRole{
-						Path:   a.setup.AppRoleAuthPath(),
-						RoleId: a.roleID,
-						SecretRef: cmmeta.SecretKeySelector{
-							Key: "secretkey",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: a.secretName,
-							},
+		Vault: &cmapi.VaultIssuer{
+			Server:   addon.Vault.Details().URL,
+			Path:     a.setup.IntermediateSignPath(),
+			CABundle: addon.Vault.Details().VaultCA,
+			Auth: cmapi.VaultAuth{
+				AppRole: &cmapi.VaultAppRole{
+					Path:   a.setup.AppRoleAuthPath(),
+					RoleId: a.roleID,
+					SecretRef: cmmeta.SecretKeySelector{
+						Key: "secretkey",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: a.secretName,
 						},
 					},
 				},

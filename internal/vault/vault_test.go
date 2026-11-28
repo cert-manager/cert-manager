@@ -586,9 +586,7 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
+							Name: "secret-ref-name",
 						},
 					},
 				}),
@@ -606,10 +604,8 @@ func TestSetToken(t *testing.T) {
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapiv1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
-							Key: "my-token-key",
+							Name: "secret-ref-name",
+							Key:  "my-token-key",
 						},
 					},
 				}),
@@ -884,10 +880,8 @@ func TestSetToken(t *testing.T) {
 							},
 						},
 						TokenSecretRef: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: "secret-ref-name",
-							},
-							Key: "my-token-key",
+							Name: "secret-ref-name",
+							Key:  "my-token-key",
 						},
 					},
 				}),
@@ -1128,6 +1122,59 @@ func TestRequestTokenWithAWSAuthAmbientCredentialsGate(t *testing.T) {
 	_, err := v.requestTokenWithAWSAuth(t.Context(), &vaultfake.FakeClient{T: t}, awsIssuer.GetSpec().Vault.Auth.AWS)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot authenticate to Vault using ambient AWS credentials")
+}
+
+// Verifies the path that requestTokenWithAWSAuth sends the login to, including the
+// default mount path.
+func TestRequestTokenWithAWSAuthLoginPath(t *testing.T) {
+	// The ambient credentials resolve from the environment without a network call.
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	t.Setenv("AWS_REGION", "us-east-1")
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+
+	tests := map[string]struct {
+		mountPath string
+		wantPath  string
+	}{
+		"default mount path":               {mountPath: "", wantPath: "auth/aws/login"},
+		"custom mount path with v1 prefix": {mountPath: "/v1/auth/foo", wantPath: "auth/foo/login"},
+		"mount path without v1 prefix":     {mountPath: "auth/foo", wantPath: "auth/foo/login"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			awsIssuer := gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapiv1.VaultIssuer{
+					CABundle: []byte(testLeafCertificate),
+					Auth: cmapiv1.VaultAuth{
+						AWS: &cmapiv1.VaultAWSAuth{
+							Role:      "vault-aws-role",
+							MountPath: tt.mountPath,
+						},
+					},
+				}),
+			)
+			v := &Vault{
+				namespace:                "test-namespace",
+				issuer:                   awsIssuer,
+				canUseAmbientCredentials: true,
+			}
+
+			var gotPath string
+			client := &vaultfake.FakeClient{
+				T: t,
+				WriteFn: func(path string, _ map[string]any) (*vault.Secret, error) {
+					gotPath = path
+					return &vault.Secret{Auth: &vault.SecretAuth{ClientToken: "token"}}, nil
+				},
+			}
+
+			token, err := v.requestTokenWithAWSAuth(t.Context(), client, awsIssuer.GetSpec().Vault.Auth.AWS)
+			require.NoError(t, err)
+			assert.Equal(t, "token", token)
+			assert.Equal(t, tt.wantPath, gotPath)
+		})
+	}
 }
 
 type testAppRoleRefT struct {
@@ -1421,10 +1468,8 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						Key: "my-bundle.crt",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Key:  "my-bundle.crt",
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1451,9 +1496,7 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1480,10 +1523,8 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						Key: "my-bundle.crt",
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Key:  "my-bundle.crt",
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1518,19 +1559,13 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientCertSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientKeySecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1560,19 +1595,13 @@ func TestNewConfig(t *testing.T) {
 				gen.SetIssuerVault(cmapiv1.VaultIssuer{
 					Server: "https://vault.example.com",
 					CABundleSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientCertSecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 					ClientKeySecretRef: &cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "bundle",
-						},
+						Name: "bundle",
 					},
 				},
 				)),
@@ -1788,10 +1817,8 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 						}, nil),
 				),
 				&cmapiv1.Issuer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "issuer1",
-						Namespace: "k8s-ns1",
-					},
+					Name:      "issuer1",
+					Namespace: "k8s-ns1",
 					Spec: cmapiv1.IssuerSpec{
 						IssuerConfig: cmapiv1.IssuerConfig{
 							Vault: &cmapiv1.VaultIssuer{
@@ -1799,10 +1826,8 @@ func TestNewWithVaultNamespaces(t *testing.T) {
 								Namespace: tc.vaultNS,
 								Auth: cmapiv1.VaultAuth{
 									TokenSecretRef: &cmmeta.SecretKeySelector{
-										LocalObjectReference: cmmeta.LocalObjectReference{
-											Name: "secret1",
-										},
-										Key: "key1",
+										Name: "secret1",
+										Key:  "key1",
 									},
 								},
 							},
@@ -1845,10 +1870,8 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 				}, nil),
 		),
 		&cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{
@@ -1856,10 +1879,8 @@ func TestIsVaultInitiatedAndUnsealedIntegration(t *testing.T) {
 						Namespace: "ns1",
 						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+								Name: "secret1",
+								Key:  "key1",
 							},
 						},
 					},
@@ -1912,10 +1933,8 @@ func TestSignIntegration(t *testing.T) {
 				}, nil),
 		),
 		&cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{
@@ -1924,10 +1943,8 @@ func TestSignIntegration(t *testing.T) {
 						Namespace: vaultNamespace,
 						Auth: cmapiv1.VaultAuth{
 							TokenSecretRef: &cmmeta.SecretKeySelector{
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "secret1",
-								},
-								Key: "key1",
+								Name: "secret1",
+								Key:  "key1",
 							},
 						},
 					},
@@ -1978,16 +1995,14 @@ func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
 	)
 
 	secretRef := cmmeta.SecretKeySelector{
-		LocalObjectReference: cmmeta.LocalObjectReference{Name: "secret1"},
-		Key:                  "key1",
+		Name: "secret1",
+		Key:  "key1",
 	}
 
 	newIssuer := func(auth cmapiv1.VaultAuth) *cmapiv1.Issuer {
 		return &cmapiv1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "issuer1",
-				Namespace: "k8s-ns1",
-			},
+			Name:      "issuer1",
+			Namespace: "k8s-ns1",
 			Spec: cmapiv1.IssuerSpec{
 				IssuerConfig: cmapiv1.IssuerConfig{
 					Vault: &cmapiv1.VaultIssuer{
@@ -2060,6 +2075,63 @@ func TestExportedFunctionsDoNotLeakResponseBodies(t *testing.T) {
 			// whoever can read the controller logs.
 			assert.Contains(t, LoggableErrorMessage(err), sentinel,
 				"the response body should remain recoverable for the logs")
+		})
+	}
+}
+
+func TestAWSLoginPath(t *testing.T) {
+	tests := map[string]struct {
+		mountPath string
+		want      string
+	}{
+		"default mount path":                 {mountPath: "/v1/auth/aws", want: "auth/aws/login"},
+		"custom mount path with v1 prefix":   {mountPath: "/v1/auth/foo", want: "auth/foo/login"},
+		"mount path without v1 prefix":       {mountPath: "auth/foo", want: "auth/foo/login"},
+		"leading slash without v1 prefix":    {mountPath: "/auth/foo", want: "auth/foo/login"},
+		"trailing slash":                     {mountPath: "/v1/auth/aws/", want: "auth/aws/login"},
+		"mount path nested below the mount":  {mountPath: "/v1/auth/team/aws", want: "auth/team/aws/login"},
+		"mount named v1/aws with the prefix": {mountPath: "/v1/v1/aws", want: "v1/aws/login"},
+		"v1/aws is read as /v1/aws":          {mountPath: "v1/aws", want: "aws/login"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, awsLoginPath(tt.mountPath))
+		})
+	}
+}
+
+// Write prepends "/v1/" to the path it is given, so the login path must not
+// carry the "/v1" of the mount path, which the default "/v1/auth/aws" does.
+func TestAWSLoginPathReachesLoginEndpoint(t *testing.T) {
+	tests := map[string]struct {
+		mountPath string
+		wantPath  string
+	}{
+		"default mount path":               {mountPath: "/v1/auth/aws", wantPath: "/v1/auth/aws/login"},
+		"custom mount path with v1 prefix": {mountPath: "/v1/auth/foo", wantPath: "/v1/auth/foo/login"},
+		"mount path without v1 prefix":     {mountPath: "auth/foo", wantPath: "/v1/auth/foo/login"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			var gotPath, gotMethod string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				gotMethod = r.Method
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"auth":{"client_token":"token"}}`))
+			}))
+			defer srv.Close()
+
+			cfg := vault.DefaultConfig()
+			cfg.Address = srv.URL
+			client, err := vault.NewClient(cfg)
+			require.NoError(t, err)
+
+			_, err = (&vaultClientWrapper{Client: client}).Write(awsLoginPath(tt.mountPath), map[string]any{"role": "role"})
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPath, gotPath)
+			// Vault routes a PUT or POST to the login handler, a GET is a read.
+			assert.Equal(t, http.MethodPut, gotMethod)
 		})
 	}
 }

@@ -50,10 +50,8 @@ var _ = framework.CertManagerDescribe("literalsubject rdn parsing", func() {
 	createCertificate := func(testingCtx context.Context, f *framework.Framework, literalSubject string) (*cmapi.Certificate, error) {
 		framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: testName + "-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: testName + "-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				SecretName: secretName,
 				PrivateKey: &cmapi.CertificatePrivateKey{RotationPolicy: cmapi.RotationPolicyAlways},

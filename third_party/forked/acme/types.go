@@ -63,14 +63,14 @@ var (
 	// support pre-authorization of identifiers.
 	errPreAuthorizationNotSupported = errors.New("acme: pre-authorization is not supported")
 
-	// ErrCADoesNotSupportProfiles indicates that [WithOrderProfile] was
+	// errCADoesNotSupportProfiles indicates that [WithOrderIssuanceProfile] was
 	// included with a CA that does not advertise support for profiles in
 	// their directory.
-	ErrCADoesNotSupportProfiles = errors.New("acme: certificate authority does not support profiles")
+	errCADoesNotSupportProfiles = errors.New("acme: certificate authority does not support profiles")
 
-	// ErrProfileNotInSetOfSupportedProfiles indicates that the profile
-	// specified with [WithOrderProfile} is not one supported by the CA
-	ErrProfileNotInSetOfSupportedProfiles = errors.New("acme: certificate authority does not advertise a profile with name")
+	// errProfileNotInSetOfSupportedProfiles indicates that the profile
+	// specified with [WithOrderIssuanceProfile] is not one supported by the CA
+	errProfileNotInSetOfSupportedProfiles = errors.New("acme: certificate authority does not advertise a profile with name")
 
 	// ErrCADoesNotSupportARI indicates the CA does not advertise the renewalInfo endpoint
 	// in its directory object (RFC 9773).
@@ -132,14 +132,15 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	str := fmt.Sprintf("%d %s: %s", e.StatusCode, e.ProblemType, e.Detail)
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "%d %s: %s", e.StatusCode, e.ProblemType, e.Detail)
 	if len(e.Subproblems) > 0 {
-		str += fmt.Sprintf("; subproblems:")
+		sb.WriteString("; subproblems:")
 		for _, sp := range e.Subproblems {
-			str += fmt.Sprintf("\n\t%s", sp)
+			fmt.Fprintf(&sb, "\n\t%s", sp)
 		}
 	}
-	return str
+	return sb.String()
 }
 
 // AuthorizationError indicates that an authorization for an identifier
@@ -334,9 +335,13 @@ type Directory struct {
 	// requests to include external account binding information.
 	ExternalAccountRequired bool
 
-	// Profiles indicates that the CA supports specifying a profile for an
-	// order. See also [WithOrderNotAfter].
-	Profiles Profiles
+	// Profiles is a map of profile identifiers to URLs containing the description of the
+	// profile. The identifiers can be used with [WithOrderIssuanceProfile] to
+	// request issuance with a specific profile. If the map is empty, the
+	// CA does not support issuance profiles. Per the draft, "CAs MAY use data
+	// URIs to provide an in-line text description if they do not wish to host
+	// external documentation pages" (e.g., `data://` URLs).
+	Profiles map[ProfileName]string
 
 	// RenewalInfo indicates the renewal information that a CA would return for a given
 	// certificate. Renewal information follows RFC 9773.
@@ -355,7 +360,7 @@ type Order struct {
 	// Possible values are StatusPending, StatusReady, StatusProcessing, StatusValid and StatusInvalid.
 	// Pending means the CA does not believe that the client has fulfilled the requirements.
 	// Ready indicates that the client has fulfilled all the requirements and can submit a CSR
-	// to obtain a certificate. This is done with Client's CreateOrderCert.
+	// to obtain a certificate. This is done with Client's CreateCertFromOrder.
 	// Processing means the certificate is being issued.
 	// Valid indicates the CA has issued the certificate. It can be downloaded
 	// from the Order's CertURL. This is done with Client's FetchCert.
@@ -400,6 +405,8 @@ type Order struct {
 	// The error that occurred while processing the order as received from a CA, if any.
 	Error *Error
 
+	// Profile is the optional issuance profile used for this order.
+	Profile ProfileName
 	// RetryAfter specifies how long the client should wait before polling the order again,
 	// based on the Retry-After header provided by the server while the order is in the
 	// StatusProcessing state.
@@ -423,12 +430,15 @@ func WithOrderNotAfter(t time.Time) OrderOption {
 	return orderNotAfterOpt(t)
 }
 
-// WithOrderProfile sets an order's Profile field for servers which support
-// profiles.
+// WithOrderIssuanceProfile sets the order's profile field. It should be used
+// with a profile present in the CA's [Directory.Profiles]. Specifying
+// the profile name here will add it to the order request. If specified when a
+// CA doesn't advertise support for profiles, an error will be returned prior
+// to sending the request. If a name is not in the directory, an error will be
+// returned prior to sending the request.
 // See also:
-// * https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
-// * https://letsencrypt.org/docs/profiles/
-func WithOrderProfile(name string) OrderOption {
+// * https://datatracker.ietf.org/doc/draft-ietf-acme-profiles/
+func WithOrderIssuanceProfile(name ProfileName) OrderOption {
 	return orderProfileOpt(name)
 }
 
@@ -455,6 +465,8 @@ func (orderNotAfterOpt) privateOrderOpt() {}
 type orderProfileOpt string
 
 func (orderProfileOpt) privateOrderOpt() {}
+
+func (o orderProfileOpt) profileName() ProfileName { return ProfileName(o) }
 
 type orderReplacesOpt string
 
@@ -714,20 +726,7 @@ type certOptTemplate x509.Certificate
 
 func (*certOptTemplate) privateCertOpt() {}
 
-type Profiles map[string]string
-
-func (ps Profiles) isSupported() bool {
-	return len(ps) > 0
-}
-
-func (ps Profiles) GetDescription(name string) string {
-	return ps[name]
-}
-
-func (ps Profiles) Has(name string) bool {
-	_, ok := ps[name]
-	return ok
-}
+type ProfileName string
 
 type RenewalInfoResponse struct {
 	// SuggestedWindow is a window of time bound by start and end timestamps in which

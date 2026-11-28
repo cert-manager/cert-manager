@@ -168,6 +168,8 @@ func (h *Helper) ValidateIssuedCertificateRequest(ctx context.Context, cr *cmapi
 			keyAlg = cmapi.ECDSAKeyAlgorithm
 		case x509.Ed25519:
 			keyAlg = cmapi.Ed25519KeyAlgorithm
+		case x509.MLDSA:
+			keyAlg = cmapi.MLDSAKeyAlgorithm
 		default:
 			return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
 		}
@@ -274,7 +276,13 @@ func (h *Helper) WaitCertificateRequestIssuedValidTLS(ctx context.Context, ns, n
 // algorithm and the isCA field.
 func computeExpectedKeyUsages(requestedUsages []cmapi.KeyUsage, isCA bool, keyAlg cmapi.PrivateKeyAlgorithm, issuerSpec *cmapi.IssuerSpec) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 
-	requestedKeyUsages, requestedExtendedKeyUsages, err := pki.KeyUsagesForCertificateOrCertificateRequest(requestedUsages, isCA)
+	// ML-DSA keys have different default key usages.
+	pubKeyAlgo := x509.UnknownPublicKeyAlgorithm
+	if keyAlg == cmapi.MLDSAKeyAlgorithm {
+		pubKeyAlgo = x509.MLDSA
+	}
+
+	requestedKeyUsages, requestedExtendedKeyUsages, err := pki.KeyUsagesForPublicKeyAlgorithm(requestedUsages, isCA, pubKeyAlgo)
 	var expectedKeyUsages x509.KeyUsage
 	if err != nil {
 		return expectedKeyUsages, nil, fmt.Errorf("failed to build key usages from certificate: %s", err)

@@ -70,10 +70,8 @@ func (b *Cloudflare) Setup(ctx context.Context, cfg *config.Config, _ ...addon.A
 // utilise these credentials in tests.
 func (b *Cloudflare) Provision() error {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-cloudflare-",
-			Namespace:    b.Namespace,
-		},
+		GenerateName: "cm-e2e-cloudflare-",
+		Namespace:    b.Namespace,
 		Data: map[string][]byte{
 			"email":   []byte(b.cf.Email),
 			"api-key": []byte(b.cf.APIKey),
@@ -90,10 +88,8 @@ func (b *Cloudflare) Provision() error {
 		Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 			Email: b.cf.Email,
 			APIKey: &cmmeta.SecretKeySelector{
-				LocalObjectReference: cmmeta.LocalObjectReference{
-					Name: b.createdSecret.Name,
-				},
-				Key: "api-key",
+				Name: b.createdSecret.Name,
+				Key:  "api-key",
 			},
 		},
 	}

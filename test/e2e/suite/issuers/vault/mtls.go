@@ -287,9 +287,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ca-bundle",
-			},
+			Name: "ca-bundle",
 			Type: "Opaque",
 			Data: map[string][]byte{
 				"ca.crt": details.VaultCA,
@@ -348,9 +346,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ca-bundle",
-			},
+			Name: "ca-bundle",
 			Type: "Opaque",
 			Data: map[string][]byte{
 				"ca.crt": details.VaultCA,
@@ -418,9 +414,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ca-bundle",
-			},
+			Name: "ca-bundle",
 			Type: "Opaque",
 			Data: map[string][]byte{
 				"ca.crt": details.VaultCA,
@@ -454,9 +448,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer [mtls]", func() {
 		public, _, err := vaultaddon.GenerateCA()
 		Expect(err).NotTo(HaveOccurred())
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ca-bundle",
-			},
+			Name: "ca-bundle",
 			Data: map[string][]byte{
 				"ca.crt": public,
 			},

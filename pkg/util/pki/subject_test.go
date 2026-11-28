@@ -108,6 +108,28 @@ func TestMustKeepOrderInRawDerBytes(t *testing.T) {
 	assert.Equal(t, subject, rdnSeq.String())
 }
 
+// RFC 4512 section 1.4 says attribute type names are case insensitive, so
+// "cn" and "CN" must map to the same OID.
+func TestAttributeTypeNamesAreCaseInsensitive(t *testing.T) {
+	rdnSeq, err := UnmarshalSubjectStringToRDNSequence("cn=foo.com,ou=Dept.,o=Corp.,c=US,dc=example,uid=jdoe,serialNumber=42,Street=Main St")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedRdnSeq := pkix.RDNSequence{
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.StreetAddress, Value: "Main St"}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.SerialNumber, Value: "42"}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.UniqueIdentifier, Value: "jdoe"}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.DomainComponent, Value: "example"}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.Country, Value: "US"}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.Organization, Value: "Corp."}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.OrganizationalUnit, Value: "Dept."}},
+		[]pkix.AttributeTypeAndValue{{Type: OIDConstants.CommonName, Value: "foo.com"}},
+	}
+
+	assert.Equal(t, expectedRdnSeq, rdnSeq)
+}
+
 func TestShouldFailForHexDER(t *testing.T) {
 	_, err := UnmarshalSubjectStringToRDNSequence("DF=#6666666666665006838820013100000746939546349182108463491821809FBFFFFFFFFF")
 	if err == nil {

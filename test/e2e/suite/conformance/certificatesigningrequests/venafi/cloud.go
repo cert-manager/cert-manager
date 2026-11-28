@@ -45,6 +45,8 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		// Ed255119 private keys
 		featureset.ECDSAFeature,
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		// Our Venafi TPP doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,

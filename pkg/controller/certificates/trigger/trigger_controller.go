@@ -52,6 +52,19 @@ import (
 
 const (
 	ControllerName = "certificates-trigger"
+
+	// reasonMLDSAPrivateKeysDisabled is the reason of the Warning event which
+	// is emitted when an ML-DSA Certificate must be re-issued but the
+	// MLDSAPrivateKeys feature gate is disabled.
+	reasonMLDSAPrivateKeysDisabled = "MLDSAPrivateKeysDisabled"
+
+	// mldsaPrivateKeysDisabledRecheckInterval is how often an ML-DSA
+	// Certificate that must be re-issued is checked again while the
+	// MLDSAPrivateKeys feature gate is disabled. The gate only changes when the
+	// controller restarts, so this only repeats the Warning event, which would
+	// otherwise expire (after one hour by default) long before the next
+	// informer resync.
+	mldsaPrivateKeysDisabledRecheckInterval = 30 * time.Minute
 )
 
 // This controller observes the state of the certificate's currently
@@ -231,6 +244,18 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		return nil
 	}
 
+	// Don't start issuance for an ML-DSA Certificate (created while the
+	// MLDSAPrivateKeys feature gate was enabled) while the gate is disabled.
+	// The existing Secret is left alone so that workloads keep running.
+	if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.Algorithm == cmapi.MLDSAKeyAlgorithm &&
+		!utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+		message = fmt.Sprintf("Certificate must be re-issued (%s), but issuing certificates with ML-DSA private keys requires the MLDSAPrivateKeys feature gate to be enabled", reason)
+		log.V(logf.InfoLevel).Info("Not re-issuing Certificate because the MLDSAPrivateKeys feature gate is disabled", "reason", reason)
+		c.recorder.Event(crt, corev1.EventTypeWarning, reasonMLDSAPrivateKeysDisabled, message)
+		c.scheduledWorkQueue.Add(key, mldsaPrivateKeysDisabledRecheckInterval)
+		return nil
+	}
+
 	// Although the below recorder.Event already logs the event, the log
 	// line is quite unreadable (very long). Since this information is very
 	// important for the user and the operator, we log the following
@@ -257,8 +282,9 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 			conditions = []cmapi.CertificateCondition{*cond}
 		}
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
-			Status:     cmapi.CertificateStatus{Conditions: conditions},
+			Namespace: crt.Namespace,
+			Name:      crt.Name,
+			Status:    cmapi.CertificateStatus{Conditions: conditions},
 		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
@@ -301,7 +327,9 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	if nextCR == nil {
 		log.V(logf.InfoLevel).Info("next CertificateRequest not available, skipping checking if Certificate matches the CertificateRequest")
 	} else {
-		mismatches, err := pki.RequestMatchesSpec(nextCR, crt.Spec)
+		mismatches, err := pki.RequestMatchesSpec(nextCR, crt.Spec,
+			pki.WithNameConstraints(utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints)),
+		)
 		if err != nil {
 			log.V(logf.InfoLevel).Info("next CertificateRequest cannot be decoded, skipping checking if Certificate matches the CertificateRequest")
 			return false, 0

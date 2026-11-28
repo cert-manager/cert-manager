@@ -282,6 +282,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister internalinformers.Se
 			ConnectorType: endpoint.ConnectorTypeNGTS,
 			BaseUrl:       ngtsConfig.URL,
 			Zone:          venaCfg.Zone,
+			Workspace:     ngtsConfig.WorkspaceID,
 			LogVerbose:    true,
 			Credentials: &endpoint.Authentication{
 				ClientId:     clientID,

@@ -50,6 +50,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.OnlySAN,
 		// Venafi seems to only support SSH Ed25519 keys
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		// The Venafi Cloud server that we use for these tests has not yet been

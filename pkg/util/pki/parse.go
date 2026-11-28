@@ -26,7 +26,8 @@ import (
 )
 
 // DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.
-// It supports ECDSA, RSA and EdDSA private keys only. All other types will return err.
+// It supports ECDSA, RSA, Ed25519 and ML-DSA private keys only. ML-DSA keys must be
+// seed-only PKCS#8 keys. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
 	block, rest, err := pem.SafeDecodePrivateKey(keyBytes)

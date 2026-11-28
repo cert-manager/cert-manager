@@ -326,6 +326,7 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 
 	ACMEHTTP01SolverRunAsNonRoot := opts.ACMEHTTP01Config.SolverRunAsNonRoot
 
+	//nolint:modernize // embedlit: the group names document which options struct each field belongs to
 	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
 		Kubeconfig:         opts.KubeConfig,
 		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
@@ -342,9 +343,10 @@ func buildControllerContextFactory(ctx context.Context, opts *config.ControllerC
 			ACMEHTTP01SolverRunAsNonRoot:      ACMEHTTP01SolverRunAsNonRoot,
 			HTTP01SolverImage:                 opts.ACMEHTTP01Config.SolverImage,
 			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
-			HTTP01SolverNameservers:      opts.ACMEHTTP01Config.SolverNameservers,
-			HTTP01SolverExtraLabels:      opts.ACMEHTTP01Config.SolverExtraLabels,
-			HTTP01SolverRuntimeClassName: opts.ACMEHTTP01Config.SolverRuntimeClassName,
+			HTTP01SolverNameservers:       opts.ACMEHTTP01Config.SolverNameservers,
+			HTTP01SolverExtraLabels:       opts.ACMEHTTP01Config.SolverExtraLabels,
+			HTTP01SolverRuntimeClassName:  opts.ACMEHTTP01Config.SolverRuntimeClassName,
+			ACMEHTTP01SolverProxyProtocol: opts.ACMEHTTP01Config.SolverProxyProtocol,
 
 			DNS01Nameservers:        nameservers,
 			DNS01CheckRetryPeriod:   opts.ACMEDNS01Config.CheckRetryPeriod,
@@ -451,6 +453,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig shared.TLSConfig, restCfg
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
 				SecretLabels:    map[string]string{"app.kubernetes.io/managed-by": "cert-manager"},
+				Server:          "metrics",
 				LeafDuration:    tlsConfig.Dynamic.LeafDuration,
 				RESTConfig:      restCfg,
 			},

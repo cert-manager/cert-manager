@@ -218,6 +218,9 @@ type ACMEOptions struct {
 	// solver resources.
 	HTTP01SolverExtraLabels map[string]string
 
+	// ACMEHTTP01SolverProxyProtocol sets the ACME pod's with ProxyProtocol
+	ACMEHTTP01SolverProxyProtocol bool
+
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
 	// for checking propagation of an RR. This is the ideal scenario
 	DNS01CheckAuthoritative bool

@@ -58,6 +58,11 @@ type DynamicAuthority struct {
 	// Labels added to the Secret resource used to store the authority.
 	SecretLabels map[string]string
 
+	// Server names the server using the leaf certificates signed by this
+	// authority, e.g. 'webhook' or 'metrics'. It is only used as a metric
+	// label, to tell apart authorities sharing a Secret resource.
+	Server string
+
 	// RESTConfig used to connect to the apiserver.
 	RESTConfig *rest.Config
 
@@ -116,6 +121,8 @@ func (d *DynamicAuthority) Run(ctx context.Context) error {
 	if d.LeafDuration == 0 {
 		d.LeafDuration = time.Hour * 24 * 7 // 7d
 	}
+
+	d.initMetrics()
 
 	if d.newClient == nil {
 		d.newClient = func(c *rest.Config) (kubernetes.Interface, error) {
@@ -191,6 +198,13 @@ func (d *DynamicAuthority) Sign(template *x509.Certificate) (*x509.Certificate, 
 	d.signMutex.Lock()
 	defer d.signMutex.Unlock()
 
+	cert, err := d.sign(template)
+	d.observeSign(cert, err)
+	return cert, err
+}
+
+// sign must be called with signMutex held.
+func (d *DynamicAuthority) sign(template *x509.Certificate) (*x509.Certificate, error) {
 	if d.currentCertData == nil || d.currentPrivateKeyData == nil {
 		return nil, ErrCertificateNotAvailable
 	}
@@ -286,6 +300,12 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 
 	d.log.V(logf.InfoLevel).Info("Detected change in CA secret data, update current CA data and notify watches")
 
+	if caCert, err := pki.DecodeX509CertificateBytes(newCertData); err != nil {
+		d.log.Error(err, "Failed to decode CA certificate, not updating CA metrics")
+	} else {
+		d.observeCA(caCert)
+	}
+
 	func() {
 		d.signMutex.Lock()
 		defer d.signMutex.Unlock()
@@ -355,10 +375,6 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	if err != nil {
 		return err
 	}
-
-	if err != nil {
-		return err
-	}
 	cert := &x509.Certificate{
 		BasicConstraintsValid: true,
 		PublicKeyAlgorithm:    x509.ECDSA,
@@ -382,13 +398,11 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 
 	if s == nil {
 		_, err := d.client.Create(ctx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      d.SecretName,
-				Namespace: d.SecretNamespace,
-				Labels:    d.SecretLabels,
-				Annotations: map[string]string{
-					cmapi.AllowsInjectionFromSecretAnnotation: "true",
-				},
+			Name:      d.SecretName,
+			Namespace: d.SecretNamespace,
+			Labels:    d.SecretLabels,
+			Annotations: map[string]string{
+				cmapi.AllowsInjectionFromSecretAnnotation: "true",
 			},
 			Data: map[string][]byte{
 				corev1.TLSCertKey:       certBytes,

@@ -127,6 +127,38 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.Ed25519FeatureSet},
 			},
 			{
+				name: "should issue an ML-DSA-44, defaulted certificate for a single distinct DNS Name",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+						}
+					},
+					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.MLDSAFeatureSet},
+			},
+			{
+				name: "should issue an ML-DSA-87 CA certificate with the CA basicConstraint set",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+							Size:      pki.MLDSA87,
+						}
+					},
+					gen.SetCertificateIsCA(true),
+					gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.IssueCAFeature, featureset.MLDSAFeatureSet},
+			},
+			{
 				name: "should issue a basic, defaulted certificate for a single Common Name",
 				certModifiers: []gen.CertificateModifier{
 					// Some issuers use the CN to define the cert's "ID"
@@ -274,6 +306,25 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.CommonNameFeature},
 			},
 			{
+				name: "should issue an ML-DSA-65, defaulted certificate for a single Common Name",
+				certModifiers: []gen.CertificateModifier{
+					func(c *cmapi.Certificate) {
+						c.Spec.PrivateKey = &cmapi.CertificatePrivateKey{
+							Algorithm: cmapi.MLDSAKeyAlgorithm,
+							Size:      pki.MLDSA65,
+						}
+					},
+					// Some issuers use the CN to define the cert's "ID"
+					// if one cert manages to be in an error state in the issuer it might throw an error
+					// this makes the CN more unique
+					gen.SetCertificateCommonName("test-common-name-" + rand.String(10)),
+				},
+				extraValidations: []certificates.ValidationFunc{
+					certificates.ExpectMLDSAKeyUsages,
+				},
+				requiredFeatures: []featureset.Feature{featureset.MLDSAFeatureSet, featureset.CommonNameFeature},
+			},
+			{
 				name: "should issue a certificate that defines an IP Address",
 				certModifiers: []gen.CertificateModifier{
 					gen.SetCertificateIPs(s.SharedIPAddress),
@@ -413,14 +464,16 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.LiteralCertificateSubject)
 				}
 
+				if requiredFeatures.Has(featureset.MLDSAFeatureSet) {
+					framework.RequireFeatureGate(utilfeature.DefaultFeatureGate, feature.MLDSAPrivateKeys)
+				}
+
 				randomTestID := rand.String(10)
 				certificate := &cmapi.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "e2e-conformance-" + randomTestID,
-						Namespace: f.Namespace.Name,
-						Annotations: map[string]string{
-							"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
-						},
+					Name:      "e2e-conformance-" + randomTestID,
+					Namespace: f.Namespace.Name,
+					Annotations: map[string]string{
+						"conformance.cert-manager.io/test-name": s.Name + " " + test.name,
 					},
 					Spec: cmapi.CertificateSpec{
 						SecretName: "e2e-conformance-tls-" + randomTestID,
@@ -459,12 +512,10 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 			randomTestID := rand.String(10)
 			certificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "e2e-conformance-ari-" + randomTestID,
-					Namespace: f.Namespace.Name,
-					Annotations: map[string]string{
-						"conformance.cert-manager.io/test-name": s.Name + " ARI",
-					},
+				Name:      "e2e-conformance-ari-" + randomTestID,
+				Namespace: f.Namespace.Name,
+				Annotations: map[string]string{
+					"conformance.cert-manager.io/test-name": s.Name + " ARI",
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "e2e-conformance-ari-tls-" + randomTestID,
@@ -799,9 +850,7 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 			all := gwapi.FromNamespaces("All")
 
 			gw := &gwapi.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
+				Name: name,
 				Spec: gwapi.GatewaySpec{
 					GatewayClassName: "foo",
 					AllowedListeners: &gwapi.AllowedListeners{
@@ -870,10 +919,8 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		s.it(f, "should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
+				Name:      "testcert",
+				Namespace: f.Namespace.Name,
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
@@ -933,10 +980,8 @@ cKK5t8N1YDX5CV+01X3vvxpM3ciYuCY9y+lSegrIEI+izRyD7P9KaZlwMaYmsBZq
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(ctx context.Context, issuerRef cmmeta.IssuerReference) {
 			testCertificate := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testcert",
-					Namespace: f.Namespace.Name,
-				},
+				Name:      "testcert",
+				Namespace: f.Namespace.Name,
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},

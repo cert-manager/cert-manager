@@ -32,28 +32,23 @@ import (
 // TestNextPrivateKeySecretSelectorRejectsUnlabeledSecret checks that the
 // selector used for next private key Secret LISTs still excludes Secrets
 // carrying no labels at all.
-//
-// The SecretsFilteredCaching feature, which is on by default, serves part of
-// that LIST from a metadata-only cache that stores no labels, and charges one
-// live GET against the API server for every Secret it returns. A selector such
-// as labels.Everything() matches every entry in that cache, so the keymanager
-// would GET every Secret in the namespace on every reconcile.
 func TestNextPrivateKeySecretSelectorRejectsUnlabeledSecret(t *testing.T) {
 	if NextPrivateKeySecretSelector.Matches(labels.Set{}) {
-		t.Error("selector must not match a Secret with no labels, or the Secret LIST will GET every Secret in the namespace")
+		t.Error("selector must not match a Secret with no labels, or the filtered lister will refuse the Secret LIST")
 	}
-	if !NextPrivateKeySecretSelector.Matches(labels.Set{cmapi.IsNextPrivateKeySecretLabelKey: "true"}) {
+	if NextPrivateKeySecretSelector.Matches(labels.Set{cmapi.IsNextPrivateKeySecretLabelKey: "true"}) {
+		t.Error("selector must require the fao label, or the plain lister returns Secrets the filtered lister cannot see")
+	}
+	if !NextPrivateKeySecretSelector.Matches(labels.Set{cmapi.IsNextPrivateKeySecretLabelKey: "true", cmapi.PartOfCertManagerControllerLabelKey: "true"}) {
 		t.Error("selector must match a next private key Secret")
 	}
 }
 
 func TestGetNextPrivateKeySecret(t *testing.T) {
 	crt := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cert",
-			Namespace: "testns",
-			UID:       "cert-uid",
-		},
+		Name:      "test-cert",
+		Namespace: "testns",
+		UID:       "cert-uid",
 		Spec: cmapi.CertificateSpec{
 			SecretName: "tls-secret",
 		},
@@ -66,15 +61,14 @@ func TestGetNextPrivateKeySecret(t *testing.T) {
 	// crt as its controller.
 	ownedSecret := func() *corev1.Secret {
 		return &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "next-pk",
-				Namespace: "testns",
-				Labels: map[string]string{
-					cmapi.IsNextPrivateKeySecretLabelKey: "true",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
-				},
+			Name:      "next-pk",
+			Namespace: "testns",
+			Labels: map[string]string{
+				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+				cmapi.PartOfCertManagerControllerLabelKey: "true",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
 			},
 		}
 	}
@@ -96,7 +90,8 @@ func TestGetNextPrivateKeySecret(t *testing.T) {
 			// An unrelated Secret in the same namespace, named by a principal
 			// with access only to the certificates/status subresource.
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "next-pk", Namespace: "testns"},
+				Name:      "next-pk",
+				Namespace: "testns",
 			},
 			crt:          crt,
 			wantNotFound: true,

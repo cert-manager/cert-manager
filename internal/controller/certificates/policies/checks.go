@@ -36,8 +36,10 @@ import (
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -222,7 +224,9 @@ func CurrentCertificateRequestMismatchesSpec(input Input) (string, string, bool)
 		return currentSecretValidForSpec(input)
 	}
 
-	violations, err := pki.RequestMatchesSpec(input.CurrentRevisionRequest, input.Certificate.Spec)
+	violations, err := pki.RequestMatchesSpec(input.CurrentRevisionRequest, input.Certificate.Spec,
+		pki.WithNameConstraints(utilfeature.DefaultFeatureGate.Enabled(feature.NameConstraints)),
+	)
 	if err != nil {
 		// If parsing the request fails, we don't immediately trigger a re-issuance as
 		// the existing certificate stored in the Secret may still be valid/up to date.
@@ -277,7 +281,6 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		}
 
 		reason := Renewing
-		message := fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime)
 
 		if input.ARIRenewalInfo != nil &&
 			!input.ARIRenewalInfo.SuggestedWindow.Start.IsZero() {
@@ -299,13 +302,20 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			if c.Now().Before(gateTime) {
 				return "", "", false
 			}
-			return reason, message, true
+			// Report the time the gate actually used, which is the window start
+			// when Status.RenewalTime is nil or lies outside the window.
+			return reason, fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", gateTime), true
 		}
 
 		renewalTime, err := pki.RenewalTime(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, crt.Spec.RenewBeforePercentage, crt.Spec.Renewal)
+		var message string
 		if err != nil {
 			reason = WindowError
 			message = err.Error()
+		} else {
+			// Report the computed renewal time, which is what this check gates
+			// on. Status.RenewalTime may be nil or out of date.
+			message = fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", renewalTime)
 		}
 
 		renewIn := renewalTime.Time.Sub(c.Now())

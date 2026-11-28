@@ -18,7 +18,9 @@ package akamai
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
@@ -559,6 +561,28 @@ func TestNewDNSProviderFromOptions(t *testing.T) {
 			if tt.checkResult != nil {
 				tt.checkResult(t, p)
 			}
+		})
+	}
+}
+
+// TestIsNotFound checks that only a 404 from the Akamai API is taken to mean
+// that the record does not exist.
+func TestIsNotFound(t *testing.T) {
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"nil error":                            {err: nil, want: false},
+		"error that did not come from the API": {err: errors.New("connection refused"), want: false},
+		"404 Not Found":                        {err: &dns.Error{StatusCode: http.StatusNotFound}, want: true},
+		"wrapped 404 Not Found":                {err: fmt.Errorf("get record: %w", &dns.Error{StatusCode: http.StatusNotFound}), want: true},
+		"nil *dns.Error in an error":           {err: (*dns.Error)(nil), want: false},
+		"403 Forbidden":                        {err: &dns.Error{StatusCode: http.StatusForbidden}, want: false},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isNotFound(tt.err))
 		})
 	}
 }

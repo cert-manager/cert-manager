@@ -44,6 +44,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.URISANsFeature,
 		featureset.OnlySAN,
 		featureset.Ed25519FeatureSet,
+		// ML-DSA private keys have not been tested against this issuer
+		featureset.MLDSAFeatureSet,
 		featureset.IssueCAFeature,
 		featureset.LiteralSubjectFeature,
 		featureset.OtherNamesFeature,

@@ -83,6 +83,16 @@ const (
 	// Certificate resources.
 	// Github Issue: https://github.com/cert-manager/cert-manager/issues/6393
 	OtherNames featuregate.Feature = "OtherNames"
+
+	// Owner: @SgtCoDFish, @FelixPhipps
+	// Alpha: v1.22
+	//
+	// MLDSAPrivateKeys adds support for ML-DSA (FIPS 204) post-quantum private
+	// keys, using the `MLDSA` private key algorithm on Certificate resources.
+	// This feature gate must be enabled on both the controller and the webhook.
+	// Design: https://github.com/cert-manager/cert-manager/blob/master/design/20261007.mldsa-private-keys.md
+	// Github Issue: https://github.com/cert-manager/cert-manager/issues/8929
+	MLDSAPrivateKeys featuregate.Feature = "MLDSAPrivateKeys"
 )
 
 func init() {
@@ -103,4 +113,5 @@ var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	LiteralCertificateSubject:          {Default: true, PreRelease: featuregate.Beta},
 	NameConstraints:                    {Default: true, PreRelease: featuregate.Beta},
 	OtherNames:                         {Default: true, PreRelease: featuregate.Beta},
+	MLDSAPrivateKeys:                   {Default: false, PreRelease: featuregate.Alpha},
 }

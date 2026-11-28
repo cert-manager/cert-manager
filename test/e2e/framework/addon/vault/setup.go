@@ -200,9 +200,7 @@ func (v *VaultInitializer) KubernetesAuthPath() string {
 
 func NewVaultAppRoleSecret(secretName, secretId string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: secretName,
-		},
+		GenerateName: secretName,
 		StringData: map[string]string{
 			"secretkey": secretId,
 		},
@@ -211,11 +209,9 @@ func NewVaultAppRoleSecret(secretName, secretId string) *corev1.Secret {
 
 func NewVaultKubernetesSecret(secretName, serviceAccountName string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: secretName,
-			Annotations: map[string]string{
-				"kubernetes.io/service-account.name": serviceAccountName,
-			},
+		Name: secretName,
+		Annotations: map[string]string{
+			"kubernetes.io/service-account.name": serviceAccountName,
 		},
 		Type: "kubernetes.io/service-account-token",
 	}
@@ -223,9 +219,7 @@ func NewVaultKubernetesSecret(secretName, serviceAccountName string) *corev1.Sec
 
 func NewVaultClientCertificateSecret(secretName string, certificate, key []byte) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: secretName,
-		},
+		Name: secretName,
 		Data: map[string][]byte{
 			corev1.TLSCertKey:       certificate,
 			corev1.TLSPrivateKeyKey: key,
@@ -599,9 +593,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth(ctx context.Context) error {
 // "bound_service_account_names".
 func (v *VaultInitializer) CreateKubernetesRole(ctx context.Context, client kubernetes.Interface, boundNS, boundSA string) error {
 	serviceAccount := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: boundSA,
-		},
+		Name: boundSA,
 	}
 	_, err := client.CoreV1().ServiceAccounts(boundNS).Create(ctx, serviceAccount, metav1.CreateOptions{})
 	if err != nil {
@@ -655,10 +647,8 @@ func (v *VaultInitializer) CleanKubernetesRole(ctx context.Context, client kuber
 
 func RoleAndBindingForServiceAccountRefAuth(roleName, namespace, serviceAccount string) (*rbacv1.Role, *rbacv1.RoleBinding) {
 	return &rbacv1.Role{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      roleName,
-				Namespace: namespace,
-			},
+			Name:      roleName,
+			Namespace: namespace,
 			Rules: []rbacv1.PolicyRule{
 				{
 					APIGroups:     []string{""},
@@ -669,9 +659,7 @@ func RoleAndBindingForServiceAccountRefAuth(roleName, namespace, serviceAccount 
 			},
 		},
 		&rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: roleName,
-			},
+			Name: roleName,
 			RoleRef: rbacv1.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
 				Kind:     "Role",

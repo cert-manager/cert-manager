@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -68,6 +69,10 @@ const (
 	minARIPoll     = 1 * time.Hour
 	maxARIPoll     = 7 * 24 * time.Hour
 	ariJitterPct   = 0.1
+	// ariRegistryRetry is the initial retry delay when the ACME Issuer has no
+	// client registered yet; the delay doubles on every consecutive miss up to
+	// defaultARIPoll.
+	ariRegistryRetry = 1 * time.Minute
 )
 
 type controller struct {
@@ -94,6 +99,14 @@ type controller struct {
 	helper             issuer.Helper
 	clock              clock.Clock
 	scheduledWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+	queue              workqueue.TypedRateLimitingInterface[types.NamespacedName]
+
+	// expiryWorkQueue re-checks a Certificate when it expires. It is separate
+	// from scheduledWorkQueue because each queue holds only one timer per key,
+	// so sharing would mean expiry and ARI checks canceling each other.
+	expiryWorkQueue scheduler.ScheduledWorkQueue[types.NamespacedName]
+
+	ariClientMisses sync.Map
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
@@ -159,6 +172,15 @@ func NewController(
 		issuerInformer.Informer().HasSynced,
 	}
 
+	// ClusterIssuers can only be read when the controller watches every
+	// namespace.
+	var clusterIssuerLister cmlisters.ClusterIssuerLister
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
 	return &controller{
 		policyChain:              chain,
 		certificateLister:        certificateInformer.Lister(),
@@ -168,6 +190,8 @@ func NewController(
 		recorder:                 ctx.Recorder,
 		accountRegistry:          ctx.ACMEAccountRegistry,
 		issuerLister:             issuerInformer.Lister(),
+		clusterIssuerLister:      clusterIssuerLister,
+		helper:                   issuer.NewHelper(issuerInformer.Lister(), clusterIssuerLister),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -176,7 +200,9 @@ func NewController(
 		renewalTimeCalculator: renewalTimeCalculator,
 		fieldManager:          ctx.FieldManager,
 		clock:                 ctx.Clock,
+		queue:                 queue,
 		scheduledWorkQueue:    scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
+		expiryWorkQueue:       scheduler.NewScheduledWorkQueue(ctx.Clock, queue.Add),
 	}, queue, mustSync, nil
 }
 
@@ -195,6 +221,10 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 	}
 	if crt == nil || crt.DeletionTimestamp != nil {
 		// If the Certificate object was/ is being deleted, we don't want to update its status.
+		c.ariClientMisses.Delete(key)
+		// Cancel pending timers so they don't outlive the Certificate.
+		c.scheduledWorkQueue.Forget(key)
+		c.expiryWorkQueue.Forget(key)
 		return nil
 	}
 
@@ -265,9 +295,47 @@ func (c *controller) ProcessItem(ctx context.Context, key types.NamespacedName) 
 		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
 			klog.SafePtr(crt.Status.NotAfter), "notBefore", klog.SafePtr(crt.Status.NotBefore), "renewalTime",
 			klog.SafePtr(crt.Status.RenewalTime))
-		return c.updateOrApplyStatus(ctx, crt)
+		if err := c.updateOrApplyStatus(ctx, crt); err != nil {
+			return err
+		}
 	}
+
+	readyCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady)
+	ready := readyCond != nil && readyCond.Status == cmmeta.ConditionTrue
+	c.scheduleRecheckAtExpiry(log, key, crt.Status.NotAfter, ready)
+
 	return nil
+}
+
+// scheduleRecheckAtExpiry re-processes the Certificate just after it expires.
+//
+// Readiness depends on the clock, but the controller only reconciles on watch
+// events. A Certificate whose renewal is stuck gets no events, so it keeps
+// reporting Ready=True long after expiry. We re-arm on every reconcile because
+// the timers are in memory and are lost on restart.
+func (c *controller) scheduleRecheckAtExpiry(log logr.Logger, key types.NamespacedName, notAfter *metav1.Time, ready bool) {
+	if notAfter == nil {
+		c.expiryWorkQueue.Forget(key)
+		return
+	}
+
+	// Wake up just after NotAfter, so the clock has definitely passed it.
+	// Add the buffer before Sub: Sub saturates for a far-future NotAfter,
+	// and adding to the saturated duration would wrap negative.
+	recheckIn := notAfter.Time.Add(time.Second).Sub(c.clock.Now())
+	if recheckIn <= 0 {
+		c.expiryWorkQueue.Forget(key)
+		// The clock passed NotAfter after the policy chain ran, so a Ready=True
+		// published by this reconcile is stale. Go round again: the next pass
+		// reads a later time and sees the expiry.
+		if ready {
+			c.queue.AddAfter(key, time.Second)
+		}
+		return
+	}
+
+	log.V(logf.DebugLevel).Info("scheduling re-check at certificate expiry", "notAfter", notAfter.Time, "recheckIn", recheckIn)
+	c.expiryWorkQueue.Add(key, recheckIn)
 }
 
 func (c *controller) computeNextCheck(now time.Time, retryAfter time.Duration) time.Time {
@@ -333,8 +401,42 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	// poll has to keep running even when the certificate has not been replaced.
 	needFetch := nextCheck == nil || !now.Before(nextCheck.Time) || staleForCurrentCert
 	if !needFetch {
+		// Re-arm the poll: a restart loses timers for a future nextCheck
+		// until the informer resync or an unrelated event.
+		c.scheduledWorkQueue.Add(key, nextCheck.Time.Sub(now))
 		return nil
 	}
+
+	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
+
+	// A missing client means no request reached the ACME server, so leave
+	// status untouched and back off until the issuer controller registers it.
+	if errors.Is(err, accounts.ErrNotFound) {
+		misses := 0
+		if v, ok := c.ariClientMisses.Load(key); ok {
+			misses, _ = v.(int)
+		}
+		delay := ariRegistryRetry
+		for i := 0; i < misses && delay < defaultARIPoll; i++ {
+			delay *= 2
+		}
+		if delay > defaultARIPoll {
+			delay = defaultARIPoll
+		}
+		c.ariClientMisses.Store(key, misses+1)
+
+		log.V(logf.DebugLevel).Info("no ACME client registered for issuer yet, will retry",
+			"issuer", genericIssuer.GetName(), "after", delay)
+
+		if staleForCurrentCert && crt.Status.ACME != nil && crt.Status.ACME.ARI != nil {
+			crt.Status.ACME.ARI.SuggestedWindow = nil
+			crt.Status.ACME.ARI.ExplanationURL = ""
+		}
+
+		c.scheduledWorkQueue.Add(key, delay)
+		return nil
+	}
+	c.ariClientMisses.Delete(key)
 
 	if crt.Status.ACME == nil {
 		crt.Status.ACME = &cmapi.CertificateACMEStatus{}
@@ -344,7 +446,6 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 	}
 	ariStatus := crt.Status.ACME.ARI
 
-	ariInfo, err := c.getARIInfo(ctx, genericIssuer, x509cert)
 	var renewalTime *metav1.Time
 
 	switch {
@@ -365,9 +466,8 @@ func (c *controller) useARIForRenewal(ctx context.Context, crt *cmapi.Certificat
 		message := fmt.Sprintf("Could not fetch ACME Renewal Information: %v", err)
 
 		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-		// ariInfo may be nil when getARIInfo fails before issuing a request
-		// (e.g. no ACME client registered yet). Fall back to the default poll
-		// interval rather than dereferencing a nil response.
+		// ariInfo is nil whenever getARIInfo fails, so fall back to the
+		// default poll interval rather than dereferencing a nil response.
 		retryAfter := defaultARIPoll
 		if ariInfo != nil {
 			retryAfter = ariInfo.RetryAfter
@@ -460,7 +560,8 @@ func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certifi
 			conditions = []cmapi.CertificateCondition{*cond}
 		}
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
+			Namespace: crt.Namespace,
+			Name:      crt.Name,
 			Status: cmapi.CertificateStatus{
 				NotAfter:    crt.Status.NotAfter,
 				NotBefore:   crt.Status.NotBefore,
@@ -511,14 +612,6 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Type
 		BuildReadyConditionFromChain,
 	)
 	c.controller = ctrl
-
-	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
-	}
-
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	return queue, mustSync, err
 }

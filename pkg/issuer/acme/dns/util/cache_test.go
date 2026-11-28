@@ -33,9 +33,9 @@ func TestCachingResolver_FindZoneByFQDN(t *testing.T) {
 			givenFQDN:  "sub.example.com.",
 			expectZone: "example.com.",
 			mockDNS: []interaction{
-				{"SOA sub.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA sub.example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 				{"SOA example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
@@ -50,13 +50,13 @@ func TestCachingResolver_FindZoneByFQDN(t *testing.T) {
 			expectZone: "example.com.",
 			mockDNS: []interaction{
 				{"SOA sub.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "sub.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "other.com."},
 					},
 				}},
 				{"SOA example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
@@ -68,7 +68,7 @@ func TestCachingResolver_FindZoneByFQDN(t *testing.T) {
 			givenFQDN: "sub.example.com.",
 			expectErr: "When querying the SOA record for the domain 'sub.example.com.' using nameservers [not-used], rcode was expected to be 'NOERROR' or 'NXDOMAIN', but got 'SERVFAIL'",
 			mockDNS: []interaction{
-				{"SOA sub.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeServerFailure}}},
+				{"SOA sub.example.com.", &dns.Msg{Rcode: dns.RcodeServerFailure}},
 			},
 		},
 		{
@@ -76,9 +76,9 @@ func TestCachingResolver_FindZoneByFQDN(t *testing.T) {
 			givenFQDN: "sub.example.com.",
 			expectErr: "Could not find the SOA record in the DNS tree for the domain 'sub.example.com.' using nameservers [not-used]",
 			mockDNS: []interaction{
-				{"SOA sub.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
-				{"SOA example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
-				{"SOA com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA sub.example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
+				{"SOA example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
+				{"SOA com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 			},
 		},
 	}
@@ -105,9 +105,9 @@ func TestCachingResolver_CacheHit(t *testing.T) {
 	// if any further queries are made, so a cache hit on the second call is verified
 	// implicitly.
 	withMockDNSQuery(t, []interaction{
-		{"SOA sub.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+		{"SOA sub.example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 		{"SOA example.com.", &dns.Msg{
-			MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+			Rcode: dns.RcodeSuccess,
 			Answer: []dns.RR{
 				&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 			},
@@ -127,11 +127,11 @@ func TestCachingResolver_CacheHit(t *testing.T) {
 
 func TestCachingResolver_CacheExpiry(t *testing.T) {
 	fqdn := "sub.example.com."
-	nxDomain := &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}
+	nxDomain := &dns.Msg{Rcode: dns.RcodeNameError}
 	// TTL=0 means the cache entry expires at the moment it is written, so any
 	// subsequent call sees it as stale and re-queries.
 	soaTTL0 := &dns.Msg{
-		MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+		Rcode: dns.RcodeSuccess,
 		Answer: []dns.RR{
 			&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 0}},
 		},
@@ -176,11 +176,11 @@ func TestCachingResolver_NameserverFallthrough(t *testing.T) {
 			return nil, fmt.Errorf("ns1 unreachable")
 		case 2:
 			assert.Equal(t, []string{ns2}, nameservers)
-			return &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}, nil
+			return &dns.Msg{Rcode: dns.RcodeNameError}, nil
 		case 3:
 			assert.Equal(t, []string{ns2}, nameservers)
 			return &dns.Msg{
-				MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+				Rcode: dns.RcodeSuccess,
 				Answer: []dns.RR{
 					&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 				},
@@ -213,9 +213,9 @@ func TestCachingResolver_AllNameserversFail(t *testing.T) {
 func TestCachingResolver_PerNameserverCaching(t *testing.T) {
 	fqdn := "sub.example.com."
 	ns1, ns2 := "ns1:53", "ns2:53"
-	nxDomain := &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}
+	nxDomain := &dns.Msg{Rcode: dns.RcodeNameError}
 	soaResp := &dns.Msg{
-		MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+		Rcode: dns.RcodeSuccess,
 		Answer: []dns.RR{
 			&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 		},
@@ -251,7 +251,7 @@ func TestCachingResolver_PerNameserverCaching(t *testing.T) {
 func TestCachingResolver_ZeroValue(t *testing.T) {
 	withMockDNSQuery(t, []interaction{
 		{"SOA example.com.", &dns.Msg{
-			MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+			Rcode: dns.RcodeSuccess,
 			Answer: []dns.RR{
 				&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 			},
@@ -332,19 +332,19 @@ func TestCachingResolver_LookupAuthoritativeNameservers(t *testing.T) {
 			givenFQDN: "en.wikipedia.org.",
 			mockDNS: []interaction{
 				{"SOA en.wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "en.wikipedia.org.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "dyna.wikimedia.org."},
 					},
 				}},
 				{"SOA wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
 				}},
 				{"NS wikipedia.org.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.NS{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns1.wikimedia.org."},
 						&dns.NS{Hdr: dns.RR_Header{Name: "wikipedia.org.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns2.wikimedia.org."},
@@ -361,16 +361,16 @@ func TestCachingResolver_LookupAuthoritativeNameservers(t *testing.T) {
 			givenFQDN: "www.google.com.",
 			mockDNS: []interaction{
 				{"SOA www.google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 				}},
 				{"SOA google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 60}},
 					},
 				}},
 				{"NS google.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns1.google.com."},
 						&dns.NS{Hdr: dns.RR_Header{Name: "google.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns2.google.com."},
@@ -387,13 +387,13 @@ func TestCachingResolver_LookupAuthoritativeNameservers(t *testing.T) {
 			givenFQDN: "physics.georgetown.edu.",
 			mockDNS: []interaction{
 				{"SOA physics.georgetown.edu.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
 				}},
 				{"NS physics.georgetown.edu.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns4.georgetown.edu."},
 						&dns.NS{Hdr: dns.RR_Header{Name: "physics.georgetown.edu.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns5.georgetown.edu."},
@@ -408,8 +408,8 @@ func TestCachingResolver_LookupAuthoritativeNameservers(t *testing.T) {
 			name:      "zone not found returns error",
 			givenFQDN: "example.com.",
 			mockDNS: []interaction{
-				{"SOA example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
-				{"SOA com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
+				{"SOA com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 			},
 			expectErr: `Could not determine the zone for "example.com.": Could not find the SOA record in the DNS tree for the domain 'example.com.' using nameservers [not-used]`,
 		},
@@ -418,12 +418,12 @@ func TestCachingResolver_LookupAuthoritativeNameservers(t *testing.T) {
 			givenFQDN: "example.com.",
 			mockDNS: []interaction{
 				{"SOA example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
 				}},
-				{"NS example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"NS example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 			},
 			expectErr: `Could not determine authoritative nameservers for "example.com."`,
 		},
@@ -448,15 +448,15 @@ func TestCachingResolver_LookupAuthoritativeNameservers_CacheHit(t *testing.T) {
 	// First call makes 3 DNS queries; withMockDNSQuery fails the test on any
 	// additional query, so a cache hit on the second call is verified implicitly.
 	withMockDNSQuery(t, []interaction{
-		{"SOA sub.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+		{"SOA sub.example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 		{"SOA example.com.", &dns.Msg{
-			MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+			Rcode: dns.RcodeSuccess,
 			Answer: []dns.RR{
 				&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 			},
 		}},
 		{"NS example.com.", &dns.Msg{
-			MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+			Rcode: dns.RcodeSuccess,
 			Answer: []dns.RR{
 				&dns.NS{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns1.example.com."},
 			},
@@ -498,9 +498,9 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			givenValue:       "token123",
 			useAuthoritative: false,
 			mockDNS: []interaction{
-				{"CNAME example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"CNAME example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 				{"TXT example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.TXT{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300}, Txt: []string{"token123"}},
 					},
@@ -514,8 +514,8 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			givenValue:       "token123",
 			useAuthoritative: false,
 			mockDNS: []interaction{
-				{"CNAME example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
-				{"TXT example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"CNAME example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
+				{"TXT example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 			},
 			expectFound: false,
 		},
@@ -525,9 +525,9 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			givenValue:       "token123",
 			useAuthoritative: false,
 			mockDNS: []interaction{
-				{"CNAME example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"CNAME example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 				{"TXT example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.TXT{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300}, Txt: []string{"wrong-token"}},
 					},
@@ -543,14 +543,14 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			useAuthoritative: false,
 			mockDNS: []interaction{
 				{"CNAME alias.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.CNAME{Hdr: dns.RR_Header{Name: "alias.example.com.", Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 300}, Target: "real.example.com."},
 					},
 				}},
-				{"CNAME real.example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"CNAME real.example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 				{"TXT real.example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.TXT{Hdr: dns.RR_Header{Name: "real.example.com.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300}, Txt: []string{"token123"}},
 					},
@@ -566,24 +566,24 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			useAuthoritative: true,
 			mockDNS: []interaction{
 				// followCNAMEs
-				{"CNAME example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"CNAME example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 				// LookupAuthoritativeNameservers -> FindZoneByFQDN
 				{"SOA example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.SOA{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: 300}},
 					},
 				}},
 				// LookupAuthoritativeNameservers -> NS query
 				{"NS example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.NS{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 300}, Ns: "ns1.example.com."},
 					},
 				}},
 				// checkAuthoritativeNss querying the resolved authoritative server
 				{"TXT example.com.", &dns.Msg{
-					MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess},
+					Rcode: dns.RcodeSuccess,
 					Answer: []dns.RR{
 						&dns.TXT{Hdr: dns.RR_Header{Name: "example.com.", Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 300}, Txt: []string{"token123"}},
 					},
@@ -598,10 +598,10 @@ func TestCachingResolver_CheckTXTRecordPropagation(t *testing.T) {
 			useAuthoritative: true,
 			mockDNS: []interaction{
 				// followCNAMEs
-				{"CNAME example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeSuccess}}},
+				{"CNAME example.com.", &dns.Msg{Rcode: dns.RcodeSuccess}},
 				// FindZoneByFQDN - no SOA anywhere in tree
-				{"SOA example.com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
-				{"SOA com.", &dns.Msg{MsgHdr: dns.MsgHdr{Rcode: dns.RcodeNameError}}},
+				{"SOA example.com.", &dns.Msg{Rcode: dns.RcodeNameError}},
+				{"SOA com.", &dns.Msg{Rcode: dns.RcodeNameError}},
 			},
 			expectErr: `Could not determine the zone for "example.com.": Could not find the SOA record in the DNS tree for the domain 'example.com.' using nameservers [not-used]`,
 		},

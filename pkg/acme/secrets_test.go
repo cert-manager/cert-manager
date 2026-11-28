@@ -85,7 +85,7 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
-						ClientSecret: &cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "azuredns-creds"}},
+						ClientSecret: &cmmeta.SecretKeySelector{Name: "azuredns-creds"},
 					},
 				}},
 			}),
@@ -95,7 +95,7 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 			issuer: gen.SetIssuerACMESolvers([]cmacme.ACMEChallengeSolver{
 				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-						APIToken: &cmmeta.SecretKeySelector{LocalObjectReference: cmmeta.LocalObjectReference{Name: "cloudflare-token"}},
+						APIToken: &cmmeta.SecretKeySelector{Name: "cloudflare-token"},
 					},
 				}},
 			}),
@@ -146,8 +146,8 @@ func TestRequiredDNS01SolverSecrets(t *testing.T) {
 				{DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 						ServiceAccount: &cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{Name: "clouddns-creds"},
-							Key:                  "service-account.json",
+							Name: "clouddns-creds",
+							Key:  "service-account.json",
 						},
 					},
 				}},

@@ -28,6 +28,7 @@ import (
 
 	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -42,6 +43,10 @@ import (
 // Integration tests for the authority can be found in `test/integration/webhook/dynamic_authority_test.go`.
 
 func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAuthority {
+	return testAuthorityForSecret(t, name, "test-secret", cs)
+}
+
+func testAuthorityForSecret(t *testing.T, name, secretName string, cs *kubefake.Clientset) *DynamicAuthority {
 	logger := testr.NewWithOptions(t, testr.Options{
 		Verbosity: 3,
 	})
@@ -49,7 +54,7 @@ func testAuthority(t *testing.T, name string, cs *kubefake.Clientset) *DynamicAu
 
 	da := &DynamicAuthority{
 		SecretNamespace: "test-namespace",
-		SecretName:      "test-secret",
+		SecretName:      secretName,
 		CommonName:      "test-common-name",
 		CADuration:      365 * 24 * time.Hour,
 		LeafDuration:    7 * 24 * time.Hour,
@@ -121,8 +126,17 @@ func TestDynamicAuthority(t *testing.T) {
 
 	waitForRotationAndSign(false)
 
-	secret, err := fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
-	assert.NoError(t, err)
+	// The rotation notification does not guarantee that the authority has
+	// recreated the Secret yet: it may be a stale buffered notification from
+	// the initial CA creation, left unconsumed because Sign succeeded
+	// immediately above, and Sign works from in-memory CA data. Poll until
+	// the recreated Secret is visible.
+	var secret *corev1.Secret
+	require.Eventually(t, func() bool {
+		var err error
+		secret, err = fake.CoreV1().Secrets(da.SecretNamespace).Get(t.Context(), da.SecretName, metav1.GetOptions{})
+		return err == nil
+	}, 10*time.Second, 10*time.Millisecond)
 
 	secret.Data = map[string][]byte{
 		"tls.crt": []byte("test"),

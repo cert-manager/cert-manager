@@ -17,17 +17,21 @@ limitations under the License.
 package http
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"slices"
 	"strings"
-	"sync/atomic"
 	"time"
 
+	"github.com/miekg/dns"
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	networkingv1listers "k8s.io/client-go/listers/networking/v1"
@@ -276,26 +280,26 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	}
 
 	if len(dnsServers) != 0 {
-		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
-			// This Dial ignores the resolv.conf address that the resolver passes
-			// in, so we rotate through dnsServers ourselves. Without this, every
-			// resolver retry would hit the same server. The counter is atomic
-			// because the resolver dials from parallel A and AAAA goroutines.
-			var counter atomic.Uint32
-			dialer := &net.Dialer{
-				Timeout: 3 * time.Second,
-				Resolver: &net.Resolver{
-					PreferGo: true,
-					Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-						d := net.Dialer{
-							Timeout: 3 * time.Second,
-						}
-						s := dnsServers[int(counter.Add(1)-1)%len(dnsServers)]
-						return d.DialContext(ctx, network, s)
-					},
-				},
+		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
 			}
-			return dialer.DialContext(ctx, network, addr)
+
+			if net.ParseIP(host) != nil {
+				return dialAddresses(ctx, network, port, []string{host})
+			}
+
+			// /etc/hosts comes before DNS: Pod hostAliases and a proxy host
+			// name from HTTP_PROXY rely on it.
+			ips := lookupHostsFile(hostsFile, host)
+			if len(ips) == 0 {
+				ips, err = resolveWithServers(ctx, host, dnsServers)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return dialAddresses(ctx, network, port, ips)
 		}
 	}
 	client := &http.Client{
@@ -337,4 +341,160 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	log.V(logf.DebugLevel).Info("reachability test succeeded")
 
 	return nil
+}
+
+// dnsServerTimeout bounds each query to a configured DNS server, so that a dead
+// one does not use up the 10 second self check.
+const dnsServerTimeout = time.Second
+
+// hostsFile is a variable so that tests can point it at a temporary file.
+var hostsFile = "/etc/hosts"
+
+const (
+	// dialTimeout bounds the whole dial, across every address.
+	dialTimeout           = 3 * time.Second
+	minAddressDialTimeout = time.Second
+)
+
+// dialContext is a variable so that tests can observe each connection attempt.
+var dialContext = (&net.Dialer{}).DialContext
+
+// dialAddresses tries IPv6 addresses first and shares the time left among the
+// addresses left, so that one that drops packets cannot use up the whole
+// timeout.
+func dialAddresses(ctx context.Context, network, port string, ips []string) (net.Conn, error) {
+	slices.SortStableFunc(ips, func(a, b string) int {
+		return cmp.Compare(ipFamilyRank(a), ipFamilyRank(b))
+	})
+
+	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
+	defer cancel()
+	deadline, _ := ctx.Deadline()
+
+	var errs []error
+	for i, ip := range ips {
+		timeout := max(time.Until(deadline)/time.Duration(len(ips)-i), minAddressDialTimeout)
+		attemptCtx, attemptCancel := context.WithTimeout(ctx, timeout)
+		conn, err := dialContext(attemptCtx, network, net.JoinHostPort(ip, port))
+		attemptCancel()
+		if err == nil {
+			return conn, nil
+		}
+		errs = append(errs, err)
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	return nil, errors.Join(errs...)
+}
+
+func ipFamilyRank(ip string) int {
+	if parsed := net.ParseIP(ip); parsed != nil && parsed.To4() == nil {
+		return 0
+	}
+	return 1
+}
+
+// resolveWithServers resolves host against dnsServers, trying them in order and
+// returning every address from the first one that answers.
+//
+// A server that does not answer, or answers with an error such as SERVFAIL, is
+// skipped. A server that answers but knows no address is not: that is an
+// answer, and falling through to another server would hide it.
+func resolveWithServers(ctx context.Context, host string, dnsServers []string) ([]string, error) {
+	var errs []error
+	for _, server := range dnsServers {
+		ips, err := lookupHostOnServer(ctx, host, server)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", server, err))
+			continue
+		}
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("no address found for %q on %s", host, server)
+		}
+		return ips, nil
+	}
+	return nil, fmt.Errorf("no configured DNS server answered for %q: %w", host, errors.Join(errs...))
+}
+
+// lookupHostOnServer asks a single server for the A and then the AAAA records
+// of host. It returns no addresses and a nil error when the server answered but
+// the name has none. Recursion is requested, so a resolver that follows a CNAME
+// returns the address in the same answer section.
+func lookupHostOnServer(ctx context.Context, host, server string) ([]string, error) {
+	var ips []string
+	for _, qtype := range []uint16{dns.TypeA, dns.TypeAAAA} {
+		response, err := exchangeWithServer(ctx, host, qtype, server)
+		if err != nil {
+			// A server that fails the AAAA query has still answered for A.
+			if len(ips) > 0 {
+				break
+			}
+			return nil, err
+		}
+		if response.Rcode == dns.RcodeNameError {
+			break
+		}
+		for _, record := range response.Answer {
+			switch t := record.(type) {
+			case *dns.A:
+				ips = append(ips, t.A.String())
+			case *dns.AAAA:
+				ips = append(ips, t.AAAA.String())
+			}
+		}
+	}
+	return ips, nil
+}
+
+// exchangeWithServer sends one query to server. Only a success or NXDOMAIN reply
+// counts as an answer; any other response code is returned as an error so that
+// the caller moves on to the next server. A truncated UDP reply is retried over
+// TCP.
+func exchangeWithServer(ctx context.Context, host string, qtype uint16, server string) (*dns.Msg, error) {
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(host), qtype)
+	msg.SetEdns0(1232, false)
+	msg.RecursionDesired = true
+
+	client := &dns.Client{Net: "udp", Timeout: dnsServerTimeout}
+	response, _, err := client.ExchangeContext(ctx, msg, server)
+	if err == nil && response.Truncated {
+		client.Net = "tcp"
+		response, _, err = client.ExchangeContext(ctx, msg, server)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if response.Rcode != dns.RcodeSuccess && response.Rcode != dns.RcodeNameError {
+		return nil, fmt.Errorf("server replied %s", dns.RcodeToString[response.Rcode])
+	}
+	return response, nil
+}
+
+// lookupHostsFile returns the addresses that the hosts file at path lists for
+// host, or nil when it lists none or cannot be read.
+func lookupHostsFile(path, host string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	host = strings.TrimSuffix(host, ".")
+	var ips []string
+	for line := range strings.Lines(string(data)) {
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 || net.ParseIP(fields[0]) == nil {
+			continue
+		}
+		for _, name := range fields[1:] {
+			if strings.EqualFold(strings.TrimSuffix(name, "."), host) {
+				ips = append(ips, fields[0])
+				break
+			}
+		}
+	}
+	return ips
 }

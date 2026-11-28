@@ -74,7 +74,7 @@ func TestExtractResourceName(t *testing.T) {
 		return nil
 	})
 
-	obj := &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Name: expectedValue}}
+	obj := &cmapi.Certificate{Name: expectedValue}
 	fn(obj)
 	if !called {
 		t.Fatal("unexpected error - function not called!")

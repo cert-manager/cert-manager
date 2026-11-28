@@ -72,7 +72,8 @@ func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string
 // API call for the cert-manager client.
 func serializeApply(req *cmapi.CertificateRequest) ([]byte, error) {
 	req = &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		Kind:       cmapi.CertificateRequestKind,
+		APIVersion: cmapi.SchemeGroupVersion.Identifier(),
 		ObjectMeta: *req.ObjectMeta.DeepCopy(),
 		Spec:       *req.Spec.DeepCopy(),
 		Status:     cmapi.CertificateRequestStatus{},
@@ -96,8 +97,10 @@ func serializeApply(req *cmapi.CertificateRequest) ([]byte, error) {
 // API call for the cert-manager client.
 func serializeApplyStatus(req *cmapi.CertificateRequest) ([]byte, error) {
 	req = &cmapi.CertificateRequest{
-		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-		ObjectMeta: metav1.ObjectMeta{Namespace: req.Namespace, Name: req.Name},
+		Kind:       cmapi.CertificateRequestKind,
+		APIVersion: cmapi.SchemeGroupVersion.Identifier(),
+		Namespace:  req.Namespace,
+		Name:       req.Name,
 		Spec:       cmapi.CertificateRequestSpec{},
 		Status:     *req.Status.DeepCopy(),
 	}

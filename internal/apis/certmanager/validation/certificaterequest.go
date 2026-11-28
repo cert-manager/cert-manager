@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
 	"fmt"
 	"reflect"
 	"strings"
@@ -27,9 +28,11 @@ import (
 
 	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	"github.com/cert-manager/cert-manager/pkg/apis/acme"
 	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
 	cmapiv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
@@ -96,19 +99,41 @@ func validateCertificateRequestSpecRequest(crSpec *cmapi.CertificateRequestSpec,
 		return el
 	}
 
+	csr, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
+	if err == nil {
+		err = csr.CheckSignature()
+	}
+	if err != nil {
+		// truncate the request to avoid creating a ridiculously long error message with the whole CSR in it
+		el = append(el, field.Invalid(fldPath.Child("request"), truncateString(string(crSpec.Request)), err.Error()))
+		return el
+	}
+
+	if csr.PublicKeyAlgorithm == x509.MLDSA {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+			el = append(el, field.Forbidden(fldPath.Child("request"), "CSRs with an ML-DSA public key require the MLDSAPrivateKeys feature gate to be enabled"))
+			return el
+		}
+
+		if usageErrs := validateMLDSAUsages(crSpec.Usages, fldPath.Child("usages")); len(usageErrs) > 0 {
+			return append(el, usageErrs...)
+		}
+	}
+
 	usages := make([]cmapiv1.KeyUsage, 0, len(crSpec.Usages))
 	for _, usage := range crSpec.Usages {
 		usages = append(usages, cmapiv1.KeyUsage(usage))
 	}
 
-	keyUsage, extKeyUsage, err := pki.KeyUsagesForCertificateOrCertificateRequest(usages, crSpec.IsCA)
+	// The default key usages depend on the CSR's public key algorithm.
+	keyUsage, extKeyUsage, err := pki.KeyUsagesForPublicKeyAlgorithm(usages, crSpec.IsCA, csr.PublicKeyAlgorithm)
 	if err != nil {
 		el = append(el, field.Invalid(fldPath.Child("usages"), crSpec.Usages, err.Error()))
 		return el
 	}
 
-	_, err = pki.CertificateTemplateFromCSRPEM(
-		crSpec.Request,
+	_, err = pki.CertificateTemplateFromCSR(
+		csr,
 		pki.CertificateTemplateValidateAndOverrideBasicConstraints(crSpec.IsCA, nil),
 		pki.CertificateTemplateValidateAndOverrideKeyUsages(keyUsage, extKeyUsage),
 	)

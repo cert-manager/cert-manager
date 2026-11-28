@@ -17,8 +17,14 @@ limitations under the License.
 package ca
 
 import (
+	"crypto/mldsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"math/big"
+	"time"
+
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // These hardcoded certificates are generated using cert-manager.
@@ -86,9 +92,7 @@ CnC5P5hccNsXSdKcTpwrP8xFLtQxPD1qkA==
 
 func newSigningKeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       rootCert,
 			corev1.TLSPrivateKeyKey: rootKey,
@@ -159,9 +163,7 @@ AwEHoUQDQgAEEM5aoWdtVlCaT6XT/GoG3YAP31eT/OGjAcIyBWF9gqVhlqBCYa9v
 
 func newSigningIssuer1KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       issuer1Cert + rootCert,
 			corev1.TLSPrivateKeyKey: issuer1Key,
@@ -232,14 +234,54 @@ nRbhBk4mLAHg36z2yO8GclGeVYh98Q/U5w==
 
 func newSigningIssuer2KeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		StringData: map[string]string{
 			corev1.TLSCertKey:       issuer2Cert + issuer1Cert + rootCert,
 			corev1.TLSPrivateKeyKey: issuer2Key,
 		},
 	}
+}
+
+// newMLDSASigningKeypairSecret returns a Secret containing a freshly generated
+// self-signed ML-DSA-87 CA. ML-DSA certificates are large, so unlike the
+// fixtures above the CA is generated at runtime rather than hardcoded.
+func newMLDSASigningKeypairSecret(name string) (*corev1.Secret, error) {
+	pk, err := pki.GenerateMLDSAPrivateKey(mldsa.MLDSA87())
+	if err != nil {
+		return nil, err
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Country:      []string{"UK"},
+			Organization: []string{"cert-manager"},
+			CommonName:   "cert-manager testing ML-DSA CA",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	certPEM, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	if err != nil {
+		return nil, err
+	}
+
+	keyPEM, err := pki.EncodePKCS8PrivateKey(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return &corev1.Secret{
+		Name: name,
+		Data: map[string][]byte{
+			corev1.TLSCertKey:       certPEM,
+			corev1.TLSPrivateKeyKey: keyPEM,
+		},
+	}, nil
 }
 
 // YAML for creating the hardcoded certificates in this file:

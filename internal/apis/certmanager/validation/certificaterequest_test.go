@@ -26,10 +26,13 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
 	cminternal "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 	cminternalmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
@@ -40,12 +43,10 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 	baseRequest := mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com")))
 
 	baseCR := &cminternal.CertificateRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				"abc":                      "123",
-				"cert-manager.io/foo":      "abc",
-				"acme.cert-manager.io/bar": "123",
-			},
+		Annotations: map[string]string{
+			"abc":                      "123",
+			"cert-manager.io/foo":      "abc",
+			"acme.cert-manager.io/bar": "123",
 		},
 		Spec: cminternal.CertificateRequestSpec{
 			Request:   baseRequest,
@@ -77,11 +78,9 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 		"if CertificateRequest spec and cert-manager.io annotations change, error": {
 			oldCR: baseCR.DeepCopy(),
 			newCR: &cminternal.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"acme.cert-manager.io/bar": "123",
-						"123":                      "abc",
-					},
+				Annotations: map[string]string{
+					"acme.cert-manager.io/bar": "123",
+					"123":                      "abc",
 				},
 				Spec: cminternal.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
@@ -96,11 +95,9 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 		"if CertificateRequest spec and acme.cert-manager.io annotations change, error": {
 			oldCR: baseCR.DeepCopy(),
 			newCR: &cminternal.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"cert-manager.io/foo": "abc",
-						"123":                 "abc",
-					},
+				Annotations: map[string]string{
+					"cert-manager.io/foo": "abc",
+					"123":                 "abc",
 				},
 				Spec: cminternal.CertificateRequestSpec{
 					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
@@ -853,6 +850,84 @@ func TestValidateCertificateRequest(t *testing.T) {
 			gotE, gotW := ValidateCertificateRequest(test.a, test.cr)
 			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, test.wantE, gotE)
 			assert.Equal(t, test.wantW, gotW)
+		})
+	}
+}
+
+func TestValidateCertificateRequestMLDSA(t *testing.T) {
+	fldPath := field.NewPath("spec")
+	mldsaCSR := mustGenerateCSR(t, gen.Certificate("test",
+		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateKeyAlgorithm(cmapi.MLDSAKeyAlgorithm),
+	))
+	mldsaCACSR := mustGenerateCSR(t, gen.Certificate("test",
+		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateKeyAlgorithm(cmapi.MLDSAKeyAlgorithm),
+		gen.SetCertificateIsCA(true),
+	))
+	rsaCSR := mustGenerateCSR(t, gen.Certificate("test",
+		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment),
+	))
+
+	tests := map[string]struct {
+		spec           cminternal.CertificateRequestSpec
+		featureEnabled bool
+		wantE          field.ErrorList
+	}{
+		"ML-DSA CSR with no usages": {
+			spec: cminternal.CertificateRequestSpec{
+				Request:   mldsaCSR,
+				IssuerRef: validIssuerRef,
+			},
+			featureEnabled: true,
+			wantE:          []*field.Error{},
+		},
+		"ML-DSA CA CSR with no usages": {
+			spec: cminternal.CertificateRequestSpec{
+				Request:   mldsaCACSR,
+				IssuerRef: validIssuerRef,
+				IsCA:      true,
+			},
+			featureEnabled: true,
+			wantE:          []*field.Error{},
+		},
+		"ML-DSA CSR with feature gate disabled": {
+			spec: cminternal.CertificateRequestSpec{
+				Request:   mldsaCSR,
+				IssuerRef: validIssuerRef,
+			},
+			wantE: []*field.Error{
+				field.Forbidden(fldPath.Child("request"), "CSRs with an ML-DSA public key require the MLDSAPrivateKeys feature gate to be enabled"),
+			},
+		},
+		"ML-DSA CSR with forbidden usages": {
+			spec: cminternal.CertificateRequestSpec{
+				Request:   mldsaCSR,
+				IssuerRef: validIssuerRef,
+				Usages:    []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment},
+			},
+			featureEnabled: true,
+			wantE: []*field.Error{
+				field.Invalid(fldPath.Child("usages").Index(1), cminternal.UsageKeyEncipherment, "not allowed for ML-DSA keys (RFC 9881)"),
+			},
+		},
+		"RSA CSR with key encipherment usage and feature gate enabled": {
+			spec: cminternal.CertificateRequestSpec{
+				Request:   rsaCSR,
+				IssuerRef: validIssuerRef,
+				Usages:    []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment},
+			},
+			featureEnabled: true,
+			wantE:          []*field.Error{},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.MLDSAPrivateKeys, test.featureEnabled)
+			gotE, gotW := ValidateCertificateRequest(someAdmissionRequest, &cminternal.CertificateRequest{Spec: test.spec})
+			field.ErrorMatcher{}.ByType().ByField().ByDetailExact().Test(t, test.wantE, gotE)
+			assert.Empty(t, gotW)
 		})
 	}
 }

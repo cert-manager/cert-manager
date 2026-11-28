@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
@@ -288,13 +289,12 @@ func containsValue(values []string, value string) bool {
 	return false
 }
 
+// isNotFound reports whether err is a 404 from the Akamai API. The SDK returns
+// every non-200 response as a *dns.Error, so the type alone is not enough.
 func isNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	_, ok := err.(*dns.Error)
-	return ok
+	var apiErr *dns.Error
+	// errors.As also matches a nil *dns.Error stored in the error.
+	return errors.As(err, &apiErr) && apiErr != nil && apiErr.StatusCode == http.StatusNotFound
 }
 
 func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {

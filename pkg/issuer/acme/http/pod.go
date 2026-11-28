@@ -208,18 +208,25 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	if s.ACMEOptions.HTTP01SolverRuntimeClassName != "" {
 		runtimeClassName = new(s.ACMEOptions.HTTP01SolverRuntimeClassName)
 	}
+	podArgs := []string{
+		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+		fmt.Sprintf("--domain=%s", ch.Spec.DNSName),
+		fmt.Sprintf("--token=%s", ch.Spec.Token),
+		fmt.Sprintf("--key=%s", ch.Spec.Key),
+	}
+	if s.ACMEOptions.ACMEHTTP01SolverProxyProtocol {
+		podArgs = append(podArgs, "--proxy-protocol")
+	}
 
 	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
-			Labels:       podLabels,
-			Annotations: map[string]string{
-				"sidecar.istio.io/inject":                        "false",
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
-			},
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
+		GenerateName: "cm-acme-http-solver-",
+		Namespace:    ch.Namespace,
+		Labels:       podLabels,
+		Annotations: map[string]string{
+			"sidecar.istio.io/inject":                        "false",
+			"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 		},
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		Spec: corev1.PodSpec{
 			// The HTTP01 solver process does not need access to the
 			// Kubernetes API server, so we turn off automounting of
@@ -244,12 +251,7 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 					Image:           s.ACMEOptions.HTTP01SolverImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					// TODO: replace this with some kind of cmdline generator
-					Args: []string{
-						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
-						fmt.Sprintf("--domain=%s", ch.Spec.DNSName),
-						fmt.Sprintf("--token=%s", ch.Spec.Token),
-						fmt.Sprintf("--key=%s", ch.Spec.Key),
-					},
+					Args: podArgs,
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    s.ACMEOptions.HTTP01SolverResourceRequestCPU,

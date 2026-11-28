@@ -89,10 +89,8 @@ var _ = framework.CertManagerDescribe("Certificate Foreground Deletion", func() 
 		Expect(err).NotTo(HaveOccurred())
 
 		crt = &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "test-foreground-deletion-",
-				Namespace:    f.Namespace.Name,
-			},
+			GenerateName: "test-foreground-deletion-",
+			Namespace:    f.Namespace.Name,
 			Spec: cmapi.CertificateSpec{
 				CommonName: "test",
 				SecretName: secretName,

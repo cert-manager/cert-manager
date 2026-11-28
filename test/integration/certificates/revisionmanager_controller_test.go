@@ -77,7 +77,7 @@ func TestRevisionManagerController(t *testing.T) {
 	)
 
 	// Create Namespace
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{Name: namespace}
 	if _, err := kubeClient.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -112,15 +112,13 @@ func TestRevisionManagerController(t *testing.T) {
 	// Create 6 CertificateRequests which are owned by this Certificate
 	for i := range 6 {
 		_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(t.Context(), &cmapi.CertificateRequest{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: crtName + "-",
-				Namespace:    namespace,
-				Annotations: map[string]string{
-					cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(i),
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
-				},
+			GenerateName: crtName + "-",
+			Namespace:    namespace,
+			Annotations: map[string]string{
+				cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(i),
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")),
 			},
 			Spec: cmapi.CertificateRequestSpec{
 				Request:   csrPEM,

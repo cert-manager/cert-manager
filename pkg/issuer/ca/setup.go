@@ -21,20 +21,25 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/kube"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (
 	errorGetKeyPair     = "ErrGetKeyPair"
 	errorInvalidKeyPair = "ErrInvalidKeyPair"
+	errorMLDSADisabled  = "MLDSAPrivateKeysDisabled"
 
 	successKeyPairVerified = "KeyPairVerified"
 
 	messageErrorGetKeyPair = "Error getting keypair for CA issuer: "
+	messageMLDSADisabled   = "Signing CA has an ML-DSA key, which requires the MLDSAPrivateKeys feature gate to be enabled"
 
 	messageKeyPairVerified = "Signing CA verified"
 )
@@ -54,7 +59,7 @@ func (c *CA) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		return err
 	}
 
-	_, err = kube.SecretTLSKey(ctx, c.secretsLister, resourceNamespace, issuer.GetSpec().CA.SecretName)
+	key, err := kube.SecretTLSKey(ctx, c.secretsLister, resourceNamespace, issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		log.Error(err, "error getting signing CA private key")
 		s := messageErrorGetKeyPair + err.Error()
@@ -70,6 +75,15 @@ func (c *CA) Setup(ctx context.Context, issuer v1.GenericIssuer) error {
 		c.Recorder.Event(issuer, corev1.EventTypeWarning, errorInvalidKeyPair, s)
 		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
+		return nil
+	}
+
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) && pki.IsMLDSAPublicKey(key.Public()) {
+		log.Error(nil, "signing CA has an ML-DSA key but the MLDSAPrivateKeys feature gate is disabled")
+		c.Recorder.Event(issuer, corev1.EventTypeWarning, errorMLDSADisabled, messageMLDSADisabled)
+		apiutil.SetIssuerCondition(issuer, issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorMLDSADisabled, messageMLDSADisabled)
+		// Don't return an error here: changing the feature gate restarts the
+		// controller, which resyncs every issuer.
 		return nil
 	}
 

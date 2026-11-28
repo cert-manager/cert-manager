@@ -89,7 +89,7 @@ func runVaultClientCertAuthTest(issuerKind string, testWithRoot bool, unsupporte
 		Expect(err).NotTo(HaveOccurred())
 
 		sec, err := f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Create(testingCtx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{GenerateName: "vault-client-cert-"},
+			GenerateName: "vault-client-cert-",
 			StringData: map[string]string{
 				"tls.key": string(keyPEM),
 				"tls.crt": string(certPEM),

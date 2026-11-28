@@ -112,7 +112,7 @@ If a component-specific nodeSelector is also set, it will be merged and take pre
 Labels to apply to all resources.  
 These labels are also applied to dynamically-created ACME HTTP01 solver resources  
 (pods, services, ingresses, or Gateway API HTTPRoutes).  
-The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources.
+The following ACME identity label keys are reserved and will be silently ignored on dynamically-created resources: acme.cert-manager.io/http-domain, acme.cert-manager.io/http-token, acme.cert-manager.io/http01-solver. For per-Issuer-specific labels, use the HTTP01 ingress solver podTemplate and ingressTemplate fields for pod/ingress resources, or the gatewayHTTPRoute solver labels field for Gateway API HTTPRoute resources. These override the chart's own labels but not podLabels, serviceLabels or serviceAccount.labels, and cannot change the selector labels on the Pods or on the Services the ServiceMonitor selects.
 #### **global.revisionHistoryLimit** ~ `number`
 
 The number of old ReplicaSets to retain to allow rollback (if not set, the default Kubernetes value is set to 10).
@@ -453,14 +453,16 @@ config:
   numberOfConcurrentWorkers: 200
   gatewayAPI:
     enabled: true
-  # Feature gates as of v1.20.0. Listed with their default values.
+  # Feature gates as of v1.21.0. Listed with their default values.
   # See https://cert-manager.io/docs/cli/controller/
   featureGates:
     AllAlpha: false # ALPHA - default=false
     AllBeta: false # BETA - default=false
     ACMEHTTP01IngressPathTypeExact: true # BETA - default=true
+    ACMEUseARI: false # ALPHA - default=false
     ExperimentalCertificateSigningRequestControllers: false # ALPHA - default=false
     ExperimentalGatewayAPISupport: true # BETA - default=true
+    ListenerSets: false # ALPHA - default=false
     LiteralCertificateSubject: true # BETA - default=true
     NameConstraints: true # BETA - default=true
     OtherNames: true # BETA - default=true
@@ -545,7 +547,7 @@ Extra containers to add to the pod spec in the deployment of the cert-manager co
 ```yaml
 extraEnv:
   - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
-  - value: http://127.0.0.1:9911
+    value: http://127.0.0.1:9911
 extraContainers:
   - name: rolesanywhere-credential-helper
     image: public.ecr.aws/rolesanywhere/credential-helper:latest

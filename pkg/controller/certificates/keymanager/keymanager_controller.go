@@ -56,6 +56,8 @@ const (
 	reasonCannotRegenerateKey = "CannotRegenerateKey"
 	reasonDeleted             = "Deleted"
 	reasonNotOwned            = "NotOwned"
+	reasonGenerateFailed      = "GenerateFailed"
+	reasonMLDSADisabled       = "MLDSAPrivateKeysDisabled"
 )
 
 var (
@@ -272,8 +274,17 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 }
 
 func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.Certificate) error {
+	// The trigger controller doesn't start issuance for ML-DSA Certificates
+	// while the MLDSAPrivateKeys feature gate is disabled, so this is only
+	// defence in depth. Retrying wouldn't help, so no error is returned.
+	if crt.Spec.PrivateKey.Algorithm == cmapi.MLDSAKeyAlgorithm && !utilfeature.DefaultFeatureGate.Enabled(feature.MLDSAPrivateKeys) {
+		c.recorder.Event(crt, corev1.EventTypeWarning, reasonMLDSADisabled, "Not generating an ML-DSA private key because the MLDSAPrivateKeys feature gate is disabled")
+		return nil
+	}
+
 	pk, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonGenerateFailed, "Failed to generate private key: %v", err)
 		return err
 	}
 
@@ -324,8 +335,9 @@ func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi
 func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
 		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
-			Status:     cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
+			Namespace: crt.Namespace,
+			Name:      crt.Name,
+			Status:    cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
 		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, &cmapi.Certificate{
@@ -372,15 +384,13 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 	// that has not issued yet, and creating it here would let this Certificate
 	// later delete that one's Secret, or sign with its key.
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: crt.Namespace,
-			// TODO: handle certificate resources that have especially long names
-			GenerateName:    crt.Name + "-",
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Labels: map[string]string{
-				cmapi.IsNextPrivateKeySecretLabelKey:      "true",
-				cmapi.PartOfCertManagerControllerLabelKey: "true",
-			},
+		Namespace: crt.Namespace,
+		// TODO: handle certificate resources that have especially long names
+		GenerateName:    crt.Name + "-",
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+		Labels: map[string]string{
+			cmapi.IsNextPrivateKeySecretLabelKey:      "true",
+			cmapi.PartOfCertManagerControllerLabelKey: "true",
 		},
 		Data: map[string][]byte{
 			corev1.TLSPrivateKeyKey: pkData,

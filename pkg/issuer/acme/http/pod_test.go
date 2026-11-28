@@ -100,9 +100,7 @@ func TestEnsurePod(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -115,16 +113,14 @@ func TestEnsurePod(t *testing.T) {
 			},
 		}
 		pod = &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cm-acme-http-solver-",
-				Namespace:    testNamespace,
-				Labels:       podLabels(chal),
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject":                        "false",
-					"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
-				},
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    testNamespace,
+			Labels:       podLabels(chal),
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject":                        "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 			},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 			Spec: corev1.PodSpec{
 				AutomountServiceAccountToken: new(false),
 				EnableServiceLinks:           new(false),
@@ -176,11 +172,16 @@ func TestEnsurePod(t *testing.T) {
 			},
 		}
 		podMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: pod.ObjectMeta,
+		}
+		acmeOptions = controller.ACMEOptions{
+			HTTP01SolverResourceRequestCPU:    cpuRequest,
+			HTTP01SolverResourceRequestMemory: memoryRequest,
+			HTTP01SolverResourceLimitsCPU:     cpuLimit,
+			HTTP01SolverResourceLimitsMemory:  memoryLimit,
+			ACMEHTTP01SolverRunAsNonRoot:      true,
 		}
 	)
 	scPod := pod.DeepCopy()
@@ -188,11 +189,26 @@ func TestEnsurePod(t *testing.T) {
 	scPod.Spec.SecurityContext.RunAsNonRoot = nil
 	scPod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 	scPod.Spec.Tolerations = []corev1.Toleration{}
+
+	ppACMEOptions := acmeOptions
+	ppACMEOptions.ACMEHTTP01SolverProxyProtocol = true
+	ppPod := pod.DeepCopy()
+	ppPod.Spec.Containers[0].Args = []string{
+		fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+		fmt.Sprintf("--domain=%s", chal.Spec.DNSName),
+		fmt.Sprintf("--token=%s", chal.Spec.Token),
+		fmt.Sprintf("--key=%s", chal.Spec.Key),
+		"--proxy-protocol",
+	}
+
 	tests := map[string]testT{
 		"should do nothing if pod already exists": {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{podMeta},
 				ExpectedActions:        []testpkg.Action{},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal: chal,
 		},
@@ -200,14 +216,15 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal: chal,
 		},
 		"should have the correct default security context": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -222,13 +239,14 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, pod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"security context should be configurable": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -254,13 +272,14 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"security context should be configurable using gateway-api": {
 			chal: &cmacme.Challenge{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNamespace,
-				},
+				Namespace: testNamespace,
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
@@ -286,6 +305,9 @@ func TestEnsurePod(t *testing.T) {
 			builder: &testpkg.Builder{
 				PartialMetadataObjects: []runtime.Object{},
 				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, scPod))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 		},
 		"should clean up if multiple pods exist": {
@@ -294,9 +316,22 @@ func TestEnsurePod(t *testing.T) {
 				KubeObjects:            []runtime.Object{pod, func(p corev1.Pod) *corev1.Pod { p.Name = "foobar"; return &p }(*pod)},
 				ExpectedActions: []testpkg.Action{testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, "foobar")),
 					testpkg.NewAction(coretesting.NewDeleteAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ""))},
+				Context: &controller.Context{
+					ACMEOptions: acmeOptions,
+				},
 			},
 			chal:        chal,
 			expectedErr: true,
+		},
+		"proxy protocol should be configurable": {
+			chal: chal,
+			builder: &testpkg.Builder{
+				PartialMetadataObjects: []runtime.Object{},
+				ExpectedActions:        []testpkg.Action{testpkg.NewAction(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("pods"), testNamespace, ppPod))},
+				Context: &controller.Context{
+					ACMEOptions: ppACMEOptions,
+				},
+			},
 		},
 	}
 	for name, scenario := range tests {
@@ -307,13 +342,7 @@ func TestEnsurePod(t *testing.T) {
 				Context:   scenario.builder.Context,
 				podLister: scenario.builder.HTTP01ResourceMetadataInformersFactory.ForResource(corev1.SchemeGroupVersion.WithResource("pods")).Lister(),
 			}
-			s.Context.ACMEOptions = controller.ACMEOptions{
-				HTTP01SolverResourceRequestCPU:    cpuRequest,
-				HTTP01SolverResourceRequestMemory: memoryRequest,
-				HTTP01SolverResourceLimitsCPU:     cpuLimit,
-				HTTP01SolverResourceLimitsMemory:  memoryLimit,
-				ACMEHTTP01SolverRunAsNonRoot:      true,
-			}
+
 			scenario.builder.Start()
 			defer scenario.builder.Stop()
 			err := s.ensurePod(t.Context(), scenario.chal)
@@ -337,9 +366,7 @@ func TestGetPodsForChallenge(t *testing.T) {
 	var (
 		testNamespace = "foo"
 		chal          = &cmacme.Challenge{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testNamespace,
-			},
+			Namespace: testNamespace,
 			Spec: cmacme.ChallengeSpec{
 				DNSName: "example.com",
 				Token:   "token",
@@ -352,32 +379,24 @@ func TestGetPodsForChallenge(t *testing.T) {
 			},
 		}
 		pod = &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    "cm-acme-http-solver-",
-				Namespace:       testNamespace,
-				Labels:          podLabels(chal),
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
-			},
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       testNamespace,
+			Labels:          podLabels(chal),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 		}
 		podMeta = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: pod.ObjectMeta,
 		}
 		podMeta2 = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
 		podMetaWithExtraLabels = &metav1.PartialObjectMetadata{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Pod",
-			},
+			APIVersion: "v1",
+			Kind:       "Pod",
 			ObjectMeta: *pod.ObjectMeta.DeepCopy(),
 		}
 	)
@@ -452,16 +471,14 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"sidecar.istio.io/inject":                        "true",
-											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
-											"foo": "bar",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"sidecar.istio.io/inject":                        "true",
+										"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+										"foo": "bar",
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										PriorityClassName: "high",
@@ -543,16 +560,14 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"this is a":           "label",
-											cmacme.DomainLabelKey: "44655555555",
-										},
-										Annotations: map[string]string{
-											"sidecar.istio.io/inject":                        "true",
-											"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
-											"foo": "bar",
-										},
+									Labels: map[string]string{
+										"this is a":           "label",
+										cmacme.DomainLabelKey: "44655555555",
+									},
+									Annotations: map[string]string{
+										"sidecar.istio.io/inject":                        "true",
+										"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+										"foo": "bar",
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										PriorityClassName: "high",
@@ -827,10 +842,8 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
-										Labels: map[string]string{
-											"custom-extra-label": "overridden-by-template",
-										},
+									Labels: map[string]string{
+										"custom-extra-label": "overridden-by-template",
 									},
 								},
 							},
@@ -943,7 +956,7 @@ func validateContainerResources(t *testing.T, container corev1.Container, expect
 func TestCleanupPods(t *testing.T) {
 	testNamespace := "foo"
 	chal := &cmacme.Challenge{
-		ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace},
+		Namespace: testNamespace,
 		Spec: cmacme.ChallengeSpec{
 			DNSName: "example.com",
 			Token:   "token",
@@ -956,13 +969,12 @@ func TestCleanupPods(t *testing.T) {
 		},
 	}
 	podMeta := &metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Pod"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "cm-acme-http-solver-fghij",
-			Namespace:       testNamespace,
-			Labels:          podLabels(chal),
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
-		},
+		APIVersion:      "v1",
+		Kind:            "Pod",
+		Name:            "cm-acme-http-solver-fghij",
+		Namespace:       testNamespace,
+		Labels:          podLabels(chal),
+		OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(chal, challengeGvk)},
 	}
 
 	tests := map[string]struct {

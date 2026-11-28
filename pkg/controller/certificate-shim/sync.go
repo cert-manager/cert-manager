@@ -141,6 +141,14 @@ func SyncFnFor(
 
 		extraAnnotations := extractExtraAnnotations(ingLike, defaults.ExtraCertificateAnnotations)
 		newCrts, updateCrts, err := buildCertificates(rec, log, cmLister, ingLike, issuerName, issuerKind, issuerGroup, extraAnnotations, defaults)
+		if errors.Is(err, errInvalidIngressAnnotation) {
+			// Retrying won't help. Fixing an invalid annotation means changing
+			// the annotation, which triggers a new sync, or changing a feature
+			// gate, which restarts the controller and resyncs everything.
+			log.Error(err, "not creating or updating Certificates because of an invalid annotation")
+			rec.Eventf(ingLikeObj, corev1.EventTypeWarning, reasonBadConfig, "%s", err.Error())
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -406,13 +414,11 @@ func buildCertificates(
 		// annotations is one map shared by every Certificate built in this loop,
 		// so clone it: setIssuerSpecificConfig below writes into crt.Annotations.
 		crt := &cmapi.Certificate{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            secretRef.Name,
-				Namespace:       secretRef.Namespace,
-				Labels:          labels,
-				Annotations:     maps.Clone(annotations),
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
-			},
+			Name:            secretRef.Name,
+			Namespace:       secretRef.Namespace,
+			Labels:          labels,
+			Annotations:     maps.Clone(annotations),
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			Spec: cmapi.CertificateSpec{
 				DNSNames:    dnsNames,
 				IPAddresses: ipAddress,

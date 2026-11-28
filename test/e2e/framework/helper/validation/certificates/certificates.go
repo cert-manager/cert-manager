@@ -284,6 +284,31 @@ func ExpectKeyUsageUsageDataEncipherment(certificate *cmapi.Certificate, secret 
 	return nil
 }
 
+// ExpectMLDSAKeyUsages checks that the issued certificate has an ML-DSA public
+// key, has the KeyUsageDigitalSignature key usage set and has none of the key
+// usages that RFC 9881 forbids for ML-DSA keys.
+func ExpectMLDSAKeyUsages(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	if cert.PublicKeyAlgorithm != x509.MLDSA {
+		return fmt.Errorf("Expected certificate to have an ML-DSA public key, but got %v", cert.PublicKeyAlgorithm)
+	}
+
+	if cert.KeyUsage&x509.KeyUsageDigitalSignature == 0 {
+		return fmt.Errorf("Expected certificate to have KeyUsageDigitalSignature %#b, but got %#b", x509.KeyUsageDigitalSignature, cert.KeyUsage)
+	}
+
+	const forbidden = x509.KeyUsageKeyEncipherment | x509.KeyUsageDataEncipherment | x509.KeyUsageKeyAgreement | x509.KeyUsageEncipherOnly | x509.KeyUsageDecipherOnly
+	if usage := cert.KeyUsage & forbidden; usage != 0 {
+		return fmt.Errorf("Expected certificate to have no key usages forbidden for ML-DSA keys, but got %#b", usage)
+	}
+
+	return nil
+}
+
 // ExpectEmailsToMatch check if the issued certificate has all requested email SANs
 func ExpectEmailsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
