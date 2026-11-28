@@ -1,6 +1,7 @@
+{{- $shouldRenderStr := include "cert-manager.shouldRenderServiceMonitor" . | trim }}
 {{- if and .Values.prometheus.enabled (and .Values.prometheus.podmonitor.enabled .Values.prometheus.servicemonitor.enabled) }}
 {{- fail "Either .Values.prometheus.podmonitor.enabled or .Values.prometheus.servicemonitor.enabled can be enabled at a time, but not both." }}
-{{- else if and .Values.prometheus.enabled .Values.prometheus.servicemonitor.enabled }}
+{{- else if and .Values.prometheus.enabled .Values.prometheus.servicemonitor.enabled (eq $shouldRenderStr "true") }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
