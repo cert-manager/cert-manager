@@ -1,0 +1,32 @@
+suite: cainjector RBAC - Leader Election
+templates:
+  - templates/cainjector-rbac.yaml
+release:
+  name: cert-manager
+  namespace: cert-manager
+tests:
+  - it: should only grant access to the cainjector leader election lease
+    documentSelector:
+      path: kind
+      value: Role
+    asserts:
+      - equal:
+          path: rules
+          value:
+            - apiGroups: ["coordination.k8s.io"]
+              resources: ["leases"]
+              resourceNames: ["cert-manager-cainjector-leader-election"]
+              verbs: ["get", "update", "patch"]
+            - apiGroups: ["coordination.k8s.io"]
+              resources: ["leases"]
+              verbs: ["create"]
+  - it: should create the leader election Role in the leader election namespace
+    set:
+      global.leaderElection.namespace: leader-ns
+    documentSelector:
+      path: kind
+      value: Role
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: leader-ns
