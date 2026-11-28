@@ -18,6 +18,7 @@ package keymanager
 
 import (
 	"crypto/mldsa"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -114,6 +115,11 @@ func TestProcessItem(t *testing.T) {
 			UID:       types.UID(name),
 		}, certificateGvk)}
 	}
+	getCertificateAction := testpkg.NewAction(coretesting.NewGetAction(
+		cmapi.SchemeGroupVersion.WithResource("certificates"),
+		"testns",
+		"test",
+	))
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
@@ -139,6 +145,8 @@ func TestProcessItem(t *testing.T) {
 		// mldsaFeatureEnabled is the state of the MLDSAPrivateKeys feature
 		// gate during the test.
 		mldsaFeatureEnabled bool
+
+		certificateGetReactor coretesting.ReactionFunc
 	}{
 		"do nothing if an empty 'key' is used": {},
 		"do nothing if an invalid 'key' is used": {
@@ -517,6 +525,7 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				getCertificateAction,
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -550,6 +559,7 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-3", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				getCertificateAction,
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -582,6 +592,7 @@ func TestProcessItem(t *testing.T) {
 				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
 			},
 			expectedActions: []testpkg.Action{
+				getCertificateAction,
 				testpkg.NewAction(coretesting.NewDeleteAction(
 					corev1.SchemeGroupVersion.WithResource("secrets"),
 					"testns",
@@ -593,6 +604,64 @@ func TestProcessItem(t *testing.T) {
 					"fixed-name-2",
 				)),
 			},
+		},
+		"if multiple owned secrets exist and the cached nextPrivateKeySecretName is stale, preserve the one named by the API server": {
+			certificate: &cmapi.Certificate{
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("stale-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			certificateGetReactor: func(coretesting.Action) (bool, runtime.Object, error) {
+				return true, &cmapi.Certificate{
+					Status: cmapi.CertificateStatus{NextPrivateKeySecretName: new("current-name")},
+				}, nil
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "stale-name", "test", nil),
+				ownedSecretWithName("testns", "current-name", "test", nil),
+			},
+			expectedActions: []testpkg.Action{
+				getCertificateAction,
+				testpkg.NewAction(coretesting.NewDeleteAction(
+					corev1.SchemeGroupVersion.WithResource("secrets"),
+					"testns",
+					"stale-name",
+				)),
+			},
+		},
+		"if multiple owned secrets exist and the Certificate cannot be read from the API server, delete none": {
+			certificate: &cmapi.Certificate{
+				Namespace: "testns",
+				Name:      "test",
+				UID:       types.UID("test"),
+				Status: cmapi.CertificateStatus{
+					NextPrivateKeySecretName: new("fixed-name"),
+					Conditions: []cmapi.CertificateCondition{
+						{
+							Type:   cmapi.CertificateConditionIssuing,
+							Status: cmmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			certificateGetReactor: func(coretesting.Action) (bool, runtime.Object, error) {
+				return true, nil, errors.New("simulated get failure")
+			},
+			secrets: []runtime.Object{
+				ownedSecretWithName("testns", "fixed-name", "test", nil),
+				ownedSecretWithName("testns", "fixed-name-2", "test", nil),
+			},
+			expectedActions: []testpkg.Action{getCertificateAction},
+			err:             "simulated get failure",
 		},
 		"if a named and owned secret exists but contains no data, delete it": {
 			certificate: &cmapi.Certificate{
@@ -843,6 +912,10 @@ func TestProcessItem(t *testing.T) {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, req)
 			}
 			builder.Init()
+
+			if test.certificateGetReactor != nil {
+				builder.FakeCMClient().PrependReactor("get", "certificates", test.certificateGetReactor)
+			}
 
 			// Register informers used by the controller using the registration wrapper
 			w := &controllerWrapper{}
