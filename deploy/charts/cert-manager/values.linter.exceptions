@@ -2,3 +2,6 @@ value missing from templates: crds.enabled
 value missing from templates: crds.keep
 value missing from templates: acmesolver.image.pullPolicy
 value missing from templates: enabled
+value missing from values.yaml: externalIssuers[*]
+value missing from templates: externalIssuers.vault
+value missing from templates: vault-issuer
