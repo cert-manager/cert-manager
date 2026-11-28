@@ -51,14 +51,11 @@ metadata:
   labels:
     {{- include "cainjector.componentLabels" . | nindent 4 }}
 rules:
-  # Used for leader election by the controller
-  # cert-manager-cainjector-leader-election is used by the CertificateBased injector controller
-  #   see cmd/cainjector/start.go#L113
-  # cert-manager-cainjector-leader-election-core is used by the SecretBased injector controller
-  #   see cmd/cainjector/start.go#L137
+  # Used for leader election by the cainjector manager, see LeaderElectionID
+  # in cmd/cainjector/app/controller.go
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
-    resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core"]
+    resourceNames: ["cert-manager-cainjector-leader-election"]
     verbs: ["get", "update", "patch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
@@ -66,7 +63,7 @@ rules:
 
 ---
 
-# grant cert-manager permission to manage the leaderelection configmap in the
+# grant cainjector permission to manage its leader election lease in the
 # leader election namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
